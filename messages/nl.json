@@ -1,0 +1,15 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "settings": "Instellingen",
+    "save": "Opslaan"
+  },
+  "settingsMenu": {
+    "title": "Instellingen",
+    "categories": "Categorieën",
+    "brandIcons": "Merk-iconen",
+    "accounts": "Rekeningen",
+    "general": "Algemeen",
+    "admin": "Beheer"
+  }
+}

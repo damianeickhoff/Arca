@@ -1,0 +1,728 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --ease-out-quart: var(--easing-out-quart);
+  --shadow-raised: var(--elevation-raised);
+  --shadow-floating: var(--elevation-floating);
+  --shadow-overlay: var(--elevation-overlay);
+}
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --container-sm: 25rem;
+  --font-heading: var(--font-sans);
+
+  /* Motion — the house easing curve (matches .nav-pill-indicator / search-*-in)
+     and the standard duration scale. Spring physics live in src/lib/motion.ts.
+     (Named --easing-*, not --ease-*: the @theme inline mapping above would
+     otherwise be self-referential and hang the CSS build.) */
+  --easing-out-quart: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+
+  /* Elevation — the only three shadows the app uses (plus the dark icon-chip one).
+     raised = cards/chips at rest, floating = glass/FAB/toasts, overlay = popovers/dialogs.
+     Exposed as shadow-raised/-floating/-overlay utilities via @theme inline. */
+  --elevation-raised: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(13, 148, 136, 0.08);
+  --elevation-floating: 0 6px 18px rgba(109, 109, 109, 0.18);
+  --elevation-overlay: 0 8px 40px rgba(13, 148, 136, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* Teal Glassmorphism — light mode (cool neutrals + teal/emerald accent) */
+  --background: #f4f6f6;
+  --foreground: #0e0e0e;
+  --card: #ffffff;
+  --card-muted: color-mix(in srgb, var(--foreground) 58%, transparent);
+  --card-foreground: #10201c;
+  --popover: #ffffff;
+  --popover-foreground: #10201c;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --secondary: #d1fae5;
+  --secondary-foreground: #065f46;
+  --muted: color-mix(in srgb, var(--foreground) 8%, transparent);
+  --muted-foreground: rgba(73, 73, 73, 0.712);
+  --accent: #ecfdf5;
+  --accent-foreground: #047857;
+  --destructive: #dc2626;
+  --success: #38d052;
+  --danger: #99ff25;
+  --warning: #fe9131;
+  --border: color-mix(in srgb, var(--foreground) 20%, transparent);
+  --input: rgba(15, 118, 110, 0.10);
+  --ring: #14b8a6;
+  --chart-1: #0f766e;
+  --chart-2: #f59e0b;
+  --chart-3: #6366f1;
+  --chart-4: #e11d48;
+  --chart-5: #0ea5e9;
+  --radius: 0.875rem;
+  --sidebar: rgba(255, 255, 255, 0.88);
+  --sidebar-foreground: #0f766e;
+  --sidebar-primary: #0d9488;
+  --sidebar-primary-foreground: #ffffffa2;
+  --sidebar-accent: rgba(13, 148, 136, 0.08);
+  --sidebar-accent-foreground: #065f46;
+  --sidebar-border: rgba(172, 172, 172, 0.12);
+  --sidebar-ring: #14b8a6;
+  --color-nodig: #0e7490;
+  --color-willen: #7c3aed;
+  --color-sparen: #059669;
+  --color-income: var(--success);
+  --color-expense: #e11d48;
+  --glass-blur: blur(20px);
+
+  --color-amber-600: #fe9131;
+  --color-emerald-400: #38d052;
+  --wallet-background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(240, 244, 255, 0.35) 10%,
+      rgba(213, 217, 228, 0.85) 35%,
+      #f4f6f6 55%
+    ),
+    linear-gradient(
+      122deg,
+      #3858c9 0%,
+      #536fe0 45%,
+      #8067d8 100%
+    );
+  /* Savings-goal progress bars (dashboard + savings page) */
+  --gradient-goal-track: linear-gradient(to right, #d7f0ea, #e9f8f2);
+  --gradient-goal-fill: linear-gradient(to right, #0f766e, #14b8a6, #6ee7b7);
+  /* Icon chips on goal/budget/debt rows (light values = the former hardcoded literals) */
+  --goal-icon-bg-from: #e6f2ef;
+  --goal-icon-bg-to: #eefaf5;
+  /* Income-row arrow icon on the dashboard's white stat chip */
+  --stat-chip-icon: #252525;
+  /* Savings-page total progress bar track */
+  --savings-bar-track: #f5f2f3;
+  /* Debts-page navy accent (stat border, matches the debts progress gradient) */
+  --debt-accent: rgb(14, 52, 112);
+  /* Savings/Debts page hero fades — same two-layer technique as --wallet-background
+     (a fade-to-background wash over a diagonal color wash), tinted green/orange. */
+  --savings-background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(240, 250, 246, 0.35) 10%,
+      rgba(216, 228, 224, 0.85) 35%,
+      #f4f6f6 55%
+    ),
+    linear-gradient(
+      122deg,
+      #0f766e 0%,
+      #14b8a6 45%,
+      #6ee7b7 100%
+    );
+  --debt-background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 246, 237, 0.35) 10%,
+      rgba(230, 220, 213, 0.85) 35%,
+      #f4f6f6 55%
+    ),
+    linear-gradient(
+      122deg,
+      #c2410c 0%,
+      #f97316 45%,
+      #fdba74 100%
+    );
+}
+
+.dark {
+  /* Teal Glassmorphism — dark mode */
+  --background: #000000;
+  --foreground: #fdfffe;
+  --card: #0f0f0f;
+  --card-muted: rgba(217, 242, 234, 0.70);
+  --card-foreground: #d9f2ea;
+  --popover: #1b2723;
+  --popover-foreground: #f2e5d9;
+  --primary: #817fe0;
+  --primary-foreground: #042f2e;
+  --secondary: rgba(45, 212, 191, 0.17);
+  --secondary-foreground: #99f6e4;
+  --muted: rgba(45, 212, 191, 0.13);
+  --muted-foreground: rgba(255, 255, 255, 0.493);
+  --accent: rgba(16, 185, 129, 0.19);
+  --accent-foreground: #6ee7b7;
+  --destructive: #f14254;
+  --success: #38d052;
+  --danger: #ff0f16;
+  --warning: #ff8d00;
+  --border: rgba(190, 227, 216, 0.17);
+  --input: rgba(190, 227, 216, 0.15);
+  --ring: #2dd4bf;
+  --icon-muted: #1f1f1f;
+  --chart-1: #2dd4bf;
+  --chart-2: #fbbf24;
+  --chart-3: #818cf8;
+  --chart-4: #fb7185;
+  --chart-5: #38bdf8;
+  --sidebar: rgba(13, 24, 21, 0.92);
+  --sidebar-foreground: #5eead4;
+  --sidebar-primary: #2dd4bf;
+  --sidebar-primary-foreground: #2e2e30;
+  --sidebar-accent: rgba(45, 212, 191, 0.14);
+  --sidebar-accent-foreground: #99f6e4;
+  --sidebar-border: rgba(190, 227, 216, 0.14);
+  --sidebar-ring: #2dd4bf;
+  --color-nodig: #22d3ee;
+  --color-willen: #a78bfa;
+  --color-sparen: #34d399;
+  --color-income: var(--success);
+  --color-expense: var(--danger);
+  --gradient-goal-track: linear-gradient(to right, rgba(45, 212, 191, 0.20), rgba(45, 212, 191, 0.10));
+  --gradient-goal-fill: linear-gradient(to right, #14b8a6, #2dd4bf, #6ee7b7);
+  --goal-icon-bg-from: rgba(45, 212, 191, 0.14);
+  --goal-icon-bg-to: rgba(45, 212, 191, 0.08);
+  --stat-chip-icon: rgba(255, 255, 255, 0.85);
+  --savings-bar-track: rgba(255, 255, 255, 0.10);
+  --debt-accent: rgb(126, 166, 240);
+  --elevation-raised: 0 1px 4px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --elevation-floating: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --elevation-overlay: 0 8px 40px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --wallet-background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.35) 5%,
+      rgba(0, 0, 0, 0.507) 15%,
+      #07080d 25%
+    ),
+    linear-gradient(
+      122deg,
+      rgb(3, 33, 157) 0%,
+      rgb(3, 33, 157) 15%,
+      rgb(3, 33, 157) 35%,
+      rgb(3, 33, 157) 100%
+    );
+  --savings-background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.35) 5%,
+      rgba(0, 0, 0, 0.658) 15%,
+      #000000 35%
+    ),
+    linear-gradient(
+      122deg,
+      rgb(6, 78, 59) 0%,
+      rgb(6, 78, 59) 15%,
+      rgb(5, 95, 70) 35%,
+      rgb(5, 95, 70) 100%
+    );
+  --debt-background:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.35) 5%,
+      rgba(0, 0, 0, 0.658) 15%,
+      #000000 35%
+    ),
+    linear-gradient(
+      122deg,
+      rgb(124, 45, 18) 0%,
+      rgb(124, 45, 18) 15%,
+      rgb(154, 52, 18) 35%,
+      rgb(154, 52, 18) 100%
+    );
+}
+
+/* Privacy mode — blur all tabular-nums (amounts) */
+html.privacy .tabular-nums {
+  filter: blur(6px);
+  transition: filter 0.2s ease;
+  user-select: none;
+}
+html.privacy .tabular-nums:hover {
+  filter: blur(0);
+}
+
+/* Hide the scrollbar on horizontally-scrollable rows (e.g. the Reports comparison cards) while keeping them scrollable. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* App-wide: this is a mobile-first app UI, so scrollbars are hidden everywhere by
+   default (scrolling itself is untouched) — matches the chrome-less feel on every
+   scrollable surface, not just the rows that opted into .scrollbar-hide above. */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Revolut-style "liquid glass" circular icon buttons (mobile header). Pure-CSS
+   approximation: frosted blur + saturate, a luminous rim, and a directional specular
+   highlight via ::after. True edge refraction needs SVG displacement maps, which WebKit
+   (the engine behind the iPhone PWA) doesn't support in backdrop-filter — so it's omitted
+   and the specular rim carries the "liquid" read. Unlayered so it wins over Tailwind
+   utilities of equal specificity. Tunable: blur radius, tint alpha, ::after highlight alphas. */
+.glass-icon-btn {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease, transform 0.15s var(--easing-out-quart);
+  background: rgba(255, 255, 255, 0.60);
+  -webkit-backdrop-filter: blur(3px) saturate(180%);
+  backdrop-filter: blur(3px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow:
+    0 6px 18px rgba(109, 109, 109, 0.178),
+    inset 0 1px 1px rgba(255, 255, 255, 0.205);
+}
+.glass-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+/* Specular rim — bright directional crescents (top-left + bottom-right), under the icon. */
+.glass-icon-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  box-shadow:
+    inset -7px -5px 10px -8px rgba(224, 224, 224, 0.637),
+    inset 6px 5px 10px -8px rgba(255, 255, 255, 0.377);
+  transition: box-shadow 0.2s ease;
+}
+/* "Liquid" press response — the specular highlight brightens and the whole button
+   compresses slightly, like glass being pressed rather than a flat button darkening. */
+.glass-icon-btn:active {
+  transform: scale(0.94);
+}
+.glass-icon-btn:active::after {
+  box-shadow:
+    inset -4px -3px 8px -6px rgba(224, 224, 224, 0.85),
+    inset 4px 3px 8px -6px rgba(255, 255, 255, 0.6);
+}
+/* Dark theme — dimmer tint + softer specular. */
+.dark .glass-icon-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: none;
+  box-shadow: none;
+
+}
+
+.dark .glass-icon-btn::after {
+  box-shadow: none;
+}
+
+/* Eliminate 300ms tap delay on all interactive elements. */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS Safari from zooming when focusing inputs (requires font-size >= 16px). */
+@media (max-width: 640px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}
+
+/* Glass search bar — pill-shaped input container with the same frosted glass treatment
+   as .glass-icon-btn. Apply to the wrapper div, use bg-transparent on the input inside. */
+.glass-search-bar {
+  position: relative;
+  isolation: isolate;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.60);
+  -webkit-backdrop-filter: blur(3px) saturate(180%);
+  backdrop-filter: blur(3px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow:
+    0 6px 18px rgba(109, 109, 109, 0.178),
+    inset 0 1px 1px rgba(255, 255, 255, 0.205);
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-search-bar {
+    transition: none;
+  }
+  .glass-icon-btn {
+    transition: none;
+  }
+}
+.glass-search-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  box-shadow:
+    inset -7px -5px 10px -8px rgba(224, 224, 224, 0.637),
+    inset 6px 5px 10px -8px rgba(255, 255, 255, 0.377);
+}
+.dark .glass-search-bar {
+  background: rgba(44, 44, 44, 0.835);
+  border-color: none;
+  border: none;
+  box-shadow: none
+}
+.dark .glass-search-bar::after {
+  box-shadow: none;
+}
+/* Dim variant — used over gradients (same override pattern as .glass-icon-dim). */
+.glass-search-bar.glass-icon-dim {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: none;
+  box-shadow: none;
+}
+.glass-search-bar.glass-icon-dim::after {
+  box-shadow: none;
+}
+
+/* Glass surface — same tint, blur, border, shadow, and specular rim as .glass-icon-btn
+   but without pill shape or button-specific layout, for use on wider card elements. */
+.glass-surface {
+  position: relative;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.60);
+  -webkit-backdrop-filter: blur(3px) saturate(180%);
+  backdrop-filter: blur(3px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow:
+    0 6px 18px rgba(109, 109, 109, 0.178),
+    inset 0 1px 1px rgba(255, 255, 255, 0.205);
+}
+.glass-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  box-shadow:
+    inset -7px -5px 10px -8px rgba(224, 224, 224, 0.637),
+    inset 6px 5px 10px -8px rgba(255, 255, 255, 0.377);
+}
+.dark .glass-surface {
+  background: rgba(233, 233, 233, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.22);
+}
+.dark .glass-surface::after {
+  box-shadow:
+    inset -7px -5px 10px -8px rgba(255, 255, 255, 0.212),
+    inset 6px 5px 10px -8px rgba(255, 255, 255, 0.233);
+}
+
+/* Dimmed variant for glass buttons sitting over the dark gradient hero (dashboard only).
+   Overrides bg/border/shadow to match the stat card's transparent style; specular rim off. */
+.glass-icon-dim {
+  background: rgba(255, 255, 255, 0.151);
+  border: 1px solid rgba(255, 255, 255, 0.062);
+  backdrop-filter: blur(12px);
+  box-shadow: none;
+}
+.glass-icon-dim::after {
+  box-shadow: none;
+}
+.glass-icon-dim svg {
+  color: rgba(255, 255, 255, 0.753);
+  transition: color 0.25s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-icon-dim svg {
+    transition: none;
+  }
+}
+
+/* Sliding active indicator inside the mobile bottom nav. */
+.nav-pill-indicator {
+  transition: transform 220ms var(--easing-out-quart);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-pill-indicator {
+    transition: none;
+  }
+}
+
+/* Same specular rim as .glass-icon-btn, adapted for the pill-shaped mobile bottom nav. */
+.glass-nav {
+  position: relative;
+  isolation: isolate;
+}
+.glass-nav::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  box-shadow:
+    inset -3px -5px 10px -8px rgb(255, 255, 255),
+    inset 5px 8px 10px -8px rgb(255, 255, 255);
+}
+.dark .glass-nav::after {
+  box-shadow: none;
+}
+
+/* App-wide page-enter fade (PageTransition, keyed on pathname). Kept UNLAYERED
+   (outside @layer base) on purpose: the production CSS minifier (Lightning CSS)
+   mishandles @keyframes nested inside a cascade layer, so the animation silently
+   never runs in a production build even though it works in dev. No fill-mode:
+   the element's resting opacity is 1, so if the animation never runs (older
+   engine, reduced motion) the page is simply visible — never stuck blank. */
+/* margin-left (not transform) drives the horizontal settle — a transform here would
+   make this wrapper a new containing block for every position:fixed descendant
+   (the transactions FAB, sticky page headers, full-screen dialogs), breaking them
+   app-wide. margin-left has no such side effect, so the slide is safe everywhere. */
+@keyframes page-fade-in {
+  from { opacity: 0; margin-left: 18px; }
+  to { opacity: 1; margin-left: 0; }
+}
+.page-fade-in {
+  animation: page-fade-in 0.28s var(--easing-out-quart);
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-in { animation: none; }
+}
+
+/* "Underwater light" hero decoration for the settings dialog's first page (see
+   Sparkles component) — kept unlayered for the same Lightning CSS
+   @keyframes-in-layer reason as page-fade-in above. Beams sway gently around their
+   own base rotation (--beam-rot, set per element); particles rise by their own
+   distance (--rise, set per element) from their own scattered start position, so
+   they don't all pop in along one shared line. Both hold a non-zero opacity floor
+   at rest so reduced-motion still shows something rather than nothing. */
+@keyframes sparkle-beam-sway {
+  0%, 100% { opacity: 0.55; transform: rotate(var(--beam-rot)) scaleY(1); }
+  50%      { opacity: 0.9;  transform: rotate(calc(var(--beam-rot) + 3deg)) scaleY(1.06); }
+}
+@keyframes sparkle-rise {
+  0%   { opacity: 0;   transform: translateY(0); }
+  15%  { opacity: 0.9; }
+  80%  { opacity: 0.3; }
+  100% { opacity: 0;   transform: translateY(calc(var(--rise) * -1)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sparkle-beam { animation: none; opacity: 0.5; }
+  .sparkle-rise { animation: none; opacity: 0.5; transform: none; }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    /* Use `clip`, not `hidden`, to suppress horizontal scroll. `overflow-x: hidden`
+       turns <html> into a scroll container, which decouples position:sticky
+       descendants (e.g. the mobile page headers) from the real document scroll so
+       they never stick. `clip` clips the same overflow WITHOUT creating a scroll
+       container, so sticky keeps working. (iOS Safari 16+ / Chrome 90+.) */
+    overflow-x: clip;
+  }
+
+  /* base-ui's Dialog scroll-lock sets `scrollbar-gutter: stable` and
+     `overflow: hidden scroll` inline (without !important) on <html> while a dialog
+     is open. Both reserve real width for a scrollbar track on the right, which
+     shrinks the fixed-positioning containing block asymmetrically and makes
+     centered dialogs sit off-center. Force both off, scoped to while a dialog
+     popup actually exists in the DOM so normal page scrolling is unaffected. */
+  html:has([data-slot="dialog-content"]) {
+    scrollbar-gutter: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  /* Mobile bottom-sheet (vaul) scroll lock. Vaul's own lock is disabled
+     (disablePreventScroll in ui/dialog.tsx) because it mutates <body> and breaks
+     position:sticky headers when the page is scrolled. Lock on <html> instead —
+     html stays the scroll root, so sticky descendants keep sticking to the
+     viewport while the sheet is open (the header stays visible behind the
+     overlay instead of vanishing). */
+  html:has([data-vaul-drawer]) {
+    overflow-y: hidden !important;
+  }
+
+  body {
+    @apply text-foreground;
+    background-color: var(--background);
+    position: relative;
+    z-index: 0;
+    /* No overflow-x here: setting overflow on <body> turns it into its own
+       scroll container, which decouples position:sticky descendants from the
+       real (document/<html>) scrolling box and makes them never appear to
+       "stick" — they just sit static. <html> already clips horizontal
+       overflow above, so body doesn't need to repeat it. */
+  }
+
+  @keyframes search-content-in {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
+
+  @keyframes search-item-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0);    }
+  }
+
+  .search-content-enter {
+    animation: search-content-in 380ms var(--easing-out-quart) both;
+  }
+
+  .search-item-enter {
+    animation: search-item-in 340ms var(--easing-out-quart) both;
+  }
+
+  /* Undo-toast countdown bar (transactions list). */
+  @keyframes undo-shrink {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+
+  html {
+    @apply font-sans;
+    /* With the translucent iOS status bar, content bleeds under the notch. On every page but
+       the dashboard (which paints its own gradient there) this is the background that shows in
+       that band; the top edge-fade keeps the white status icons legible over it. */
+    background-color: var(--background);
+  }
+
+  /* ── Glassmorphism ─────────────────────────────────────────────────── */
+
+  /* Tooltip and popup-card components */
+  .bg-card-glass {
+    /* Routed through a custom property so the build's CSS minifier doesn't treat the standard
+     * and -webkit- prefixed declarations as duplicates and silently drop one of them (verified
+     * in the compiled output — without this, only -webkit-backdrop-filter survived, which Chrome/
+     * Safari alias but Firefox does not). */
+    background: rgba(255, 255, 255, 0.65);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid rgb(255, 255, 255);
+    box-shadow:
+      0 4px 32px rgba(13, 148, 136, 0.10),
+      0 1px 4px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .dark .bg-card-glass {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(190, 227, 216, 0.16);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.6),
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /* shadcn Card components */
+  [data-slot="card"] {
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border: 1px solid rgba(255, 255, 255, 0.68);
+    box-shadow:
+      0 4px 32px rgba(13, 148, 136, 0.10),
+      0 1px 4px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .dark [data-slot="card"] {
+    border-color: rgba(190, 227, 216, 0.16);
+    box-shadow:
+      0 8px 40px rgba(0, 0, 0, 0.6),
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .rounded-3xl.bg-card,
+  .dark .rounded-2xl.bg-card,
+  .dark .rounded-xl.bg-card {
+    border-color: none;
+    box-shadow: none;
+  }
+
+  /* react-colorful theming — round the gradient box/hue bar and resize the pointer to match
+   * this app's rounded, glassy aesthetic instead of the library's square defaults. */
+  .react-colorful {
+    width: 100% !important;
+    height: 140px !important;
+    gap: 0.5rem;
+  }
+  .react-colorful__saturation {
+    border-radius: var(--radius-lg);
+  }
+  .react-colorful__hue {
+    height: 14px !important;
+    border-radius: 999px;
+  }
+  .react-colorful__pointer {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  /* Thinner outlined (Tabler) icons app-wide. Tabler defaults to stroke-width 2;
+   * 1.5 reads lighter and more refined. A CSS rule overrides the SVG presentation
+   * attribute, so this applies everywhere without touching each icon usage. */
+  .tabler-icon {
+    stroke-width: 1.5;
+  }
+
+}

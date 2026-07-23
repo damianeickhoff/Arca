@@ -1,0 +1,15 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "settings": "Settings",
+    "save": "Save"
+  },
+  "settingsMenu": {
+    "title": "Settings",
+    "categories": "Categories",
+    "brandIcons": "Brand icons",
+    "accounts": "Accounts",
+    "general": "General",
+    "admin": "Admin"
+  }
+}

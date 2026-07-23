@@ -1,0 +1,156 @@
+// Static map of brand icons imported individually from @thesvg/icons.
+// Avoids the barrel import (index.js) which contains TypeScript-only syntax
+// incompatible with Turbopack's JS parser.
+// Import paths and keys use the package's hyphenated slug convention.
+
+import * as _spotify from "@thesvg/icons/spotify";
+import * as _netflix from "@thesvg/icons/netflix";
+import * as _plex from "@thesvg/icons/plex";
+import * as _youtube from "@thesvg/icons/youtube";
+import * as _youtube_music from "@thesvg/icons/youtube-music";
+import * as _apple_music from "@thesvg/icons/apple-music";
+import * as _deezer from "@thesvg/icons/deezer";
+import * as _tidal from "@thesvg/icons/tidal";
+import * as _hbo from "@thesvg/icons/hbo";
+import * as _paramountplus from "@thesvg/icons/paramountplus";
+import * as _disney from "@thesvg/icons/disney";
+import * as _suno from "@thesvg/icons/suno";
+import * as _apple from "@thesvg/icons/apple";
+import * as _google from "@thesvg/icons/google";
+import * as _samsung from "@thesvg/icons/samsung";
+import * as _sony from "@thesvg/icons/sony";
+import * as _dropbox from "@thesvg/icons/dropbox";
+import * as _box from "@thesvg/icons/box";
+import * as _figma from "@thesvg/icons/figma";
+import * as _notion from "@thesvg/icons/notion";
+import * as _github from "@thesvg/icons/github";
+import * as _intel from "@thesvg/icons/intel";
+import * as _anthropic from "@thesvg/icons/anthropic";
+import * as _claude from "@thesvg/icons/claude";
+import * as _openai from "@thesvg/icons/openai";
+import * as _paypal from "@thesvg/icons/paypal";
+import * as _stripe from "@thesvg/icons/stripe";
+import * as _revolut from "@thesvg/icons/revolut";
+import * as _n26 from "@thesvg/icons/n26";
+import * as _bunq from "@thesvg/icons/bunq";
+import * as _vodafone from "@thesvg/icons/vodafone";
+import * as _virgin from "@thesvg/icons/virgin";
+import * as _ea from "@thesvg/icons/ea";
+import * as _steam from "@thesvg/icons/steam";
+import * as _playstation from "@thesvg/icons/playstation";
+import * as _twitch from "@thesvg/icons/twitch";
+import * as _discord from "@thesvg/icons/discord";
+import * as _whatsapp from "@thesvg/icons/whatsapp";
+import * as _telegram from "@thesvg/icons/telegram";
+import * as _instagram from "@thesvg/icons/instagram";
+import * as _facebook from "@thesvg/icons/facebook";
+import * as _x from "@thesvg/icons/x";
+import * as _reddit from "@thesvg/icons/reddit";
+import * as _snapchat from "@thesvg/icons/snapchat";
+import * as _patreon from "@thesvg/icons/patreon";
+import * as _kfc from "@thesvg/icons/kfc";
+import * as _mcdonalds from "@thesvg/icons/mcdonalds";
+import * as _mcdonald_s from "@thesvg/icons/mcdonald-s";
+import * as _burger_king from "@thesvg/icons/burger-king";
+import * as _starbucks from "@thesvg/icons/starbucks";
+import * as _taco_bell from "@thesvg/icons/taco-bell";
+import * as _uber_eats from "@thesvg/icons/uber-eats";
+import * as _albert_heijn from "@thesvg/icons/albert-heijn";
+import * as _lidl from "@thesvg/icons/lidl";
+import * as _ikea from "@thesvg/icons/ikea";
+import * as _zalando from "@thesvg/icons/zalando";
+import * as _ebay from "@thesvg/icons/ebay";
+import * as _etsy from "@thesvg/icons/etsy";
+import * as _aliexpress from "@thesvg/icons/aliexpress";
+import * as _wish from "@thesvg/icons/wish";
+import * as _nike from "@thesvg/icons/nike";
+import * as _adidas from "@thesvg/icons/adidas";
+import * as _zara from "@thesvg/icons/zara";
+import * as _uniqlo from "@thesvg/icons/uniqlo";
+import * as _mediamarkt from "@thesvg/icons/mediamarkt";
+import * as _saturn from "@thesvg/icons/saturn";
+import * as _airbnb from "@thesvg/icons/airbnb";
+import * as _bookingdotcom from "@thesvg/icons/bookingdotcom";
+import * as _expedia from "@thesvg/icons/expedia";
+import * as _klm from "@thesvg/icons/klm";
+import * as _vinted from "@thesvg/icons/vinted";
+import * as _amazon_prime from "@thesvg/icons/amazon-prime";
+import * as _subway from "@thesvg/icons/subway";
+
+export type BrandEntry = { slug: string; hex: string; svg: string; title: string };
+
+export const BRAND_MAP: Record<string, BrandEntry> = {
+  spotify: _spotify as unknown as BrandEntry,
+  netflix: _netflix as unknown as BrandEntry,
+  plex: _plex as unknown as BrandEntry,
+  youtube: _youtube as unknown as BrandEntry,
+  "youtube-music": _youtube_music as unknown as BrandEntry,
+  "apple-music": _apple_music as unknown as BrandEntry,
+  deezer: _deezer as unknown as BrandEntry,
+  tidal: _tidal as unknown as BrandEntry,
+  hbo: _hbo as unknown as BrandEntry,
+  paramountplus: _paramountplus as unknown as BrandEntry,
+  disney: _disney as unknown as BrandEntry,
+  suno: _suno as unknown as BrandEntry,
+  apple: _apple as unknown as BrandEntry,
+  google: _google as unknown as BrandEntry,
+  samsung: _samsung as unknown as BrandEntry,
+  sony: _sony as unknown as BrandEntry,
+  dropbox: _dropbox as unknown as BrandEntry,
+  box: _box as unknown as BrandEntry,
+  figma: _figma as unknown as BrandEntry,
+  notion: _notion as unknown as BrandEntry,
+  github: _github as unknown as BrandEntry,
+  intel: _intel as unknown as BrandEntry,
+  anthropic: _anthropic as unknown as BrandEntry,
+  claude: _claude as unknown as BrandEntry,
+  openai: _openai as unknown as BrandEntry,
+  paypal: _paypal as unknown as BrandEntry,
+  stripe: _stripe as unknown as BrandEntry,
+  revolut: _revolut as unknown as BrandEntry,
+  n26: _n26 as unknown as BrandEntry,
+  bunq: _bunq as unknown as BrandEntry,
+  vodafone: _vodafone as unknown as BrandEntry,
+  virgin: _virgin as unknown as BrandEntry,
+  ea: _ea as unknown as BrandEntry,
+  steam: _steam as unknown as BrandEntry,
+  playstation: _playstation as unknown as BrandEntry,
+  twitch: _twitch as unknown as BrandEntry,
+  discord: _discord as unknown as BrandEntry,
+  whatsapp: _whatsapp as unknown as BrandEntry,
+  telegram: _telegram as unknown as BrandEntry,
+  instagram: _instagram as unknown as BrandEntry,
+  facebook: _facebook as unknown as BrandEntry,
+  x: _x as unknown as BrandEntry,
+  reddit: _reddit as unknown as BrandEntry,
+  snapchat: _snapchat as unknown as BrandEntry,
+  patreon: _patreon as unknown as BrandEntry,
+  kfc: _kfc as unknown as BrandEntry,
+  mcdonalds: _mcdonalds as unknown as BrandEntry,
+  "mcdonald-s": _mcdonald_s as unknown as BrandEntry,
+  "burger-king": _burger_king as unknown as BrandEntry,
+  starbucks: _starbucks as unknown as BrandEntry,
+  "taco-bell": _taco_bell as unknown as BrandEntry,
+  "uber-eats": _uber_eats as unknown as BrandEntry,
+  "albert-heijn": _albert_heijn as unknown as BrandEntry,
+  lidl: _lidl as unknown as BrandEntry,
+  ikea: _ikea as unknown as BrandEntry,
+  zalando: _zalando as unknown as BrandEntry,
+  ebay: _ebay as unknown as BrandEntry,
+  etsy: _etsy as unknown as BrandEntry,
+  aliexpress: _aliexpress as unknown as BrandEntry,
+  wish: _wish as unknown as BrandEntry,
+  nike: _nike as unknown as BrandEntry,
+  adidas: _adidas as unknown as BrandEntry,
+  zara: _zara as unknown as BrandEntry,
+  uniqlo: _uniqlo as unknown as BrandEntry,
+  mediamarkt: _mediamarkt as unknown as BrandEntry,
+  saturn: _saturn as unknown as BrandEntry,
+  airbnb: _airbnb as unknown as BrandEntry,
+  bookingdotcom: _bookingdotcom as unknown as BrandEntry,
+  expedia: _expedia as unknown as BrandEntry,
+  klm: _klm as unknown as BrandEntry,
+  vinted: _vinted as unknown as BrandEntry,
+  "amazon-prime": _amazon_prime as unknown as BrandEntry,
+  "subway": _subway as unknown as BrandEntry,
+};

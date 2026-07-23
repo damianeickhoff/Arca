@@ -1,0 +1,15 @@
+services:
+  arca:
+    build: .
+    container_name: arca
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data
+    environment:
+      - DB_PATH=/data/finance.db
+      # Set to "true" only if a reverse proxy in front of this container terminates
+      # TLS (i.e. the browser reaches you over https). Leave "false" for plain-HTTP
+      # LAN access (e.g. Unraid), otherwise session cookies won't be sent back.
+      - COOKIE_SECURE=false
+    restart: unless-stopped

@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<Container version="2">
+
+    <Name>Arca</Name>
+
+    <Repository>yourusername/arca:latest</Repository>
+
+    <Registry>https://hub.docker.com/r/yourusername/arca</Registry>
+
+    <Network>bridge</Network>
+
+    <Overview>
+        A self-hosted personal finance application for tracking expenses, budgets, subscriptions, and financial insights.
+    </Overview>
+
+    <Category>Finance:</Category>
+
+    <WebUI>http://[IP]:[PORT:3000]</WebUI>
+
+    <Config Name="Web Interface"
+            Target="3000"
+            Default="3000"
+            Mode="tcp"
+            Description="Arca web interface port"
+            Type="Port"
+            Display="always" />
+
+    <Config Name="Data"
+            Target="/data"
+            Default="/mnt/user/appdata/arca"
+            Mode="rw"
+            Description="Persistent storage for Arca database"
+            Type="Path"
+            Display="always" />
+
+</Container>
