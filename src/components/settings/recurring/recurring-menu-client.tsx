@@ -95,7 +95,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
         {FILTERS.map((f) => (
           <DropdownMenuItem key={f.value} onClick={() => setFilter(f.value)}>
             <span className="flex-1">{f.label}</span>
-            {filter === f.value && <Check className="size-4 text-primary" />}
+            {filter === f.value && <Check className="size-4 text-foreground/70" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -109,7 +109,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
         action={<>{filterMenu}<RecurringClient action="add" variant="default" /></>}
       />
 
-      <div className="px-4 pt-3 pb-28 bg-[#1c1c1e]">
+      <div className="px-4 pt-3 pb-28 var(--dialog-background)">
         {/* Total line */}
         <div className="mb-6">
           <p className="text-md text-foreground/50">
@@ -210,7 +210,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search recurring"
-            className="h-14 w-full rounded-full bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-muted-foreground"
+            className="h-14 w-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-muted-foreground"
           />
         </div>
       </div>

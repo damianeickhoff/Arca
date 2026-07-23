@@ -139,7 +139,7 @@ export function PrognoseOverrideBtn({ itemId, itemName, month, defaultAmount, ov
         <div
           ref={popoverRef}
           style={popoverStyle}
-          className="relative bg-white/5 rounded-xl backdrop-blur-xl p-3 w-52"
+          className="relative bg-black/7 dark:bg-white/7 rounded-xl backdrop-blur-xl p-3 w-52"
         >
           <button
             type="button"

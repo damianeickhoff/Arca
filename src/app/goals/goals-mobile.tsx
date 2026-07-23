@@ -11,6 +11,7 @@ import { GaugeCard, formatGaugeMoney } from "@/components/gauge-card";
 import type { SavingsSummary } from "./goal-shared";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 import type { FinancialMonthConfig } from "@/lib/date-range";
+import type { BudgetRecurringMode } from "@/lib/app-settings";
 
 // The /goals page is savings-only — budget (expense) goals now live in the
 // dashboard header's Goals subpage instead. Adding here always creates a saving.
@@ -21,6 +22,7 @@ export function GoalsMobile({
   user,
   settingsPanels,
   financialMonth,
+  budgetRecurringMode,
 }: {
   goals: Goal[];
   categories: Category[];
@@ -28,6 +30,7 @@ export function GoalsMobile({
   user: User;
   settingsPanels: SettingsPanelContent;
   financialMonth: FinancialMonthConfig;
+  budgetRecurringMode?: BudgetRecurringMode;
 }) {
   const visible = goals.filter((g) => g.goalType === "savings");
 
@@ -35,7 +38,7 @@ export function GoalsMobile({
     <>
       <div className="min-h-screen flex flex-col px-4 pt-[calc(3.5rem+var(--sat))] pb-[calc(7rem+var(--sab))] space-y-4" style={{ background: "var(--savings-background)" }}>
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 mt-3">
-          <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} iconOnly />
+          <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} iconOnly />
           <h1 className="text-lg text-foreground text-center truncate">Savings</h1>
           <div className="shrink-0 min-w-11 min-h-11 justify-self-end" />
         </div>

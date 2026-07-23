@@ -468,17 +468,16 @@ export function AppLockSectionContent() {
   return (
     <div className="space-y-4">
       {/* Enable toggle */}
-      <div className="flex items-center justify-between gap-4 py-1">
+      <div className="h-16 rounded-xl px-4 flex items-center bg-[var(--dialog-content-background)] justify-between gap-4 py-1">
         <div className="flex items-center gap-2">
-          {enabled ? <Lock className="size-4 text-foreground/60" /> : <LockOpen className="size-4 text-foreground/40" />}
-          <span className="text-sm font-medium">App lock</span>
+          <span className="text-md font-medium">App lock</span>
         </div>
         <button
           onClick={toggleEnabled}
           disabled={toggling || (!hasPinHash && !enabled)}
           title={!hasPinHash && !enabled ? "Set up a passcode first" : undefined}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-            enabled ? "bg-primary" : "bg-foreground/20"
+            enabled ? "bg-black" : "bg-foreground/20"
           }`}
         >
           <span className={`inline-block size-4 transform rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
@@ -490,20 +489,11 @@ export function AppLockSectionContent() {
 
       {/* PIN setup */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Passcode</span>
-          {hasPinHash && (
-            <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-              <Check className="size-3.5" />
-              Ingesteld
-            </span>
-          )}
-        </div>
 
         {pinStep === "idle" ? (
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             size="lg"
             className="w-full"
             onClick={() => { setPinStep("enter"); setPinError(null); setPin(""); setPinConfirm(""); }}
@@ -516,6 +506,7 @@ export function AppLockSectionContent() {
               {pinStep === "enter" ? "Choose a passcode (4–6 digits):" : "Confirm your passcode:"}
             </p>
             <Input
+              backgroundClassName="bg-[var(--dialog-content-background)]"
               type="password"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -535,7 +526,7 @@ export function AppLockSectionContent() {
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 className="flex-1"
                 onClick={() => { setPinStep("idle"); setPinError(null); setPin(""); setPinConfirm(""); }}
               >
@@ -551,59 +542,6 @@ export function AppLockSectionContent() {
               </Button>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Biometric */}
-      <div className="space-y-2 border-t border-foreground/5 pt-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Fingerprint className="size-4 text-foreground/60" />
-            <span className="text-sm font-medium">Face ID / vingerafdruk</span>
-          </div>
-          {biometricSupported && hasWebAuthn && (
-            <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-              <Check className="size-3.5" />
-              Ingesteld
-            </span>
-          )}
-        </div>
-
-        {biometricSupported ? (
-          <>
-            {biometricError && <p className="text-xs text-destructive">{biometricError}</p>}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="flex-1"
-                disabled={biometricLoading}
-                onClick={registerBiometric}
-              >
-                <Fingerprint className="size-4" />
-                {hasWebAuthn ? "Reset" : "Set up Face ID / fingerprint"}
-              </Button>
-              {hasWebAuthn && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  disabled={biometricLoading}
-                  onClick={removeBiometric}
-                  className="text-destructive hover:text-destructive"
-                >
-                  Delete
-                </Button>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            {biometricReason === "secure"
-              ? "Face ID / fingerprint only works over a secure (HTTPS) connection or in the installed app — not over a plain HTTP connection."
-              : "This device or browser doesn't support Face ID / fingerprint."}
-          </p>
         )}
       </div>
     </div>
@@ -830,19 +768,19 @@ export function TwoFactorSectionContent() {
         <div className="flex gap-2 ">
           <Button
             type="button"
-            variant="outline"
-            className="flex-1 bg-white/7"
+            variant="default"
+            className="flex-1"
             onClick={() => { setStep("regenerate"); setError(null); }}
           >
-            <p className="text-white/90">Nieuwe back-upcodes</p>
+            <p className="text-background">Nieuwe back-upcodes</p>
           </Button>
           <Button
             type="button"
-            variant="default"
-            className="flex-1 bg-red-600/7"
+            variant="destructive"
+            className="flex-1"
             onClick={() => { setStep("disable"); setError(null); }}
           >
-            <p className="text-red-500 tracking-wide">Uitschakelen</p>
+            <p className="tracking-wide">Uitschakelen</p>
           </Button>
         </div>
       ) : (

@@ -49,7 +49,7 @@ export function PrognosePeriodPicker({ current }: { current: string }) {
           onClick={() => step(-1)}
           disabled={index <= 0}
           aria-label="Previous month"
-          className="h-full aspect-square rounded-full bg-white/2 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
+          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
         >
           <IconChevronLeft className={cn("size-4", index <= 0 && "opacity-30")} />
         </button>
@@ -57,7 +57,7 @@ export function PrognosePeriodPicker({ current }: { current: string }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex-1 min-w-0 h-full rounded-full bg-white/7 backdrop-blur-lg px-4 flex flex-col items-center justify-center active:scale-[0.98] transition-transform"
+          className="flex-1 min-w-0 h-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg px-4 flex flex-col items-center justify-center active:scale-[0.98] transition-transform"
         >
           <p className="text-[11px] leading-tight text-foreground/50">Month</p>
           <p className="text-sm font-semibold leading-tight truncate">{currentLabel}</p>
@@ -68,7 +68,7 @@ export function PrognosePeriodPicker({ current }: { current: string }) {
           onClick={() => step(1)}
           disabled={index < 0 || index >= months.length - 1}
           aria-label="Next month"
-          className="h-full aspect-square rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
+          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
         >
           <IconChevronRight className={cn("size-4", index < 0 || index >= months.length - 1 && "opacity-30")} />
         </button>

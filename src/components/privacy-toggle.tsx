@@ -30,15 +30,13 @@ export function PrivacyToggle({ variant = "icon", compact }: { variant?: "icon" 
         type="button"
         onClick={toggle}
         className={cn(
-          "flex items-center rounded-xl font-normal text-foreground/40 transition-colors w-full",
+          "flex items-center rounded-xl font-normal transition-colors w-full",
           compact ? "gap-2.5 px-3 py-2 text-sm" : "gap-3 px-3 py-2.5 text-base"
         )}
       >
         <span className={cn(
-          "flex items-center justify-center rounded-lg shrink-0 text-foreground/40",
-          compact ? "size-7" : "size-8"
+          "rounded-lg shrink-0",
         )}>
-          <IconShieldFilled className={compact ? "size-4" : "size-4.5"} />
         </span>
         <span className="flex-1 text-left">Privacy mode</span>
         <ToggleSwitch on={blur} />

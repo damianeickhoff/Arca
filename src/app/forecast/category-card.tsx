@@ -25,7 +25,7 @@ export function CategoryCard({
   const hasChildren = subcategories.length > 0;
 
   return (
-    <div className="rounded-2xl bg-card overflow-hidden">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
       <VariablePrognoseOverrideBtn
         categoryId={category.id}
         categoryName={category.name}

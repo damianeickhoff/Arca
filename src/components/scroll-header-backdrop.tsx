@@ -14,7 +14,7 @@ export function ScrollHeaderBackdrop({ scrolled }: { scrolled: boolean }) {
       style={{
         backdropFilter: scrolled ? "blur(24px) saturate(180%)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(24px) saturate(180%)" : "none",
-        background: scrolled ? "color-mix(in srgb, #1c1c1e 70%, transparent)" : "transparent",
+        background: scrolled ? "color-mix(in srgb, var(--dialog-background) 70%, transparent)" : "transparent",
       }}
     />
   );

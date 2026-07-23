@@ -295,7 +295,7 @@ function DialogContent({
               style={{
                 backdropFilter: contentScrolled ? "blur(24px) saturate(180%)" : undefined,
                 WebkitBackdropFilter: contentScrolled ? "blur(24px) saturate(180%)" : undefined,
-                background: contentScrolled ? "color-mix(in srgb, #1c1c1e 70%, transparent)" : undefined,
+                background: contentScrolled ? "color-mix(in srgb, var(--dialog-background) 70%, transparent)" : undefined,
               }}
             >
               {title && (
@@ -311,7 +311,7 @@ function DialogContent({
                 <button
 
                   className={cn(
-                    "absolute size-11 left-[21px] rounded-full bg-white/60 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground transition-colors",
+                    "absolute size-11 left-[21px] rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground transition-colors",
                     fullHeight ? "top-[calc(var(--sat)+20px)]" : "top-2",
                   )}
                   aria-label="Close"
@@ -462,7 +462,7 @@ function DialogHeader({
             data-slot="dialog-close"
             render={
               <Button
-                variant="ghost"
+                variant="default"
                 className="shrink-0 bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive dark:hover:bg-foreground/80 size-9"
                 size="icon-sm"
               />

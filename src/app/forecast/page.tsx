@@ -343,28 +343,28 @@ export default async function PrognPage({
             label="Income"
             value={formatEur(totalIncome)}
             valueClassName="text-xl font-bold tabular-nums"
-            badge={<TileBadge icon={TrendingUp} color="rgba(255,255,255,0.07)" />}
+            badge={<TileBadge icon={TrendingUp} color="var(--dialog-background)" />}
             footer={incomeChange ? <ChangePill change={incomeChange} /> : "vs previous month — no data"}
           />
           <StatTile
             label="Recurring bills"
             value={formatEur(totalExpenses)}
             valueClassName="text-xl font-bold tabular-nums"
-            badge={<TileBadge icon={TrendingDown} color="rgba(255,255,255,0.07)" />}
+            badge={<TileBadge icon={TrendingDown} color="var(--dialog-background)" />}
             footer={expensesChange ? <ChangePill change={{ ...expensesChange, up: !expensesChange.up }} /> : "vs previous month — no data"}
           />
           <StatTile
-            label="Excl. sparen"
+            label="Free to spend incl. saves"
             value={formatEur(totalRecurringExpenses)}
-            valueClassName="text-xl font-bold tabular-nums"
-            badge={<TileBadge icon={Wallet} color="rgba(255,255,255,0.07)" />}
+            valueClassName="text-xl font-bold tabular-nums text"
+            badge={<TileBadge icon={Wallet} color="var(--dialog-background)" />}
             footer={recurringExpensesChange ? <ChangePill change={{ ...recurringExpensesChange, up: !recurringExpensesChange.up }} /> : "vs previous month — no data"}
           />
           <StatTile
-            label="Vrij besteedbaar"
+            label="Free to spend"
             value={formatEur(vrij)}
             valueClassName="text-xl font-bold tabular-nums"
-            badge={<TileBadge icon={Scale} color="rgba(255,255,255,0.07)" />}
+            badge={<TileBadge icon={Scale} color="var(--dialog-background)" />}
             footer={vrijChange ? <ChangePill change={vrijChange} /> : "vs previous month — no data"}
           />
         </div>
@@ -372,7 +372,7 @@ export default async function PrognPage({
         {/* Verdeling inkomen — same plain-card style as "Expenses per category"
             (src/app/reports/top-expense-categories-card.tsx). */}
         {totalIncome > 0 && (
-          <div className="rounded-2xl bg-card p-5">
+          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
             <h2 className="text-sm font-semibold pb-1">Distribution of income</h2>
             <p className="text-xs text-foreground/60 mb-2">How your income is distributed over {label}</p>
             <ExpenseDonutChart segments={donutSegments} />
@@ -382,9 +382,9 @@ export default async function PrognPage({
         {/* Projected balance — same nested two-tone shell + line chart as the Net
             worth tab's own chart. */}
         {totalIncome > 0 && (
-          <div className="bg-white/5 p-1 rounded-2xl">
-            <div className="rounded-b-sm rounded-t-2xl bg-white/2 py-2 px-4 pb-3">
-              <p className="text-md text-white mb-1">Projected balance — 12 months</p>
+          <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
+            <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
+              <p className="text-md mb-1">Projected balance — 12 months</p>
               <p className="text-xs text-muted-foreground mb-2">Net worth + what&apos;s owed to you, projected forward</p>
               <NetWorthTrendChart data={balanceHistory} forecast={balanceForecast} />
             </div>
@@ -393,8 +393,8 @@ export default async function PrognPage({
 
         {/* Budget health — verdeling style matching debt page */}
         {totalIncome > 0 && (
-          <div className="rounded-2xl bg-card p-5 space-y-4">
-            <p className="text-md text-white mb-1">Budget distribution</p>
+          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4">
+            <p className="text-md mb-1">Budget distribution</p>
             <p className="text-xs text-muted-foreground mb-2">Your budget is currently set to ({strategy.nodig}/{strategy.willen}/{strategy.sparen})</p>
             <div className="h-2 rounded-full overflow-hidden flex gap-0.5 bg-foreground/5 mt-3">
               {needsTotal > 0 && <div className="rounded-full" style={{ width: `${needsPct}%`, backgroundColor: "var(--color-danger)" }} />}

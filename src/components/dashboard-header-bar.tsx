@@ -6,7 +6,7 @@ import {
   IconChartBar as ChartBar,
   IconWallet as Wallet,
   IconExchange as Exchange,
-  IconChevronLeft as ChevronLeft,
+  IconX,
 } from "@tabler/icons-react";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { CurrencyConverterDialog } from "@/components/currency-converter-dialog";
@@ -16,13 +16,14 @@ import { useBudgetPortal } from "@/lib/budget-portal-state";
 import { cn } from "@/lib/utils";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
+import type { BudgetRecurringMode } from "@/lib/app-settings";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 
 const REPORT_TABS = [
   { id: "rapporten", label: "Analytics" },
   { id: "trends",    label: "Trends" },
   { id: "vermogen",  label: "Net worth" },
-  { id: "prognose",  label: "Prognose" },
+  { id: "prognose",  label: "Forecast" },
 ] as const;
 
 type ReportTab = typeof REPORT_TABS[number]["id"];
@@ -40,12 +41,14 @@ export function DashboardHeaderBar({
   user,
   settingsPanels,
   financialMonth,
+  budgetRecurringMode,
 }: {
   reportsContent: ReportsContent;
   budgetContent: React.ReactNode;
   user: User;
   settingsPanels: SettingsPanelContent;
   financialMonth: FinancialMonthConfig;
+  budgetRecurringMode: BudgetRecurringMode;
 }) {
   // Scroll-aware dim/glassy state
   const [glassy, setGlassy] = useState(false);
@@ -133,6 +136,7 @@ export function DashboardHeaderBar({
             user={user}
             panels={settingsPanels}
             financialMonth={financialMonth}
+            budgetRecurringMode={budgetRecurringMode}
             triggerClassName={dimClass}
           />
         </div>
@@ -204,10 +208,10 @@ export function DashboardHeaderBar({
               <button
                 type="button"
                 onClick={closeActivePortal}
-                aria-label="Back"
-                className="size-11 rounded-full bg-white/12 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
+                aria-label="Close"
+                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
               >
-                <ChevronLeft className="size-5" />
+                <IconX className="size-5" />
               </button>
               <h1 className="text-lg text-foreground text-center truncate">Analytics</h1>
               <div className="size-11" />
@@ -223,7 +227,7 @@ export function DashboardHeaderBar({
                     className={cn(
                       "flex-1 text-sm font-medium py-1.5 rounded-lg transition-all",
                       activeReportTab === tab.id
-                        ? "bg-background text-foreground shadow-sm"
+                        ? "bg-background text-foreground"
                         : "text-foreground/50 hover:text-foreground/70",
                     )}
                   >
@@ -301,10 +305,10 @@ export function DashboardHeaderBar({
               <button
                 type="button"
                 onClick={closeActivePortal}
-                aria-label="Back"
-                className="size-11 rounded-full bg-white/6 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
+                aria-label="Close"
+                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
               >
-                <ChevronLeft className="size-5" />
+                <IconX className="size-5" />
               </button>
               <h1 className="absolute inset-x-14 text-lg text-foreground text-center truncate pointer-events-none">Budget</h1>
               <div className="flex items-center gap-2 min-h-11">

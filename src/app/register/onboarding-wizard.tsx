@@ -669,7 +669,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
             className="fixed inset-0 z-[1] pointer-events-none"
-            style={authBackgroundStyle(getAuthBackgroundPreset(bgPreview))}
+            style={authBackgroundStyle(getAuthBackgroundPreset(bgPreview), { theme: "dark" })}
           />
         )}
       </AnimatePresence>
@@ -1080,7 +1080,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
                   <button key={preset.id} type="button" onClick={() => chooseBackground(preset.id)} className="flex flex-col items-center gap-1.5">
                     <span
                       className={`h-12 w-full rounded-lg ring-2 ring-offset-2 ring-offset-transparent transition-all ${isSelected ? "ring-white" : "ring-transparent"}`}
-                      style={authBackgroundPreviewStyle(preset)}
+                      style={authBackgroundPreviewStyle(preset, { theme: "dark" })}
                     />
                     <span className="text-[11px] text-white/60">{preset.label}</span>
                   </button>

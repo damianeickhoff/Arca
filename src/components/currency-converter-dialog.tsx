@@ -7,7 +7,7 @@ import { CURRENCIES, currencyInfo, flagEmoji } from "@/lib/currencies";
 import { pressKey } from "@/lib/amount-expression";
 import { cn } from "@/lib/utils";
 import { acquireNavHidden } from "@/lib/nav-visibility";
-import { IconPlus, IconX, IconSearch, IconChevronLeft } from "@tabler/icons-react";
+import { IconPlus, IconX, IconSearch } from "@tabler/icons-react";
 
 const DEFAULT_CODES = ["EUR", "USD"];
 
@@ -142,10 +142,10 @@ export function CurrencyConverterDialog({ open, onOpenChange }: { open: boolean;
           <button
             type="button"
             onClick={() => onOpenChange(false)}
-            aria-label="Back"
-            className="size-11 rounded-full bg-white/12 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
+            aria-label="Close"
+            className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
           >
-            <IconChevronLeft className="size-5" />
+            <IconX className="size-5" />
           </button>
           <h1 className="text-lg text-foreground text-center truncate">Currency converter</h1>
           <button

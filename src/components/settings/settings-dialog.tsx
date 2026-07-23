@@ -19,6 +19,7 @@ import {
   IconLock,
   IconLanguage,
   IconCoin,
+  IconWallet,
   IconHelpCircle,
   IconUsers,
 } from "@tabler/icons-react";
@@ -31,6 +32,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { logoutAction, updateOwnProfileAction, updateOwnEmailAction, updateOwnPasswordAction } from "@/app/actions/auth";
 import { FinancieleMaandForm, MaandUitzonderingenSubPage } from "@/app/settings/general-client";
+import { BudgetRecurringCard } from "@/components/settings/budget-recurring-card";
+import type { BudgetRecurringMode } from "@/lib/app-settings";
 import { ImportCsvCard } from "@/components/import-csv-card";
 import { ThemeList } from "@/components/theme-toggle";
 import { LanguageList } from "@/components/language-switcher";
@@ -45,7 +48,7 @@ import { useSettingsPortal } from "@/lib/settings-portal-state";
 
 type PanelKey =
   | "accounts" | "categories" | "recurring" | "brandIcons"
-  | "financialMonth" | "monthOverrides"
+  | "financialMonth" | "monthOverrides" | "budgetRecurring"
   | "import" | "appearance" | "privacy" | "appLock" | "language" | "currency"
   | "help" | "users";
 
@@ -64,6 +67,7 @@ const SECTIONS: Section[] = [
       { key: "brandIcons", label: "Brand Icons", icon: IconStar },
       { key: "financialMonth", label: "Financial Month", icon: IconCalendar },
       { key: "monthOverrides", label: "Month Overrides", icon: IconCalendarEvent },
+      { key: "budgetRecurring", label: "Budget & Bills", icon: IconWallet },
     ],
   },
   {
@@ -90,6 +94,7 @@ const PANEL_TITLES: Record<PanelKey, string> = {
   brandIcons: "Brand Icons",
   financialMonth: "Financial Month",
   monthOverrides: "Month Overrides",
+  budgetRecurring: "Budget & Bills",
   import: "Import CSV",
   appearance: "Appearance",
   privacy: "Privacy",
@@ -134,12 +139,14 @@ export function SettingsDialog({
   user,
   panels,
   financialMonth,
+  budgetRecurringMode = "budgeted",
   triggerClassName,
   iconOnly,
 }: {
   user: User;
   panels: SettingsPanelContent;
   financialMonth: FinancialMonthConfig;
+  budgetRecurringMode?: BudgetRecurringMode;
   triggerClassName?: string;
   iconOnly?: boolean;
 }) {
@@ -347,7 +354,7 @@ export function SettingsDialog({
                 {HEAVY_KEYS.includes(active) ? (
                   panels[active as keyof SettingsPanelContent]
                 ) : (
-                  <InlinePanel panelKey={active} financialMonth={financialMonth} />
+                  <InlinePanel panelKey={active} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} />
                 )}
               </div>
               </PanelChromeContext.Provider>
@@ -376,9 +383,11 @@ export function SettingsDialog({
 function InlinePanel({
   panelKey,
   financialMonth,
+  budgetRecurringMode,
 }: {
   panelKey: PanelKey;
   financialMonth: FinancialMonthConfig;
+  budgetRecurringMode: BudgetRecurringMode;
 }) {
   const [addOverrideOpen, setAddOverrideOpen] = useState(false);
 
@@ -440,6 +449,9 @@ function InlinePanel({
         </div>
       );
 
+    case "budgetRecurring":
+      return <BudgetRecurringCard initialMode={budgetRecurringMode} />;
+
     case "monthOverrides": {
       const initialOverrides = Object.entries(financialMonth.overrides ?? {}).map(
         ([month, startDay]) => ({ month, startDay: startDay as number }),
@@ -450,9 +462,9 @@ function InlinePanel({
             <button
               type="button"
               onClick={() => setAddOverrideOpen(true)}
-              className="text-sm font-medium text-primary px-2 py-1"
+              className="text-sm font-medium px-2 py-1"
             >
-              + Add override
+              Add override
             </button>
           </div>
           <MaandUitzonderingenSubPage

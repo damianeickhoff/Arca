@@ -121,8 +121,8 @@ export function FinancieleMaandForm({
       <Field label="Default start day">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
-            <Input type="number" inputMode="numeric" min={1} max={28} value={startDay} onChange={(e) => setStartDay(e.target.value)} className="w-24" placeholder="1" />
-            <span className="text-sm text-foreground/60">of the month (1–28)</span>
+            <Input backgroundClassName="bg-[var(--dialog-background)]" type="number" inputMode="numeric" min={1} max={28} value={startDay} onChange={(e) => setStartDay(e.target.value)} className="w-24" placeholder="1" />
+            <span className="text-sm text-foreground/60">of the month (1-28)</span>
           </div>
           <Button onClick={saveDefaultStartDay} disabled={savingDefault || !isValidStartDay(startDay)}>
             {savingDefault ? "Saving..." : savedDefault ? "Saved ✓" : "Save"}
@@ -365,7 +365,7 @@ export function MaandUitzonderingenSubPage({
       ) : (
         <div className="space-y-3 pt-1">
           {overrides.map((override) => (
-            <div key={override.month} className="py-3.5 px-5 rounded-2xl bg-white dark:bg-white/10 shadow-sm flex items-center gap-3">
+            <div key={override.month} className="py-3.5 px-5 rounded-2xl bg-white dark:bg-white/10 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold capitalize truncate">{formatMonthLabel(override.month)}</p>
                 <p className="text-sm text-foreground/60 mt-0.5">Startdag {override.startDay} · {formatRange(previewConfig, override.month)}</p>
@@ -386,7 +386,7 @@ export function MaandUitzonderingenSubPage({
           <div className="space-y-3">
             <Field label="Month"><DatePicker granularity="month" value={newMonth} onChange={setNewMonth} /></Field>
             <Field label="Start day">
-              <Input type="number" inputMode="numeric" min={1} max={28} value={newStartDay} onChange={(e) => setNewStartDay(e.target.value)} />
+              <Input backgroundClassName="bg-[var(--dialog-content-background)]" type="number" inputMode="text" min={1} max={28} value={newStartDay} onChange={(e) => setNewStartDay(e.target.value)} />
             </Field>
             <Button onClick={submitAdd} disabled={pending || !isValidMonth(newMonth) || !isValidStartDay(newStartDay)} className="w-full">
               Add
@@ -404,7 +404,7 @@ export function MaandUitzonderingenSubPage({
               <p className="h-12 w-full rounded-lg bg-foreground/3 px-3.5 text-sm mt-1 flex items-center capitalize">{editingMonth ? formatMonthLabel(editingMonth) : ""}</p>
             </Field>
             <Field label="Start day">
-              <Input type="number" inputMode="numeric" min={1} max={28} value={editStartDay} onChange={(e) => setEditStartDay(e.target.value)} />
+              <Input backgroundClassName="bg-[var(--dialog-content-background)]" type="number" inputMode="text" min={1} max={28} value={editStartDay} onChange={(e) => setEditStartDay(e.target.value)} />
             </Field>
             <div className="flex gap-2">
               <Button onClick={submitEdit} disabled={pending || !isValidStartDay(editStartDay)} className="flex-1">

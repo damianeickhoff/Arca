@@ -97,8 +97,8 @@
   --accent-foreground: #047857;
   --destructive: #dc2626;
   --success: #38d052;
-  --danger: #99ff25;
-  --warning: #fe9131;
+  --danger: #ff0f16;
+  --warning: #ff8d00;
   --border: color-mix(in srgb, var(--foreground) 20%, transparent);
   --input: rgba(15, 118, 110, 0.10);
   --ring: #14b8a6;
@@ -273,6 +273,21 @@
     );
 }
 
+/* Auth / dashboard background — light vs dark gradient selector.
+   authBackgroundStyle()/authBackgroundPreviewStyle() (theme "adaptive") render server-side
+   where the theme is unknown, so they emit BOTH palettes as inline custom properties
+   (--auth-bg-light / --auth-bg-dark) and leave background-image to this rule. The switch
+   MUST be a real property on the element like this — a `:root { --x: var(--per-el-var) }`
+   indirection fails, because a var() inside a custom property resolves on the element where
+   it's declared (:root, which has no per-element vars), not where it's used.
+   `.dark .auth-bg` outranks `.auth-bg` on specificity, so dark wins when the class is set. */
+.auth-bg {
+  background-image: var(--auth-bg-light);
+}
+.dark .auth-bg {
+  background-image: var(--auth-bg-dark);
+}
+
 /* Privacy mode — blur all tabular-nums (amounts) */
 html.privacy .tabular-nums {
   filter: blur(6px);
@@ -318,40 +333,12 @@ html.privacy .tabular-nums:hover {
   border-radius: 9999px;
   cursor: pointer;
   transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease, transform 0.15s var(--easing-out-quart);
-  background: rgba(255, 255, 255, 0.60);
-  -webkit-backdrop-filter: blur(3px) saturate(180%);
-  backdrop-filter: blur(3px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  box-shadow:
-    0 6px 18px rgba(109, 109, 109, 0.178),
-    inset 0 1px 1px rgba(255, 255, 255, 0.205);
+  background: rgba(255, 255, 255);
 }
-.glass-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-/* Specular rim — bright directional crescents (top-left + bottom-right), under the icon. */
-.glass-icon-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: -1;
-  box-shadow:
-    inset -7px -5px 10px -8px rgba(224, 224, 224, 0.637),
-    inset 6px 5px 10px -8px rgba(255, 255, 255, 0.377);
-  transition: box-shadow 0.2s ease;
-}
+
 /* "Liquid" press response — the specular highlight brightens and the whole button
    compresses slightly, like glass being pressed rather than a flat button darkening. */
-.glass-icon-btn:active {
-  transform: scale(0.94);
-}
-.glass-icon-btn:active::after {
-  box-shadow:
-    inset -4px -3px 8px -6px rgba(224, 224, 224, 0.85),
-    inset 4px 3px 8px -6px rgba(255, 255, 255, 0.6);
-}
+
 /* Dark theme — dimmer tint + softer specular. */
 .dark .glass-icon-btn {
   background: rgba(255, 255, 255, 0.07);

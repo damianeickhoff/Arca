@@ -6,7 +6,7 @@ import { GoalsMobile } from "./goals-mobile";
 import { GoalsDesktop } from "./goals-desktop";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettingsPanelContent } from "@/app/settings-panel-content";
-import { getFinancialMonthConfig } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getBudgetRecurringMode } from "@/lib/app-settings";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +15,11 @@ export default async function GoalsPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [allGoals, cats, financialMonth] = await Promise.all([
+  const [allGoals, cats, financialMonth, budgetRecurringMode] = await Promise.all([
     db.select().from(goals).orderBy(asc(goals.name)),
     db.select().from(categories).orderBy(categories.group, categories.name),
     getFinancialMonthConfig(),
+    getBudgetRecurringMode(),
   ]);
   const settingsPanels = getSettingsPanelContent(user);
 
@@ -51,7 +52,7 @@ export default async function GoalsPage() {
 
   return (
     <PageShell
-      mobile={<GoalsMobile goals={displayGoals} categories={cats} savings={savings} user={user} settingsPanels={settingsPanels} financialMonth={financialMonth} />}
+      mobile={<GoalsMobile goals={displayGoals} categories={cats} savings={savings} user={user} settingsPanels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} />}
       desktop={<GoalsDesktop goals={displayGoals} categories={cats} savings={savings} />}
     />
   );

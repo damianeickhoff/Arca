@@ -207,7 +207,9 @@ async function getAnalyticsData(
 
   const expenseByCategory = topByCategory("expense");
   const incomeByCategory = topByCategory("income");
-  const favoriteCategory = expenseByCategory[0] ?? null;
+  // Skip the "uncategorized" bucket (null categoryId) — "Favorite category" should
+  // surface an actual category, not the catch-all for untagged spend.
+  const favoriteCategory = expenseByCategory.find((c) => c.categoryId != null) ?? null;
 
   // "Spending by category" preview (top 3 + View all) reuses the same portal the
   // dashboard's own spending row opens — so each card needs the same shape,
@@ -342,8 +344,8 @@ export async function AnalyticsTab({
       />
 
       {/* Cashflow */}
-      <div className="bg-white/5 p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-white/2 py-2 px-4 pb-3">
+      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
+        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
           <p className="text-md text-foreground/60 mb-1">Cashflow</p>
           <p className={`text-2xl font-semibold tabular-nums tracking-tight ${data.cashflow < 0 ? "text-foreground" : "text-foreground"}`}>
             {data.cashflow < 0 ? "" : ""}{formatEur(Math.abs(data.cashflow))}
@@ -361,7 +363,7 @@ export async function AnalyticsTab({
         {/* Spending / Income mini-summary rows */}
         <div className="rounded-2xl px-4 mt-3 flex items-center justify-between">
           <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full bg-foreground/60" /> Spending
+            <span className="size-2 rounded-full bg-foreground/30" /> Spending
           </span>
           <span className="text-md tabular-nums">{formatEur(data.expense)}</span>
         </div>
@@ -374,12 +376,12 @@ export async function AnalyticsTab({
       </div>
 
       {/* Spending */}
-      <div className="bg-white/5 p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-white/2 py-2 px-4 pb-3">
+      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
+        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
           <p className="text-md text-foreground/60 mb-1">Spending</p>
           <p className="text-2xl font-semibold tabular-nums tracking-tight">{formatEur(data.expense)}</p>
           <ChangeRow change={data.expenseChange ? { ...data.expenseChange, up: !data.expenseChange.up } : null} className="mt-1 mb-5" />
-          <MiniBarChart buckets={data.spendingBuckets} color={() => "color-mix(in srgb, var(--foreground) 70%, transparent)"} />
+          <MiniBarChart buckets={data.spendingBuckets} color={() => "color-mix(in srgb, var(--foreground) 30%, transparent)"} />
         </div>
 
         <SpendingCategoryPreview
@@ -393,12 +395,12 @@ export async function AnalyticsTab({
       </div>
 
       {/* Income — same grouped bg-white/5 + bg-white/2 shell as Spending */}
-      <div className="bg-white/5 p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-white/2 py-2 px-4 pb-3">
+      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
+        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
           <p className="text-md text-foreground/60 mb-1">Income</p>
           <p className="text-2xl font-semibold tabular-nums tracking-tight" style={{ color: "var(--color-income)" }}>+{formatEur(data.income)}</p>
           <ChangeRow change={data.incomeChange} className="mt-1 mb-5" />
-          <MiniBarChart buckets={data.incomeBuckets} color={() => "#b6b8b7"} />
+          <MiniBarChart buckets={data.incomeBuckets} color={() => "color-mix(in srgb, var(--foreground) 30%, transparent)"} />
         </div>
 
         <IncomeCategoryPreview
@@ -412,7 +414,7 @@ export async function AnalyticsTab({
 
       {/* Budget ring */}
       {data.budgetOverview?.budget && (
-        <div className="rounded-2xl bg-card p-5">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
           <p className="font-semibold text-sm mb-4">Budget</p>
           <div className="flex items-center gap-5">
             <BudgetRing pct={data.budgetOverview.budget.amount > 0 ? (data.budgetOverview.totalSpent / data.budgetOverview.budget.amount) * 100 : 0} />
@@ -459,26 +461,27 @@ export async function AnalyticsTab({
         <StatTile
           label="Transactions"
           value={data.transactionCount}
+          footerAtBottom
           footer={`${data.transactionCountChange >= 0 ? "+" : ""}${data.transactionCountChange} vs last period`}
         />
-        <div className="rounded-2xl bg-[#0f0f0f] p-4 flex flex-col aspect-square">
-          <p className="text-xs text-white/50 mb-1">Popular day</p>
-          <p className="text-base font-bold text-white mb-2">{data.popularDayName}</p>
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-4 flex flex-col aspect-square">
+          <p className="text-xs text-foreground/50 mb-1">Popular day</p>
+          <p className="text-base font-bold text-foreground mb-2">{data.popularDayName}</p>
           <div className="mt-auto">
             <div className="flex items-end gap-1 h-8">
               {data.weekdayCounts.map((c, i) => (
-                <div key={i} className="flex-1 rounded-sm" style={{ height: `${Math.max(10, (c / maxWeekdayCount) * 100)}%`, background: c === maxWeekdayCount && c > 0 ? "#ffffff" : "rgba(255,255,255,0.15)" }} />
+                <div key={i} className="flex-1 rounded-sm" style={{ height: `${Math.max(10, (c / maxWeekdayCount) * 100)}%`, background: c === maxWeekdayCount && c > 0 ? "color-mix(in srgb, var(--foreground) 80%, transparent)" : "color-mix(in srgb, var(--foreground) 30%, transparent)" }} />
               ))}
             </div>
             <div className="flex justify-between mt-1">
-              {WEEKDAY_LABELS.map((l, i) => <span key={i} className="text-[9px] text-white/35 flex-1 text-center">{l}</span>)}
+              {WEEKDAY_LABELS.map((l, i) => <span key={i} className="text-[9px] text-muted-foreground flex-1 text-center">{l}</span>)}
             </div>
           </div>
         </div>
       </div>
 
       {/* Calendar */}
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
         <p className="font-semibold text-sm mb-3">Calendar</p>
         <div className="grid grid-cols-7 gap-1.5 text-center mb-4">
           {WEEKDAY_LABELS.map((l, i) => <span key={i} className="text-[11px] text-foreground/40">{l}</span>)}

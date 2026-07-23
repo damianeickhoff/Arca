@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function CategoryGroup({ name, children }: { name: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl bg-foreground/3 overflow-hidden">
+    <div className="rounded-xl bg-[var(--dialog-background)] overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

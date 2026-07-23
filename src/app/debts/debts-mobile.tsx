@@ -14,6 +14,7 @@ import type { DebtsPageData } from "./debt-shared";
 import type { User } from "@/db/schema";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 import type { FinancialMonthConfig } from "@/lib/date-range";
+import type { BudgetRecurringMode } from "@/lib/app-settings";
 
 interface Props extends DebtsPageData {
   /** Only passed by the standalone /debts route — when embedded in the dashboard's
@@ -22,6 +23,7 @@ interface Props extends DebtsPageData {
   user?: User;
   settingsPanels?: SettingsPanelContent;
   financialMonth?: FinancialMonthConfig;
+  budgetRecurringMode?: BudgetRecurringMode;
 }
 
 // No page-level client state (no filters/tabs) — unlike GoalsMobile, this stays a
@@ -45,6 +47,7 @@ export function DebtsMobile({
   user,
   settingsPanels,
   financialMonth,
+  budgetRecurringMode,
 }: Props) {
   const activeSimDebts = computed
     .filter((c) => c.currentBalance > 0)
@@ -61,7 +64,7 @@ export function DebtsMobile({
       <div className="min-h-screen flex flex-col px-4 pt-[calc(3.5rem+var(--sat))] pb-[calc(7rem+var(--sab))] space-y-4" style={{ background: "var(--debt-background)" }}>
         {user && settingsPanels && financialMonth ? (
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 mt-3">
-            <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} iconOnly />
+            <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} iconOnly />
             <h1 className="text-lg text-foreground text-center truncate">Debts</h1>
             <div className="flex items-center gap-2 shrink-0 min-w-11 min-h-11 justify-self-end justify-end">
               {activeSimDebts.length > 0 && (

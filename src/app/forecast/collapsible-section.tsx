@@ -22,7 +22,7 @@ export function CollapsibleSection({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between w-full rounded-xl px-1 bg-card p-5 px-5"
+        className="flex items-center justify-between w-full rounded-xl px-1 bg-[var(--dialog-content-background)] p-5 px-5"
       >
         <div className="flex items-center gap-2">
           {color && <span className="w-4 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />}

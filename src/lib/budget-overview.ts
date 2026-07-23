@@ -4,7 +4,7 @@ import { eq, and, gte, lte, sql, asc, inArray } from "drizzle-orm";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
-import { getBudgetStrategy } from "@/lib/app-settings";
+import { getBudgetStrategy, getBudgetRecurringMode } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
 
 const DEFAULT_BUDGET_MONTH = "0000-00";
@@ -38,13 +38,16 @@ function weeklyPeriodRange(now = new Date()): { from: string; to: string } {
 
 /** Per-category variable expense spend over [from,to], honoring splits and
  * internal-transfer exclusion. Spend is gross — reimbursements are never netted out
- * (a reimbursement receipt shows only in the account balance). Transactions matched to a recurring bill/subscription
- * are excluded entirely — a recurring bill isn't something you can budget down this
- * month, so it shouldn't eat into the variable-spend budget. Spend is keyed by the
- * category the transaction (or split) was actually assigned to — no parent rollup here;
- * callers that want a top-level category to also cover its sub-categories' spend do that
- * rollup themselves (see getBudgetOverview), since only they know which sub-categories
+ * (a reimbursement receipt shows only in the account balance). Each category's spend is
+ * split into `nonRecurring` and `recurring` (transactions matched to a recurring
+ * bill/subscription) so the caller can decide whether recurring bills count toward the
+ * budget — see getBudgetRecurringMode / resolveSpend in getBudgetOverview. Spend is keyed
+ * by the category the transaction (or split) was actually assigned to — no parent rollup
+ * here; callers that want a top-level category to also cover its sub-categories' spend do
+ * that rollup themselves (see getBudgetOverview), since only they know which sub-categories
  * have their own budget and should therefore be excluded from the rollup. */
+type CategorySpend = { nonRecurring: number; recurring: number };
+
 async function variableSpend(from: string, to: string, variableIds: Set<number>) {
   const periodRows = await db.select({
     id: transactions.id,
@@ -60,21 +63,22 @@ async function variableSpend(from: string, to: string, variableIds: Set<number>)
   }).from(transactions)
     .where(and(gte(transactions.date, from), lte(transactions.date, to)));
 
-  const nonRecurringRows = periodRows.filter((r) => r.recurringItemId == null);
+  const recurringTxIds = new Set(periodRows.filter((r) => r.recurringItemId != null).map((r) => r.id));
 
-  const splitRows = await getTransactionSplitRows(nonRecurringRows.map((r) => r.id));
+  const splitRows = await getTransactionSplitRows(periodRows.map((r) => r.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(nonRecurringRows, splitMap);
+  const allocations = buildSplitAllocations(periodRows, splitMap);
 
-  const byCategory = new Map<number, number>();
-  let total = 0;
+  const byCategory = new Map<number, CategorySpend>();
   for (const row of allocations) {
     if (row.direction !== "expense" || row.isInternalTransfer || row.categoryId == null) continue;
     if (!variableIds.has(row.categoryId)) continue;
-    byCategory.set(row.categoryId, (byCategory.get(row.categoryId) ?? 0) + row.amount);
-    total += row.amount;
+    const entry = byCategory.get(row.categoryId) ?? { nonRecurring: 0, recurring: 0 };
+    if (recurringTxIds.has(row.transactionId)) entry.recurring += row.amount;
+    else entry.nonRecurring += row.amount;
+    byCategory.set(row.categoryId, entry);
   }
-  return { total, byCategory };
+  return { byCategory };
 }
 
 export interface BudgetCategoryRow {
@@ -120,10 +124,11 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
   const last30From = toDateStr(new Date(now.getTime() - 29 * 86_400_000));
   const last7From = toDateStr(new Date(now.getTime() - 6 * 86_400_000));
 
-  const [allExpenseCats, defaultTargetRows, strategy] = await Promise.all([
+  const [allExpenseCats, defaultTargetRows, strategy, recurringMode] = await Promise.all([
     db.select().from(categories).where(inArray(categories.budgetType, [...VARIABLE_TYPES])).orderBy(asc(categories.name)),
     db.select().from(budgetTargets).where(and(eq(budgetTargets.year, 0), eq(budgetTargets.month, 0))),
     getBudgetStrategy(),
+    getBudgetRecurringMode(),
   ]);
 
   const variableIds = new Set(allExpenseCats.map((c) => c.id));
@@ -164,17 +169,36 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
 
   const defaultMap = new Map(defaultTargetRows.map((t) => [t.categoryId, t.targetAmount]));
 
+  // Resolve one category's raw {nonRecurring, recurring} spend into a single number,
+  // applying the recurring-mode setting: recurring bills count toward the category
+  // always, never, or only when that category has a budget set (see getBudgetRecurringMode).
+  function resolveSpend(entry: CategorySpend | undefined, categoryId: number) {
+    if (!entry) return 0;
+    const includeRecurring =
+      recurringMode === "always" ||
+      (recurringMode === "budgeted" && defaultMap.has(categoryId));
+    return entry.nonRecurring + (includeRecurring ? entry.recurring : 0);
+  }
+
   // A top-level category's spend rolls up any child that doesn't have its own budget
   // set — so an un-broken-out "Housing" budget still covers Rent, Utilities, etc.
   // Once a child gets its own saved budget, its spend is tracked on the child instead
   // (and dropped from the parent's rollup) so it isn't counted twice.
-  function topLevelSpend(spend: { byCategory: Map<number, number> }, parentId: number) {
-    const own = spend.byCategory.get(parentId) ?? 0;
+  function topLevelSpend(spend: { byCategory: Map<number, CategorySpend> }, parentId: number) {
+    const own = resolveSpend(spend.byCategory.get(parentId), parentId);
     const children = childrenByParent.get(parentId) ?? [];
     const rolled = children
       .filter((c) => !defaultMap.has(c.id))
-      .reduce((s, c) => s + (spend.byCategory.get(c.id) ?? 0), 0);
+      .reduce((s, c) => s + resolveSpend(spend.byCategory.get(c.id), c.id), 0);
     return own + rolled;
+  }
+
+  // Flat resolved total across every variable category (no rollup, each counted once) —
+  // feeds totalSpent and the trailing-window creation hints.
+  function resolvedTotal(spend: { byCategory: Map<number, CategorySpend> }) {
+    let total = 0;
+    for (const [categoryId, entry] of spend.byCategory) total += resolveSpend(entry, categoryId);
+    return total;
   }
 
   const categoryRows: BudgetCategoryRow[] = [
@@ -195,8 +219,8 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
       icon: cat.icon ?? null,
       parentCategoryId: cat.parentCategoryId,
       budget: defaultMap.get(cat.id) ?? null,
-      spent: periodSpend.byCategory.get(cat.id) ?? 0,
-      last30: last30Spend.byCategory.get(cat.id) ?? 0,
+      spent: resolveSpend(periodSpend.byCategory.get(cat.id), cat.id),
+      last30: resolveSpend(last30Spend.byCategory.get(cat.id), cat.id),
     })),
   ];
 
@@ -210,10 +234,10 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
     from,
     to,
     daysLeft: daysBetweenInclusive(todayStr < from ? from : todayStr, to),
-    totalSpent: periodSpend.total,
+    totalSpent: resolvedTotal(periodSpend),
     budgetedSpent,
-    last30Total: last30Spend.total,
-    last7Total: last7Spend.total,
+    last30Total: resolvedTotal(last30Spend),
+    last7Total: resolvedTotal(last7Spend),
     allocated,
     income,
     strategy,

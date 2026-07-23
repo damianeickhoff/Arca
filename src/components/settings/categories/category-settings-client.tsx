@@ -216,7 +216,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           type="button"
           onClick={close}
           aria-label="Back"
-          className="size-11 rounded-full bg-white/60 dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
+          className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
         >
           <ChevronLeft className="size-5 text-foreground" />
         </button>
@@ -225,7 +225,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           onClick={remove}
           disabled={loading}
           aria-label="Delete category"
-          className="size-11 rounded-full bg-white/60 dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0 disabled:opacity-50"
+          className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0 disabled:opacity-50"
         >
           <Trash2 className="size-5 text-foreground" />
         </button>
@@ -256,7 +256,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="Name"
-            className="flex-1 h-14 rounded-2xl border-0 px-4 text-base bg-white/7"
+            className="flex-1 h-14 rounded-2xl border-0 px-4 text-base bg-[var(--dialog-content-background)]"
           />
           {!isSubcategory && !(form.icon && isBrandIcon(form.icon)) && (
             <ColorPicker value={form.color} onChange={(c) => set("color", c)} inline />
@@ -410,7 +410,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 min-h-[3.25rem]">
+    <div className="flex items-center justify-between bg-[var(--dialog-content-background)] gap-3 px-4 py-3 min-h-[3.25rem]">
       <span className="text-sm font-medium text-foreground shrink-0">{label}</span>
       <div className="min-w-0 flex-1 flex justify-end">{children}</div>
     </div>
@@ -449,7 +449,7 @@ function RuleForm({
         placeholder="Name (optional)"
         value={value.namePattern}
         onChange={(e) => onChange((r) => ({ ...r, namePattern: e.target.value }))}
-        className="text-sm bg-white/10"
+        className="text-sm bg-[var(--dialog-content-background)]"
       />
       <Segmented value={value.matchType} options={matchOptions} onChange={(v) => onChange((r) => ({ ...r, matchType: v as RuleValue["matchType"] }))} />
       <Segmented value={value.direction} options={dirOptions} onChange={(v) => onChange((r) => ({ ...r, direction: v }))} />
@@ -457,7 +457,7 @@ function RuleForm({
         <select
           value={value.bankId}
           onChange={(e) => onChange((r) => ({ ...r, bankId: e.target.value }))}
-          className="h-11 w-full rounded-md px-4 text-sm text-foreground bg-white/10"
+          className="h-11 w-full rounded-md px-4 text-sm text-foreground bg-[var(--dialog-content-background)]"
         >
           <option value="">All accounts</option>
           {banks.map((bank) => (
@@ -486,7 +486,7 @@ function Segmented({ value, options, onChange }: { value: string; options: { val
           type="button"
           onClick={() => onChange(opt.value)}
           className={`flex-1 px-2 py-2.5 transition-colors ${
-            value === opt.value ? "bg-white/20 text-foreground font-medium" : "bg-white/10 text-foreground/60"
+            value === opt.value ? "bg-[var(--dialog-content-background)] dark:bg-foreground dark:text-black text-foreground font-medium" : "bg-foreground/7 text-foreground/60"
           } ${i > 0 ? "" : ""}`}
         >
           {opt.label}

@@ -35,7 +35,7 @@ export function MiniBarChart({ buckets, color, className }: { buckets: Bucket[];
 // Cashflow's own chart — each bucket shows a neutral bar next to a green bar instead of one
 // net value, so the two series are directly comparable period by period. Works for any bucket
 // count (5 period-buckets in Analytics, 12 months in Trends).
-export function PairedBarChart({ a, b, aColor = "color-mix(in srgb, var(--foreground) 55%, transparent)", bColor = "var(--color-income)", className }: {
+export function PairedBarChart({ a, b, aColor = "color-mix(in srgb, var(--foreground) 30%, transparent)", bColor = "var(--color-income)", className }: {
   a: Bucket[];
   b: Bucket[];
   aColor?: string;

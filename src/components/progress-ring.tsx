@@ -30,7 +30,7 @@ export function ProgressRing({
   const clamped = pct != null ? Math.min(100, Math.max(0, pct)) : 0;
   const over = (pct ?? 0) > 100;
   const ringColor = over ? "var(--danger)" : (color ?? "var(--success)");
-  const trackColor = color ? `color-mix(in srgb, ${color} 35%, black)` : "currentColor";
+  const trackColor = color ? `color-mix(in srgb, ${color} 35%, var(--background))` : "currentColor";
   const trackOpacity = color ? 1 : 0.12;
 
   const marker = periodElapsedPct != null;

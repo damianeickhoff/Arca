@@ -72,7 +72,7 @@ function CategoriesPill({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
+      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0 bg-black/7 dark:bg-white/7")}>
         {active ? (
           <span className="flex items-center -space-x-1.5 shrink-0">
             {selectedCats.slice(0, 2).map((c) => (
@@ -100,7 +100,7 @@ function CategoriesPill({
             onClick={(e) => { e.stopPropagation(); onChange([]); }}
             className="shrink-0"
           >
-            <IconX className="size-5 bg-white/40 rounded-full text-background p-1" />
+            <IconX className="size-5 bg-white rounded-full text-background p-1" />
           </span>
         )}
       </button>
@@ -139,7 +139,7 @@ function AccountsPill({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
+      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0 bg-black/7 dark:bg-white/7")}>
         {active ? (
           <span className="flex items-center -space-x-1.5 shrink-0">
             {selectedBanks.slice(0, 2).map((b) => (

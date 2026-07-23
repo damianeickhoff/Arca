@@ -293,7 +293,7 @@ export function PeriodSelector({
           type="button"
           onClick={() => step(-1)}
           aria-label="Previous period"
-          className="h-full aspect-square rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0"
+          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0"
         >
           <IconChevronLeft className="size-4" />
         </button>
@@ -301,7 +301,7 @@ export function PeriodSelector({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex-1 min-w-0 h-full rounded-full bg-white/7 backdrop-blur-lg px-4 flex flex-col items-center justify-center active:scale-[0.98] transition-transform"
+          className="flex-1 min-w-0 h-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg px-4 flex flex-col items-center justify-center active:scale-[0.98] transition-transform"
         >
           <p className="text-[11px] leading-tight text-foreground/50">{PRESET_LABEL[preset]}</p>
           <p className="text-sm font-semibold leading-tight truncate">{fmtRange(from, to)}</p>
@@ -312,7 +312,7 @@ export function PeriodSelector({
           onClick={() => step(1)}
           disabled={!canGoNext}
           aria-label="Next period"
-          className="h-full aspect-square rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
+          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
         >
           <IconChevronRight className={cn("size-4", !canGoNext && "opacity-30")} />
         </button>

@@ -74,6 +74,7 @@ export function CategoryMultiPicker({
       <DialogContent
         fullHeight
         hideHandle
+        className="pt-3"
         title="Select Categories"
         headerAction={
           <button
@@ -161,7 +162,7 @@ function CategoryCheckRow({
       <span
         className={cn(
           "size-6 rounded-md border flex items-center justify-center shrink-0",
-          active ? "bg-primary border-primary text-primary-foreground" : "border-foreground/25",
+          active ? "bg-foreground text-background" : "border-foreground/25",
         )}
       >
         {active && <Check className="size-4" />}

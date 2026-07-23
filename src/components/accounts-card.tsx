@@ -57,7 +57,7 @@ export function AccountsCard({
           ))}
           {vermogenRows.map((a) => (
             <div key={`asset-${a.id}`} className="flex items-center gap-3">
-              <span className="flex size-11 items-center justify-center rounded-2xl text-white font-semibold shrink-0" style={{ backgroundColor: a.color ?? "#0f9d8c" }}>
+              <span className="flex size-7 items-center justify-center rounded-[5px] text-white text-sm font-normal shrink-0" style={{ backgroundColor: a.color ?? "#0f9d8c" }}>
                 {a.name.charAt(0).toUpperCase()}
               </span>
               <span className="flex-1 text-sm font-medium text-foreground truncate">{a.name}</span>

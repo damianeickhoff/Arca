@@ -406,9 +406,9 @@ export function CategoryDetailPortal({
 
                 <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
                   <p className="text-foreground/60 mb-4">Set a budget for this category</p>
-                  <p className="text-6xl font-semibold tracking-tight tabular-nums">
+                  <div className="text-6xl font-semibold tracking-tight tabular-nums">
                     <AnimatedAmountDisplay value={editBudgetAmount} prefixClassName="text-foreground/40 mr-1" />
-                  </p>
+                  </div>
                 </div>
 
                 <Numpad onKey={(k) => setEditBudgetAmount((cur) => nextAmountValue(cur, k))} />

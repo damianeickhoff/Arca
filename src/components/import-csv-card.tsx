@@ -64,7 +64,7 @@ export function ImportCsvCard() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
         <h2 className="font-semibold text-base mb-4">Upload export file</h2>
 
         <div
@@ -134,7 +134,7 @@ export function ImportCsvCard() {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
         <h2 className="font-semibold text-base mb-3">Which banks are supported?</h2>
         <div className="text-sm text-foreground space-y-2">
           <p>

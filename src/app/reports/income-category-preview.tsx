@@ -33,7 +33,7 @@ export function IncomeCategoryPreview({
   const hasMore = rows.length > top.length;
 
   return (
-    <div className="rounded-2xl bg-card overflow-hidden">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
       <div className="flex items-center justify-between px-5 pt-4 pb-2 gap-3">
         <p className="text-sm text-muted-foreground">Income by category</p>
       </div>

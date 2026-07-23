@@ -7,6 +7,7 @@ import {
   AUTH_BACKGROUND_PRESETS,
   DEFAULT_AUTH_BACKGROUND_ID,
   authBackgroundPreviewStyle,
+  AUTH_BG_CLASS,
 } from "@/lib/auth-background";
 import { updateOwnAuthBackgroundAction } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
@@ -58,8 +59,9 @@ export function AuthBackgroundPicker() {
             >
               <span
                 className={cn(
-                  "relative h-14 w-full rounded-xl ring-2 ring-offset-2 ring-offset-[#2e2e30] transition-all",
-                  isSelected ? "ring-white" : "ring-transparent",
+                  AUTH_BG_CLASS,
+                  "relative h-14 w-full rounded-xl ring-1 ring-offset-1 ring-offset-[var(--dialog-content-background)] transition-all",
+                  isSelected ? "ring-foreground" : "ring-transparent",
                 )}
                 style={authBackgroundPreviewStyle(preset)}
               >

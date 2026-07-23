@@ -49,6 +49,7 @@ export function AccountMultiPicker({
       <DialogContent
         fullHeight
         hideHandle
+        className="pt-3"
         title="Select Accounts"
         headerAction={
           <button

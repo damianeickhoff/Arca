@@ -65,6 +65,20 @@ export async function getBudgetRollover(): Promise<boolean> {
   return row[0]?.value === "1";
 }
 
+// How transactions matched to a recurring bill count toward a category's budget spend:
+//   "always"   — always counted
+//   "exclude"  — never counted (a recurring bill isn't something you budget down this month)
+//   "budgeted" — counted only for categories that have a budget target set
+// Applied identically by getBudgetOverview (budget page) and getDashboardData
+// (dashboard "Spending by category") so the two never disagree.
+export type BudgetRecurringMode = "always" | "exclude" | "budgeted";
+
+export async function getBudgetRecurringMode(): Promise<BudgetRecurringMode> {
+  const row = await db.select().from(appSettings).where(eq(appSettings.key, "budget_recurring_mode")).limit(1);
+  const value = row[0]?.value;
+  return value === "always" || value === "exclude" ? value : "budgeted";
+}
+
 export interface AppLockConfig {
   enabled: boolean;
   hasWebAuthn: boolean;

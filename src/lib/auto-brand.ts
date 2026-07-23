@@ -46,11 +46,14 @@ export function avatarColorFor(name: string): string {
   return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
 }
 
-// Neutral "uncategorized" chip — a gray cross on a muted gray background. Used
-// wherever a transaction or recurring bill has no category (and no brand) to fall
-// back on, replacing the old initials avatar for the genuinely-uncategorized case.
-export const UNCATEGORIZED_ICON = "IconX";
-export const UNCATEGORIZED_COLOR = "#9ca3af";
+// Neutral "uncategorized" chip — a gray question mark on a theme-aware gray
+// background (lighter gray in light mode, #818181 in dark mode). Both are `null`
+// on purpose: passing no iconKey/color makes <Icon> render its placeholder chip,
+// which is where that theme-aware styling lives (a single solid color can't be
+// theme-aware). Used wherever a transaction or recurring bill has no category (and
+// no brand) to fall back on.
+export const UNCATEGORIZED_ICON: string | null = null;
+export const UNCATEGORIZED_COLOR: string | null = null;
 
 // Single helper used by all transaction display components.
 // Priority: manual brand rule -> auto-detected brand -> category icon -> initials avatar / uncategorized cross.
@@ -101,7 +104,8 @@ export function resolveTransactionIcon(t: {
   }
 
   // No brand and no category icon. A genuinely uncategorized item (no category at
-  // all) gets the neutral gray cross; a categorized-but-iconless one keeps an
+  // all) gets the neutral gray question-mark chip (iconKey/color left null so
+  // <Icon> renders its themed placeholder); a categorized-but-iconless one keeps an
   // initials avatar tinted with its category color.
   if (!t.categoryColor && !t.categoryIcon) {
     return { iconKey: UNCATEGORIZED_ICON, color: UNCATEGORIZED_COLOR, background: null };

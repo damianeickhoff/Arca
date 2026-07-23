@@ -12,7 +12,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-foreground text-white dark:text-black aria-expanded:text-black",
         outline:
-          "bg-foreground/7 aria-expanded:bg-muted aria-expanded:text-foreground",
+          "bg-black aria-expanded:bg-muted aria-expanded:text-foreground",
         secondary:
           "bg-secondary text-secondary-foreground aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:

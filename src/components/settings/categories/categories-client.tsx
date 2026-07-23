@@ -51,7 +51,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
           <button
             type="button"
             onClick={() => setEditMode((m) => !m)}
-            className="px-4 h-9 rounded-full bg-white/60 dark:bg-white/7 text-sm font-medium text-foreground active:scale-[0.97] transition-transform"
+            className="px-4 h-9 rounded-full bg-white dark:bg-white/7 text-sm font-medium text-foreground active:scale-[0.97] transition-transform"
           >
             {editMode ? "Done" : "Edit"}
           </button>

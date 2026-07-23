@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { transactions, categories, goals, recurringItems, banks, vermogenAccounts } from "@/db/schema";
+import { transactions, categories, goals, recurringItems, banks, vermogenAccounts, budgetTargets } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc, asc } from "drizzle-orm";
 import { formatEur } from "@/lib/format";
 import { SplitEur } from "@/components/split-eur";
@@ -9,8 +9,8 @@ import Link from "next/link";
 import { ComparisonCard } from "@/components/comparison-card";
 import { getMonthComparison, pctChange } from "@/lib/month-comparison";
 import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, shiftDate, periodElapsedPct } from "@/lib/date-range";
-import { getFinancialMonthConfig } from "@/lib/app-settings";
-import { authBackgroundStyle, getAuthBackgroundPreset } from "@/lib/auth-background";
+import { getFinancialMonthConfig, getBudgetRecurringMode } from "@/lib/app-settings";
+import { authBackgroundStyle, getAuthBackgroundPreset, AUTH_BG_CLASS } from "@/lib/auth-background";
 import { getBillStatuses } from "@/lib/bill-status";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
@@ -74,7 +74,7 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
   const chartToStr = chartNow.toISOString().slice(0, 10);
   const chartFromStr = new Date(chartNow.getTime() - 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [periodRows, monthlyRows, goalsRaw, recurringRaw, recurringItemsRaw, last7DaysRaw, recentRows, allCategories] =
+  const [periodRows, monthlyRows, goalsRaw, recurringRaw, recurringItemsRaw, last7DaysRaw, recentRows, allCategories, budgetTargetRows, recurringMode] =
     await Promise.all([
       db.select({
         id: transactions.id,
@@ -94,6 +94,7 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
         brandIconBgColor: transactions.brandIconBgColor,
         isReimbursement: transactions.isReimbursement,
         isInternalTransfer: isInternalTransferExpr,
+        recurringItemId: transactions.recurringItemId,
       })
         .from(transactions)
         .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -195,6 +196,12 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
         .limit(40),
 
       db.select().from(categories).orderBy(categories.name),
+
+      db.select({ categoryId: budgetTargets.categoryId })
+        .from(budgetTargets)
+        .where(and(eq(budgetTargets.year, 0), eq(budgetTargets.month, 0))),
+
+      getBudgetRecurringMode(),
     ]);
 
   const splitRows = await getTransactionSplitRows(
@@ -303,9 +310,20 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
   // the row) are tracked with `excluded` so the row/count can skip them while the
   // "View all" list still shows — and can re-include — every one of them.
   const excludedCategoryIds = new Set(allCategories.filter((c) => c.excludeFromSpendingRow).map((c) => c.id));
+  // Whether a transaction matched to a recurring bill counts toward its category's spend
+  // follows the budget_recurring_mode setting — kept in lock-step with the budget page
+  // (getBudgetOverview / resolveSpend) so the dashboard's "X of Y used" never disagrees.
+  const recurringTxIds = new Set(periodRows.filter((r) => r.recurringItemId != null).map((r) => r.id));
+  const budgetedCatIds = new Set(budgetTargetRows.map((r) => r.categoryId));
   const categorySpendingMap = new Map<number, { categoryId: number; categoryName: string; color: string | null; icon: string | null; spent: number; excluded: boolean }>();
   for (const row of periodAllocations) {
     if (row.direction !== "expense" || row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings" || row.categoryId == null) continue;
+    if (recurringTxIds.has(row.transactionId)) {
+      const includeRecurring =
+        recurringMode === "always" ||
+        (recurringMode === "budgeted" && budgetedCatIds.has(row.categoryId));
+      if (!includeRecurring) continue;
+    }
     const current = categorySpendingMap.get(row.categoryId) ?? {
       categoryId: row.categoryId,
       categoryName: row.categoryName ?? "Uncategorized",
@@ -400,7 +418,7 @@ export default async function DashboardPage({
   const currentMonthRange = financialMonthRange(financialMonth, 0);
   const isViewingCurrentMonth = from === currentMonthRange.from && to === currentMonthRange.to;
 
-  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory] = await Promise.all([
+  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode] = await Promise.all([
     getDashboardData(from, to, selectedBank, financialMonth),
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
     getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct, month: sp.month }),
@@ -414,6 +432,7 @@ export default async function DashboardPage({
     getBankBalances(),
     db.select().from(vermogenAccounts).where(eq(vermogenAccounts.active, true)),
     getAccountBalanceHistory(180),
+    getBudgetRecurringMode(),
   ]);
 
   // Per-user, not app-wide — each family member picks their own dashboard color fade
@@ -558,7 +577,7 @@ export default async function DashboardPage({
     <DashboardAnimationProvider>
     <BudgetPortalProvider>
     <TransactionsPortalProvider>
-    <div className="relative isolate mt-[calc(-1.7rem-var(--sat))] lg:mt-0 pt-[var(--sat)] lg:pt-0 min-h-dvh " style={authBackgroundStyle(authBackground, { boxHeight: "100dvh", fadeStop: 50 })}>
+    <div className={`${AUTH_BG_CLASS} relative isolate mt-[calc(-1.7rem-var(--sat))] lg:mt-0 pt-[var(--sat)] lg:pt-0 min-h-dvh `} style={authBackgroundStyle(authBackground, { boxHeight: "100dvh", fadeStop: 50 })}>
       <DashboardReadySignal />
       <DashboardFlowGlow />
 
@@ -575,11 +594,12 @@ export default async function DashboardPage({
             user={user}
             settingsPanels={settingsPanels}
             financialMonth={financialMonth}
+            budgetRecurringMode={budgetRecurringMode}
           />
         </div>
 
-        {/* Wallet card — gradient hero; tap the amount to toggle cash flow ↔ total
-            balance (see WalletHero). */}
+        {/* Wallet card — gradient hero; tap the amount to cycle cash flow → total
+            balance → each account (see WalletHero). */}
         <WalletHero
           cashflowBalance={data.balance}
           periodLabel={label}

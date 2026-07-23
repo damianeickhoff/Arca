@@ -403,7 +403,7 @@ async function getTrendsData(
 // ── Net worth helpers ─────────────────────────────────────────────────────
 
 const VERMOGEN_TYPES = [
-  { value: "spaarrekening",  label: "Savings account",  color: "#14b8a6", icon: PiggyBank },
+  { value: "spaarrekening",  label: "Savings account",  color: "#b81414", icon: PiggyBank },
   { value: "beleggingen",    label: "Investments",    color: "#a855f7", icon: TrendingUp },
   { value: "betaalrekening", label: "Checking account", color: "#3b82f6", icon: Wallet },
   { value: "bezitting",      label: "Possession",      color: "#f59e0b", icon: Gem },
@@ -560,6 +560,7 @@ export async function TrendsTab({
           label="Total expenses"
           value={formatEur(data.totalExpense)}
           valueClassName="text-xl font-bold tabular-nums"
+          footerAtBottom
           footer={data.expenseChange
             ? <ChangeRow change={{ ...data.expenseChange, up: !data.expenseChange.up }} />
             : "vs last period — no data"}
@@ -567,8 +568,8 @@ export async function TrendsTab({
       </div>
 
       {/* Income vs Expenses — Cashflow's nested two-tone shell, kept as a line chart. */}
-      <div className="bg-white/5 p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-white/2 py-2 px-4 pb-3">
+      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
+        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
           <p className="text-md text-foreground/60 mb-1">Income vs Expenses</p>
           <p
             className="text-2xl font-semibold tabular-nums tracking-tight"
@@ -582,7 +583,7 @@ export async function TrendsTab({
 
         <div className="rounded-2xl px-4 mt-3 flex items-center justify-between">
           <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full bg-foreground/60" /> Expenses
+            <span className="size-2 rounded-full bg-foreground/30" /> Expenses
           </span>
           <span className="text-md tabular-nums">{formatEur(data.totalExpense)}</span>
         </div>
@@ -597,7 +598,7 @@ export async function TrendsTab({
       <CategoryTrendList groups={data.groupedDetailed} months={data.months} financialMonth={financialMonth} periodRange={chartedPeriod} />
 
       {/* Maandvergelijking */}
-      <div className="rounded-2xl bg-card overflow-hidden">
+      <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
         <div className="px-5 py-4 border-b border-foreground/5 flex flex-col items-center gap-2 text-center">
           <h2 className="font-semibold text-sm">Month comparison</h2>
           <ComparisonPicker cmpA={data.cmpA} cmpB={data.cmpB} />
@@ -612,7 +613,7 @@ export async function TrendsTab({
               const diff = a - b;
               const diffPct = b !== 0 ? Math.round((diff / Math.abs(b)) * 100) : null;
               return (
-                <div key={label} className="rounded-xl bg-foreground/3 p-3">
+                <div key={label} className="rounded-xl bg-[var(--dialog-background)] p-3">
                   <p className="text-xs text-foreground/60 mb-1">{label}</p>
                   <div className="flex items-end justify-between gap-1 flex-wrap">
                     <div>
@@ -690,19 +691,29 @@ export async function VermogenTab() {
   })).filter((g) => g.items.length > 0);
 
   // Assets composition — savings goals plus each vermogen-account group, for the
-  // donut below the history chart ("other useful graphs").
+  // donut below the history chart ("other useful graphs"). The slices must sum to
+  // the exact `totalAssets` the donut is scaled to, otherwise the gray background
+  // track shows through the gap. That means covering the two things totalAssets
+  // includes but the groups above don't: accounts whose type isn't one of the
+  // VERMOGEN_TYPES (bucketed into "Other"), and money owed to the user (a
+  // receivable asset, "Owed to you"). See getNetWorthData for totalAssets' makeup.
   const totalNetWorthBanks = netWorthBanks.reduce((s, b) => s + b.balance, 0);
+  const knownTypes = new Set(VERMOGEN_TYPES.map((t) => t.value));
+  const otherAccountsTotal = accounts.filter((a) => !knownTypes.has(a.type)).reduce((s, a) => s + a.value, 0);
+  const totalOwed = debtSummary?.totalOwed ?? 0;
   const assetSlices = [
     ...(totalSavings > 0 ? [{ name: "Savings goals", value: totalSavings, color: "var(--color-success)" }] : []),
     ...groupedAccounts.map((g) => ({ name: g.label, value: g.items.reduce((s, a) => s + a.value, 0), color: g.color })),
     ...(totalNetWorthBanks > 0 ? [{ name: "Bank accounts", value: totalNetWorthBanks, color: "#3b82f6" }] : []),
+    ...(totalOwed > 0 ? [{ name: "Owed to you", value: totalOwed, color: "#6e8185" }] : []),
+    ...(otherAccountsTotal > 0 ? [{ name: "Other", value: otherAccountsTotal, color: "#64748b" }] : []),
   ].filter((s) => s.value > 0);
 
   return (
     <div className="px-5 pb-5 pt-3 space-y-5">
       {/* Net worth history — Cashflow's nested two-tone shell, kept as a line chart. */}
-      <div className="bg-white/5 p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-white/2 py-2 px-4 pb-3">
+      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
+        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
           <p className="text-md text-foreground/60 mb-1">Net worth</p>
           <p
             className="text-2xl font-semibold tabular-nums tracking-tight"
@@ -718,23 +729,22 @@ export async function VermogenTab() {
           )}
         </div>
 
-        <div className="rounded-2xl px-4 mt-3 flex items-center justify-between">
-          <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full bg-foreground/60" /> Debts
-          </span>
-          <span className="text-md tabular-nums">{formatEur(totalDebt)}</span>
+        {/* Current totals summarising the net worth above (assets − debts) — plain
+            label/value rows, deliberately with no colored dots so they don't read as
+            a legend for lines the single-line chart never plots. */}
+        <div className="px-4 mt-3 flex items-center justify-between">
+          <span className="text-md text-foreground/60">Assets</span>
+          <span className="text-md tabular-nums text-foreground">{formatEur(totalAssets)}</span>
         </div>
-        <div className="rounded-2xl px-4 py-1 mb-2 flex items-center justify-between">
-          <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full" style={{ backgroundColor: "var(--color-income)" }} /> Assets
-          </span>
-          <span className="text-md tabular-nums" style={{ color: "var(--color-income)" }}>+{formatEur(totalAssets)}</span>
+        <div className="px-4 py-1 mb-2 flex items-center justify-between">
+          <span className="text-md text-foreground/60">Debts</span>
+          <span className="text-md tabular-nums text-foreground">{formatEur(totalDebt)}</span>
         </div>
       </div>
 
       {/* Assets composition donut */}
       {assetSlices.length > 0 && (
-        <div className="rounded-2xl bg-card p-5">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
           <h2 className="font-semibold text-sm mb-4">Assets composition</h2>
           <AssetsDonut slices={assetSlices} total={totalAssets} />
         </div>
@@ -742,11 +752,11 @@ export async function VermogenTab() {
 
       {/* Assets */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="rounded-2xl bg-card p-5">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-base">Assets</h2>
-            <Link href="/settings?tab=banks" className="flex items-center gap-1 font-semibold text-xs text-muted-foreground hover:opacity-75 transition-opacity">
-              Manage
+            <Link href="/settings?tab=banks" className="flex items-center gap-1 font-semibold text-xs text-muted-foreground transition-opacity">
+              <p className="bg-[var(--dialog-background)]/40 p-2 rounded-md">Manage</p>
             </Link>
           </div>
           {goals.length > 0 && (
@@ -784,11 +794,11 @@ export async function VermogenTab() {
         </div>
 
         {/* Liabilities */}
-        <div className="rounded-2xl bg-card p-5">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-base">Debts</h2>
             <Link href="/debts" className="flex items-center gap-1 font-semibold text-xs text-muted-foreground hover:opacity-75 transition-opacity">
-              Manage
+              <p className="bg-[var(--dialog-background)]/40 p-2 rounded-md">Manage</p>
             </Link>
           </div>
           {debtSummary ? (
@@ -856,10 +866,10 @@ function AssetsDonut({ slices, total }: { slices: { name: string; value: number;
             />
           );
         })}
-        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="15" fontWeight="bold" fill="currentColor">
+        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="20" fontWeight="bold" fill="currentColor">
           {formatEur(total).replace(",00", "")}
         </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="9" fill="currentColor" fillOpacity="0.5">total assets</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="12" fill="currentColor" fillOpacity="0.5">total assets</text>
       </svg>
       <div className="flex-1 min-w-0 space-y-2">
         {withOffset.map((s) => (

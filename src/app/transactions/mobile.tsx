@@ -201,7 +201,7 @@ export function TransactionsMobile({
         <Link
           href="/transactions/add"
           aria-label="Add new transaction"
-          className="shrink-0 size-12 rounded-full bg-white/60 dark:bg-white/7 backdrop-blur-lg text-white flex items-center justify-center shadow-floating shadow-primary/30 active:scale-[0.92] transition-transform"
+          className="shrink-0 size-12 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg text-white flex items-center justify-center shadow-floating shadow-primary/30 active:scale-[0.92] transition-transform"
         >
           <IconPlus className="size-5" />
         </Link>

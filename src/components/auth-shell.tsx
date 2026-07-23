@@ -18,7 +18,10 @@ export function AuthShell({
   // The background is per-user now (see users.authBackground), but there's no signed-in
   // user yet on this screen — always the default preset here, whichever user logs in
   // then sees their own choice on the dashboard.
-  const bgStyle = authBackgroundStyle(getAuthBackgroundPreset(null));
+  // Pinned dark: this pre-auth screen is a deliberately always-dark art scene (dark base,
+  // dark scrim, white text below), so it keeps the dark palette even when the app theme
+  // is light — unlike the in-app dashboard, which follows the theme.
+  const bgStyle = authBackgroundStyle(getAuthBackgroundPreset(null), { theme: "dark" });
 
   return (
     <div className="min-h-dvh w-full relative overflow-hidden bg-[#050e2e]">

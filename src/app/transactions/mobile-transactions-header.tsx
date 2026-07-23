@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export const pillContainerClass = cn(
   "glass-nav relative flex items-center rounded-full transition-all duration-300 ease-in-out overflow-hidden",
-  "bg-white/60 dark:bg-white/7",
+  "bg-white dark:bg-white/7",
   "backdrop-blur-lg backdrop-saturate-80 dark:backdrop-blur-lg",
   "border-1 border-white/10 dark:border-0",
   "shadow-[0_6px_18px_rgba(109,109,109,0.178),inset_0_1px_1px_rgba(255,255,255,0.205)]",

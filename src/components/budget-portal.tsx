@@ -19,8 +19,8 @@ import {
   IconWallet,
   IconChevronLeft,
   IconX,
-  IconPencil,
-  IconTrash,
+  IconPencilFilled as Pencil,
+  IconTrashFilled as Trash2,
   IconAlertTriangleFilled,
   IconChevronRight,
   IconPlus,
@@ -199,7 +199,7 @@ function CategoryBudgetsPanel({
   saving: boolean;
 }) {
   return (
-    <div className="flex flex-col h-full bg-black">
+    <div className="flex flex-col h-full bg-[var(--dialog-background)]">
       <div
         className="grid grid-cols-[auto_1fr_auto] items-center px-4 min-h-11 shrink-0 pb-4"
         style={{ paddingTop: "calc(20px + var(--sat))" }}
@@ -215,7 +215,7 @@ function CategoryBudgetsPanel({
         <button
           type="button"
           onClick={resetAllToZero}
-          className="h-11 px-4 rounded-full text-white bg-white/7 text-sm active:scale-95 transition-transform justify-self-end"
+          className="h-11 px-4 rounded-full bg-destructive/10 text-destructive focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 text-sm active:scale-95 transition-transform justify-self-end"
         >
           Reset
         </button>
@@ -558,10 +558,10 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
     data.budget ? (
       <>
         <button onClick={openCreateOrEditFlow} aria-label="Edit budget" className="glass-icon-btn size-11">
-          <IconPencil className="size-5" />
+          <Pencil className="size-5" />
         </button>
         <button onClick={deleteBudget} aria-label="Delete budget" className="glass-icon-btn size-11">
-          <IconTrash className="size-5" />
+          <Trash2 className="size-5" />
         </button>
       </>
     ) : null
@@ -711,15 +711,15 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                   <h1 className="font-bold text-lg truncate">{editingCat.categoryName}</h1>
                 </div>
                 <button onClick={deleteEditingCategory} aria-label="Remove budget" className="glass-icon-btn size-11">
-                  <IconTrash className="size-5" />
+                  <Trash2 className="size-5" />
                 </button>
               </div>
 
               <div className="relative flex-1 flex flex-col items-center justify-center px-6 text-center">
                 <p className="text-foreground/60 mb-4">Set a budget for this category</p>
-                <p className="text-6xl font-semibold tracking-tight tabular-nums">
+                <div className="text-6xl font-semibold tracking-tight tabular-nums">
                   <AnimatedAmountDisplay value={editAmount} prefixClassName="text-foreground/40 mr-1" />
-                </p>
+                </div>
                 <p className="text-foreground/50 text-sm mt-4">Last 30 days: {money(editingCat.last30)}</p>
               </div>
 
@@ -761,7 +761,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
               onClick={closeStrategyPicker}
             >
               <div
-                className="w-full bg-[#1f1f1f]/70 backdrop-blur-3xl rounded-t-3xl p-5 pb-[calc(1.25rem+var(--sab))] transition-transform duration-300 ease-out"
+                className="w-full bg-[var(--dialog-background)] backdrop-blur-3xl rounded-t-3xl p-5 pb-[calc(1.25rem+var(--sab))] transition-transform duration-300 ease-out"
                 style={{ transform: strategyVisible ? "translateY(0)" : "translateY(100%)" }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -786,7 +786,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                 <button
                   onClick={confirmStrategy}
                   disabled={strategyDraft.nodig + strategyDraft.willen + strategyDraft.sparen !== 100}
-                  className="w-full h-12 mt-5 rounded-full bg-white text-black font-semibold text-sm active:scale-[0.98] transition-transform disabled:opacity-40 disabled:pointer-events-none"
+                  className="w-full h-12 mt-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-sm active:scale-[0.98] transition-transform disabled:opacity-40 disabled:pointer-events-none"
                 >
                   Save
                 </button>

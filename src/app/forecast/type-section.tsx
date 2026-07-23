@@ -17,7 +17,7 @@ export function TypeSection({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-2xl bg-card overflow-hidden">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -26,7 +26,7 @@ export function TypeSection({
         <h2 className="font-semibold text-sm">{title}</h2>
         <ChevronDown className={cn("size-4 text-foreground/60 transition-transform", open && "rotate-180")} />
       </button>
-      {open && <div className="px-5 pb-5 space-y-2">{children}</div>}
+      {open && <div className="px-5 pb-5 space-y-2 ">{children}</div>}
     </div>
   );
 }

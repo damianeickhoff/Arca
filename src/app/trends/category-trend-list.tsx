@@ -66,8 +66,8 @@ function FilterPill({
       onClick={onClick}
       className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer ${
         active
-          ? "bg-foreground/60 text-black font-bold"
-          : "bg-foreground/5 text-foreground/60"
+          ? "bg-foreground/10 dark:bg-foreground/60 text-black font-bold"
+          : "bg-foreground/5 dark:bg-foreground/5 text-foreground/60"
       }`}
     >
       {children}
@@ -102,7 +102,7 @@ export function CategoryTrendList({
   const cats = expanded ? allCats : allCats.slice(0, VISIBLE_COUNT);
 
   return (
-<div className="rounded-2xl bg-card p-5 relative">
+<div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 relative">
   <div className="pr-32">
     <h2 className="text-sm mb-1">Expenses per category</h2>
     <p className="text-xs text-foreground/60 mb-4">Per month · last 12 months</p>

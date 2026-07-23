@@ -236,7 +236,7 @@ export function RecurringClient(props: Props) {
                 type="button"
                 onClick={() => set("active", !form.active)}
                 aria-label={form.active ? "Enabled" : "Disabled"}
-                className="size-11 rounded-full bg-foreground/10 flex items-center justify-center active:scale-[0.95] transition-transform"
+                className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center active:scale-[0.95] transition-transform"
               >
                 <Check className={cn("size-5", form.active ? "text-[#1fb651]" : "text-foreground/30")} /> 
               </button>
@@ -246,7 +246,7 @@ export function RecurringClient(props: Props) {
                   onClick={remove}
                   disabled={loading}
                   aria-label="Delete"
-                  className="size-11 rounded-full bg-foreground/10 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                  className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
                 >
                   <Trash2 className="size-4.5" />
                 </button>
@@ -302,7 +302,7 @@ export function RecurringClient(props: Props) {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-sm font-medium">End date</p>
-                        <button type="button" onClick={() => set("endDate", form.endDate ? "" : todayISO())} className="text-sm font-medium text-primary">
+                        <button type="button" onClick={() => set("endDate", form.endDate ? "" : todayISO())} className="text-sm font-medium">
                           {form.endDate ? "Remove" : "Add"}
                         </button>
                       </div>

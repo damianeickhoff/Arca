@@ -147,7 +147,7 @@ export function VariablePrognoseOverrideBtn({ categoryId, categoryName, month, d
         <div
           ref={popoverRef}
           style={popoverStyle}
-          className="relative bg-white/5 rounded-xl backdrop-blur-xl p-3 w-52"
+          className="relative bg-black/7 dark:bg-white/7 rounded-xl backdrop-blur-xl p-3 w-52"
         >
           <button
             type="button"
@@ -176,7 +176,7 @@ export function VariablePrognoseOverrideBtn({ categoryId, categoryName, month, d
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full rounded-lg pl-5 py-1.5 text-sm bg-white/12 outline-none focus:outline-none focus:ring-0 border border-transparent focus:border-white/20"
+                className="w-full rounded-lg pl-5 py-1.5 text-sm bg-[var(--dialog-background)] outline-none focus:outline-none focus:ring-0 border border-transparent focus:border-white/20"
               />
             </div>
               <button

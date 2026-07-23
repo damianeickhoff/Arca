@@ -80,7 +80,7 @@ export function RecurringMultiPicker({
                 placeholder="Search recurring bill"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-foreground/5 focus:outline-none"
+                className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-black/7 dark:bg-white/7 focus:outline-none"
               />
             </div>
             <button

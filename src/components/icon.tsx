@@ -141,7 +141,10 @@ export function Icon({
     if (solid) chipStyle.backgroundColor = color!;
     return (
       <div
-        className={`${wrap} ${shape} ${solid ? "" : chipBg} shrink-0 flex items-center justify-center`}
+        // The neutral "uncategorized" / no-icon chip: a lighter gray tint in light
+        // mode, #818181 in dark mode (theme-aware, so it can't be driven by a single
+        // solid `color` value the way real category icons are).
+        className={`${wrap} ${shape} ${solid ? "" : "bg-gray-200 dark:bg-[#818181]"} shrink-0 flex items-center justify-center`}
         style={chipStyle}
       >
         {initials ? (
@@ -151,8 +154,12 @@ export function Icon({
           >
             {initials}
           </span>
+        ) : solid ? (
+          // A color was given but no glyph (e.g. a color swatch) — keep the plain dot.
+          <div className="size-2 rounded-sm" style={{ backgroundColor: contrastIconColor(color!) }} />
         ) : (
-          <div className="size-2 rounded-sm" style={{ backgroundColor: solid ? contrastIconColor(color!) : (color ?? "#94a3b8") }} />
+          // Genuinely uncategorized / no icon and no color — the gray question mark.
+          <Tabler.IconQuestionMark size={svgSize} className="text-gray-600 dark:text-white/90" />
         )}
       </div>
     );

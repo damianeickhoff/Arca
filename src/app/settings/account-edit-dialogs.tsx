@@ -314,7 +314,7 @@ export function BankEditDialog({
             type="button"
             onClick={remove}
             aria-label="Delete"
-            className="size-11 rounded-full bg-white/60 dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+            className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-4.5" />
           </button>
