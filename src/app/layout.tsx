@@ -124,6 +124,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 enabled={appLock.enabled}
                 hasWebAuthn={appLock.hasWebAuthn}
                 webAuthnCredentialId={appLock.webAuthnCredentialId}
+                pinLength={appLock.pinLength}
               >
                 <div className="flex h-dvh">
                   <Nav user={user} subtitle={sidebarSubtitle} />

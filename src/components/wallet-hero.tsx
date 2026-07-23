@@ -4,49 +4,42 @@ import { useState } from "react";
 import { AnimatedEur } from "@/components/animated-eur";
 import { WalletBalanceLineChart } from "@/components/dashboard-charts";
 
-interface HeroAccount {
-  id: string;
-  name: string;
-  balance: number;
-}
-
 interface HistoryPoint {
   date: string;
   balance: number;
 }
 
-// The dashboard's gradient hero used to show only period cash flow (income − expense).
-// Tapping the big amount now cycles — in a loop, no swipe/indicators — through: cash
-// flow, total account balance, then each individual account's own balance. Only the
-// first two views have a matching history line (the per-period net flow and the
-// 180-day total-balance series); individual accounts have no stored history, so the
-// chart area just collapses for those.
+// The dashboard's gradient hero. Tapping the big amount toggles — in a loop, no
+// swipe/indicators — between period cash flow (income − expense) and the total
+// account balance. Each view has its own history line: the per-period net flow
+// and the 180-day total-balance series.
 export function WalletHero({
   cashflowBalance,
   periodLabel,
   walletHistory,
   totalBalance,
   accountHistory,
-  accounts,
 }: {
   cashflowBalance: number;
   periodLabel: string;
   walletHistory: HistoryPoint[];
   totalBalance: number;
   accountHistory: HistoryPoint[];
-  accounts: HeroAccount[];
 }) {
   const [viewIndex, setViewIndex] = useState(0);
-  const viewCount = 2 + accounts.length;
+  // Once the user taps to switch views, replay the line's draw-in on every toggle.
+  // Stays off for the very first render so the session-scoped initial-load guard
+  // (and back-navigation) still decides whether the entrance animation plays.
+  const [interacted, setInteracted] = useState(false);
+  const viewCount = 2;
 
   const view =
     viewIndex === 0
       ? { label: "Cash flow", value: cashflowBalance, history: walletHistory }
-      : viewIndex === 1
-        ? { label: "Total balance", value: totalBalance, history: accountHistory }
-        : { label: accounts[viewIndex - 2].name, value: accounts[viewIndex - 2].balance, history: [] as HistoryPoint[] };
+      : { label: "Total balance", value: totalBalance, history: accountHistory };
 
   function nextView() {
+    setInteracted(true);
     setViewIndex((i) => (i + 1) % viewCount);
   }
 
@@ -69,7 +62,12 @@ export function WalletHero({
 
       {view.history.length > 1 && (
         <div className="h-28">
-          <WalletBalanceLineChart data={view.history} />
+          {/* Remount per view so Recharts replays its draw-in on each toggle. */}
+          <WalletBalanceLineChart
+            key={viewIndex}
+            data={view.history}
+            animate={interacted ? true : undefined}
+          />
         </div>
       )}
     </div>

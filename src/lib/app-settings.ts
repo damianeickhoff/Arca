@@ -69,12 +69,17 @@ export interface AppLockConfig {
   enabled: boolean;
   hasWebAuthn: boolean;
   webAuthnCredentialId: string | null;
+  // Length of the stored passcode (4–6), or null for passcodes set before the
+  // length was recorded. The lock screen uses it to size the dots and know when
+  // to auto-submit; a null falls back to a manual confirm button.
+  pinLength: number | null;
 }
 
 export async function getAppLockConfig(): Promise<AppLockConfig> {
-  const [enabledRow, webAuthnRow] = await Promise.all([
+  const [enabledRow, webAuthnRow, pinLengthRow] = await Promise.all([
     db.select().from(appSettings).where(eq(appSettings.key, "app_lock_enabled")).limit(1),
     db.select().from(appSettings).where(eq(appSettings.key, "app_lock_webauthn_credential")).limit(1),
+    db.select().from(appSettings).where(eq(appSettings.key, "app_lock_pin_length")).limit(1),
   ]);
 
   const enabled = enabledRow[0]?.value === "1";
@@ -87,9 +92,13 @@ export async function getAppLockConfig(): Promise<AppLockConfig> {
     } catch { /* ignore */ }
   }
 
+  const parsedLength = parseInt(pinLengthRow[0]?.value ?? "", 10);
+  const pinLength = parsedLength >= 4 && parsedLength <= 6 ? parsedLength : null;
+
   return {
     enabled,
     hasWebAuthn: !!webAuthnCredentialId,
     webAuthnCredentialId,
+    pinLength,
   };
 }

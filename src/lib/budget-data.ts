@@ -45,7 +45,6 @@ export function getDailyBucketSplit(
 export async function getBudgetData(
   month: string,
   financialMonth: FinancialMonthConfig | { defaultStartDay: number } = { defaultStartDay: 1 },
-  netto = false,
   rolloverEnabled = false,
 ) {
   const { from: start, to: end } = financialMonthRangeByMonth(month, financialMonth);
@@ -77,7 +76,7 @@ export async function getBudgetData(
 
   const splitRows = await getTransactionSplitRows(periodRows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(periodRows, splitMap, { netto });
+  const allocations = buildSplitAllocations(periodRows, splitMap);
 
   // A sub-category's spend counts towards its parent, so the parent's row shows the sum
   // of itself plus all its children and only top-level categories get their own row.
@@ -155,7 +154,7 @@ export async function getBudgetData(
 
     const prevSplitRows = await getTransactionSplitRows(prevPeriodRows.map((row) => row.id));
     const prevSplitMap = groupTransactionSplits(prevSplitRows);
-    const prevAllocations = buildSplitAllocations(prevPeriodRows, prevSplitMap, { netto });
+    const prevAllocations = buildSplitAllocations(prevPeriodRows, prevSplitMap);
     const prevSpendingMap = new Map(
       prevAllocations
         .filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryId != null && variableCatIds.has(row.categoryId))
@@ -213,7 +212,7 @@ export async function getBudgetData(
 // page's budget-filter card) without the rest of getBudgetData's per-category detail.
 export async function getLeftThisMonth(financialMonth: FinancialMonthConfig, rolloverEnabled = false) {
   const month = currentFinancialMonth(financialMonth);
-  const data = await getBudgetData(month, financialMonth, false, rolloverEnabled);
+  const data = await getBudgetData(month, financialMonth, rolloverEnabled);
 
   const targetedRows = data.targetRows.filter((r) => r.target != null && r.target > 0);
   const totalTarget = targetedRows.reduce((s, r) => s + (r.effectiveTarget ?? r.target!), 0);

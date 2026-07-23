@@ -15,7 +15,6 @@ export async function getReportsPortalContent(params?: { cmpA?: string; cmpB?: s
     { from: cookieStore.get("date_from")?.value, to: cookieStore.get("date_to")?.value },
     financialMonth,
   );
-  const netto = cookieStore.get("netto")?.value === "1";
   const periodLabel = from.slice(0, 7) === to.slice(0, 7)
     ? new Date(`${from}T00:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
     : `${new Date(`${from}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })} – ${new Date(`${to}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
@@ -32,7 +31,7 @@ export async function getReportsPortalContent(params?: { cmpA?: string; cmpB?: s
 
   return {
     rapporten: <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} embedded />,
-    trends: <TrendsTab from={trendsFrom} to={trendsTo} netto={netto} cmpA={params?.cmpA ?? ""} cmpB={params?.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} embedded />,
+    trends: <TrendsTab from={trendsFrom} to={trendsTo} cmpA={params?.cmpA ?? ""} cmpB={params?.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} embedded />,
     vermogen: <VermogenTab />,
     // Neutralizes ForecastPage's own "-mt-14" root margin (meant for its standalone
     // route) and sticks its mobile month-picker bar at the top of this pane's own

@@ -271,8 +271,12 @@ export function WeeklyExpenseBarChart({ data }: { data: { date: string; amount: 
 /** Cumulative net-balance line for the dashboard's wallet hero card — sits directly on
  * the gradient hero background (not a card), so it's styled in white/translucent tones
  * instead of the `--chart-*`/`currentColor` tokens every other chart in this file uses. */
-export function WalletBalanceLineChart({ data }: { data: { date: string; balance: number }[] }) {
-  const shouldAnimate = useDashboardShouldAnimate();
+export function WalletBalanceLineChart({ data, animate }: { data: { date: string; balance: number }[]; animate?: boolean }) {
+  // `animate` lets the caller force the draw-in (e.g. the wallet hero replays it on
+  // every cash-flow ↔ total-balance toggle); otherwise fall back to the session-scoped
+  // guard that only animates on the dashboard's first load.
+  const shouldAnimateHook = useDashboardShouldAnimate();
+  const shouldAnimate = animate ?? shouldAnimateHook;
   const today = new Date().toISOString().slice(0, 10);
 
   const display = data.map((d) => ({
@@ -323,6 +327,8 @@ export function WalletBalanceLineChart({ data }: { data: { date: string; balance
           activeDot={{ r: 3, strokeWidth: 0, fill: "#ffffff" }}
           connectNulls
           isAnimationActive={shouldAnimate}
+          animationDuration={800}
+          animationEasing="ease-out"
         />
 
         <Area
@@ -336,6 +342,8 @@ export function WalletBalanceLineChart({ data }: { data: { date: string; balance
           activeDot={{ r: 3, strokeWidth: 0, fill: "#ffffff" }}
           connectNulls
           isAnimationActive={shouldAnimate}
+          animationDuration={800}
+          animationEasing="ease-out"
         />
       </ComposedChart>
     </ResponsiveContainer>

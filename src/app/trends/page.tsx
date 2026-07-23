@@ -93,11 +93,10 @@ const BUDGET_GROUPS = ["nodig", "willen"] as const;
 export default async function TrendsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ netto?: string; cmpA?: string; cmpB?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ cmpA?: string; cmpB?: string; from?: string; to?: string }>;
 }) {
   const sp = await searchParams;
   const cookieStore = await cookies();
-  const netto = (sp.netto ?? cookieStore.get("netto")?.value) === "1";
   const financialMonth = await getFinancialMonthConfig();
 
   // Period picked via PeriodSelector — shares the same date_from/date_to cookie
@@ -155,7 +154,7 @@ export default async function TrendsPage({
   const recurringTypeByTxn = new Map(monthlyRows.map((row) => [row.id, row.recurringType]));
   const splitRows = await getTransactionSplitRows(monthlyRows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(monthlyRows, splitMap, { netto });
+  const allocations = buildSplitAllocations(monthlyRows, splitMap);
 
   const monthlyMap: Record<string, { income: number; expense: number }> = {};
   for (const m of months24) monthlyMap[m] = { income: 0, expense: 0 };

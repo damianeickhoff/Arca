@@ -12,7 +12,8 @@ export function debtMonthsElapsed(startMonth: string): number {
 }
 
 export type DebtSummary = {
-  totalBalance: number;
+  totalBalance: number; // money YOU owe (direction 'owe') — the liability side of net worth
+  totalOwed: number;    // money owed TO you (direction 'owed') — an asset, added to net worth (not subtracted)
   totalStarting: number;
   totalPaid: number;
   paidPct: number;
@@ -40,10 +41,18 @@ export async function getDebtSummary(): Promise<DebtSummary | null> {
     return { debt, amountPaid, currentBalance };
   });
 
-  const totalBalance = computed.reduce((s, c) => s + c.currentBalance, 0);
-  const totalStarting = debtRows.reduce((s: number, d: Debt) => s + d.startingBalance, 0);
-  const totalPaid = computed.reduce((s, c) => s + c.amountPaid, 0);
+  // Split by direction: money you owe is a liability (totalBalance), money owed to you
+  // is an asset (totalOwed). They must never be lumped together — doing so subtracts
+  // receivables from net worth instead of adding them.
+  const oweComputed = computed.filter((c) => c.debt.direction !== "owed");
+  const owedComputed = computed.filter((c) => c.debt.direction === "owed");
+
+  const totalBalance = oweComputed.reduce((s, c) => s + c.currentBalance, 0);
+  const totalOwed = owedComputed.reduce((s, c) => s + c.currentBalance, 0);
+  // Payoff-progress metrics describe *your* debts only.
+  const totalStarting = oweComputed.reduce((s, c) => s + c.debt.startingBalance, 0);
+  const totalPaid = oweComputed.reduce((s, c) => s + c.amountPaid, 0);
   const paidPct = totalStarting > 0 ? Math.round((totalPaid / totalStarting) * 100) : 0;
 
-  return { totalBalance, totalStarting, totalPaid, paidPct, debts: computed };
+  return { totalBalance, totalOwed, totalStarting, totalPaid, paidPct, debts: computed };
 }

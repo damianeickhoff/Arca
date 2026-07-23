@@ -40,6 +40,7 @@ import { AvatarFormContent, AppLockSectionContent, TwoFactorSectionContent } fro
 import { PanelChromeContext, PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { AuthBackgroundPicker } from "@/components/settings/auth-background-picker";
 import { Sparkles } from "@/components/sparkles";
+import { LogoMark } from "@/components/brand-mark";
 import { useSettingsPortal } from "@/lib/settings-portal-state";
 
 type PanelKey =
@@ -358,8 +359,9 @@ export function SettingsDialog({
               whole settings dialog. */}
           <ProfileEditDialog open={editOpen} onOpenChange={setEditOpen} user={user} />
 
-          <div className="pt-6 pb-8 text-center">
-            <p className="text-lg font-medium text-foreground/40">
+          <div className="pt-6 pb-8 flex flex-col items-center gap-2 text-center opacity-40">
+            <LogoMark className="size-8" />
+            <p className="text-lg font-medium text-foreground">
               Arca
             </p>
           </div>

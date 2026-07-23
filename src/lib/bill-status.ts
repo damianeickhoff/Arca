@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { billPayments, categories, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
+import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
 import { financialMonthRangeByMonth, getFinancialMonthStartDay, type FinancialMonthConfig } from "@/lib/date-range";
 
 export type BillStatus = {
@@ -47,20 +48,15 @@ export async function getBillStatuses(
   const paymentByItem = new Map(payments.map((p) => [p.recurringItemId, p]));
   const categoriesById = new Map(cats.map((c) => [c.id, { icon: c.icon, color: c.color }]));
 
-  function findMatch(pattern: string, matchAmount?: number | null) {
-    const lower = pattern.toLowerCase();
-    return periodTx.some((t) => {
-      if (!t.description.toLowerCase().includes(lower)) return false;
-      if (matchAmount != null && Math.abs(t.amount - matchAmount) > 0.01) return false;
-      return true;
-    });
+  function findMatch(item: RecurringItem) {
+    return periodTx.some((t) => transactionMatchesRecurringItem(t.description, t.amount, item));
   }
 
   return items
     .filter((r) => r.type === "bill" || r.type === "subscription" || r.type === "debt")
     .map((item) => {
       const manual = paymentByItem.get(item.id);
-      const autoMatch = item.matchPattern ? findMatch(item.matchPattern, item.matchAmount) : null;
+      const autoMatch = item.matchPattern ? findMatch(item) : null;
 
       let paid: boolean | null;
       let paidSource: "match" | "manual" | null;

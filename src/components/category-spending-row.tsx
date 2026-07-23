@@ -84,7 +84,7 @@ export function CategorySpendingRow({
 
   return (
     <div className="mt-5">
-      <div className="mx-3 mb-2 flex items-center justify-between">
+      <div className="mx-6 mb-2 flex items-center justify-between">
         <p className="text-base font-semibold text-foreground">Spending by category</p>
         {hasMore && (
           <button type="button" onClick={() => setShowAll(true)} className="text-sm text-muted-foreground active:opacity-70">
@@ -92,7 +92,7 @@ export function CategorySpendingRow({
           </button>
         )}
       </div>
-      <div className="flex gap-3 overflow-x-auto pl-3 pr-3 pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-3 overflow-x-auto ml-3 pr-3 pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {visible.map((c) => (
           <CategorySpendCardButton key={c.categoryId} card={c} periodElapsedPct={periodElapsedPct} onClick={() => setSelectedId(c.categoryId)} />
         ))}

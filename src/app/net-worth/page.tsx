@@ -61,7 +61,9 @@ async function getNetWorthData() {
 
   const totalSavings = goalList.reduce((s, g) => s + g.currentAmount, 0);
   const totalAccounts = accounts.reduce((s, a) => s + a.value, 0) + netWorthBanks.reduce((s, b) => s + b.balance, 0);
-  const totalAssets = totalSavings + totalAccounts;
+  // Money owed to the user (direction 'owed') is a receivable asset, added to net worth.
+  const owedToUser = debtSummary?.totalOwed ?? 0;
+  const totalAssets = totalSavings + totalAccounts + owedToUser;
   const totalDebt = debtSummary?.totalBalance ?? 0;
   const netWorth = totalAssets - totalDebt;
 
@@ -71,11 +73,15 @@ async function getNetWorthData() {
   const projection: { month: string; netWorth: number; savings: number; debt: number }[] = [];
 
   let projSavings = totalAssets;
-  let projDebtBalances = (debtSummary?.debts ?? []).map((d) => ({
-    id: d.debt.id,
-    balance: d.currentBalance,
-    payment: d.debt.minimumPayment,
-  }));
+  // Only debts you owe shrink the liability side of the projection; money owed *to*
+  // you is already counted as a (constant) asset in projSavings/totalAssets above.
+  let projDebtBalances = (debtSummary?.debts ?? [])
+    .filter((d) => d.debt.direction !== "owed")
+    .map((d) => ({
+      id: d.debt.id,
+      balance: d.currentBalance,
+      payment: d.debt.minimumPayment,
+    }));
 
   for (let i = 0; i <= 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);

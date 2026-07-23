@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { billPayments, debtRecurring, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
 import { financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
 
 /**
@@ -83,19 +84,9 @@ export async function getDebtRecurringLinks(
   const paymentByItemMonth = new Map(payments.map((p) => [paymentKey(p.recurringItemId, p.month), p]));
 
   function autoMatched(item: RecurringItem, from: string, to: string): boolean {
-    if (!item.matchPattern) return false;
-    const needle = item.matchPattern.toLowerCase();
-    return expenseTx.some((t) => {
-      if (t.date < from || t.date > to) return false;
-      if (!t.description.toLowerCase().includes(needle)) return false;
-      if (item.matchAmountMin != null || item.matchAmountMax != null) {
-        if (item.matchAmountMin != null && t.amount < item.matchAmountMin) return false;
-        if (item.matchAmountMax != null && t.amount > item.matchAmountMax) return false;
-        return true;
-      }
-      if (item.matchAmount != null && Math.abs(t.amount - item.matchAmount) > 0.01) return false;
-      return true;
-    });
+    return expenseTx.some(
+      (t) => t.date >= from && t.date <= to && transactionMatchesRecurringItem(t.description, t.amount, item),
+    );
   }
 
   function paidFor(debtId: number, startMonth: string, endMonth: string = currentMonth()): number | null {

@@ -10,6 +10,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 const KEY_ENABLED = "app_lock_enabled";
 const KEY_PIN_HASH = "app_lock_pin_hash";
+const KEY_PIN_LENGTH = "app_lock_pin_length";
 const KEY_WEBAUTHN_CREDENTIAL = "app_lock_webauthn_credential";
 const KEY_WEBAUTHN_CHALLENGE = "app_lock_webauthn_challenge";
 
@@ -70,6 +71,7 @@ export async function setPinAction(pin: string): Promise<{ error?: string }> {
 
   const hash = await bcrypt.hash(pin, 10);
   await setSetting(KEY_PIN_HASH, hash);
+  await setSetting(KEY_PIN_LENGTH, String(pin.length));
   return {};
 }
 

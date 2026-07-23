@@ -59,7 +59,7 @@ export const viewport: Viewport = {
   themeColor: "#0b3b47",
 };
 
-async function getDashboardData(from: string, to: string, netto = false, selectedBank = "", financialMonth = { defaultStartDay: 1 }) {
+async function getDashboardData(from: string, to: string, selectedBank = "", financialMonth = { defaultStartDay: 1 }) {
   const year = from.slice(0, 4);
 
   // Monthly chart always shows the last 12 financial months (not affected by date filter)
@@ -201,8 +201,8 @@ async function getDashboardData(from: string, to: string, netto = false, selecte
     Array.from(new Set([...periodRows.map((row) => row.id), ...monthlyRows.map((row) => row.id), ...recentRows.map((row) => row.id)])),
   );
   const splitMap = groupTransactionSplits(splitRows);
-  const periodAllocations = buildSplitAllocations(periodRows, splitMap, { netto });
-  const monthlyAllocations = buildSplitAllocations(monthlyRows, splitMap, { netto });
+  const periodAllocations = buildSplitAllocations(periodRows, splitMap);
+  const monthlyAllocations = buildSplitAllocations(monthlyRows, splitMap);
 
   const totals = periodAllocations
     .filter((row) => !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings")
@@ -380,7 +380,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; month?: string; netto?: string; cmpA?: string; cmpB?: string; cat?: string; acct?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; month?: string; cmpA?: string; cmpB?: string; cat?: string; acct?: string }>;
 }) {
   const sp = await searchParams;
   const cookieStore = await cookies();
@@ -393,7 +393,6 @@ export default async function DashboardPage({
   // date pickers (e.g. Reports), only its own URL query params.
   const { from, to } = getDateRange(sp, financialMonth);
   const label = rangeLabel(from, to);
-  const netto = (sp.netto ?? cookieStore.get("netto")?.value) === "1";
 
   const selectedBank = cookieStore.get("selected_bank")?.value ?? "";
 
@@ -402,7 +401,7 @@ export default async function DashboardPage({
   const isViewingCurrentMonth = from === currentMonthRange.from && to === currentMonthRange.to;
 
   const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory] = await Promise.all([
-    getDashboardData(from, to, netto, selectedBank, financialMonth),
+    getDashboardData(from, to, selectedBank, financialMonth),
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
     getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct, month: sp.month }),
     getBudgetPortalContent(),
@@ -550,13 +549,6 @@ export default async function DashboardPage({
 
   const accountsTotal = bankBalances.reduce((s, b) => s + b.balance, 0) + vermogenRows.reduce((s, a) => s + a.value, 0);
 
-  // Feeds the Wallet hero's tap-to-cycle views (cash flow → total balance → each
-  // account) — same accounts the Accounts card below already lists.
-  const heroAccounts = [
-    ...bankBalances.map((b) => ({ id: `bank-${b.id}`, name: b.displayName ?? b.accountNumber ?? `Bank ${b.id}`, balance: b.balance })),
-    ...vermogenRows.map((a) => ({ id: `vermogen-${a.id}`, name: a.name, balance: a.value })),
-  ];
-
   const activeGoals = data.goals.filter((g) => g.targetAmount > 0);
   const sortedGoals = [...activeGoals]
     .map((g) => ({ ...g, pct: Math.min(100, (g.currentAmount / g.targetAmount) * 100) }))
@@ -586,15 +578,14 @@ export default async function DashboardPage({
           />
         </div>
 
-        {/* Wallet card — gradient hero; tap the amount to cycle cash flow → total
-            balance → each account (see WalletHero). */}
+        {/* Wallet card — gradient hero; tap the amount to toggle cash flow ↔ total
+            balance (see WalletHero). */}
         <WalletHero
           cashflowBalance={data.balance}
           periodLabel={label}
           walletHistory={data.walletHistory}
           totalBalance={accountsTotal}
           accountHistory={accountHistory}
-          accounts={heroAccounts}
         />
 
         {/* Overall budget alert — ring + message, only once spend reaches 80% of the

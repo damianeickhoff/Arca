@@ -225,7 +225,6 @@ function prevMonth(ym: string): string {
 async function getTrendsData(
   from: string,
   to: string,
-  netto: boolean,
   cmpA: string,
   cmpB: string,
   categoryIds?: number[],
@@ -268,7 +267,7 @@ async function getTrendsData(
 
   const splitRows = await getTransactionSplitRows(monthlyRows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(monthlyRows, splitMap, { netto });
+  const allocations = buildSplitAllocations(monthlyRows, splitMap);
 
   const monthlyMap: Record<string, { income: number; expense: number }> = {};
   for (const m of months24) monthlyMap[m] = { income: 0, expense: 0 };
@@ -432,7 +431,8 @@ async function getNetWorthData() {
 
   const totalSavings = goalList.reduce((s, g) => s + g.currentAmount, 0);
   const totalAccounts = accounts.reduce((s, a) => s + a.value, 0) + netWorthBanks.reduce((s, b) => s + b.balance, 0);
-  const totalAssets = totalSavings + totalAccounts;
+  // Money owed to the user (direction 'owed') is a receivable asset, added to net worth.
+  const totalAssets = totalSavings + totalAccounts + (debtSummary?.totalOwed ?? 0);
   const totalDebt = debtSummary?.totalBalance ?? 0;
   const netWorth = totalAssets - totalDebt;
 
@@ -496,7 +496,6 @@ export async function RapportenTab({ from, to, financialMonth }: { from: string;
 export async function TrendsTab({
   from,
   to,
-  netto,
   cmpA,
   cmpB,
   categoryIds,
@@ -506,7 +505,6 @@ export async function TrendsTab({
 }: {
   from: string;
   to: string;
-  netto: boolean;
   cmpA: string;
   cmpB: string;
   categoryIds?: number[];
@@ -516,7 +514,7 @@ export async function TrendsTab({
    * distinction, for the same reason (AnalyticsFilterBar's sticky offset). */
   embedded?: boolean;
 }) {
-  const data = await getTrendsData(from, to, netto, cmpA, cmpB, categoryIds, accounts);
+  const data = await getTrendsData(from, to, cmpA, cmpB, categoryIds, accounts);
   const chartedPeriod = { from, to };
 
   return (

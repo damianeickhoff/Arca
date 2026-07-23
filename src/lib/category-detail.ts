@@ -85,9 +85,10 @@ export interface CategoryDetail {
 }
 
 /** Per-category (rolled up to include children) variable-expense spend, honoring
- * splits, reimbursements, and internal-transfer exclusion — mirrors variableSpend()
- * in budget-overview.ts but scoped to a single category and returning per-transaction
- * allocations instead of just totals, since the detail page needs the raw list too. */
+ * splits and internal-transfer exclusion — mirrors variableSpend() in budget-overview.ts
+ * but scoped to a single category and returning per-transaction allocations instead of
+ * just totals, since the detail page needs the raw list too. Spend is gross;
+ * reimbursements are not netted (a reimbursement receipt shows only in the balance). */
 async function categoryAllocations(from: string, to: string, categoryIds: number[], direction: "income" | "expense" = "expense") {
   const rows = await db.select({
     id: transactions.id,
@@ -105,7 +106,7 @@ async function categoryAllocations(from: string, to: string, categoryIds: number
 
   const splitRows = await getTransactionSplitRows(rows.map((r) => r.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(rows, splitMap, { netto: false });
+  const allocations = buildSplitAllocations(rows, splitMap);
   const accountById = new Map(rows.map((r) => [r.id, r.account]));
 
   const idSet = new Set(categoryIds);
@@ -224,7 +225,11 @@ export async function getCategoryDetail(categoryId: number, from: string, to: st
 
   if (txList.length >= 4) {
     avgPerWeek = spent / Math.max(1, rangeDays / 7);
-    biggestSpent = Math.max(...txList.map((t) => t.amount));
+    // Biggest *single transaction*, summing split parts back together so a split
+    // expense isn't understated by only counting one of its slices.
+    const perTxTotals = new Map<number, number>();
+    for (const a of allocations) perTxTotals.set(a.transactionId, (perTxTotals.get(a.transactionId) ?? 0) + a.amount);
+    biggestSpent = Math.max(...perTxTotals.values());
     const amounts = [0, 0, 0, 0, 0, 0, 0]; // Mon..Sun
     for (const t of txList) {
       const dow = new Date(`${t.date}T00:00:00`).getDay(); // 0=Sun..6=Sat

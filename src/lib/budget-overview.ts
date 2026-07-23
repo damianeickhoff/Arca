@@ -36,8 +36,9 @@ function weeklyPeriodRange(now = new Date()): { from: string; to: string } {
   return { from: toDateStr(from), to: toDateStr(to) };
 }
 
-/** Per-category variable expense spend over [from,to], honoring splits, reimbursements,
- * and internal-transfer exclusion. Transactions matched to a recurring bill/subscription
+/** Per-category variable expense spend over [from,to], honoring splits and
+ * internal-transfer exclusion. Spend is gross — reimbursements are never netted out
+ * (a reimbursement receipt shows only in the account balance). Transactions matched to a recurring bill/subscription
  * are excluded entirely — a recurring bill isn't something you can budget down this
  * month, so it shouldn't eat into the variable-spend budget. Spend is keyed by the
  * category the transaction (or split) was actually assigned to — no parent rollup here;
@@ -63,7 +64,7 @@ async function variableSpend(from: string, to: string, variableIds: Set<number>)
 
   const splitRows = await getTransactionSplitRows(nonRecurringRows.map((r) => r.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(nonRecurringRows, splitMap, { netto: false });
+  const allocations = buildSplitAllocations(nonRecurringRows, splitMap);
 
   const byCategory = new Map<number, number>();
   let total = 0;
@@ -156,7 +157,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
   }).from(transactions)
     .where(and(gte(transactions.date, fmRange.from), lte(transactions.date, fmRange.to), eq(transactions.direction, "income")));
   const incomeSplitRows = await getTransactionSplitRows(incomeRows.map((r) => r.id));
-  const incomeAlloc = buildSplitAllocations(incomeRows, groupTransactionSplits(incomeSplitRows), { netto: false });
+  const incomeAlloc = buildSplitAllocations(incomeRows, groupTransactionSplits(incomeSplitRows));
   const income = incomeAlloc
     .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer)
     .reduce((s, row) => s + row.amount, 0);

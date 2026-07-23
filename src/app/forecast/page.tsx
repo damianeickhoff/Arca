@@ -26,7 +26,6 @@ import { getFinancialMonthConfig, getBudgetStrategy } from "@/lib/app-settings";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
 import { computeNetWorth } from "@/lib/net-worth-snapshots";
-import { getDebtSummary } from "@/lib/debt-calculations";
 import { ScrollStickyHeader } from "@/components/scroll-sticky-header";
 import Link from "next/link";
 import { BudgetTabs } from "@/app/budget/budget-tabs";
@@ -161,7 +160,7 @@ export default async function PrognPage({
   const rangeEnd = offsetMonth(baseMonth, 11);
   const [baseYear, baseMon] = baseMonth.split("-").map(Number);
 
-  const [itemsRaw, overridesRaw, goals, savingsOverridesRaw, allCategories, [monthBudgetTargets, defaultBudgetTargets], variableOverridesRaw, netWorthData, debtSummary] = await Promise.all([
+  const [itemsRaw, overridesRaw, goals, savingsOverridesRaw, allCategories, [monthBudgetTargets, defaultBudgetTargets], variableOverridesRaw, netWorthData] = await Promise.all([
     db.select().from(recurringItems)
       .where(eq(recurringItems.active, true))
       .orderBy(recurringItems.type, recurringItems.name),
@@ -189,7 +188,6 @@ export default async function PrognPage({
       eq(variablePrognoseOverrides.month, baseMonth),
     ),
     computeNetWorth(),
-    getDebtSummary(),
   ]);
 
   const categoriesById = new Map(allCategories.map((c) => [c.id, c]));
@@ -286,13 +284,10 @@ export default async function PrognPage({
 
   const balanceData = buildProjection(items, baseMonth, overrideLookup, 12, (m) => goals.reduce((s, g) => s + getSavingsEffective(g, m), 0), totalVariableBudget);
 
-  // Projected balance anchor — current net worth (same figure as the Net worth tab)
-  // plus what's currently owed to the user (debts with direction "owed"), so the
-  // chart reads as "where my actual balance is headed", not a relative delta from 0.
-  const owedToUser = (debtSummary?.debts ?? [])
-    .filter((d) => d.debt.direction === "owed")
-    .reduce((s, d) => s + d.currentBalance, 0);
-  const balanceAnchor = netWorthData.netWorth + owedToUser;
+  // Projected balance anchor — current net worth (same figure as the Net worth tab).
+  // netWorthData.netWorth already counts money owed to the user (direction "owed") as an
+  // asset (see getDebtSummary / computeNetWorth), so the anchor is just the net worth.
+  const balanceAnchor = netWorthData.netWorth;
   const balanceHistory = [{ date: `${baseMonth}-01`, netWorth: Math.round(balanceAnchor) }];
   const balanceForecast = balanceData.map((d, i) => ({
     date: `${offsetMonth(baseMonth, i + 1)}-01`,

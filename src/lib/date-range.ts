@@ -136,8 +136,13 @@ export function getDateRange(
 ): DateRange {
   const now = new Date();
   if (sp.from && sp.to) return { from: sp.from, to: sp.to };
-  // Legacy month param
-  if (sp.month) return { from: `${sp.month}-01`, to: `${sp.month}-31` };
+  // Legacy month param — use the month's real last day, not a bare "-31" (which only
+  // happened to work because dates are compared as strings).
+  if (sp.month) {
+    const [y, m] = sp.month.split("-").map(Number);
+    const lastDay = new Date(y, m, 0).getDate();
+    return { from: `${sp.month}-01`, to: `${sp.month}-${pad(lastDay)}` };
+  }
   const normalized = normalizeFinancialMonthConfig(config);
   if (normalized.defaultStartDay > 1 || Object.keys(normalized.overrides).length > 0 || normalized.weekendRollback) {
     return financialMonthRange(normalized);

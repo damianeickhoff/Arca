@@ -5,6 +5,7 @@ import {
   IconLock as Lock,
   IconFingerprint as Fingerprint,
   IconBackspace as Delete,
+  IconArrowRight as ArrowRight,
 } from "@tabler/icons-react";
 import { verifyPinAction, getWebAuthnChallengeAction, verifyWebAuthnAssertionAction } from "@/app/actions/app-lock";
 import { cn } from "@/lib/utils";
@@ -37,10 +38,11 @@ interface AppLockGateProps {
   enabled: boolean;
   hasWebAuthn: boolean;
   webAuthnCredentialId: string | null;
+  pinLength: number | null;
   children: React.ReactNode;
 }
 
-export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, children }: AppLockGateProps) {
+export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, pinLength, children }: AppLockGateProps) {
   const [locked, setLocked] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -68,6 +70,7 @@ export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, childr
     <LockScreen
       hasWebAuthn={hasWebAuthn}
       webAuthnCredentialId={webAuthnCredentialId}
+      pinLength={pinLength}
       onUnlock={handleUnlock}
     />
   );
@@ -76,10 +79,12 @@ export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, childr
 function LockScreen({
   hasWebAuthn,
   webAuthnCredentialId,
+  pinLength,
   onUnlock,
 }: {
   hasWebAuthn: boolean;
   webAuthnCredentialId: string | null;
+  pinLength: number | null;
   onUnlock: () => void;
 }) {
   const [pin, setPin] = useState("");
@@ -87,10 +92,17 @@ function LockScreen({
   const [verifying, setVerifying] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
 
+  const MIN_DIGITS = 4;
   const MAX_DIGITS = 6;
+  // When the passcode length is known we size the dots to it and auto-submit once
+  // it's filled. When it's unknown (passcodes set before the length was recorded)
+  // we show the max slots and rely on the confirm button to submit.
+  const knownLength = pinLength;
+  const dotCount = knownLength ?? MAX_DIGITS;
+  const canConfirm = pin.length >= MIN_DIGITS;
 
   async function submitPin(fullPin: string) {
-    if (fullPin.length < 4) return;
+    if (fullPin.length < MIN_DIGITS) return;
     setVerifying(true);
     setError(null);
     const result = await verifyPinAction(fullPin);
@@ -108,8 +120,10 @@ function LockScreen({
     const next = (pin + d).slice(0, MAX_DIGITS);
     setPin(next);
     setError(null);
-    if (next.length >= 4) {
-      // Auto-submit at 4+ digits after a short delay so the user sees the fill
+    // Only auto-submit when we know exactly how long the code is; otherwise the
+    // user confirms manually so 5- and 6-digit codes aren't cut off at 4.
+    if (knownLength !== null && next.length === knownLength) {
+      // Short delay so the user sees the final dot fill before it submits.
       setTimeout(() => submitPin(next), 80);
     }
   }
@@ -182,9 +196,10 @@ function LockScreen({
           </div>
         </div>
 
-        {/* PIN dots — 4 dots, auto-submit fires when all 4 are filled */}
+        {/* PIN dots — sized to the passcode length (4–6). When the length is
+            known, auto-submit fires once every dot is filled. */}
         <div className="flex items-center gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: dotCount }).map((_, i) => (
             <div
               key={i}
               className={cn(
@@ -236,6 +251,19 @@ function LockScreen({
             <Delete className="size-5" />
           </button>
         </div>
+
+        {/* Confirm — only needed when the passcode length is unknown, since those
+            codes don't auto-submit. Lets 5- and 6-digit codes be entered fully. */}
+        {knownLength === null && (
+          <button
+            onClick={() => submitPin(pin)}
+            disabled={!canConfirm || verifying}
+            className="h-14 w-full rounded-2xl bg-foreground text-background text-base font-medium flex items-center justify-center gap-2 active:scale-[0.99] transition-all disabled:opacity-40"
+          >
+            <span>Ontgrendelen</span>
+            <ArrowRight className="size-5" />
+          </button>
+        )}
       </div>
     </div>
   );

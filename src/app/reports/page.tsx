@@ -13,7 +13,7 @@ import { AnalyticsTab } from "./analytics-tab";
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; tab?: string; netto?: string; cmpA?: string; cmpB?: string; cat?: string; acct?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; tab?: string; cmpA?: string; cmpB?: string; cat?: string; acct?: string }>;
 }) {
   const sp = await searchParams;
   const cookieStore = await cookies();
@@ -69,7 +69,7 @@ export default async function ReportsPage({
       </div>
 
       {activeTab === "rapporten" && <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} />}
-      {activeTab === "trends" && <TrendsTab from={from} to={to} netto={(sp.netto ?? cookieStore.get("netto")?.value) === "1"} cmpA={sp.cmpA ?? ""} cmpB={sp.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} />}
+      {activeTab === "trends" && <TrendsTab from={from} to={to} cmpA={sp.cmpA ?? ""} cmpB={sp.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} />}
       {activeTab === "vermogen" && <VermogenTab />}
     </div>
   );

@@ -8,7 +8,6 @@ import {
   IconCoinEuroFilled
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { cookies } from "next/headers";
 import { getFinancialMonthConfig, getBudgetStrategy, getBudgetRollover } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
 import { getBudgetData } from "@/lib/budget-data";
@@ -22,13 +21,11 @@ import { ScrollStickyHeader } from "@/components/scroll-sticky-header";
 export default async function BudgetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; nodig?: string; willen?: string; sparen?: string; netto?: string }>;
+  searchParams: Promise<{ month?: string; nodig?: string; willen?: string; sparen?: string }>;
 }) {
   const sp = await searchParams;
-  const cookieStore = await cookies();
   const [financialMonth, strategy, rolloverEnabled] = await Promise.all([getFinancialMonthConfig(), getBudgetStrategy(), getBudgetRollover()]);
   const month = sp.month ?? currentFinancialMonth(financialMonth);
-  const netto = (sp.netto ?? cookieStore.get("netto")?.value) === "1";
   const { from: rangeStart, to: rangeEnd } = financialMonthRangeByMonth(month, financialMonth);
   function fmtDisplayDate(d: string) {
     return new Date(d + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -40,7 +37,7 @@ export default async function BudgetPage({
   const sparenPct = Math.max(0, Math.min(100, parseInt(sp.sparen ?? String(strategy.sparen))));
 
   const [data, billStatuses] = await Promise.all([
-    getBudgetData(month, financialMonth, netto, rolloverEnabled),
+    getBudgetData(month, financialMonth, rolloverEnabled),
     getBillStatuses(month, financialMonth),
   ]);
   const { overRows: overBudgetRows, nearRows: nearBudgetRows } = classifyBudgetRows(

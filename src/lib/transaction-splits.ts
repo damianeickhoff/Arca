@@ -113,31 +113,27 @@ export function summarizeSplitCategories(names: Array<string | null | undefined>
   return uniqueNames.join(" + ");
 }
 
+// Expands each transaction into one allocation per split (or a single allocation when
+// unsplit), always at the transaction's gross amount (correctedAmount if set, else amount).
+// Reimbursements are never netted out here — spend is reported gross everywhere; a
+// reimbursement receipt shows only in the account balance, not as a reduction of spend.
 export function buildSplitAllocations<
   TBase extends SplitAwareTransactionBase,
   TSplit extends TransactionSplitRow,
->(transactions: TBase[], splitMap: Map<number, TSplit[]>, options?: { netto?: boolean }) {
+>(transactions: TBase[], splitMap: Map<number, TSplit[]>) {
   const allocations: SplitAwareAllocation[] = [];
 
   for (const transaction of transactions) {
     const splits = splitMap.get(transaction.id) ?? [];
     const baseTotal = getTransactionSplitTotal(transaction.amount, transaction.correctedAmount);
-    const targetTotal = options?.netto
-      ? Math.max(0, roundToCents(baseTotal - (transaction.reimbursedAmount ?? 0)))
-      : baseTotal;
 
     if (splits.length > 0) {
-      const scaledAmounts = options?.netto
-        ? allocateByCounts(targetTotal, splits.map((split) => split.amount))
-        : splits.map((split) => roundToCents(split.amount));
-
-      for (const [index, split] of splits.entries()) {
-        const amount = scaledAmounts[index] ?? 0;
+      for (const split of splits) {
         allocations.push({
           transactionId: transaction.id,
           date: transaction.date,
           direction: transaction.direction,
-          amount,
+          amount: roundToCents(split.amount),
           isReimbursement: transaction.isReimbursement ?? false,
           isInternalTransfer: transaction.isInternalTransfer ?? false,
           categoryId: split.categoryId,
@@ -154,7 +150,7 @@ export function buildSplitAllocations<
       transactionId: transaction.id,
       date: transaction.date,
       direction: transaction.direction,
-      amount: targetTotal,
+      amount: baseTotal,
       isReimbursement: transaction.isReimbursement ?? false,
       isInternalTransfer: transaction.isInternalTransfer ?? false,
       categoryId: transaction.categoryId ?? null,

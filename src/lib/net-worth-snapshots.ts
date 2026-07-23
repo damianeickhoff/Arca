@@ -30,7 +30,9 @@ export async function computeNetWorth() {
     + savingsGoalTypeRows.reduce((s, g) => s + g.currentAmount, 0);
   const totalAccounts = accounts.reduce((s, a) => s + a.value, 0)
     + bankBalances.filter((b) => b.includeInNetWorth).reduce((s, b) => s + b.balance, 0);
-  const totalAssets = totalSavings + totalAccounts;
+  // Money owed to the user (direction 'owed') is a receivable asset, so it adds to net worth.
+  const owedToUser = debtSummary?.totalOwed ?? 0;
+  const totalAssets = totalSavings + totalAccounts + owedToUser;
   const totalDebt = debtSummary?.totalBalance ?? 0;
   const netWorth = totalAssets - totalDebt;
   return { totalSavings, totalAccounts, totalAssets, totalDebt, netWorth };
