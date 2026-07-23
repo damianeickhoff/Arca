@@ -113,7 +113,7 @@ export function CategoryFilterMenu({
           "flex items-center justify-center transition-colors cursor-pointer shrink-0",
           triggerClassName ??
             cn(
-              "size-9 rounded-full",
+              "size-9 rounded-full bg-black",
               isFiltered ? "bg-card text-primary-foreground hover:bg-card" : "bg-card text-foreground hover:bg-card",
             ),
         )}
@@ -124,7 +124,6 @@ export function CategoryFilterMenu({
         <div className="flex items-center gap-2.5 px-2 py-1.5 text-sm font-medium">
           <Filter className="size-4.5" />
           <span className="flex-1">Filter</span>
-          <ChevronDown className="size-4.5 text-foreground/40" />
         </div>
         <DropdownMenuSeparator />
         <FilterMenuItem icon={<Cart className="size-4.5" />} label="Only needs" active={budgetType === "nodig"} onClick={() => onBudgetTypeChange(budgetType === "nodig" ? "" : "nodig")} />
@@ -178,10 +177,8 @@ export function CategorySearchBar({
           placeholder="Search"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          // Don't let the sheet's focus handler scroll this into center and drag the
-          // list up — it's already pinned above the keyboard (see dialog.tsx onFocusIn).
           data-no-keyboard-scroll
-          className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-foreground/5 focus:outline-none"
+          className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-white/7 border border-foreground/10 backdrop-blur-xl backdrop-saturate-150 focus:outline-none"
         />
       </div>
       <CategoryClient action="add" variant="icon" categories={categories} />
@@ -257,7 +254,7 @@ function FloatingSearchBar({
     >
       <div
         ref={barRef}
-        className="pointer-events-auto flex items-center h-13 rounded-full pl-4 pr-2 bg-background/70 border border-foreground/10 shadow-overlay backdrop-blur-xl backdrop-saturate-180"
+        className="pointer-events-auto flex items-center h-13 rounded-full pl-4 pr-2 bg-white/7 border border-foreground/10 backdrop-blur-xl backdrop-saturate-180"
       >
         <Search className="size-5 text-foreground/40 shrink-0" />
         <input
@@ -372,7 +369,7 @@ export function CategoryGrid({
           {topLevel.map((cat) => {
             const children = childrenByParentId.get(cat.id) ?? [];
             return (
-              <div key={cat.id} className="rounded-xl bg-card p-1.5">
+              <div key={cat.id} className="rounded-xl bg-[var(--dialog-content-background)] p-1.5">
                 <CategoryRow
                   label={cat.name}
                   iconKey={cat.icon}
@@ -414,7 +411,7 @@ export function CategoryGrid({
           search={search}
           onSearchChange={setSearch}
           categories={categories}
-          className="shrink-0 pt-2 border-t border-foreground/5"
+          className="shrink-0"
         />
       )}
     </div>
@@ -488,7 +485,7 @@ export function CategoryPicker({
   // On mobile the filter button sits in the sheet's header row next to the close
   // button, so it takes the close button's styling.
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: isMobile ? "size-11 rounded-full bg-white/80 shadow-lg text-foreground" : undefined,
+    triggerClassName: isMobile ? "size-11 rounded-full bg-white/7 text-foreground" : undefined,
   });
 
   // Hide the mobile bottom nav while the picker sheet is open.

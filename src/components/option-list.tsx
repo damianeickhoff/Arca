@@ -27,7 +27,7 @@ export function OptionList<T extends string>({
           className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors disabled:opacity-50 disabled:cursor-default"
         >
           <span className="flex-1 font-medium">{o.label}</span>
-          {value === o.value && <Check className="size-5 text-primary shrink-0" />}
+          {value === o.value && <Check className="size-5 text-white shrink-0" />}
         </button>
       ))}
     </div>

@@ -44,14 +44,14 @@ export function authBackgroundStyle(
   const { boxHeight, fadeStop = 45 } = options ?? {};
 
   return {
-    backgroundColor: "#000",
+    backgroundColor: "var(--background)",
     backgroundImage: `
       linear-gradient(
         to bottom,
         rgba(0, 0, 0, 0) 0%,
         rgba(0, 0, 0, 0.35) ${fadeStop * (20 / 45)}%,
         rgba(0, 0, 0, 0.507) ${fadeStop * (35 / 45)}%,
-        #000000 ${fadeStop}%
+        var(--background) ${fadeStop}%
       ),
       linear-gradient(
         ${preset.angle}deg,

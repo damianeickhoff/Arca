@@ -201,7 +201,7 @@ export function DebtEditDialog({
 
               {subpage === "period" && (
                 <div className="pt-2">
-                  <DatePicker granularity="month" value={startMonth} onChange={(v) => { setStartMonth(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[#292a2d]/35" />
+                  <DatePicker granularity="month" value={startMonth} onChange={(v) => { setStartMonth(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
                 </div>
               )}
 
@@ -211,7 +211,7 @@ export function DebtEditDialog({
 
               {subpage === "originalAmount" && (
                 <div className="space-y-3">
-                  <p className="text-sm text-foreground/50 -mb-2">
+                  <p className="text-sm text-foreground/50 -mb-2 text-center">
                     Optional — only needed if tracking started after some of this debt was already paid off. Leave blank to use the starting balance as the total.
                   </p>
                   <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
@@ -231,18 +231,27 @@ export function DebtEditDialog({
               )}
 
               {subpage === "iconColor" && (
-                <div className="flex items-center gap-6 pt-2">
-                  <div className="flex-1">
-                    <PickerField label="Icon">
-                      <IconPicker value={icon} onChange={setIcon} previewColor={color} />
-                    </PickerField>
-                  </div>
-                  <div className="flex-1">
-                    <PickerField label="Color">
-                      <ColorPicker value={color} onChange={setColor} previewIcon={icon} />
-                    </PickerField>
-                  </div>
+              <div className="space-y-3">
+                <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
+                  <PickerField label="Icon">
+                    <IconPicker
+                      value={icon}
+                      onChange={setIcon}
+                      previewColor={color}
+                    />
+                  </PickerField>
                 </div>
+
+                <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
+                  <PickerField label="Color">
+                    <ColorPicker
+                      value={color}
+                      onChange={setColor}
+                      previewIcon={icon}
+                    />
+                  </PickerField>
+                </div>
+              </div>
               )}
           </SubSheet>
         )}
@@ -271,7 +280,7 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[#292a2d]/35 px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
       <span className="text-foreground/40 shrink-0">{icon}</span>
       <span className="flex-1 font-medium text-foreground">{label}</span>
       <span className="flex items-center gap-1.5 text-foreground/60 min-w-0">
@@ -284,11 +293,11 @@ function Row({
 
 function OptionList({ options, value, onSelect }: { options: { value: string; label: string }[]; value: string; onSelect: (v: string) => void }) {
   return (
-    <div className="rounded-2xl bg-[#292a2d]/35 overflow-hidden divide-y divide-border/50">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
       {options.map((o) => (
         <button key={o.value} type="button" onClick={() => onSelect(o.value)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
           <span className="flex-1 font-medium">{o.label}</span>
-          {value === o.value && <Check className="size-5 text-primary shrink-0" />}
+          {value === o.value && <Check className="size-5 text-white/50 shrink-0" />}
         </button>
       ))}
     </div>

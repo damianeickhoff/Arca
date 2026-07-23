@@ -40,7 +40,7 @@ export function SubSheet({
       className="fixed inset-0 z-[70] flex flex-col bg-[#1c1c1e] backdrop-blur-xl rounded-t-2xl overflow-hidden transition-transform duration-300 ease-out"
       style={{ transform: visible ? "translateX(0)" : "translateX(100%)" }}
     >
-      <div className="relative flex items-center justify-center shrink-0 px-4 min-h-11 pt-[24px] mb-5">
+      <div className="relative flex items-center justify-center shrink-0 px-4 min-h-11 pt-[30px] mb-5">
         <h2 className="font-heading text-lg font-semibold text-foreground truncate px-12">{title}</h2>
         {/* Pinned via an explicit top offset (matching pt-[24px] above) rather than
             flex centering — see the matching comment in dialog.tsx's header row for why. */}
@@ -48,7 +48,7 @@ export function SubSheet({
           type="button"
           onClick={onClose}
           aria-label="Back"
-          className="absolute top-[24px] size-11 left-[21px] rounded-full bg-white/7 backdrop-blur-lg shadow-lg flex items-center justify-center text-foreground transition-colors"
+          className="absolute top-[20px] size-11 left-[21px] rounded-full bg-white/7 backdrop-blur-lg shadow-lg flex items-center justify-center text-foreground transition-colors"
         >
           <ChevronLeft className="size-5" />
         </button>

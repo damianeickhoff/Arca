@@ -230,7 +230,7 @@ function LockScreen({
             <button
               onClick={tryBiometric}
               disabled={biometricLoading || verifying}
-              className="h-14 rounded-2xl bg-foreground/5 flex items-center justify-center text-foreground/50 hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
+              className="h-14 rounded-2xl bg-card flex items-center justify-center text-foreground/50 hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
               aria-label="Biometric verification"
             >
               <Fingerprint className={cn("size-6", biometricLoading && "animate-pulse")} />
@@ -245,7 +245,7 @@ function LockScreen({
           <button
             onClick={pressDelete}
             disabled={pin.length === 0 || verifying}
-            className="h-14 rounded-2xl bg-foreground/5 flex items-center justify-center text-foreground/50 hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
+            className="h-14 rounded-2xl bg-card flex items-center justify-center text-foreground/50 hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
             aria-label="Delete"
           >
             <Delete className="size-5" />
@@ -274,7 +274,7 @@ function NumKey({ label, onPress, disabled }: { label: string; onPress: () => vo
     <button
       onClick={onPress}
       disabled={disabled}
-      className="h-14 rounded-2xl bg-foreground/5 text-xl font-medium hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
+      className="h-14 rounded-2xl bg-card text-xl font-medium hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
     >
       {label}
     </button>

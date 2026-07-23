@@ -142,7 +142,7 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
       </div>
 
       {/* Key figures */}
-      <div className="rounded-xl bg-[#292a2d]/35 backdrop-blur-xs">
+      <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
         {debt.originalAmount != null && debt.originalAmount > debt.startingBalance ? (
           <>
             <DetailRow label="Original amount" value={formatEur(debt.originalAmount)} />
@@ -158,7 +158,7 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
       </div>
 
       {debt.notes && (
-        <div className="rounded-2xl bg-[#292a2d]/35 backdrop-blur-xs">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
           <DetailRow label="Notes" value={debt.notes} />
         </div>
       )}
@@ -176,7 +176,7 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
             <ChevronDown className={cn("size-4 text-foreground/40 transition-transform", scheduleOpen && "rotate-180")} />
           </button>
           {scheduleOpen && (
-            <div className="rounded-xl bg-[#292a2d]/35 backdrop-blur-xs divide-y divide-border/50">
+            <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs divide-y divide-border/50">
               {schedule.map((entry, i) => (
                 <DetailRow key={i} label={fmtShortMonth(entry.date)} value={formatEur(entry.amount)} />
               ))}
@@ -193,7 +193,7 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
           </div>
           <div className="space-y-2">
             {linkedBills.map((bill: RecurringItem) => (
-              <div key={bill.id} className="flex items-center gap-3 rounded-2xl bg-[#292a2d]/35 px-4 py-3">
+              <div key={bill.id} className="flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
                 <Icon iconKey={bill.icon} color={bill.iconColor} size="lg" round />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate leading-tight">{bill.name}</p>

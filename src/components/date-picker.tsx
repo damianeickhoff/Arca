@@ -330,7 +330,7 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
       className={cn(
         "h-12 w-full rounded-lg px-3.5 text-sm mt-1 mb-2 flex items-center gap-2.5 outline-none transition-colors focus-visible:ring-1 cursor-pointer",
         dark
-          ? "bg-white/10 focus-visible:border-white/40 focus-visible:ring-white/20"
+          ? "bg-white/7 focus-visible:border-white/40 focus-visible:ring-white/20"
           : "bg-foreground/3 focus-visible:border-ring focus-visible:ring-foreground/15",
         triggerClassName,
       )}

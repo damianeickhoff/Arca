@@ -423,7 +423,7 @@ function CategorySubpage({ cats, value, onSelect }: { cats: Category[]; value: s
     <div className="space-y-4 pt-1">
       <button type="button" onClick={() => onSelect("")} className="w-full flex items-center gap-3 rounded-2xl bg-[#2e2e30] px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
         <span className="flex-1 font-medium text-foreground/60">No category</span>
-        {!value && <Check className="size-5 text-primary shrink-0" />}
+        {!value && <Check className="size-5 text-white/70 shrink-0" />}
       </button>
       {topLevel.map((parent) => {
         const children = childrenByParentId.get(parent.id) ?? [];
@@ -436,7 +436,7 @@ function CategorySubpage({ cats, value, onSelect }: { cats: Category[]; value: s
                 <button key={c.id} type="button" onClick={() => onSelect(String(c.id))} className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-foreground/[0.04] transition-colors">
                   <Icon iconKey={c.icon} color={c.color} size="sm" round />
                   <span className="flex-1 font-medium truncate">{c.name}</span>
-                  {value === String(c.id) && <Check className="size-5 text-primary shrink-0" />}
+                  {value === String(c.id) && <Check className="size-5 text-white/70 shrink-0" />}
                 </button>
               ))}
             </div>

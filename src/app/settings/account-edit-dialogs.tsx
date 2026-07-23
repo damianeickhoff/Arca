@@ -93,7 +93,7 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[#292a2d]/35 px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
       <span className="text-foreground/40 shrink-0">{icon}</span>
       <span className="flex-1 font-medium text-foreground">{label}</span>
       <span className="flex items-center gap-1.5 text-foreground/60 min-w-0">
@@ -106,11 +106,11 @@ function Row({
 
 function OptionList({ options, value, onSelect }: { options: { value: string; label: string }[]; value: string; onSelect: (v: string) => void }) {
   return (
-    <div className="rounded-2xl bg-[#292a2d]/35 overflow-hidden divide-y divide-border/50">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
       {options.map((o) => (
         <button key={o.value} type="button" onClick={() => onSelect(o.value)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
           <span className="flex-1 font-medium">{o.label}</span>
-          {value === o.value && <Check className="size-5 text-primary shrink-0" />}
+          {value === o.value && <Check className="size-5 text-white/70 shrink-0" />}
         </button>
       ))}
     </div>
@@ -154,7 +154,7 @@ function NetWorthToggleRow({ checked, onChange }: { checked: boolean; onChange: 
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="w-full flex items-center gap-3 rounded-2xl bg-[#292a2d]/35 px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors"
+      className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors"
     >
       <span className="text-foreground/40 shrink-0"><Scale className="size-5" /></span>
       <span className="flex-1 font-medium text-foreground">Include in net worth</span>
@@ -358,7 +358,7 @@ export function BankEditDialog({
         <div className="space-y-3 px-5 pb-2">
           {/* Name input + color swatch, matching the account edit sheet. */}
           <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[#292a2d]/35 border-0 px-4 text-base" />
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
             {!(icon && isBrandIcon(icon)) && (
               <ColorPicker value={color} onChange={setColor} inline />
             )}
@@ -378,7 +378,7 @@ export function BankEditDialog({
             )}
             {subpage === "expiration" && (
               <div className="pt-2">
-                <DatePicker value={expiration} onChange={(v) => { setExpiration(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[#292a2d]/35" />
+                <DatePicker value={expiration} onChange={(v) => { setExpiration(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
               </div>
             )}
             {subpage === "balance" && (
@@ -533,7 +533,7 @@ export function VermogenEditDialog({
 
         <div className="space-y-3 px-5 pb-2">
           <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[#292a2d]/35 border-0 px-4 text-base" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
             <ColorPicker value={color} onChange={setColor} inline />
           </div>
 
@@ -557,7 +557,7 @@ export function VermogenEditDialog({
             )}
             {subpage === "lastUpdated" && (
               <div className="pt-2">
-                <DatePicker value={lastUpdated} onChange={(v) => { setLastUpdated(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[#292a2d]/35" />
+                <DatePicker value={lastUpdated} onChange={(v) => { setLastUpdated(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
               </div>
             )}
             {subpage === "notes" && (
@@ -715,7 +715,7 @@ export function AddAccountDialog({
 
         <div className="space-y-3 px-5 pb-2">
           <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[#292a2d]/35 border-0 px-4 text-base" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
             {!(icon && isBrandIcon(icon)) && (
               <ColorPicker value={color} onChange={setColor} inline />
             )}

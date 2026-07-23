@@ -14,7 +14,7 @@ import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/am
 import { currencySymbol } from "@/lib/format";
 
 const digitKey =
-  "flex items-center justify-center rounded-2xl h-14 text-2xl font-medium text-foreground bg-foreground/5 active:bg-foreground/10 transition-colors select-none";
+  "flex items-center justify-center rounded-2xl h-14 text-2xl font-medium text-foreground bg-[var(--dialog-content-background)] active:bg-foreground/10 transition-colors select-none";
 const opKey =
   "flex items-center justify-center rounded-2xl h-14 text-foreground/80 bg-foreground/[0.07] active:bg-foreground/15 transition-colors select-none";
 

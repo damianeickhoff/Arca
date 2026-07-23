@@ -70,7 +70,7 @@ export function SavingsGoalDetailDialog({
                 type="button"
                 onClick={() => setEditOpen(true)}
                 aria-label="Edit"
-                className="size-11 rounded-full bg-foreground/10 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                className="size-11 rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
               >
                 <Pencil className="size-4.5" />
               </button>
@@ -79,7 +79,7 @@ export function SavingsGoalDetailDialog({
                 onClick={remove}
                 disabled={deleting}
                 aria-label="Delete"
-                className="size-11 rounded-full bg-foreground/10 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                className="size-11 rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
               >
                 <Trash2 className="size-4.5" />
               </button>
@@ -129,7 +129,7 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
       </div>
 
       {/* Key figures */}
-      <div className="rounded-2xl p-2 bg-[#292a2d59]">
+      <div className="rounded-2xl p-2 bg-[var(--dialog-content-background)]">
         <DetailRow label="Target amount" value={formatEur(goal.targetAmount)} />
         <DetailRow label="Monthly contribution" value={goal.monthlyContribution != null ? formatEur(goal.monthlyContribution) : "—"} />
         {goal.startDate && <DetailRow label="Start date" value={fmtDay(goal.startDate)} />}
@@ -139,7 +139,7 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
       </div>
 
       {category && (
-        <div className="rounded-2xl bg-[#292a2d]/35">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)]">
           <DetailRow label="Category" valueIcon={<Icon iconKey={category.icon} color={category.color} size="xs" round />} value={category.name} />
         </div>
       )}
