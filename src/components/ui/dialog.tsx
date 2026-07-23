@@ -311,7 +311,7 @@ function DialogContent({
                 <button
 
                   className={cn(
-                    "absolute size-11 left-[21px] rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground transition-colors",
+                    "absolute size-11 left-[21px] rounded-full bg-white/60 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground transition-colors",
                     fullHeight ? "top-[calc(var(--sat)+20px)]" : "top-2",
                   )}
                   aria-label="Close"

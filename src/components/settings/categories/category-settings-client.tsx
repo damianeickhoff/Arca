@@ -216,7 +216,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           type="button"
           onClick={close}
           aria-label="Back"
-          className="size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
+          className="size-11 rounded-full bg-white/60 dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
         >
           <ChevronLeft className="size-5 text-foreground" />
         </button>
@@ -225,7 +225,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           onClick={remove}
           disabled={loading}
           aria-label="Delete category"
-          className="size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0 disabled:opacity-50"
+          className="size-11 rounded-full bg-white/60 dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0 disabled:opacity-50"
         >
           <Trash2 className="size-5 text-foreground" />
         </button>
@@ -312,7 +312,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
               )}
               {rules.map((rule) => (
                 <div key={rule.id}>
-                  <div className="flex items-center justify-between bg-black/80 gap-2 m-1 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between bg-[var(--dialog-content-background)] gap-2 m-1 rounded-xl px-4 py-3">
                     <div className="text-sm text-foreground/60 min-w-0">
                       {rule.namePattern && (
                         <span>
@@ -388,7 +388,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
       <div
         className={cn(
           "fixed bottom-0 inset-x-0 px-4 pb-[calc(1rem+var(--sab))] pt-3 bg-gradient-to-t to-transparent",
-          onClose ? "from-[#1c1c1e] via-[#1c1c1e]" : "from-background via-background",
+          onClose ? "from-bg-[var(--dialog-background)] via-bg-[var(--dialog-background)]" : "from-background via-background",
         )}
       >
         <Button onClick={save} disabled={loading || !form.name} className="w-full h-12">

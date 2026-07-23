@@ -5,7 +5,7 @@ export function ToggleSwitch({ on }: { on: boolean }) {
     <span
       className={cn(
         "relative inline-flex h-7 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer",
-        on ? "bg-primary" : "bg-foreground/15"
+        on ? "bg-black" : "bg-foreground/15"
       )}
     >
       <span

@@ -73,7 +73,7 @@ function UserRow({
   }
 
   return (
-    <div className="rounded-2xl bg-[#2e2e30] px-4 py-3.5">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3.5">
       <div className="flex items-center gap-4">
         <span className="flex size-12 items-center justify-center rounded-2xl bg-blue-600 text-white shrink-0">
           <IconUserFilled className="size-6" />

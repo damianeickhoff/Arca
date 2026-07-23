@@ -112,7 +112,7 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
                   onClick={() => startEdit(rule)}
                   className={cn(
                     "w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 text-left active:scale-[0.99] transition-transform",
-                    panelHeader ? "bg-[#2e2e30]" : "bg-card",
+                    panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-card",
                   )}
                 >
                   <span className="size-12 shrink-0">
@@ -130,7 +130,7 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
             </div>
           </section>
         ) : (
-          <div className={cn("rounded-2xl py-16 text-center text-muted-foreground", panelHeader ? "bg-[#2e2e30]" : "bg-card")}>
+          <div className={cn("rounded-2xl py-16 text-center text-muted-foreground", panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-card")}>
             <p className="text-sm">No rules yet</p>
           </div>
         )}

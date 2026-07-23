@@ -382,7 +382,7 @@ export function CategoryClient(props: Props) {
                 <div className="px-3 pb-3 space-y-2">
                   {!isEdit && (
                     <p className="text-sm text-foreground/60 mb-5">
-                      Regels worden aangemaakt zodra je de categorie opslaat.
+                      Rules are created when you save the category.
                     </p>
                   )}
                   {rules.length > 0 && (
@@ -432,7 +432,7 @@ export function CategoryClient(props: Props) {
 
                   <Button size="lg" variant="default" onClick={openAddRule} className="w-full">
                     <Plus className="size-4 mr-1" />
-                    Add rule
+                      Add rule
                   </Button>
                 </div>
               )}
@@ -441,7 +441,7 @@ export function CategoryClient(props: Props) {
             {/* Add rule inline panel */}
             {addRuleOpen && (
               <div className="rounded-lg border border-foreground/15 p-3 space-y-2 bg-foreground/[0.02]">
-                <p className="text-sm font-medium">New rule</p>
+                <p className="text-md font-medium">New rule</p>
                 <Field label="Name">
                   <Input
                     placeholder="Name (optioneel)"
@@ -457,9 +457,9 @@ export function CategoryClient(props: Props) {
                   <Button size="lg" variant="default" onClick={submitAddRule}
                     disabled={ruleLoading || (!newRule.namePattern && !newRule.bankId)}
                     className="flex-1">
-                    <Check className="size-4 mr-1" />Add
+                    Add
                   </Button>
-                  <Button size="lg" variant="ghost" onClick={() => setAddRuleOpen(false)} className="flex-1">Cancel</Button>
+                  <Button size="lg" variant="destructive" onClick={() => setAddRuleOpen(false)} className="flex-1">Cancel</Button>
                 </div>
               </div>
             )}
@@ -481,7 +481,7 @@ export function CategoryClient(props: Props) {
                 <BankPicker banks={banks} value={editForm.bankId} onChange={(v) => setEditForm((f) => ({ ...f, bankId: v }))} />
                 <div className="flex gap-2 pt-1">
                   <Button size="lg" variant="default" onClick={() => editingRule !== null && saveEdit(editingRule)} className="flex-1">
-                    <Check className="size-4 mr-1" />Save
+                    Save
                   </Button>
                   <Button size="lg" variant="ghost" onClick={() => setEditingRule(null)} className="flex-1">Cancel</Button>
                 </div>
@@ -527,8 +527,8 @@ function MatchTypePicker({
           onClick={() => onChange(opt.value)}
           className={`flex-1 px-2 py-2.5 transition-colors pb-2 ${
             value === opt.value
-              ? "bg-foreground text-primary-foreground font-medium"
-              : "bg-foreground/3 text-foreground/60 hover:bg-foreground/10"
+              ? "bg-foreground text-background font-bold text-md"
+              : "bg-[var(--dialog-content-background)] text-foreground/60 hover:bg-foreground/10"
           } ${opt.value !== "contains" ? "border-l border-foreground/10" : ""}`}
         >
           {opt.label}
@@ -553,8 +553,8 @@ function DirectionPicker({ value, onChange }: { value: string; onChange: (v: str
           onClick={() => onChange(opt.value)}
           className={`flex-1 px-2 py-2.5 transition-colors ${
             value === opt.value
-              ? "bg-foreground text-primary-foreground font-medium"
-              : "bg-background text-foreground/60 hover:bg-foreground/10"
+              ? "bg-foreground text-background font-bold text-md"
+              : "bg-[var(--dialog-content-background)] text-foreground/60 hover:bg-foreground/10"
           } ${i > 0 ? "border-l border-foreground/10" : ""}`}
         >
           {opt.label}
@@ -586,7 +586,7 @@ function BankPicker({ banks, value, onChange }: { banks: Bank[]; value: string; 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm font-medium text-muted-foreground">{label}</label>
       {children}
     </div>
   );

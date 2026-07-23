@@ -296,7 +296,7 @@ export function RecurringClient(props: Props) {
                   <div className="space-y-5 pt-2">
                     <div>
                       <p className="text-sm font-medium mb-1.5">Start date</p>
-                      <DatePicker value={form.startDate || todayISO()} onChange={(v) => set("startDate", v)} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[#2e2e30]" />
+                      <DatePicker value={form.startDate || todayISO()} onChange={(v) => set("startDate", v)} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
                       <p className="text-xs text-foreground/50 mt-1.5">This becomes the due date of the recurrence.</p>
                     </div>
                     <div>
@@ -308,7 +308,7 @@ export function RecurringClient(props: Props) {
                       </div>
                       {form.endDate ? (
                         <>
-                          <DatePicker value={form.endDate} onChange={(v) => set("endDate", v)} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[#2e2e30]" />
+                          <DatePicker value={form.endDate} onChange={(v) => set("endDate", v)} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
                           <p className="text-xs text-foreground/50 mt-1.5">After this date the recurrence is automatically disabled.</p>
                         </>
                       ) : (
@@ -405,7 +405,7 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[#2e2e30] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
       <span className="text-foreground/40 shrink-0">{icon}</span>
       <span className="flex-1 font-medium text-foreground">{label}</span>
       <span className="flex items-center gap-1.5 text-foreground/60 min-w-0">
@@ -421,7 +421,7 @@ function CategorySubpage({ cats, value, onSelect }: { cats: Category[]; value: s
   const { topLevel, childrenByParentId } = groupCategoriesByParent(cats);
   return (
     <div className="space-y-4 pt-1">
-      <button type="button" onClick={() => onSelect("")} className="w-full flex items-center gap-3 rounded-2xl bg-[#2e2e30] px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
+      <button type="button" onClick={() => onSelect("")} className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
         <span className="flex-1 font-medium text-foreground/60">No category</span>
         {!value && <Check className="size-5 text-white/70 shrink-0" />}
       </button>
@@ -431,7 +431,7 @@ function CategorySubpage({ cats, value, onSelect }: { cats: Category[]; value: s
         return (
           <section key={parent.id}>
             <h3 className="text-sm font-medium text-foreground/45 px-1 mb-2">{parent.name}</h3>
-            <div className="rounded-2xl bg-[#2e2e30] overflow-hidden divide-y divide-border/50">
+            <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
               {rows.map((c) => (
                 <button key={c.id} type="button" onClick={() => onSelect(String(c.id))} className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-foreground/[0.04] transition-colors">
                   <Icon iconKey={c.icon} color={c.color} size="sm" round />

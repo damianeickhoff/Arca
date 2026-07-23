@@ -51,7 +51,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
           <button
             type="button"
             onClick={() => setEditMode((m) => !m)}
-            className="px-4 h-9 rounded-full bg-foreground/10 text-sm font-medium text-foreground active:scale-[0.97] transition-transform"
+            className="px-4 h-9 rounded-full bg-white/60 dark:bg-white/7 text-sm font-medium text-foreground active:scale-[0.97] transition-transform"
           >
             {editMode ? "Done" : "Edit"}
           </button>
@@ -63,7 +63,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
           searchResults.length === 0 ? (
             <EmptyState label="No categories found" />
           ) : (
-            <div className="rounded-2xl bg-[#2e2e30] overflow-hidden divide-y divide-border/50">
+            <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
               {searchResults.map((cat) => (
                 <CategoryRow key={cat.id} cat={cat} categories={categories} onSelect={openDetail} />
               ))}
@@ -90,7 +90,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
                         </button>
                       )}
                     </div>
-                    <div className="rounded-2xl bg-[#2e2e30] overflow-hidden divide-y divide-border/50">
+                    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
                       {children.length > 0 ? (
                         children.map((child) => (
                           <CategoryRow key={child.id} cat={child} categories={categories} indent onSelect={openDetail} />
@@ -118,14 +118,14 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search categories"
-              className="h-14 w-full rounded-full bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-muted-foreground"
+              className="h-14 w-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-muted-foreground"
             />
           </div>
           <CategoryClient
             action="add"
             variant="custom"
             categories={categories}
-            className="flex size-14 items-center justify-center rounded-full bg-white/7 backdrop-blur-lg active:scale-[0.95] transition-transform shrink-0"
+            className="flex size-14 items-center justify-center rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg active:scale-[0.95] transition-transform shrink-0"
           >
             <Plus className="size-6" />
           </CategoryClient>
@@ -138,7 +138,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
           id so switching categories reseeds the form. */}
       {detail && (
         <div
-          className="fixed inset-0 z-[70] flex flex-col overflow-y-auto rounded-t-4xl bg-[#1c1c1e] transition-transform duration-300 ease-out"
+          className="fixed inset-0 z-[70] flex flex-col overflow-y-auto rounded-t-4xl bg-[var(--dialog-background)] transition-transform duration-300 ease-out"
           style={{ transform: detailVisible ? "translateX(0)" : "translateX(100%)" }}
         >
           <CategorySettingsClient

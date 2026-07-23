@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/lib/use-is-mobile";
 
-export const FORM_TRIGGER_CLASS = "h-12 w-full rounded-lg text-sm mt-1 flex items-center justify-between gap-2.5 outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-foreground/15 cursor-pointer";
+export const FORM_TRIGGER_CLASS = "bg-[var(--dialog-content-background)] px-3 h-12 w-full rounded-lg text-sm mt-1 flex items-center justify-between gap-2.5 outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-foreground/15 cursor-pointer";
 
 export function OptionDropdown({
   value,

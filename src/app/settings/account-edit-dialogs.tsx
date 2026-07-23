@@ -110,7 +110,7 @@ function OptionList({ options, value, onSelect }: { options: { value: string; la
       {options.map((o) => (
         <button key={o.value} type="button" onClick={() => onSelect(o.value)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
           <span className="flex-1 font-medium">{o.label}</span>
-          {value === o.value && <Check className="size-5 text-white/70 shrink-0" />}
+          {value === o.value && <Check className="size-5 text-foreground/70 shrink-0" />}
         </button>
       ))}
     </div>
@@ -314,7 +314,7 @@ export function BankEditDialog({
             type="button"
             onClick={remove}
             aria-label="Delete"
-            className="size-11 rounded-full bg-foreground/10 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+            className="size-11 rounded-full bg-white/60 dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-4.5" />
           </button>

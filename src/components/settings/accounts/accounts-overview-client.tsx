@@ -110,7 +110,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
       )}
 
       {/* ── Range selector ── */}
-      <div className="flex gap-1 rounded-full bg-[#323137] p-1">
+      <div className="flex gap-1 rounded-full bg-sidebar-primary-foreground p-1">
         {RANGES.map((r) => (
           <button
             key={r.key}
@@ -118,7 +118,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
             onClick={() => setRange(r.key)}
             className={cn(
               "flex-1 rounded-full py-2 text-sm font-medium transition-colors",
-              range === r.key ? "bg-white/20 text-foreground shadow-sm" : "text-foreground/50",
+              range === r.key ? "bg-foreground/10 text-foreground" : "text-foreground/50",
             )}
           >
             {r.label}
@@ -128,7 +128,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
 
       {/* ── Account groups ── */}
       {accountCount === 0 ? (
-        <div className="rounded-2xl bg-[#2e2e30] py-16 text-center text-muted-foreground">
+        <div className="rounded-2xl bg-sidebar-primary-foreground py-16 text-center text-muted-foreground">
           <p className="text-sm">No accounts yet</p>
         </div>
       ) : (
@@ -222,7 +222,7 @@ function AccountCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-4 rounded-2xl bg-[#2e2e30] px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
+      className="w-full flex items-center gap-4 rounded-2xl bg-sidebar-primary-foreground px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
     >
       {bareIcon ? (
         <span className="size-12 shrink-0">{icon}</span>

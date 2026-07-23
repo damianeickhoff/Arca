@@ -80,6 +80,8 @@
   /* Teal Glassmorphism — light mode (cool neutrals + teal/emerald accent) */
   --background: #f4f6f6;
   --foreground: #0e0e0e;
+  --dialog-background: var(--background);
+  --dialog-content-background: var(--card);
   --card: #ffffff;
   --card-muted: color-mix(in srgb, var(--foreground) 58%, transparent);
   --card-foreground: #10201c;
@@ -106,14 +108,8 @@
   --chart-4: #e11d48;
   --chart-5: #0ea5e9;
   --radius: 0.875rem;
-  --sidebar: rgba(255, 255, 255, 0.88);
-  --sidebar-foreground: #0f766e;
-  --sidebar-primary: #0d9488;
-  --sidebar-primary-foreground: #ffffffa2;
-  --sidebar-accent: rgba(13, 148, 136, 0.08);
-  --sidebar-accent-foreground: #065f46;
-  --sidebar-border: rgba(172, 172, 172, 0.12);
-  --sidebar-ring: #14b8a6;
+  --sidebar: var(--dialog-background);
+  --sidebar-primary-foreground: var(--dialog-content-background);
   --color-nodig: #0e7490;
   --color-willen: #7c3aed;
   --color-sparen: #059669;
@@ -213,14 +209,8 @@
   --chart-3: #818cf8;
   --chart-4: #fb7185;
   --chart-5: #38bdf8;
-  --sidebar: rgba(13, 24, 21, 0.92);
-  --sidebar-foreground: #5eead4;
-  --sidebar-primary: #2dd4bf;
-  --sidebar-primary-foreground: #2e2e30;
-  --sidebar-accent: rgba(45, 212, 191, 0.14);
-  --sidebar-accent-foreground: #99f6e4;
-  --sidebar-border: rgba(190, 227, 216, 0.14);
-  --sidebar-ring: #2dd4bf;
+  --sidebar: var(--dialog-background);
+  --sidebar-primary-foreground: var(--dialog-content-background);
   --color-nodig: #22d3ee;
   --color-willen: #a78bfa;
   --color-sparen: #34d399;

@@ -17,7 +17,7 @@ export function OptionList<T extends string>({
   disabled?: boolean;
 }) {
   return (
-    <div className="rounded-2xl bg-[#2e2e30] overflow-hidden divide-y divide-border/50">
+    <div className="rounded-2xl bg-[var(--dialog-content-background) overflow-hidden divide-y divide-border/50">
       {options.map((o) => (
         <button
           key={o.value}

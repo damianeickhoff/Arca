@@ -246,7 +246,7 @@ export function SettingsDialog({
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="px-0" sheetClassName="bg-[#1c1c1e]" hideHandle hideHeaderRow title="Settings">
+        <DialogContent className="px-0" sheetClassName="bg-sidebar" hideHandle hideHeaderRow title="Settings">
           {/* ── Root menu ── shares the same sticky header chrome as every sub-panel
               (PanelHeader from settings-panel-chrome.tsx), with the X acting as a
               close button for the whole dialog. Rendered as a sibling of the hero
@@ -328,7 +328,7 @@ export function SettingsDialog({
           {active && (
             <div
               className={cn(
-                "fixed inset-0 z-[60] flex flex-col rounded-t-4xl overflow-hidden bg-[#1c1c1e]",
+                "fixed inset-0 z-[60] flex flex-col rounded-t-4xl overflow-hidden bg-sidebar",
                 !dragging && "transition-transform duration-300 ease-out",
               )}
               style={{ transform: visible ? `translateX(${dragX}px)` : "translateX(100%)" }}
@@ -400,7 +400,7 @@ function InlinePanel({
     case "privacy":
       return (
         <div className="px-4 pt-4 space-y-3">
-          <div className="rounded-2xl bg-[#2e2e30] p-2">
+          <div className="rounded-2xl bg-sidebar-primary-foreground p-2">
             <PrivacyToggle variant="row" />
           </div>
           <p className="px-2 text-sm text-foreground/50">
@@ -431,7 +431,7 @@ function InlinePanel({
     case "financialMonth":
       return (
         <div className="px-4 pt-4">
-          <div className="rounded-2xl bg-[#2e2e30] p-5">
+          <div className="rounded-2xl bg-sidebar-primary-foreground p-5">
             <FinancieleMaandForm
               currentStartDay={financialMonth.defaultStartDay}
               currentWeekendRollback={financialMonth.weekendRollback ?? false}
@@ -468,7 +468,7 @@ function InlinePanel({
     case "help":
       return (
         <div className="px-4 pt-4 space-y-3">
-          <div className="rounded-2xl bg-[#2e2e30] p-5">
+          <div className="rounded-2xl bg-sidebar-primary-foreground p-5">
             <p className="text-sm font-medium text-foreground mb-1">Questions or problems?</p>
             <p className="text-sm text-foreground/70">
               Email support and we&apos;ll get back to you as soon as possible.
@@ -476,7 +476,7 @@ function InlinePanel({
           </div>
           <a
             href="mailto:support@arca.app"
-            className="flex items-center gap-3.5 rounded-2xl bg-[#2e2e30] px-4 py-3.5 active:bg-foreground/5 transition-colors"
+            className="flex items-center gap-3.5 rounded-2xl bg-sidebar-primary-foreground px-4 py-3.5 active:bg-foreground/5 transition-colors"
           >
             <IconHelpCircle className="size-5 text-primary shrink-0" />
             <span className="flex-1 text-sm font-medium text-foreground">Contact support</span>

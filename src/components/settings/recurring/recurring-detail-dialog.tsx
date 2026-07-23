@@ -211,26 +211,26 @@ function DetailBody({
       </div>
 
       {/* Category */}
-      <div className="rounded-2xl bg-[#2e2e30] backdrop-blur-xs">
+      <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
         <DetailRow label="Category" valueIcon={<Icon iconKey={iconKey} color={iconColor} size="xs" round />} value={category?.name ?? "Uncategorized"} />
       </div>
 
       {/* Account (derived from a linked transaction) */}
       {derivedAccountLabel && (
-        <div className="rounded-2xl bg-[#2e2e30] backdrop-blur-xs">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
           <DetailRow label="Account" value={derivedAccountLabel} />
         </div>
       )}
 
       {/* Type + budget type */}
-      <div className="rounded-2xl bg-[#2e2e30] backdrop-blur-xs">
+      <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
         <DetailRow label="Type" value={TYPE_LABELS[item.type] ?? item.type} />
         {item.budgetType && <DetailRow label="Budget type" value={BUDGET_TYPE_LABELS[item.budgetType] ?? item.budgetType} />}
       </div>
 
       {/* Dates + notes */}
       {(item.dueDay != null || dueDate || item.endDate || item.notes) && (
-        <div className="rounded-2xl bg-[#2e2e30] backdrop-blur-xs">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
           {item.dueDay != null && <DetailRow label="Due day" value={`Day ${item.dueDay}`} />}
           {dueDate && <DetailRow label="Next transaction" value={fmtDate(dueDate)} />}
           {item.endDate && <DetailRow label="End date" value={fmtDate(item.endDate)} />}
@@ -257,7 +257,7 @@ function DetailBody({
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedTx(t)}
-                    className="w-full flex items-center gap-3 rounded-2xl bg-[#2e2e30] px-4 py-3 text-left active:bg-foreground/[0.04] transition-colors"
+                    className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3 text-left active:bg-foreground/[0.04] transition-colors"
                   >
                     <Icon iconKey={iconKey} color={iconColor} size="lg" round />
                     <div className="flex-1 min-w-0">

@@ -37,7 +37,7 @@ export function SubSheet({
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex flex-col bg-[#1c1c1e] backdrop-blur-xl rounded-t-2xl overflow-hidden transition-transform duration-300 ease-out"
+      className="fixed inset-0 z-[70] flex flex-col bg-[var(--dialog-background)] backdrop-blur-xl rounded-t-2xl overflow-hidden transition-transform duration-300 ease-out"
       style={{ transform: visible ? "translateX(0)" : "translateX(100%)" }}
     >
       <div className="relative flex items-center justify-center shrink-0 px-4 min-h-11 pt-[30px] mb-5">
@@ -48,7 +48,7 @@ export function SubSheet({
           type="button"
           onClick={onClose}
           aria-label="Back"
-          className="absolute top-[20px] size-11 left-[21px] rounded-full bg-white/7 backdrop-blur-lg shadow-lg flex items-center justify-center text-foreground transition-colors"
+          className="absolute top-[20px] size-11 left-[21px] rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground transition-colors"
         >
           <ChevronLeft className="size-5" />
         </button>

@@ -10,7 +10,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-foreground dark:text-black aria-expanded:text-black",
+        default: "bg-foreground text-white dark:text-black aria-expanded:text-black",
         outline:
           "bg-foreground/7 aria-expanded:bg-muted aria-expanded:text-foreground",
         secondary:

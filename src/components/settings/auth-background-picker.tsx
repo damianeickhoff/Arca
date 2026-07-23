@@ -42,7 +42,7 @@ export function AuthBackgroundPicker() {
   }
 
   return (
-    <div className="rounded-2xl bg-[#2e2e30] p-5">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
       <p className="font-medium">Background</p>
       <p className="text-sm text-foreground/50 mb-4">Choose a color fade for your own dashboard background.</p>
       <div className="grid grid-cols-3 gap-3">

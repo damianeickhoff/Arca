@@ -113,7 +113,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
         {/* Total line */}
         <div className="mb-6">
           <p className="text-md text-foreground/50">
-            {filter === "all" ? "Total" : activeFilterLabel} <span className="font-black px-1">·</span> <span className="text-foreground/50"><span className="bg-[#2e2e30] px-2 py-0.5 rounded-full">{visible.length}/{activeItems.length}</span> transaction{activeItems.length === 1 ? "" : "s"} active</span>
+            {filter === "all" ? "Total" : activeFilterLabel} <span className="font-black px-1">·</span> <span className="text-foreground/50"><span className="bg-[var(--dialog-content-background)] px-2 py-0.5 rounded-full">{visible.length}/{activeItems.length}</span> transaction{activeItems.length === 1 ? "" : "s"} active</span>
           </p>
           <p className="text-4xl font-medium tabular-nums tracking-tight py-3">{formatEur(monthlyTotal)}</p>
           <p className="text-md text-foreground/45 -mt-1">{perMonthLabel}</p>
@@ -121,7 +121,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
 
         {/* List */}
         {visible.length === 0 && dismissedItems.length === 0 ? (
-          <div className="rounded-2xl bg-[#2e2e30] py-16 text-center text-muted-foreground">
+          <div className="rounded-2xl bg-[var(--dialog-content-background)] py-16 text-center text-muted-foreground">
             <p className="text-sm">No recurring items found</p>
           </div>
         ) : (
@@ -137,7 +137,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
                   onClick={() => setDetailItemId(item.id)}
                   className="block w-full text-left"
                 >
-                    <div className={cn("flex items-top gap-4 rounded-2xl bg-[#2e2e30] px-4 py-3.5", !item.active && "opacity-50")}>
+                    <div className={cn("flex items-top gap-4 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3.5", !item.active && "opacity-50")}>
                       <Icon
                         iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
                         color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
@@ -183,7 +183,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
                 <h2 className="text-sm font-medium text-foreground/40 px-1 mb-2">Dismissed</h2>
                 <div className="space-y-3">
                   {dismissedItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 rounded-2xl bg-[#2e2e30] px-5 py-4 opacity-70">
+                    <div key={item.id} className="flex items-center gap-4 rounded-2xl bg-[var(--dialog-content-background)] px-5 py-4 opacity-70">
                       <div className="flex-1 min-w-0">
                         <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
                         <p className="text-sm text-foreground/50 mt-0.5 truncate">
