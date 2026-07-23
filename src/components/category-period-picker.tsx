@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { IconCalendarWeek as CalendarIcon } from "@tabler/icons-react";
+import { IconCalendarWeekFilled as CalendarIcon } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/date-picker";
 import { cn } from "@/lib/utils";
@@ -128,7 +128,7 @@ export function CategoryPeriodPicker({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Change period"
-        className={cn("size-11 rounded-full bg-white/7 flex items-center justify-center active:scale-95 transition-transform", triggerClassName)}
+        className={cn("size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center active:scale-95 transition-transform", triggerClassName)}
       >
         <CalendarIcon className="size-5" />
       </button>

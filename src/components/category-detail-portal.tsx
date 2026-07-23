@@ -10,6 +10,9 @@ import {
   IconTag,
   IconEyeOff,
   IconEye,
+  IconPencilFilled,
+  IconTagFilled,
+  IconEyeFilled,
 } from "@tabler/icons-react";
 import {
   DropdownMenu,
@@ -220,7 +223,7 @@ export function CategoryDetailPortal({
           <>
             {/* Backdrop */}
             <div
-              className="fixed inset-x-0 bottom-0 bg-black"
+              className="fixed inset-x-0 bottom-0 bg-[var(--dialog-background)]"
               style={{
                 top: 0,
                 zIndex: 45,
@@ -258,7 +261,7 @@ export function CategoryDetailPortal({
                   type="button"
                   onClick={close}
                   aria-label="Back"
-                  className="size-11 rounded-full bg-white/12 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
+                  className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
                 >
                   <IconChevronLeft className="size-5" />
                 </button>
@@ -278,22 +281,22 @@ export function CategoryDetailPortal({
                       leave scrolling stuck for a moment after the menu closes. Same fix as
                       category-picker.tsx / transaction-filter-bar.tsx. */}
                   <DropdownMenu modal={false}>
-                    <DropdownMenuTrigger className="size-11 rounded-full bg-white/7 flex items-center justify-center active:scale-95 transition-transform">
+                    <DropdownMenuTrigger className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center active:scale-95 transition-transform">
                       <IconDotsVertical className="size-5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {!isIncome && (
                         <DropdownMenuItem onClick={openEditBudget}>
-                          <IconPencil className="size-4 mr-2" /> Edit budget
+                          <IconPencilFilled className="size-4 mr-2" /> Edit budget
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem onClick={openEditCategory}>
-                        <IconTag className="size-4 mr-2" /> Edit category
+                        <IconTagFilled className="size-4 mr-2" /> Edit category
                       </DropdownMenuItem>
                       {!isIncome && detail && (
                         <DropdownMenuItem onClick={toggleExcludeFromSpendingRow}>
                           {detail.excludeFromSpendingRow ? (
-                            <><IconEye className="size-4 mr-2" /> Show in spending row</>
+                            <><IconEyeFilled className="size-4 mr-2" /> Show in spending row</>
                           ) : (
                             <><IconEyeOff className="size-4 mr-2" /> Hide from spending row</>
                           )}
@@ -334,15 +337,15 @@ export function CategoryDetailPortal({
                         history to project a pace from (detail.forecast, the same figure
                         the Forecast insight card shows). */}
                     {!isIncome && !(detail.budget && detail.budget > 0) && detail.forecast != null && detail.forecast > 0 && (
-                      <div className="mt-4 mb-3 mx-4 rounded-3xl text-bold bg-[#0f0f0f] p-5">
-                        <p className="text-lg font-medium text-foreground/60">Suggested category limit</p>
-                        <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{formatEur(Math.round(detail.forecast))}</p>
-                        <p className="mt-1 text-md text-foreground/60">Projected from your current spending pace</p>
+                      <div className="mt-4 mb-3 mx-4 rounded-3xl text-bold bg-[var(--dialog-content-background)] p-5">
+                        <p className="text-md font-medium text-foreground/60 text-center">Suggested category limit</p>
+                        <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-center">{formatEur(Math.round(detail.forecast))}</p>
+                        <p className="mt-1 text-sm text-foreground/60 text-center">Projected from your current spending pace</p>
                         <button
                           type="button"
                           onClick={() => saveBudget(Math.round(detail.forecast!))}
                           disabled={savingBudget}
-                          className="mt-3 w-full h-11 rounded-full bg-white/13 text-sm font-medium text-foreground active:scale-[0.98] transition-transform disabled:opacity-50"
+                          className="mt-3 w-full h-11 rounded-full bg-foreground text-background dark:bg-white/13 text-sm dark:text-foreground active:scale-[0.98] transition-transform disabled:opacity-50"
                         >
                           {savingBudget ? "Saving…" : "Use suggested limit"}
                         </button>
@@ -365,7 +368,7 @@ export function CategoryDetailPortal({
                               </p>
                               <p className="text-sm font-medium text-foreground/60 tabular-nums">{formatEur(g.total)}</p>
                             </div>
-                            <div className="rounded-xl bg-[#0f0f0f] mx-3 overflow-hidden">
+                            <div className="rounded-xl bg-[var(--dialog-content-background)] mx-3 overflow-hidden">
                               {g.rows.map((t) => (
                                 <ListItemRow
                                   key={t.id}
@@ -387,7 +390,7 @@ export function CategoryDetailPortal({
 
             {/* ── Edit budget — numpad overlay, stacked above the detail portal ── */}
             {editBudgetOpen && category && (
-              <div className="fixed inset-0 z-[65] bg-background flex flex-col" style={{ paddingTop: "var(--sat)" }}>
+              <div className="fixed inset-0 z-[46] bg-background flex flex-col" style={{ paddingTop: "var(--sat)" }}>
                 <div className="flex items-center justify-between px-4 h-14 shrink-0">
                   <button
                     type="button"
@@ -428,7 +431,7 @@ export function CategoryDetailPortal({
 
             {/* ── Edit category — reuses CategorySettingsClient's embedded mode ── */}
             {editCategoryOpen && (
-              <div className="fixed inset-0 z-[65] bg-background overflow-y-auto">
+              <div className="fixed inset-0 z-[46] bg-background overflow-y-auto">
                 {loadingEditCategory || !editCategoryData ? (
                   <div className="flex items-center justify-center h-full text-foreground/50 text-sm">Loading…</div>
                 ) : (

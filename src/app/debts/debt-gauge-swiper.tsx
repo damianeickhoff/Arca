@@ -50,7 +50,7 @@ export function DebtGaugeSwiper({ owe, owed }: { owe: GaugeCardProps; owed: Gaug
             type="button"
             aria-label={`Show gauge ${i + 1}`}
             onClick={() => goTo(i)}
-            className={cn("rounded-full transition-all", active === i ? "w-5 h-1.5 bg-foreground/60" : "w-1.5 h-1.5 bg-foreground/20")}
+            className={cn("rounded-full transition-all", active === i ? "w-5 h-1.5 bg-white/60" : "w-1.5 h-1.5 bg-white/50")}
           />
         ))}
       </div>

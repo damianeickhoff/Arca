@@ -113,8 +113,8 @@ export function CategoryFilterMenu({
           "flex items-center justify-center transition-colors cursor-pointer shrink-0",
           triggerClassName ??
             cn(
-              "size-9 rounded-full bg-black",
-              isFiltered ? "bg-card text-primary-foreground hover:bg-card" : "bg-card text-foreground hover:bg-card",
+              "size-9 rounded-full bg-white dark:bg-white/7",
+              isFiltered ? "bg-white dark:bg-white/7 text-primary-foreground" : "bg-white dark:bg-white/7 text-foreground",
             ),
         )}
       >
@@ -485,7 +485,7 @@ export function CategoryPicker({
   // On mobile the filter button sits in the sheet's header row next to the close
   // button, so it takes the close button's styling.
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: isMobile ? "size-11 rounded-full bg-white/7 text-foreground" : undefined,
+    triggerClassName: isMobile ? "size-11 rounded-full bg-white dark:bg-white/7 text-foreground" : undefined,
   });
 
   // Hide the mobile bottom nav while the picker sheet is open.

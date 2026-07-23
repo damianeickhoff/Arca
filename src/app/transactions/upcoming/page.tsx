@@ -45,7 +45,7 @@ export default async function UpcomingTransactionsPage() {
     new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 
   const content = (
-    <div className="pb-24 pt-8 space-y-4">
+    <div className="pb-24 pt-13 space-y-4">
     <MobileSubpageHeader title="Upcoming" backHref="/transactions" useHistoryBack />
 
       <BillsCalendar

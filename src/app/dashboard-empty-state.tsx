@@ -18,7 +18,7 @@ export function DashboardEmptyState({ categories }: { categories: Category[] }) 
       <div className="text-center">
         <p className="text-xs">No data available yet.</p>
         <Link href="/import" className="mt-1 text-primary text-xs hover:underline">
-          Import a CSV →
+          Import a CSV
         </Link>
       </div>
 

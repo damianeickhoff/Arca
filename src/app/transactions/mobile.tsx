@@ -93,12 +93,12 @@ export function TransactionsMobile({
           element's covered content does — the matching pt-[...] on the content
           wrapper below reserves exactly its height instead, the same technique the
           fixed search/add bar at the bottom already uses with pb-28. */}
-      <div className="sticky top-0 z-40 bg-[#000000]">
+      <div className="sticky top-0 z-40 bg-background">
         <div className="relative flex items-center px-4 pt-[calc(var(--sat)+0.75rem)]">
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="shrink-0 size-11 rounded-full bg-white/10 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center"
+            className="shrink-0 size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center"
           >
             <IconChevronLeft className="size-5 text-foreground" />
           </button>
@@ -126,7 +126,7 @@ export function TransactionsMobile({
 
       {/* pt-[...] clears the fixed header above (back/title row + pills row) so
           content always starts fully below it — never partially hidden underneath. */}
-      <div className="pt-15 px-4 pb-28 space-y-4 lg:max-w-3xl lg:mx-auto bg-[#000000]">
+      <div className="pt-15 px-4 pb-28 space-y-4 lg:max-w-3xl lg:mx-auto bg-background">
         {hasActiveFilters && (
           <p className="text-sm text-muted-foreground">
             Results: {filteredCount} transaction{filteredCount === 1 ? "" : "s"}
@@ -137,14 +137,14 @@ export function TransactionsMobile({
         {upcomingCount > 0 && (
           <Link
             href="/transactions/upcoming"
-            className="flex items-center gap-3 rounded-2xl bg-[#141414] p-4 active:scale-[0.99] transition-transform"
+            className="flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] p-4 active:scale-[0.99] transition-transform"
           >
             {upcomingIcons.length > 0 && (
               <div className="flex shrink-0 -space-x-3">
                 {upcomingIcons.map((u, i) => (
                   <div
                     key={i}
-                    className="rounded-xl ring-2 ring-card"
+                    className="rounded-xl"
                     style={{ zIndex: upcomingIcons.length - i }}
                   >
                     <Icon iconKey={u.icon} color={u.iconColor} background={u.iconBackground} size="md" />
@@ -152,7 +152,7 @@ export function TransactionsMobile({
                 ))}
               </div>
             )}
-            <span className="text-base font-semibold text-foreground leading-snug flex-1">
+            <span className="text-base text-foreground leading-snug flex-1">
               {upcomingCount} upcoming transaction{upcomingCount === 1 ? "" : "s"}
               <br />this month
             </span>
@@ -163,11 +163,11 @@ export function TransactionsMobile({
         {/* Summary — reflects every filtered transaction, not just the visible page */}
         {hasActiveFilters && filteredCount > 0 && (
           <div className="grid grid-cols-2 gap-3 text-center">
-            <div className="rounded-lg bg-[#141414] p-3">
+            <div className="rounded-lg bg-[var(--dialog-content-background)] p-3">
               <p className="text-xs text-foreground/60 mb-1">Income</p>
               <p className="text-xl font-medium tabular-nums">{formatEur(income)}</p>
             </div>
-            <div className="rounded-lg bg-[#141414] p-3">
+            <div className="rounded-lg bg-[var(--dialog-content-background)] p-3">
               <p className="text-xs text-foreground/60 mb-1">Expenses</p>
               <p className="text-xl font-medium tabular-nums">{formatEur(expense)}</p>
             </div>
@@ -175,9 +175,9 @@ export function TransactionsMobile({
         )}
 
         {filteredCount === 0 ? (
-          <div className="rounded-2xl bg-[#141414] py-16 text-center text-muted-foreground">
-            <p className="mb-2 text-sm">No transactions found</p>
-            <Link href="/import" className="text-primary text-sm hover:underline">Import a CSV →</Link>
+          <div className="rounded-2xl bg-[var(--dialog-content-background)] py-16 text-center text-muted-foreground">
+            <p className="mb-7 text-sm">No transactions found</p>
+            <Link href="/import" className="p-3 font-semibold bg-foreground rounded-lg text-background text-md">Import a CSV</Link>
           </div>
         ) : (
           <>
@@ -201,7 +201,7 @@ export function TransactionsMobile({
         <Link
           href="/transactions/add"
           aria-label="Add new transaction"
-          className="shrink-0 size-12 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg text-white flex items-center justify-center shadow-floating shadow-primary/30 active:scale-[0.92] transition-transform"
+          className="shrink-0 size-12 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center shadow-floating shadow-primary/30 active:scale-[0.92] transition-transform"
         >
           <IconPlus className="size-5" />
         </Link>

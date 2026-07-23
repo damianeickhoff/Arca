@@ -88,7 +88,7 @@ export function UpcomingPortal({
             type="button"
             onClick={close}
             aria-label="Back"
-            className="size-11 rounded-full bg-white/12 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
+            className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
           >
             <IconChevronLeft className="size-5" />
           </button>

@@ -65,13 +65,13 @@ export function AccountMultiPicker({
           <button
             type="button"
             onClick={toggleAll}
-            className="w-full h-11 rounded-full bg-foreground/5 text-sm font-semibold text-foreground"
+            className="w-full h-11 rounded-full bg-foreground text-sm font-semibold text-background"
           >
             {allSelected ? "Deselect All" : "Select All"}
           </button>
         }
       >
-        <div className="rounded-2xl bg-card divide-y divide-border/50 overflow-hidden">
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] divide-y divide-border/50 overflow-hidden">
           {banks.map((bank) => {
             const accountNumber = bank.accountNumber;
             if (!accountNumber) return null;
@@ -92,7 +92,7 @@ export function AccountMultiPicker({
                 <span
                   className={cn(
                     "size-6 rounded-md border flex items-center justify-center shrink-0",
-                    active ? "bg-primary border-primary text-primary-foreground" : "border-foreground/25",
+                    active ? "bg-foreground text-background" : "",
                   )}
                 >
                   {active && <Check className="size-4" />}

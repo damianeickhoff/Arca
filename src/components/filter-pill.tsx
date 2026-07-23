@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export function filterPillClass(active: boolean, className?: string) {
   return cn(
     "flex items-center justify-between gap-1.5 text-md  backdrop-blur-lg rounded-full pl-3 pr-3 py-2.5 cursor-pointer transition-colors",
-    active ? "bg-[var(--dialog-background)] text-foreground" : "bg-[var(--dialog-background)] dark:bg-white/7 text-foreground",
+    active ? "bg-foreground text-background" : "bg-[var(--dialog-content-background)] dark:bg-white/7 text-foreground",
     className,
   );
 }

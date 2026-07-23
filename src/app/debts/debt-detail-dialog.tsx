@@ -7,7 +7,7 @@ import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
-  IconPencil as Pencil,
+  IconPencilFilled as Pencil,
   IconTrashFilled as Trash2,
   IconChevronDown as ChevronDown,
 } from "@tabler/icons-react";
@@ -78,7 +78,7 @@ export function DebtDetailDialog({
                 type="button"
                 onClick={() => setEditOpen(true)}
                 aria-label="Edit"
-                className="size-11 rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
               >
                 <Pencil className="size-4.5" />
               </button>
@@ -87,7 +87,7 @@ export function DebtDetailDialog({
                 onClick={remove}
                 disabled={deleting}
                 aria-label="Delete"
-                className="size-11 rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
               >
                 <Trash2 className="size-4.5" />
               </button>

@@ -136,24 +136,27 @@ export function MobileSubpageHeader({
 
   return (
     <div className="px-4 pb-3 pt-4" style={{ paddingTop: `calc(1rem + var(--sat))` }}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {useHistoryBack ? (
-            <button type="button" onClick={() => router.back()} aria-label="Back" className={backButtonClassName}>
-              <ChevronLeft className="size-5 text-foreground" />
-            </button>
-          ) : (
-            <Link href={backHref} aria-label="Back" className={backButtonClassName}>
-              <ChevronLeft className="size-5 text-foreground" />
-            </Link>
-          )}
+      <div className="relative flex items-center justify-between">
+        {useHistoryBack ? (
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Back"
+            className={backButtonClassName}
+          >
+            <ChevronLeft className="size-5 text-foreground" />
+          </button>
+        ) : (
+          <Link href={backHref} aria-label="Back" className={backButtonClassName}>
+            <ChevronLeft className="size-5 text-foreground" />
+          </Link>
+        )}
 
-          <h2 className="font-semibold text-2xl text-foreground">
-            {title}
-          </h2>
-        </div>
+        <h2 className="absolute left-1/2 -translate-x-1/2 text-2xl text-foreground">
+          {title}
+        </h2>
 
-        {action}
+        {action ?? <div className="size-11" />}
       </div>
     </div>
   );

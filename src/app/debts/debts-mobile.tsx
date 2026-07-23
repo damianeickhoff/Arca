@@ -65,7 +65,7 @@ export function DebtsMobile({
         {user && settingsPanels && financialMonth ? (
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 mt-3">
             <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} iconOnly />
-            <h1 className="text-lg text-foreground text-center truncate">Debts</h1>
+            <h1 className="text-xl text-background text-semibold text-center truncate">Debts</h1>
             <div className="flex items-center gap-2 shrink-0 min-w-11 min-h-11 justify-self-end justify-end">
               {activeSimDebts.length > 0 && (
                 <DebtSimulationPortal content={<DebtSimulationClient debts={activeSimDebts} />} triggerClassName="size-11" />

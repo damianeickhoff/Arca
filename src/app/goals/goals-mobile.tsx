@@ -39,7 +39,7 @@ export function GoalsMobile({
       <div className="min-h-screen flex flex-col px-4 pt-[calc(3.5rem+var(--sat))] pb-[calc(7rem+var(--sab))] space-y-4" style={{ background: "var(--savings-background)" }}>
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 mt-3">
           <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} iconOnly />
-          <h1 className="text-lg text-foreground text-center truncate">Savings</h1>
+          <h1 className="text-xl text-background text-semibold text-center truncate">Savings</h1>
           <div className="shrink-0 min-w-11 min-h-11 justify-self-end" />
         </div>
 

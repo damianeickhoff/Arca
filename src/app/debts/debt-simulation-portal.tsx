@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { IconCalculator, IconX } from "@tabler/icons-react";
+import { IconCalculatorFilled, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
 const springOut = "cubic-bezier(0.32, 0.72, 0, 1)";
@@ -41,9 +41,9 @@ export function DebtSimulationPortal({ content, triggerClassName }: { content: R
         type="button"
         onClick={openPortal}
         aria-label="Extra payment simulation"
-        className={cn("rounded-full bg-white/7 flex items-center justify-center active:scale-[0.97] transition-transform", triggerClassName)}
+        className={cn("rounded-full bg-white dark:bg-white/7 flex items-center justify-center active:scale-[0.97] transition-transform", triggerClassName)}
       >
-        <IconCalculator className="size-5" />
+        <IconCalculatorFilled className="size-5" />
       </button>
 
       {mounted &&
@@ -80,7 +80,7 @@ export function DebtSimulationPortal({ content, triggerClassName }: { content: R
                   type="button"
                   onClick={closePortal}
                   aria-label="Close"
-                  className="size-11 rounded-full bg-card shadow-raised flex items-center justify-center active:scale-[0.97] transition-transform"
+                  className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center active:scale-[0.97] transition-transform"
                 >
                   <IconX className="size-5" />
                 </button>

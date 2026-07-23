@@ -383,6 +383,23 @@ addColumnIfMissing("recurring_items", "end_date", "TEXT");
   // and the first render shows stale data).
   runConfigSync(sqlite);
 
+  // Backfill: normalize budget types to their canonical Dutch keys (nodig/willen/sparen).
+  // The category seed (src/config/categories.ts) stores English labels ("Needs"/"Wants"/
+  // "Savings") and config-sync inserts them verbatim, but every runtime query filters on
+  // the Dutch keys — so an un-normalized row silently drops out of the dashboard and
+  // analytics (it still shows on Trends, which groups by category regardless). Runs after
+  // runConfigSync so freshly-seeded rows are healed on the same boot, and every boot so
+  // existing databases self-heal. Idempotent — canonical rows already match and are skipped.
+  sqlite.exec(`UPDATE categories        SET budget_type = 'nodig'  WHERE lower(budget_type) IN ('needs','need')`);
+  sqlite.exec(`UPDATE categories        SET budget_type = 'willen' WHERE lower(budget_type) IN ('wants','want')`);
+  sqlite.exec(`UPDATE categories        SET budget_type = 'sparen' WHERE lower(budget_type) IN ('savings','saving')`);
+  sqlite.exec(`UPDATE recurring_items   SET budget_type = 'nodig'  WHERE lower(budget_type) IN ('needs','need')`);
+  sqlite.exec(`UPDATE recurring_items   SET budget_type = 'willen' WHERE lower(budget_type) IN ('wants','want')`);
+  sqlite.exec(`UPDATE recurring_items   SET budget_type = 'sparen' WHERE lower(budget_type) IN ('savings','saving')`);
+  sqlite.exec(`UPDATE transactions      SET budget_type_override = 'nodig'  WHERE lower(budget_type_override) IN ('needs','need')`);
+  sqlite.exec(`UPDATE transactions      SET budget_type_override = 'willen' WHERE lower(budget_type_override) IN ('wants','want')`);
+  sqlite.exec(`UPDATE transactions      SET budget_type_override = 'sparen' WHERE lower(budget_type_override) IN ('savings','saving')`);
+
   return drizzle(sqlite, { schema });
 }
 

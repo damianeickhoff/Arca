@@ -10,6 +10,7 @@ import {
   IconArrowsUpDown,
   IconSparkles,
   IconRepeat,
+  IconCalendarFilled,
 } from "@tabler/icons-react";
 import {
   DropdownMenu,
@@ -144,7 +145,7 @@ function PeriodPill({
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger className={cn(filterPillClass(!isAll, "shrink-0"))}>
-          <IconCalendar className="size-4 shrink-0" />
+          <IconCalendarFilled className="size-4 shrink-0" />
           <span>{label}</span>
           {!isAll && (
             <span
@@ -156,7 +157,7 @@ function PeriodPill({
               onClick={(e) => { e.stopPropagation(); onReset(); }}
               className="shrink-0"
             >
-              <IconX className="size-5 bg-white/40 rounded-full text-background p-1" />
+              <IconX className="size-5 bg-white/40 text-foreground rounded-full dark:text-background p-1" />
             </span>
           )}
         </DropdownMenuTrigger>

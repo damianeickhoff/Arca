@@ -76,7 +76,7 @@ export function TransactionDetailDialog({
               onClick={remove}
               disabled={deleting}
               aria-label="Delete"
-              className="size-11 rounded-full bg-foreground/10 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+              className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
             >
               <Trash2 className="size-4.5" />
             </button>
@@ -369,7 +369,7 @@ function TransactionDetailBody({
           <TransactionMap name={row.customName || row.description} />
         )}
           {/* Category — tappable, opens picker dialog */}
-          <div className="rounded-full bg-white/2 backdrop-blur-xs text-sm py-2">
+          <div className="rounded-full bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm py-2">
           {!row.isInternalTransfer && (
             <>
               <button
@@ -422,7 +422,7 @@ function TransactionDetailBody({
           )}
           </div>
         {/* Details grid */}
-        <div className="rounded-xl bg-white/2 backdrop-blur-xs text-sm py-2">
+        <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm py-2">
                     {/* Exclude from reports toggle */}
           <button
             type="button"
@@ -435,7 +435,7 @@ function TransactionDetailBody({
               excluded ? "bg-primary" : "bg-foreground/20"
             )}>
               <div className={cn(
-                "absolute top-0.5 size-5 bg-white rounded-full shadow-sm transition-transform",
+                "absolute top-0.5 size-5 bg-[var(--dialog-content-background)] rounded-full shadow-sm transition-transform",
                 excluded ? "translate-x-[22px]" : "translate-x-0.5"
               )} />
             </div>

@@ -151,7 +151,7 @@ export function DebtEditDialog({
             onClick={remove}
             disabled={loading}
             aria-label="Delete"
-            className="size-11 rounded-full bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+            className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-4.5" />
           </button>

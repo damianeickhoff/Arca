@@ -99,7 +99,7 @@ export function MobileTransactionList({ rows, categories, savingsGoals }: { rows
           <p className="text-xs font-medium text-foreground/60 uppercase tracking-wide mb-2 ml-1">
             {groupLabel(group.date, today, yesterday)}
           </p>
-          <div className="rounded-xl bg-[#141414] py-3">
+          <div className="rounded-xl bg-[var(--dialog-content-background)] py-3">
             {group.rows.map((t) => (
               <Pressable
                 key={t.id}

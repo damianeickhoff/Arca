@@ -12,7 +12,7 @@ const NEUTRAL_BAR = "color-mix(in srgb, var(--foreground) 18%, transparent)";
 // two of them, they instead split the full row width — still square, via aspect-square
 // on a flex-1 basis instead of a fixed width.
 function cardClass(wide: boolean) {
-  return cn("rounded-2xl bg-[#0f0f0f] p-4 flex flex-col aspect-square", wide ? "flex-1" : "shrink-0 w-40 snap-start");
+  return cn("rounded-2xl bg-[var(--dialog-content-background)] p-4 flex flex-col aspect-square", wide ? "flex-1" : "shrink-0 w-40 snap-start");
 }
 
 /** Full-circle ring — same shape as the dashboard's own CategoryProgressRing
@@ -109,16 +109,16 @@ function ForecastCard({ forecast, budget, spent, daysLeft, daysElapsed, wide }: 
   return (
     <div className={cardClass(wide)}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-lg font-medium text-foreground/60">Forecast</p>
+        <p className="text-md font-medium text-foreground/60">Forecast</p>
         {budget != null && (
           <DotToggle active={view} onChange={setView} />
         )}
       </div>
       <p className="mt-1 flex items-baseline gap-2 flex-wrap">
-        <span className="text-2xl font-semibold text-foreground tabular-nums">{formatEur(forecast)}</span>
+        <span className="text-xl font-semibold text-foreground tabular-nums">{formatEur(forecast)}</span>
         {pct != null && <span className={cn("text-md font-medium tabular-nums", over ? "text-[var(--color-expense)]" : "text-foreground/50")}>{pct}%</span>}
       </p>
-      <div className="mt-auto text-md font-medium">
+      <div className="mt-auto text-sm font-medium">
         {view === 0
           ? budgetDifference != null
             ? (
@@ -249,7 +249,7 @@ export function CategoryInsightCards({ detail, color, periodElapsedPct, periodLa
         </>
       ) : hasTx ? (
         <StatCard label="Insights" wide={wide}>
-          <p className="mt-auto mt-2 text-md text-foreground/60 leading-snug">Add more transactions to unlock personalised insights.</p>
+          <p className="mt-auto mt-2 text-sm text-foreground/60 leading-snug">Add more transactions to unlock personalised insights.</p>
         </StatCard>
       ) : null}
     </div>
