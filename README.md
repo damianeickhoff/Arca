@@ -24,42 +24,71 @@ Arca gives you a clear overview of your income, expenses, budgets, and spending 
 
 ## 🚀 Getting Started
 
-### Requirements
+### Docker
 
-- Node.js 20+
-- npm
+Run Arca:
 
-### Installation
+    docker run -d \
+      --name arca \
+      -p 3000:3000 \
+      -v arca-data:/data \
+      damianeickhoff/arca:latest
 
-Clone the repository:
+### Storage
 
-```bash
-git clone https://github.com/yourusername/arca.git
-cd arca
-```
+Arca stores its database in:
 
-Install dependencies:
-`npm install`
+    /data
 
-Run the development server:
-`npm run dev`
+Mount this directory to persist your data.
 
-Open:
-`http://localhost:3000`
+Example:
 
-🏗️ Production Build
-Create a production build:
-`npm run build`
+    /mnt/user/appdata/arca:/data
 
-Start the production server:
-`npm start`
+### Docker Compose
 
-🛠️ Tech Stack
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- SQLite
+Example:
 
-📄 License
-This project is currently private and intended for personal use.
+    services:
+      arca:
+        image: damianeickhoff/arca:latest
+        container_name: arca
+        ports:
+          - "3000:3000"
+        volumes:
+          - arca-data:/data
+        restart: unless-stopped
+
+    volumes:
+      arca-data:
+
+## 🔄 Updates
+
+Pull the latest image:
+
+    docker pull damianeickhoff/arca:latest
+
+Then recreate the container while keeping the `/data` volume.
+
+## 🐳 Unraid
+
+Arca can be installed on Unraid using the Docker template.
+
+The application data should be mapped to:
+
+    /data
+
+Recommended host path:
+
+    /mnt/user/appdata/arca
+
+## 🆘 Support
+
+For issues and feature requests:
+
+https://github.com/damianeickhoff/arca/issues
+
+## 📄 License
+
+This project is currently distributed as a self-hosted application.
