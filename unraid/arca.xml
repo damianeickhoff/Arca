@@ -2,7 +2,7 @@
 <Container version="2">
 
     <Name>Arca</Name>
-
+    <Icon>https://raw.githubusercontent.com/damianeickhoff/arca/master/public/icon.png</Icon>
     <Repository>yourusername/arca:latest</Repository>
 
     <Registry>https://hub.docker.com/r/yourusername/arca</Registry>
