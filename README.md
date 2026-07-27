@@ -1,3 +1,8 @@
+> **⚠️ Work in Progress**
+>
+> Arca is currently in active development. Expect frequent updates, new features, and occasional breaking changes. If you're using Arca to manage important financial data, make regular backups of your `/data` directory before updating.
+
+
 # 💰 Arca
 
 A modern personal finance dashboard designed to help you understand, track, and improve your financial life.
