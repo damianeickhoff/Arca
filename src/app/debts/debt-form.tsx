@@ -43,14 +43,14 @@ import { formatEur, currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Category, RecurringItem } from "@/db/schema";
 
-function currentYearMonth() {
+function todayISO() {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-function formatMonthLabel(monthStr: string): string {
-  const [y, m] = monthStr.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, 1).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+function formatDateLabel(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 // The debt add form (behind /debts/add) — full-screen calculator style, matching the
@@ -63,7 +63,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
   const [direction, setDirection] = useState<"owe" | "owed">("owe");
   const [name, setName] = useState("");
   const [expr, setExpr] = useState("");
-  const [startMonth, setStartMonth] = useState(currentYearMonth());
+  const [startDate, setStartDate] = useState(todayISO());
   const [paymentExpr, setPaymentExpr] = useState("");
   const [paymentCalcEnabled, setPaymentCalcEnabled] = useState(false);
   const [minPaymentOpen, setMinPaymentOpen] = useState(false);
@@ -113,7 +113,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         startingBalance: result,
         originalAmount: originalVal || null,
         minimumPayment: paymentVal || 0,
-        startMonth,
+        startDate,
+        startMonth: startDate.slice(0, 7),
         color: color || null,
         icon: icon || null,
         notes: notes.trim() || null,
@@ -278,10 +279,10 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           <div className="flex items-center justify-between gap-2 pb-3 shrink-0">
             <div className="flex items-center gap-2 min-w-0">
               <DatePicker
-                value={startMonth}
-                onChange={setStartMonth}
-                granularity="month"
-                label={formatMonthLabel(startMonth)}
+                value={startDate}
+                onChange={setStartDate}
+                granularity="day"
+                label={formatDateLabel(startDate)}
                 triggerClassName="mt-0 mb-0 h-11 w-auto rounded-full bg-foreground/8 px-4 gap-2"
               />
               <button

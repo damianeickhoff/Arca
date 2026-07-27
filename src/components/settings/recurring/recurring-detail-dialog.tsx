@@ -19,7 +19,6 @@ import type { RecurringItem, Category } from "@/db/schema";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
 
 const FREQ_LABELS: Record<string, string> = { monthly: "Monthly", yearly: "Yearly", weekly: "Weekly", once: "One-time", quarterly: "Per quarter" };
-const FREQ_LETTER: Record<string, string> = { monthly: "M", yearly: "Y", weekly: "W", once: "1", quarterly: "Q" };
 const TYPE_LABELS: Record<string, string> = { income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt", savings: "Savings" };
 const BUDGET_TYPE_LABELS: Record<string, string> = { nodig: "Needs", willen: "Wants", sparen: "Savings" };
 
@@ -176,6 +175,7 @@ function DetailBody({
   const iconKey = category?.icon ?? UNCATEGORIZED_ICON;
   const iconColor = category?.icon ? category.color : UNCATEGORIZED_COLOR;
   const freq = item.frequency;
+  const isFutureStart = !!item.startDate && item.startDate > new Date().toISOString().slice(0, 10);
   // Prefer the friendly bank name over the raw account number/IBAN.
   const derivedAccount = txs?.find((t) => t.bankName || t.account);
   const derivedAccountLabel = derivedAccount?.bankName ?? derivedAccount?.account ?? null;
@@ -198,11 +198,6 @@ function DetailBody({
           <p className="text-3xl font-bold tabular-nums mt-3">{item.amount != null ? formatEur(item.amount) : "—"}</p>
           <div className="flex items-center gap-2 mt-1.5 text-sm text-foreground/55">
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-5 rounded bg-foreground/10 text-xs font-extralight flex items-center justify-center">{FREQ_LETTER[freq] ?? "•"}</span>
-              {FREQ_LABELS[freq] ?? freq}
-            </span>
-            <span>•</span>
-            <span className="inline-flex items-center gap-1.5">
               <span className={cn("size-2 rounded-full", active ? "bg-emerald-500" : "bg-foreground/30")} />
               {active ? "Active" : "Paused"}
             </span>
@@ -222,15 +217,19 @@ function DetailBody({
         </div>
       )}
 
-      {/* Type + budget type */}
+      {/* Frequency + type + budget type */}
       <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
+        <DetailRow label="Frequency" value={FREQ_LABELS[freq] ?? freq} />
         <DetailRow label="Type" value={TYPE_LABELS[item.type] ?? item.type} />
         {item.budgetType && <DetailRow label="Budget type" value={BUDGET_TYPE_LABELS[item.budgetType] ?? item.budgetType} />}
       </div>
 
       {/* Dates + notes */}
-      {(item.dueDay != null || dueDate || item.endDate || item.notes) && (
+      {(isFutureStart || item.dueDay != null || dueDate || item.endDate || item.notes) && (
         <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
+          {/* Only meaningful once the recurrence hasn't started yet — otherwise the due
+              day / next transaction already convey the schedule. */}
+          {isFutureStart && <DetailRow label="Start date" value={fmtDate(item.startDate!)} />}
           {item.dueDay != null && <DetailRow label="Due day" value={`Day ${item.dueDay}`} />}
           {dueDate && <DetailRow label="Next transaction" value={fmtDate(dueDate)} />}
           {item.endDate && <DetailRow label="End date" value={fmtDate(item.endDate)} />}

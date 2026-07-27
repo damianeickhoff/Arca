@@ -14,6 +14,7 @@ import {
 import { Icon } from "@/components/icon";
 import { formatEur, toMonthly } from "@/lib/format";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
+import { recurringPeriodStatus } from "@/lib/recurring-status";
 import { cn } from "@/lib/utils";
 import type { RecurringItem, Category } from "@/db/schema";
 
@@ -29,8 +30,13 @@ const ITEM_LABELS: Record<string, string> = {
   income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt",
 };
 
-const FREQ_LABELS: Record<string, string> = {
-  monthly: "Monthly", yearly: "Yearly", weekly: "Weekly", once: "One-time",
+const BUDGET_LABELS: Record<string, string> = {
+  nodig: "Needs", willen: "Wants", sparen: "Savings",
+};
+
+// Single-letter frequency indicator shown as a pill next to the title.
+const FREQ_LETTER: Record<string, string> = {
+  daily: "D", weekly: "W", monthly: "M", quarterly: "Q", yearly: "Y", once: "1×",
 };
 
 interface Props {
@@ -129,7 +135,11 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
             {visible.map((item) => {
               const cat = item.categoryId != null ? catById.get(item.categoryId) : undefined;
               const due = dueDateByItemId[item.id];
-              const subtitle = cat ? cat.name : (ITEM_LABELS[item.type] ?? item.type);
+              // Shown under the amount: transaction type + budget type, e.g. "Subscription • Needs".
+              const typeBudget =
+                (ITEM_LABELS[item.type] ?? item.type) +
+                (item.budgetType && BUDGET_LABELS[item.budgetType] ? ` • ${BUDGET_LABELS[item.budgetType]}` : "");
+              const status = recurringPeriodStatus(item);
               return (
                 <button
                   key={item.id}
@@ -147,15 +157,30 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
+                          {/* Single-letter frequency indicator next to the title. */}
+                          <span className="shrink-0 rounded-full bg-foreground/8 text-foreground/55 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                            {FREQ_LETTER[item.frequency] ?? item.frequency}
+                          </span>
+                          {status === "future" && (
+                            <span className="shrink-0 rounded-full bg-blue-500/12 text-blue-600 dark:text-blue-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                              Upcoming
+                            </span>
+                          )}
+                          {status === "expired" && (
+                            <span className="shrink-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                              Expired
+                            </span>
+                          )}
                           {item.source === "auto" && (
                             <span className="shrink-0 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5 leading-none">
                               Auto
                             </span>
                           )}
                         </div>
+                        {/* Under the title: the linked category name. */}
                         <p className="text-sm text-foreground/50 truncate">
-                          {subtitle}
-                          {!item.active && " · Inactive"}
+                          {cat?.name ?? "No category"}
+                          {!item.active && status === "active" && " · Inactive"}
                         </p>
                         <p className="text-sm text-foreground/50 truncate">
                           {due && <> Next {fmtDue(due)}</>}
@@ -165,12 +190,8 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
                         <p className="text-lg font-semibold tabular-nums leading-tight">
                           {item.amount ? formatEur(item.amount) : "—"}
                         </p>
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="size-5 rounded bg-foreground/10 text-xs font-extralight flex items-center justify-center">
-                            {(FREQ_LABELS[item.frequency] ?? item.frequency).charAt(0)}
-                          </span>
-                          <span className="text-sm font-light text-foreground/45">{FREQ_LABELS[item.frequency] ?? item.frequency}</span>
-                        </span>
+                        {/* Under the amount: transaction type + budget type. */}
+                        <p className="text-xs text-foreground/40 mt-0.5 truncate">{typeBudget}</p>
                       </div>
                     </div>
                 </button>

@@ -38,12 +38,12 @@ export function DebtsMobile({
   totalStarting,
   totalPaidPct,
   totalMonthly,
-  latestFreeDate,
+  latestPaymentDate,
   snowballTarget,
   totalOwedStarting,
   totalOwedPaidPct,
   totalOwedMonthly,
-  latestOwedFreeDate,
+  latestOwedPaymentDate,
   user,
   settingsPanels,
   financialMonth,
@@ -65,7 +65,7 @@ export function DebtsMobile({
         {user && settingsPanels && financialMonth ? (
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 mt-3">
             <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} iconOnly />
-            <h1 className="text-xl text-background text-semibold text-center truncate">Debts</h1>
+            <h1 className="text-xl text-white text-semibold text-center truncate">Debts</h1>
             <div className="flex items-center gap-2 shrink-0 min-w-11 min-h-11 justify-self-end justify-end">
               {activeSimDebts.length > 0 && (
                 <DebtSimulationPortal content={<DebtSimulationClient debts={activeSimDebts} />} triggerClassName="size-11" />
@@ -95,8 +95,8 @@ export function DebtsMobile({
             owe={{
               topLeftLabel: "Monthly",
               topLeftValue: formatGaugeMoney(totalMonthly),
-              topRightLabel: "Last debt reached by",
-              topRightValue: latestFreeDate ? fmtShortMonth(latestFreeDate) : "—",
+              topRightLabel: "Last payment on",
+              topRightValue: latestPaymentDate ? fmtShortMonth(latestPaymentDate) : "—",
               pct: totalPaidPct,
               left: totalDebt,
               over: totalDebt < 0,
@@ -110,8 +110,8 @@ export function DebtsMobile({
                 ? {
                     topLeftLabel: "Monthly",
                     topLeftValue: formatGaugeMoney(totalOwedMonthly),
-                    topRightLabel: "Last debt reached by",
-                    topRightValue: latestOwedFreeDate ? fmtShortMonth(latestOwedFreeDate) : "—",
+                    topRightLabel: "Last payment on",
+                    topRightValue: latestOwedPaymentDate ? fmtShortMonth(latestOwedPaymentDate) : "—",
                     pct: totalOwedPaidPct,
                     left: totalOwed,
                     over: totalOwed < 0,

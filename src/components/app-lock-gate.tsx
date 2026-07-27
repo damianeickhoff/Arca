@@ -191,8 +191,8 @@ function LockScreen({
             <Lock className="size-7 text-foreground/60" />
           </div>
           <div className="text-center">
-            <h1 className="font-semibold text-lg">App vergrendeld</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Voer uw pincode in</p>
+            <h1 className="font-semibold text-lg">App Locked</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Enter your PIN</p>
           </div>
         </div>
 

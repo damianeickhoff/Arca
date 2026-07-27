@@ -12,9 +12,11 @@ import {
   IconChevronDown as ChevronDown,
 } from "@tabler/icons-react";
 import type { RecurringItem } from "@/db/schema";
-import { fmtLongMonth, fmtShortMonth, debtPaidPct, computeDebtPayoffSchedule } from "./debt-shared";
+import { fmtLongDate, fmtShortMonth, debtPaidPct, computeDebtPayoffSchedule } from "./debt-shared";
 import type { ComputedDebt } from "./debt-shared";
 import { DebtEditDialog } from "./debt-edit-dialog";
+import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
+import type { Category } from "@/db/schema";
 
 // Detail view for a single debt — same visual language as the recurring-item detail
 // dialog (accent wash, pencil/trash header actions, rounded-2xl info rows). The pencil
@@ -116,12 +118,20 @@ export function DebtDetailDialog({
 }
 
 function DetailBody({ computed }: { computed: ComputedDebt }) {
-  const { debt, linkedBills, amountPaid, currentBalance, debtFreeDate } = computed;
+  const { debt, linkedBills, amountPaid, currentBalance, lastPaymentDate } = computed;
   const isOwed = debt.direction === "owed";
   const paidPct = Math.round(debtPaidPct(debt, amountPaid, currentBalance));
   const isDone = currentBalance === 0;
   const schedule = computeDebtPayoffSchedule(debt, currentBalance);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+
+  // Categories power the recurring-bill detail dialog opened when a linked bill is tapped.
+  const [cats, setCats] = useState<Category[]>([]);
+  const [detailBillId, setDetailBillId] = useState<number | null>(null);
+  useEffect(() => {
+    fetch("/api/categories").then((r) => r.json()).then((c) => setCats(Array.isArray(c) ? c : [])).catch(() => {});
+  }, []);
+  const detailBill = detailBillId != null ? linkedBills.find((b) => b.id === detailBillId) ?? null : null;
 
   return (
     <div className="space-y-6">
@@ -153,8 +163,8 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
           <DetailRow label="Starting balance" value={formatEur(debt.startingBalance)} />
         )}
         <DetailRow label="Minimum monthly payment" value={formatEur(debt.minimumPayment)} />
-        <DetailRow label="Start month" value={fmtLongMonth(new Date(`${debt.startMonth}-01T00:00:00`))} />
-        {debtFreeDate && !isDone && <DetailRow label={isOwed ? "Received by" : "Debt-free by"} value={fmtLongMonth(debtFreeDate)} />}
+        <DetailRow label="Start date" value={fmtLongDate(new Date(`${debt.startDate ?? `${debt.startMonth}-01`}T00:00:00`))} />
+        {lastPaymentDate && !isDone && <DetailRow label="Last payment on" value={fmtLongDate(lastPaymentDate)} />}
       </div>
 
       {debt.notes && (
@@ -171,7 +181,14 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
           </div>
           <div className="space-y-2">
             {linkedBills.map((bill: RecurringItem) => (
-              <div key={bill.id} className="flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
+              // Tapping a linked bill opens its recurring-bill detail dialog, nested inside
+              // this detail dialog.
+              <button
+                key={bill.id}
+                type="button"
+                onClick={() => setDetailBillId(bill.id)}
+                className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3 text-left active:bg-foreground/[0.05] transition-colors"
+              >
                 <Icon iconKey={bill.icon} color={bill.iconColor} size="lg" round />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate leading-tight">{bill.name}</p>
@@ -179,9 +196,17 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
                 {bill.amount != null && (
                   <span className="tabular-nums font-normal text-sm shrink-0">{formatEur(bill.amount)}</span>
                 )}
-              </div>
+              </button>
             ))}
           </div>
+
+          {/* Recurring-bill detail dialog for a tapped linked bill. */}
+          <RecurringDetailDialog
+            item={detailBill}
+            category={detailBill?.categoryId != null ? cats.find((c) => c.id === detailBill.categoryId) ?? null : null}
+            categories={cats}
+            onClose={() => setDetailBillId(null)}
+          />
         </div>
       )}
 

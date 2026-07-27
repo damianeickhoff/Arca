@@ -55,9 +55,9 @@ export async function loadDebtsData(): Promise<DebtsPageData> {
   const totalPaid = computed.reduce((s, c) => s + debtEffectivePaid(c.debt, c.amountPaid, c.currentBalance), 0);
   const totalPaidPct = totalStarting > 0 ? Math.round((totalPaid / totalStarting) * 100) : 0;
   const totalMonthly = oweRows.reduce((s, d) => s + d.minimumPayment, 0);
-  const latestFreeDate = computed.reduce<Date | null>((latest, c) => {
-    if (!c.debtFreeDate) return latest;
-    if (!latest || c.debtFreeDate > latest) return c.debtFreeDate;
+  const latestPaymentDate = computed.reduce<Date | null>((latest, c) => {
+    if (!c.lastPaymentDate) return latest;
+    if (!latest || c.lastPaymentDate > latest) return c.lastPaymentDate;
     return latest;
   }, null);
 
@@ -67,9 +67,9 @@ export async function loadDebtsData(): Promise<DebtsPageData> {
   const totalOwedPaid = computedOwed.reduce((s, c) => s + debtEffectivePaid(c.debt, c.amountPaid, c.currentBalance), 0);
   const totalOwedPaidPct = totalOwedStarting > 0 ? Math.round((totalOwedPaid / totalOwedStarting) * 100) : 0;
   const totalOwedMonthly = owedRows.reduce((s, d) => s + d.minimumPayment, 0);
-  const latestOwedFreeDate = computedOwed.reduce<Date | null>((latest, c) => {
-    if (!c.debtFreeDate) return latest;
-    if (!latest || c.debtFreeDate > latest) return c.debtFreeDate;
+  const latestOwedPaymentDate = computedOwed.reduce<Date | null>((latest, c) => {
+    if (!c.lastPaymentDate) return latest;
+    if (!latest || c.lastPaymentDate > latest) return c.lastPaymentDate;
     return latest;
   }, null);
 
@@ -132,8 +132,8 @@ export async function loadDebtsData(): Promise<DebtsPageData> {
   return {
     rows, bills, computed, computedOwed, totalDebt, totalOwed, netDebt,
     totalStarting, totalPaid, totalPaidPct,
-    totalMonthly, latestFreeDate, snowballTarget, debtHistory, hasChart,
+    totalMonthly, latestPaymentDate, snowballTarget, debtHistory, hasChart,
     chartData, chartSeries,
-    totalOwedStarting, totalOwedPaid, totalOwedPaidPct, totalOwedMonthly, latestOwedFreeDate,
+    totalOwedStarting, totalOwedPaid, totalOwedPaidPct, totalOwedMonthly, latestOwedPaymentDate,
   };
 }

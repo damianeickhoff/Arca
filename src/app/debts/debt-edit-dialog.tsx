@@ -33,7 +33,7 @@ import type { Debt, RecurringItem } from "@/db/schema";
 const SUB_TITLES: Record<string, string> = {
   amount: "Starting balance",
   direction: "Type",
-  period: "Start month",
+  period: "Start date",
   payment: "Minimum monthly payment",
   originalAmount: "Original debt amount",
   recurring: "Linked recurring bills",
@@ -47,9 +47,9 @@ const DIRECTION_OPTIONS = [
   { value: "owed", label: "I am owed" },
 ];
 
-function formatMonthLabel(monthStr: string): string {
-  const [y, m] = monthStr.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+function formatDateLabel(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
 // Edit dialog for an existing debt — same row-list + slide-in-subpage style as the
@@ -78,7 +78,7 @@ export function DebtEditDialog({
   const [calcEnabled, setCalcEnabled] = useState(false);
   const [direction, setDirection] = useState<"owe" | "owed">((debt.direction as "owe" | "owed") ?? "owe");
   const [name, setName] = useState(debt.name);
-  const [startMonth, setStartMonth] = useState(debt.startMonth);
+  const [startDate, setStartDate] = useState(debt.startDate ?? `${debt.startMonth}-01`);
   const [paymentExpr, setPaymentExpr] = useState(debt.minimumPayment ? String(debt.minimumPayment).replace(".", ",") : "");
   const [paymentCalcEnabled, setPaymentCalcEnabled] = useState(false);
   const [originalExpr, setOriginalExpr] = useState(debt.originalAmount != null ? String(debt.originalAmount).replace(".", ",") : "");
@@ -115,7 +115,8 @@ export function DebtEditDialog({
         startingBalance: amountVal,
         originalAmount: originalVal || null,
         minimumPayment: paymentVal || 0,
-        startMonth,
+        startDate,
+        startMonth: startDate.slice(0, 7),
         color: color || null,
         icon: icon || null,
         notes: notes.trim() || null,
@@ -175,7 +176,7 @@ export function DebtEditDialog({
           />
           <Row icon={<Coin className="size-5" />} label="Starting balance" value={amountVal != null ? formatEur(amountVal) : "—"} onClick={() => openSub("amount")} />
           <Row icon={<Adjust className="size-5" />} label="Type" value={direction === "owe" ? "I owe" : "I am owed"} onClick={() => openSub("direction")} />
-          <Row icon={<Calendar className="size-5" />} label="Start month" value={formatMonthLabel(startMonth)} onClick={() => openSub("period")} />
+          <Row icon={<Calendar className="size-5" />} label="Start date" value={formatDateLabel(startDate)} onClick={() => openSub("period")} />
           <Row icon={<Coin className="size-5" />} label="Minimum monthly payment" value={paymentVal ? formatEur(paymentVal) : "—"} onClick={() => openSub("payment")} />
           <Row icon={<Receipt className="size-5" />} label="Original debt amount" value={originalVal ? formatEur(originalVal) : "—"} onClick={() => openSub("originalAmount")} />
           <Row
@@ -201,7 +202,7 @@ export function DebtEditDialog({
 
               {subpage === "period" && (
                 <div className="pt-2">
-                  <DatePicker granularity="month" value={startMonth} onChange={(v) => { setStartMonth(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
+                  <DatePicker granularity="day" value={startDate} onChange={(v) => { setStartDate(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
                 </div>
               )}
 

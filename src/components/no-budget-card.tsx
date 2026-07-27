@@ -73,7 +73,7 @@ export function NoBudgetCard() {
       </button>
 
       {menuOpen && (
-        <div className="absolute top-11 right-3 z-10 w-48 rounded-xl bg-[#232327] shadow-lg overflow-hidden text-left">
+        <div className="absolute top-11 right-3 z-10 w-48 rounded-xl bg-black/7 dark:bg-white/12 backdrop-blur-lg shadow-lg overflow-hidden text-left">
           <button
             type="button"
             onClick={() => suspend(7)}

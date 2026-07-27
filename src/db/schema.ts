@@ -238,7 +238,10 @@ export const debts = sqliteTable("debts", {
   // off. Null = keep the old behavior (startingBalance is treated as the total).
   originalAmount: real("original_amount"),
   minimumPayment: real("minimum_payment").notNull().default(0),
-  startMonth: text("start_month").notNull(), // YYYY-MM
+  startMonth: text("start_month").notNull(), // YYYY-MM (kept in sync with startDate's month for month-based payoff maths)
+  // Full start date (YYYY-MM-DD) — the editable, day-precise start, mirrored to/from any
+  // linked recurring bill's startDate. startMonth is always this value's leading YYYY-MM.
+  startDate: text("start_date"),
   endMonth: text("end_month"), // YYYY-MM — optional payoff/payout target, drives the auto-computed monthly amount
   color: text("color"),
   icon: text("icon"),

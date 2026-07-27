@@ -10,6 +10,7 @@ import { formatEur, toMonthly } from "@/lib/format";
 import { MobileCategoryList } from "@/components/settings/categories/mobile-category-list";
 import { getCategoryTransactionCounts } from "@/lib/category-counts";
 import { RecurringClient, RecurringRestoreButton } from "@/components/settings/recurring/recurring-client";
+import { syncRecurringLifecycle } from "@/lib/recurring-period";
 import { MobileRecurringList } from "@/components/settings/recurring/mobile-recurring-list";
 import { MobileRecurringBottomBar } from "@/components/settings/recurring/mobile-recurring-bottom-bar";
 import { Icon } from "@/components/icon";
@@ -69,6 +70,9 @@ export default async function SettingsPage({
     tab === "profile" ? getSidebarSubtitle() : Promise.resolve(""),
     tab === "profile" ? getBudgetStrategy() : Promise.resolve(null),
   ]);
+
+  // Keep active/inactive + auto-delete in step with each item's start/end dates first.
+  await syncRecurringLifecycle();
 
   const [cats, rules, recurringAll, goals, financialMonth, brandRules, banksData, allBanks, txCountByCat, budgetRollover] = await Promise.all([
     db.select().from(categories).orderBy(asc(categories.name)),
@@ -180,7 +184,7 @@ export default async function SettingsPage({
             {/* Extra bottom clearance so the last cards can scroll clear of the fixed
                 search+add bar above the bottom nav. */}
             <div className="lg:hidden pb-20">
-              <MobileRecurringList items={recurringAll} search={recSearch} />
+              <MobileRecurringList items={recurringAll} categories={cats} search={recSearch} />
             </div>
             <MobileRecurringBottomBar search={recSearch} />
 

@@ -163,6 +163,10 @@ try {
   sqlite.exec(`ALTER TABLE debts ADD COLUMN end_month TEXT`);
 } catch { /* column already exists */ }
 try {
+  sqlite.exec(`ALTER TABLE debts ADD COLUMN start_date TEXT`);
+  sqlite.exec(`UPDATE debts SET start_date = start_month || '-01' WHERE start_date IS NULL AND start_month IS NOT NULL`);
+} catch { /* column already exists */ }
+try {
   sqlite.exec(`ALTER TABLE debts ADD COLUMN original_amount REAL`);
 } catch { /* column already exists */ }
 try {

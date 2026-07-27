@@ -20,7 +20,7 @@ export function DebtsDesktop({
   totalPaid,
   totalPaidPct,
   totalMonthly,
-  latestFreeDate,
+  latestPaymentDate,
   snowballTarget,
   hasChart,
   chartData,
@@ -75,8 +75,8 @@ export function DebtsDesktop({
             <p className="text-xl font-bold tabular-nums text-foreground">{formatEur(totalMonthly)}</p>
           </div>
           <div className="rounded-2xl bg-card p-4">
-            <p className="text-xs text-muted-foreground mb-1">Schuldvrij op</p>
-            <p className="text-xl font-bold tabular-nums text-foreground">{latestFreeDate ? fmtLongMonth(latestFreeDate) : "—"}</p>
+            <p className="text-xs text-muted-foreground mb-1">Last payment on</p>
+            <p className="text-xl font-bold tabular-nums text-foreground">{latestPaymentDate ? fmtLongMonth(latestPaymentDate) : "—"}</p>
           </div>
         </div>
 
@@ -110,7 +110,7 @@ export function DebtsDesktop({
         {/* Debt rows */}
         {computed.length > 0 && (
           <div className="rounded-2xl bg-card overflow-hidden">
-            {computed.map(({ debt, linkedBills, amountPaid, currentBalance, debtFreeDate }) => {
+            {computed.map(({ debt, linkedBills, amountPaid, currentBalance, lastPaymentDate }) => {
               const paidPct = debtPaidPct(debt, amountPaid, currentBalance);
               const isPaidOff = currentBalance === 0;
               const color = debt.color ?? "var(--chart-3)";
@@ -149,11 +149,11 @@ export function DebtsDesktop({
                         <p className="text-sm font-semibold tabular-nums">{formatEur(debt.minimumPayment)}</p>
                       </div>
                       <div className="rounded-lg bg-muted/50 px-2 py-1.5">
-                        <p className="text-[10px] text-muted-foreground">Vrij op</p>
+                        <p className="text-[10px] text-muted-foreground">Last payment</p>
                         {isPaidOff ? (
                           <p className="text-sm font-semibold text-emerald-600">✓</p>
-                        ) : debtFreeDate ? (
-                          <p className="text-sm font-semibold tabular-nums">{fmtShortMonth(debtFreeDate)}</p>
+                        ) : lastPaymentDate ? (
+                          <p className="text-sm font-semibold tabular-nums">{fmtShortMonth(lastPaymentDate)}</p>
                         ) : (
                           <p className="text-sm text-muted-foreground">—</p>
                         )}

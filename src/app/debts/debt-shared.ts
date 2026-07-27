@@ -29,11 +29,33 @@ export function computeDebt(debt: Debt, billPaid: number | null) {
     debt.minimumPayment > 0 && currentBalance > 0
       ? Math.ceil(currentBalance / debt.minimumPayment)
       : currentBalance === 0 ? 0 : null;
-  const debtFreeDate =
-    monthsRemaining != null
-      ? (() => { const d = payoffAnchor(debt.startMonth); d.setMonth(d.getMonth() + monthsRemaining); return d; })()
+  // The FINAL payment's date (not the month after). With N payments left, counting from
+  // the payoff anchor, the last one falls (N − 1) months later. Keep the debt's own
+  // payment day (its start date's day) so the date shows a real day, not the 1st.
+  const lastPaymentDate =
+    monthsRemaining != null && monthsRemaining > 0
+      ? (() => {
+          const d = payoffAnchor(debt.startMonth);
+          d.setMonth(d.getMonth() + (monthsRemaining - 1));
+          const day = debt.startDate ? Number(debt.startDate.slice(8, 10)) || 1 : 1;
+          const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+          d.setDate(Math.min(day, lastDay));
+          return d;
+        })()
       : null;
-  return { amountPaid, currentBalance, monthsRemaining, debtFreeDate };
+  return { amountPaid, currentBalance, monthsRemaining, lastPaymentDate };
+}
+
+// The linked recurring bill's end date: the full date of the debt's final payment,
+// projected from the FULL starting balance (a freshly created/edited debt has the
+// whole balance still outstanding). Keeps the bill's day-of-month aligned with the
+// debt's start date. Null when there's no minimum payment to project from.
+export function computeDebtBillEndDate(startDate: string, startingBalance: number, minimumPayment: number): string | null {
+  if (minimumPayment <= 0 || startingBalance <= 0) return null;
+  const months = Math.ceil(startingBalance / minimumPayment);
+  const [y, m, d] = startDate.split("-").map(Number);
+  const end = new Date(y, (m - 1) + (months - 1), d || 1);
+  return `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
 }
 
 // When an original amount is set (and genuinely bigger than the starting balance —
@@ -90,6 +112,9 @@ export function fmtShortMonth(date: Date) {
 export function fmtLongMonth(date: Date) {
   return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
+export function fmtLongDate(date: Date) {
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
 
 export type ComputedDebt = {
   debt: Debt;
@@ -99,7 +124,8 @@ export type ComputedDebt = {
   amountPaid: number;
   currentBalance: number;
   monthsRemaining: number | null;
-  debtFreeDate: Date | null;
+  // Date of the final payment (last payment month), or null when already settled.
+  lastPaymentDate: Date | null;
 };
 
 export type DebtChartRow = { name: string; Total: number; [key: string]: number | string };
@@ -122,7 +148,7 @@ export interface DebtsPageData {
   totalPaid: number;
   totalPaidPct: number;
   totalMonthly: number;
-  latestFreeDate: Date | null;
+  latestPaymentDate: Date | null;
   snowballTarget: ComputedDebt | null;
   debtHistory: number[];
   hasChart: boolean;
@@ -133,5 +159,5 @@ export interface DebtsPageData {
   totalOwedPaid: number;
   totalOwedPaidPct: number;
   totalOwedMonthly: number;
-  latestOwedFreeDate: Date | null;
+  latestOwedPaymentDate: Date | null;
 }

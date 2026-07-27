@@ -41,7 +41,7 @@ export function DebtsInteractive({
           <h2 className="font-semibold text-base mb-3 px-3">Debts</h2>
           <div className="space-y-2.5">
             {computed.map((c) => {
-              const { debt, linkedBills, amountPaid, currentBalance, debtFreeDate } = c;
+              const { debt, linkedBills, amountPaid, currentBalance, lastPaymentDate } = c;
               const paidPct = debtPaidPct(debt, amountPaid, currentBalance);
               const isPaidOff = currentBalance === 0;
               const color = debt.color ?? "var(--chart-3)";
@@ -70,7 +70,7 @@ export function DebtsInteractive({
                           {formatEur(currentBalance)}
                         </p>
                         <p className="text-sm text-foreground/60 tabular-nums">
-                          {isPaidOff ? "✓" : debtFreeDate ? fmtShortMonth(debtFreeDate) : "—"}
+                          {isPaidOff ? "✓" : lastPaymentDate ? fmtShortMonth(lastPaymentDate) : "—"}
                         </p>
                       </div>
                     }

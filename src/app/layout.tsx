@@ -121,7 +121,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <FinishTransitionProvider>
             <MotionProvider>
               <AppLockGate
-                enabled={appLock.enabled}
+                // Only gate the app once the user is actually logged in and on a private
+                // route — otherwise the lock screen would cover the login/register pages,
+                // showing the PIN prompt before authentication instead of after it.
+                enabled={appLock.enabled && !!user && !isPublicPath(pathname)}
                 hasWebAuthn={appLock.hasWebAuthn}
                 webAuthnCredentialId={appLock.webAuthnCredentialId}
                 pinLength={appLock.pinLength}

@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { recurringItems } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { debts, debtRecurring, recurringItems } from "@/db/schema";
+import { eq, asc, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 import { applyAllRules } from "@/lib/apply-rules";
 import { findRecurringItemByName } from "@/lib/recurring-dedupe";
+import { computeDebtBillEndDate } from "@/app/debts/debt-shared";
+
+// When a bill linked to a debt has its start date changed, mirror it back onto the debt
+// (start date + month), then re-project the debt's last-payment date onto every one of
+// that debt's linked bills — so start dates sync both ways and the end date stays led by
+// the debt's own computation.
+async function syncDebtFromBill(billId: number, newStartDate: string | null) {
+  if (!newStartDate) return;
+  const links = await db.select({ debtId: debtRecurring.debtId }).from(debtRecurring).where(eq(debtRecurring.recurringItemId, billId));
+  for (const { debtId } of links) {
+    const [debt] = await db.select().from(debts).where(eq(debts.id, debtId));
+    if (!debt) continue;
+    const startMonth = newStartDate.slice(0, 7);
+    await db.update(debts).set({ startDate: newStartDate, startMonth }).where(eq(debts.id, debtId));
+    const dueDay = Number(newStartDate.slice(8, 10)) || 1;
+    const endDate = computeDebtBillEndDate(newStartDate, debt.startingBalance, debt.minimumPayment);
+    const billLinks = await db.select({ rid: debtRecurring.recurringItemId }).from(debtRecurring).where(eq(debtRecurring.debtId, debtId));
+    await db.update(recurringItems).set({ startDate: newStartDate, dueDay, endDate }).where(inArray(recurringItems.id, billLinks.map((b) => b.rid)));
+  }
+}
 
 export async function GET() {
   const denied = await requireAuth();
@@ -64,6 +84,8 @@ export async function PATCH(req: NextRequest) {
   const { id, ...data } = await req.json();
   const [row] = await db.update(recurringItems).set(data).where(eq(recurringItems.id, id)).returning();
   if (!row) return NextResponse.json({ error: "Recurring item not found" }, { status: 404 });
+  // If this bill is linked to a debt and its start date changed, sync it back to the debt.
+  if (data.startDate !== undefined) await syncDebtFromBill(id, row.startDate);
   // Re-apply so pattern/amount/category edits re-flow to matching transactions.
   await applyAllRules();
   return NextResponse.json(row);

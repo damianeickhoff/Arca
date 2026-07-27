@@ -34,7 +34,16 @@ import { evaluateExpression } from "@/lib/amount-expression";
 import { cn } from "@/lib/utils";
 
 interface AddProps { action: "add"; variant?: "default" | "icon" | "fab" }
-interface EditProps { action: "edit"; item: RecurringItem; trigger?: React.ReactNode; open?: boolean; onOpenChange?: (v: boolean) => void }
+interface EditProps {
+  action: "edit";
+  item: RecurringItem;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  /** Hide the end-date editor — used when this bill is linked to a debt, whose own
+   *  computed "last payment on" date is the source of truth for the end date. */
+  lockEndDate?: boolean;
+}
 type Props = AddProps | EditProps;
 
 const TYPE_OPTIONS = [
@@ -69,6 +78,22 @@ function fmtShort(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// For a debt-linked bill whose end date is fixed-duration (end = start + N months), keep
+// the end date in step the instant the start date changes — so the UI reflects it without
+// waiting for the server round-trip + refresh. Preserves the original month-span and lands
+// on the new start's day-of-month (clamped to the month's length).
+function shiftEndDate(origStart: string, origEnd: string, newStart: string): string {
+  const [oy, om] = origStart.split("-").map(Number);
+  const [ey, em] = origEnd.split("-").map(Number);
+  const durationMonths = (ey - oy) * 12 + (em - om);
+  const [ny, nm, nd] = newStart.split("-").map(Number);
+  const d = new Date(ny, (nm - 1) + durationMonths, 1);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(nd || 1, lastDay));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export function RecurringClient(props: Props) {
   const router = useRouter();
   const controlled = props.action === "edit" && props.open !== undefined;
@@ -83,6 +108,10 @@ export function RecurringClient(props: Props) {
 
   const isEdit = props.action === "edit";
   const item = isEdit ? props.item : null;
+  // End date is owned by a linked debt when explicitly told (opened from the debt detail)
+  // or for any debt-type bill (auto-created from a debt) — its end mirrors the debt's
+  // computed last-payment date and must not be edited here.
+  const endDateLocked = isEdit && (((props as EditProps).lockEndDate ?? false) || item?.type === "debt");
 
   const [cats, setCats] = useState<Category[]>([]);
   useEffect(() => {
@@ -296,17 +325,31 @@ export function RecurringClient(props: Props) {
                   <div className="space-y-5 pt-2">
                     <div>
                       <p className="text-sm font-medium mb-1.5">Start date</p>
-                      <DatePicker value={form.startDate || todayISO()} onChange={(v) => set("startDate", v)} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
+                      <DatePicker
+                        value={form.startDate || todayISO()}
+                        onChange={(v) => {
+                          set("startDate", v);
+                          // Locked (debt-linked) end date follows the start date immediately.
+                          if (endDateLocked && item?.startDate && item?.endDate) set("endDate", shiftEndDate(item.startDate, item.endDate, v));
+                        }}
+                        triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]"
+                      />
                       <p className="text-xs text-foreground/50 mt-1.5">This becomes the due date of the recurrence.</p>
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <p className="text-sm font-medium">End date</p>
-                        <button type="button" onClick={() => set("endDate", form.endDate ? "" : todayISO())} className="text-sm font-medium">
-                          {form.endDate ? "Remove" : "Add"}
-                        </button>
+                        {!endDateLocked && (
+                          <button type="button" onClick={() => set("endDate", form.endDate ? "" : todayISO())} className="text-sm font-medium">
+                            {form.endDate ? "Remove" : "Add"}
+                          </button>
+                        )}
                       </div>
-                      {form.endDate ? (
+                      {endDateLocked ? (
+                        <p className="text-sm text-foreground/45">
+                          {form.endDate ? `Ends ${fmtShort(form.endDate)} — ` : ""}managed by the linked debt&apos;s last-payment date.
+                        </p>
+                      ) : form.endDate ? (
                         <>
                           <DatePicker value={form.endDate} onChange={(v) => set("endDate", v)} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
                           <p className="text-xs text-foreground/50 mt-1.5">After this date the recurrence is automatically disabled.</p>

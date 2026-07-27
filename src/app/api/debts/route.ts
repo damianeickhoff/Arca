@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { debts, debtRecurring, recurringItems } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
+import type { Debt } from "@/db/schema";
 import { requireAuth } from "@/lib/auth";
 import { findRecurringItemByName } from "@/lib/recurring-dedupe";
+import { computeDebtBillEndDate } from "@/app/debts/debt-shared";
+
+// Push the debt's start date, derived due-day and computed last-payment (end) date onto
+// every linked recurring bill, so a debt and its bills always share one period. The debt's
+// computed end date is leading — see computeDebtBillEndDate — hence bills can't set their
+// own end date (the recurring editor hides it for linked/debt bills).
+async function syncLinkedBillsPeriod(debt: Debt, billIds: number[]) {
+  if (billIds.length === 0) return;
+  const startDate = debt.startDate ?? `${debt.startMonth}-01`;
+  const dueDay = Number(startDate.slice(8, 10)) || 1;
+  const endDate = computeDebtBillEndDate(startDate, debt.startingBalance, debt.minimumPayment);
+  await db.update(recurringItems).set({ startDate, dueDay, endDate }).where(inArray(recurringItems.id, billIds));
+}
 
 export async function GET() {
   const denied = await requireAuth();
@@ -28,18 +42,8 @@ export async function POST(req: NextRequest) {
     if (existing) {
       if (!linkIds.includes(existing.id)) linkIds.push(existing.id);
     } else {
-      // Mirror the debt's own "debt-free by" projection as the bill's end date: at
-      // creation the whole balance is still outstanding, so it takes
-      // ceil(balance / minimumPayment) monthly payments — the last of which is the
-      // end month. Left open-ended when there's no minimum payment to project from.
-      const startDate = `${data.startMonth}-01`;
-      let endDate: string | null = null;
-      if (data.minimumPayment > 0 && data.startingBalance > 0) {
-        const months = Math.ceil(data.startingBalance / data.minimumPayment);
-        const [sy, sm] = data.startMonth.split("-").map(Number);
-        const end = new Date(sy, (sm - 1) + (months - 1), 1);
-        endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-01`;
-      }
+      // Period fields (startDate/dueDay/endDate) are set by syncLinkedBillsPeriod below,
+      // which keeps every linked bill aligned with the debt in one place.
       const [bill] = await db
         .insert(recurringItems)
         .values({
@@ -51,9 +55,6 @@ export async function POST(req: NextRequest) {
           categoryId: recurringCategoryId ?? null,
           notes: data.notes ?? null,
           active: true,
-          startDate,
-          endDate,
-          dueDay: 1,
           source: "manual",
         })
         .returning();
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
   }
   if (linkIds.length > 0) {
     await db.insert(debtRecurring).values(linkIds.map((rid) => ({ debtId: row.id, recurringItemId: rid })));
+    await syncLinkedBillsPeriod(row, linkIds);
   }
   return NextResponse.json(row, { status: 201 });
 }
@@ -70,12 +72,15 @@ export async function PATCH(req: NextRequest) {
   const denied = await requireAuth();
   if (denied) return denied;
 
-  const { id, recurringIds, ...data } = await req.json();
+  const { id, recurringIds, recurringCategoryId, recurringBudgetType, createRecurringBill, ...data } = await req.json();
+  void recurringCategoryId; void recurringBudgetType; void createRecurringBill;
   const [row] = await db.update(debts).set(data).where(eq(debts.id, id)).returning();
   // Replace the recurring-bill links
   await db.delete(debtRecurring).where(eq(debtRecurring.debtId, id));
   if (Array.isArray(recurringIds) && recurringIds.length > 0) {
     await db.insert(debtRecurring).values(recurringIds.map((rid: number) => ({ debtId: id, recurringItemId: rid })));
+    // Keep the linked bills' start/end dates in sync with the (possibly changed) debt.
+    await syncLinkedBillsPeriod(row, recurringIds);
   }
   return NextResponse.json(row);
 }

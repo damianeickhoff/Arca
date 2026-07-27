@@ -309,6 +309,11 @@ addColumnIfMissing("debts", "direction", "TEXT NOT NULL DEFAULT 'owe'");
 addColumnIfMissing("debts", "end_month", "TEXT");
 addColumnIfMissing("debts", "original_amount", "REAL");
 
+// Auto-migrate: day-precise debt start date (mirrored to/from linked recurring bills).
+// Backfill from the existing month-only start_month (first of that month).
+addColumnIfMissing("debts", "start_date", "TEXT");
+sqlite.exec(`UPDATE debts SET start_date = start_month || '-01' WHERE start_date IS NULL AND start_month IS NOT NULL`);
+
 // Auto-migrate: unified goals (budgeting + savings) for the /goals page
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS goals (

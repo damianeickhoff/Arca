@@ -577,9 +577,9 @@ export default async function DashboardPage({
     <DashboardAnimationProvider>
     <BudgetPortalProvider>
     <TransactionsPortalProvider>
-    <div className={`${AUTH_BG_CLASS} relative isolate mt-[calc(-1.7rem-var(--sat))] lg:mt-0 pt-[var(--sat)] lg:pt-0 min-h-dvh `} style={authBackgroundStyle(authBackground, { boxHeight: "100dvh", fadeStop: 50 })}>
+    <div className={`${AUTH_BG_CLASS} relative isolate mt-[calc(-1.7rem-var(--sat))] lg:mt-0 pt-[var(--sat)] lg:pt-0 min-h-dvh `} style={authBackgroundStyle(authBackground, { boxHeight: "110dvh", fadeStop: 50 })}>
       <DashboardReadySignal />
-      <DashboardFlowGlow />
+      
 
       {/* ── DASHBOARD — mobile base, widens into a grid on desktop ── */}
       <div className="min-h-dvh pb-[calc(5rem+env(safe-area-inset-bottom))] pt-5 lg:pb-0 lg:max-w-6xl lg:mx-auto lg:px-6 ">

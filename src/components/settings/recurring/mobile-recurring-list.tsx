@@ -6,6 +6,7 @@ import { formatEur, toMonthly } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
+import { recurringPeriodStatus, type RecurringPeriodStatus } from "@/lib/recurring-status";
 import type { RecurringItem, Category } from "@/db/schema";
 
 const GROUPS = ["income", "bill", "subscription", "debt"] as const;
@@ -17,13 +18,9 @@ const GROUP_LABELS: Record<string, string> = {
 const ITEM_LABELS: Record<string, string> = {
   income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt",
 };
-const FREQ_LABELS: Record<string, string> = {
-  yearly: "jaar", weekly: "week", monthly: "mnd", once: "eenmalig",
-};
-// Short indicator shown as a small pill behind the name (non-monthly items only —
-// monthly is the norm, so it stays unmarked to keep the row clean).
+// Single-letter frequency indicator shown as a small pill behind the name.
 const FREQ_INDICATOR: Record<string, string> = {
-  daily: "Dag", weekly: "Week", monthly: "Mnd", quarterly: "Kwt", yearly: "Jaar", once: "1×",
+  daily: "D", weekly: "W", monthly: "M", quarterly: "Q", yearly: "Y", once: "1×",
 };
 // Budget-type labels used in the subtitle ("Subscription • Needs").
 const BUDGET_LABELS: Record<string, string> = {
@@ -56,6 +53,72 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
+/** Status pill shown after the name for future/expired items. */
+function StatusBadge({ status }: { status: RecurringPeriodStatus }) {
+  if (status === "future") {
+    return <span className="shrink-0 rounded-full bg-blue-500/12 text-blue-600 dark:text-blue-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">Upcoming</span>;
+  }
+  if (status === "expired") {
+    return <span className="shrink-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">Expired</span>;
+  }
+  return null;
+}
+
+/** One recurring item row, wrapped in its edit dialog. Extracted so the active, upcoming
+ * and expired sections can all reuse the exact same card. */
+function RecurringCard({ item, cat, status }: { item: RecurringItem; cat: Category | undefined; status: RecurringPeriodStatus }) {
+  const monthly = toMonthly(item.amount, item.frequency);
+  // Future/expired items are naturally inactive; dim only when the period doesn't already
+  // explain it (e.g. a manually-disabled item that's still within its dates).
+  const dim = !item.active && status === "active";
+  // "Type • Budget" line, shown under the amount (e.g. "Subscription • Needs").
+  const typeBudget =
+    (ITEM_LABELS[item.type] ?? item.type) +
+    (item.budgetType && BUDGET_LABELS[item.budgetType] ? ` • ${BUDGET_LABELS[item.budgetType]}` : "");
+  return (
+    <RecurringClient
+      action="edit"
+      item={item}
+      trigger={
+        <div className={`flex items-center gap-4 rounded-2xl bg-card px-5 py-4 ${dim ? "opacity-50" : ""}`}>
+          <Icon
+            iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
+            color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
+            size="xl"
+            round
+          />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-lg font-semibold truncate leading-tight min-w-0">{item.name}</p>
+              {/* Single-letter frequency indicator right after the name. */}
+              <span className="shrink-0 rounded-full bg-foreground/8 text-foreground/55 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                {FREQ_INDICATOR[item.frequency] ?? item.frequency}
+              </span>
+              <StatusBadge status={status} />
+              {item.source === "auto" && (
+                <span className="shrink-0 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                  Auto
+                </span>
+              )}
+            </div>
+            {/* Under the title: the linked category name. */}
+            <p className="text-sm text-foreground/50 mt-0.5 truncate">
+              {cat?.name ?? "No category"}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-lg font-semibold tabular-nums leading-tight">
+              {item.amount ? formatEur(monthly) : "—"}
+            </p>
+            {/* Under the amount: transaction type + budget type. */}
+            <p className="text-xs text-foreground/40 mt-0.5 truncate">{typeBudget}</p>
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
 /** Mobile recurring-items list — each item is its own rounded card with a bold title,
  * a grey subtitle and a right-aligned monthly amount (accounts-list style). Per-category
  * totals live in the summary cards up top; a pill row filters by type. Tapping a card
@@ -66,11 +129,23 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
   const query = (search ?? "").trim().toLowerCase();
   const visibleGroups = filter === "all" ? GROUPS : GROUPS.filter((g) => g === filter);
 
-  function groupItems(g: string) {
-    return items
-      .filter((i) => i.type === g && !i.dismissed)
-      .filter((i) => !query || i.name.toLowerCase().includes(query));
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const statusOf = (i: RecurringItem) => recurringPeriodStatus(i, todayStr);
+
+  function matchesQuery(i: RecurringItem) {
+    return !query || i.name.toLowerCase().includes(query);
   }
+  // Active-period items belong to their type sections; future/expired get their own.
+  function groupItems(g: string) {
+    return items.filter((i) => i.type === g && !i.dismissed && matchesQuery(i) && statusOf(i) === "active");
+  }
+  function periodItems(status: RecurringPeriodStatus) {
+    return items
+      .filter((i) => !i.dismissed && matchesQuery(i) && statusOf(i) === status)
+      .filter((i) => filter === "all" || i.type === filter);
+  }
+  const futureItems = periodItems("future");
+  const expiredItems = periodItems("expired");
 
   // Per-category monthly totals for the summary cards (active, non-dismissed items only).
   const totals: Record<string, number> = {};
@@ -85,7 +160,11 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
     .filter((i) => i.dismissed)
     .filter((i) => !query || i.name.toLowerCase().includes(query));
 
-  const noResults = visibleGroups.every((g) => groupItems(g).length === 0) && dismissedItems.length === 0;
+  const noResults =
+    visibleGroups.every((g) => groupItems(g).length === 0) &&
+    futureItems.length === 0 &&
+    expiredItems.length === 0 &&
+    dismissedItems.length === 0;
 
   return (
     <div className="space-y-5">
@@ -134,75 +213,52 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
               <section key={g}>
                 <SectionHeader label={GROUP_LABELS[g]} />
                 <div className="space-y-3">
-                  {rows.map((item) => {
-                    const monthly = toMonthly(item.amount, item.frequency);
-                    const isNonMonthly = item.frequency !== "monthly" && item.amount;
-                    return (
-                      <RecurringClient
-                        key={item.id}
-                        action="edit"
-                        item={item}
-                        trigger={
-                          (() => {
-                          const cat = item.categoryId != null ? catById.get(item.categoryId) : undefined;
-                          // Recurring items always take their icon from the assigned category — brand
-                          // logos belong to transactions (matched by name), not to recurring items.
-                          // (Some items still carry a stale brand icon like "siPlex" in the DB; it's
-                          // deliberately ignored here so the category icon shows consistently.)
-                          return (
-                          <div className={`flex items-center gap-4 rounded-2xl bg-card px-5 py-4 ${!item.active ? "opacity-50" : ""}`}>
-                            <Icon
-                              iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
-                              color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
-                              size="xl"
-                              round
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-lg font-semibold truncate leading-tight min-w-0">{item.name}</p>
-                                {/* Frequency indicator — a compact pill right after the name,
-                                    shown only for non-monthly items (monthly is the norm). */}
-                                {item.frequency !== "monthly" && (
-                                  <span className="shrink-0 rounded-full bg-foreground/8 text-foreground/55 text-[10px] font-medium px-1.5 py-0.5 leading-none">
-                                    {FREQ_INDICATOR[item.frequency] ?? item.frequency}
-                                  </span>
-                                )}
-                                {item.source === "auto" && (
-                                  <span className="shrink-0 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5 leading-none">
-                                    Auto
-                                  </span>
-                                )}
-                              </div>
-                              {/* Subtitle: transaction type + budget type, e.g. "Subscription • Needs". */}
-                              <p className="text-sm text-foreground/50 mt-0.5 truncate">
-                                {ITEM_LABELS[item.type] ?? item.type}
-                                {item.budgetType && BUDGET_LABELS[item.budgetType] ? ` • ${BUDGET_LABELS[item.budgetType]}` : ""}
-                                {!item.active && " · Inactief"}
-                              </p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-lg font-semibold tabular-nums leading-tight">
-                                {item.amount ? formatEur(monthly) : "—"}
-                              </p>
-                              {isNonMonthly ? (
-                                <p className="text-xs text-foreground/40 tabular-nums mt-0.5">
-                                  {formatEur(item.amount ?? 0)}/{FREQ_LABELS[item.frequency] ?? item.frequency}
-                                </p>
-                              ) : item.amount ? (
-                                <p className="text-xs text-foreground/40 mt-0.5">/mnd</p>
-                              ) : null}
-                            </div>
-                          </div>
-                          );
-                          })()
-                        }
-                      />
-                    );
-                  })}
+                  {rows.map((item) => (
+                    <RecurringCard
+                      key={item.id}
+                      item={item}
+                      cat={item.categoryId != null ? catById.get(item.categoryId) : undefined}
+                      status="active"
+                    />
+                  ))}
                 </div>
               </section>
             );
           })}
+
+          {/* Upcoming — items whose start date is still in the future (not active yet). */}
+          {futureItems.length > 0 && (
+            <section>
+              <SectionHeader label="Upcoming" />
+              <div className="space-y-3">
+                {futureItems.map((item) => (
+                  <RecurringCard
+                    key={item.id}
+                    item={item}
+                    cat={item.categoryId != null ? catById.get(item.categoryId) : undefined}
+                    status="future"
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Expired — items past their end date (auto-deleted 2 months after expiry). */}
+          {expiredItems.length > 0 && (
+            <section>
+              <SectionHeader label="Expired" />
+              <div className="space-y-3">
+                {expiredItems.map((item) => (
+                  <RecurringCard
+                    key={item.id}
+                    item={item}
+                    cat={item.categoryId != null ? catById.get(item.categoryId) : undefined}
+                    status="expired"
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Dismissed auto-detected items — kept so detection never recreates them, restorable. */}
           {dismissedItems.length > 0 && (

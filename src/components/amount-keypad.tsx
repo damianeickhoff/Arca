@@ -8,6 +8,7 @@ import {
   IconPlus,
   IconCalculator,
 } from "@tabler/icons-react";
+import { useEffect } from "react";
 import { m, AnimatePresence, LazyMotion, domMax } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
@@ -44,6 +45,31 @@ export function AmountKeypad({
   const isZeroDisplay = bigDisplay === "0";
   const amountChars = bigDisplay.split("");
   const press = (key: string) => onChange(pressKey(expr, key));
+
+  // Allow hardware keyboard / numpad input so the keypad works on devices with a keyboard.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't hijack typing into a real text field.
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      let key: string | null = null;
+      if (e.key >= "0" && e.key <= "9") key = e.key;
+      else if (e.key === "," || e.key === ".") key = ",";
+      else if (e.key === "Backspace") key = "back";
+      else if (calcEnabled && (e.key === "/" || e.key === "÷")) key = "÷";
+      else if (calcEnabled && (e.key === "*" || e.key === "×")) key = "×";
+      else if (calcEnabled && (e.key === "-" || e.key === "−")) key = "−";
+      else if (calcEnabled && (e.key === "+")) key = "+";
+      if (key === null) return;
+
+      e.preventDefault();
+      onChange(pressKey(expr, key));
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [expr, calcEnabled, onChange]);
 
   return (
     <div className="flex flex-col">

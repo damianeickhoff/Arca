@@ -34,7 +34,7 @@ export function DashboardFlowGlow() {
              the blur is ever visible, so it softens the same way the rest
              of the shape does without touching the shape's own fill. */
           height: calc(100% + 140px);
-          background: rgba(0,0,0,0.50);
+          background: var(--background);
           /* Half-ellipse top (rounded dome, full width/height) + flat bottom —
              scales cleanly with the box's own width/height, unlike an SVG
              viewBox stretched non-uniformly across a tall, narrow area. */
@@ -81,8 +81,8 @@ export function DashboardFlowGlow() {
             }
           }
         @keyframes caustic-shimmer {
-          0%, 100% { opacity: 0.44; }
-          50% { opacity: 0.44; }
+          0%, 100% { opacity: 0.24; }
+          50% { opacity: 0.24; }
         }
         @media (prefers-reduced-motion: reduce) {
           .caustic-mover { animation: none; opacity: 0.2; }
