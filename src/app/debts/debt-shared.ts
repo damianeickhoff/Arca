@@ -5,6 +5,18 @@ export function monthsElapsed(startMonth: string, asOf: Date = new Date()): numb
   return Math.max(0, (asOf.getFullYear() - sy) * 12 + (asOf.getMonth() + 1 - sm));
 }
 
+// The month payments actually start from: the later of this month and the debt's
+// start month. A debt whose start month is in the future hasn't begun paying down
+// yet, so its upcoming payments (and debt-free date) should count forward from that
+// start month rather than from today.
+export function payoffAnchor(startMonth: string): Date {
+  const now = new Date();
+  const cur = new Date(now.getFullYear(), now.getMonth(), 1);
+  const [sy, sm] = startMonth.split("-").map(Number);
+  const start = new Date(sy, (sm || 1) - 1, 1);
+  return start > cur ? start : cur;
+}
+
 // `billPaid` is the amount paid via the debt's linked recurring bills, or null when
 // it has no links — in which case the linear minimumPayment × monthsElapsed model applies.
 export function computeDebt(debt: Debt, billPaid: number | null) {
@@ -19,7 +31,7 @@ export function computeDebt(debt: Debt, billPaid: number | null) {
       : currentBalance === 0 ? 0 : null;
   const debtFreeDate =
     monthsRemaining != null
-      ? (() => { const d = new Date(); d.setMonth(d.getMonth() + monthsRemaining); return d; })()
+      ? (() => { const d = payoffAnchor(debt.startMonth); d.setMonth(d.getMonth() + monthsRemaining); return d; })()
       : null;
   return { amountPaid, currentBalance, monthsRemaining, debtFreeDate };
 }
@@ -58,12 +70,14 @@ export function debtPaidPct(debt: Debt, amountPaid: number, currentBalance: numb
 export function computeDebtPayoffSchedule(debt: Debt, currentBalance: number): { date: Date; amount: number }[] {
   if (debt.minimumPayment <= 0 || currentBalance <= 0) return [];
   const schedule: { date: Date; amount: number }[] = [];
-  const now = new Date();
+  // Payments start from the debt's start month when it's in the future, otherwise
+  // from the current month — so changing the start month shifts the schedule.
+  const anchor = payoffAnchor(debt.startMonth);
   let remaining = currentBalance;
   let i = 0;
   while (remaining > 0.005 && i < 1200) {
     const amount = Math.min(debt.minimumPayment, remaining);
-    schedule.push({ date: new Date(now.getFullYear(), now.getMonth() + i, 1), amount });
+    schedule.push({ date: new Date(anchor.getFullYear(), anchor.getMonth() + i, 1), amount });
     remaining -= amount;
     i++;
   }

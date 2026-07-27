@@ -24,6 +24,7 @@ import {
 import { DatePicker } from "@/components/date-picker";
 import { AmountKeypad } from "@/components/amount-keypad";
 import { RecurringMultiPicker } from "@/components/recurring-multi-picker";
+import { RecurringCategoryPicker } from "@/components/recurring-category-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { ColorPicker } from "@/components/color-picker";
 import { PickerField } from "@/components/picker-field";
@@ -40,7 +41,7 @@ import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/moti
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
 import { formatEur, currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { RecurringItem } from "@/db/schema";
+import type { Category, RecurringItem } from "@/db/schema";
 
 function currentYearMonth() {
   const now = new Date();
@@ -80,8 +81,11 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [calcEnabled, setCalcEnabled] = useState(false);
   // When on, saving also creates a monthly recurring bill from this debt's own name +
-  // minimum payment + start month, and links it — so you don't have to fill it in twice.
+  // minimum payment + start month + notes, and links it — so you don't have to fill it
+  // in twice. A category is mandatory before it can be turned on (picked via the popup).
   const [autoCreateBill, setAutoCreateBill] = useState(false);
+  const [recurringCategory, setRecurringCategory] = useState<Category | null>(null);
+  const [recurringCatOpen, setRecurringCatOpen] = useState(false);
 
   useEffect(() => acquireNavHidden(), []);
 
@@ -115,6 +119,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         notes: notes.trim() || null,
         recurringIds,
         createRecurringBill: autoCreateBill,
+        recurringCategoryId: autoCreateBill ? recurringCategory?.id ?? null : null,
+        recurringBudgetType: autoCreateBill ? recurringCategory?.budgetType ?? "nodig" : null,
       }),
     });
     setLoading(false);
@@ -307,11 +313,16 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setAutoCreateBill((v) => {
-                  const next = !v;
-                  if (next) setRecurringIds([]);
-                  return next;
-                })}
+                onClick={() => {
+                  if (autoCreateBill) {
+                    // Turn it back off and clear the chosen category.
+                    setAutoCreateBill(false);
+                    setRecurringCategory(null);
+                  } else {
+                    // A category is mandatory — open the picker; only enable once one is chosen.
+                    setRecurringCatOpen(true);
+                  }
+                }}
                 aria-label={autoCreateBill ? "Recurring bill will be created" : "Also create a recurring bill"}
                 title="Also create a recurring bill from this debt"
                 className={cn(
@@ -337,7 +348,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
 
           {autoCreateBill && (
             <p className="px-1 -mt-1 mb-2 text-xs text-foreground/50 shrink-0">
-              Will also create a monthly recurring bill named &quot;{name.trim() || "…"}&quot; for {paymentVal ? formatEur(paymentVal) : "the minimum payment"}.
+              Will also create a monthly recurring bill named &quot;{name.trim() || "…"}&quot; for {paymentVal ? formatEur(paymentVal) : "the minimum payment"}
+              {recurringCategory ? <> in <button type="button" onClick={() => setRecurringCatOpen(true)} className="underline underline-offset-2">{recurringCategory.name}</button></> : null}.
             </p>
           )}
 
@@ -491,6 +503,19 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         open={recurringOpen}
         onOpenChange={setRecurringOpen}
         onApply={setRecurringIds}
+      />
+
+      {/* Mandatory category for the auto-created recurring bill. Choosing one enables
+          "also create a recurring bill"; cancelling leaves it off. */}
+      <RecurringCategoryPicker
+        open={recurringCatOpen}
+        onOpenChange={setRecurringCatOpen}
+        selectedId={recurringCategory?.id ?? null}
+        onSelect={(cat) => {
+          setRecurringCategory(cat);
+          setAutoCreateBill(true);
+          setRecurringIds([]);
+        }}
       />
     </div>
   );

@@ -20,6 +20,15 @@ const ITEM_LABELS: Record<string, string> = {
 const FREQ_LABELS: Record<string, string> = {
   yearly: "jaar", weekly: "week", monthly: "mnd", once: "eenmalig",
 };
+// Short indicator shown as a small pill behind the name (non-monthly items only —
+// monthly is the norm, so it stays unmarked to keep the row clean).
+const FREQ_INDICATOR: Record<string, string> = {
+  daily: "Dag", weekly: "Week", monthly: "Mnd", quarterly: "Kwt", yearly: "Jaar", once: "1×",
+};
+// Budget-type labels used in the subtitle ("Subscription • Needs").
+const BUDGET_LABELS: Record<string, string> = {
+  nodig: "Needs", willen: "Wants", sparen: "Savings",
+};
 
 // Pill filter options — "all" plus one per group.
 const FILTERS = [
@@ -150,15 +159,24 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
+                                <p className="text-lg font-semibold truncate leading-tight min-w-0">{item.name}</p>
+                                {/* Frequency indicator — a compact pill right after the name,
+                                    shown only for non-monthly items (monthly is the norm). */}
+                                {item.frequency !== "monthly" && (
+                                  <span className="shrink-0 rounded-full bg-foreground/8 text-foreground/55 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                                    {FREQ_INDICATOR[item.frequency] ?? item.frequency}
+                                  </span>
+                                )}
                                 {item.source === "auto" && (
                                   <span className="shrink-0 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5 leading-none">
                                     Auto
                                   </span>
                                 )}
                               </div>
+                              {/* Subtitle: transaction type + budget type, e.g. "Subscription • Needs". */}
                               <p className="text-sm text-foreground/50 mt-0.5 truncate">
-                                {cat ? cat.name : (ITEM_LABELS[item.type] ?? item.type)}
+                                {ITEM_LABELS[item.type] ?? item.type}
+                                {item.budgetType && BUDGET_LABELS[item.budgetType] ? ` • ${BUDGET_LABELS[item.budgetType]}` : ""}
                                 {!item.active && " · Inactief"}
                               </p>
                             </div>

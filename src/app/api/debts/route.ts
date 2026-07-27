@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const denied = await requireAuth();
   if (denied) return denied;
 
-  const { recurringIds, createRecurringBill, ...data } = await req.json();
+  const { recurringIds, createRecurringBill, recurringCategoryId, recurringBudgetType, ...data } = await req.json();
   const [row] = await db.insert(debts).values(data).returning();
 
   const linkIds: number[] = Array.isArray(recurringIds) ? [...recurringIds] : [];
@@ -28,6 +28,18 @@ export async function POST(req: NextRequest) {
     if (existing) {
       if (!linkIds.includes(existing.id)) linkIds.push(existing.id);
     } else {
+      // Mirror the debt's own "debt-free by" projection as the bill's end date: at
+      // creation the whole balance is still outstanding, so it takes
+      // ceil(balance / minimumPayment) monthly payments — the last of which is the
+      // end month. Left open-ended when there's no minimum payment to project from.
+      const startDate = `${data.startMonth}-01`;
+      let endDate: string | null = null;
+      if (data.minimumPayment > 0 && data.startingBalance > 0) {
+        const months = Math.ceil(data.startingBalance / data.minimumPayment);
+        const [sy, sm] = data.startMonth.split("-").map(Number);
+        const end = new Date(sy, (sm - 1) + (months - 1), 1);
+        endDate = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-01`;
+      }
       const [bill] = await db
         .insert(recurringItems)
         .values({
@@ -35,9 +47,12 @@ export async function POST(req: NextRequest) {
           type: "debt",
           amount: data.minimumPayment || 0,
           frequency: "monthly",
-          budgetType: "nodig",
+          budgetType: recurringBudgetType || "nodig",
+          categoryId: recurringCategoryId ?? null,
+          notes: data.notes ?? null,
           active: true,
-          startDate: `${data.startMonth}-01`,
+          startDate,
+          endDate,
           dueDay: 1,
           source: "manual",
         })

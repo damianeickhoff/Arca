@@ -86,6 +86,12 @@ export async function getBillStatuses(
         const lastDayOfMonth = new Date(calendarYear, calendarMonth, 0).getDate();
         const clampedDay = Math.min(item.dueDay, lastDayOfMonth);
         dueDate = `${calendarYear}-${String(calendarMonth).padStart(2, "0")}-${String(clampedDay).padStart(2, "0")}`;
+        // Respect the recurrence's own period: a due date that falls before the item's
+        // start date (or after its end date) hasn't begun/has ended, so it isn't
+        // upcoming. This makes changing a bill's start date remove it from the
+        // upcoming list until that date arrives.
+        if (item.startDate && dueDate < item.startDate) dueDate = null;
+        if (dueDate && item.endDate && dueDate > item.endDate) dueDate = null;
       }
 
       const overdue = paid === false && dueDate != null && dueDate <= todayStr && todayStr >= from && todayStr <= to;

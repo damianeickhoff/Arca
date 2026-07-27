@@ -1,8 +1,9 @@
 import { db } from "@/db";
-import { debts, recurringItems } from "@/db/schema";
+import { categories, debts, recurringItems } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import type { RecurringItem } from "@/db/schema";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
+import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
 import { computeDebt, monthsElapsed, fmtShortMonth, debtEffectiveTotal, debtEffectivePaid } from "./debt-shared";
 import type { DebtsPageData } from "./debt-shared";
@@ -11,11 +12,22 @@ import type { DebtsPageData } from "./debt-shared";
 // the settings dialog's Debts panel can reuse the exact same data + <DebtsMobile />
 // without duplicating the (fairly involved) payoff/history/projection maths.
 export async function loadDebtsData(): Promise<DebtsPageData> {
-  const [rows, bills, financialMonth] = await Promise.all([
+  const [rows, billsRaw, cats, financialMonth] = await Promise.all([
     db.select().from(debts).orderBy(asc(debts.name)),
     db.select().from(recurringItems).orderBy(asc(recurringItems.name)),
+    db.select({ id: categories.id, icon: categories.icon, color: categories.color }).from(categories),
     getFinancialMonthConfig(),
   ]);
+
+  // Recurring bills take their icon from their assigned category (brand logos belong to
+  // transactions, not recurring items). Resolve it here so the debt page — hero glyph
+  // and the "Linked recurring bills" list — always reflects the bill's current
+  // category icon instead of a stale value stored on the row.
+  const categoriesById = new Map(cats.map((c) => [c.id, { icon: c.icon, color: c.color }]));
+  const bills: RecurringItem[] = billsRaw.map((b) => {
+    const resolved = resolveRecurringIcon(b, categoriesById);
+    return { ...b, icon: resolved.iconKey ?? b.icon, iconColor: resolved.color ?? b.iconColor };
+  });
 
   // Payoff progress comes from the paid-months history of each debt's linked
   // recurring bills (see lib/debt-recurring-paid.ts).

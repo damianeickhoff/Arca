@@ -163,28 +163,6 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
         </div>
       )}
 
-      {/* Upcoming payments — one per month until payoff, last one prorated to
-          whatever balance actually remains rather than always the full minimum. */}
-      {schedule.length > 0 && (
-        <div>
-          <button
-            type="button"
-            onClick={() => setScheduleOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-3 mb-2"
-          >
-            <span className="text-sm font-medium text-foreground/45">Upcoming payments</span>
-            <ChevronDown className={cn("size-4 text-foreground/40 transition-transform", scheduleOpen && "rotate-180")} />
-          </button>
-          {scheduleOpen && (
-            <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs divide-y divide-border/50">
-              {schedule.map((entry, i) => (
-                <DetailRow key={i} label={fmtShortMonth(entry.date)} value={formatEur(entry.amount)} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Linked recurring bills */}
       {linkedBills.length > 0 && (
         <div>
@@ -204,6 +182,28 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Upcoming payments — one per month until payoff, last one prorated to
+          whatever balance actually remains rather than always the full minimum. */}
+      {schedule.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setScheduleOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-3 mb-2"
+          >
+            <span className="text-sm font-medium text-foreground/45">Upcoming payments</span>
+            <ChevronDown className={cn("size-4 text-foreground/40 transition-transform", scheduleOpen && "rotate-180")} />
+          </button>
+          {scheduleOpen && (
+            <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs divide-y divide-border/50">
+              {schedule.map((entry, i) => (
+                <DetailRow key={i} label={fmtShortMonth(entry.date)} value={formatEur(entry.amount)} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
