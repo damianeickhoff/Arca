@@ -19,7 +19,29 @@ import { PickerField } from "@/components/picker-field";
 import { isBrandIcon } from "@/components/icon";
 import { OptionDropdown } from "@/components/option-dropdown";
 
-interface AddProps { action: "add"; variant?: "default" | "icon" }
+// Fields an "add" can be prefilled with — e.g. creating a recurring bill straight
+// from a transaction (see transaction-detail-dialog.tsx).
+export interface RecurringPrefill {
+  name?: string;
+  type?: string;
+  amount?: string;
+  budgetType?: string;
+  dueDay?: string;
+  matchPattern?: string;
+  matchAmount?: string;
+  icon?: string | null;
+  iconColor?: string | null;
+  categoryId?: number | null;
+}
+
+interface AddProps {
+  action: "add";
+  /** "none" renders no trigger — for callers that drive `open` themselves. */
+  variant?: "default" | "icon" | "none";
+  prefill?: RecurringPrefill;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
 interface EditProps { action: "edit"; item: RecurringItem }
 type Props = AddProps | EditProps;
 
@@ -46,25 +68,34 @@ const FREQUENCY_OPTIONS = [
 
 export function RecurringClient(props: Props) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const isEdit = props.action === "edit";
   const item = isEdit ? props.item : null;
+  const prefill = !isEdit ? props.prefill : undefined;
+  // Controlled when the caller passes `open` (transaction → new recurring bill).
+  const controlled = !isEdit && props.open !== undefined;
+  const open = controlled ? (props as AddProps).open! : uncontrolledOpen;
+  const setOpen = (v: boolean) => {
+    if (!controlled) setUncontrolledOpen(v);
+    if (!isEdit) props.onOpenChange?.(v);
+  };
 
   const [form, setForm] = useState({
-    name: item?.name ?? "",
-    type: item?.type ?? "bill",
-    amount: item?.amount?.toString() ?? "",
+    name: item?.name ?? prefill?.name ?? "",
+    type: item?.type ?? prefill?.type ?? "bill",
+    amount: item?.amount?.toString() ?? prefill?.amount ?? "",
     frequency: item?.frequency ?? "monthly",
-    budgetType: item?.budgetType ?? "nodig",
+    budgetType: item?.budgetType ?? prefill?.budgetType ?? "nodig",
     active: item?.active ?? true,
     notes: item?.notes ?? "",
-    dueDay: item?.dueDay?.toString() ?? "",
-    icon: item?.icon ?? null as string | null,
-    iconColor: item?.iconColor ?? null as string | null,
-    matchPattern: item?.matchPattern ?? "",
-    matchAmount: item?.matchAmount?.toString() ?? "",
+    dueDay: item?.dueDay?.toString() ?? prefill?.dueDay ?? "",
+    icon: item?.icon ?? prefill?.icon ?? null as string | null,
+    iconColor: item?.iconColor ?? prefill?.iconColor ?? null as string | null,
+    matchPattern: item?.matchPattern ?? prefill?.matchPattern ?? "",
+    matchAmount: item?.matchAmount?.toString() ?? prefill?.matchAmount ?? "",
+    categoryId: item?.categoryId ?? prefill?.categoryId ?? null as number | null,
   });
 
   function set(key: string, value: string | boolean) {
@@ -111,7 +142,7 @@ export function RecurringClient(props: Props) {
         <button className="flex items-center justify-center p-1.5 hover:bg-foreground/10 text-foreground rounded-sm bg-foreground/3 hover:text-foreground shrink-0 size-9" onClick={() => setOpen(true)}>
           <EllipsisVertical className="size-4" />
         </button>
-      ) : props.variant === "icon" ? (
+      ) : props.variant === "none" ? null : props.variant === "icon" ? (
         <button
           onClick={() => setOpen(true)}
           className="glass-icon-btn size-12"

@@ -35,6 +35,28 @@ export const categories = sqliteTable("categories", {
   uniqueIndex("categories_name_group_unique").on(t.name, t.group),
 ]);
 
+// ─── Merchants ─────────────────────────────────────────────────────────────
+// One row per shop/company a transaction was made with. `normalizedKey` is the
+// merchant name stripped down to lowercase alphanumerics (see normalizeMerchantKey
+// in src/lib/merchant-name.ts) and is what dedupes "Albert Heijn", "ALBERT HEIJN"
+// and "albert-heijn" into a single profile. `name` stays the display spelling.
+export const merchants = sqliteTable("merchants", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  normalizedKey: text("normalized_key").notNull(),
+  // Optional per-merchant presentation overrides. Null = fall back to the
+  // transaction's own brand icon / auto-detected brand (see src/lib/auto-brand.ts).
+  icon: text("icon"),
+  color: text("color"),
+  // Tombstone rather than a hard delete: the row has to stay so the auto-derivation
+  // (which runs on every import and on boot for unlinked rows) doesn't immediately
+  // recreate a merchant the user just deleted. Deleting also unlinks its transactions.
+  deleted: integer("deleted", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+}, (t) => [
+  uniqueIndex("merchants_normalized_key_unique").on(t.normalizedKey),
+]);
+
 // ─── Transactions ──────────────────────────────────────────────────────────
 export const transactions = sqliteTable("transactions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -48,6 +70,10 @@ export const transactions = sqliteTable("transactions", {
   description: text("description").notNull(),
   rawDescription: text("raw_description"),
   categoryId: integer("category_id").references(() => categories.id, { onDelete: "cascade" }),
+  // The shop/company this transaction was made with. Derived from the description on
+  // insert (see src/lib/merchants.ts) and editable per transaction; null when nothing
+  // merchant-like could be extracted (e.g. person-to-person transfers).
+  merchantId: integer("merchant_id").references(() => merchants.id, { onDelete: "set null" }),
   // true = user assigned by hand; auto-rules will never overwrite
   manuallyCategorized: integer("manually_categorized", { mode: "boolean" }).notNull().default(false),
   // manual | csv_import
@@ -476,6 +502,8 @@ export type Reimbursement = typeof reimbursements.$inferSelect;
 export type NewReimbursement = typeof reimbursements.$inferInsert;
 export type Category = typeof categories.$inferSelect;
 export type NewCategory = typeof categories.$inferInsert;
+export type Merchant = typeof merchants.$inferSelect;
+export type NewMerchant = typeof merchants.$inferInsert;
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type TransactionSplit = typeof transactionSplits.$inferSelect;

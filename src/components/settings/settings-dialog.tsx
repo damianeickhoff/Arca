@@ -9,8 +9,8 @@ import {
   IconPencil,
   IconCreditCard,
   IconTag,
-  IconRepeat,
-  IconStar,
+  IconReload,
+  IconBuildingStore,
   IconCalendar,
   IconCalendarEvent,
   IconFileUpload,
@@ -47,7 +47,7 @@ import { LogoMark } from "@/components/brand-mark";
 import { useSettingsPortal } from "@/lib/settings-portal-state";
 
 type PanelKey =
-  | "accounts" | "categories" | "recurring" | "brandIcons"
+  | "accounts" | "categories" | "recurring" | "merchants"
   | "financialMonth" | "monthOverrides" | "budgetRecurring"
   | "import" | "appearance" | "privacy" | "appLock" | "language" | "currency"
   | "help" | "users";
@@ -63,8 +63,8 @@ const SECTIONS: Section[] = [
     rows: [
       { key: "accounts", label: "Accounts", icon: IconCreditCard },
       { key: "categories", label: "Categories", icon: IconTag },
-      { key: "recurring", label: "Recurring", icon: IconRepeat },
-      { key: "brandIcons", label: "Brand Icons", icon: IconStar },
+      { key: "recurring", label: "Recurring", icon: IconReload },
+      { key: "merchants", label: "Merchants", icon: IconBuildingStore },
       { key: "financialMonth", label: "Financial Month", icon: IconCalendar },
       { key: "monthOverrides", label: "Month Overrides", icon: IconCalendarEvent },
       { key: "budgetRecurring", label: "Budget & Bills", icon: IconWallet },
@@ -91,7 +91,7 @@ const PANEL_TITLES: Record<PanelKey, string> = {
   accounts: "Accounts",
   categories: "Categories",
   recurring: "Recurring",
-  brandIcons: "Brand Icons",
+  merchants: "Merchants",
   financialMonth: "Financial Month",
   monthOverrides: "Month Overrides",
   budgetRecurring: "Budget & Bills",
@@ -107,11 +107,11 @@ const PANEL_TITLES: Record<PanelKey, string> = {
 
 // The data-heavy panels are server-rendered on the dashboard and injected as
 // nodes; the rest are built inline here from existing client components.
-const HEAVY_KEYS: PanelKey[] = ["accounts", "categories", "recurring", "brandIcons", "users"];
+const HEAVY_KEYS: PanelKey[] = ["accounts", "categories", "recurring", "merchants", "users"];
 
 // Panels that render their own sticky header (back + panel-specific actions) via
 // PanelHeader, so SettingsDialog skips the generic header for them.
-const SELF_CHROMED = new Set<PanelKey>(["accounts", "categories", "recurring", "brandIcons", "users"]);
+const SELF_CHROMED = new Set<PanelKey>(["accounts", "categories", "recurring", "merchants", "users"]);
 
 function Avatar({ user, size }: { user: User; size: number }) {
   if (user.avatarUrl) {

@@ -117,6 +117,42 @@ function syncDefaultCategories(sqlite: Database) {
 }
 
 /**
+ * Wipes every category (default *and* user-created) and re-seeds the set defined in
+ * src/config/categories.ts from scratch — the "reset to defaults" action in the
+ * category settings panel.
+ *
+ * Transactions are never deleted: categories.id is referenced by transactions with
+ * ON DELETE CASCADE, so the links are nulled *before* the delete. Recurring items are
+ * likewise unlinked (their FK cascades too) rather than removed. Splits, goals and
+ * budget targets lose their category link as well; there's no way to remap a
+ * user-created category onto a config entry. Transactions are re-categorized by the
+ * freshly seeded default rules at the end (applyDefaultCategoryRulesSync, called from
+ * syncDefaultCategories).
+ */
+export function resetDefaultCategories(sqlite: Database) {
+  const run = sqlite.transaction(() => {
+    sqlite.prepare("UPDATE transactions SET category_id = NULL").run();
+    sqlite.prepare("UPDATE transaction_splits SET category_id = NULL").run();
+    sqlite.prepare("UPDATE recurring_items SET category_id = NULL").run();
+    sqlite.prepare("UPDATE goals SET category_id = NULL").run();
+    sqlite.prepare("UPDATE categories SET parent_category_id = NULL").run();
+    sqlite.prepare("DELETE FROM budget_targets").run();
+    sqlite.prepare("DELETE FROM category_rules").run();
+    sqlite.prepare("DELETE FROM categories").run();
+
+    syncDefaultCategories(sqlite);
+    backfillDefaultParents(sqlite);
+    // Keep the config hash in step so the next boot doesn't consider this a change.
+    setSetting(
+      sqlite,
+      "default_categories_config_hash",
+      hashOf([DEFAULT_CATEGORIES, DEFAULT_CATEGORIES.map((d) => (d.matchingPatterns ?? []).map(normalizeMatchingPattern))]),
+    );
+  });
+  run();
+}
+
+/**
  * Ensures every default sub-category is linked to its parent (parentKey -> parent_category_id).
  * Idempotent and safe to run on every boot: it only fills a NULL parent, so a user who
  * deliberately re-parented a default category is never overridden. Nesting is capped at 2
@@ -155,7 +191,7 @@ function loadBanksByAccountNumber(sqlite: Database): Map<string, Bank> {
  * changes. It still never touches a transaction currently owned by a genuine
  * user-created (non-default) category — that's a real manual choice and stays put.
  */
-function applyDefaultCategoryRulesSync(sqlite: Database) {
+export function applyDefaultCategoryRulesSync(sqlite: Database) {
   const rules = sqlite.prepare(`
     SELECT r.id, r.category_id AS categoryId, r.name_pattern AS namePattern, r.name_wildcard AS nameWildcard,
            r.name_whole_word AS nameWholeWord, r.amount, r.direction, r.bank_id AS bankId, r.created_at AS createdAt
@@ -214,7 +250,14 @@ export function runConfigSync(sqlite: Database) {
   sqlite.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)");
 
   try {
-    const categoriesHash = hashOf(DEFAULT_CATEGORIES);
+    // Hash the *normalized* patterns alongside the raw config: how a bare pattern string
+    // is interpreted (contains vs whole-word) lives in normalizeMatchingPattern, so a
+    // change there alters behaviour without touching DEFAULT_CATEGORIES — and would
+    // otherwise slip past this gate and never be applied.
+    const categoriesHash = hashOf([
+      DEFAULT_CATEGORIES,
+      DEFAULT_CATEGORIES.map((d) => (d.matchingPatterns ?? []).map(normalizeMatchingPattern)),
+    ]);
     if (getSetting(sqlite, "default_categories_config_hash") !== categoriesHash) {
       syncDefaultCategories(sqlite);
       setSetting(sqlite, "default_categories_config_hash", categoriesHash);

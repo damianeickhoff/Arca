@@ -1,7 +1,7 @@
 import { Icon } from "@/components/icon";
 import { RecurringClient } from "./recurring-client";
 import { PageEmptyState } from "@/components/page-empty-state";
-import { IconRepeat as Repeat } from "@tabler/icons-react";
+import { IconReload as Repeat } from "@tabler/icons-react";
 import { formatEur, toMonthly } from "@/lib/format";
 import type { RecurringItem } from "@/db/schema";
 

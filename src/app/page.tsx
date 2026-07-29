@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { transactions, categories, goals, recurringItems, banks, vermogenAccounts, budgetTargets } from "@/db/schema";
+import { transactions, categories, goals, recurringItems, banks, merchants, vermogenAccounts, budgetTargets } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc, asc } from "drizzle-orm";
 import { formatEur } from "@/lib/format";
 import { SplitEur } from "@/components/split-eur";
@@ -17,10 +17,13 @@ import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balance
 import { DashboardHeaderBar } from "@/components/dashboard-header-bar";
 import { BudgetAlertCard } from "@/components/budget-alert-card";
 import { NoBudgetCard } from "@/components/no-budget-card";
+import { CashFlowForecastCard } from "@/components/cash-flow-forecast-card";
+import { getCashFlowForecast } from "@/lib/cash-flow-forecast";
 import { DashboardFlowGlow } from "@/components/dashboard-flow-glow";
 import { DashboardReadySignal } from "@/components/dashboard-ready-signal";
 import { DashboardEmptyState } from "@/app/dashboard-empty-state";
 import { BudgetPortalProvider } from "@/lib/budget-portal-state";
+import { ReportsPortalProvider } from "@/lib/reports-portal-state";
 import { DashboardAnimationProvider } from "@/lib/dashboard-animation";
 import { AccountsCard } from "@/components/accounts-card";
 import { getReportsPortalContent } from "@/app/reports/reports-portal-content";
@@ -186,11 +189,14 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
         recurringItemId: transactions.recurringItemId,
         recurringName: recurringItems.name,
         recurringFriendlyName: recurringItems.friendlyName,
+        merchantIcon: merchants.icon,
+        merchantColor: merchants.color,
       })
         .from(transactions)
         .leftJoin(categories, eq(transactions.categoryId, categories.id))
         .leftJoin(banks, eq(transactions.account, banks.accountNumber))
         .leftJoin(recurringItems, eq(transactions.recurringItemId, recurringItems.id))
+        .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
         .where(bankFilter)
         .orderBy(desc(transactions.date), desc(transactions.id))
         .limit(40),
@@ -389,6 +395,10 @@ function monthName(date: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+// Shared layout override for cards inside the dashboard's horizontal card row: strips
+// each card's standalone margins and gives it a uniform snap width.
+const DASH_CARD = "snap-start shrink-0 m-0 w-[85%] max-w-[22rem]";
+
 function signedEur(amount: number) {
   return `${amount < 0 ? "-" : ""}${formatEur(amount)}`;
 }
@@ -418,7 +428,7 @@ export default async function DashboardPage({
   const currentMonthRange = financialMonthRange(financialMonth, 0);
   const isViewingCurrentMonth = from === currentMonthRange.from && to === currentMonthRange.to;
 
-  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode] = await Promise.all([
+  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast] = await Promise.all([
     getDashboardData(from, to, selectedBank, financialMonth),
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
     getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct, month: sp.month }),
@@ -433,6 +443,7 @@ export default async function DashboardPage({
     db.select().from(vermogenAccounts).where(eq(vermogenAccounts.active, true)),
     getAccountBalanceHistory(180),
     getBudgetRecurringMode(),
+    getCashFlowForecast(financialMonth),
   ]);
 
   // Per-user, not app-wide — each family member picks their own dashboard color fade
@@ -575,6 +586,7 @@ export default async function DashboardPage({
 
   return (
     <DashboardAnimationProvider>
+    <ReportsPortalProvider>
     <BudgetPortalProvider>
     <TransactionsPortalProvider>
     <div className={`${AUTH_BG_CLASS} relative isolate mt-[calc(-1.7rem-var(--sat))] lg:mt-0 pt-[var(--sat)] lg:pt-0 min-h-dvh `} style={authBackgroundStyle(authBackground, { boxHeight: "110dvh", fadeStop: 50 })}>
@@ -608,18 +620,33 @@ export default async function DashboardPage({
           accountHistory={accountHistory}
         />
 
-        {/* Overall budget alert — ring + message, only once spend reaches 80% of the
-            overall (or summed category) budget. Opens the Budget portal (same one as
-            the header's wallet icon) rather than navigating to the old /budget page. */}
-        {budgetOverview && !budgetOverview.budget && <NoBudgetCard />}
-        {budgetOverview?.budget && budgetAlert && (
-          <BudgetAlertCard
-            pct={budgetAlert.pct * 100}
-            severity={budgetAlert.severity}
-            title={budgetAlert.title}
-            description={budgetAlert.description}
+        {/* Horizontal card row — the overall budget alert (ring + message, or the
+            create-a-budget prompt when none is set) sits alongside the Cash Flow
+            Forecast card. Cards are 85% wide so the next one peeks in and the row
+            reads as scrollable; each card overrides its own standalone margins. */}
+        {/* scroll-px-3 + the trailing spacer below: a scroll container's padding-right
+            collapses at the end of the scroll, leaving the last card flush against the
+            screen edge, so the gutter has to be restored with a real element. */}
+        <div className="mt-5 flex items-stretch gap-3 overflow-x-auto px-3 pb-1 snap-x snap-mandatory scroll-px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {budgetOverview && !budgetOverview.budget && <NoBudgetCard className={DASH_CARD} />}
+          {budgetOverview?.budget && budgetAlert && (
+            <BudgetAlertCard
+              pct={budgetAlert.pct * 100}
+              severity={budgetAlert.severity}
+              title={budgetAlert.title}
+              description={budgetAlert.description}
+              className={DASH_CARD}
+            />
+          )}
+          <CashFlowForecastCard
+            current={forecast.current}
+            status={forecast.status}
+            message={forecast.message}
+            hasStartingBalance={forecast.hasStartingBalance}
+            className={DASH_CARD}
           />
-        )}
+          <div aria-hidden className="shrink-0 w-0.5" />
+        </div>
 
         {/* Spending by category — scrollable row of every category with at least one
             transaction this period (biggest spend first), regardless of whether it has
@@ -663,7 +690,7 @@ export default async function DashboardPage({
         <div className="pb-4 mt-3 px-5 mx-3 rounded-xl bg-card backdrop-blur-3xl">
           {data.recent.length > 0 ? (
             <DashboardRecentTransactions recent={data.recent} categories={data.categories} savingsGoals={data.goals} />
-          ) : <DashboardEmptyState categories={data.categories} />}
+          ) : <DashboardEmptyState />}
         </div>
 
         {/* Accounts — total saldo across bank + asset accounts, with a running-balance sparkline */}
@@ -675,6 +702,7 @@ export default async function DashboardPage({
     <NeedsReviewPortal rows={needsReview} categories={data.categories} savingsGoals={data.goals} />
     </TransactionsPortalProvider>
     </BudgetPortalProvider>
+    </ReportsPortalProvider>
     </DashboardAnimationProvider>
   );
 }

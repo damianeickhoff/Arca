@@ -7,7 +7,7 @@ import {
   IconSearch as Search,
   IconX as X,
   IconArrowsLeftRight as ArrowLeftRight,
-  IconRepeat as Repeat,
+  IconReload as Repeat,
   IconCreditCard as CreditCard,
   IconTags as Tags,
   IconChevronRight,

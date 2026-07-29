@@ -6,6 +6,7 @@ import { amountsMatch, getTransactionSplitTotal, roundToCents } from "@/lib/tran
 import { applyAllBrandRules } from "@/lib/apply-brand-rules";
 import { requireAuth } from "@/lib/auth";
 import { adjustGoalAmount, goalDeltaForTransaction } from "@/lib/goal-contributions";
+import { resolveMerchantIdFor } from "@/lib/merchants";
 
 function parseSplitPayload(input: unknown, expectedTotal: number) {
   if (!Array.isArray(input)) {
@@ -215,6 +216,10 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
 
   const body = await req.json();
+  // Derive the merchant unless the caller already picked one explicitly.
+  if (body.merchantId === undefined && typeof body.description === "string") {
+    body.merchantId = await resolveMerchantIdFor({ description: body.description, rawDescription: body.rawDescription });
+  }
   const [row] = await db.insert(transactions).values(body).returning();
   if (row.goalId) {
     await adjustGoalAmount(row.goalId, goalDeltaForTransaction(row.direction, getTransactionSplitTotal(row.amount, row.correctedAmount)));

@@ -50,6 +50,9 @@ export async function GET() {
       icon: recurringItems.icon,
       iconColor: recurringItems.iconColor,
       source: recurringItems.source,
+      // Included so a row from here is a complete RecurringItem — clients (the
+      // transaction sheet's recurrence card) hand it straight to RecurringDetailDialog.
+      signature: recurringItems.signature,
       dismissed: recurringItems.dismissed,
       startDate: recurringItems.startDate,
       endDate: recurringItems.endDate,

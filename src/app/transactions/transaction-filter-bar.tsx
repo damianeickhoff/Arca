@@ -9,7 +9,7 @@ import {
   IconWallet,
   IconArrowsUpDown,
   IconSparkles,
-  IconRepeat,
+  IconReload,
   IconCalendarFilled,
 } from "@tabler/icons-react";
 import {
@@ -399,7 +399,7 @@ function ChoicePill({
 function RecurringPill({ active, onToggle }: { active: boolean; onToggle: () => void }) {
   return (
     <button type="button" onClick={onToggle} className={filterPillClass(active, "shrink-0")}>
-      <IconRepeat className="size-4 shrink-0" />
+      <IconReload className="size-4 shrink-0" />
       <span>Recurring</span>
       {active && (
         <span

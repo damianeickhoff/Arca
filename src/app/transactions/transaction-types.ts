@@ -17,6 +17,10 @@ export type TransactionRow = {
   brandIcon: string | null;
   brandIconColor: string | null;
   brandIconBgColor: string | null;
+  // The linked merchant profile's icon, which outranks the category icon when set
+  // (see resolveTransactionIcon in src/lib/auto-brand.ts).
+  merchantIcon?: string | null;
+  merchantColor?: string | null;
   source: string | null;
   correctedAmount: number | null;
   isReimbursement: boolean;
@@ -58,6 +62,8 @@ export type TransactionDetail = {
   brandIcon?: string | null;
   brandIconColor?: string | null;
   brandIconBgColor?: string | null;
+  merchantIcon?: string | null;
+  merchantColor?: string | null;
   bankName?: string | null;
   notes?: string | null;
   isReimbursement?: boolean | number;

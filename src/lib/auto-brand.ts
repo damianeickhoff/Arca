@@ -1,31 +1,13 @@
 // Auto-detects a brand icon from a merchant name using the @thesvg/icons library.
 // Manual brand rules (stored on the transaction) always take priority over this.
-import { BRAND_MAP } from "@/lib/brand-map";
 import { extractMerchantName } from "./parse-transaction-location";
+import { brandColorForIconKey, detectBrandIcon } from "@/lib/brand-detect";
 import { isLogoStyleIcon } from "@/components/icon";
 import { TRANSFER_TYPE_ICONS, TRANSFER_TYPE_COLORS, DEFAULT_TRANSFER_ICON, DEFAULT_TRANSFER_COLOR } from "@/lib/transfer-types";
 
-function candidateKeys(name: string): string[] {
-  const lower = name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  const words = lower.split(/\s+/).filter(Boolean);
-  if (!words.length) return [];
-
-  return [
-    words.join("-"),   // albert-heijn, mcdonald-s, burger-king (slug format)
-    words.join(""),    // albertheijn, mcdonalds, burgerking
-    words[0],          // albert, mcdonald (first word fallback)
-  ];
-}
-
-export function detectBrandIcon(
-  merchantName: string | null | undefined,
-): { iconKey: string; color: string } | null {
-  if (!merchantName) return null;
-  for (const key of candidateKeys(merchantName)) {
-    if (key in BRAND_MAP) return { iconKey: key, color: `#${BRAND_MAP[key].hex}` };
-  }
-  return null;
-}
+// Lives in @/lib/brand-detect (React-free, so the DB boot backfill can use it too);
+// re-exported here so existing call sites keep importing it from this module.
+export { detectBrandIcon };
 
 // Initials avatar for transactions with no brand or category icon — mainly
 // person-to-person transfers, where the description is the counterparty's name
@@ -56,11 +38,17 @@ export const UNCATEGORIZED_ICON: string | null = null;
 export const UNCATEGORIZED_COLOR: string | null = null;
 
 // Single helper used by all transaction display components.
-// Priority: manual brand rule -> auto-detected brand -> category icon -> initials avatar / uncategorized cross.
+// Priority: manual brand rule -> merchant icon -> auto-detected brand -> category icon
+// -> initials avatar / uncategorized cross.
 export function resolveTransactionIcon(t: {
   brandIcon?: string | null;
   brandIconColor?: string | null;
   brandIconBgColor?: string | null;
+  /** The transaction's merchant profile icon, when it has one. Outranks the category
+   * icon and brand auto-detection: a merchant icon is either an explicit user choice
+   * or a name match the user can correct, so it should be what identifies the row. */
+  merchantIcon?: string | null;
+  merchantColor?: string | null;
   categoryIcon?: string | null;
   categoryColor?: string | null;
   rawDescription?: string | null;
@@ -87,10 +75,22 @@ export function resolveTransactionIcon(t: {
   // Internal transfers never carry a category, so their icon comes from the
   // transfer sub-type instead (savings, cash withdrawal, ...), falling back to a
   // generic swap-arrows glyph when no sub-type has been set or auto-detected.
+  // Checked before the merchant icon: a transfer between your own accounts has no
+  // merchant, and any stale link shouldn't override the transfer glyph.
   if (t.isInternalTransfer) {
     const iconKey = (t.transferType && TRANSFER_TYPE_ICONS[t.transferType]) || DEFAULT_TRANSFER_ICON;
     const color = (t.transferType && TRANSFER_TYPE_COLORS[t.transferType]) || DEFAULT_TRANSFER_COLOR;
     return { iconKey, color, background: null };
+  }
+
+  if (t.merchantIcon) {
+    return {
+      iconKey: t.merchantIcon,
+      // Same rule as the merchant surfaces themselves: the logo's own brand color
+      // wins over whatever is stored, so the two never drift apart.
+      color: brandColorForIconKey(t.merchantIcon) ?? t.merchantColor ?? null,
+      background: withLogoBackdrop(t.merchantIcon, null),
+    };
   }
 
   const merchant = extractMerchantName(t.rawDescription ?? t.description);

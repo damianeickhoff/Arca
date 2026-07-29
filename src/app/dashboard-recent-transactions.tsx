@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { IconReload } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -81,7 +82,20 @@ export function DashboardRecentTransactions({
                 onClick={() => setDetailRow(t)}
                 className="w-full flex items-center gap-3.5 rounded-xl text-left active:bg-foreground/[0.04] transition-colors"
               >
-                {(() => { const ic = resolveTransactionIcon(t); return <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size="md" />; })()}
+                {(() => { const ic = resolveTransactionIcon(t); return (
+                  <div className="relative shrink-0">
+                    <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size="md" />
+                    {/* Same recurring marker as the transactions list. */}
+                    {t.recurringItemId != null && (
+                      <span
+                        aria-label="Recurring bill"
+                        className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--dialog-content-background)]"
+                      >
+                        <IconReload className="size-3 text-foreground/60" stroke={2.5} />
+                      </span>
+                    )}
+                  </div>
+                ); })()}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate leading-tight">{resolveDisplayName(t)}</p>
                   {t.isInternalTransfer ? (

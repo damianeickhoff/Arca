@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export function AuthShell({
   title,
   subtitle,
+  fullBleedBackground = false,
   children,
 }: {
   // Omit both when the child content owns its own heading — the onboarding wizard
@@ -13,6 +14,10 @@ export function AuthShell({
   // per step instead of one fixed hero.
   title?: string;
   subtitle?: string;
+  // Paint the color gradient across the whole viewport instead of fading it out into
+  // --background partway down. The onboarding wizard sets this: its steps run the full
+  // height of the screen, and the faded lower half left white text on a bare background.
+  fullBleedBackground?: boolean;
   children: ReactNode;
 }) {
   // The background is per-user now (see users.authBackground), but there's no signed-in
@@ -21,7 +26,10 @@ export function AuthShell({
   // Pinned dark: this pre-auth screen is a deliberately always-dark art scene (dark base,
   // dark scrim, white text below), so it keeps the dark palette even when the app theme
   // is light — unlike the in-app dashboard, which follows the theme.
-  const bgStyle = authBackgroundStyle(getAuthBackgroundPreset(null), { theme: "dark" });
+  const bgStyle = authBackgroundStyle(getAuthBackgroundPreset(null), {
+    theme: "dark",
+    fade: !fullBleedBackground,
+  });
 
   return (
     <div className="min-h-dvh w-full relative overflow-hidden bg-[#050e2e]">

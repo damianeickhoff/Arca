@@ -2,7 +2,10 @@ import Database from "better-sqlite3";
 import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as schema from "./schema";
 import path from "path";
-import { runConfigSync } from "@/lib/config-sync";
+import { runConfigSync, applyDefaultCategoryRulesSync } from "@/lib/config-sync";
+import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
+import { detectBrandIcon } from "@/lib/brand-detect";
+import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/migrate.ts (used by
 // `npm run db:init` for fresh databases). Any new column MUST be added in BOTH places —
@@ -380,6 +383,122 @@ addColumnIfMissing("recurring_items", "end_date", "TEXT");
       created_at TEXT    DEFAULT (datetime('now'))
     )
   `);
+
+  // Auto-migrate: merchant profiles + the transaction → merchant link
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS merchants (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      name           TEXT    NOT NULL,
+      normalized_key TEXT    NOT NULL,
+      icon           TEXT,
+      color          TEXT,
+      created_at     TEXT    DEFAULT (datetime('now'))
+    )
+  `);
+  sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS merchants_normalized_key_unique ON merchants(normalized_key)`);
+  addColumnIfMissing("merchants", "deleted", "INTEGER NOT NULL DEFAULT 0");
+  addColumnIfMissing("transactions", "merchant_id", "INTEGER REFERENCES merchants(id) ON DELETE SET NULL");
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions(merchant_id)`);
+
+  // Backfill: derive a merchant for every transaction that doesn't have one yet.
+  // Runs on every boot but only ever looks at merchant_id IS NULL rows, so after the
+  // first pass it's a single indexed query returning nothing. Manual transfers are
+  // skipped outright; other internal transfers may get a merchant assigned but never
+  // surface, since every merchant query filters them out (see merchant-detail.ts).
+  {
+    const pending = sqlite
+      .prepare(`SELECT id, description, raw_description FROM transactions WHERE merchant_id IS NULL AND is_manual_transfer = 0`)
+      .all() as Array<{ id: number; description: string; raw_description: string | null }>;
+
+    if (pending.length > 0) {
+      const findMerchant = sqlite.prepare(`SELECT id, deleted FROM merchants WHERE normalized_key = ?`);
+      const insertMerchant = sqlite.prepare(`INSERT INTO merchants (name, normalized_key, icon, color) VALUES (?, ?, ?, ?)`);
+      const linkTransaction = sqlite.prepare(`UPDATE transactions SET merchant_id = ? WHERE id = ?`);
+      const idByKey = new Map<string, number>();
+
+      const run = sqlite.transaction(() => {
+        for (const row of pending) {
+          const name = deriveMerchantName({ description: row.description, rawDescription: row.raw_description });
+          if (!name) continue;
+          const key = normalizeMerchantKey(name);
+          if (!key) continue;
+
+          let merchantId = idByKey.get(key);
+          if (merchantId === undefined) {
+            const found = findMerchant.get(key) as { id: number; deleted: number } | undefined;
+            // A deleted merchant stays deleted — never re-link transactions to it.
+            if (found?.deleted) { idByKey.set(key, 0); merchantId = 0; }
+            else if (found) merchantId = found.id;
+            else {
+              const brand = detectBrandIcon(name);
+              merchantId = Number(insertMerchant.run(name, key, brand?.iconKey ?? null, brand?.color ?? null).lastInsertRowid);
+            }
+            idByKey.set(key, merchantId);
+          }
+          if (merchantId === 0) continue;
+          linkTransaction.run(merchantId, row.id);
+        }
+      });
+      run();
+    }
+  }
+
+  // Backfill: merchants created before brand-icon detection existed (or by an earlier
+  // build of the backfill above) have no icon at all, which renders as a blank chip in
+  // the merchant editor and picker. Fill in any icon we can match by name; a merchant
+  // whose name matches no brand is left null and falls back to its transactions' own
+  // icon resolution at render time.
+  {
+    const iconless = sqlite
+      .prepare(`SELECT id, name FROM merchants WHERE icon IS NULL AND deleted = 0`)
+      .all() as Array<{ id: number; name: string }>;
+
+    if (iconless.length > 0) {
+      const setIcon = sqlite.prepare(`UPDATE merchants SET icon = ?, color = ? WHERE id = ?`);
+      const run = sqlite.transaction(() => {
+        for (const m of iconless) {
+          const brand = detectBrandIcon(m.name);
+          if (brand) setIcon.run(brand.iconKey, brand.color, m.id);
+        }
+      });
+      run();
+    }
+  }
+
+  // Auto-migrate: short config-seeded patterns become whole-word matches. They were
+  // seeded as "contains", so a 2–5 character pattern matched inside unrelated words —
+  // "MBO" (Education) swallowed every "Jumbo" transaction, "Spa" every "Spar", etc.
+  // Only touches rules on config-managed (is_default) categories whose pattern still
+  // matches the config verbatim, so a user-edited or user-created rule is left alone.
+  {
+    const shortDefaults = new Set(
+      DEFAULT_CATEGORIES.flatMap((def) => def.matchingPatterns ?? [])
+        .map((raw) => normalizeMatchingPattern(raw))
+        .filter((p) => p.match === "word")
+        .map((p) => p.pattern.trim().toLowerCase()),
+    );
+    if (shortDefaults.size > 0) {
+      const candidates = sqlite
+        .prepare(`
+          SELECT r.id, r.name_pattern AS namePattern
+          FROM category_rules r JOIN categories c ON c.id = r.category_id
+          WHERE c.is_default = 1 AND r.name_whole_word = 0 AND r.name_pattern IS NOT NULL
+        `)
+        .all() as Array<{ id: number; namePattern: string }>;
+      const promote = sqlite.prepare(`UPDATE category_rules SET name_whole_word = 1 WHERE id = ?`);
+      const run = sqlite.transaction(() => {
+        let n = 0;
+        for (const rule of candidates) {
+          if (shortDefaults.has(rule.namePattern.trim().toLowerCase())) n += promote.run(rule.id).changes;
+        }
+        return n;
+      });
+      // Re-apply the default rules to existing transactions, so rows already filed under
+      // the wrong category by the old contains-match (every "Jumbo" in Education) are
+      // corrected on this boot rather than only on the next import.
+      if (run() > 0) applyDefaultCategoryRulesSync(sqlite);
+    }
+  }
 
   // Sync src/config/categories.ts + src/config/brandIcons.ts into the database.
   // Runs synchronously as part of db init so it's guaranteed to complete before any

@@ -1,6 +1,7 @@
 "use client";
 
 import { useBudgetPortal } from "@/lib/budget-portal-state";
+import { cn } from "@/lib/utils";
 
 // Circular budget-usage ring for the overall-budget alert card — a full ring rather
 // than the semicircular Gauge on the Budget portal (components/budget-portal.tsx),
@@ -64,18 +65,24 @@ export function BudgetAlertCard({
   severity,
   title,
   description,
+  className,
 }: {
   pct: number;
   severity: "success" | "warning" | "danger";
   title: string;
   description: string;
+  /** Layout override for when this sits inside the dashboard's horizontal card row. */
+  className?: string;
 }) {
   const { openBudget } = useBudgetPortal();
   return (
     <button
       type="button"
       onClick={openBudget}
-      className="flex items-center gap-4 mx-3 mt-5 rounded-2xl bg-card p-4 active:scale-[0.98] transition-transform duration-150 w-[calc(100%-1.5rem)] text-left"
+      className={cn(
+        "flex items-center gap-4 mx-3 mt-5 rounded-2xl bg-card p-4 active:scale-[0.98] transition-transform duration-150 w-[calc(100%-1.5rem)] text-left",
+        className,
+      )}
     >
       <BudgetRing pct={pct} severity={severity} />
       <div className="flex-1 min-w-0">

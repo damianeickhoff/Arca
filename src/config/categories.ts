@@ -44,10 +44,21 @@ export interface NormalizedPattern {
   direction: MatchDirection | null;
 }
 
-/** Expands a MatchingPattern to its explicit form, applying defaults (contains / both directions). */
+/**
+ * Short patterns default to "word" instead of "contains": a 2–5 character pattern
+ * ("MBO", "NS", "Spa") hits inside unrelated words far more often than it helps —
+ * "MBO" matched every "Jumbo" transaction into Education. Anything longer keeps the
+ * "contains" default so it still matches inside concatenated descriptions. Override
+ * either way with the object form.
+ */
+export const SHORT_PATTERN_MAX_LENGTH = 5;
+
+/** Expands a MatchingPattern to its explicit form, applying defaults (see SHORT_PATTERN_MAX_LENGTH). */
 export function normalizeMatchingPattern(entry: MatchingPattern): NormalizedPattern {
-  if (typeof entry === "string") return { pattern: entry, match: "contains", direction: null };
-  return { pattern: entry.pattern, match: entry.match ?? "contains", direction: entry.direction ?? null };
+  const pattern = typeof entry === "string" ? entry : entry.pattern;
+  const fallback: MatchType = pattern.trim().length <= SHORT_PATTERN_MAX_LENGTH ? "word" : "contains";
+  if (typeof entry === "string") return { pattern, match: fallback, direction: null };
+  return { pattern, match: entry.match ?? fallback, direction: entry.direction ?? null };
 }
 
 export interface DefaultCategory {
@@ -110,7 +121,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   name: "Events",
   budgetType: "Wants",
   color: "#de3535",
-  icon: "IconTicketFilled",
+  icon: "IconRollercoasterFilled",
   parentKey: "Entertainment",
   matchingPatterns: [
     "Eventbrite",
@@ -151,7 +162,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   name: "Cinema",
   budgetType: "Wants",
   color: "#de3535",
-  icon: "IconMovieFilled",
+  icon: "IconTicketFilled",
   parentKey: "Entertainment",
   matchingPatterns: [
     "Pathé",
@@ -261,6 +272,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
     "About You",
     "H&M",
     "C&A",
+    "nike",
     "WE Fashion",
     "Vero Moda",
     "Only",
@@ -319,7 +331,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   name: "General Shopping",
   budgetType: "Wants",
   color: "#9c8bf4",
-  icon: "IconShoppingBagFilled",
+  icon: "IconShoppingCartFilled",
   parentKey: "Shopping",
   matchingPatterns: [
     "Bol.com",
@@ -914,6 +926,15 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
     "RET",
     "Qbuzz"
   ]
+},
+
+{
+  key: "Car maintenance",
+  name: "Car maintenance",
+  budgetType: "Needs",
+  color: "#21cabe",
+  icon: "IconEngineFilled",
+  parentKey: "Transportation"
 },
 
 {

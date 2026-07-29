@@ -2,7 +2,8 @@
   "common": {
     "dashboard": "Dashboard",
     "settings": "Settings",
-    "save": "Save"
+    "save": "Save",
+    "spending by category":"Spending by Category"
   },
   "settingsMenu": {
     "title": "Settings",

@@ -18,6 +18,6 @@ export interface TransactionInfoField {
 }
 
 export const TRANSACTION_INFO_FIELDS: TransactionInfoField[] = [
-  { key: "description", label: "Omschrijving", matchPattern: "Omschrijving:" },
-  { key: "name", label: "Naam", matchPattern: "Naam:" },
+  { key: "description", label: "Description", matchPattern: "Omschrijving:" },
+  { key: "name", label: "Name", matchPattern: "Naam:" },
 ];

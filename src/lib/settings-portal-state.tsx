@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 type PanelKey =
-  | "accounts" | "categories" | "recurring" | "brandIcons"
+  | "accounts" | "categories" | "recurring" | "merchants"
   | "financialMonth" | "monthOverrides"
   | "import" | "appearance" | "privacy" | "appLock" | "language" | "currency"
   | "help" | "users";

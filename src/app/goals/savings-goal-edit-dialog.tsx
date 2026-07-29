@@ -13,7 +13,7 @@ import {
   IconCalendarEvent as Calendar,
   IconTag as TagIcon,
   IconCategory2 as CategoryIcon,
-  IconRepeat as Repeat,
+  IconReload as Repeat,
   IconWallet,
 } from "@tabler/icons-react";
 import { DatePicker } from "@/components/date-picker";

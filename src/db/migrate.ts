@@ -26,6 +26,16 @@ sqlite.exec(`
     color       TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS merchants (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    name           TEXT    NOT NULL,
+    normalized_key TEXT    NOT NULL UNIQUE,
+    icon           TEXT,
+    color          TEXT,
+    deleted        INTEGER NOT NULL DEFAULT 0,
+    created_at     TEXT    DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS transactions (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     date            TEXT    NOT NULL,
@@ -35,6 +45,7 @@ sqlite.exec(`
     description     TEXT    NOT NULL,
     raw_description TEXT,
     category_id     INTEGER REFERENCES categories(id) ON DELETE CASCADE,
+    merchant_id     INTEGER REFERENCES merchants(id) ON DELETE SET NULL,
     source          TEXT    NOT NULL DEFAULT 'manual',
     import_hash     TEXT    UNIQUE,
     account         TEXT,
@@ -478,6 +489,14 @@ try {
 try {
   sqlite.exec(`ALTER TABLE vermogen_accounts ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 1`);
 } catch { /* column already exists */ }
+
+try {
+  sqlite.exec(`ALTER TABLE transactions ADD COLUMN merchant_id INTEGER REFERENCES merchants(id) ON DELETE SET NULL`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE merchants ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`);
+} catch { /* column already exists */ }
+sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions(merchant_id)`);
 
 console.log("✅ Database initialised and seeded.");
 sqlite.close();

@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { recurringItems, prognoseOverrides, savingsGoals, savingsMonthOverrides, budgetTargets, categories, variablePrognoseOverrides } from "@/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { recurringItems, prognoseOverrides, savingsGoals, savingsMonthOverrides, budgetTargets, categories, variablePrognoseOverrides, goals as goalsTable, transactions, banks } from "@/db/schema";
+import { eq, and, gte, lte, gt } from "drizzle-orm";
 import { formatEur, toMonthly, pctChangeLabel, MONTH_NAMES } from "@/lib/format";
 import type { RecurringItem, PrognoseOverride, SavingsGoal, Category } from "@/db/schema";
 import { PrognoseOverrideBtn } from "./forecast-override-btn";
@@ -11,6 +11,9 @@ import {
   IconTrendingDown as TrendingDown,
   IconWallet as Wallet,
   IconScaleFilled as Scale,
+  IconAlertTriangleFilled as AlertTriangle,
+  IconArrowDownRight,
+  IconArrowUpRight,
 } from "@tabler/icons-react";
 import { MonthPicker } from "@/components/month-picker";
 import { PrognosePeriodPicker } from "./prognose-period-picker";
@@ -19,6 +22,9 @@ import { CategoryCard } from "./category-card";
 import { TypeSection } from "./type-section";
 import { CategoryGroup } from "./category-group";
 import { ExpenseDonutChart } from "./forecast-charts";
+import { CashFlowChart } from "./cash-flow-chart";
+import { CashFlowCalendar } from "./cash-flow-calendar";
+import { CashFlowEvents } from "./cash-flow-events";
 import { NetWorthTrendChart } from "@/app/reports/net-worth-trend-chart";
 import { StatTile, TileBadge } from "@/components/stat-tile";
 import { ChangePill } from "@/components/change-pill";
@@ -26,6 +32,9 @@ import { getFinancialMonthConfig, getBudgetStrategy } from "@/lib/app-settings";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
 import { computeNetWorth } from "@/lib/net-worth-snapshots";
+import { getCashFlowForecast, formatForecastDate, signedForecastEur, FORECAST_HORIZON_DAYS } from "@/lib/cash-flow-forecast";
+import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
+import type { TransactionDetail } from "@/app/transactions/transaction-types";
 import { ScrollStickyHeader } from "@/components/scroll-sticky-header";
 import Link from "next/link";
 import { BudgetTabs } from "@/app/budget/budget-tabs";
@@ -51,6 +60,15 @@ const TYPE_COLORS: Record<string, string> = {
   vrij:         "#94a3b8",
   budget:       "#f97316",
 };
+
+// Forecast health, in the priority the cash flow section surfaces it: negative first,
+// then the low-balance warning, then healthy. Colors reuse the app's semantic tokens
+// so this matches the Budget distribution bars further down the tab.
+const CASH_FLOW_STATUS = {
+  healthy:  { label: "Healthy",  color: "var(--color-success)", icon: TrendingUp },
+  warning:  { label: "Warning",  color: "var(--color-warning)", icon: AlertTriangle },
+  critical: { label: "Critical", color: "var(--color-danger)",  icon: TrendingDown },
+} as const;
 
 const FREQ_LABELS: Record<string, string> = {
   yearly:    "jaar",
@@ -189,6 +207,52 @@ export default async function PrognPage({
     ),
     computeNetWorth(),
   ]);
+
+  // ── Cash flow forecast ──────────────────────────────────────────────────────
+  // Day-level projection (balance + upcoming recurring + booked future transactions),
+  // as opposed to the month-level Prognose above it. Deliberately not driven by the
+  // month picker: it always looks forward from today.
+  const cashFlow = await getCashFlowForecast(financialMonth);
+  const [cashFlowTxRows, cashFlowSavingsGoals] = await Promise.all([
+    db
+      .select({
+        id: transactions.id,
+        date: transactions.date,
+        direction: transactions.direction,
+        amount: transactions.amount,
+        correctedAmount: transactions.correctedAmount,
+        description: transactions.description,
+        rawDescription: transactions.rawDescription,
+        categoryId: transactions.categoryId,
+        categoryName: categories.name,
+        categoryColor: categories.color,
+        categoryIcon: categories.icon,
+        categoryBudgetType: categories.budgetType,
+        budgetTypeOverride: transactions.budgetTypeOverride,
+        brandIcon: transactions.brandIcon,
+        brandIconColor: transactions.brandIconColor,
+        brandIconBgColor: transactions.brandIconBgColor,
+        bankName: banks.displayName,
+        notes: transactions.notes,
+        customName: transactions.customName,
+        receiptUrl: transactions.receiptUrl,
+        excludeFromReports: transactions.excludeFromReports,
+        isReimbursement: transactions.isReimbursement,
+        isInternalTransfer: isInternalTransferExpr,
+        transferType: effectiveTransferTypeExpr,
+        goalId: transactions.goalId,
+        recurringItemId: transactions.recurringItemId,
+      })
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .leftJoin(banks, eq(transactions.account, banks.accountNumber))
+      .where(and(gt(transactions.date, cashFlow.from), lte(transactions.date, cashFlow.to))),
+    db.select().from(goalsTable).where(and(eq(goalsTable.goalType, "savings"), eq(goalsTable.active, true))),
+  ]);
+
+  const cashFlowStatus = CASH_FLOW_STATUS[cashFlow.status];
+  const CashFlowStatusIcon = cashFlowStatus.icon;
+  const cashFlowLabel = cashFlow.hasStartingBalance ? "Current cash flow" : "Projected cash flow";
 
   const categoriesById = new Map(allCategories.map((c) => [c.id, c]));
   const variableCats = allCategories.filter((c) => c.budgetType === "nodig" || c.budgetType === "willen" || c.budgetType === "sparen");
@@ -391,6 +455,134 @@ export default async function PrognPage({
           </div>
         )}
 
+        {/* ── Cash flow forecast ────────────────────────────────────────────────
+            Day-level view: where the money actually lands over the next 90 days,
+            complementing the month-level projection above. Same nested two-tone
+            chart shell as "Projected balance". */}
+        <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
+          <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
+            <p className="text-md mb-1">Cash flow forecast — {FORECAST_HORIZON_DAYS} days</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              {cashFlow.hasStartingBalance
+                ? "Your balance, projected forward through upcoming income and bills"
+                : "Cumulative projected cash flow — no account balance is set, so this is not a balance"}
+            </p>
+
+            <div className="flex items-baseline gap-2 mb-1">
+              <p className="text-2xl font-bold tabular-nums tracking-tight">{signedForecastEur(cashFlow.current)}</p>
+              <span className="text-xs text-foreground/50">{cashFlowLabel}</span>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <CashFlowStatusIcon className="size-3.5 shrink-0" style={{ color: cashFlowStatus.color }} />
+              <p className="text-xs" style={{ color: cashFlowStatus.color }}>{cashFlow.message}</p>
+            </div>
+
+            <CashFlowChart points={cashFlow.points} events={cashFlow.events} lowest={cashFlow.lowest} />
+
+            <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full inline-block" style={{ backgroundColor: "var(--color-income)" }} />
+                Money in
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full inline-block" style={{ backgroundColor: "var(--color-expense)" }} />
+                Money out
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full inline-block bg-current" />
+                Today
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full inline-block" style={{ backgroundColor: "var(--color-warning)" }} />
+                Lowest point
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Cash flow summary — same row treatment as "Budget distribution" below. */}
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4">
+          <div>
+            <p className="text-md mb-1">Cash flow summary</p>
+            <p className="text-xs text-muted-foreground">Next {FORECAST_HORIZON_DAYS} days, from today</p>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <CashFlowRow label={cashFlowLabel} value={signedForecastEur(cashFlow.current)} />
+            <CashFlowRow
+              label="Lowest point"
+              value={cashFlow.lowest ? signedForecastEur(cashFlow.lowest.amount) : "—"}
+              hint={cashFlow.lowest ? formatForecastDate(cashFlow.lowest.date) : undefined}
+              color={cashFlow.lowest && cashFlow.lowest.amount < 0 ? "var(--color-danger)" : undefined}
+            />
+            <CashFlowRow label="Expected income" value={formatEur(cashFlow.totalIncome)} color="var(--color-income)" />
+            <CashFlowRow label="Expected expenses" value={formatEur(cashFlow.totalExpenses)} color="var(--color-expense)" />
+            <CashFlowRow
+              label="Next income"
+              value={cashFlow.nextIncome ? formatEur(cashFlow.nextIncome.amount) : "—"}
+              hint={cashFlow.nextIncome ? `${cashFlow.nextIncome.name} · ${formatForecastDate(cashFlow.nextIncome.date)}` : undefined}
+            />
+            <CashFlowRow label="Forecast status" value={cashFlowStatus.label} color={cashFlowStatus.color} />
+          </div>
+        </div>
+
+        {/* Income vs expenses over the horizon */}
+        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4">
+          <div>
+            <p className="text-md mb-1">Expected income vs expenses</p>
+            <p className="text-xs text-muted-foreground">Everything scheduled in the forecast period</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            {[
+              { label: "Income", amount: cashFlow.totalIncome, color: "var(--color-income)", icon: IconArrowUpRight },
+              { label: "Expenses", amount: cashFlow.totalExpenses, color: "var(--color-expense)", icon: IconArrowDownRight },
+            ].map((bar) => {
+              const peak = Math.max(cashFlow.totalIncome, cashFlow.totalExpenses, 1);
+              const BarIcon = bar.icon;
+              return (
+                <div key={bar.label}>
+                  <div className="flex items-center gap-2.5 min-w-0 mb-1.5">
+                    <BarIcon className="size-3.5 shrink-0" style={{ color: bar.color }} />
+                    <span className="text-sm font-medium truncate">{bar.label}</span>
+                    <span className="text-sm font-semibold tabular-nums shrink-0 ml-auto" style={{ color: bar.color }}>
+                      {formatEur(bar.amount)}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full overflow-hidden bg-foreground/5">
+                    <div className="h-full rounded-full" style={{ width: `${(bar.amount / peak) * 100}%`, backgroundColor: bar.color }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2.5 pt-1">
+            <span className="text-sm font-medium">Net change</span>
+            <span
+              className="text-sm font-semibold tabular-nums ml-auto"
+              style={{ color: cashFlow.netChange >= 0 ? "var(--color-income)" : "var(--color-expense)" }}
+            >
+              {cashFlow.netChange >= 0 ? "+" : "−"}{formatEur(Math.abs(cashFlow.netChange))}
+            </span>
+          </div>
+        </div>
+
+        {/* Cash flow calendar + upcoming events — collapsed by default, matching the
+            Categories / Recurring items sections at the bottom of this tab. */}
+        <CollapsibleSection title="Cash flow calendar">
+          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
+            <p className="text-xs text-muted-foreground mb-4">Days with money moving in or out</p>
+            <CashFlowCalendar points={cashFlow.points} />
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Upcoming cash flow">
+          <CashFlowEvents
+            events={cashFlow.events}
+            transactions={cashFlowTxRows as TransactionDetail[]}
+            categories={allCategories}
+            savingsGoals={cashFlowSavingsGoals}
+          />
+        </CollapsibleSection>
+
         {/* Budget health — verdeling style matching debt page */}
         {totalIncome > 0 && (
           <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4">
@@ -481,6 +673,22 @@ export default async function PrognPage({
         )}
 
       </div>
+    </div>
+  );
+}
+
+// ─── Cash flow summary row ──────────────────────────────────────────────────────
+// Same shape as the Budget distribution rows: label left, value pushed right with
+// ml-auto, optional muted hint under the value.
+
+function CashFlowRow({ label, value, hint, color }: { label: string; value: string; hint?: string; color?: string }) {
+  return (
+    <div className="flex items-center gap-2.5 min-w-0">
+      <span className="text-sm font-medium truncate">{label}</span>
+      <span className="ml-auto shrink-0 text-right">
+        <span className="block text-sm font-semibold tabular-nums" style={color ? { color } : undefined}>{value}</span>
+        {hint && <span className="block text-xs text-foreground/40">{hint}</span>}
+      </span>
     </div>
   );
 }

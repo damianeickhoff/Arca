@@ -12,7 +12,7 @@ import {
   IconTrendingUp,
   IconCoinEuro,
   IconReceipt2,
-  IconRepeat,
+  IconReload,
 } from "@tabler/icons-react";
 import {
   IconBackspace,
@@ -331,7 +331,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                   autoCreateBill ? "bg-foreground text-background" : "glass-icon-btn text-foreground",
                 )}
               >
-                <IconRepeat className="size-5" />
+                <IconReload className="size-5" />
               </button>
               <button
                 type="button"

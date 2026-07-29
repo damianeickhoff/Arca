@@ -9,13 +9,16 @@ import { resolveTransactionIcon } from "@/lib/auto-brand";
 import { resolveDisplayName } from "@/lib/friendly-names";
 import { getMatchedTransactionInfoFields } from "@/lib/transaction-info-fields";
 import { getDominantImageColor } from "@/lib/dominant-color";
-import type { Category, Goal } from "@/db/schema";
+import dynamic from "next/dynamic";
+import type { Category, Goal, Merchant, RecurringItem } from "@/db/schema";
+import { MerchantDetailPortal, merchantIcon, type MerchantRef } from "@/components/merchant-detail-portal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { TransactionMap } from "@/components/transaction-map";
 import { CategoryGrid, useCategoryFilter } from "@/components/category-picker";
 import { OptionDropdown } from "@/components/option-dropdown";
 import { TRANSFER_TYPES } from "@/lib/transfer-types";
+import { FREQUENCY_LABELS, nextOccurrence } from "@/lib/recurring-occurrence";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { useIsMobile } from "@/lib/use-is-mobile";
 import {
@@ -23,8 +26,17 @@ import {
   IconXFilled as X,
   IconCameraFilled as Camera,
   IconMessageFilled as MessageSquare,
+  IconReload,
 } from "@tabler/icons-react";
 import type { TransactionDetail } from "./transaction-types";
+
+// Loaded lazily to break a module cycle: the recurring detail sheet lists its linked
+// transactions and opens *this* dialog for them. A static import would leave one of the
+// two undefined at render time depending on which module initialises first.
+const RecurringDetailDialog = dynamic(
+  () => import("@/components/settings/recurring/recurring-detail-dialog").then((m) => m.RecurringDetailDialog),
+  { ssr: false },
+);
 
 // Always-mounted, controlled wrapper. Keeping the <Dialog> (which becomes a vaul
 // bottom-sheet on mobile) mounted and toggling `open` is what makes it animate in —
@@ -45,11 +57,56 @@ export function TransactionDetailDialog({
   onCategorized: (previousCategoryId: number | null, newCategoryName: string, newCategoryId: number | null) => void;
 }) {
   const router = useRouter();
-  const lastRowRef = useRef<TransactionDetail | null>(null);
-  if (row) lastRowRef.current = row;
-  const shown = row ?? lastRowRef.current;
+  // Remembers the last opened transaction so content stays visible through the close
+  // animation. Synced during render (the same pattern BrandIconsClient uses for its
+  // props) rather than by writing a ref mid-render, which React forbids. Compared by
+  // id, not identity: while the sheet is open `row` is used directly, so a new object
+  // for the same transaction would only cost a wasted render pass.
+  const [lastRow, setLastRow] = useState<TransactionDetail | null>(null);
+  if (row && row.id !== lastRow?.id) setLastRow(row);
+  const shown = row ?? lastRow;
   const [washColor, setWashColor] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Drilled-down merchant profile. The transaction sheet deliberately stays open
+  // underneath it (the profile is a full-screen portal that covers it anyway), so
+  // reassigning the merchant from the profile's ⋯ menu returns to this sheet with the
+  // new merchant already applied instead of dumping you back on the list.
+  const [openMerchant, setOpenMerchant] = useState<MerchantRef | null>(null);
+  // Picker state lives here, not in the body, because reassignment can be started from
+  // the merchant profile — which is rendered by this wrapper.
+  // `merchantVersion` tells the body to re-read the field after a pick.
+  const [merchantPickerOpen, setMerchantPickerOpen] = useState(false);
+  const [merchantVersion, setMerchantVersion] = useState(0);
+  // "Make recurring" — closes this sheet and navigates to the routed add-fixed-cost
+  // form, prefilled from this transaction through the URL. That routed form is the
+  // app's current "add" flow; the old in-place dialog is only used for editing now.
+  function makeRecurring() {
+    if (!shown) return;
+    onClose();
+    router.push(`/settings/recurring/add?${buildRecurringPrefillParams(shown, categories)}`);
+  }
+
+  async function pickMerchant(name: string) {
+    if (!shown) return;
+    const created = await fetch("/api/merchants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!created.ok) return;
+    const next: Merchant = await created.json();
+    setMerchantPickerOpen(false);
+    await fetch("/api/transactions", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: shown.id, merchantId: next.id }),
+    });
+    setMerchantVersion((v) => v + 1);
+    // Reassigning from an open merchant profile re-points that profile at the merchant
+    // just picked (the portal refetches on id change), rather than closing it.
+    setOpenMerchant((current) => (current ? { id: next.id, name: next.name } : null));
+    router.refresh();
+  }
 
   async function remove() {
     if (!shown) return;
@@ -66,20 +123,45 @@ export function TransactionDetailDialog({
   }
 
   return (
-    <Dialog open={row != null} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <>
+    {/* Suspended (not closed) while the merchant profile is up: that profile is a
+        full-screen body portal, and leaving this sheet *open* underneath it means its
+        focus trap keeps yanking focus back out of the profile's own inputs — the rename
+        field was impossible to type in. `row` is untouched, so the sheet slides back
+        with the same transaction (and the refreshed merchant) when the profile closes.
+        The onOpenChange guard keeps that from being reported as a real dismissal. */}
+    <Dialog
+      open={row != null && openMerchant == null}
+      onOpenChange={(open) => { if (!open && openMerchant == null) onClose(); }}
+    >
       <DialogContent
         accentColor={washColor}
         headerAction={
           shown ? (
-            <button
-              type="button"
-              onClick={remove}
-              disabled={deleting}
-              aria-label="Delete"
-              className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
-            >
-              <Trash2 className="size-4.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Only offered for transactions that aren't already driven by a recurring
+                  rule — for those the recurrence card below is the way in, and creating
+                  a second rule off the same transaction would just duplicate it. */}
+              {shown.recurringItemId == null && (
+              <button
+                type="button"
+                onClick={makeRecurring}
+                aria-label="Make recurring"
+                className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+              >
+                <IconReload className="size-4.5" />
+              </button>
+              )}
+              <button
+                type="button"
+                onClick={remove}
+                disabled={deleting}
+                aria-label="Delete"
+                className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+              >
+                <Trash2 className="size-4.5" />
+              </button>
+            </div>
           ) : undefined
         }
       >
@@ -92,11 +174,32 @@ export function TransactionDetailDialog({
             savingsGoals={savingsGoals}
             onCategorized={onCategorized}
             onWashColor={setWashColor}
+            onOpenMerchant={setOpenMerchant}
+            onChangeMerchant={() => setMerchantPickerOpen(true)}
+            merchantVersion={merchantVersion}
           />
         )}
       </DialogContent>
-
     </Dialog>
+
+    <MerchantDetailPortal
+      merchant={openMerchant}
+      onClose={() => setOpenMerchant(null)}
+      // Reassigning *this transaction* is a transaction-level action, so it's offered
+      // from the profile's menu (the field itself is now a plain drill-down row).
+      onChangeMerchant={() => setMerchantPickerOpen(true)}
+    />
+
+    {/* A sibling of both, not a child: it has to be openable from the merchant profile,
+        which is up at a point where the transaction sheet is suspended. */}
+    <MerchantPickerDialog
+      open={merchantPickerOpen}
+      currentId={null}
+      suggestion={shown ? guessMerchant(shown.description) : ""}
+      onOpenChange={setMerchantPickerOpen}
+      onPick={pickMerchant}
+    />
+    </>
   );
 }
 
@@ -106,12 +209,18 @@ function TransactionDetailBody({
   savingsGoals,
   onCategorized,
   onWashColor,
+  onOpenMerchant,
+  onChangeMerchant,
+  merchantVersion,
 }: {
   row: TransactionDetail;
   categories: Category[];
   savingsGoals: Goal[];
   onCategorized: (previousCategoryId: number | null, newCategoryName: string, newCategoryId: number | null) => void;
   onWashColor: (color: string | null) => void;
+  onOpenMerchant: (merchant: MerchantRef) => void;
+  onChangeMerchant: () => void;
+  merchantVersion: number;
 }) {
   const router = useRouter();
   const [categoryId, setCategoryId] = useState<string | null>(row.categoryId != null ? String(row.categoryId) : null);
@@ -138,6 +247,10 @@ function TransactionDetailBody({
   const [bulkPrompt, setBulkPrompt] = useState<BulkPrompt | null>(null);
   const [budgetTypeOverride, setBudgetTypeOverride] = useState<string | null>(row.budgetTypeOverride ?? null);
   const [transferType, setTransferType] = useState<string | null>(row.transferType ?? null);
+  // Merchant — fetched per transaction rather than carried on every row shape, so the
+  // field works from every place that opens this dialog (transactions list, dashboard,
+  // needs-review). The endpoint derives and links one on the fly if the row has none.
+  const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [notes, setNotes] = useState<string | null>(row.notes ?? null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteValue, setNoteValue] = useState(row.notes ?? "");
@@ -148,6 +261,18 @@ function TransactionDetailBody({
     if (!showPicker) return;
     return acquireNavHidden();
   }, [showPicker]);
+
+  useEffect(() => {
+    if (row.isInternalTransfer) return;
+    let cancelled = false;
+    fetch(`/api/merchants/for-transaction?transactionId=${row.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setMerchant(d.merchant ?? null); })
+      .catch(() => { /* leave the field empty rather than break the sheet */ });
+    return () => { cancelled = true; };
+    // merchantVersion: the picker lives in the wrapper (so it outlives this sheet when
+    // reassignment is started from the merchant profile) — a bump means re-read.
+  }, [row.id, row.isInternalTransfer, merchantVersion]);
 
   const currentCat = categories.find((c) => c.id === parseInt(categoryId ?? ""));
   const merchantPattern = guessMerchant(row.description);
@@ -302,6 +427,10 @@ function TransactionDetailBody({
     ...row,
     categoryIcon: currentCat?.icon ?? row.categoryIcon,
     categoryColor: currentCat?.color ?? row.categoryColor,
+    // Prefer the merchant fetched for this sheet over the one baked into the row, so
+    // reassigning the merchant re-skins the hero without waiting for a page refresh.
+    merchantIcon: merchant?.icon ?? row.merchantIcon,
+    merchantColor: merchant?.color ?? row.merchantColor,
     transferType,
   });
   const detailIconBg = detailIcon.background;
@@ -339,7 +468,19 @@ function TransactionDetailBody({
             the drag-handle chrome above this component on mobile. */}
         <div className="relative -mx-6 -mt-2 lg:-mx-7 lg:-mt-7 px-6 lg:px-7 pt-2 lg:pt-7">
           <div className="relative flex flex-col items-center text-center gap-1 pb-2">
-            <Icon iconKey={detailIcon.iconKey} color={detailIcon.color} background={detailIconBg} initials={detailIcon.initials} round size="xxl" />
+            {/* Recurring badge on the icon's top-right, same marker the transaction
+                lists draw (see mobile-transaction-list.tsx), scaled to the xxl chip. */}
+            <div className="relative">
+              <Icon iconKey={detailIcon.iconKey} color={detailIcon.color} background={detailIconBg} initials={detailIcon.initials} round size="xxl" />
+              {row.recurringItemId != null && (
+                <span
+                  aria-label="Recurring bill"
+                  className="absolute -top-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-[var(--dialog-content-background)]"
+                >
+                  <IconReload className="size-3.5 text-foreground/60" stroke={2.5} />
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-1.5 mt-3 px-4">
               <span className="font-semibold text-lg leading-snug">{resolveDisplayName(row)}</span>
             </div>
@@ -357,7 +498,7 @@ function TransactionDetailBody({
             src/config/transactionInfoFields.ts. Absent entirely (no card, no gap)
             unless at least one configured field actually matched this transaction. */}
         {infoFields.length > 0 && (
-          <div className="rounded-xl bg-white/2 backdrop-blur-xs text-sm py-2">
+          <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm py-2">
             {infoFields.map((field) => (
               <DetailRow key={field.key} label={field.label} value={field.value} />
             ))}
@@ -369,9 +510,9 @@ function TransactionDetailBody({
           <TransactionMap name={row.customName || row.description} />
         )}
           {/* Category — tappable, opens picker dialog */}
-          <div className="rounded-full bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm py-2">
           {!row.isInternalTransfer && (
             <>
+              <div className="rounded-full bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm py-2">
               <button
                 type="button"
                 className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left text-md active:bg-foreground/[0.04] transition-colors"
@@ -390,6 +531,20 @@ function TransactionDetailBody({
                   )}
                 </div>
               </button>
+              </div>
+
+              {/* Nothing categorized yet — a filled call-to-action right under the row,
+                  since an uncategorized transaction is the one thing worth fixing here
+                  and the row itself reads as a value, not an action. */}
+              {!currentCat && !row.isSplit && (
+                <button
+                  type="button"
+                  onClick={() => setShowPicker(true)}
+                  className="w-full rounded-full bg-foreground text-background py-3.5 text-md font-medium active:scale-[0.98] transition-transform"
+                >
+                  Select category
+                </button>
+              )}
 
               <Dialog open={showPicker && !row.isSplit} onOpenChange={(v) => !v && setShowPicker(false)}>
                 <DialogContent
@@ -420,7 +575,42 @@ function TransactionDetailBody({
               </Dialog>
             </>
           )}
+        {/* Merchant — same row treatment as Category above: icon + name, whole row
+            tappable. Tapping drills into the merchant's profile once one is set;
+            with no merchant yet it opens the picker, since there'd be nothing to
+            drill into. Reassigning an existing one lives in the profile's ⋯ menu. */}
+        {!row.isInternalTransfer && (
+          <div className="rounded-full bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm py-2">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between gap-3 px-4 py-2.5 text-left text-md active:bg-foreground/[0.04] transition-colors"
+              onClick={() =>
+                merchant
+                  ? onOpenMerchant({ id: merchant.id, name: merchant.name })
+                  : onChangeMerchant()
+              }
+            >
+              <span className="text-muted-foreground shrink-0">Merchant</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                {merchant ? (
+                  <>
+                    {(() => {
+                      const icon = merchantIcon(merchant);
+                      return <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} size="xs" round />;
+                    })()}
+                    <span className="font-medium text-foreground truncate">{merchant.name}</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon iconKey={null} color={null} size="xs" round />
+                    <span className="font-medium text-muted-foreground/50">Unknown</span>
+                  </>
+                )}
+              </div>
+            </button>
           </div>
+        )}
+
         {/* Details grid */}
         <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm py-2">
                     {/* Exclude from reports toggle */}
@@ -441,13 +631,6 @@ function TransactionDetailBody({
             </div>
           </button>
           {row.bankName && <DetailRow label="Bank" value={row.bankName} />}
-
-          {/* Linked recurring expense — set when this transaction matched a recurring
-              item's pattern (see src/lib/recurring-match.ts). Shown for any linked
-              transaction, preferring the item's friendly name. */}
-          {row.recurringItemId != null && (
-            <DetailRow label="Recurring" value={row.recurringFriendlyName || row.recurringName || "Recurring"} />
-          )}
 
           {/* Savings goal — links this transaction's amount to a goal's currentAmount */}
           {!row.isInternalTransfer && savingsGoals.length > 0 && (
@@ -558,6 +741,17 @@ function TransactionDetailBody({
 
           <ReceiptSection transactionId={row.id} receiptUrl={row.receiptUrl ?? null} />
         </div>
+
+        {/* Recurrence — set when this transaction matched a recurring item's pattern
+            (see src/lib/recurring-match.ts). Its own card rather than a detail row, so
+            the schedule can be read and paused/cancelled without leaving the sheet. */}
+        {row.recurringItemId != null && (
+          <RecurrenceCard
+            recurringItemId={row.recurringItemId}
+            fallbackName={row.recurringFriendlyName || row.recurringName || "Recurring"}
+            categories={categories}
+          />
+        )}
 
         {/* Split summary */}
         {!!row.isSplit && row.splitSummary && (
@@ -690,6 +884,108 @@ function TransactionDetailBody({
   );
 }
 
+// Merchant picker: pick one of the merchants already in use, or type a new name.
+// Both paths go through POST /api/merchants, which get-or-creates by normalized name —
+// so typing "albert heijn" when "Albert Heijn" exists reuses that profile.
+function MerchantPickerDialog({
+  open,
+  currentId,
+  suggestion,
+  onOpenChange,
+  onPick,
+}: {
+  open: boolean;
+  currentId: number | null;
+  suggestion: string;
+  onOpenChange: (open: boolean) => void;
+  onPick: (name: string) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* z-[80]: reassignment can be started from the merchant profile, a body portal at
+          z-70 that now stays open behind this picker — without it the sheet opens
+          underneath the profile and looks like nothing happened. */}
+      <DialogContent className="sm:max-w-sm" sheetClassName="z-[80]" overlayClassName="z-[80] backdrop-blur-lg bg-foreground/20">
+        <DialogHeader>
+          <DialogTitle>Merchant</DialogTitle>
+        </DialogHeader>
+        {/* Mounted only while open so the search box and merchant list reset per
+            opening, instead of an effect resetting them on every `open` flip. */}
+        {open && <MerchantPickerBody currentId={currentId} suggestion={suggestion} onPick={onPick} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MerchantPickerBody({
+  currentId,
+  suggestion,
+  onPick,
+}: {
+  currentId: number | null;
+  suggestion: string;
+  onPick: (name: string) => void;
+}) {
+  const [all, setAll] = useState<Array<{ id: number; name: string; icon: string | null; color: string | null; transactionCount: number }>>([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/merchants")
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setAll(Array.isArray(d) ? d : []); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const term = query.trim().toLowerCase();
+  const matches = term ? all.filter((m) => m.name.toLowerCase().includes(term)) : all;
+  const exact = all.some((m) => m.name.toLowerCase() === term);
+
+  return (
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={suggestion ? `Search or add — e.g. ${suggestion}` : "Search or add a merchant"}
+            className="w-full border rounded-lg px-3 py-2 text-sm bg-background"
+          />
+          <div className="space-y-1 max-h-[50vh] overflow-y-auto">
+            {term && !exact && (
+              <button
+                type="button"
+                onClick={() => onPick(query.trim())}
+                className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left hover:bg-foreground/5 transition-colors"
+              >
+                <span className="font-medium">Add “{query.trim()}”</span>
+              </button>
+            )}
+            {loading && <p className="text-xs text-muted-foreground px-3 py-2">Loading…</p>}
+            {matches.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => onPick(m.name)}
+                className={cn(
+                  "w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm text-left transition-colors",
+                  m.id === currentId ? "bg-foreground/8 font-semibold" : "hover:bg-foreground/5",
+                )}
+              >
+                <Icon iconKey={m.icon} color={m.color} size="xs" round />
+                <span className="flex-1 truncate">{m.name}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{m.transactionCount}</span>
+              </button>
+            ))}
+            {!loading && matches.length === 0 && !term && (
+              <p className="text-xs text-muted-foreground px-3 py-2">No merchants yet.</p>
+            )}
+          </div>
+        </div>
+  );
+}
+
 // Extract the likely merchant/brand name from a raw transaction description.
 // Stops at the first token that contains a digit (store numbers, postal codes, etc.)
 // so "ALDI CUL009 TIEL TIEL NLD" → "ALDI", "Albert Heijn 1177 DOORN NLD" → "Albert Heijn".
@@ -702,6 +998,161 @@ function guessMerchant(description: string): string {
     if (brand.length >= 3) break;
   }
   return brand.join(" ") || description;
+}
+
+// Everything a recurring item can inherit from a single transaction: name, amount,
+// due day (this transaction's day of month), match pattern and category. Anything not
+// derivable (frequency, notes) keeps the add form's own defaults. Serialized as query
+// params because that form is a route, not a dialog — see settings/recurring/add/page.tsx.
+function buildRecurringPrefillParams(row: TransactionDetail, categories: Category[]): string {
+  const category = categories.find((c) => c.id === row.categoryId);
+  const amount = row.correctedAmount ?? row.amount;
+  const day = parseInt(row.date.slice(8, 10), 10);
+  const budgetType = row.budgetTypeOverride ?? category?.budgetType ?? null;
+
+  const params = new URLSearchParams();
+  const set = (key: string, value: string | null | undefined) => { if (value) params.set(key, value); };
+
+  set("name", resolveDisplayName(row));
+  set("type", row.direction === "income" ? "income" : "bill");
+  set("amount", amount != null ? String(Math.abs(amount)) : "");
+  set("budgetType", budgetType && ["nodig", "willen", "sparen"].includes(budgetType) ? budgetType : null);
+  set("dueDay", Number.isFinite(day) ? String(day) : "");
+  set("matchPattern", guessMerchant(row.description));
+  set("categoryId", row.categoryId != null ? String(row.categoryId) : null);
+
+  return params.toString();
+}
+
+// The recurring rule behind a linked transaction: its schedule at a glance, plus the
+// two actions worth having in the moment — pause (keeps the rule, stops it matching
+// and projecting) and cancel (removes it entirely; auto-detected items are soft-
+// dismissed server-side so the detector doesn't recreate them).
+function RecurrenceCard({
+  recurringItemId,
+  fallbackName,
+  categories,
+}: {
+  recurringItemId: number;
+  fallbackName: string;
+  categories: Category[];
+}) {
+  const router = useRouter();
+  const [item, setItem] = useState<RecurringItem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
+  // Bumped when the detail sheet closes, so edits made in there (name, frequency,
+  // dates, active) are reflected here — a router.refresh() wouldn't reach this card's
+  // own client-fetched copy, and firing one mid-close makes the sheet stutter.
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    let ignore = false;
+    fetch("/api/recurring")
+      .then((r) => r.json())
+      .then((rows: RecurringItem[]) => {
+        if (!ignore) setItem(Array.isArray(rows) ? rows.find((r) => r.id === recurringItemId) ?? null : null);
+      })
+      .catch(() => { /* leave the card in its loading state rather than break the sheet */ });
+    return () => { ignore = true; };
+  }, [recurringItemId, version]);
+
+  async function togglePaused() {
+    if (!item) return;
+    const next = !item.active;
+    setBusy(true);
+    setItem({ ...item, active: next });
+    await fetch("/api/recurring", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, active: next }),
+    });
+    setBusy(false);
+    router.refresh();
+  }
+
+  async function cancelRecurrence() {
+    if (!item) return;
+    if (!confirm(`Cancel “${item.friendlyName || item.name}”? Future occurrences stop and the rule is removed.`)) return;
+    setBusy(true);
+    await fetch("/api/recurring", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id }),
+    });
+    setBusy(false);
+    setCancelled(true);
+    router.refresh();
+  }
+
+  if (cancelled) {
+    return (
+      <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs px-4 py-3 text-sm text-muted-foreground text-center">
+        Recurrence cancelled.
+      </div>
+    );
+  }
+
+  const next = item && item.active ? nextOccurrence(item) : null;
+
+  return (
+    <div className="space-y-2">
+      <p className="px-1 text-sm font-medium text-foreground/60">Recurrence</p>
+      <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs text-sm">
+        {/* Name + schedule — the whole block drills into the recurring item itself
+            (same sheet the Recurring settings list opens), where the amount, match
+            pattern, category and every linked transaction live. */}
+        <button
+          type="button"
+          onClick={() => item && setDetailOpen(true)}
+          disabled={!item}
+          className="w-full px-4 py-3 border-b border-foreground/10 text-center active:bg-foreground/[0.04] transition-colors disabled:active:bg-transparent"
+        >
+          <span className="flex items-center justify-center gap-1.5 font-medium text-foreground">
+            {item ? item.friendlyName || item.name : fallbackName}
+          </span>
+          <span className="mt-1 flex items-center justify-center gap-2">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="flex size-5 items-center justify-center rounded bg-foreground/10 text-[10px] font-semibold uppercase text-foreground/70">
+                {(item?.frequency ?? "-").slice(0, 1)}
+              </span>
+              {item ? FREQUENCY_LABELS[item.frequency] ?? item.frequency : "—"}
+            </span>
+            {item && (
+              <span className="flex items-center gap-1.5 font-medium text-foreground">
+                <span className={cn("size-2 rounded-full", item.active ? "bg-emerald-500" : "bg-foreground/30")} />
+                {item.active ? "Active" : "Paused"}
+              </span>
+            )}
+          </span>
+        </button>
+        {item?.startDate && <DetailRow label="Started" value={formatDate(item.startDate)} />}
+        {item?.endDate && <DetailRow label="Ends" value={formatDate(item.endDate)} />}
+        {next && <DetailRow label="Next occurrence" value={formatDate(next)} />}
+        <div className="flex gap-2 px-4 py-3">
+          <Button variant="outline" className="flex-1 rounded-full" onClick={togglePaused} disabled={!item || busy}>
+            {item && !item.active ? "Resume" : "Pause"}
+          </Button>
+          <Button
+            className="flex-1 rounded-full bg-destructive text-white hover:bg-destructive/90"
+            onClick={cancelRecurrence}
+            disabled={!item || busy}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+
+      {/* Nested inside the transaction sheet's content, so closing it returns here. */}
+      <RecurringDetailDialog
+        item={detailOpen ? item : null}
+        category={categories.find((c) => c.id === item?.categoryId) ?? null}
+        categories={categories}
+        onClose={() => { setDetailOpen(false); setVersion((v) => v + 1); }}
+      />
+    </div>
+  );
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {

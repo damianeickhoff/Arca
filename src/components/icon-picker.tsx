@@ -183,7 +183,9 @@ export const TABLER_ICONS: { key: string; label: string }[] = [
   { key: "IconMovie",            label: "Film" },
   { key: "IconBook",             label: "Boeken" },
   { key: "IconHeadphones",       label: "Audio" },
-  { key: "IconTicket",           label: "Uitje" },
+  { key: "IconTicket",           label: "Ticket" },
+  { key: "IconRollercoaster",    label: "Rollcercoaster" },
+  
   // Health & fitness
   { key: "IconHeart",            label: "Gezondheid" },
   { key: "IconBarbell",          label: "Sport" },
@@ -258,6 +260,8 @@ export const TABLER_ICONS: { key: string; label: string }[] = [
   { key: "IconCoins",               label: "Coins"},
   { key: "IconRoad",                label: "Road"},
   { key: "IconChartAreaLine",       label: "ChartAreaLine"},
+  { key: "IconEngine",              label: "Engine"},
+
 ];
 
 // ─── Bare glyph renderer — no chip/background, used inside the grid ──────────

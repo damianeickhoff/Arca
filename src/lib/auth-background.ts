@@ -69,6 +69,13 @@ export function getAuthBackgroundPreset(id: string | null | undefined): AuthBack
 // `fadeColor` is the tint the overlay fades *through* before it reaches --background —
 // black in dark mode (so colors sink into the near-black page) and white in light mode
 // (so they wash out over the bright page instead of leaving a dark smudge).
+// The preset's diagonal color gradient on its own — the bottom layer of buildImage,
+// and the whole background when the fade overlay is turned off (`fade: false`).
+function buildColorLayer(colors: string[], angle: number): string {
+  const [c1, c2 = c1, c3 = c2, c4 = c3] = colors;
+  return `linear-gradient(${angle}deg, ${c1} 0%, ${c2} 15%, ${c3} 35%, ${c4} 100%)`;
+}
+
 function buildImage(colors: string[], angle: number, fadeStop: number, fadeColor: string): string {
   const [c1, c2 = c1, c3 = c2, c4 = c3] = colors;
   return `
@@ -124,20 +131,36 @@ export const AUTH_BG_CLASS = "auth-bg";
 
 export function authBackgroundStyle(
   preset: AuthBackgroundPreset,
-  options?: { boxHeight?: string; fadeStop?: number; theme?: BgTheme },
+  options?: { boxHeight?: string; fadeStop?: number; theme?: BgTheme; fade?: boolean },
 ): CSSProperties {
-  const { boxHeight, fadeStop = 45, theme = "adaptive" } = options ?? {};
+  const { boxHeight, fadeStop = 45, theme = "adaptive", fade = true } = options ?? {};
 
-  const darkImage = buildImage(preset.colors, preset.angle, fadeStop, "rgba(0, 0, 0, 0)");
-  const lightImage = buildImage(preset.lightColors ?? preset.colors, preset.angle, fadeStop, "rgba(255, 255, 255, 0)");
+  // `fade: false` drops the fade-to---background overlay entirely: the preset's color
+  // gradient alone paints the whole box, stretched to fill it. Used by the onboarding
+  // flow, where the faded lower half left white text sitting on --background (white in
+  // the light theme) and made it near-invisible.
+  const darkImage = fade
+    ? buildImage(preset.colors, preset.angle, fadeStop, "rgba(0, 0, 0, 0)")
+    : buildColorLayer(preset.colors, preset.angle);
+  const lightImage = fade
+    ? buildImage(preset.lightColors ?? preset.colors, preset.angle, fadeStop, "rgba(255, 255, 255, 0)")
+    : buildColorLayer(preset.lightColors ?? preset.colors, preset.angle);
 
-  const base: CSSProperties = {
-    backgroundColor: "var(--background)",
-    backgroundSize: boxHeight ? `100% ${boxHeight}` : "auto",
-    backgroundPosition: "top",
-    backgroundRepeat: boxHeight ? "no-repeat" : "repeat",
-    backgroundAttachment: "fixed",
-  };
+  const base: CSSProperties = fade
+    ? {
+        backgroundColor: "var(--background)",
+        backgroundSize: boxHeight ? `100% ${boxHeight}` : "auto",
+        backgroundPosition: "top",
+        backgroundRepeat: boxHeight ? "no-repeat" : "repeat",
+        backgroundAttachment: "fixed",
+      }
+    : {
+        backgroundColor: preset.colors[preset.colors.length - 1],
+        backgroundSize: boxHeight ? `100% ${boxHeight}` : "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+      };
 
   if (theme === "adaptive") {
     return { ...base, "--auth-bg-light": lightImage, "--auth-bg-dark": darkImage } as CSSProperties;

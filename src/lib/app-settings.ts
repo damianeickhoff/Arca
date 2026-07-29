@@ -79,6 +79,17 @@ export async function getBudgetRecurringMode(): Promise<BudgetRecurringMode> {
   return value === "always" || value === "exclude" ? value : "budgeted";
 }
 
+// Cash-flow forecast "getting low" line. The forecast is Warning once the projected
+// low point dips under this (and Critical once it goes negative) — see
+// src/lib/cash-flow-forecast.ts.
+export const DEFAULT_CASH_FLOW_WARNING_THRESHOLD = 500;
+
+export async function getCashFlowWarningThreshold(): Promise<number> {
+  const row = await db.select().from(appSettings).where(eq(appSettings.key, "cash_flow_warning_threshold")).limit(1);
+  const parsed = Number(row[0]?.value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_CASH_FLOW_WARNING_THRESHOLD;
+}
+
 export interface AppLockConfig {
   enabled: boolean;
   hasWebAuthn: boolean;

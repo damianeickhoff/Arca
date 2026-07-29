@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useMotionValue, useTransform } from "motion/react";
 import { Input } from "@/components/ui/input";
 import { AmountInput } from "@/components/ui/amount-input";
 import { AuthPillButton } from "@/components/auth-pill-button";
@@ -11,7 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { CalendarContent } from "@/components/date-picker";
 import { useIsMobile } from "@/lib/use-is-mobile";
-import { m, AnimatePresence, spring, easeOutQuart, LazyMotion, domMax, animate } from "@/lib/motion";
+import { m, AnimatePresence, spring, easeOutQuart } from "@/lib/motion";
 import { useTheme, type ThemeMode } from "@/lib/theme";
 import {
   AUTH_BACKGROUND_PRESETS,
@@ -37,7 +36,7 @@ import {
   IconUserFilled as UserIcon,
   IconMailFilled as Mail,
   IconLockFilled as Lock,
-  IconRepeatOnce as Repeat,
+  IconReload as Repeat,
   IconWallet,
   IconShieldCheck as ShieldCheck,
   IconShieldLockFilled as ShieldLock,
@@ -205,63 +204,32 @@ function BirthdayPicker({ value, onChange }: { value: string; onChange: (value: 
   );
 }
 
-// The intro splash's CTA — a "slide to start" control: drag the arrow badge across the
-// track (or just tap it) to advance. `domMax` is loaded locally since drag/layout
-// projection isn't part of the app-wide `domAnimation` bundle (see lib/motion.ts).
+// The intro splash's CTA — a plain press-to-commit button. It keeps the glass track
+// look of the old slide control (badge on the left, label centred) but works the same
+// with a mouse as with a thumb.
 function IntroStartButton({ onClick, className }: { onClick: () => void; className?: string }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const [maxX, setMaxX] = useState(0);
   const [committed, setCommitted] = useState(false);
-  const glow = useTransform(x, (v) => (maxX > 0 ? Math.min(v / maxX, 1) : 0));
-
-  useEffect(() => {
-    function measure() {
-      if (trackRef.current) setMaxX(Math.max(trackRef.current.offsetWidth - 88, 40));
-    }
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
 
   function commit() {
     if (committed) return;
     setCommitted(true);
-    animate(x, maxX, { type: "spring", stiffness: 280, damping: 26 });
-    setTimeout(onClick, 260);
-  }
-
-  function handleDragEnd() {
-    if (committed) return;
-    if (x.get() > maxX * 0.55) commit();
-    else animate(x, 0, { type: "spring", stiffness: 420, damping: 32 });
+    setTimeout(onClick, 160);
   }
 
   return (
-    <LazyMotion features={domMax} strict>
-      <div
-        ref={trackRef}
-        className={`relative w-full h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/10 overflow-hidden select-none ${className ?? ""}`}
-      >
-        <m.div className="absolute inset-0 bg-white/20 pointer-events-none" style={{ opacity: glow }} />
-        <span className="absolute inset-0 flex items-center justify-center text-white font-semibold text-lg pointer-events-none">
-          Swipe to commit
-        </span>
-        <m.div
-          drag={committed ? false : "x"}
-          dragConstraints={{ left: 0, right: maxX }}
-          dragElastic={0.08}
-          dragMomentum={false}
-          style={{ x }}
-          onDragEnd={handleDragEnd}
-          onClick={commit}
-          whileTap={{ scale: 0.95 }}
-          className="absolute left-2 top-2 bottom-2 aspect-square rounded-full bg-white/20 flex items-center justify-center text-white cursor-grab active:cursor-grabbing shadow-lg"
-        >
-          <ArrowRight className="size-6" />
-        </m.div>
-      </div>
-    </LazyMotion>
+    <button
+      type="button"
+      onClick={commit}
+      disabled={committed}
+      className={`relative w-full h-20 rounded-full bg-white/10 backdrop-blur-md border border-white/10 overflow-hidden select-none transition-all duration-200 hover:bg-white/15 active:scale-[0.98] disabled:bg-white/20 ${className ?? ""}`}
+    >
+      <span className="absolute inset-0 flex items-center justify-center text-white font-semibold text-lg">
+        Press to commit
+      </span>
+      <span className="absolute left-2 top-2 bottom-2 aspect-square rounded-full bg-white/20 flex items-center justify-center text-white shadow-lg">
+        <ArrowRight className="size-6" />
+      </span>
+    </button>
   );
 }
 
@@ -669,7 +637,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
             className="fixed inset-0 z-[1] pointer-events-none"
-            style={authBackgroundStyle(getAuthBackgroundPreset(bgPreview), { theme: "dark" })}
+            style={authBackgroundStyle(getAuthBackgroundPreset(bgPreview), { theme: "dark", fade: false })}
           />
         )}
       </AnimatePresence>

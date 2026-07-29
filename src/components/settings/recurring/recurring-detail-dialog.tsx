@@ -62,6 +62,14 @@ export function RecurringDetailDialog({
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Keeps the body rendered through the close animation. Without it the caller clears
+  // `item` the instant the sheet starts closing, so the content vanishes a frame later
+  // and the sheet slides away empty — which reads as an abrupt cut rather than a
+  // dismissal. Synced during render (same pattern as TransactionDetailDialog) and
+  // compared by id, since `item` is used directly while open.
+  const [lastItem, setLastItem] = useState<RecurringItem | null>(null);
+  if (item && item.id !== lastItem?.id) setLastItem(item);
+  const shown = item ?? lastItem;
 
   async function remove() {
     if (!item) return;
@@ -84,7 +92,7 @@ export function RecurringDetailDialog({
           accentColor={category?.color ?? null}
           scrollBlur
           headerAction={
-            item ? (
+            shown ? (
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -108,12 +116,12 @@ export function RecurringDetailDialog({
           }
         >
           <DialogTitle className="sr-only">Recurrence details</DialogTitle>
-          {item && <DetailBody key={item.id} item={item} category={category} categories={categories} dueDate={dueDate} />}
+          {shown && <DetailBody key={shown.id} item={shown} category={category} categories={categories} dueDate={dueDate} />}
 
           {/* Edit dialog — controlled by the pencil button. Rendered INSIDE this dialog's
               content so it's a nested sheet: closing it returns here instead of tearing
               down the detail dialog too. */}
-          {item && <RecurringClient action="edit" item={item} open={editOpen} onOpenChange={setEditOpen} />}
+          {shown && <RecurringClient action="edit" item={shown} open={editOpen} onOpenChange={setEditOpen} />}
         </DialogContent>
       </Dialog>
     </>

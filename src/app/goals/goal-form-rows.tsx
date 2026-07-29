@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   IconChevronRight as ChevronRight,
-  IconRepeat,
+  IconReload,
   IconSparkles,
 } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -152,7 +152,7 @@ export function RecurrenceRow({ value, onChange }: { value: string; onChange: (v
   return (
     <>
       <ValueRow
-        icon={<IconRepeat className="size-5" />}
+        icon={<IconReload className="size-5" />}
         label="Recurrency"
         value={recurrenceLabel(value)}
         onClick={() => setOpen(true)}

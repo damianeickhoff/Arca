@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { transactions, categories, banks, recurringItems } from "@/db/schema";
+import { transactions, categories, banks, merchants, recurringItems } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
@@ -39,11 +39,14 @@ export async function getNeedsReviewTransactions() {
       recurringItemId: transactions.recurringItemId,
       recurringName: recurringItems.name,
       recurringFriendlyName: recurringItems.friendlyName,
+      merchantIcon: merchants.icon,
+      merchantColor: merchants.color,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .leftJoin(banks, eq(transactions.account, banks.accountNumber))
     .leftJoin(recurringItems, eq(transactions.recurringItemId, recurringItems.id))
+    .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
     .where(isNull(transactions.categoryId))
     .orderBy(desc(transactions.date), desc(transactions.id));
 

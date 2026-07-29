@@ -26,7 +26,7 @@ export default async function RegisterPage() {
     : null;
 
   return (
-    <AuthShell>
+    <AuthShell fullBleedBackground>
       <OnboardingWizard resumeUser={resumeUser} />
     </AuthShell>
   );

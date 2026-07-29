@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { IconX } from "@tabler/icons-react";
 import { useBudgetPortal } from "@/lib/budget-portal-state";
+import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "arca:no-budget-card-dismissed";
 
@@ -26,7 +27,7 @@ function readDismissal(): Dismissal | null {
 // check). Tapping it jumps straight into the create-budget flow; the X lets the
 // user suspend the prompt for 7 days or for good, remembered in localStorage
 // (per-device — see the CLAUDE.md instructions for why this stays client-only).
-export function NoBudgetCard() {
+export function NoBudgetCard({ className }: { className?: string }) {
   const { openBudgetCreate } = useBudgetPortal();
   // "checking" until the mount effect below reads localStorage — avoids an
   // SSR/hydration mismatch (the server has no way to know the dismissal state).
@@ -62,7 +63,7 @@ export function NoBudgetCard() {
   if (status !== "visible") return null;
 
   return (
-    <div ref={ref} className="relative mx-3 mt-5 rounded-2xl bg-card p-6 text-center">
+    <div ref={ref} className={cn("relative mx-3 mt-5 rounded-2xl bg-card p-6 text-center", className)}>
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}

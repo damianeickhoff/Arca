@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { IconChevronRight as ChevronRight, IconPlus as Plus, IconSearch as Search } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
 import { CategoryClient } from "@/components/settings/categories/category-client";
@@ -19,8 +20,30 @@ interface Props {
 }
 
 export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [editMode, setEditMode] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  // Wipes every category and re-seeds src/config/categories.ts. Only reachable from
+  // edit mode (the "Done" state), since it throws away all custom categories.
+  async function resetToDefaults() {
+    if (
+      !confirm(
+        "Reset categories to the defaults? All custom categories and rules are deleted and the default set is restored. Your transactions are kept, but lose their category until the default rules re-assign them.",
+      )
+    )
+      return;
+    setResetting(true);
+    const res = await fetch("/api/categories/reset", { method: "POST" });
+    setResetting(false);
+    if (!res.ok) {
+      alert("Failed to reset the categories.");
+      return;
+    }
+    setEditMode(false);
+    router.refresh();
+  }
 
   // Drill-down into a single category's detail/edit screen, shown as a slide-over
   // *inside* the dialog (not a route) so the panel's own Back returns here instead
@@ -48,13 +71,25 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
       <PanelHeader
         title="Categories"
         action={
-          <button
-            type="button"
-            onClick={() => setEditMode((m) => !m)}
-            className="px-4 h-9 rounded-full bg-white dark:bg-white/7 text-sm font-medium text-foreground active:scale-[0.97] transition-transform"
-          >
-            {editMode ? "Done" : "Edit"}
-          </button>
+          <div className="flex items-center gap-2">
+            {editMode && (
+              <button
+                type="button"
+                onClick={resetToDefaults}
+                disabled={resetting}
+                className="px-4 h-9 rounded-full bg-white dark:bg-white/7 text-sm font-medium text-destructive active:scale-[0.97] transition-transform disabled:opacity-50"
+              >
+                {resetting ? "Resetting..." : "Reset"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setEditMode((m) => !m)}
+              className="px-4 h-9 rounded-full bg-white dark:bg-white/7 text-sm font-medium text-foreground active:scale-[0.97] transition-transform"
+            >
+              {editMode ? "Done" : "Edit"}
+            </button>
+          </div>
         }
       />
 

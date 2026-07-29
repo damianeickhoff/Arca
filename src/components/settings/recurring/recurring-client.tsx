@@ -13,7 +13,7 @@ import {
   IconCircleCheckFilled as CheckCircle,
   IconCheck as Check,
   IconCoinEuro as Coin,
-  IconRepeat as Repeat,
+  IconReload as Repeat,
   IconCalendarEvent as Calendar,
   IconTag as TagIcon,
   IconCategory2 as CategoryIcon,

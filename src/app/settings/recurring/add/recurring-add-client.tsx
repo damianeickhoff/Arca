@@ -31,27 +31,41 @@ const FREQUENCY_OPTIONS = [
   { value: "weekly", label: "Weekly" },
 ];
 
+/** Values a new item can start from — used by "Make recurring" on a transaction,
+ * which passes them through the URL (see this route's page.tsx). Every field is
+ * optional; anything absent keeps the form's own default. */
+export interface RecurringAddPrefill {
+  name?: string;
+  type?: string;
+  amount?: string;
+  budgetType?: string;
+  dueDay?: string;
+  matchPattern?: string;
+  matchAmount?: string;
+  categoryId?: string;
+}
+
 // Routed "Add fixed cost" page, built on the shared FormSubpage scaffold (was
 // previously a dialog inside components/settings/recurring/recurring-client.tsx).
 // Editing an existing item still uses that dialog.
-export function RecurringAddClient({ categories }: { categories: Category[] }) {
+export function RecurringAddClient({ categories, prefill }: { categories: Category[]; prefill?: RecurringAddPrefill }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
-    name: "",
-    type: "bill",
-    amount: "",
+    name: prefill?.name ?? "",
+    type: prefill?.type ?? "bill",
+    amount: prefill?.amount ?? "",
     frequency: "monthly",
-    budgetType: "nodig",
+    budgetType: prefill?.budgetType ?? "nodig",
     notes: "",
-    dueDay: "",
-    matchPattern: "",
+    dueDay: prefill?.dueDay ?? "",
+    matchPattern: prefill?.matchPattern ?? "",
     matchMode: "exact" as "exact" | "range",
-    matchAmount: "",
+    matchAmount: prefill?.matchAmount ?? "",
     matchAmountMin: "",
     matchAmountMax: "",
-    categoryId: "",
+    categoryId: prefill?.categoryId ?? "",
     friendlyName: "",
   });
 

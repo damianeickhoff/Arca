@@ -8,6 +8,7 @@ import { CategoryDetailPortal } from "@/components/category-detail-portal";
 import { CategorySpendingListPortal } from "@/components/category-spending-list-portal";
 import { ProgressRing } from "@/components/progress-ring";
 import type { FinancialMonthConfig } from "@/lib/date-range";
+import { useTranslations } from "next-intl";
 
 export interface CategorySpendCard {
   categoryId: number;
@@ -78,6 +79,7 @@ export function CategorySpendingRow({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const selected = allRows.find((r) => r.categoryId === selectedId) ?? null;
+  const t = useTranslations("common");
 
   const visible = rows.slice(0, ROW_LIMIT);
   const hasMore = allRows.length > visible.length;
@@ -85,7 +87,7 @@ export function CategorySpendingRow({
   return (
     <div className="mt-5">
       <div className="mx-6 mb-2 flex items-center justify-between">
-        <p className="text-base font-semibold text-foreground">Spending by category</p>
+        <p className="text-base font-semibold text-foreground">{t("spending by category")}</p>
         {hasMore && (
           <button type="button" onClick={() => setShowAll(true)} className="text-sm text-muted-foreground active:opacity-70">
             View all

@@ -2,7 +2,8 @@
   "common": {
     "dashboard": "Dashboard",
     "settings": "Instellingen",
-    "save": "Opslaan"
+    "save": "Opslaan",
+    "spending by category":"Uitgegeven per Categorie"
   },
   "settingsMenu": {
     "title": "Instellingen",

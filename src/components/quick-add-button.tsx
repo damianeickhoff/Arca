@@ -6,7 +6,7 @@ import {
   IconPlus as Plus,
   IconTagFilled as Tag,
   IconArrowsLeftRight as ArrowLeftRight,
-  IconRepeat as Repeat,
+  IconReload as Repeat,
 } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

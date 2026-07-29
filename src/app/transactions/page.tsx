@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { transactions, categories, banks, goals, recurringItems } from "@/db/schema";
+import { transactions, categories, banks, goals, merchants, recurringItems } from "@/db/schema";
 import { eq, and, gte, lte, desc, like, or, sql, asc, isNotNull, inArray } from "drizzle-orm";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { currentFinancialMonth } from "@/lib/date-range";
@@ -95,11 +95,14 @@ async function getTransactions(
       recurringItemId: transactions.recurringItemId,
       recurringName: recurringItems.name,
       recurringFriendlyName: recurringItems.friendlyName,
+      merchantIcon: merchants.icon,
+      merchantColor: merchants.color,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .leftJoin(banks, eq(transactions.account, banks.accountNumber))
     .leftJoin(recurringItems, eq(transactions.recurringItemId, recurringItems.id))
+    .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(orderFn(sortExpr), desc(transactions.id));
 }

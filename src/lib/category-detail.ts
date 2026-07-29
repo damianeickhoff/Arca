@@ -1,9 +1,10 @@
 import { db } from "@/db";
-import { transactions, categories, budgetTargets } from "@/db/schema";
+import { transactions, categories, budgetTargets, banks } from "@/db/schema";
 import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
+import { resolveDisplayName } from "@/lib/friendly-names";
 
 const DEFAULT_BUDGET_MONTH_YEAR = 0;
 const DEFAULT_BUDGET_MONTH_MONTH = 0;
@@ -101,18 +102,29 @@ async function categoryAllocations(from: string, to: string, categoryIds: number
     isReimbursement: transactions.isReimbursement,
     isInternalTransfer: isInternalTransferExpr,
     account: transactions.account,
+    customName: transactions.customName,
+    description: transactions.description,
   }).from(transactions)
     .where(and(gte(transactions.date, from), lte(transactions.date, to)));
 
   const splitRows = await getTransactionSplitRows(rows.map((r) => r.id));
   const splitMap = groupTransactionSplits(splitRows);
   const allocations = buildSplitAllocations(rows, splitMap);
-  const accountById = new Map(rows.map((r) => [r.id, r.account]));
+  // The transaction's own display name and account live on the base row, not on the
+  // per-split allocation — carry them across so the detail list can show them.
+  const metaById = new Map(rows.map((r) => [r.id, r]));
 
   const idSet = new Set(categoryIds);
   return allocations
     .filter((row) => row.direction === direction && !row.isInternalTransfer && row.categoryId != null && idSet.has(row.categoryId))
-    .map((row) => ({ ...row, account: accountById.get(row.transactionId) ?? null }));
+    .map((row) => {
+      const meta = metaById.get(row.transactionId);
+      return {
+        ...row,
+        account: meta?.account ?? null,
+        name: meta ? resolveDisplayName({ customName: meta.customName, description: meta.description }) : "",
+      };
+    });
 }
 
 /** Always exactly 6 buckets ending at `endDateRaw` (clamped to today, so no empty
@@ -166,8 +178,9 @@ export async function getCategoryDetail(categoryId: number, from: string, to: st
   const children = await db.select({ id: categories.id }).from(categories).where(eq(categories.parentCategoryId, categoryId));
   const categoryIds = [categoryId, ...children.map((c) => c.id)];
 
-  const [allocations, [targetRow]] = await Promise.all([
+  const [allocations, bankRows, [targetRow]] = await Promise.all([
     categoryAllocations(from, to, categoryIds, direction),
+    db.select({ accountNumber: banks.accountNumber, displayName: banks.displayName }).from(banks),
     db.select().from(budgetTargets).where(and(
       eq(budgetTargets.year, DEFAULT_BUDGET_MONTH_YEAR),
       eq(budgetTargets.month, DEFAULT_BUDGET_MONTH_MONTH),
@@ -214,8 +227,16 @@ export async function getCategoryDetail(categoryId: number, from: string, to: st
   });
 
   // ── Transaction list, newest first ──
+  // Accounts are stored as the raw IBAN/"Rekening" value; show the bank's friendly name when it has one.
+  const bankNameByAccount = new Map(bankRows.filter((b) => b.accountNumber).map((b) => [b.accountNumber as string, b.displayName]));
   const txList: CategoryDetailTransaction[] = allocations
-    .map((a) => ({ id: a.transactionId, date: a.date, amount: a.amount, account: a.account, name: a.categoryName ?? category.name }))
+    .map((a) => ({
+      id: a.transactionId,
+      date: a.date,
+      amount: a.amount,
+      account: a.account ? (bankNameByAccount.get(a.account) ?? a.account) : null,
+      name: a.name || category.name,
+    }))
     .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id));
 
   // ── Insight stats — only meaningful with enough transactions ──

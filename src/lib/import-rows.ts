@@ -5,6 +5,8 @@ import { detectRecurringTransactions } from "@/lib/detect-recurring";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
 import { isOwnAccountTransfer, normalizeAccountNumber } from "@/lib/internal-transfers";
 import { applyAllBrandRules } from "@/lib/apply-brand-rules";
+import { assignMissingMerchants, getOrCreateMerchantId } from "@/lib/merchants";
+import { deriveMerchantName } from "@/lib/merchant-name";
 import { isNotNull, sql, eq, inArray } from "drizzle-orm";
 import type { ParsedRow } from "@/lib/bank-parsers";
 
@@ -100,6 +102,11 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
     // Force "Tikkies Inkomst" for auto-detected reimbursements if available
     if (isReimbursement && tikkiesInkomstId) categoryId = tikkiesInkomstId;
 
+    // Merchant profile for this row. Internal transfers are between your own accounts,
+    // so they never get one — the counterparty there is you, not a shop.
+    const merchantName = isInternalTransfer ? null : deriveMerchantName({ description: row.name, rawDescription: row.description });
+    const merchantId = merchantName ? await getOrCreateMerchantId(merchantName) : null;
+
     try {
       await db.insert(transactions).values({
         date: row.date,
@@ -109,6 +116,7 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
         description: row.name,
         rawDescription: row.description,
         categoryId,
+        merchantId,
         recurringItemId: isInternalTransfer ? null : (recurringMatch?.id ?? null),
         isReimbursement,
         source: "csv_import",
@@ -152,6 +160,10 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
     : [];
 
   await applyAllBrandRules();
+
+  // Safety net for rows that slipped through without a merchant (e.g. duplicates whose
+  // bank metadata was backfilled above). No-op when everything already has one.
+  await assignMissingMerchants();
 
   // Now that the new rows are in, detect any newly-recurring transactions (creates recurring
   // items) and link every transaction to its matching item.

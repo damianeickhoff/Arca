@@ -14,7 +14,7 @@ import {
   IconTag as TagIcon,
   IconAdjustments as Adjust,
   IconNote as Note,
-  IconRepeat as Repeat,
+  IconReload as Repeat,
   IconReceipt2 as Receipt,
 } from "@tabler/icons-react";
 import { DatePicker } from "@/components/date-picker";

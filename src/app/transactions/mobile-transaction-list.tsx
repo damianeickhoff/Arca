@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { IconReload } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { extractMerchantName } from "@/lib/parse-transaction-location";
@@ -109,7 +110,17 @@ export function MobileTransactionList({ rows, categories, savingsGoals }: { rows
                 className="w-full flex items-center gap-5 px-6 py-2 text-left active:bg-foreground/[0.04] transition-colors"
               >
                 {(() => { const ic = resolveTransactionIcon(t); return (
-                  <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size="md" />
+                  <div className="relative shrink-0">
+                    <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size="md" />
+                    {t.recurringItemId != null && (
+                      <span
+                        aria-label="Recurring bill"
+                        className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--dialog-content-background)]"
+                      >
+                        <IconReload className="size-3 text-foreground/60" stroke={2.5} />
+                      </span>
+                    )}
+                  </div>
                 ); })()}
                 <div className="flex-1 min-w-0 ">
                   <p className="text-base font-medium truncate leading-tight">

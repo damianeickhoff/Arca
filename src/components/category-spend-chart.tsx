@@ -5,14 +5,22 @@ import type { XAxisTickContentProps } from "recharts";
 import { formatEur } from "@/lib/format";
 import type { CategorySpendPoint } from "@/lib/category-detail";
 
-function fmtTick(date: string) {
-  return new Date(`${date}T00:00:00`).getDate().toString();
+/** Day-of-month for daily series; "Jan '25" for monthly ones (the merchant profile
+ * plots one point per month, where a bare day number would read as "1" every time). */
+function tickLabel(date: string, format: TickFormat) {
+  const d = new Date(`${date}T00:00:00`);
+  if (format === "month") {
+    return `${d.toLocaleDateString("en-GB", { month: "short" })} '${String(d.getFullYear()).slice(2)}`;
+  }
+  return d.getDate().toString();
 }
+
+export type TickFormat = "day" | "month";
 
 /** Cumulative actual spend (solid, filled) continuing as a dashed forecast to the end
  * of the period, with a dashed reference line at the budget amount — same split
  * actual/forecast dataKey trick as WalletBalanceLineChart in dashboard-charts.tsx. */
-export function CategorySpendChart({ data, budget, color }: { data: CategorySpendPoint[]; budget: number | null; color: string | null }) {
+export function CategorySpendChart({ data, budget, color, tickFormat = "day" }: { data: CategorySpendPoint[]; budget: number | null; color: string | null; tickFormat?: TickFormat }) {
   const stroke = color ?? "var(--color-expense)";
   const gradId = "categorySpendGrad";
 
@@ -36,7 +44,7 @@ export function CategorySpendChart({ data, budget, color }: { data: CategorySpen
         <XAxis
           dataKey="date"
           ticks={ticks}
-          tickFormatter={fmtTick}
+          tickFormatter={(v: string) => tickLabel(v, tickFormat)}
           // Custom renderer instead of the plain style-object `tick` — nudges just the
           // first/last date labels a few px inward so they're not flush against the
           // card edges. Only the label glyphs move; the axis scale (and so the
@@ -49,7 +57,7 @@ export function CategorySpendChart({ data, budget, color }: { data: CategorySpen
             const dx = isFirst ? 5 : isLast ? -5 : 0;
             return (
               <Text {...rest} x={Number(x) + dx} fontSize={11} fill="currentColor" fillOpacity={0.5}>
-                {fmtTick(value)}
+                {tickLabel(value, tickFormat)}
               </Text>
             );
           }}

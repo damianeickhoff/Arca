@@ -109,7 +109,7 @@ export function ImportCsvCard() {
               </div>
               <button
                 onClick={(e) => { e.stopPropagation(); setStatus("idle"); setResult(null); }}
-                className="text-sm text-white font-medium hover:underline cursor-pointer bg-foreground rounded-md p-3"
+                className="text-sm text-foreground font-medium hover:underline cursor-pointer bg-foreground/20 rounded-md p-3"
               >
                 Import another file
               </button>

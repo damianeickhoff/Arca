@@ -1,12 +1,13 @@
 import { Suspense } from "react";
 import { db } from "@/db";
-import { categories, categoryRules, banks, recurringItems, brandIconRules, vermogenAccounts, users } from "@/db/schema";
+import { categories, categoryRules, banks, recurringItems, vermogenAccounts, users } from "@/db/schema";
 import type { CategoryRule } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { CategoriesClient } from "@/components/settings/categories/categories-client";
 import { RecurringMenuClient } from "@/components/settings/recurring/recurring-menu-client";
 import { AccountsOverviewClient } from "@/components/settings/accounts/accounts-overview-client";
-import { BrandIconsClient } from "@/app/settings/brand-icons-client";
+import { MerchantsClient } from "@/components/settings/merchants-client";
+import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
 import { getBillStatuses } from "@/lib/bill-status";
@@ -79,9 +80,8 @@ async function AccountsPanel() {
   return <AccountsOverviewClient banks={bankBalances} assets={assets} history={history} />;
 }
 
-async function BrandIconsPanel() {
-  const brandRules = await db.select().from(brandIconRules);
-  return <BrandIconsClient initialRules={brandRules} />;
+async function MerchantsPanel() {
+  return <MerchantsClient initialMerchants={await listMerchants()} />;
 }
 
 async function UsersPanel({ currentUserId }: { currentUserId: number }) {
@@ -94,7 +94,7 @@ export function getSettingsPanelContent(currentUser: { id: number; isAdmin: bool
     accounts: <Suspense key="accounts" fallback={<PanelSkeleton />}><AccountsPanel /></Suspense>,
     categories: <Suspense key="categories" fallback={<PanelSkeleton />}><CategoriesPanel /></Suspense>,
     recurring: <Suspense key="recurring" fallback={<PanelSkeleton />}><RecurringPanel /></Suspense>,
-    brandIcons: <Suspense key="brandIcons" fallback={<PanelSkeleton />}><BrandIconsPanel /></Suspense>,
+    merchants: <Suspense key="merchants" fallback={<PanelSkeleton />}><MerchantsPanel /></Suspense>,
     // Only fetched/embedded for admins — the row that opens this panel is itself
     // admin-gated in SettingsDialog, so non-admins never get the user list in props.
     ...(currentUser.isAdmin

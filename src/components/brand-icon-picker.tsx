@@ -248,7 +248,10 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
       <PickerTrigger value={value ?? null} onClick={() => setOpen(true)} />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto z-[60]" overlayClassName="z-[55] backdrop-blur-lg bg-foreground/20">
+        {/* z-90/85: this picker is always the topmost thing on screen when open, and it
+            is now opened from editors that themselves stack above full-screen portals
+            (merchant editor, z-72) — anything lower would render behind its own host. */}
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto z-[90]" overlayClassName="z-[85] backdrop-blur-lg bg-foreground/20">
           <DialogHeader>
             <DialogTitle>Merk kiezen</DialogTitle>
           </DialogHeader>

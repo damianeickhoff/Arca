@@ -13,6 +13,7 @@ import { CurrencyConverterDialog } from "@/components/currency-converter-dialog"
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { BudgetHeaderActionsProvider, BudgetHeaderActionsSlot } from "@/lib/budget-header-actions";
 import { useBudgetPortal } from "@/lib/budget-portal-state";
+import { useReportsPortal } from "@/lib/reports-portal-state";
 import { cn } from "@/lib/utils";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
@@ -25,8 +26,6 @@ const REPORT_TABS = [
   { id: "vermogen",  label: "Net worth" },
   { id: "prognose",  label: "Forecast" },
 ] as const;
-
-type ReportTab = typeof REPORT_TABS[number]["id"];
 
 interface ReportsContent {
   rapporten: React.ReactNode;
@@ -61,13 +60,21 @@ export function DashboardHeaderBar({
     return () => window.removeEventListener("scroll", check);
   }, []);
 
-  // Reports portal state
-  const [reportsOpen, setReportsOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
-  const [activeReportTab, setActiveReportTab] = useState<ReportTab>("rapporten");
-  // Once true, tab content is mounted permanently (avoid remounting on re-open)
-  const [reportsEverOpened, setReportsEverOpened] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Reports portal state — shared with the dashboard's Cash Flow Forecast card via
+  // ReportsPortalProvider, so that card can open this portal straight onto the
+  // Forecast tab. `everOpened` keeps tab content mounted once opened, avoiding a
+  // remount (and refetch of every chart) each time the portal is reopened.
+  const {
+    open: reportsOpen,
+    everOpened: reportsEverOpened,
+    activeTab: activeReportTab,
+    openReports,
+    closeReports,
+    setActiveTab: setActiveReportTab,
+  } = useReportsPortal();
 
   // Budget portal state — shared with the dashboard's "left in budget" alert card
   // via BudgetPortalProvider (wraps the whole page), so either can open the same portal.
@@ -89,12 +96,6 @@ export function DashboardHeaderBar({
     if (!reportsOpen && !budgetOpen) return;
     return acquireNavHidden();
   }, [reportsOpen, budgetOpen]);
-
-  function openReports() {
-    setReportsEverOpened(true);
-    setReportsOpen(true);
-  }
-  function closeReports() { setReportsOpen(false); }
 
   // Single close handler for the morphing back button — routes to whichever
   // portal is actually open.
@@ -150,7 +151,7 @@ export function DashboardHeaderBar({
             <Wallet className="size-6 text-foreground dark:text-gray-300 transition-colors duration-200"/>
           </button>
           <button
-            onClick={openReports}
+            onClick={() => openReports()}
             className={cn("glass-icon-btn size-11", dimClass)}
             aria-label="Analytics"
           >
