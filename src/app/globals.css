@@ -58,6 +58,13 @@
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
+  /* Vertical space the floating bottom nav occupies, at every viewport width:
+     the pill's own height (h-13 + p-[4px] on both sides = 3.75rem) plus its
+     bottom-5 offset = 5rem to the pill's top edge, plus a 1rem gap so the last
+     row doesn't just touch the pill, plus the home-indicator inset. Pages
+     reserve this at the bottom so their last row never sits under the pill.
+     See bottom-nav.tsx. */
+  --nav-clearance: calc(6rem + var(--sab));
   --container-sm: 25rem;
   --font-heading: var(--font-sans);
 

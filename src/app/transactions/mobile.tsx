@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { IconChevronLeft, IconPlus } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
@@ -80,6 +81,8 @@ export function TransactionsMobile({
     !!max ||
     !!search;
   const router = useRouter();
+  const t = useTranslations("transactions");
+  const dasht = useTranslations("dashboard");
 
   // This is a subpage reached from the dashboard's "Show all" — hide the bottom
   // nav for its lifetime and show a back button + title instead.
@@ -104,7 +107,7 @@ export function TransactionsMobile({
           </button>
 
           <h1 className="absolute left-1/2 -translate-x-1/2 text-md text-foreground truncate">
-            Transactions
+            {t("title")}
           </h1>
         </div>
         <div className="px-4 py-3">
@@ -129,7 +132,7 @@ export function TransactionsMobile({
       <div className="pt-15 px-4 pb-28 space-y-4 lg:max-w-3xl lg:mx-auto bg-background">
         {hasActiveFilters && (
           <p className="text-sm text-muted-foreground">
-            Results: {filteredCount} transaction{filteredCount === 1 ? "" : "s"}
+            {t("results", { count: filteredCount })}
           </p>
         )}
 
@@ -153,8 +156,7 @@ export function TransactionsMobile({
               </div>
             )}
             <span className="text-base text-foreground leading-snug flex-1">
-              {upcomingCount} upcoming transaction{upcomingCount === 1 ? "" : "s"}
-              <br />this month
+              {dasht.rich("upcomingCount", { count: upcomingCount, br: () => <br /> })}
             </span>
             <span className="text-sm font-semibold tabular-nums text-muted-foreground shrink-0">{formatEur(upcomingTotal)}</span>
           </Link>
@@ -164,11 +166,11 @@ export function TransactionsMobile({
         {hasActiveFilters && filteredCount > 0 && (
           <div className="grid grid-cols-2 gap-3 text-center">
             <div className="rounded-lg bg-[var(--dialog-content-background)] p-3">
-              <p className="text-xs text-foreground/60 mb-1">Income</p>
+              <p className="text-xs text-foreground/60 mb-1">{t("income")}</p>
               <p className="text-xl font-medium tabular-nums">{formatEur(income)}</p>
             </div>
             <div className="rounded-lg bg-[var(--dialog-content-background)] p-3">
-              <p className="text-xs text-foreground/60 mb-1">Expenses</p>
+              <p className="text-xs text-foreground/60 mb-1">{t("expenses")}</p>
               <p className="text-xl font-medium tabular-nums">{formatEur(expense)}</p>
             </div>
           </div>
@@ -176,8 +178,8 @@ export function TransactionsMobile({
 
         {filteredCount === 0 ? (
           <div className="rounded-2xl bg-[var(--dialog-content-background)] py-16 text-center text-muted-foreground">
-            <p className="mb-7 text-sm">No transactions found</p>
-            <Link href="/import" className="p-3 font-semibold bg-foreground rounded-lg text-background text-md">Import a CSV</Link>
+            <p className="mb-7 text-sm">{t("noneFound")}</p>
+            <Link href="/import" className="p-3 font-semibold bg-foreground rounded-lg text-background text-md">{t("importCsv")}</Link>
           </div>
         ) : (
           <>
@@ -185,7 +187,7 @@ export function TransactionsMobile({
             {hasMore && (
               <div className="text-center">
                 <Link href={showMoreHref} scroll={false} className="text-sm text-primary hover:underline">
-                  Show more ({filteredCount - visibleRows.length} resterend)
+                  {t("showMore", { count: filteredCount - visibleRows.length })}
                 </Link>
               </div>
             )}
@@ -200,7 +202,7 @@ export function TransactionsMobile({
         </div>
         <Link
           href="/transactions/add"
-          aria-label="Add new transaction"
+          aria-label={t("addNew")}
           className="shrink-0 size-12 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center shadow-floating shadow-primary/30 active:scale-[0.92] transition-transform"
         >
           <IconPlus className="size-5" />

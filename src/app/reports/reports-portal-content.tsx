@@ -33,14 +33,9 @@ export async function getReportsPortalContent(params?: { cmpA?: string; cmpB?: s
     rapporten: <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} embedded />,
     trends: <TrendsTab from={trendsFrom} to={trendsTo} cmpA={params?.cmpA ?? ""} cmpB={params?.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} embedded />,
     vermogen: <VermogenTab />,
-    // Neutralizes ForecastPage's own "-mt-14" root margin (meant for its standalone
-    // route) and sticks its mobile month-picker bar at the top of this pane's own
-    // scroll container (`0px`, same convention as AnalyticsFilterBar's `embedded`
-    // stickyTop above) instead of the standalone page's `var(--sat)` offset.
-    prognose: (
-      <div className="mt-14 lg:mt-0">
-        <ForecastPage searchParams={Promise.resolve({ month: params?.month })} embedded stickyTop="0px" />
-      </div>
-    ),
+    // Sticks ForecastPage's month-picker bar at the top of this pane's own scroll
+    // container (`0px`, same convention as AnalyticsFilterBar's `embedded` stickyTop
+    // above) instead of the standalone page's `var(--sat)` offset.
+    prognose: <ForecastPage searchParams={Promise.resolve({ month: params?.month })} embedded stickyTop="0px" />,
   };
 }

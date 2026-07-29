@@ -266,6 +266,6 @@ export async function getCashFlowForecast(
     netChange: totalIncome - totalExpenses,
     warningThreshold: threshold,
     status,
-    message: forecastMessage({ status, lowest, firstNegativeDate, threshold, points }),
+    message: await forecastMessage({ status, lowest, firstNegativeDate, threshold, points }),
   };
 }

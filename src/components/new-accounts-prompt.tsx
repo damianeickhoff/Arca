@@ -55,7 +55,7 @@ export function NewAccountsPrompt({ accounts, onDone }: { accounts: Bank[]; onDo
   return (
     <Dialog open={accounts.length > 0} onOpenChange={(v) => !v && onDone()}>
       <DialogContent
-        className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]"
+        className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]"
         sheetClassName="bg-[#0f1533]/95 backdrop-blur-xl text-white border border-white/10"
       >
         <DialogHeader>

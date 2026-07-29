@@ -15,7 +15,7 @@ import {
   IconFolderFilled as Folder,
   IconCheck as Check,
 } from "@tabler/icons-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -30,7 +30,6 @@ import { cn } from "@/lib/utils";
 import { BUDGET_TYPE_LABELS, normalizeBudgetType } from "@/lib/format";
 import { CategoryClient } from "@/components/settings/categories/category-client";
 import { acquireNavHidden } from "@/lib/nav-visibility";
-import { useIsMobile } from "@/lib/use-is-mobile";
 
 // Force WebKit to recompute the layout/visual viewport by briefly re-writing the
 // viewport <meta>. On an iOS home-screen PWA the WKWebView is left ~62px short of the
@@ -481,11 +480,10 @@ export function CategoryPicker({
   const isFormMode = !!onChangeProp;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const isMobile = useIsMobile();
-  // On mobile the filter button sits in the sheet's header row next to the close
-  // button, so it takes the close button's styling.
+  // The filter button sits in the sheet's header row next to the close button, so it
+  // takes the close button's styling.
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: isMobile ? "size-11 rounded-full bg-white dark:bg-white/7 text-foreground" : undefined,
+    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-foreground",
   });
 
   // Hide the mobile bottom nav while the picker sheet is open.
@@ -505,7 +503,7 @@ export function CategoryPicker({
   // Toggling the viewport <meta> forces that recompute without a scroll; we fire it
   // when the keyboard closes and again as the picker closes.
   useEffect(() => {
-    if (!open || !isMobile) return;
+    if (!open) return;
     const vv = window.visualViewport;
     let restHeight = vv ? vv.height : window.innerHeight;
     let keyboardWasOpen = false;
@@ -529,7 +527,7 @@ export function CategoryPicker({
       vv?.removeEventListener("resize", pin);
       [50, 350, 700].forEach((d) => setTimeout(forceViewportRecompute, d));
     };
-  }, [open, isMobile]);
+  }, [open]);
 
   function onChange(value: string) {
     if (onChangeProp) {
@@ -594,22 +592,17 @@ export function CategoryPicker({
       </button>
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
         <DialogContent
-          // Extra bottom padding on mobile so the last categories can scroll clear of
-          // the floating search bar that overlays the bottom of the sheet.
-          className={cn("sm:max-w-sm", isMobile && "pb-28")}
+          // Extra bottom padding so the last categories can scroll clear of the
+          // floating search bar that overlays the bottom of the sheet.
+          className="pb-28"
           fullHeight
           hideHandle
-          headerAction={isMobile ? filterMenu : undefined}
-          // On mobile the title is rendered by the sheet's own fixed header row,
-          // which reserves space around the close button — a separate in-flow
-          // DialogTitle here would sit right underneath it and visually overlap.
-          title={isMobile ? "Category" : undefined}
+          headerAction={filterMenu}
+          // The title is rendered by the sheet's own fixed header row, which reserves
+          // space around the close button — a separate in-flow DialogTitle here would
+          // sit right underneath it and visually overlap.
+          title="Category"
         >
-          {!isMobile && (
-            <DialogHeader actions={filterMenu}>
-              <DialogTitle>Category</DialogTitle>
-            </DialogHeader>
-          )}
           <CategoryGrid
             categories={categories}
             current={current}
@@ -621,14 +614,14 @@ export function CategoryPicker({
             onClose={() => setOpen(false)}
             search={search}
             onSearchChange={setSearch}
-            // On mobile the search is the floating portal bar below; on desktop it stays
-            // inline at the bottom of the grid (no keyboard to float above).
-            hideSearch={isMobile}
+            // Search lives in the floating portal bar below instead of inline at the
+            // bottom of the grid, so it can sit above the keyboard.
+            hideSearch
           />
         </DialogContent>
       </Dialog>
-      {/* Floating search — mobile only, portalled to <body> so it's viewport-fixed. */}
-      {open && isMobile && <FloatingSearchBar search={search} onSearchChange={setSearch} />}
+      {/* Floating search — portalled to <body> so it's viewport-fixed. */}
+      {open && <FloatingSearchBar search={search} onSearchChange={setSearch} />}
     </>
   );
 }

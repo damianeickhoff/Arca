@@ -1,6 +1,7 @@
 "use client";
 
 import { IconArrowDownLeft, IconArrowRight } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { useTransactionsPortal } from "@/lib/transactions-portal-state";
@@ -18,6 +19,7 @@ export function UpcomingBillsTile({
   icons: { icon: string | null; iconColor: string | null; iconBackground: string | null }[];
 }) {
   const { openUpcoming } = useTransactionsPortal();
+  const t = useTranslations("dashboard");
   return (
     <button
       type="button"
@@ -34,8 +36,7 @@ export function UpcomingBillsTile({
         </div>
       )}
       <span className="text-base font-normal text-foreground leading-snug flex-1">
-        {count} upcoming transaction{count === 1 ? "" : "s"}
-        <br />this month
+        {t.rich("upcomingCount", { count, br: () => <br /> })}
       </span>
       <span className="text-sm font-semibold tabular-nums text-muted-foreground shrink-0">{formatEur(total)}</span>
     </button>
@@ -46,6 +47,7 @@ export function UpcomingBillsTile({
 // navigating to /transactions/needs-review — same reasoning as above.
 export function NeedsReviewTile({ count, total }: { count: number; total: number }) {
   const { openNeedsReview } = useTransactionsPortal();
+  const t = useTranslations("dashboard");
   return (
     <button
       type="button"
@@ -55,7 +57,7 @@ export function NeedsReviewTile({ count, total }: { count: number; total: number
       <div className="flex items-center gap-4 rounded-xl bg-card p-5">
         <div className="flex-1 min-w-0">
           <p className="text-base font-semibold text-foreground leading-snug">
-            {count} transaction{count === 1 ? "" : "s"} needs review
+            {t("needsReview", { count })}
           </p>
           <div className="flex items-center gap-1.5 mt-1 text-foreground/60">
             <span className="flex size-5 items-center justify-center rounded-full bg-foreground/20 shrink-0">

@@ -499,7 +499,7 @@ export function AddTransactionClient({
       </m.div>
 
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Note</DialogTitle>
           </DialogHeader>
@@ -522,7 +522,7 @@ export function AddTransactionClient({
       </Dialog>
 
       <Dialog open={pickerFor !== null} onOpenChange={(o) => !o && setPickerFor(null)}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{pickerFor === "from" ? "From account" : pickerFor === "to" ? "To account" : "Account"}</DialogTitle>
           </DialogHeader>

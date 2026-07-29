@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { IconReload } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
@@ -29,23 +30,28 @@ function yesterdayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function groupLabel(date: string, today: string, yesterday: string) {
-  if (date === today) return "Today";
-  if (date === yesterday) return "Yesterday";
-  return new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+type T = ReturnType<typeof useTranslations>;
+
+function groupLabel(date: string, today: string, yesterday: string, t: T, dateLocale: string) {
+  if (date === today) return t("today");
+  if (date === yesterday) return t("yesterday");
+  return new Date(date + "T00:00:00").toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "long" });
 }
 
-function subtitleFor(row: Row): string | null {
+function subtitleFor(row: Row, t: T): string | null {
   if (row.isInternalTransfer) {
-    return (row.transferType && TRANSFER_TYPE_LABELS[row.transferType]) || "Internal transfer";
+    return (row.transferType && TRANSFER_TYPE_LABELS[row.transferType]) || t("internalTransfer");
   }
-  if (row.isSplit) return row.splitSummary ?? `${row.splitCount} ${row.splitCount === 1 ? "deel" : "delen"}`;
+  if (row.isSplit) return row.splitSummary ?? t("splitParts", { count: row.splitCount });
   return row.categoryName;
 }
 
 export function MobileTransactionList({ rows, categories, savingsGoals }: { rows: Row[]; categories: Category[]; savingsGoals: Goal[] }) {
   const today = todayISO();
   const yesterday = yesterdayISO();
+  const tr = useTranslations("transactions");
+  const locale = useLocale();
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
   const router = useRouter();
   const searchParams = useSearchParams();
   const [detailRow, setDetailRow] = useState<Row | null>(null);
@@ -98,7 +104,7 @@ export function MobileTransactionList({ rows, categories, savingsGoals }: { rows
       {groups.map((group, groupIndex) => (
         <StaggerItem key={group.date} index={groupIndex}>
           <p className="text-xs font-medium text-foreground/60 uppercase tracking-wide mb-2 ml-1">
-            {groupLabel(group.date, today, yesterday)}
+            {groupLabel(group.date, today, yesterday, tr, dateLocale)}
           </p>
           <div className="rounded-xl bg-[var(--dialog-content-background)] py-3">
             {group.rows.map((t) => (
@@ -114,7 +120,7 @@ export function MobileTransactionList({ rows, categories, savingsGoals }: { rows
                     <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size="md" />
                     {t.recurringItemId != null && (
                       <span
-                        aria-label="Recurring bill"
+                        aria-label={tr("recurringBill")}
                         className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--dialog-content-background)]"
                       >
                         <IconReload className="size-3 text-foreground/60" stroke={2.5} />
@@ -126,8 +132,8 @@ export function MobileTransactionList({ rows, categories, savingsGoals }: { rows
                   <p className="text-base font-medium truncate leading-tight">
                     {resolveDisplayName(t)}
                   </p>
-                  {subtitleFor(t) && (
-                    <p className="text-sm text-foreground/60 mt-0.5 truncate">{subtitleFor(t)}</p>
+                  {subtitleFor(t, tr) && (
+                    <p className="text-sm text-foreground/60 mt-0.5 truncate">{subtitleFor(t, tr)}</p>
                   )}
                 </div>
                 <div className="shrink-0 text-right">

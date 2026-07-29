@@ -517,8 +517,12 @@ export async function TrendsTab({
   const data = await getTrendsData(from, to, cmpA, cmpB, categoryIds, accounts);
   const chartedPeriod = { from, to };
 
+  // pb was previously reduced on desktop (lg:pb-5) back when desktop had a sidebar
+  // instead of a floating bottom nav — the nav is never hidden on the standalone
+  // /reports route, so it needs the same clearance at every width now. Harmless
+  // extra whitespace when embedded (the dashboard portal hides the nav there).
   return (
-    <div className="px-4 pb-[calc(8rem+var(--sab))] lg:pb-5 pt-4 space-y-4">
+    <div className="px-4 pb-[calc(8rem+var(--sab))] pt-4 space-y-4">
       <AnalyticsFilterBar
         categories={data.allCats}
         banks={data.allBanksFull}

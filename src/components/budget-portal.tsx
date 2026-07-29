@@ -3,9 +3,13 @@
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { Icon } from "@/components/icon";
+import { AnchoredTip } from "@/components/anchored-tip";
+import { ContextualTip } from "@/components/contextual-tip";
 import { ProgressRing } from "@/components/progress-ring";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { currencySymbol } from "@/lib/format";
 import { BudgetStrategySliders, type BudgetStrategy } from "@/components/budget-strategy-sliders";
 import type { BudgetCategoryRow, BudgetOverview, BudgetPeriod } from "@/lib/budget-overview";
@@ -34,8 +38,8 @@ function money(n: number) {
   return eur0.format(Math.round(n)).replace(/\s/g, "");
 }
 
-function fmtRange(from: string, to: string) {
-  const f = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+function fmtRange(from: string, to: string, locale: string) {
+  const f = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "short" });
   return `${f(from)} – ${f(to)}`;
 }
 
@@ -60,13 +64,14 @@ function Numpad({ onKey, className }: { onKey: (k: string) => void; className?: 
 }
 
 const PERIOD_OPTIONS = [
-  { value: "weekly" as const, letter: "W", label: "Weekly" },
-  { value: "monthly" as const, letter: "M", label: "Monthly" },
+  { value: "weekly" as const, letter: "W" },
+  { value: "monthly" as const, letter: "M" },
 ];
 
 /** Segmented W/M period control — the selected side shows its letter badge plus the
  * full label inside a raised pill; the other side is just the muted letter badge. */
 function PeriodToggle({ value, onChange }: { value: BudgetPeriod; onChange: (p: BudgetPeriod) => void }) {
+  const t = useTranslations("budget");
   return (
     <div className="inline-flex items-center gap-1 rounded-full bg-card p-1">
       {PERIOD_OPTIONS.map((opt) => {
@@ -89,7 +94,7 @@ function PeriodToggle({ value, onChange }: { value: BudgetPeriod; onChange: (p: 
             >
               {opt.letter}
             </span>
-            {active && <span className="text-sm font-semibold text-foreground whitespace-nowrap">{opt.label}</span>}
+            {active && <span className="text-sm font-semibold text-foreground whitespace-nowrap">{t(`period.${opt.value}`)}</span>}
           </button>
         );
       })}
@@ -99,6 +104,7 @@ function PeriodToggle({ value, onChange }: { value: BudgetPeriod; onChange: (p: 
 
 /** Semicircular gauge — track + orange/green fill, big centred amount. */
 function Gauge({ pct, left, over }: { pct: number; left: number; over: boolean }) {
+  const t = useTranslations("budget");
   const clamped = Math.max(0, Math.min(100, pct));
   const color = over ? "var(--danger)" : clamped >= 80 ? "#f97316" : clamped >= 60 ? "#f59e0b" : "var(--success)";
   return (
@@ -122,9 +128,9 @@ function Gauge({ pct, left, over }: { pct: number; left: number; over: boolean }
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-        <p className="text-sm text-foreground/60">{over ? "Over" : "Left"}</p>
+        <p className="text-sm text-foreground/60">{over ? t("over") : t("left")}</p>
         <p className="text-4xl font-semibold tabular-nums tracking-tight">{money(Math.abs(left))}</p>
-        <p className="text-sm font-medium tabular-nums" style={{ color }}>{Math.round(pct)}% used</p>
+        <p className="text-sm font-medium tabular-nums" style={{ color }}>{t("used", { pct: Math.round(pct) })}</p>
       </div>
     </div>
   );
@@ -145,12 +151,13 @@ function CategoryAmountRow({
   onChange: (v: string) => void;
   indent?: boolean;
 }) {
+  const t = useTranslations("budget");
   return (
     <div className={cn("flex items-center gap-4 rounded-2xl bg-card px-4 py-3", indent && "ml-8")}>
       <Icon iconKey={cat.icon} color={cat.color} size={indent ? "lg" : "xl"} round />
       <div className="flex-1 min-w-0">
         <p className="font-semibold truncate">{cat.categoryName}</p>
-        <p className="text-xs text-foreground/50 tabular-nums">Last 30 days: {money(cat.last30)}</p>
+        <p className="text-xs text-foreground/50 tabular-nums">{t("last30", { amount: money(cat.last30) })}</p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <span className="text-foreground/50 text-sm">{currencySymbol()}</span>
@@ -198,6 +205,7 @@ function CategoryBudgetsPanel({
   save: () => void;
   saving: boolean;
 }) {
+  const t = useTranslations("budget");
   return (
     <div className="flex flex-col h-full bg-[var(--dialog-background)]">
       <div
@@ -206,18 +214,18 @@ function CategoryBudgetsPanel({
       >
         <button
           onClick={onBack}
-          aria-label={backIcon === "close" ? "Close" : "Back"}
+          aria-label={backIcon === "close" ? t("close") : t("back")}
           className="glass-icon-btn size-11"
         >
           {backIcon === "close" ? <IconX className="size-5" /> : <IconChevronLeft className="size-5" />}
         </button>
-        <h1 className="text-lg text-foreground text-center truncate">Category budgets</h1>
+        <h1 className="text-lg text-foreground text-center truncate">{t("categoryBudgets")}</h1>
         <button
           type="button"
           onClick={resetAllToZero}
           className="h-11 px-4 rounded-full bg-destructive/10 text-destructive focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 text-sm active:scale-95 transition-transform justify-self-end"
         >
-          Reset
+          {t("reset")}
         </button>
       </div>
 
@@ -226,8 +234,8 @@ function CategoryBudgetsPanel({
           {parsedAmount > 0 ? (
             <>
               <div className="flex items-end justify-between gap-3">
-                <p className="text-xl font-bold tabular-nums">{Math.round(100 - remainingPct)}% allocated</p>
-                <p className="text-sm text-foreground/50 tabular-nums shrink-0">{money(Math.max(0, parsedAmount - catTotal))} left</p>
+                <p className="text-xl font-bold tabular-nums">{t("allocatedPct", { pct: Math.round(100 - remainingPct) })}</p>
+                <p className="text-sm text-foreground/50 tabular-nums shrink-0">{t("amountLeft", { amount: money(Math.max(0, parsedAmount - catTotal)) })}</p>
               </div>
               <div className="mt-3 h-1.5 rounded-full bg-foreground/10 overflow-hidden">
                 <div
@@ -238,9 +246,9 @@ function CategoryBudgetsPanel({
             </>
           ) : (
             <>
-              <p className="text-sm text-foreground/60">Total category budgets</p>
+              <p className="text-sm text-foreground/60">{t("totalCategoryBudgets")}</p>
               <p className="text-2xl font-bold tabular-nums">{money(catTotal)}</p>
-              <p className="text-xs text-foreground/50 mt-1">This total will become your overall budget limit.</p>
+              <p className="text-xs text-foreground/50 mt-1">{t("totalBecomesLimit")}</p>
             </>
           )}
         </div>
@@ -271,7 +279,7 @@ function CategoryBudgetsPanel({
           disabled={saving}
           className="w-full h-14 rounded-full bg-foreground text-background font-semibold text-base active:scale-[0.98] transition-transform disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Save"}
+          {saving ? t("saving") : t("save")}
         </button>
       </div>
     </div>
@@ -305,6 +313,8 @@ interface ExceedWarning {
 
 export function BudgetPortal({ data }: { data: BudgetOverview }) {
   const router = useRouter();
+  const t = useTranslations("budget");
+  const locale = useLocale();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
@@ -320,6 +330,10 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
   // until "Save" is pressed, so closing via the backdrop or the X discards it.
   const [strategyDraft, setStrategyDraft] = useState<BudgetStrategy>(data.strategy);
   const [exceedWarning, setExceedWarning] = useState<ExceedWarning | null>(null);
+  // Flipped by save() when a budget is created on a portal that had none. Drives the
+  // one-time pointer tip at the edit button — the strategy sliders live one tap
+  // inside it, which is not something the saved overview shows on its own.
+  const [justCreatedBudget, setJustCreatedBudget] = useState(false);
 
   // Draft state for the create/edit flow
   const [amount, setAmount] = useState("0");
@@ -386,7 +400,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
 
   // The dashboard's "no budget" card opens this portal wanting the create flow
   // directly, skipping the empty-state landing screen below.
-  const { autoCreate, clearAutoCreate } = useBudgetPortal();
+  const { open: portalOpen, autoCreate, clearAutoCreate } = useBudgetPortal();
   useEffect(() => {
     if (!autoCreate) return;
     openCreateOrEditFlow();
@@ -450,6 +464,11 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
   }
 
   async function save() {
+    // Whether this save is the user's *first* budget rather than an edit — a zero
+    // overall with no category targets deletes instead of creating, so it doesn't
+    // count. Read before the save, since `data` is what the server had beforehand.
+    const creating = !data.budget && (parsedAmount > 0 || catTotal > 0);
+
     // A literal 0 overall means "no overall limit" set from this screen — if a real
     // overall limit already exists, category budgets can't be saved past it (see the
     // exceed-budget guard below); with no overall limit at all, anything goes.
@@ -463,6 +482,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
           setSaving(false);
           setExceedWarning(null);
           setStep(null);
+          if (creating) setJustCreatedBudget(true);
           router.refresh();
         },
       });
@@ -479,11 +499,12 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
     );
     setSaving(false);
     setStep(null);
+    if (creating) setJustCreatedBudget(true);
     router.refresh();
   }
 
   async function deleteBudget() {
-    if (!confirm("Delete this budget? Category budgets will be cleared too.")) return;
+    if (!confirm(t("confirmDelete"))) return;
     setSaving(true);
     await fetch("/api/budget", { method: "DELETE" });
     setSaving(false);
@@ -526,7 +547,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
 
   async function deleteEditingCategory() {
     if (!editingCat) return;
-    if (!confirm(`Remove the budget for ${editingCat.categoryName}?`)) return;
+    if (!confirm(t("confirmRemoveCategory", { name: editingCat.categoryName }))) return;
     setSaving(true);
     await saveCategoryTarget(editingCat.categoryId, 0);
     setSaving(false);
@@ -557,10 +578,10 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
   const headerActions = useMemo(() => (
     data.budget ? (
       <>
-        <button onClick={openCreateOrEditFlow} aria-label="Edit budget" className="glass-icon-btn size-11">
+        <button onClick={openCreateOrEditFlow} data-tip-anchor="budgetEdit" aria-label={t("editBudget")} className="glass-icon-btn size-11">
           <Pencil className="size-5" />
         </button>
-        <button onClick={deleteBudget} aria-label="Delete budget" className="glass-icon-btn size-11">
+        <button onClick={deleteBudget} aria-label={t("deleteBudget")} className="glass-icon-btn size-11">
           <Trash2 className="size-5" />
         </button>
       </>
@@ -571,22 +592,38 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
 
   return (
     <div className="pb-[calc(6rem+var(--sab))]">
+      {/* Tied to the portal's own open state, not to this component being mounted —
+          DashboardHeaderBar keeps it mounted after the first open (budgetEverOpened). */}
+      <ContextualTip id="budget" active={portalOpen} />
+      <ContextualTip id="budgetStrategy" active={strategyOpen} />
+
+      {/* Fires once, on the overview the user lands on straight after creating their
+          first budget. The edit button is the anchor because the strategy sliders sit
+          inside the edit flow — there's nothing on this screen to point at otherwise.
+          The tip waits for the router.refresh() above to render the button, and stands
+          down unspent if it never does (see AnchoredTip). */}
+      <AnchoredTip
+        id="strategyLocation"
+        anchor="budgetEdit"
+        active={justCreatedBudget && portalOpen && step === null}
+      />
+
       {/* ─────────────── EMPTY STATE ─────────────── */}
       {!data.budget && (
         <div className="flex flex-col items-center justify-center text-center px-8" style={{ minHeight: "60vh" }}>
           <div className="size-16 rounded-xl bg-[var(--icon-muted)] border border-white/5 flex items-center justify-center mb-6 -rotate-10">
             <IconWallet className="size-8 text-foreground" />
           </div>
-          <h2 className="text-xl font-bold mb-2">No budget set</h2>
-          <p className="text-foreground/55 text-sm max-w-xs">Create a budget to track your spending and stay on top of your finances.</p>
+          <h2 className="text-xl font-bold mb-2">{t("emptyTitle")}</h2>
+          <p className="text-foreground/55 text-sm max-w-xs">{t("emptyDesc")}</p>
         </div>
       )}
 
       {!data.budget && (
         <FloatingAddButton
           onClick={openCreateOrEditFlow}
-          label="Create budget"
-          ariaLabel="Create budget"
+          label={t("create")}
+          ariaLabel={t("create")}
         />
       )}
 
@@ -596,7 +633,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
           {pacingBehind && (
             <div className="flex items-start gap-3 rounded-2xl bg-card p-4">
               <IconAlertTriangleFilled className="size-5 shrink-0 text-orange-500 mt-0.5" />
-              <p className="text-sm text-foreground/80">Spending a bit faster than planned. Keep an eye on it.</p>
+              <p className="text-sm text-foreground/80">{t("alert.warning1")}</p>
             </div>
           )}
 
@@ -604,12 +641,12 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
           <div className="rounded-2xl bg-card p-5">
             <div className="flex items-start justify-between mb-2">
               <div>
-                <p className="text-sm text-foreground/60 capitalize">{data.budget.period}</p>
-                <p className="font-semibold">{fmtRange(data.from, data.to)}</p>
+                <p className="text-sm text-foreground/60 capitalize">{t(`period.${data.budget.period}`)}</p>
+                <p className="font-semibold">{fmtRange(data.from, data.to, locale)}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-foreground/60">Days left</p>
-                <p className="font-semibold">{data.daysLeft} days</p>
+                <p className="text-sm text-foreground/60">{t("daysLeft")}</p>
+                <p className="font-semibold">{t("days", { count: data.daysLeft })}</p>
               </div>
             </div>
 
@@ -617,17 +654,17 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
 
             <div className="flex items-end justify-between mt-2">
               <div>
-                <p className="text-sm text-foreground/60">{hasOverall ? "Amount" : "Allocated"}</p>
+                <p className="text-sm text-foreground/60">{hasOverall ? t("amount") : t("allocated")}</p>
                 <p className="font-semibold tabular-nums">{money(amountLimit)}</p>
               </div>
               {hasOverall ? (
                 <div className="text-right">
-                  <p className="text-sm text-foreground/60">Left to allocate</p>
+                  <p className="text-sm text-foreground/60">{t("leftToAllocate")}</p>
                   <p className="font-semibold tabular-nums">{money(leftToAllocate)}</p>
                 </div>
               ) : (
                 <div className="text-right">
-                  <p className="text-sm text-foreground/60">Budgeted categories</p>
+                  <p className="text-sm text-foreground/60">{t("budgetedCategories")}</p>
                   <p className="font-semibold tabular-nums">{data.categories.filter((c) => c.budget != null && c.budget > 0).length}</p>
                 </div>
               )}
@@ -637,11 +674,11 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
           {/* Category budgets */}
           <div className="flex items-center justify-between pt-1">
             <div>
-              <h3 className="text-lg font-bold">Category budgets</h3>
-              <p className="text-sm text-foreground/55 tabular-nums">{money(data.allocated)} total</p>
+              <h3 className="text-lg font-bold">{t("categoryBudgets")}</h3>
+              <p className="text-sm text-foreground/55 tabular-nums">{t("totalAllocated", { amount: money(data.allocated) })}</p>
             </div>
             <button onClick={openManageCategories} className="h-10 px-4 rounded-full bg-card font-semibold text-sm active:scale-95 transition-transform">
-              Manage
+              {t("manage")}
             </button>
           </div>
 
@@ -665,8 +702,8 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                     <p className="font-semibold truncate">{c.categoryName}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={cn("font-semibold tabular-nums", cOver && "text-red-500")}>{money(Math.abs(cLeft))} {cOver ? "over" : "left"}</p>
-                    <p className="text-xs text-foreground/50 tabular-nums">of {money(c.budget ?? 0)}</p>
+                    <p className={cn("font-semibold tabular-nums", cOver && "text-red-500")}>{money(Math.abs(cLeft))} {cOver ? t("overLabel") : t("leftLabel")}</p>
+                    <p className="text-xs text-foreground/50 tabular-nums">{t("ofAmount", { amount: money(c.budget ?? 0) })}</p>
                   </div>
                 </button>
               );
@@ -678,9 +715,9 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                 <IconPlus className="size-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold">Add category budget</p>
+                <p className="font-semibold">{t("addCategory")}</p>
                 {hasOverall && (
-                  <p className="text-xs text-foreground/50 tabular-nums">{money(Math.max(0, leftToAllocate))} left to allocate</p>
+                  <p className="text-xs text-foreground/50 tabular-nums">{t("leftToAllocateAmount", { amount: money(Math.max(0, leftToAllocate)) })}</p>
                 )}
               </div>
               <IconChevronRight className="size-5 text-foreground/40 shrink-0" />
@@ -700,27 +737,27 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
         <>
           {/* ─────────────── SINGLE-CATEGORY QUICK EDIT ─────────────── */}
           {editingCat && (
-            <div className="fixed inset-0 z-50 bg-background flex flex-col" style={{ paddingTop: "var(--sat)", pointerEvents: "auto" }}>
+            <div className={cn(CONTENT_COLUMN, "fixed inset-0 z-50 bg-background flex flex-col")} style={{ paddingTop: "var(--sat)", pointerEvents: "auto" }}>
               <ColorWash color={editingCat.color} />
               <div className="relative flex items-center justify-between px-4 h-14 shrink-0">
-                <button onClick={() => setEditingCat(null)} aria-label="Close" className="glass-icon-btn size-11">
+                <button onClick={() => setEditingCat(null)} aria-label={t("close")} className="glass-icon-btn size-11">
                   <IconX className="size-5" />
                 </button>
                 <div className="flex items-center gap-2 min-w-0 max-w-[55%]">
                   <Icon iconKey={editingCat.icon} color={editingCat.color} size="sm" round />
                   <h1 className="font-bold text-lg truncate">{editingCat.categoryName}</h1>
                 </div>
-                <button onClick={deleteEditingCategory} aria-label="Remove budget" className="glass-icon-btn size-11">
+                <button onClick={deleteEditingCategory} aria-label={t("removeBudget")} className="glass-icon-btn size-11">
                   <Trash2 className="size-5" />
                 </button>
               </div>
 
               <div className="relative flex-1 flex flex-col items-center justify-center px-6 text-center">
-                <p className="text-foreground/60 mb-4">Set a budget for this category</p>
+                <p className="text-foreground/60 mb-4">{t("setCategoryBudget")}</p>
                 <div className="text-6xl font-semibold tracking-tight tabular-nums">
                   <AnimatedAmountDisplay value={editAmount} prefixClassName="text-foreground/40 mr-1" />
                 </div>
-                <p className="text-foreground/50 text-sm mt-4">Last 30 days: {money(editingCat.last30)}</p>
+                <p className="text-foreground/50 text-sm mt-4">{t("last30", { amount: money(editingCat.last30) })}</p>
               </div>
 
               <Numpad onKey={(k) => setEditAmount((cur) => nextAmountValue(cur, k))} />
@@ -731,7 +768,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                   disabled={saving}
                   className="w-full h-14 rounded-full bg-foreground text-background font-semibold text-base active:scale-[0.98] transition-transform disabled:opacity-50"
                 >
-                  {saving ? "Saving…" : "Save"}
+                  {saving ? t("saving") : t("save")}
                 </button>
               </div>
             </div>
@@ -767,20 +804,23 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
               >
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h2 className="font-semibold text-base">Budget strategy</h2>
-                    <p className="text-xs text-foreground/55">How your income splits across Needs, Wants, and Savings.</p>
-                    <p className="text-xs text-foreground/55">Commonly used is 50/25/25.</p>
+                    <h2 className="font-semibold text-base">{t("strategyTitle")}</h2>
+                    <p className="text-xs text-foreground/55">{t("strategyDesc")}</p>
+                    <p className="text-xs text-foreground/55">{t("strategyCommon")}</p>
                   </div>
-                  <button onClick={closeStrategyPicker} aria-label="Close" className="size-11 rounded-full bg-white/7 flex items-center justify-center">
+                  <button onClick={closeStrategyPicker} aria-label={t("close")} className="size-11 rounded-full bg-white/7 flex items-center justify-center">
                     <IconX className="size-5" />
                   </button>
                 </div>
                 <BudgetStrategySliders value={strategyDraft} onChange={setStrategyDraft} />
                 {data.income > 0 && (
                   <p className="text-xs text-center text-foreground/55 mt-4">
-                    Advised budget: <span className="font-semibold text-foreground">
-                      {money(Math.round((data.income * (strategyDraft.nodig + strategyDraft.willen)) / 100))}
-                    </span> ({strategyDraft.nodig + strategyDraft.willen}% of {money(data.income)} income)
+                    {t.rich("advisedBudget", {
+                      amount: money(Math.round((data.income * (strategyDraft.nodig + strategyDraft.willen)) / 100)),
+                      pct: strategyDraft.nodig + strategyDraft.willen,
+                      income: money(data.income),
+                      b: (chunks) => <span className="font-semibold text-foreground">{chunks}</span>,
+                    })}
                   </p>
                 )}
                 <button
@@ -788,7 +828,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                   disabled={strategyDraft.nodig + strategyDraft.willen + strategyDraft.sparen !== 100}
                   className="w-full h-12 mt-5 rounded-full bg-black text-white dark:bg-white dark:text-black font-semibold text-sm active:scale-[0.98] transition-transform disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  Save
+                  {t("save")}
                 </button>
               </div>
             </div>
@@ -808,10 +848,10 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
               <div className="w-full max-w-md bg-background/90 backdrop-blur-xl rounded-t-3xl p-5 pb-[calc(1.25rem+var(--sab))]" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center gap-3 mb-3">
                   <IconAlertTriangleFilled className="size-6 text-warning shrink-0" />
-                  <h2 className="font-semibold text-base">Category budgets exceed your overall budget</h2>
+                  <h2 className="font-semibold text-base">{t("exceedTitle")}</h2>
                 </div>
                 <p className="text-sm text-foreground/70 mb-5">
-                  Your category budgets add up to {money(exceedWarning.requiredOverall)}, more than your overall budget of {money(data.budget?.amount ?? 0)}. Increase the overall budget to {money(exceedWarning.requiredOverall)}, or cancel and lower the category amount instead.
+                  {t("exceedDesc", { total: money(exceedWarning.requiredOverall), overall: money(data.budget?.amount ?? 0) })}
                 </p>
                 <div className="flex flex-col gap-2">
                   <button
@@ -819,13 +859,13 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                     disabled={saving}
                     className="w-full h-12 rounded-full bg-foreground text-background font-semibold text-sm active:scale-[0.98] transition-transform disabled:opacity-50"
                   >
-                    Increase overall to {money(exceedWarning.requiredOverall)}
+                    {t("increaseOverall", { amount: money(exceedWarning.requiredOverall) })}
                   </button>
                   <button
                     onClick={() => setExceedWarning(null)}
                     className="w-full h-12 rounded-full bg-card font-semibold text-sm active:scale-[0.98] transition-transform"
                   >
-                    Cancel
+                    {t("cancel")}
                   </button>
                 </div>
               </div>
@@ -851,11 +891,11 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                 period toggle where the title would sit (center, like add-transaction's
                 expense/income/transfer toggle), a secondary action (right). */}
             <div className="flex items-center justify-between px-4 pt-[calc(var(--sat)+20px)] pb-2 shrink-0">
-              <button onClick={() => setStep(null)} aria-label="Close" className="glass-icon-btn size-11">
+              <button onClick={() => setStep(null)} aria-label={t("close")} className="glass-icon-btn size-11">
                 <IconX className="size-5" />
               </button>
               <PeriodToggle value={period} onChange={setPeriod} />
-              <button onClick={openStrategyPicker} aria-label="Budget strategy" className="glass-icon-btn size-11">
+              <button onClick={openStrategyPicker} aria-label={t("strategyTitle")} className="glass-icon-btn size-11">
                 <IconAdjustmentsHorizontal className="size-5" />
               </button>
             </div>
@@ -864,16 +904,16 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                 add-transaction's card (account pill + amount + keypad). */}
             <div className="flex-1 flex flex-col min-h-0 mx-4 mb-3 rounded-3xl bg-foreground/[0.03] p-4">
               <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-2 text-center">
-                <p className="text-foreground/60 mb-4">Set your overall budget limit for this period</p>
+                <p className="text-foreground/60 mb-4">{t("overallLimit")}</p>
                 <div className="text-6xl font-semibold tracking-tight tabular-nums">
                   <AnimatedAmountDisplay value={amount} prefixClassName="text-foreground/40 mr-1" />
                 </div>
                 <p className="text-foreground/50 text-sm mt-4">
-                  {period === "weekly" ? `Last 7 days: ${money(data.last7Total)}` : `Last 30 days: ${money(data.last30Total)}`}
+                  {period === "weekly" ? t("last7", { amount: money(data.last7Total) }) : t("last30", { amount: money(data.last30Total) })}
                 </p>
                 {strategySet && (
                   <button onClick={() => setAmount(String(advised))} className="mt-3 px-3 py-1.5 rounded-full bg-foreground/6 text-sm font-medium active:scale-95 transition-transform">
-                    Advised: {money(advised)}
+                    {t("advised", { amount: money(advised) })}
                   </button>
                 )}
               </div>
@@ -887,9 +927,9 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                 onClick={() => { setCategoriesEntry("flow"); setStep("categories"); }}
                 className="w-full h-14 rounded-full bg-foreground text-background font-semibold text-base active:scale-[0.98] transition-transform"
               >
-                {parsedAmount === 0 ? "Skip" : "Continue"}
+                {parsedAmount === 0 ? t("skip") : t("continue")}
               </button>
-              <p className="text-center text-xs text-foreground/45 mt-2">You can skip and set category budgets next</p>
+              <p className="text-center text-xs text-foreground/45 mt-2">{t("skipHint")}</p>
             </div>
           </div>
 
@@ -898,7 +938,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
             open={step === "categories" && categoriesEntry === "flow"}
             onOpenChange={(o) => { if (!o) setStep("amount"); }}
           >
-            <DialogContent fullHeight hideHandle hideHeaderRow title="Category budgets" className="p-0 gap-0 overflow-hidden">
+            <DialogContent fullHeight hideHandle hideHeaderRow title={t("categoryBudgets")} className="p-0 gap-0 overflow-hidden">
               <CategoryBudgetsPanel
                 backIcon="chevron"
                 onBack={() => setStep("amount")}
@@ -924,7 +964,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
         open={step === "categories" && categoriesEntry === "direct"}
         onOpenChange={(o) => { if (!o) setStep(null); }}
       >
-        <DialogContent fullHeight hideHandle hideHeaderRow title="Category budgets" className="p-0 gap-0 overflow-hidden">
+        <DialogContent fullHeight hideHandle hideHeaderRow title={t("categoryBudgets")} className="p-0 gap-0 overflow-hidden">
           <CategoryBudgetsPanel
             backIcon="close"
             onBack={() => setStep(null)}

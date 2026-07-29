@@ -107,7 +107,7 @@ export function LinkDialog({ tikkie }: Props) {
       </button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setConfirming(null); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {confirming ? "Confirm link" : "Koppel Tikkie aan uitgave"}

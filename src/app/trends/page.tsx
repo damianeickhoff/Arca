@@ -18,7 +18,7 @@ import { SearchTriggerButton } from "@/components/search-trigger-button";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { MonthlyLineChart } from "@/components/dashboard-charts";
-import { ScrollStickyHeader } from "@/components/scroll-sticky-header";
+import { PageContainer } from "@/components/page-container";
 import { CategoryTrendList } from "./category-trend-list";
 import { MonthComparison } from "./month-comparison";
 import { RecurringCostTrendCard } from "@/app/reports/recurring-cost-trend-card";
@@ -377,35 +377,21 @@ export default async function TrendsPage({
   const priorCaption = `vs prior ${prevMonths.length} month${prevMonths.length === 1 ? "" : "s"}`;
 
   return (
-    <div className="-mt-14 lg:mt-0 min-h-screen">
+    <PageContainer className="px-0 min-h-screen">
 
-      {/* Mobile top bar */}
-      <div className="lg:hidden sticky top-[var(--sat)] z-40 flex items-center justify-end px-4 pt-2 pb-3">
+      <div className="sticky top-[var(--sat)] z-40 flex items-center justify-end px-4 pt-2 pb-3">
         <div className="flex items-center gap-3">
           <SearchTriggerButton />
         </div>
       </div>
-      <div className="lg:hidden flex items-end justify-between gap-4 px-4 pb-3">
+      <div className="flex items-end justify-between gap-4 px-4 pb-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight">Trends</h1>
           <p className="text-sm text-foreground/60">{periodLabel}</p>
         </div>
       </div>
 
-      {/* Desktop sticky header */}
-      <ScrollStickyHeader
-        className="hidden lg:flex sticky top-0 z-10 px-6 md:px-8 py-4 items-end justify-between gap-4"
-        scrolledClassName="bg-white/40 dark:bg-white/5 backdrop-blur-xl border-b border-white/30 dark:border-white/10"
-      >
-        <div className="mt-6">
-          <h1 className="text-3xl font-black tracking-tight">Trends</h1>
-          <p className="text-sm text-foreground/60">{periodLabel}</p>
-        </div>
-        <div className="pb-1">
-        </div>
-      </ScrollStickyHeader>
-
-      <div className="px-4 pb-[calc(8rem+var(--sab))] md:px-6 lg:px-8 lg:pb-8 pt-4 space-y-4">
+      <div className="px-4 pb-8 pt-4 space-y-4">
 
         {/* Hero — the exact nested two-tone shell + paired mini bar chart the Analytics
             tab uses for Cashflow (see StyleDescriptions/analytics-page-style.md §2a/§6a),
@@ -541,6 +527,6 @@ export default async function TrendsPage({
       </div>
 
       <PeriodSelector from={from} to={to} financialMonth={financialMonth} budgetPeriod={null} />
-    </div>
+    </PageContainer>
   );
 }

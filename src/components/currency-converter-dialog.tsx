@@ -6,6 +6,7 @@ import { NumericKeypad } from "@/components/numeric-keypad";
 import { CURRENCIES, currencyInfo, flagEmoji } from "@/lib/currencies";
 import { pressKey } from "@/lib/amount-expression";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { IconPlus, IconX, IconSearch } from "@tabler/icons-react";
 
@@ -122,7 +123,7 @@ export function CurrencyConverterDialog({ open, onOpenChange }: { open: boolean;
 
       {/* Content */}
       <div
-        className="fixed inset-x-0 bottom-0 flex flex-col"
+        className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
         style={{
           top: 0,
           zIndex: 45,
@@ -280,7 +281,7 @@ function CurrencyPickerDialog({
 
       {/* Content */}
       <div
-        className="fixed inset-x-0 bottom-0 flex flex-col"
+        className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
         style={{
           top: 0,
           zIndex: 50,

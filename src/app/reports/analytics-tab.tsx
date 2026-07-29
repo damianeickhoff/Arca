@@ -335,8 +335,12 @@ export async function AnalyticsTab({
   const data = await getAnalyticsData(from, to, financialMonth, categoryIds, accounts);
   const maxWeekdayCount = Math.max(...data.weekdayCounts, 1);
 
+  // pb was previously reduced on desktop (lg:pb-4) back when desktop had a sidebar
+  // instead of a floating bottom nav — the nav is never hidden on the standalone
+  // /reports route, so it needs the same clearance at every width now. Harmless
+  // extra whitespace when embedded (the dashboard portal hides the nav there).
   return (
-    <div className="px-4 pt-1 pb-[calc(8rem+var(--sab))] lg:pb-4 space-y-4">
+    <div className="px-4 pt-1 pb-[calc(8rem+var(--sab))] space-y-4">
       <AnalyticsFilterBar
         categories={data.allCategories}
         banks={data.allBanks}

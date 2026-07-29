@@ -4,6 +4,7 @@ import { IconTrendingUp, IconTrendingDown, IconAlertTriangleFilled } from "@tabl
 import { signedForecastEur, type ForecastStatus } from "@/lib/cash-flow-forecast-shared";
 import { useReportsPortal } from "@/lib/reports-portal-state";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const STATUS_STYLES: Record<ForecastStatus, { color: string; icon: typeof IconTrendingUp }> = {
   healthy: { color: "var(--color-success)", icon: IconTrendingUp },
@@ -35,6 +36,8 @@ export function CashFlowForecastCard({
 }) {
   const { openReports } = useReportsPortal();
   const { color, icon: StatusIcon } = STATUS_STYLES[status];
+  const t = useTranslations("cashFlow");
+
 
   return (
     <button
@@ -52,7 +55,7 @@ export function CashFlowForecastCard({
         >
           <StatusIcon className="size-3.5" style={{ color }} />
         </span>
-        <p className="text-sm font-semibold text-foreground truncate">Cash Flow Forecast</p>
+        <p className="text-sm font-semibold text-foreground truncate">{t("title")}</p>
       </div>
 
       <p className="text-2xl font-black tabular-nums tracking-tight text-foreground">
@@ -60,7 +63,7 @@ export function CashFlowForecastCard({
       </p>
 
       {!hasStartingBalance && (
-        <p className="text-xs text-foreground/40 -mt-0.5">Projected cash flow — no account balance set</p>
+        <p className="text-xs text-foreground/40 -mt-0.5">{t("emptySub")}</p>
       )}
 
       <p className="text-sm text-foreground/50 leading-snug line-clamp-2" style={status === "healthy" ? undefined : { color }}>

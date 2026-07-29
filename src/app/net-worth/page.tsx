@@ -10,7 +10,7 @@ import { NetworthChart } from "./networth-chart";
 import { NetWorthTrendChart } from "@/app/reports/net-worth-trend-chart";
 import { ChangePill } from "@/components/change-pill";
 import { StatTile, TileBadge } from "@/components/stat-tile";
-import { ScrollStickyHeader } from "@/components/scroll-sticky-header";
+import { PageContainer } from "@/components/page-container";
 import Link from "next/link";
 import {
   IconArrowRight as ArrowRight,
@@ -121,28 +121,16 @@ export default async function NetWorthPage() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <div className="-mt-14 lg:mt-0 min-h-screen">
+    <PageContainer className="px-0 min-h-screen">
 
-      {/* Mobile top bar — matches dashboard mobile top bar */}
-      <div className="lg:hidden sticky top-[var(--sat)] z-40 flex items-center justify-end px-4 pt-2 pb-3">
+      <div className="sticky top-[var(--sat)] z-40 flex items-center justify-end px-4 pt-2 pb-3">
       </div>
-      <div className="lg:hidden px-4 pb-3">
+      <div className="px-4 pb-3">
         <h1 className="text-2xl font-black tracking-tight text-foreground">Net worth</h1>
         <p className="text-sm text-muted-foreground">Bezittingen minus schulden</p>
       </div>
 
-      {/* Desktop sticky header */}
-      <ScrollStickyHeader
-        className="hidden lg:block sticky top-0 z-10 px-6 md:px-8 py-4"
-        scrolledClassName="bg-white/40 dark:bg-white/5 backdrop-blur-xl border-b border-white/30 dark:border-white/10"
-      >
-        <div className="mt-6">
-          <h1 className="text-3xl font-black tracking-tight text-foreground">Net worth</h1>
-          <p className="text-sm text-muted-foreground">Bezittingen minus schulden</p>
-        </div>
-      </ScrollStickyHeader>
-
-      <div className="px-5 pb-5 md:px-6 md:pb-6 lg:px-8 lg:pb-8 pt-4 space-y-5">
+      <div className="px-5 pb-5 pt-4 space-y-5">
 
         {/* Hero net worth card */}
         <div className="rounded-2xl p-6 relative overflow-hidden bg-gradient-to-br from-teal-500 via-emerald-600 to-cyan-700 dark:from-teal-950 dark:via-emerald-950 dark:to-cyan-950">
@@ -396,6 +384,6 @@ export default async function NetWorthPage() {
 
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

@@ -1,13 +1,10 @@
 import { formatEur } from "@/lib/format";
 import { SplitEur } from "@/components/split-eur";
 import { MonthPicker } from "@/components/month-picker";
-import { BudgetTargetsClient, BudgetCategoriesMobile } from "./target-client";
+import { BudgetCategoriesMobile } from "./target-client";
+import { PageContainer } from "@/components/page-container";
 import { SearchTriggerButton } from "@/components/search-trigger-button";
 import { Icon } from "@/components/icon";
-import {
-  IconCoinEuroFilled
-} from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
 import { getFinancialMonthConfig, getBudgetStrategy, getBudgetRollover } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
 import { getBudgetData } from "@/lib/budget-data";
@@ -16,7 +13,6 @@ import { getBillStatuses } from "@/lib/bill-status";
 import { BillsCalendar, type CalendarBill } from "./bills-calendar";
 import { classifyBudgetRows } from "@/lib/budget-overspend";
 import { WarningBanner } from "@/components/warning-banner";
-import { ScrollStickyHeader } from "@/components/scroll-sticky-header";
 
 export default async function BudgetPage({
   searchParams,
@@ -27,10 +23,6 @@ export default async function BudgetPage({
   const [financialMonth, strategy, rolloverEnabled] = await Promise.all([getFinancialMonthConfig(), getBudgetStrategy(), getBudgetRollover()]);
   const month = sp.month ?? currentFinancialMonth(financialMonth);
   const { from: rangeStart, to: rangeEnd } = financialMonthRangeByMonth(month, financialMonth);
-  function fmtDisplayDate(d: string) {
-    return new Date(d + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  }
-  const monthLabel = new Date(rangeStart + "T12:00:00").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
   const nodigPct = Math.max(0, Math.min(100, parseInt(sp.nodig ?? String(strategy.nodig))));
   const willenPct = Math.max(0, Math.min(100, parseInt(sp.willen ?? String(strategy.willen))));
@@ -90,10 +82,8 @@ export default async function BudgetPage({
   const totalOver = totalLeft < 0 && totalTarget > 0;
 
   return (
-    <div className="-mt-14 lg:mt-0 min-h-screen">
-      {/* ── MOBILE BUDGET PAGE ── */}
-      <div className="lg:hidden">
-        {/* Top bar — matches dashboard/reports mobile top bar */}
+    <PageContainer className="px-0 min-h-screen">
+        {/* Top bar — matches dashboard/reports top bar */}
         <div className="sticky top-[var(--sat)] z-40 px-4 pt-2 pb-3 space-y-2">
           <div className="flex items-center justify-end">
             <div className="flex items-center gap-3">
@@ -225,126 +215,6 @@ export default async function BudgetPage({
             </div>
           )}
         </div>
-      </div>
-
-      {/* ── DESKTOP BUDGET PAGE ── */}
-      <div className="hidden lg:block">
-      {/* Desktop header */}
-      <ScrollStickyHeader
-        className="flex sticky top-0 z-10 px-6 md:px-8 py-4 items-end justify-between gap-4"
-        scrolledClassName="bg-white/40 dark:bg-white/5 backdrop-blur-xl border-b border-white/30 dark:border-white/10"
-      >
-        <div className="mt-6">
-          <h1 className="text-3xl font-black tracking-tight text-foreground">Budget</h1>
-          <p className="text-sm text-muted-foreground">{fmtDisplayDate(rangeStart)} – {fmtDisplayDate(rangeEnd)}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <MonthPicker current={month} />
-        </div>
-      </ScrollStickyHeader>
-
-    <div className="px-4 pt-1 pb-4 md:px-6 md:pb-6 lg:px-8 lg:pb-8 lg:pt-4 space-y-4 lg:space-y-5">
-
-      {/* Income strip */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-2xl bg-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Income {monthLabel}</p>
-          <p className="text-2xl font-bold tabular-nums" style={{ color: "var(--color-income)" }}>{formatEur(data.income)}</p>
-        </div>
-        <div className="rounded-2xl bg-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Variable spent</p>
-          <p className="text-2xl font-bold tabular-nums text-foreground">
-            {formatEur(Object.values(data.byBudgetType).reduce((s, v) => s + v, 0))}
-          </p>
-        </div>
-      </div>
-
-      {/* 3-column bucket cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {buckets.map((bucket) => {
-          const spent = data.byBudgetType[bucket.key] ?? 0;
-          const goal = data.income * (bucket.pct / 100);
-          const pct = goal > 0 ? Math.min(100, (spent / goal) * 100) : 0;
-          const over = spent > goal && goal > 0;
-
-          return (
-            <div key={bucket.key} className="rounded-2xl bg-card p-5 flex flex-col gap-3">
-              <div>
-                <div className="flex items-center justify-between mb-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="size-2.5 rounded-full" style={{ backgroundColor: bucket.color }} />
-                    <h3 className="font-semibold text-sm">{bucket.label}</h3>
-                  </div>
-                  <span className="text-xs text-muted-foreground">{bucket.pct}%</span>
-                </div>
-                <p className="text-xs text-muted-foreground ml-4">{bucket.desc}</p>
-              </div>
-
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className={cn("text-2xl font-bold tabular-nums", over ? "text-red-600" : "text-foreground")}>
-                    {formatEur(spent)}
-                  </p>
-                  <p className="text-xs tabular-nums text-muted-foreground">of {formatEur(goal)}</p>
-                </div>
-                {over ? (
-                  <span className="text-xs font-medium tabular-nums text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded-full">
-                    +{formatEur(spent - goal)}
-                  </span>
-                ) : (
-                  <span className="text-xs font-medium tabular-nums text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
-                    {formatEur(goal - spent)} over
-                  </span>
-                )}
-              </div>
-
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${pct}%`, backgroundColor: over ? "#ef4444" : bucket.color }}
-                />
-              </div>
-              <p className="text-xs tabular-nums text-muted-foreground">{pct.toFixed(0)}% used</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Budget alerts */}
-      {overBudgetRows.length > 0 && (
-        <WarningBanner severity="danger">
-          <span className="font-semibold">{overBudgetRows.length} {overBudgetRows.length === 1 ? "category" : "categories"} over budget:</span>
-          <span>{overBudgetRows.map((r) => r.categoryName).join(", ")}</span>
-        </WarningBanner>
-      )}
-      {overBudgetRows.length === 0 && nearBudgetRows.length > 0 && (
-        <WarningBanner severity="warning">
-          <span className="font-semibold">{nearBudgetRows.length} {nearBudgetRows.length === 1 ? "category" : "categories"} near budget:</span>
-          <span>{nearBudgetRows.map((r) => r.categoryName).join(", ")}</span>
-        </WarningBanner>
-      )}
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
-        <div className="xl:col-span-2">
-          {/* Full-width per-category section */}
-          {data.targetRows.length > 0 ? (
-            <div className="rounded-2xl bg-card p-5">
-              <div className="mb-4">
-                <h2 className="font-semibold text-base">Per category</h2>
-                <p className="text-xs text-muted-foreground">Set a monthly target. Click a field to edit.</p>
-              </div>
-              <BudgetTargetsClient rows={data.targetRows} month={data.month} />
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-card p-8 text-center text-muted-foreground">
-              <p className="text-sm">No variable categories found.</p>
-            </div>
-          )}
-        </div>
-        <BillsCalendar from={rangeStart} to={rangeEnd} bills={calendarBills} month={month} />
-      </div>
-    </div>
-    </div>
-    </div>
+    </PageContainer>
   );
 }

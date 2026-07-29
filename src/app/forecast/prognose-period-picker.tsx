@@ -6,6 +6,7 @@ import { IconChevronLeft, IconChevronRight, IconCheck as Check } from "@tabler/i
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MONTH_NAMES } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { bottomDockClass } from "@/components/bottom-nav";
 
 // Same floating bottom-bar style as PeriodSelector (src/app/reports/period-selector.tsx)
 // — prev/next chevrons around a center pill that opens a dialog list — but behaves like
@@ -41,9 +42,8 @@ export function PrognosePeriodPicker({ current }: { current: string }) {
 
   return (
     <>
-      {/* Fixed at the same position + height as the mobile bottom nav, same
-          convention as PeriodSelector. */}
-      <div className="lg:hidden fixed left-6 right-6 bottom-5 z-40 h-[3.75rem] flex items-center justify-between gap-2">
+      {/* Occupies the bottom nav's exact footprint, same convention as PeriodSelector. */}
+      <div className={cn(bottomDockClass, "z-40 h-[3.75rem] flex items-center justify-between gap-2")}>
         <button
           type="button"
           onClick={() => step(-1)}

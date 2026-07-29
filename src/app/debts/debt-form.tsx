@@ -421,7 +421,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </m.div>
 
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Note</DialogTitle>
           </DialogHeader>
@@ -444,7 +444,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </Dialog>
 
       <Dialog open={minPaymentOpen} onOpenChange={setMinPaymentOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Minimum monthly payment</DialogTitle>
           </DialogHeader>
@@ -460,7 +460,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </Dialog>
 
       <Dialog open={originalAmountOpen} onOpenChange={setOriginalAmountOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Original debt amount</DialogTitle>
           </DialogHeader>
@@ -479,7 +479,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </Dialog>
 
       <Dialog open={iconColorOpen} onOpenChange={setIconColorOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Icon &amp; color</DialogTitle>
           </DialogHeader>

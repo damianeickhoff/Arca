@@ -24,6 +24,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import packageJson from "../../../package.json";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
@@ -241,6 +242,9 @@ export function SettingsDialog({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open settings"
+        // Target for the "everything else is behind your photo" pointer tip. Only one
+        // SettingsDialog is ever rendered per route, so the selector stays unambiguous.
+        data-tip-anchor="settingsTrigger"
         className={cn(
           iconOnly ? "glass-icon-btn size-11 p-0" : "glass-icon-btn h-11 gap-2 p-1 pr-5 max-w-[60vw] ",
           triggerClassName,
@@ -371,6 +375,7 @@ export function SettingsDialog({
             <p className="text-lg font-medium text-foreground">
               Arca
             </p>
+            <p className="text-xs text-muted-foreground">v{packageJson.version}</p>
           </div>
         </DialogContent>
       </Dialog>

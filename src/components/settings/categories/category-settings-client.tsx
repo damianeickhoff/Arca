@@ -20,6 +20,7 @@ import { ColorPicker } from "@/components/color-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { OptionDropdown } from "@/components/option-dropdown";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { normalizeBudgetType, ruleAmountLabel } from "@/lib/format";
 
 const PRESET_COLORS = [
@@ -200,7 +201,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
   }
 
   return (
-    <div className="relative lg:hidden min-h-[calc(100dvh-var(--nav-clearance))] pb-[calc(6rem+var(--sab))]">
+    <div className={cn(CONTENT_COLUMN, "relative min-h-[calc(100dvh-var(--nav-clearance))] pb-[calc(6rem+var(--sab))]")}>
       {/* Color wash — fades from the icon's background color at the top, matching
           the category detail portal's header treatment. */}
       {effectiveColor && (
@@ -356,7 +357,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
         open={addRuleOpen || editingRule !== null}
         onOpenChange={(v) => { if (!v) { setAddRuleOpen(false); setEditingRule(null); } }}
       >
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{addRuleOpen ? "New rule" : "Edit rule"}</DialogTitle>
           </DialogHeader>

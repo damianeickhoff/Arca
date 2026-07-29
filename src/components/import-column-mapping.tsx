@@ -119,7 +119,7 @@ export function ImportColumnMapping({ data, onImported, onCancel }: Props) {
 
   return (
     <Dialog open={!!data} onOpenChange={(v) => !v && onCancel()}>
-      <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
         <DialogHeader>
           <DialogTitle>Unrecognized bank format</DialogTitle>
           <DialogDescription>

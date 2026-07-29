@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import {
   IconX,
   IconCalendar,
@@ -51,6 +52,7 @@ type Props = {
 export function TransactionFilterBar(props: Props) {
   const { cats, banks, financialMonth, search } = props;
   const router = useRouter();
+  const t = useTranslations("transactions");
 
   function push(overrides: Record<string, string | undefined>) {
     const base: Record<string, string | undefined> = {
@@ -83,17 +85,17 @@ export function TransactionFilterBar(props: Props) {
       <AccountsPill banks={banks} value={props.account} onChange={(v) => push({ account: v })} />
       <ChoicePill
         icon={<IconArrowsUpDown className="size-4 shrink-0" />}
-        label="Operation type"
+        label={t("filters.operationType")}
         value={props.direction}
         options={[
-          { value: "income", label: "Income" },
-          { value: "expense", label: "Expenses" },
+          { value: "income", label: t("income") },
+          { value: "expense", label: t("expenses") },
         ]}
         onChange={(v) => push({ direction: v })}
       />
       <ChoicePill
         icon={<IconSparkles className="size-4 shrink-0" />}
-        label="Nature"
+        label={t("filters.nature")}
         value={props.budgetType}
         options={[
           { value: "nodig", label: BUDGET_TYPE_LABELS.nodig },
@@ -105,9 +107,6 @@ export function TransactionFilterBar(props: Props) {
     </div>
   );
 }
-
-const fmtDate = (d: string) =>
-  new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
 function PeriodPill({
   from,
@@ -122,6 +121,10 @@ function PeriodPill({
   onChange: (from: string, to: string) => void;
   onReset: () => void;
 }) {
+  const t = useTranslations("transactions");
+  const locale = useLocale();
+  const fmtDate = (d: string) =>
+    new Date(d + "T00:00:00").toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "short" });
   const [customOpen, setCustomOpen] = useState(false);
   const [customFrom, setCustomFrom] = useState(from);
   const [customTo, setCustomTo] = useState(to);
@@ -151,7 +154,7 @@ function PeriodPill({
             <span
               role="button"
               tabIndex={0}
-              aria-label="Reset period"
+              aria-label={t("filters.reset", { name: t("filters.period") })}
               onPointerDown={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onReset(); }}
@@ -167,19 +170,19 @@ function PeriodPill({
               {p.label}
             </DropdownMenuItem>
           ))}
-          <DropdownMenuItem onClick={openCustom}>Custom…</DropdownMenuItem>
+          <DropdownMenuItem onClick={openCustom}>{t("filters.custom")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       <Dialog open={customOpen} onOpenChange={setCustomOpen}>
-        <DialogContent title="Custom period">
+        <DialogContent title={t("filters.customPeriod")}>
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div>
-              <label className="text-xs text-foreground/60 px-1">From</label>
+              <label className="text-xs text-foreground/60 px-1">{t("filters.from")}</label>
               <DatePicker value={customFrom} onChange={setCustomFrom} triggerClassName="h-10 text-xs mt-0 mb-0" />
             </div>
             <div>
-              <label className="text-xs text-foreground/60 px-1">To</label>
+              <label className="text-xs text-foreground/60 px-1">{t("filters.to")}</label>
               <DatePicker value={customTo} onChange={setCustomTo} triggerClassName="h-10 text-xs mt-0 mb-0" />
             </div>
           </div>
@@ -188,7 +191,7 @@ function PeriodPill({
             onClick={applyCustom}
             className="mt-4 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-semibold"
           >
-            Apply
+            {t("filters.apply")}
           </button>
         </DialogContent>
       </Dialog>
@@ -205,6 +208,7 @@ function CategoriesPill({
   value?: string;
   onChange: (v: string | undefined) => void;
 }) {
+  const t = useTranslations("transactions");
   const [open, setOpen] = useState(false);
   const selectedIds = value ? value.split(",").filter(Boolean) : [];
   const selectedCats = selectedIds
@@ -231,12 +235,12 @@ function CategoriesPill({
         ) : (
           <IconCategory className="size-4 shrink-0" />
         )}
-        <span>Categories</span>
+        <span>{t("filters.categories")}</span>
         {active && (
           <span
             role="button"
             tabIndex={0}
-            aria-label="Reset categories"
+            aria-label={t("filters.reset", { name: t("filters.categories") })}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onChange(undefined); }}
@@ -275,6 +279,7 @@ function AccountsPill({
   value?: string;
   onChange: (v: string | undefined) => void;
 }) {
+  const t = useTranslations("transactions");
   const [open, setOpen] = useState(false);
   const selectedIds = value ? value.split(",").filter(Boolean) : [];
   const selectedBanks = selectedIds
@@ -307,12 +312,12 @@ function AccountsPill({
         ) : (
           <IconWallet className="size-4 shrink-0" />
         )}
-        <span>Accounts</span>
+        <span>{t("filters.accounts")}</span>
         {active && (
           <span
             role="button"
             tabIndex={0}
-            aria-label="Reset accounts"
+            aria-label={t("filters.reset", { name: t("filters.accounts") })}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onChange(undefined); }}
@@ -347,6 +352,7 @@ function ChoicePill({
   options: { value: string; label: string }[];
   onChange: (v: string | undefined) => void;
 }) {
+  const t = useTranslations("transactions");
   const [open, setOpen] = useState(false);
   const active = !!value;
   const selectedLabel = options.find((o) => o.value === value)?.label;
@@ -360,7 +366,7 @@ function ChoicePill({
           <span
             role="button"
             tabIndex={0}
-            aria-label={`Reset ${label}`}
+            aria-label={t("filters.reset", { name: label })}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onChange(undefined); }}
@@ -397,15 +403,16 @@ function ChoicePill({
 }
 
 function RecurringPill({ active, onToggle }: { active: boolean; onToggle: () => void }) {
+  const t = useTranslations("transactions");
   return (
     <button type="button" onClick={onToggle} className={filterPillClass(active, "shrink-0")}>
       <IconReload className="size-4 shrink-0" />
-      <span>Recurring</span>
+      <span>{t("filters.recurring")}</span>
       {active && (
         <span
           role="button"
           tabIndex={0}
-          aria-label="Reset recurring"
+          aria-label={t("filters.reset", { name: t("filters.recurring") })}
           onPointerDown={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onToggle(); }}

@@ -43,6 +43,9 @@ import { cookies } from "next/headers";
 import { AccountsButton } from "@/app/accounts-button";
 import { selectBankAction } from "@/app/actions/select-bank";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
+import { getTranslations } from "next-intl/server";
+import { PageContainer } from "@/components/page-container";
+
 import {
   buildSplitAllocations,
   getDisplayedTransactionCategory,
@@ -491,6 +494,7 @@ export default async function DashboardPage({
     const overallTarget = hasOverall ? budgetOverview.budget!.amount : budgetOverview.allocated;
     const overallSpent = hasOverall ? budgetOverview.totalSpent : budgetOverview.budgetedSpent;
     const pct = overallTarget > 0 ? overallSpent / overallTarget : 0;
+    const t = await getTranslations("budget");
 
     const totalDays = Math.max(
       1,
@@ -515,43 +519,43 @@ export default async function DashboardPage({
       budgetAlert = {
         severity: "danger",
         pct,
-        title: `${formatEur(overallSpent - overallTarget)} over budget`,
-        description: `You're over the budget ${phase}. Consider whether your limit needs adjusting for next month.`,
+        title: t("alert.over", {amount: formatEur(overallTarget - overallSpent),}),
+        description: t("alert.danger", { phase }),
       };
     } else if (pct >= 0.85) {
       budgetAlert = {
         severity: "warning",
         pct,
-        title: `${formatEur(overallTarget - overallSpent)} left in budget`,
-        description: `Not a lot left ${phase}. Slowing down now could help.`,
+        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
+        description: t("alert.warning2", { phase }),
       };
     } else if (pct >= 0.7) {
       budgetAlert = {
         severity: "warning",
         pct,
-        title: `${formatEur(overallTarget - overallSpent)} left in budget`,
-        description: `Spending a bit faster than planned. Keep an eye on it.`,
+        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
+        description: `${t("alert.warning1")}`,
       };
     } else if (pct >= 0.5) {
       budgetAlert = {
         severity: "success",
         pct,
-        title: `${formatEur(overallTarget - overallSpent)} left in budget`,
-        description: `Right on track for this period.`,
+        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
+        description: `${t("alert.success3")}`,
       };
     } else if (pct >= 0.3) {
       budgetAlert = {
         severity: "success",
         pct,
-        title: `${formatEur(overallTarget - overallSpent)} left in budget`,
-        description: `Spending comfortably below pace. Looking good.`,
+        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
+        description: `${t("alert.success2")}`,
       };
     } else {
       budgetAlert = {
         severity: "success",
         pct,
-        title: `${formatEur(overallTarget - overallSpent)} left in budget`,
-        description: `Well under pace. You've built a strong cushion.`,
+        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
+        description: `${t("alert.success1")}`,
       };
     }
 
@@ -571,7 +575,8 @@ export default async function DashboardPage({
   }
   const categorySpendingRows = data.categorySpending.map(withBudget);
   const categorySpendingAllRows = data.categorySpendingAll.map(withBudget);
-
+  const commont = await getTranslations("common");
+  const dasht = await getTranslations("dashboard");
   // How far into the current financial month "today" is — feeds the small "you are
   // here" marker on the dashboard's category-spend rings (the detail portal instead
   // uses whatever period the user has selected there).
@@ -589,16 +594,17 @@ export default async function DashboardPage({
     <ReportsPortalProvider>
     <BudgetPortalProvider>
     <TransactionsPortalProvider>
-    <div className={`${AUTH_BG_CLASS} relative isolate mt-[calc(-1.7rem-var(--sat))] lg:mt-0 pt-[var(--sat)] lg:pt-0 min-h-dvh `} style={authBackgroundStyle(authBackground, { boxHeight: "110dvh", fadeStop: 50 })}>
+    <div className={`${AUTH_BG_CLASS} relative isolate mt-[calc(-1.7rem-var(--sat))] pt-[var(--sat)] min-h-dvh `} style={authBackgroundStyle(authBackground, { boxHeight: "110dvh", fadeStop: 50 })}>
       <DashboardReadySignal />
       
 
-      {/* ── DASHBOARD — mobile base, widens into a grid on desktop ── */}
-      <div className="min-h-dvh pb-[calc(5rem+env(safe-area-inset-bottom))] pt-5 lg:pb-0 lg:max-w-6xl lg:mx-auto lg:px-6 ">
+      {/* ── DASHBOARD — one tree at every width, centred in the shared column.
+          The gradient hero above stays full-bleed; only the content is capped.
+          MainContent already reserves --nav-clearance at the bottom. ── */}
+      <PageContainer className="px-0 min-h-dvh pt-5">
 
         {/* Transparent top bar — circular buttons, status-bar height padding.
-            Sticky like the other pages; white glass icons stay legible once stuck
-            because the scroll-aware top edge-fade reveals a dark strip behind them. */}
+            Sticky like the other pages. */}
         <div className="sticky top-[var(--sat)] z-40 flex items-center justify-between px-4 pt-[11px] pb-3">
           <DashboardHeaderBar
             reportsContent={reportsContent}
@@ -666,7 +672,7 @@ export default async function DashboardPage({
         {upcomingBills.length > 0 && (
           <>
             <div className="flex items-center justify-between mx-6 mt-5 mb-2">
-                <h2 className="font-semibold text-base">Upcoming Bills</h2>
+                <h2 className="font-semibold text-base">{dasht("upcomingBills")}</h2>
             </div>
             <UpcomingBillsTile count={upcomingBills.length} total={upcomingTotal} icons={upcomingIcons} />
           </>
@@ -675,10 +681,10 @@ export default async function DashboardPage({
 
         {/* Recent transactions */}
           <div className="flex items-center justify-between mx-6 mt-5 mb-2">
-            <h2 className="font-semibold text-base">Recent transactions</h2>
+            <h2 className="font-semibold text-base">{commont("recentTransactions")}</h2>
             {data.recent.length > 0 && (
               <Link href="/transactions" className="text-sm text-muted-foreground active:opacity-70">
-                Show all
+                {commont("showAll")}
               </Link>
             )}
           </div>
@@ -696,7 +702,7 @@ export default async function DashboardPage({
         {/* Accounts — total saldo across bank + asset accounts, with a running-balance sparkline */}
         <AccountsCard bankBalances={bankBalances} vermogenRows={vermogenRows} accountsTotal={accountsTotal} accountHistory={accountHistory} />
 
-      </div>
+      </PageContainer>
     </div>
     <UpcomingPortal bills={calendarBills} from={currentMonthRange.from} to={currentMonthRange.to} month={billMonth} />
     <NeedsReviewPortal rows={needsReview} categories={data.categories} savingsGoals={data.goals} />

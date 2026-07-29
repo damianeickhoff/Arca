@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { m, spring, AnimatePresence } from "@/lib/motion";
 import { useEffect, useRef, useState } from "react";
 import { GlobalSearchOverlay } from "@/components/global-search-overlay";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { useNavHidden } from "@/lib/nav-visibility";
 
 type NavItem = {
@@ -106,6 +107,13 @@ function LiquidTabIndicator({ activeIndex, count }: { activeIndex: number; count
   );
 }
 
+// Where anything that docks to the bottom of the screen sits: full-bleed with
+// 1.5rem gutters on a phone, capped to the shared content column and centred above
+// it on desktop. Shared with the bars that temporarily stand in for the nav (the
+// reports period selector, the forecast month picker) so all of them occupy the
+// same footprint instead of three hand-tuned inset triples.
+export const bottomDockClass = cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-5 px-6");
+
 export const pillContainerClass = cn(
   "glass-nav relative flex items-center rounded-full transition-all duration-300 ease-in-out overflow-hidden",
   "bg-white/70 dark:bg-white/7",
@@ -116,7 +124,11 @@ export const pillContainerClass = cn(
   "p-[4px]",
 );
 
-export function MobileBottomNav() {
+// The app's only navigation, at every viewport width. It replaced the desktop
+// sidebar (the old nav.tsx) so there is a single nav to maintain; on wide screens
+// the pill is capped to the shared content column, rather than stretching across
+// the monitor.
+export function BottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [compact, setCompact] = useState(false);
@@ -186,9 +198,15 @@ export function MobileBottomNav() {
   return (
     <>
       <nav
+        // bottomDockClass (inset-x-0 + centred column) rather than left-6/right-6:
+        // below the column width its horizontal padding reproduces the old 1.5rem
+        // gutters exactly, and above it the pill stops widening and centres over
+        // the content column. The compact (scrolled) state pulls the gutters in to
+        // 3.5rem the same way, now via padding instead of inset.
         className={cn(
-          "lg:hidden fixed left-6 right-6 bottom-5 z-[60] flex items-center gap-3 transition-all duration-300 ease-in-out",
-          compact && !searchOpen ? "right-14 left-14" : "",
+          bottomDockClass,
+          "z-[60] flex items-center gap-3 transition-all duration-300 ease-in-out",
+          compact && !searchOpen && "px-14",
         )}
       >
         {/* Nav pill — collapses away entirely when search is open; closing happens

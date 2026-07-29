@@ -1,9 +1,25 @@
 {
   "common": {
+    "fields": {
+      "description": "Omschrijving",
+      "name": "Naam",
+      "category": "Categorie",
+      "merchant": "Tegenpartij",
+      "notInReports": "Niet in analyses",
+      "bank": "Bank",
+      "budgetType": "Type Budget",
+      "note": "Notitie",
+      "receipt": "Kassabon",
+      "recurrence": "Terugkerend",
+      "started": "Gestart",
+      "nextOccurence": "Volgende betaling"
+    },
     "dashboard": "Dashboard",
     "settings": "Instellingen",
     "save": "Opslaan",
-    "spending by category":"Uitgegeven per Categorie"
+    "spendingByCategory": "Uitgaven per Categorie",
+    "showAll": "Alles zien",
+    "recentTransactions": "Recente Transacties"
   },
   "settingsMenu": {
     "title": "Instellingen",
@@ -12,5 +28,248 @@
     "accounts": "Rekeningen",
     "general": "Algemeen",
     "admin": "Beheer"
+  },
+  "budget": {
+    "alert": {
+      "over": "{amount} over je budget",
+      "left": "{amount} over in budget",
+      "success1": "Ruim onder schema. Je hebt een mooie buffer opgebouwd.",
+      "success2": "Je uitgaven liggen ruim onder schema. Dat ziet er goed uit.",
+      "success3": "Je ligt mooi op schema voor deze periode.",
+      "warning1": "Je geeft iets sneller uit dan gepland. Houd het goed in de gaten.",
+      "warning2": "Er is niet veel budget meer over. Wat rustiger aan doen kan helpen.",
+      "danger": "Je zit over je budget. Overweeg om je budget voor volgende maand aan te passen."
+    },
+    "emptyTitle": "Geen budget ingesteld",
+    "emptyDesc": "Maak een budget om je uitgaven te volgen en grip te houden op je financiën.",
+    "create": "Budget aanmaken",
+    "period": {
+      "weekly": "Wekelijks",
+      "monthly": "Maandelijks"
+    },
+    "over": "Te veel",
+    "left": "Resterend",
+    "used": "{pct}% gebruikt",
+    "daysLeft": "Resterende dagen",
+    "days": "{count, plural, one {# dag} other {# dagen}}",
+    "amount": "Bedrag",
+    "allocated": "Toegewezen",
+    "leftToAllocate": "Nog toe te wijzen",
+    "budgetedCategories": "Categorieën met budget",
+    "categoryBudgets": "Categoriebudgetten",
+    "totalAllocated": "{amount} totaal",
+    "manage": "Beheren",
+    "overLabel": "te veel",
+    "leftLabel": "over",
+    "ofAmount": "van {amount}",
+    "addCategory": "Categoriebudget toevoegen",
+    "leftToAllocateAmount": "{amount} nog toe te wijzen",
+    "editBudget": "Budget bewerken",
+    "deleteBudget": "Budget verwijderen",
+    "close": "Sluiten",
+    "back": "Terug",
+    "reset": "Wissen",
+    "save": "Opslaan",
+    "saving": "Opslaan…",
+    "allocatedPct": "{pct}% toegewezen",
+    "amountLeft": "{amount} over",
+    "totalCategoryBudgets": "Totaal categoriebudgetten",
+    "totalBecomesLimit": "Dit totaal wordt je totale budgetlimiet.",
+    "last30": "Laatste 30 dagen: {amount}",
+    "last7": "Laatste 7 dagen: {amount}",
+    "setCategoryBudget": "Stel een budget in voor deze categorie",
+    "removeBudget": "Budget verwijderen",
+    "strategyTitle": "Budgetstrategie",
+    "strategyDesc": "Hoe je inkomen wordt verdeeld over Nodig, Willen en Sparen.",
+    "strategyCommon": "Veelgebruikt is 50/25/25.",
+    "advisedBudget": "Aanbevolen budget: <b>{amount}</b> ({pct}% van {income} inkomen)",
+    "advised": "Aanbevolen: {amount}",
+    "exceedTitle": "Categoriebudgetten overschrijden je totale budget",
+    "exceedDesc": "Je categoriebudgetten komen samen op {total}, meer dan je totale budget van {overall}. Verhoog het totale budget naar {total}, of annuleer en verlaag het categoriebedrag.",
+    "increaseOverall": "Verhoog totaal naar {amount}",
+    "cancel": "Annuleren",
+    "confirmDelete": "Dit budget verwijderen? Categoriebudgetten worden ook gewist.",
+    "confirmRemoveCategory": "Het budget voor {name} verwijderen?",
+    "overallLimit": "Stel je totale budgetlimiet in voor deze periode",
+    "skip": "Overslaan",
+    "continue": "Doorgaan",
+    "skipHint": "Je kunt overslaan en categoriebudgetten hierna instellen"
+  },
+  "cashFlow": {
+    "title": "Cash Flow Vooruitzicht",
+    "emptySub": "Geen account balans ingesteld",
+    "alert": {
+      "critical": "Je verwachte cashflow bereikt {amount} op {date}",
+      "warning": "Je verwachte cashflow daalt onder {amount} op {date}",
+      "healthy": "Je verwachte cashflow blijft positief"
+    }
+  },
+  "dashboard": {
+    "upcomingBills": "Aankomende rekeningen",
+    "upcomingCount": "{count, plural, one {# aankomende transactie} other {# aankomende transacties}}<br></br>deze maand",
+    "needsReview": "{count, plural, one {# transactie moet worden gecontroleerd} other {# transacties moeten worden gecontroleerd}}"
+  },
+  "transactions": {
+    "title": "Transacties",
+    "searchPlaceholder": "Zoek op categorie, tegenpartij, enz...",
+    "clear": "Wissen",
+    "results": "Resultaten: {count, plural, one {# transactie} other {# transacties}}",
+    "income": "Inkomsten",
+    "expenses": "Uitgaven",
+    "noneFound": "Geen transacties gevonden",
+    "importCsv": "Importeer een CSV",
+    "showMore": "Toon meer ({count} resterend)",
+    "addNew": "Nieuwe transactie toevoegen",
+    "today": "Vandaag",
+    "yesterday": "Gisteren",
+    "internalTransfer": "Interne overboeking",
+    "splitParts": "{count, plural, one {# deel} other {# delen}}",
+    "recurringBill": "Terugkerende rekening",
+    "filters": {
+      "operationType": "Soort transactie",
+      "nature": "Aard",
+      "categories": "Categorieën",
+      "accounts": "Rekeningen",
+      "recurring": "Terugkerend",
+      "custom": "Aangepast…",
+      "customPeriod": "Aangepaste periode",
+      "from": "Van",
+      "to": "Tot",
+      "apply": "Toepassen",
+      "reset": "{name} wissen",
+      "period": "Periode"
+    }
+  },
+  "goals": {
+    "savings": "Sparen",
+    "monthly": "Maandelijks",
+    "lastGoalReachedBy": "Laatste doel bereikt op",
+    "allocated": "Toegewezen",
+    "savingsGoals": "Spaardoelen",
+    "emptyTitle": "Begin met je eerste spaardoel",
+    "emptyDesc": "Klaar om te sparen? Tik op de knop hieronder om je eerste spaardoel in te stellen.",
+    "addSaving": "Spaardoel toevoegen",
+    "addNewSaving": "Nieuw spaardoel toevoegen",
+    "filterAll": "Alle",
+    "filterBudget": "Budget",
+    "filterSavings": "Sparen",
+    "typeBudget": "Budget",
+    "typeSavings": "Sparen",
+    "spent": "besteed",
+    "saved": "gespaard",
+    "recurrence": {
+      "none": "Geen",
+      "weekly": "Wekelijks",
+      "monthly": "Maandelijks",
+      "yearly": "Jaarlijks"
+    },
+    "detailsTitle": "Spaardoel details",
+    "edit": "Bewerken",
+    "delete": "Verwijderen",
+    "close": "Sluiten",
+    "ofAmount": "van {amount}",
+    "reached": "Bereikt",
+    "savedPct": "{pct}% gespaard",
+    "targetAmount": "Doelbedrag",
+    "monthlyContribution": "Maandelijkse inleg",
+    "startDate": "Startdatum",
+    "endDate": "Einddatum",
+    "endDateOptional": "Einddatum (optioneel)",
+    "noEndDate": "Geen einddatum",
+    "recurrenceLabel": "Herhaling",
+    "reachedBy": "Bereikt op",
+    "category": "Categorie",
+    "currentBalance": "Huidig saldo",
+    "name": "Naam",
+    "confirmDelete": "\"{name}\" verwijderen?",
+    "chooseCategory": "Kies categorie",
+    "chooseACategory": "Kies een categorie",
+    "categoryOptional": "Categorie (optioneel)",
+    "required": "Verplicht",
+    "all": "Alle",
+    "done": "Klaar",
+    "recurrency": "Herhaling",
+    "clear": "Wissen",
+    "savingsGoal": "Spaardoel",
+    "moreOptions": "Meer opties",
+    "calculator": "Rekenmachine",
+    "chooseIconColor": "Kies icoon en kleur",
+    "namePlaceholder": "bijv. Nieuwe auto",
+    "setStartEndDate": "Start- en einddatum instellen",
+    "startEndDate": "Start / einddatum",
+    "setMonthlyContribution": "Maandelijkse inleg instellen",
+    "monthlyContributionAmount": "Maandelijkse inleg {amount}",
+    "startingBalance": "Startsaldo",
+    "setStartingBalance": "Startsaldo instellen",
+    "startingBalanceAmount": "Startsaldo {amount}",
+    "backspace": "Backspace",
+    "divide": "Delen",
+    "multiply": "Vermenigvuldigen",
+    "subtract": "Aftrekken",
+    "add": "Optellen",
+    "dates": "Datums",
+    "autoCalc": "Automatisch berekend op basis van de einddatum ({amount}) — wis de einddatum om dit handmatig in te stellen.",
+    "iconColor": "Icoon & kleur",
+    "icon": "Icoon",
+    "color": "Kleur",
+    "editSaving": "Spaardoel bewerken",
+    "saving": "Opslaan…",
+    "save": "Opslaan"
+  },
+  "tips": {
+    "gotIt": "Duidelijk",
+    "dontShowAgain": "Niet meer tonen",
+    "receiptScan": {
+      "title": "Bon scannen",
+      "body": "Maak een foto en Arca vult de winkel, het bedrag en de datum in. Het uitlezen gebeurt op dit apparaat — de foto gaat nergens heen."
+    },
+    "csvImport": {
+      "title": "Importeren vanaf je bank",
+      "body": "Zet een CSV-export erin en Arca koppelt de kolommen, slaat dubbele boekingen over en categoriseert wat het herkent."
+    },
+    "recurring": {
+      "title": "Wat zich herhaalt",
+      "body": "Rekeningen, abonnementen en inkomsten die je hier toevoegt worden gekoppeld aan je transacties en tellen mee in je budget en prognose."
+    },
+    "merchant": {
+      "title": "Winkelprofiel",
+      "body": "Elke winkel waar je betaalt krijgt een eigen pagina: wat je er uitgeeft, hoe vaak, en hoe dat door de jaren heen is veranderd."
+    },
+    "budget": {
+      "title": "Je budget",
+      "body": "Stel één totaallimiet in en verfijn daarna per categorie. Arca houdt bij of je voor- of achterloopt op het maandtempo."
+    },
+    "budgetStrategy": {
+      "title": "Budgetstrategie",
+      "body": "Verdeel je inkomen over nodig, willen en sparen. Arca maakt daar een geadviseerd maandbudget van."
+    },
+    "reports": {
+      "title": "Rapporten",
+      "body": "Trends, vergelijkingen tussen maanden en je vermogen, over de periode die je bovenin kiest."
+    },
+    "forecast": {
+      "title": "Cashflowprognose",
+      "body": "Berekent je saldo vooruit op basis van je vaste lasten en gebruikelijke uitgaven, zodat je dips ziet aankomen."
+    },
+    "budgetLocation": {
+      "title": "Hier staat je budget",
+      "body": "Tik op de portemonnee om een totaallimiet in te stellen en eventueel een doel per categorie."
+    },
+    "reportsLocation": {
+      "title": "Trends en prognoses",
+      "body": "Het grafiekicoon opent je rapporten: uitgaven door de tijd, vergelijkingen per maand, vermogen en cashflow."
+    },
+    "settingsLocation": {
+      "title": "De rest zit achter je foto",
+      "body": "Rekeningen, categorieën, vaste lasten en al je voorkeuren vind je daar."
+    },
+    "transactionDetail": {
+      "title": "Tik voor het hele verhaal",
+      "body": "Open een transactie om hem te hercategoriseren, te splitsen, een bon toe te voegen of naar de winkel te springen."
+    },
+    "strategyLocation": {
+      "title": "Je verdeling zit hierachter",
+      "body": "Tik op bewerken en dan op het schuifjes-icoon om te wijzigen hoe je inkomen over nodig, willen en sparen wordt verdeeld — Arca past het budgetadvies daarop aan."
+    }
   }
 }

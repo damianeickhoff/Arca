@@ -316,7 +316,7 @@ export function CategoryClient(props: Props) {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg sm:max-h-[90dvh] sm:overflow-y-auto sm:[scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader>
             <DialogTitle>{isEdit ? "Edit" : "New category"}</DialogTitle>
           </DialogHeader>

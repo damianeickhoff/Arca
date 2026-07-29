@@ -1,7 +1,7 @@
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
 import { getBillStatuses } from "@/lib/bill-status";
-import { PageShell } from "@/components/page-shell";
+import { PageContainer } from "@/components/page-container";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
@@ -98,10 +98,5 @@ export default async function UpcomingTransactionsPage() {
     </div>
   );
 
-  return (
-    <PageShell
-      mobile={content}
-      desktop={<div className="mx-auto max-w-2xl">{content}</div>}
-    />
-  );
+  return <PageContainer className="px-0">{content}</PageContainer>;
 }

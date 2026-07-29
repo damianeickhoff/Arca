@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
@@ -11,11 +12,11 @@ import {
   IconTrashFilled as Trash2,
 } from "@tabler/icons-react";
 import type { Category, Goal } from "@/db/schema";
-import { goalProgressPct, recurrenceLabel } from "./goal-shared";
+import { goalProgressPct } from "./goal-shared";
 import { SavingsGoalEditDialog } from "./savings-goal-edit-dialog";
 
-function fmtDay(iso: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+function fmtDay(iso: string, dateLocale: string) {
+  return new Date(iso + "T00:00:00").toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 // Detail view for a single savings goal — same visual language as the debt detail
@@ -31,6 +32,7 @@ export function SavingsGoalDetailDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("goals");
   const [deleting, setDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -46,7 +48,7 @@ export function SavingsGoalDetailDialog({
 
   async function remove() {
     if (!goal) return;
-    if (!confirm(`Delete "${goal.name}"?`)) return;
+    if (!confirm(t("confirmDelete", { name: goal.name }))) return;
     setDeleting(true);
     await fetch("/api/goals", {
       method: "DELETE",
@@ -69,7 +71,7 @@ export function SavingsGoalDetailDialog({
               <button
                 type="button"
                 onClick={() => setEditOpen(true)}
-                aria-label="Edit"
+                aria-label={t("edit")}
                 className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
               >
                 <Pencil className="size-4.5" />
@@ -78,7 +80,7 @@ export function SavingsGoalDetailDialog({
                 type="button"
                 onClick={remove}
                 disabled={deleting}
-                aria-label="Delete"
+                aria-label={t("delete")}
                 className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
               >
                 <Trash2 className="size-4.5" />
@@ -87,7 +89,7 @@ export function SavingsGoalDetailDialog({
           ) : undefined
         }
       >
-        <DialogTitle className="sr-only">Savings goal details</DialogTitle>
+        <DialogTitle className="sr-only">{t("detailsTitle")}</DialogTitle>
         {displayGoal && <DetailBody key={displayGoal.id} goal={displayGoal} categories={categories} />}
 
         {/* Edit dialog — controlled by the pencil button. Rendered INSIDE this dialog's
@@ -102,6 +104,9 @@ export function SavingsGoalDetailDialog({
 }
 
 function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }) {
+  const t = useTranslations("goals");
+  const locale = useLocale();
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
   const pct = Math.round(goalProgressPct(goal));
   const isDone = goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount;
   const category = categories.find((c) => c.id === goal.categoryId);
@@ -118,11 +123,11 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
           <Icon iconKey={goal.icon} color={goal.color} round size="xxl" />
           <p className="text-3xl font-bold tabular-nums mt-3">{formatEur(goal.currentAmount)}</p>
           <div className="flex items-center gap-2 mt-1.5 text-sm text-foreground/55">
-            <span>of {formatEur(goal.targetAmount)}</span>
+            <span>{t("ofAmount", { amount: formatEur(goal.targetAmount) })}</span>
             <span>•</span>
             <span className="inline-flex items-center gap-1.5">
               <span className={cn("size-2 rounded-full", isDone ? "bg-emerald-500" : "bg-foreground/30")} />
-              {isDone ? "Reached" : `${pct}% saved`}
+              {isDone ? t("reached") : t("savedPct", { pct })}
             </span>
           </div>
         </div>
@@ -130,17 +135,17 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
 
       {/* Key figures */}
       <div className="rounded-2xl p-2 bg-[var(--dialog-content-background)]">
-        <DetailRow label="Target amount" value={formatEur(goal.targetAmount)} />
-        <DetailRow label="Monthly contribution" value={goal.monthlyContribution != null ? formatEur(goal.monthlyContribution) : "—"} />
-        {goal.startDate && <DetailRow label="Start date" value={fmtDay(goal.startDate)} />}
-        {goal.endDate && <DetailRow label="End date" value={fmtDay(goal.endDate)} />}
-        {goal.recurrence !== "none" && <DetailRow label="Recurrence" value={recurrenceLabel(goal.recurrence)} />}
-        {targetDate && !isDone && <DetailRow label="Reached by" value={targetDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" })} />}
+        <DetailRow label={t("targetAmount")} value={formatEur(goal.targetAmount)} />
+        <DetailRow label={t("monthlyContribution")} value={goal.monthlyContribution != null ? formatEur(goal.monthlyContribution) : "—"} />
+        {goal.startDate && <DetailRow label={t("startDate")} value={fmtDay(goal.startDate, dateLocale)} />}
+        {goal.endDate && <DetailRow label={t("endDate")} value={fmtDay(goal.endDate, dateLocale)} />}
+        {goal.recurrence !== "none" && <DetailRow label={t("recurrenceLabel")} value={t(`recurrence.${goal.recurrence}`)} />}
+        {targetDate && !isDone && <DetailRow label={t("reachedBy")} value={targetDate.toLocaleDateString(dateLocale, { month: "long", year: "numeric" })} />}
       </div>
 
       {category && (
         <div className="rounded-2xl bg-[var(--dialog-content-background)]">
-          <DetailRow label="Category" valueIcon={<Icon iconKey={category.icon} color={category.color} size="xs" round />} value={category.name} />
+          <DetailRow label={t("category")} valueIcon={<Icon iconKey={category.icon} color={category.color} size="xs" round />} value={category.name} />
         </div>
       )}
     </div>

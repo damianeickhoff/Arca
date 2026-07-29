@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import {
   IconChevronLeft,
   IconDotsVertical,
@@ -235,7 +237,7 @@ export function CategoryDetailPortal({
 
             {/* Content */}
             <div
-              className="fixed inset-x-0 bottom-0 flex flex-col overflow-hidden"
+              className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
               style={{
                 top: 0,
                 zIndex: 45,
@@ -390,7 +392,7 @@ export function CategoryDetailPortal({
 
             {/* ── Edit budget — numpad overlay, stacked above the detail portal ── */}
             {editBudgetOpen && category && (
-              <div className="fixed inset-0 z-[46] bg-background flex flex-col" style={{ paddingTop: "var(--sat)" }}>
+              <div className={cn(CONTENT_COLUMN, "fixed inset-0 z-[46] bg-background flex flex-col")} style={{ paddingTop: "var(--sat)" }}>
                 <div className="flex items-center justify-between px-4 h-14 shrink-0">
                   <button
                     type="button"
@@ -431,7 +433,7 @@ export function CategoryDetailPortal({
 
             {/* ── Edit category — reuses CategorySettingsClient's embedded mode ── */}
             {editCategoryOpen && (
-              <div className="fixed inset-0 z-[46] bg-background overflow-y-auto">
+              <div className={cn(CONTENT_COLUMN, "fixed inset-0 z-[46] bg-background overflow-y-auto")}>
                 {loadingEditCategory || !editCategoryData ? (
                   <div className="flex items-center justify-center h-full text-foreground/50 text-sm">Loading…</div>
                 ) : (

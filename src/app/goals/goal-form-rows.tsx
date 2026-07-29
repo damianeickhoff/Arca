@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import {
   IconChevronRight as ChevronRight,
   IconReload,
@@ -14,15 +15,15 @@ import { CalendarContent } from "@/components/date-picker";
 import { cn } from "@/lib/utils";
 import { formatEur } from "@/lib/format";
 import type { Category } from "@/db/schema";
-import { RECURRENCE_OPTIONS, recurrenceLabel } from "./goal-shared";
+import { RECURRENCE_OPTIONS } from "./goal-shared";
 
 // The goal creator's row vocabulary — icon-led rows inside rounded cards, each
 // opening a small dialog. Shared by the routed /goals/add page and the edit
 // overlay (goal-creator.tsx) so the two stay identical.
 
-export function fmtDate(value: string | null): string {
+export function fmtDate(value: string | null, dateLocale = "en-GB"): string {
   if (!value) return "—";
-  return new Date(value + "T00:00:00").toLocaleDateString("en-GB", {
+  return new Date(value + "T00:00:00").toLocaleDateString(dateLocale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -78,20 +79,21 @@ export function CategoryRow({
   required?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("goals");
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter();
   const selected = categories.find((c) => String(c.id) === value);
   return (
     <>
       <ValueRow
         icon={<IconSparkles className="size-5" />}
-        label="Category"
-        value={selected ? selected.name : required ? "Required" : "All"}
+        label={t("category")}
+        value={selected ? selected.name : required ? t("required") : t("all")}
         onClick={() => setOpen(true)}
       />
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader actions={filterMenu}>
-            <DialogTitle>Choose category</DialogTitle>
+            <DialogTitle>{t("chooseCategory")}</DialogTitle>
           </DialogHeader>
           <CategoryGrid
             categories={categories}
@@ -110,6 +112,7 @@ export function CategoryRow({
 
 export function AmountRow({ icon, label, value, onChange }: { icon: React.ReactNode; label: string; value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("goals");
   const [draft, setDraft] = useState(value);
   return (
     <>
@@ -120,7 +123,7 @@ export function AmountRow({ icon, label, value, onChange }: { icon: React.ReactN
         onClick={() => { setDraft(value); setOpen(true); }}
       />
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xs">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{label}</DialogTitle>
           </DialogHeader>
@@ -138,7 +141,7 @@ export function AmountRow({ icon, label, value, onChange }: { icon: React.ReactN
               className="w-full"
               onClick={() => { onChange(draft); setOpen(false); }}
             >
-              Done
+              {t("done")}
             </Button>
           </div>
         </DialogContent>
@@ -149,18 +152,19 @@ export function AmountRow({ icon, label, value, onChange }: { icon: React.ReactN
 
 export function RecurrenceRow({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("goals");
   return (
     <>
       <ValueRow
         icon={<IconReload className="size-5" />}
-        label="Recurrency"
-        value={recurrenceLabel(value)}
+        label={t("recurrency")}
+        value={t(`recurrence.${value || "none"}`)}
         onClick={() => setOpen(true)}
       />
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xs">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Recurrency</DialogTitle>
+            <DialogTitle>{t("recurrency")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-1">
             {RECURRENCE_OPTIONS.map((opt) => (
@@ -173,7 +177,7 @@ export function RecurrenceRow({ value, onChange }: { value: string; onChange: (v
                   value === opt.value ? "bg-foreground text-primary-foreground font-semibold" : "hover:bg-foreground/5",
                 )}
               >
-                {opt.label}
+                {t(`recurrence.${opt.value}`)}
               </button>
             ))}
           </div>
@@ -185,15 +189,17 @@ export function RecurrenceRow({ value, onChange }: { value: string; onChange: (v
 
 export function DateRow({ icon, label, value, onChange }: { icon: React.ReactNode; label: string; value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("goals");
+  const locale = useLocale();
   const [cursor, setCursor] = useState(() => {
     const d = value ? new Date(value + "T00:00:00") : new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   return (
     <>
-      <ValueRow icon={icon} label={label} value={fmtDate(value || null)} onClick={() => setOpen(true)} />
+      <ValueRow icon={icon} label={label} value={fmtDate(value || null, locale === "nl" ? "nl-NL" : "en-GB")} onClick={() => setOpen(true)} />
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xs">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{label}</DialogTitle>
           </DialogHeader>
@@ -211,7 +217,7 @@ export function DateRow({ icon, label, value, onChange }: { icon: React.ReactNod
               onClick={() => { onChange(""); setOpen(false); }}
               className="w-full text-center text-xs font-medium text-foreground/50 hover:text-foreground mt-2 transition-colors"
             >
-              Clear
+              {t("clear")}
             </button>
           )}
         </DialogContent>

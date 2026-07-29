@@ -15,6 +15,7 @@ import type { User } from "@/db/schema";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetRecurringMode } from "@/lib/app-settings";
+import { PageContainer } from "@/components/page-container";
 
 interface Props extends DebtsPageData {
   /** Only passed by the standalone /debts route — when embedded in the dashboard's
@@ -61,7 +62,11 @@ export function DebtsMobile({
 
   return (
     <>
-      <div className="min-h-screen flex flex-col px-4 pt-[calc(3.5rem+var(--sat))] pb-[calc(7rem+var(--sab))] space-y-4" style={{ background: "var(--debt-background)" }}>
+      {/* Gradient stays full-bleed; PageContainer caps the content to the shared column.
+          pt is just the status-bar inset — the extra 3.5rem this used to carry was
+          cancelling a negative margin on the old mobile/desktop page shell. */}
+      <div className="min-h-screen pt-[var(--sat)] pb-[calc(7rem+var(--sab))]" style={{ background: "var(--debt-background)" }}>
+       <PageContainer className="flex flex-col space-y-4">
         {user && settingsPanels && financialMonth ? (
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 mt-3">
             <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} iconOnly />
@@ -149,6 +154,7 @@ export function DebtsMobile({
         {!user && activeSimDebts.length > 0 && (
           <DebtSimulationClient debts={activeSimDebts} />
         )}
+       </PageContainer>
       </div>
     </>
   );

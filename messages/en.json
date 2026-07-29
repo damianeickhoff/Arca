@@ -1,9 +1,25 @@
 {
   "common": {
+    "fields": {
+      "description": "Description",
+      "name": "Name",
+      "category": "Category",
+      "merchant": "Merchant",
+      "notInReports": "Not In Reports",
+      "bank": "Bank",
+      "budgetType": "Budget Type",
+      "note": "Note",
+      "receipt": "Receipt",
+      "recurrence": "Recurrence",
+      "started": "Started",
+      "nextOccurence": "Next Occurence"
+    },
     "dashboard": "Dashboard",
     "settings": "Settings",
     "save": "Save",
-    "spending by category":"Spending by Category"
+    "spendingByCategory": "Spending by Category",
+    "showAll": "Show all",
+    "recentTransactions": "Recent Transactions"
   },
   "settingsMenu": {
     "title": "Settings",
@@ -12,5 +28,248 @@
     "accounts": "Accounts",
     "general": "General",
     "admin": "Admin"
+  },
+  "budget": {
+    "alert": {
+      "over": "{amount} over budget",
+      "left": "{amount} left in budget",
+      "success1": "Well under pace. You've build a strong cushion.",
+      "success2": "Spending comfortably below pace. Looking good.",
+      "success3": "Right on track for this period.",
+      "warning1": "Spending a bit faster than planned. Keep an eye on it.",
+      "warning2": "Not a lot left. Slowing down now could help.",
+      "danger": "You're over the budget. Consider whether your limit needs adjusting for next month."
+    },
+    "emptyTitle": "No budget set",
+    "emptyDesc": "Create a budget to track your spending and stay on top of your finances.",
+    "create": "Create budget",
+    "period": {
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "over": "Over",
+    "left": "Left",
+    "used": "{pct}% used",
+    "daysLeft": "Days left",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "amount": "Amount",
+    "allocated": "Allocated",
+    "leftToAllocate": "Left to allocate",
+    "budgetedCategories": "Budgeted categories",
+    "categoryBudgets": "Category budgets",
+    "totalAllocated": "{amount} total",
+    "manage": "Manage",
+    "overLabel": "over",
+    "leftLabel": "left",
+    "ofAmount": "of {amount}",
+    "addCategory": "Add category budget",
+    "leftToAllocateAmount": "{amount} left to allocate",
+    "editBudget": "Edit budget",
+    "deleteBudget": "Delete budget",
+    "close": "Close",
+    "back": "Back",
+    "reset": "Reset",
+    "save": "Save",
+    "saving": "Saving…",
+    "allocatedPct": "{pct}% allocated",
+    "amountLeft": "{amount} left",
+    "totalCategoryBudgets": "Total category budgets",
+    "totalBecomesLimit": "This total will become your overall budget limit.",
+    "last30": "Last 30 days: {amount}",
+    "last7": "Last 7 days: {amount}",
+    "setCategoryBudget": "Set a budget for this category",
+    "removeBudget": "Remove budget",
+    "strategyTitle": "Budget strategy",
+    "strategyDesc": "How your income splits across Needs, Wants, and Savings.",
+    "strategyCommon": "Commonly used is 50/25/25.",
+    "advisedBudget": "Advised budget: <b>{amount}</b> ({pct}% of {income} income)",
+    "advised": "Advised: {amount}",
+    "exceedTitle": "Category budgets exceed your overall budget",
+    "exceedDesc": "Your category budgets add up to {total}, more than your overall budget of {overall}. Increase the overall budget to {total}, or cancel and lower the category amount instead.",
+    "increaseOverall": "Increase overall to {amount}",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete this budget? Category budgets will be cleared too.",
+    "confirmRemoveCategory": "Remove the budget for {name}?",
+    "overallLimit": "Set your overall budget limit for this period",
+    "skip": "Skip",
+    "continue": "Continue",
+    "skipHint": "You can skip and set category budgets next"
+  },
+  "cashFlow": {
+    "title": "Cash Flow Forecast",
+    "emptySub": "No account balance set",
+    "alert": {
+      "critical": "Your expected cash flow reaches {amount} on {date}",
+      "warning": "Your expected cash flow drops below {amount} on {date}",
+      "healthy": "Your expected cash flow remains positive"
+    }
+  },
+  "dashboard": {
+    "upcomingBills": "Upcoming Bills",
+    "upcomingCount": "{count, plural, one {# upcoming transaction} other {# upcoming transactions}}<br></br>this month",
+    "needsReview": "{count, plural, one {# transaction needs review} other {# transactions need review}}"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "searchPlaceholder": "Search by category, merchant, etc...",
+    "clear": "Clear",
+    "results": "Results: {count, plural, one {# transaction} other {# transactions}}",
+    "income": "Income",
+    "expenses": "Expenses",
+    "noneFound": "No transactions found",
+    "importCsv": "Import a CSV",
+    "showMore": "Show more ({count} remaining)",
+    "addNew": "Add new transaction",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "internalTransfer": "Internal transfer",
+    "splitParts": "{count, plural, one {# part} other {# parts}}",
+    "recurringBill": "Recurring bill",
+    "filters": {
+      "operationType": "Operation type",
+      "nature": "Nature",
+      "categories": "Categories",
+      "accounts": "Accounts",
+      "recurring": "Recurring",
+      "custom": "Custom…",
+      "customPeriod": "Custom period",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "reset": "Reset {name}",
+      "period": "Period"
+    }
+  },
+  "goals": {
+    "savings": "Savings",
+    "monthly": "Monthly",
+    "lastGoalReachedBy": "Last goal reached by",
+    "allocated": "Allocated",
+    "savingsGoals": "Savings goals",
+    "emptyTitle": "Start your first saving",
+    "emptyDesc": "Ready to start saving? Tap the button below to set up your first savings goal.",
+    "addSaving": "Add saving",
+    "addNewSaving": "Add new saving",
+    "filterAll": "All",
+    "filterBudget": "Budget",
+    "filterSavings": "Savings",
+    "typeBudget": "Budget",
+    "typeSavings": "Savings",
+    "spent": "spent",
+    "saved": "saved",
+    "recurrence": {
+      "none": "None",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "detailsTitle": "Savings goal details",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "ofAmount": "of {amount}",
+    "reached": "Reached",
+    "savedPct": "{pct}% saved",
+    "targetAmount": "Target amount",
+    "monthlyContribution": "Monthly contribution",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "endDateOptional": "End date (optional)",
+    "noEndDate": "No end date",
+    "recurrenceLabel": "Recurrence",
+    "reachedBy": "Reached by",
+    "category": "Category",
+    "currentBalance": "Current balance",
+    "name": "Name",
+    "confirmDelete": "Delete \"{name}\"?",
+    "chooseCategory": "Choose category",
+    "chooseACategory": "Choose a category",
+    "categoryOptional": "Category (optional)",
+    "required": "Required",
+    "all": "All",
+    "done": "Done",
+    "recurrency": "Recurrency",
+    "clear": "Clear",
+    "savingsGoal": "Savings goal",
+    "moreOptions": "More options",
+    "calculator": "Calculator",
+    "chooseIconColor": "Choose icon and color",
+    "namePlaceholder": "e.g. New car",
+    "setStartEndDate": "Set start and end date",
+    "startEndDate": "Start / end date",
+    "setMonthlyContribution": "Set monthly contribution",
+    "monthlyContributionAmount": "Monthly contribution {amount}",
+    "startingBalance": "Starting balance",
+    "setStartingBalance": "Set starting balance",
+    "startingBalanceAmount": "Starting balance {amount}",
+    "backspace": "Backspace",
+    "divide": "Divide",
+    "multiply": "Multiply",
+    "subtract": "Subtract",
+    "add": "Add",
+    "dates": "Dates",
+    "autoCalc": "Auto-calculated from the end date ({amount}) — clear the end date to set this manually.",
+    "iconColor": "Icon & color",
+    "icon": "Icon",
+    "color": "Color",
+    "editSaving": "Edit saving",
+    "saving": "Saving…",
+    "save": "Save"
+  },
+  "tips": {
+    "gotIt": "Got it",
+    "dontShowAgain": "Don't show again",
+    "receiptScan": {
+      "title": "Scan a receipt",
+      "body": "Take a photo and Arca fills in the merchant, amount and date. Reading happens on this device — the photo never leaves it."
+    },
+    "csvImport": {
+      "title": "Import from your bank",
+      "body": "Drop in a CSV export and Arca matches the columns, skips duplicates and categorises what it recognises."
+    },
+    "recurring": {
+      "title": "Things that repeat",
+      "body": "Bills, subscriptions and income you add here are matched to your transactions and feed your budget and forecast."
+    },
+    "merchant": {
+      "title": "Merchant profile",
+      "body": "Every shop you pay gets its own page: what you spend there, how often, and how that has changed over the years."
+    },
+    "budget": {
+      "title": "Your budget",
+      "body": "Set one overall limit, then fine-tune per category. Arca tracks whether you are ahead of or behind pace for the month."
+    },
+    "budgetStrategy": {
+      "title": "Budget strategy",
+      "body": "Split your income across needs, wants and savings. Arca turns that split into an advised monthly budget."
+    },
+    "reports": {
+      "title": "Reports",
+      "body": "Trends, month-to-month comparisons and net worth, over whichever period you pick at the top."
+    },
+    "forecast": {
+      "title": "Cash flow forecast",
+      "body": "Projects your balance forward from your recurring items and usual spending, so you can see dips before they happen."
+    },
+    "budgetLocation": {
+      "title": "Your budget lives here",
+      "body": "Tap the wallet to set an overall limit and, if you want, a target per category."
+    },
+    "reportsLocation": {
+      "title": "Trends and forecasts",
+      "body": "The chart icon opens your reports: spending over time, month-to-month comparisons, net worth and cash flow."
+    },
+    "settingsLocation": {
+      "title": "Everything else is behind your photo",
+      "body": "Accounts, categories, recurring items and all your preferences live in there."
+    },
+    "transactionDetail": {
+      "title": "Tap for the whole story",
+      "body": "Open any transaction to recategorise it, split it, attach a receipt or jump to the merchant."
+    },
+    "strategyLocation": {
+      "title": "Your split lives in here",
+      "body": "Tap edit, then the sliders icon, to change how your income divides across needs, wants and savings — Arca re-advises your budget from it."
+    }
   }
 }

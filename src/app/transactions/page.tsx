@@ -6,6 +6,7 @@ import { currentFinancialMonth } from "@/lib/date-range";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBillStatuses } from "@/lib/bill-status";
 import { normalizeBudgetType } from "@/lib/format";
+import { PageContainer } from "@/components/page-container";
 import { ALL_FROM, todayStr } from "./periods";
 import { TransactionsMobile } from "./mobile";
 import {
@@ -240,10 +241,9 @@ export default async function TransactionsPage({
   const hasMore = filteredRows.length > visibleRows.length;
 
   return (
-    // -mt-14 (mobile only) cancels MainContent's base top padding so the sticky header sits
-    // flush under the status bar — this is what PageShell used to apply before this page went
-    // to a single responsive tree. On desktop MainContent has no padding, so reset to mt-0.
-    <div className="-mt-14 lg:mt-0 min-h-dvh pb-[var(--nav-clearance)] lg:pb-0 bg-background">
+    // MainContent already reserves --nav-clearance at the bottom for every page, so this
+    // root only needs the page background and a full-viewport minimum height.
+    <PageContainer className="px-0 min-h-dvh bg-background">
     <TransactionsMobile
       cats={cats}
       savingsGoals={savingsGoalOptions}
@@ -269,7 +269,7 @@ export default async function TransactionsPage({
       showMoreHref={showMoreHref}
       hasMore={hasMore}
     />
-    </div>
+    </PageContainer>
   );
 }
 

@@ -15,7 +15,6 @@ import {
   IconArrowDownRight,
   IconArrowUpRight,
 } from "@tabler/icons-react";
-import { MonthPicker } from "@/components/month-picker";
 import { PrognosePeriodPicker } from "./prognose-period-picker";
 import { CollapsibleSection } from "./collapsible-section";
 import { CategoryCard } from "./category-card";
@@ -35,7 +34,7 @@ import { computeNetWorth } from "@/lib/net-worth-snapshots";
 import { getCashFlowForecast, formatForecastDate, signedForecastEur, FORECAST_HORIZON_DAYS } from "@/lib/cash-flow-forecast";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
-import { ScrollStickyHeader } from "@/components/scroll-sticky-header";
+import { PageContainer } from "@/components/page-container";
 import Link from "next/link";
 import { BudgetTabs } from "@/app/budget/budget-tabs";
 
@@ -372,34 +371,16 @@ export default async function PrognPage({
 
   const label         = monthLabel(baseMonth);
   const range = financialMonthRangeByMonth(baseMonth, financialMonth);
-  const rangeLabel = `${new Date(range.from + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${new Date(range.to + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
   return (
-    <div className="-mt-14 lg:mt-0 min-h-screen">
+    <PageContainer className="px-0 min-h-screen">
 
-      {/* Mobile top bar */}
-      <div className="lg:hidden sticky z-40 bg-background px-4 pt-2 pb-3 space-y-2" style={{ top: stickyTop }}>
+      <div className="sticky z-40 bg-background px-4 pt-2 pb-3 space-y-2" style={{ top: stickyTop }}>
         {!embedded && <BudgetTabs />}
       </div>
       <PrognosePeriodPicker current={baseMonth} />
 
-      {/* Desktop sticky header with month nav */}
-      <ScrollStickyHeader
-        className="hidden lg:block sticky top-0 z-10 px-6 md:px-8 py-4"
-        scrolledClassName="bg-card/40 dark:bg-card/5 backdrop-blur-xl border-b border-white/30 dark:border-white/10"
-      >
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">Prognose</h1>
-            <p className="text-sm text-muted-foreground">
-              {rangeLabel}
-            </p>
-          </div>
-          <MonthPicker current={baseMonth} variant="icon" />
-        </div>
-      </ScrollStickyHeader>
-
-      <div className="px-4 pb-[calc(6rem+var(--sab))] lg:pb-6 md:px-6 lg:px-8 pt-3 space-y-3">
+      <div className="px-4 pb-6 pt-3 space-y-3">
 
         {/* Summary — 4 stat tiles, same grid as the Trends page */}
         <div className="grid grid-cols-2 gap-3">
@@ -673,7 +654,7 @@ export default async function PrognPage({
         )}
 
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

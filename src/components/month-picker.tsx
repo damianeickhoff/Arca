@@ -11,14 +11,7 @@ import { MONTH_NAMES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { glassIconButton } from "@/lib/styles";
 import { filterPillClass } from "@/components/filter-pill";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useIsMobile } from "@/lib/use-is-mobile";
 
 export function MonthPicker({
   current,
@@ -34,7 +27,6 @@ export function MonthPicker({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
   const months: { value: string; label: string }[] = [];
@@ -54,8 +46,7 @@ export function MonthPicker({
     setOpen(false);
   }
 
-  if (isMobile) {
-    return (
+  return (
       <>
         <button
           type="button"
@@ -99,38 +90,5 @@ export function MonthPicker({
           </DialogContent>
         </Dialog>
       </>
-    );
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className={variant === "icon" ? cn("size-12", glassIconButton) : filterPillClass(false, "pr-3")}
-        aria-label={variant === "icon" ? currentLabel : undefined}
-      >
-        {variant === "icon" ? (
-          <CalendarMonth className="size-7 text-foreground dark:text-gray-300" />
-        ) : (
-          <>
-            <span className="truncate">{currentLabel}</span>
-            <ChevronDown className="size-4.5 shrink-0" />
-          </>
-        )}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-44 ring-0 border-none">
-        {months.map((m) => {
-          const active = m.value === current;
-          return (
-            <DropdownMenuItem
-              key={m.value}
-              onClick={() => onChange(m.value)}
-              className={active ? "bg-foreground text-primary-foreground font-medium focus:bg-foreground focus:text-primary-foreground" : "text-foreground"}
-            >
-              {m.label}
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

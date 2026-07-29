@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { IconChevronLeft, IconDotsVertical, IconPencilFilled, IconSwitchHorizontal } from "@tabler/icons-react";
 import {
   DropdownMenu,
@@ -14,6 +16,7 @@ import { Icon, parseImgKey } from "@/components/icon";
 import { getDominantImageColor } from "@/lib/dominant-color";
 import { ListItemRow } from "@/components/list-item-row";
 import { CategorySpendChart } from "@/components/category-spend-chart";
+import { ContextualTip } from "@/components/contextual-tip";
 import { brandColorForIconKey, detectBrandIcon } from "@/lib/brand-detect";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { formatEur, formatDate } from "@/lib/format";
@@ -253,6 +256,7 @@ export function MerchantDetailPortal({
 
   return (
     <>
+      <ContextualTip id="merchant" active={open} />
       {mounted &&
         createPortal(
           <>
@@ -275,7 +279,7 @@ export function MerchantDetailPortal({
                 keepOpenOnOutside in components/ui/dialog.tsx. */}
             <div
               data-dialog-keep-open=""
-              className="fixed inset-x-0 bottom-0 flex flex-col overflow-hidden"
+              className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
               style={{
                 top: 0,
                 zIndex: 70,

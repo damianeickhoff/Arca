@@ -87,7 +87,7 @@ export function CategorySpendingRow({
   return (
     <div className="mt-5">
       <div className="mx-6 mb-2 flex items-center justify-between">
-        <p className="text-base font-semibold text-foreground">{t("spending by category")}</p>
+        <p className="text-base font-semibold text-foreground">{t("spendingByCategory")}</p>
         {hasMore && (
           <button type="button" onClick={() => setShowAll(true)} className="text-sm text-muted-foreground active:opacity-70">
             View all

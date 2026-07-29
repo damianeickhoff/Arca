@@ -1,19 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  IconChevronRightFilled as ChevronRight,
-  IconCheck as Check,
-} from "@tabler/icons-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { IconCheck as Check } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/lib/use-is-mobile";
 
 export const FORM_TRIGGER_CLASS = "bg-[var(--dialog-content-background)] px-3 h-12 w-full rounded-lg text-sm mt-1 flex items-center justify-between gap-2.5 outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-foreground/15 cursor-pointer";
 
@@ -33,11 +23,9 @@ export function OptionDropdown({
   title?: string;
 }) {
   const label = options.find((o) => o.value === value)?.label ?? "Kies…";
-  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
-  if (isMobile) {
-    return (
+  return (
       <>
         <button
           type="button"
@@ -75,28 +63,5 @@ export function OptionDropdown({
           </DialogContent>
         </Dialog>
       </>
-    );
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        disabled={disabled}
-        className={cn(FORM_TRIGGER_CLASS, disabled && "opacity-50 cursor-not-allowed", triggerClassName)}
-      >
-        <span className="truncate">{label}</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-44 max-h-56 overflow-y-auto ring-0 border-none">
-        {options.map((opt) => (
-          <DropdownMenuItem
-            key={opt.value}
-            onClick={() => onChange(opt.value)}
-            className={value === opt.value ? "bg-foreground text-primary-foreground font-medium focus:bg-foreground focus:text-primary-foreground" : "text-foreground"}
-          >
-            {opt.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

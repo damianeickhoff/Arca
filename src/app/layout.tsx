@@ -1,13 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Fraunces, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Nav } from "@/components/nav";
 import { MainContent } from "@/components/main-content";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
-import { EdgeFades } from "@/components/edge-fades";
+import { BottomNav } from "@/components/bottom-nav";
 import { AppLockGate } from "@/components/app-lock-gate";
 import { getCurrentUser } from "@/lib/auth";
-import { getSidebarSubtitle, getAppLockConfig, getDefaultCurrency } from "@/lib/app-settings";
+import { getAppLockConfig, getDefaultCurrency } from "@/lib/app-settings";
 import { setCurrentCurrency } from "@/lib/format";
 import { CurrencySync } from "@/components/currency-sync";
 import { headers } from "next/headers";
@@ -39,8 +37,7 @@ export const metadata: Metadata = {
     // "black-translucent" makes the iOS status bar transparent in the installed (standalone)
     // PWA so page content renders *under* the notch/Dynamic Island — this is what lets the
     // dashboard's full-bleed gradient fill the safe-area band (paired with the --sat padding
-    // in page.tsx / main-content.tsx). It forces white status-bar icons app-wide; the
-    // top edge-fade (see <EdgeFades /> + globals.css) keeps them legible over light pages.
+    // in page.tsx / main-content.tsx). It forces white status-bar icons app-wide.
     // Ignored in a plain Safari tab (that bar is Safari's own chrome — handled by the per-route theme-color).
     capable: true,
     statusBarStyle: "black-translucent",
@@ -63,9 +60,8 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [user, sidebarSubtitle, appLock, locale, defaultCurrency] = await Promise.all([
+  const [user, appLock, locale, defaultCurrency] = await Promise.all([
     getCurrentUser(),
-    getSidebarSubtitle(),
     getAppLockConfig(),
     getLocale(),
     getDefaultCurrency(),
@@ -129,14 +125,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 webAuthnCredentialId={appLock.webAuthnCredentialId}
                 pinLength={appLock.pinLength}
               >
-                <div className="flex h-dvh">
-                  <Nav user={user} subtitle={sidebarSubtitle} />
+                {/* min-h-dvh, NOT h-dvh. This wrapper existed to sit the old sidebar
+                    next to <main>, and its fixed height locked <main> to exactly one
+                    viewport (flex items stretch on the cross axis). With border-box
+                    sizing that put MainContent's pb-[--nav-clearance] at the 100dvh
+                    mark — the top of any scrolling page — while the content simply
+                    overflowed past it, so the reserved space never landed at the end
+                    of the content and the bottom nav covered the last card. */}
+                <div className="flex min-h-dvh">
                   <MainContent>
                     <PageTransition>{children}</PageTransition>
                   </MainContent>
                 </div>
-                <MobileBottomNav />
-                <EdgeFades />
+                <BottomNav />
               </AppLockGate>
               {/* Sibling of the page content (not nested inside it) so it survives the
                   /register → "/" client-side navigation — see finish-transition-state.tsx. */}

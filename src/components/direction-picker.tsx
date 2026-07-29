@@ -7,15 +7,8 @@ import {
   IconXFilled as X,
   IconCheck as Check,
 } from "@tabler/icons-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { filterPillClass } from "@/components/filter-pill";
-import { useIsMobile } from "@/lib/use-is-mobile";
 import { cn } from "@/lib/utils";
 
 const OPTIONS = [
@@ -27,7 +20,6 @@ const OPTIONS = [
 export function DirectionPicker({ current, flat = false }: { current?: string; flat?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
-  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
   function onChange(value: string) {
@@ -67,8 +59,7 @@ export function DirectionPicker({ current, flat = false }: { current?: string; f
     </>
   );
 
-  if (isMobile) {
-    return (
+  return (
       <>
         <button type="button" onClick={() => setOpen(true)} className={triggerClass}>
           {triggerContent}
@@ -100,28 +91,5 @@ export function DirectionPicker({ current, flat = false }: { current?: string; f
           </DialogContent>
         </Dialog>
       </>
-    );
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className={triggerClass}>
-        {triggerContent}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-40 ring-0 border-none">
-        {OPTIONS.map((opt) => {
-          const active = (current ?? "") === opt.value;
-          return (
-            <DropdownMenuItem
-              key={opt.value}
-              onClick={() => onChange(opt.value)}
-              className={active ? "bg-foreground text-primary-foreground font-medium focus:bg-foreground focus:text-primary-foreground" : "text-foreground"}
-            >
-              {opt.label}
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

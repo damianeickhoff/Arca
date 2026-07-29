@@ -120,7 +120,6 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="sm:max-w-sm"
         sheetClassName={dark ? "bg-[#0f1533] border border-white/10 text-white" : undefined}
       >
         <DialogHeader>
