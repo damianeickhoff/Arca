@@ -1,14 +1,14 @@
 > **⚠️ Work in Progress**
 >
-> Arca is currently in active development. Expect frequent updates, new features, and occasional breaking changes. If you're using Arca to manage important financial data, make regular backups of your `/data` directory before updating.
-> Arca is also a webapp only for now and has a responsive design for mobile and desktop. You can use it as PWA.
-
+> Arca is actively developed and may receive frequent updates, new features, and occasional breaking changes. If you use Arca for important financial data, make regular backups of your `/data` directory before updating.
+>
+> Arca is currently a web application with a responsive design for mobile and desktop. It can also be installed as a Progressive Web App (PWA).
 
 # 💰 Arca
 
-A modern personal finance dashboard designed to help you understand, track, and improve your financial life.
+A modern, self-hosted personal finance dashboard designed to help you understand, track, and improve your financial life.
 
-Arca gives you a clear overview of your income, expenses, budgets, and spending patterns — without the complexity of traditional budgeting tools.
+Arca gives you a clear overview of your income, expenses, budgets, subscriptions, and spending patterns — while keeping your financial data under your control.
 
 ## ✨ Features
 
@@ -24,9 +24,17 @@ Arca gives you a clear overview of your income, expenses, budgets, and spending 
   - Track your monthly financial goals
   - Compare planned expenses with actual spending
 
+- 📱 **Responsive Web App**
+  - Works on desktop and mobile devices
+  - Installable as a Progressive Web App (PWA)
+
 - 🔒 **Local-first Data**
   - Your financial data stays under your control
-  - No unnecessary cloud dependency
+  - No required cloud services
+
+## 📸 Screenshots
+
+Coming soon.
 
 ## 🚀 Getting Started
 
@@ -38,7 +46,12 @@ Run Arca:
       --name arca \
       -p 3000:3000 \
       -v arca-data:/data \
+      --restart unless-stopped \
       damianeickhoff/arca:latest
+
+Open Arca:
+
+    http://localhost:3000
 
 ### Storage
 
@@ -77,9 +90,11 @@ Pull the latest image:
 
 Then recreate the container while keeping the `/data` volume.
 
+Always back up your data before major updates.
+
 ## 🐳 Unraid
 
-Arca can be installed on Unraid using the Docker template.
+Arca can be installed through the Unraid Community Applications catalog.
 
 The application data should be mapped to:
 
