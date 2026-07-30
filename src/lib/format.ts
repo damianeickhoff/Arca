@@ -3,6 +3,8 @@
 // already reads is pure risk. Dates use en-GB for English month names with
 // day-first ordering ("3 Jul 2026"), closest to the Dutch reading habit.
 
+import { isValidISODate } from "@/lib/date-valid";
+
 export type SupportedCurrencyCode = "EUR" | "USD" | "GBP";
 
 export const SUPPORTED_CURRENCIES: { code: SupportedCurrencyCode; label: string; symbol: string }[] = [
@@ -70,29 +72,32 @@ export function ruleAmountLabel(rule: { amount?: number | null; amountMin?: numb
   return null;
 }
 
+// Intl.DateTimeFormat.format() *throws* a RangeError on an Invalid Date — it does not
+// render "Invalid Date". An unparseable value in transactions.date (a CSV imported with
+// the date mapped to the wrong column) therefore used to take down the whole component
+// mid-render, including the transaction detail dialog — which made the offending row
+// impossible to open and impossible to delete.
+//
+// So these three never throw: a value that isn't a real YYYY-MM-DD is shown verbatim.
+// The user sees the nonsense that is actually stored, and every control around it keeps
+// working — see the Data health panel for cleaning it up.
+function formatWith(dateStr: string, options: Intl.DateTimeFormatOptions): string {
+  if (!isValidISODate(dateStr)) return dateStr ?? "";
+  // Local midnight, not the UTC Date from parseISODateSafe: Intl formats in the local
+  // timezone, and a UTC-midnight instant renders as the previous day west of Greenwich.
+  return new Intl.DateTimeFormat("en-GB", options).format(new Date(dateStr + "T00:00:00"));
+}
+
 export function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(d);
+  return formatWith(dateStr, { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function formatMonth(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return new Intl.DateTimeFormat("en-GB", {
-    month: "long",
-    year: "numeric",
-  }).format(d);
+  return formatWith(dateStr, { month: "long", year: "numeric" });
 }
 
 export function formatMonthShort(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return new Intl.DateTimeFormat("en-GB", {
-    month: "short",
-    year: "numeric",
-  }).format(d);
+  return formatWith(dateStr, { month: "short", year: "numeric" });
 }
 
 export function toISODate(excelSerial: number): string {

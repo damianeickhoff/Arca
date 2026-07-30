@@ -15,6 +15,8 @@ import {
   IconCalendarEvent,
   IconFileUpload,
   IconMoon,
+  IconStethoscope,
+  IconTableOptions,
   IconShield,
   IconLock,
   IconLanguage,
@@ -24,10 +26,13 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
+import packageJson from "../../../package.json";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { logoutAction, updateOwnProfileAction, updateOwnEmailAction, updateOwnPasswordAction } from "@/app/actions/auth";
@@ -41,6 +46,7 @@ import { CurrencyList } from "@/components/currency-switcher";
 import { PrivacyToggle } from "@/components/privacy-toggle";
 import { AvatarFormContent, AppLockSectionContent, TwoFactorSectionContent } from "@/app/settings/profile-client";
 import { PanelChromeContext, PanelHeader } from "@/components/settings/settings-panel-chrome";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { AuthBackgroundPicker } from "@/components/settings/auth-background-picker";
 import { Sparkles } from "@/components/sparkles";
 import { LogoMark } from "@/components/brand-mark";
@@ -49,7 +55,8 @@ import { useSettingsPortal } from "@/lib/settings-portal-state";
 type PanelKey =
   | "accounts" | "categories" | "recurring" | "merchants"
   | "financialMonth" | "monthOverrides" | "budgetRecurring"
-  | "import" | "appearance" | "privacy" | "appLock" | "language" | "currency"
+  | "import" | "importProfiles" | "dataHealth"
+  | "appearance" | "privacy" | "appLock" | "language" | "currency"
   | "help" | "users";
 
 type Section = {
@@ -71,9 +78,16 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    title: "App",
+    title: "Data",
     rows: [
       { key: "import", label: "Import CSV", icon: IconFileUpload },
+      { key: "importProfiles", label: "Import Profiles", icon: IconTableOptions },
+      { key: "dataHealth", label: "Data Health", icon: IconStethoscope },
+    ],
+  },
+  {
+    title: "App",
+    rows: [
       { key: "appearance", label: "Appearance", icon: IconMoon },
       { key: "privacy", label: "Privacy", icon: IconShield },
       { key: "appLock", label: "App Lock", icon: IconLock },
@@ -96,6 +110,8 @@ const PANEL_TITLES: Record<PanelKey, string> = {
   monthOverrides: "Month Overrides",
   budgetRecurring: "Budget & Bills",
   import: "Import CSV",
+  importProfiles: "Import Profiles",
+  dataHealth: "Data Health",
   appearance: "Appearance",
   privacy: "Privacy",
   appLock: "App Lock",
@@ -107,11 +123,11 @@ const PANEL_TITLES: Record<PanelKey, string> = {
 
 // The data-heavy panels are server-rendered on the dashboard and injected as
 // nodes; the rest are built inline here from existing client components.
-const HEAVY_KEYS: PanelKey[] = ["accounts", "categories", "recurring", "merchants", "users"];
+const HEAVY_KEYS: PanelKey[] = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles"];
 
 // Panels that render their own sticky header (back + panel-specific actions) via
 // PanelHeader, so SettingsDialog skips the generic header for them.
-const SELF_CHROMED = new Set<PanelKey>(["accounts", "categories", "recurring", "merchants", "users"]);
+const SELF_CHROMED = new Set<PanelKey>(["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles"]);
 
 function Avatar({ user, size }: { user: User; size: number }) {
   if (user.avatarUrl) {
@@ -179,6 +195,12 @@ export function SettingsDialog({
     setTimeout(() => setActive(null), 280);
   }
 
+  // Keyboard equivalent of the edge-swipe-back below: with a sub-panel open,
+  // Escape steps back to the settings menu instead of dismissing the whole sheet.
+  // The panel is a descendant of the drawer, so Radix would otherwise close the
+  // drawer out from under it — aboveDialog takes the key first.
+  useEscapeToClose(active != null && visible, closePanel, { aboveDialog: true });
+
   // Edge-swipe-back for the sub-panel — mirrors iOS: dragging in from the left
   // edge tracks the finger 1:1, releasing past a threshold (or with a fast
   // flick) commits the close, otherwise it springs back to place. Restricted to
@@ -241,6 +263,9 @@ export function SettingsDialog({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Open settings"
+        // Target for the "everything else is behind your photo" pointer tip. Only one
+        // SettingsDialog is ever rendered per route, so the selector stays unambiguous.
+        data-tip-anchor="settingsTrigger"
         className={cn(
           iconOnly ? "glass-icon-btn size-11 p-0" : "glass-icon-btn h-11 gap-2 p-1 pr-5 max-w-[60vw] ",
           triggerClassName,
@@ -315,7 +340,15 @@ export function SettingsDialog({
                         "relative w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-foreground/5 transition-colors";
 
                       return (
-                        <button key={key} type="button" onClick={() => openPanel(key)} className={rowClass}>
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => openPanel(key)}
+                          className={rowClass}
+                          // Only the Data Health row is a tip target today; the attribute
+                          // is undefined on every other row so the selector stays unique.
+                          data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : undefined}
+                        >
                           <Icon className="size-6 shrink-0 text-foreground" />
                           <span className="flex-1 text-base font-normal text-foreground">{label}</span>
                           <IconChevronRight className="size-5 text-foreground/30 shrink-0" />
@@ -329,12 +362,19 @@ export function SettingsDialog({
             </div>
           </div>
 
+          {/* Points out where a broken import can be cleaned up. Only while the menu
+              itself is on screen — an open sub-panel covers the row it points at. */}
+          <AnchoredTip id="dataHealth" anchor="dataHealthMenu" active={open && !active} />
+
           {/* ── Slide-over sub-panel ── fixed so it's positioned against the
               full-height drawer (its transformed containing block), not the
               scroll offset of the menu underneath. */}
           {active && (
             <div
               className={cn(
+                // `fixed inset-0` escapes the sheet it slides over, so it needs the
+                // column cap itself to stay aligned with that sheet on desktop.
+                CONTENT_COLUMN,
                 "fixed inset-0 z-[60] flex flex-col rounded-t-4xl overflow-hidden bg-sidebar",
                 !dragging && "transition-transform duration-300 ease-out",
               )}
@@ -371,6 +411,7 @@ export function SettingsDialog({
             <p className="text-lg font-medium text-foreground">
               Arca
             </p>
+            <p className="text-xs text-muted-foreground">v{packageJson.version}</p>
           </div>
         </DialogContent>
       </Dialog>

@@ -1,9 +1,25 @@
 {
   "common": {
+    "fields": {
+      "description": "Description",
+      "name": "Name",
+      "category": "Category",
+      "merchant": "Merchant",
+      "notInReports": "Not In Reports",
+      "bank": "Bank",
+      "budgetType": "Budget Type",
+      "note": "Note",
+      "receipt": "Receipt",
+      "recurrence": "Recurrence",
+      "started": "Started",
+      "nextOccurence": "Next Occurence"
+    },
     "dashboard": "Dashboard",
     "settings": "Settings",
     "save": "Save",
-    "spending by category":"Spending by Category"
+    "spendingByCategory": "Spending by Category",
+    "showAll": "Show all",
+    "recentTransactions": "Recent Transactions"
   },
   "settingsMenu": {
     "title": "Settings",
@@ -12,5 +28,376 @@
     "accounts": "Accounts",
     "general": "General",
     "admin": "Admin"
+  },
+  "budget": {
+    "alert": {
+      "over": "{amount} over budget",
+      "left": "{amount} left in budget",
+      "success1": "Well under pace. You've build a strong cushion.",
+      "success2": "Spending comfortably below pace. Looking good.",
+      "success3": "Right on track for this period.",
+      "warning1": "Spending a bit faster than planned. Keep an eye on it.",
+      "warning2": "Not a lot left. Slowing down now could help.",
+      "danger": "You're over the budget. Consider whether your limit needs adjusting for next month."
+    },
+    "emptyTitle": "No budget set",
+    "emptyDesc": "Create a budget to track your spending and stay on top of your finances.",
+    "create": "Create budget",
+    "period": {
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "over": "Over",
+    "left": "Left",
+    "used": "{pct}% used",
+    "daysLeft": "Days left",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "amount": "Amount",
+    "allocated": "Allocated",
+    "leftToAllocate": "Left to allocate",
+    "budgetedCategories": "Budgeted categories",
+    "categoryBudgets": "Category budgets",
+    "totalAllocated": "{amount} total",
+    "manage": "Manage",
+    "overLabel": "over",
+    "leftLabel": "left",
+    "ofAmount": "of {amount}",
+    "addCategory": "Add category budget",
+    "leftToAllocateAmount": "{amount} left to allocate",
+    "editBudget": "Edit budget",
+    "deleteBudget": "Delete budget",
+    "close": "Close",
+    "back": "Back",
+    "reset": "Reset",
+    "save": "Save",
+    "saving": "Saving…",
+    "allocatedPct": "{pct}% allocated",
+    "amountLeft": "{amount} left",
+    "totalCategoryBudgets": "Total category budgets",
+    "totalBecomesLimit": "This total will become your overall budget limit.",
+    "last30": "Last 30 days: {amount}",
+    "last7": "Last 7 days: {amount}",
+    "setCategoryBudget": "Set a budget for this category",
+    "removeBudget": "Remove budget",
+    "strategyTitle": "Budget strategy",
+    "strategyDesc": "How your income splits across Needs, Wants, and Savings.",
+    "strategyCommon": "Commonly used is 50/25/25.",
+    "advisedBudget": "Advised budget: <b>{amount}</b> ({pct}% of {income} income)",
+    "advised": "Advised: {amount}",
+    "exceedTitle": "Category budgets exceed your overall budget",
+    "exceedDesc": "Your category budgets add up to {total}, more than your overall budget of {overall}. Increase the overall budget to {total}, or cancel and lower the category amount instead.",
+    "increaseOverall": "Increase overall to {amount}",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete this budget? Category budgets will be cleared too.",
+    "confirmRemoveCategory": "Remove the budget for {name}?",
+    "overallLimit": "Set your overall budget limit for this period",
+    "skip": "Skip",
+    "continue": "Continue",
+    "skipHint": "You can skip and set category budgets next"
+  },
+  "cashFlow": {
+    "title": "Cash Flow Forecast",
+    "emptySub": "No account balance set",
+    "status": {
+      "healthy": "Healthy",
+      "warning": "Caution",
+      "critical": "Critical",
+      "empty": "No data"
+    },
+    "alert": {
+      "critical": "Your expected cash flow reaches {amount} on {date}",
+      "warning": "Your expected cash flow drops below {amount} on {date}",
+      "healthy": "Your expected cash flow remains positive",
+      "empty": "Add recurring bills, income or transactions to see a forecast"
+    }
+  },
+  "financialHealth": {
+    "title": "Financial Health",
+    "opportunity": "{area} is the biggest improvement opportunity",
+    "subtitlePerfect": "Every area is scoring full marks",
+    "subtitleEmpty": "Add accounts and transactions to get a score",
+    "dataNeeded": "Data needed",
+    "state": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "attention": "Needs Attention"
+    },
+    "category": {
+      "savingsRate": "Savings rate",
+      "emergencyFund": "Emergency fund",
+      "budgetAdherence": "Budget adherence",
+      "recurringExpenses": "Recurring expenses",
+      "debtRatio": "Debt ratio",
+      "incomeStability": "Income stability"
+    }
+  },
+  "dashboard": {
+    "upcomingBills": "Upcoming Bills",
+    "upcomingCount": "{count, plural, one {# upcoming transaction} other {# upcoming transactions}}<br></br>this month",
+    "needsReview": "{count, plural, one {# transaction needs review} other {# transactions need review}}"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "searchPlaceholder": "Search by category, merchant, etc...",
+    "clear": "Clear",
+    "results": "Results: {count, plural, one {# transaction} other {# transactions}}",
+    "income": "Income",
+    "expenses": "Expenses",
+    "noneFound": "No transactions found",
+    "importCsv": "Import a CSV",
+    "showMore": "Show more ({count} remaining)",
+    "addNew": "Add new transaction",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "internalTransfer": "Internal transfer",
+    "splitParts": "{count, plural, one {# part} other {# parts}}",
+    "recurringBill": "Recurring bill",
+    "filters": {
+      "operationType": "Operation type",
+      "nature": "Nature",
+      "categories": "Categories",
+      "accounts": "Accounts",
+      "recurring": "Recurring",
+      "custom": "Custom…",
+      "customPeriod": "Custom period",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "reset": "Reset {name}",
+      "period": "Period"
+    },
+    "bulkSelected": "{count, plural, =0 {Nothing selected} one {# selected} other {# selected}}",
+    "bulkSelectAll": "Select all ({count})",
+    "bulkSelectNone": "Clear",
+    "bulkSelectAllShort": "select day",
+    "bulkSelectNoneShort": "clear day",
+    "bulkCategory": "Category",
+    "bulkExclude": "Exclude",
+    "bulkInclude": "Include",
+    "bulkDelete": "Delete",
+    "bulkDone": "Leave selection mode",
+    "bulkConfirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?"
+  },
+  "goals": {
+    "savings": "Savings",
+    "monthly": "Monthly",
+    "lastGoalReachedBy": "Last goal reached by",
+    "allocated": "Allocated",
+    "savingsGoals": "Savings goals",
+    "emptyTitle": "Start your first saving",
+    "emptyDesc": "Ready to start saving? Tap the button below to set up your first savings goal.",
+    "addSaving": "Add saving",
+    "addNewSaving": "Add new saving",
+    "filterAll": "All",
+    "filterBudget": "Budget",
+    "filterSavings": "Savings",
+    "typeBudget": "Budget",
+    "typeSavings": "Savings",
+    "spent": "spent",
+    "saved": "saved",
+    "recurrence": {
+      "none": "None",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "detailsTitle": "Savings goal details",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "ofAmount": "of {amount}",
+    "reached": "Reached",
+    "savedPct": "{pct}% saved",
+    "targetAmount": "Target amount",
+    "monthlyContribution": "Monthly contribution",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "endDateOptional": "End date (optional)",
+    "noEndDate": "No end date",
+    "recurrenceLabel": "Recurrence",
+    "reachedBy": "Reached by",
+    "category": "Category",
+    "currentBalance": "Current balance",
+    "name": "Name",
+    "confirmDelete": "Delete \"{name}\"?",
+    "chooseCategory": "Choose category",
+    "chooseACategory": "Choose a category",
+    "categoryOptional": "Category (optional)",
+    "required": "Required",
+    "all": "All",
+    "done": "Done",
+    "recurrency": "Recurrency",
+    "clear": "Clear",
+    "savingsGoal": "Savings goal",
+    "moreOptions": "More options",
+    "calculator": "Calculator",
+    "chooseIconColor": "Choose icon and color",
+    "namePlaceholder": "e.g. New car",
+    "setStartEndDate": "Set start and end date",
+    "startEndDate": "Start / end date",
+    "setMonthlyContribution": "Set monthly contribution",
+    "monthlyContributionAmount": "Monthly contribution {amount}",
+    "startingBalance": "Starting balance",
+    "setStartingBalance": "Set starting balance",
+    "startingBalanceAmount": "Starting balance {amount}",
+    "backspace": "Backspace",
+    "divide": "Divide",
+    "multiply": "Multiply",
+    "subtract": "Subtract",
+    "add": "Add",
+    "dates": "Dates",
+    "autoCalc": "Auto-calculated from the end date ({amount}) — clear the end date to set this manually.",
+    "iconColor": "Icon & color",
+    "icon": "Icon",
+    "color": "Color",
+    "editSaving": "Edit saving",
+    "saving": "Saving…",
+    "save": "Save"
+  },
+  "tips": {
+    "gotIt": "Got it",
+    "dontShowAgain": "Don't show again",
+    "receiptScan": {
+      "title": "Scan a receipt",
+      "body": "Take a photo and Arca fills in the merchant, amount and date. Reading happens on this device — the photo never leaves it."
+    },
+    "csvImport": {
+      "title": "Import from your bank",
+      "body": "Drop in a CSV export and Arca matches the columns, skips duplicates and categorises what it recognises."
+    },
+    "recurring": {
+      "title": "Things that repeat",
+      "body": "Bills, subscriptions and income you add here are matched to your transactions and feed your budget and forecast."
+    },
+    "merchant": {
+      "title": "Merchant profile",
+      "body": "Every shop you pay gets its own page: what you spend there, how often, and how that has changed over the years."
+    },
+    "budget": {
+      "title": "Your budget",
+      "body": "Set one overall limit, then fine-tune per category. Arca tracks whether you are ahead of or behind pace for the month."
+    },
+    "budgetStrategy": {
+      "title": "Budget strategy",
+      "body": "Split your income across needs, wants and savings. Arca turns that split into an advised monthly budget."
+    },
+    "reports": {
+      "title": "Reports",
+      "body": "Trends, month-to-month comparisons and net worth, over whichever period you pick at the top."
+    },
+    "forecast": {
+      "title": "Cash flow forecast",
+      "body": "Projects your balance forward from your recurring items and usual spending, so you can see dips before they happen."
+    },
+    "health": {
+      "title": "Financial health",
+      "body": "One score out of 100, built from your savings, buffer, budget, fixed costs, debt and income. The breakdown shows exactly where it comes from."
+    },
+    "keyboardShortcuts": {
+      "title": "Arca on a keyboard",
+      "body": "Ctrl+K (⌘K on a Mac) opens search from anywhere, Esc closes whatever is on top, and your numpad types amounts — with Enter to save."
+    },
+    "importBalance": {
+      "title": "Bring your balance along",
+      "body": "If your export has a balance column, point it out here. Arca stores your bank's own figure untouched, ready for balance history and better forecasts."
+    },
+    "budgetLocation": {
+      "title": "Your budget lives here",
+      "body": "Tap the wallet to set an overall limit and, if you want, a target per category."
+    },
+    "healthCard": {
+      "title": "How you are doing overall",
+      "body": "Tap for your financial health score, what each part contributes, and the changes that would lift it most."
+    },
+    "reportsLocation": {
+      "title": "Trends and forecasts",
+      "body": "The chart icon opens your reports: spending over time, month-to-month comparisons, net worth and cash flow."
+    },
+    "settingsLocation": {
+      "title": "Everything else is behind your photo",
+      "body": "Accounts, categories, recurring items and all your preferences live in there."
+    },
+    "transactionDetail": {
+      "title": "Tap for the whole story",
+      "body": "Open any transaction to recategorise it, split it, attach a receipt or jump to the merchant."
+    },
+    "strategyLocation": {
+      "title": "Your split lives in here",
+      "body": "Tap edit, then the sliders icon, to change how your income divides across needs, wants and savings — Arca re-advises your budget from it."
+    },
+    "importDatePreview": {
+      "title": "Check the dates first",
+      "body": "This shows exactly what your date column turns into. If it says \"not a date\", you've picked the wrong column or format — fix it here and nothing broken gets imported."
+    },
+    "dataHealth": {
+      "title": "Something imported wrong?",
+      "body": "Data Health finds transactions with an unreadable date — the kind an import with the wrong column mapping leaves behind — and lets you correct or delete them."
+    },
+    "bulkSelect": {
+      "title": "Hold to select several",
+      "body": "Press and hold any transaction to turn on selection mode. Pick as many as you like, then recategorise, exclude from reports, or delete them all at once."
+    }
+  },
+  "importMapping": {
+    "title": "Unrecognized bank format",
+    "description": "We couldn't automatically detect this bank. Tell us which column is which — we'll remember it for next time.",
+    "bankName": "Bank name (optional)",
+    "bankNamePlaceholder": "e.g. My Bank",
+    "column": "Column {index}",
+    "none": "None",
+    "dateColumn": "Date column",
+    "dateFormat": "Date format",
+    "dateFormatIso": "YYYY-MM-DD",
+    "dateFormatDmy": "DD-MM-YYYY",
+    "dateFormatMdy": "MM-DD-YYYY",
+    "dateFormatCustom": "Custom…",
+    "customDateFormat": "Custom date format",
+    "customDateFormatPlaceholder": "e.g. DD.MM.YYYY",
+    "customDateFormatHint": "Use DD, MM and YYYY (or YY) with any separator, e.g. DD.MM.YYYY or MM/DD/YY.",
+    "descriptionColumn": "Description column",
+    "amountColumn": "Amount column",
+    "decimalSeparator": "Decimal separator",
+    "decimalComma": "Comma (1.234,56)",
+    "decimalDot": "Dot (1,234.56)",
+    "directionHint": "Direction (optional — leave as \"Use amount sign\" if negative amounts already mean money out)",
+    "directionColumn": "Direction column",
+    "useAmountSign": "Use amount sign",
+    "directionExpenseValue": "Value in that column meaning \"money out\"",
+    "directionExpenseValuePlaceholder": "e.g. Debit",
+    "accountColumn": "Account column (optional)",
+    "counterAccountColumn": "Counter-account (optional)",
+    "balanceColumn": "Resulting balance (optional)",
+    "balanceColumnHint": "The balance your bank reports after each transaction — often called Balance, Running balance or Saldo. Stored exactly as it comes in, for future balance history and forecasts.",
+    "cancel": "Cancel",
+    "import": "Import",
+    "importing": "Importing…",
+    "previewLabel": "How your dates will be read",
+    "notADate": "not a date",
+    "notAnAmount": "not an amount",
+    "datePreviewInvalid": "This column can't be read as a date. Pick a different column, or change the date format.",
+    "importBlockedInvalidDates": "{count, plural, one {# row has} other {# rows have}} a date we can't read (for example: {samples}). Nothing was imported — check the date column and format.",
+    "rowsSkippedBadDate": "{count, plural, one {# row was} other {# rows were}} skipped because their date could not be read."
+  },
+  "dataHealth": {
+    "title": "Data Health",
+    "allClear": "Everything looks fine — no broken transactions.",
+    "brokenDatesTitle": "{count, plural, one {# transaction has} other {# transactions have}} an unreadable date",
+    "brokenDatesBody": "These came from an import where the date column was mapped to the wrong field. They don't show up in your transaction list, because it filters by date. Give them a real date or delete them.",
+    "storedAs": "Stored as",
+    "selectRow": "Select this transaction",
+    "correctDate": "Correct date",
+    "fix": "Fix",
+    "deleteSelected": "Delete selected ({count})",
+    "deleteAll": "Delete all ({count})",
+    "confirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?"
+  },
+  "importProfiles": {
+    "title": "Import Profiles",
+    "description": "A saved profile remembers which column is which for a bank export, and is reapplied automatically to every file with the same columns. Delete one to be asked again next time.",
+    "empty": "No saved import profiles yet.",
+    "dateColumn": "Date column",
+    "delete": "Delete profile",
+    "confirmDelete": "Delete the saved mapping \"{label}\"? The next import of that file will ask you to map its columns again."
   }
 }

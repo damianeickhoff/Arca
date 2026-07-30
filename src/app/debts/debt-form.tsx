@@ -41,6 +41,7 @@ import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/moti
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
 import { formatEur, currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import type { Category, RecurringItem } from "@/db/schema";
 
 function todayISO() {
@@ -135,7 +136,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
     "flex items-center justify-center rounded-2xl h-13 text-foreground/80 bg-foreground/[0.07] active:bg-foreground/15 transition-colors select-none";
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
+    <div className={cn(CONTENT_COLUMN, "fixed inset-0 flex flex-col bg-background")}>
       {/* Header: close (left) + direction toggle (center) + overflow menu (right) */}
       <div className="flex items-center justify-between px-4 pt-[calc(var(--sat)+0.75rem)] pb-2 shrink-0">
         <button
@@ -421,7 +422,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </m.div>
 
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Note</DialogTitle>
           </DialogHeader>
@@ -444,11 +445,11 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </Dialog>
 
       <Dialog open={minPaymentOpen} onOpenChange={setMinPaymentOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Minimum monthly payment</DialogTitle>
           </DialogHeader>
-          <AmountKeypad expr={paymentExpr} onChange={setPaymentExpr} calcEnabled={paymentCalcEnabled} onToggleCalc={() => setPaymentCalcEnabled((c) => !c)} />
+          <AmountKeypad expr={paymentExpr} onChange={setPaymentExpr} onEnter={() => setMinPaymentOpen(false)} calcEnabled={paymentCalcEnabled} onToggleCalc={() => setPaymentCalcEnabled((c) => !c)} />
           <button
             type="button"
             onClick={() => setMinPaymentOpen(false)}
@@ -460,14 +461,14 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </Dialog>
 
       <Dialog open={originalAmountOpen} onOpenChange={setOriginalAmountOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Original debt amount</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-foreground/50 -mt-2">
             Optional — only needed if you started tracking this debt after already paying some of it off. Leave blank to use the balance above as the total.
           </p>
-          <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
+          <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} onEnter={() => setOriginalAmountOpen(false)} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
           <button
             type="button"
             onClick={() => setOriginalAmountOpen(false)}
@@ -479,7 +480,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       </Dialog>
 
       <Dialog open={iconColorOpen} onOpenChange={setIconColorOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Icon &amp; color</DialogTitle>
           </DialogHeader>

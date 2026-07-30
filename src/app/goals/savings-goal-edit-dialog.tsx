@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations, useLocale } from "next-intl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,19 +30,8 @@ import { evaluateExpression } from "@/lib/amount-expression";
 import { RECURRENCE_OPTIONS, monthsUntil } from "./goal-shared";
 import type { Category, Goal } from "@/db/schema";
 
-const SUB_TITLES: Record<string, string> = {
-  amount: "Target amount",
-  balance: "Current balance",
-  monthly: "Monthly contribution",
-  dates: "Dates",
-  recurrence: "Recurrence",
-  category: "Category",
-  name: "Name",
-  iconColor: "Icon & color",
-};
-
-function fmtDay(iso: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+function fmtDay(iso: string, dateLocale: string) {
+  return new Date(iso + "T00:00:00").toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 function todayISO() {
@@ -63,6 +53,19 @@ export function SavingsGoalEditDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("goals");
+  const locale = useLocale();
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
+  const SUB_TITLES: Record<string, string> = {
+    amount: t("targetAmount"),
+    balance: t("currentBalance"),
+    monthly: t("monthlyContribution"),
+    dates: t("dates"),
+    recurrence: t("recurrenceLabel"),
+    category: t("category"),
+    name: t("name"),
+    iconColor: t("iconColor"),
+  };
   const [loading, setLoading] = useState(false);
   const [subpage, setSubpage] = useState<string | null>(null);
   const [subVisible, setSubVisible] = useState(false);
@@ -129,7 +132,7 @@ export function SavingsGoalEditDialog({
   }
 
   async function remove() {
-    if (!confirm(`Delete "${goal.name}"?`)) return;
+    if (!confirm(t("confirmDelete", { name: goal.name }))) return;
     setLoading(true);
     await fetch("/api/goals", {
       method: "DELETE",
@@ -145,13 +148,13 @@ export function SavingsGoalEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="px-0 mt-5"
-        title="Edit saving"
+        title={t("editSaving")}
         headerAction={
           <button
             type="button"
             onClick={remove}
             disabled={loading}
-            aria-label="Delete"
+            aria-label={t("delete")}
             className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-5" />
@@ -163,59 +166,59 @@ export function SavingsGoalEditDialog({
             disabled={loading || !name.trim() || amountVal == null}
             className="w-full h-13 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold"
           >
-            {loading ? "Saving..." : "Save"}
+            {loading ? t("saving") : t("save")}
           </Button>
         }
       >
         <div className="space-y-3 px-5 pb-2">
           <Row
             icon={<span className="flex items-center justify-center size-5"><Icon iconKey={icon} color={color} size="xs" round /></span>}
-            label="Icon & color"
+            label={t("iconColor")}
             value=""
             onClick={() => openSub("iconColor")}
           />
-          <Row icon={<Coin className="size-5" />} label="Target amount" value={amountVal != null ? formatEur(amountVal) : "—"} onClick={() => openSub("amount")} />
-          <Row icon={<IconWallet className="size-5" />} label="Current balance" value={formatEur(balanceVal)} onClick={() => openSub("balance")} />
-          <Row icon={<Coin className="size-5" />} label="Monthly contribution" value={effectiveMonthlyContribution ? formatEur(effectiveMonthlyContribution) : "—"} onClick={() => openSub("monthly")} />
+          <Row icon={<Coin className="size-5" />} label={t("targetAmount")} value={amountVal != null ? formatEur(amountVal) : "—"} onClick={() => openSub("amount")} />
+          <Row icon={<IconWallet className="size-5" />} label={t("currentBalance")} value={formatEur(balanceVal)} onClick={() => openSub("balance")} />
+          <Row icon={<Coin className="size-5" />} label={t("monthlyContribution")} value={effectiveMonthlyContribution ? formatEur(effectiveMonthlyContribution) : "—"} onClick={() => openSub("monthly")} />
           <Row
             icon={<Calendar className="size-5" />}
-            label="Dates"
-            value={startDate ? `${fmtDay(startDate)}${endDate ? ` – ${fmtDay(endDate)}` : ""}` : "—"}
+            label={t("dates")}
+            value={startDate ? `${fmtDay(startDate, dateLocale)}${endDate ? ` – ${fmtDay(endDate, dateLocale)}` : ""}` : "—"}
             onClick={() => openSub("dates")}
           />
-          <Row icon={<Repeat className="size-5" />} label="Recurrence" value={RECURRENCE_OPTIONS.find((o) => o.value === recurrence)?.label ?? "None"} onClick={() => openSub("recurrence")} />
+          <Row icon={<Repeat className="size-5" />} label={t("recurrenceLabel")} value={t(`recurrence.${recurrence || "none"}`)} onClick={() => openSub("recurrence")} />
           <Row
             icon={<CategoryIcon className="size-5" />}
-            label="Category"
+            label={t("category")}
             value={category?.name ?? "—"}
             valueIcon={category ? <Icon iconKey={category.icon} color={category.color} size="xs" round /> : null}
             onClick={() => openSub("category")}
           />
-          <Row icon={<TagIcon className="size-5" />} label="Name" value={name || "—"} onClick={() => openSub("name")} />
+          <Row icon={<TagIcon className="size-5" />} label={t("name")} value={name || "—"} onClick={() => openSub("name")} />
         </div>
 
         {/* Slide-in subpage — fixed against the (transformed) dialog panel */}
         {subpage && (
           <SubSheet title={SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
               {subpage === "amount" && (
-                <AmountKeypad expr={amountExpr} onChange={setAmountExpr} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
+                <AmountKeypad expr={amountExpr} onChange={setAmountExpr} onEnter={closeSub} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
               )}
 
               {subpage === "balance" && (
-                <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
+                <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} onEnter={closeSub} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
               )}
 
               {subpage === "monthly" && (
                 <div className="space-y-2">
                   {endDate && (
                     <p className="text-sm text-foreground/50">
-                      Auto-calculated from the end date ({formatEur(effectiveMonthlyContribution)}) — clear the end date to set this manually.
+                      {t("autoCalc", { amount: formatEur(effectiveMonthlyContribution) })}
                     </p>
                   )}
                   {endDate ? (
                     <p className="text-center text-3xl font-bold tabular-nums py-8 opacity-50">{formatEur(effectiveMonthlyContribution)}</p>
                   ) : (
-                    <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
+                    <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} onEnter={closeSub} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
                   )}
                 </div>
               )}
@@ -223,7 +226,7 @@ export function SavingsGoalEditDialog({
               {subpage === "dates" && (
                 <div className="pt-2 space-y-4">
                   <div>
-                    <p className="text-sm text-foreground/60 mb-1.5">Start date</p>
+                    <p className="text-sm text-foreground/60 mb-1.5">{t("startDate")}</p>
                     <DatePicker 
                       granularity="day" 
                       value={startDate || todayISO()} 
@@ -231,12 +234,12 @@ export function SavingsGoalEditDialog({
                       triggerClassName="w-full justify-between rounded-xl px-4 h-12 bg-[var(--dialog-content-background)] mt-0 mb-0" />
                   </div>
                   <div>
-                    <p className="text-sm  text-foreground/60 mb-1.5">End date (optional)</p>
+                    <p className="text-sm  text-foreground/60 mb-1.5">{t("endDateOptional")}</p>
                     <DatePicker
                       granularity="day"
                       value={endDate}
                       onChange={setEndDate}
-                      placeholder="No end date"
+                      placeholder={t("noEndDate")}
                       onClear={() => setEndDate("")}
                       triggerClassName="w-full justify-between rounded-xl px-4 h-12 bg-[var(--dialog-content-background)] mt-0 mb-0"
                     />
@@ -245,7 +248,7 @@ export function SavingsGoalEditDialog({
               )}
 
               {subpage === "recurrence" && (
-                <OptionList options={RECURRENCE_OPTIONS} value={recurrence} onSelect={(v) => { setRecurrence(v); closeSub(); }} />
+                <OptionList options={RECURRENCE_OPTIONS.map((o) => ({ value: o.value, label: t(`recurrence.${o.value}`) }))} value={recurrence} onSelect={(v) => { setRecurrence(v); closeSub(); }} />
               )}
 
               {subpage === "category" && (
@@ -254,7 +257,7 @@ export function SavingsGoalEditDialog({
                     categories={categories}
                     current={categoryId}
                     onChange={(v) => { setCategoryId(v); closeSub(); }}
-                    placeholder="Choose a category"
+                    placeholder={t("chooseACategory")}
                     showSelectedIcon
                     triggerClassName="h-12 w-full rounded-xl bg-[var(--dialog-content-background)] px-3.5 text-sm font-normal"
                   />
@@ -263,14 +266,14 @@ export function SavingsGoalEditDialog({
 
               {subpage === "name" && (
                 <div className="pt-2">
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. New car" data-autofocus data-no-keyboard-scroll className="h-12" />
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} data-autofocus data-no-keyboard-scroll className="h-12" />
                 </div>
               )}
 
               {subpage === "iconColor" && (
               <div className="space-y-3">
                 <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
-                  <PickerField label="Icon">
+                  <PickerField label={t("icon")}>
                     <IconPicker
                       value={icon}
                       onChange={setIcon}
@@ -280,7 +283,7 @@ export function SavingsGoalEditDialog({
                 </div>
 
                 <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
-                  <PickerField label="Color">
+                  <PickerField label={t("color")}>
                     <ColorPicker
                       value={color}
                       onChange={setColor}

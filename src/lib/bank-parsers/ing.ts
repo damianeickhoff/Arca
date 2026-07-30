@@ -21,7 +21,13 @@ export const ingParser: BankParser = {
 
   detect(headerLine) {
     const hasDateCol = headerLine.includes("Datum") || headerLine.includes("Date");
-    const hasIngMarker = headerLine.includes("Af Bij") || headerLine.includes("Tegenrekening") || headerLine.includes("Mededelingen");
+    const hasIngMarker =
+      headerLine.includes("Af Bij") ||
+      headerLine.includes("Tegenrekening") ||
+      headerLine.includes("Mededelingen") ||
+      headerLine.includes("Debit/credit") ||
+      headerLine.includes("Counterparty") ||
+      headerLine.includes("Notifications");
     return hasDateCol && hasIngMarker;
   },
 

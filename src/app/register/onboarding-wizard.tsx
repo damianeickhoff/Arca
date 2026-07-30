@@ -6,10 +6,8 @@ import { Input } from "@/components/ui/input";
 import { AmountInput } from "@/components/ui/amount-input";
 import { AuthPillButton } from "@/components/auth-pill-button";
 import { BrandMark } from "@/components/brand-mark";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { CalendarContent } from "@/components/date-picker";
-import { useIsMobile } from "@/lib/use-is-mobile";
 import { m, AnimatePresence, spring, easeOutQuart } from "@/lib/motion";
 import { useTheme, type ThemeMode } from "@/lib/theme";
 import {
@@ -127,14 +125,13 @@ function PasswordField({ className, ...props }: React.ComponentProps<typeof Inpu
 // otherwise follows the visitor's browser locale (often mm/dd/yyyy). `value`/`onChange`
 // still deal in the ISO "YYYY-MM-DD" string the rest of the wizard (and the
 // /api/onboarding route) expects. Uses the shared CalendarContent grid in `dark` mode,
-// with its own glass-styled trigger and a dark-tinted Popover/Dialog shell — the shared
-// DatePicker's own chrome leans on theme tokens that would go invisible against this
-// hardcoded dark gradient.
+// with its own glass-styled trigger and a dark-tinted sheet — the shared DatePicker's
+// own chrome leans on theme tokens that would go invisible against this hardcoded
+// dark gradient.
 function BirthdayPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [open, setOpen] = useState(false);
   const parsed = value ? new Date(`${value}T12:00:00`) : null;
   const [cursor, setCursor] = useState(() => parsed ?? new Date(2000, 0, 1));
-  const isMobile = useIsMobile();
 
   function openChange(next: boolean) {
     setOpen(next);
@@ -159,8 +156,7 @@ function BirthdayPicker({ value, onChange }: { value: string; onChange: (value: 
     />
   );
 
-  if (isMobile) {
-    return (
+  return (
       <>
         <button type="button" onClick={() => openChange(true)} className={triggerClass}>
           <CalendarIcon className="size-4 text-white/50 shrink-0" />
@@ -188,19 +184,6 @@ function BirthdayPicker({ value, onChange }: { value: string; onChange: (value: 
           </DialogContent>
         </Dialog>
       </>
-    );
-  }
-
-  return (
-    <Popover open={open} onOpenChange={openChange}>
-      <PopoverTrigger className={triggerClass}>
-        <CalendarIcon className="size-4 text-white/50 shrink-0" />
-        <span className={value ? "text-white" : "text-white/35"}>{label}</span>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 rounded-lg border border-white/10 bg-[#0f1533]/95 backdrop-blur-xl text-white shadow-xl">
-        {calendar}
-      </PopoverContent>
-    </Popover>
   );
 }
 

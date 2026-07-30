@@ -6,11 +6,9 @@ import {
   IconChevronLeft as ChevronLeft,
   IconChevronRightFilled as ChevronRight
 } from "@tabler/icons-react";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MONTH_NAMES } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/lib/use-is-mobile";
 
 const WEEKDAYS = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"];
 
@@ -308,8 +306,9 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
   const selected = parseDateStr(value);
   const [open, setOpen] = useState(false);
   const [cursor, setCursor] = useState(new Date(selected.getFullYear(), selected.getMonth(), 1));
-  const isMobile = useIsMobile();
 
+  // Reset the visible month to the selected date's month each time the sheet opens,
+  // so reopening never resumes wherever the user had browsed to last time.
   function openChange(v: boolean) {
     setOpen(v);
     if (v) setCursor(new Date(selected.getFullYear(), selected.getMonth(), 1));
@@ -340,8 +339,7 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
     </button>
   );
 
-  if (isMobile) {
-    return (
+  return (
       <>
         {triggerBtn}
         <Dialog open={open} onOpenChange={setOpen}>
@@ -364,36 +362,5 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
           </DialogContent>
         </Dialog>
       </>
-    );
-  }
-
-  return (
-    <Popover open={open} onOpenChange={openChange}>
-      <PopoverTrigger
-        type="button"
-        className={cn(
-          "h-12 w-full rounded-lg px-3.5 text-sm mt-1 mb-2 flex items-center gap-2.5 outline-none transition-colors focus-visible:ring-1 cursor-pointer",
-          dark
-            ? "bg-white/10 focus-visible:border-white/40 focus-visible:ring-white/20"
-            : "bg-foreground/3 focus-visible:border-ring focus-visible:ring-foreground/15",
-          triggerClassName,
-        )}
-      >
-        <CalendarIcon className={cn("size-4 shrink-0", dark ? "text-white" : "text-foreground")} />
-        <span className="truncate leading-none">{triggerLabel}</span>
-      </PopoverTrigger>
-      <PopoverContent className={cn("w-64 rounded-lg border-none shadow-md", dark && "bg-[#0f1533]/95 backdrop-blur-xl text-white border border-white/10")}>
-        <CalendarContent
-          value={value}
-          onChange={onChange}
-          granularity={granularity}
-          cursor={cursor}
-          setCursor={setCursor}
-          onClose={() => setOpen(false)}
-          onClear={onClear}
-          dark={dark}
-        />
-      </PopoverContent>
-    </Popover>
   );
 }

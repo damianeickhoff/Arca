@@ -1,4 +1,5 @@
 import { formatEur } from "@/lib/format";
+import { getTranslations } from "next-intl/server";
 
 // Types and pure presentation helpers for the cash flow forecast, split out from
 // cash-flow-forecast.ts so client components (the chart, the events list) can import
@@ -6,7 +7,13 @@ import { formatEur } from "@/lib/format";
 
 export const FORECAST_HORIZON_DAYS = 90;
 
-export type ForecastStatus = "healthy" | "warning" | "critical";
+/**
+ * "empty" is not a verdict — it means there is nothing to forecast from (no starting
+ * balance and no future transactions or recurring items). Without it a fresh install
+ * would score its flat zero line as "warning", because zero is below any positive
+ * low-balance threshold.
+ */
+export type ForecastStatus = "healthy" | "warning" | "critical" | "empty";
 
 export interface ForecastEvent {
   /** Stable React key — projections have no row id of their own. */
@@ -22,6 +29,7 @@ export interface ForecastEvent {
   icon: string | null;
   iconColor: string | null;
   iconBackground: string | null;
+  
 }
 
 export interface ForecastPoint {
@@ -64,7 +72,7 @@ export function signedForecastEur(amount: number): string {
 
 // Priority is fixed by the feature spec: negative first, then the low-balance
 // warning, then the healthy case.
-export function forecastMessage({
+export async function forecastMessage({
   status,
   lowest,
   firstNegativeDate,
@@ -76,14 +84,28 @@ export function forecastMessage({
   firstNegativeDate: string | null;
   threshold: number;
   points: ForecastPoint[];
-}): string {
+}): Promise<string> {
+
+  const t = await getTranslations("cashFlow");
+
+  if (status === "empty") return t("alert.empty");
+
   if (status === "critical") {
     const date = firstNegativeDate ?? lowest.date;
     const atDate = points.find((p) => p.date === date)?.amount ?? lowest.amount;
-    return `Your expected cash flow reaches ${signedForecastEur(atDate)} on ${formatForecastDate(date)}`;
+
+    return t("alert.critical", {
+      amount: signedForecastEur(atDate),
+      date: formatForecastDate(date),
+    });
   }
+
   if (status === "warning") {
-    return `Your expected cash flow drops below ${formatEur(threshold)} on ${formatForecastDate(lowest.date)}`;
+    return t("alert.warning", {
+      amount: formatEur(threshold),
+      date: formatForecastDate(lowest.date),
+    });
   }
-  return "Your expected cash flow remains positive";
+
+  return t("alert.healthy");
 }

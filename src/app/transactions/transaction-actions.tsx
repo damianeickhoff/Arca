@@ -309,7 +309,7 @@ export function TransactionActions({ id, description, amount, correctedAmount, i
       </DropdownMenu>
 
       <Dialog open={ruleOpen} onOpenChange={setRuleOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Automatic rule</DialogTitle>
           </DialogHeader>
@@ -417,7 +417,7 @@ export function TransactionActions({ id, description, amount, correctedAmount, i
       </Dialog>
 
       <Dialog open={iconOpen} onOpenChange={setIconOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Set brand icon</DialogTitle>
           </DialogHeader>
@@ -434,7 +434,7 @@ export function TransactionActions({ id, description, amount, correctedAmount, i
       </Dialog>
 
       <Dialog open={correctOpen} onOpenChange={setCorrectOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Correct amount</DialogTitle>
           </DialogHeader>
@@ -480,7 +480,7 @@ export function TransactionActions({ id, description, amount, correctedAmount, i
       )}
 
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Note</DialogTitle>
           </DialogHeader>

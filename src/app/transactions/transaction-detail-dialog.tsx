@@ -20,7 +20,6 @@ import { OptionDropdown } from "@/components/option-dropdown";
 import { TRANSFER_TYPES } from "@/lib/transfer-types";
 import { FREQUENCY_LABELS, nextOccurrence } from "@/lib/recurring-occurrence";
 import { acquireNavHidden } from "@/lib/nav-visibility";
-import { useIsMobile } from "@/lib/use-is-mobile";
 import {
   IconTrashFilled as Trash2,
   IconXFilled as X,
@@ -229,9 +228,10 @@ function TransactionDetailBody({
   const [showGoalPicker, setShowGoalPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const isMobile = useIsMobile();
+  // The filter button sits in the sheet's header row next to the close button, so it
+  // takes the close button's styling.
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: isMobile ? "size-11 rounded-full bg-white/80 shadow-lg text-foreground" : undefined,
+    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 shadow-lg text-foreground",
   });
   const [excluded, setExcluded] = useState(!!row.excludeFromReports);
   type BulkPrompt = {
@@ -547,19 +547,18 @@ function TransactionDetailBody({
               )}
 
               <Dialog open={showPicker && !row.isSplit} onOpenChange={(v) => !v && setShowPicker(false)}>
+                {/* sheetClassName must match the overlay's z-index: the overlay is
+                    lifted to 65 to sit above the parent sheet (z-50), and without the
+                    same lift here the content stays at 50 — i.e. *under* its own
+                    blurred overlay, which then frosts the picker along with the page. */}
                 <DialogContent
-                  className="sm:max-w-sm"
+                  sheetClassName="z-[65]"
                   overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20"
                   fullHeight
                   hideHandle
-                  headerAction={isMobile ? filterMenu : undefined}
-                  title={isMobile ? "Category" : undefined}
+                  headerAction={filterMenu}
+                  title="Category"
                 >
-                  {!isMobile && (
-                    <DialogHeader actions={filterMenu}>
-                      <DialogTitle>Category</DialogTitle>
-                    </DialogHeader>
-                  )}
                   <CategoryGrid
                     categories={categories}
                     current={categoryId ?? undefined}
@@ -655,7 +654,7 @@ function TransactionDetailBody({
               </button>
 
               <Dialog open={showGoalPicker} onOpenChange={setShowGoalPicker}>
-                <DialogContent className="sm:max-w-sm" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
+                <DialogContent sheetClassName="z-[65]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
                   <DialogTitle>Choose savings goal</DialogTitle>
                   <div className="space-y-1 max-h-[60vh] overflow-y-auto">
                     <button
@@ -771,7 +770,7 @@ function TransactionDetailBody({
 
       {/* Note editor */}
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent className="sm:max-w-sm" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
+        <DialogContent sheetClassName="z-[65]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
           <DialogHeader>
             <DialogTitle>Note</DialogTitle>
           </DialogHeader>
@@ -794,7 +793,7 @@ function TransactionDetailBody({
 
       {/* Bulk-categorize dialog */}
       <Dialog open={!!bulkPrompt} onOpenChange={(v) => !v && (setBulkPrompt(null), router.refresh())}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Also apply to other transactions?</DialogTitle>
             <DialogDescription>
@@ -905,7 +904,7 @@ function MerchantPickerDialog({
       {/* z-[80]: reassignment can be started from the merchant profile, a body portal at
           z-70 that now stays open behind this picker — without it the sheet opens
           underneath the profile and looks like nothing happened. */}
-      <DialogContent className="sm:max-w-sm" sheetClassName="z-[80]" overlayClassName="z-[80] backdrop-blur-lg bg-foreground/20">
+      <DialogContent sheetClassName="z-[80]" overlayClassName="z-[80] backdrop-blur-lg bg-foreground/20">
         <DialogHeader>
           <DialogTitle>Merchant</DialogTitle>
         </DialogHeader>
@@ -1131,11 +1130,12 @@ function RecurrenceCard({
         {item?.endDate && <DetailRow label="Ends" value={formatDate(item.endDate)} />}
         {next && <DetailRow label="Next occurrence" value={formatDate(next)} />}
         <div className="flex gap-2 px-4 py-3">
-          <Button variant="outline" className="flex-1 rounded-full" onClick={togglePaused} disabled={!item || busy}>
+          <Button variant="default" className="flex-1 rounded-full" onClick={togglePaused} disabled={!item || busy}>
             {item && !item.active ? "Resume" : "Pause"}
           </Button>
           <Button
-            className="flex-1 rounded-full bg-destructive text-white hover:bg-destructive/90"
+            variant="destructive"
+            className="flex-1 rounded-full"
             onClick={cancelRecurrence}
             disabled={!item || busy}
           >

@@ -141,7 +141,7 @@ function AddCategoryModal({ open, onClose, onDone }: { open: boolean; onClose: (
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable] bg-card"
+        className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable] bg-card"
         footer={
           <Button onClick={save} disabled={loading || !name.trim()} className="w-full">
             {loading ? "Saving..." : "Add"}
@@ -319,7 +319,7 @@ function AddRecurringModal({ open, onClose, onDone }: { open: boolean; onClose: 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
-        className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]"
+        className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]"
         footer={
           <Button onClick={save} disabled={loading || !form.name.trim() || !form.amount} className="w-full">
             {loading ? "Saving..." : "Add"}

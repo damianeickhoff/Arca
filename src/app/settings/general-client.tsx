@@ -241,7 +241,7 @@ export function MaandUitzonderingenForm({
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader><DialogTitle>New override</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Field label="Month"><DatePicker granularity="month" value={newMonth} onChange={setNewMonth} /></Field>
@@ -256,7 +256,7 @@ export function MaandUitzonderingenForm({
       </Dialog>
 
       <Dialog open={editingMonth !== null} onOpenChange={(v) => !v && setEditingMonth(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader><DialogTitle>Edit override</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Field label="Month">
@@ -381,7 +381,7 @@ export function MaandUitzonderingenSubPage({
 
       {/* Add dialog */}
       <Dialog open={addOpen} onOpenChange={onAddOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader><DialogTitle>New override</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Field label="Month"><DatePicker granularity="month" value={newMonth} onChange={setNewMonth} /></Field>
@@ -397,7 +397,7 @@ export function MaandUitzonderingenSubPage({
 
       {/* Edit dialog */}
       <Dialog open={editingMonth !== null} onOpenChange={(v) => !v && setEditingMonth(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader><DialogTitle>Edit override</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Field label="Month">
@@ -726,7 +726,7 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
 
       {/* Add override dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader>
             <DialogTitle>New override</DialogTitle>
           </DialogHeader>
@@ -757,7 +757,7 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
 
       {/* Edit override dialog */}
       <Dialog open={editingMonth !== null} onOpenChange={(v) => !v && setEditingMonth(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader>
             <DialogTitle>Edit override</DialogTitle>
           </DialogHeader>

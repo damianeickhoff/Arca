@@ -14,8 +14,10 @@ import {
   IconPigFilled as Pig,
   IconFolderFilled as Folder,
   IconCheck as Check,
+  IconLayoutList as LayoutList,
+  IconLayoutGrid as LayoutGrid,
 } from "@tabler/icons-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -27,10 +29,10 @@ import { filterPillClass } from "@/components/filter-pill";
 import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { BUDGET_TYPE_LABELS, normalizeBudgetType } from "@/lib/format";
 import { CategoryClient } from "@/components/settings/categories/category-client";
 import { acquireNavHidden } from "@/lib/nav-visibility";
-import { useIsMobile } from "@/lib/use-is-mobile";
 
 // Force WebKit to recompute the layout/visual viewport by briefly re-writing the
 // viewport <meta>. On an iOS home-screen PWA the WKWebView is left ~62px short of the
@@ -154,6 +156,73 @@ export function useCategoryFilter(options?: { triggerClassName?: string }) {
   return { budgetType, showSubcategories, filterMenu };
 }
 
+export type CategoryLayout = "rows" | "grid";
+
+const CATEGORY_LAYOUT_KEY = "category-picker-layout";
+
+/** Remembers whether the picker shows rows or a tile grid.
+ *
+ * The default is per-device rather than fixed: a tile grid uses the horizontal room a
+ * desktop window has and a phone doesn't, so it defaults to `grid` at >=1024px and
+ * `rows` below. That's a first-run default only — once the user picks a layout the
+ * choice is stored and honoured at every width. Starts as `rows` so the server and the
+ * first client render agree; the effect corrects it immediately after mount. */
+function useCategoryLayout(): [CategoryLayout, (next: CategoryLayout) => void] {
+  const [layout, setLayout] = useState<CategoryLayout>("rows");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(CATEGORY_LAYOUT_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- neither localStorage nor matchMedia is knowable during SSR, so this can't be computed in render without a hydration mismatch
+    setLayout(
+      stored === "rows" || stored === "grid"
+        ? stored
+        : window.matchMedia("(min-width: 1024px)").matches
+          ? "grid"
+          : "rows",
+    );
+  }, []);
+
+  function choose(next: CategoryLayout) {
+    setLayout(next);
+    localStorage.setItem(CATEGORY_LAYOUT_KEY, next);
+  }
+
+  return [layout, choose];
+}
+
+/** Segmented rows/grid switch shown above the category list. */
+function CategoryLayoutToggle({
+  value,
+  onChange,
+}: {
+  value: CategoryLayout;
+  onChange: (next: CategoryLayout) => void;
+}) {
+  const options: { key: CategoryLayout; Icon: typeof LayoutList; label: string }[] = [
+    { key: "rows", Icon: LayoutList, label: "Show as rows" },
+    { key: "grid", Icon: LayoutGrid, label: "Show as grid" },
+  ];
+  return (
+    <div className="inline-flex items-center gap-0.5 rounded-full bg-foreground/5 p-0.5">
+      {options.map(({ key, Icon: OptIcon, label }) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => onChange(key)}
+          aria-label={label}
+          aria-pressed={value === key}
+          className={cn(
+            "flex items-center justify-center size-8 rounded-full transition-colors",
+            value === key ? "bg-card text-foreground" : "text-foreground/40 hover:text-foreground/70",
+          )}
+        >
+          <OptIcon className="size-4.5" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // The search input + "add category" button. Extracted so it can live either at the
 // bottom of the grid (default) or — for the mobile picker sheet — in the Dialog's
 // pinned `footer` slot, where it floats above the keyboard without the list moving.
@@ -247,7 +316,11 @@ function FloatingSearchBar({
     <div
       ref={wrapRef}
       data-dialog-keep-open
-      className="fixed left-0 top-0 w-full px-4 z-[300] pointer-events-none"
+      // inset-x-0 + the shared column cap rather than left-0/w-full: the bar is
+      // portalled to <body>, so it would otherwise span the whole monitor instead of
+      // lining up with the sheet it belongs to. Vertical position stays on `transform`
+      // (see the rAF loop above), which the horizontal centring doesn't disturb.
+      className={cn(CONTENT_COLUMN, "fixed inset-x-0 top-0 px-4 z-[300] pointer-events-none")}
       // Off-screen until the first rAF frame positions it; will-change/translate3d
       // promote it to its own compositor layer so iOS repaints it on its own.
       style={{ transform: "translate3d(0, -9999px, 0)", willChange: "transform" }}
@@ -311,6 +384,7 @@ export function CategoryGrid({
   const [internalSearch, setInternalSearch] = useState("");
   const search = controlledSearch ?? internalSearch;
   const setSearch = onSearchChange ?? setInternalSearch;
+  const [layout, setLayout] = useCategoryLayout();
 
   function select(value: string) { onChange(value); onClose(); }
 
@@ -351,7 +425,47 @@ export function CategoryGrid({
 
   return (
     <div className={cn("flex flex-col gap-3 -mx-1 px-1", fill && "flex-1 min-h-0")}>
-      <div className={cn("overflow-y-auto -mx-1 px-1", fill ? "flex-1 min-h-0 lg:flex-none lg:max-h-[60vh]" : "max-h-[50vh]")}>
+      <div className="flex items-center justify-end shrink-0 pt-3">
+        <CategoryLayoutToggle value={layout} onChange={setLayout} />
+      </div>
+
+      {/* `fill` means "take whatever height the sheet gives you", at every width. The
+          old lg:flex-none lg:max-h-[60vh] here dated from when this dialog was a
+          centered modal on desktop and had to stay short; now that it's always a
+          full-height sheet, that cap just left the bottom of the screen empty. */}
+      <div className={cn("overflow-y-auto -mx-1 px-1", fill ? "flex-1 min-h-0" : "max-h-[50vh]")}>
+        {layout === "grid" ? (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {!isFormMode && !query && (
+              <CategoryTile label="Alle" active={!current} onClick={() => select("")} />
+            )}
+            {!query && (
+              <CategoryTile
+                label="Uncategorized"
+                iconKey={UNCATEGORIZED_ICON}
+                color={UNCATEGORIZED_COLOR}
+                active={current === "none"}
+                onClick={() => select("none")}
+              />
+            )}
+            {/* Flat in grid mode — a tiled layout has no room for the indented
+                parent/child nesting the row layout uses, so children sit alongside
+                their parent as their own tiles. */}
+            {topLevel.flatMap((cat) => [cat, ...(childrenByParentId.get(cat.id) ?? [])]).map((cat) => (
+              <CategoryTile
+                key={cat.id}
+                label={cat.name}
+                iconKey={cat.icon}
+                color={cat.color}
+                active={current === String(cat.id)}
+                onClick={() => select(String(cat.id))}
+              />
+            ))}
+            {topLevel.length === 0 && (
+              <p className="col-span-full text-sm text-foreground/40 text-center py-6">No categories found</p>
+            )}
+          </div>
+        ) : (
         <div className="flex flex-col gap-1.5">
           {!isFormMode && !query && (
             <CategoryRow label="Alle" active={!current} onClick={() => select("")} />
@@ -402,6 +516,7 @@ export function CategoryGrid({
             <p className="text-sm text-foreground/40 text-center py-6">No categories found</p>
           )}
         </div>
+        )}
       </div>
 
       {/* Search sits below the scrollable list. Callers that render it in a pinned
@@ -415,6 +530,43 @@ export function CategoryGrid({
         />
       )}
     </div>
+  );
+}
+
+/** Grid-layout counterpart to CategoryRow: icon above a wrapped label, selection
+ *  shown as a ring rather than a radio dot (there's no room for one in a tile). */
+function CategoryTile({
+  label,
+  iconKey,
+  color,
+  active,
+  onClick,
+}: {
+  label: string;
+  iconKey?: string | null;
+  color?: string | null;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center gap-2 rounded-xl px-2 py-3 transition-colors cursor-pointer text-center",
+        active ? "bg-card ring-2 ring-primary" : "bg-[var(--dialog-content-background)] hover:bg-card",
+      )}
+    >
+      <Icon iconKey={iconKey ?? null} color={color ?? null} round size="lg" />
+      <span
+        className={cn(
+          "block w-full text-xs leading-tight line-clamp-2",
+          active ? "font-semibold text-foreground" : "text-foreground",
+        )}
+      >
+        {label}
+      </span>
+    </button>
   );
 }
 
@@ -481,11 +633,10 @@ export function CategoryPicker({
   const isFormMode = !!onChangeProp;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const isMobile = useIsMobile();
-  // On mobile the filter button sits in the sheet's header row next to the close
-  // button, so it takes the close button's styling.
+  // The filter button sits in the sheet's header row next to the close button, so it
+  // takes the close button's styling.
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: isMobile ? "size-11 rounded-full bg-white dark:bg-white/7 text-foreground" : undefined,
+    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-foreground",
   });
 
   // Hide the mobile bottom nav while the picker sheet is open.
@@ -505,7 +656,7 @@ export function CategoryPicker({
   // Toggling the viewport <meta> forces that recompute without a scroll; we fire it
   // when the keyboard closes and again as the picker closes.
   useEffect(() => {
-    if (!open || !isMobile) return;
+    if (!open) return;
     const vv = window.visualViewport;
     let restHeight = vv ? vv.height : window.innerHeight;
     let keyboardWasOpen = false;
@@ -529,7 +680,7 @@ export function CategoryPicker({
       vv?.removeEventListener("resize", pin);
       [50, 350, 700].forEach((d) => setTimeout(forceViewportRecompute, d));
     };
-  }, [open, isMobile]);
+  }, [open]);
 
   function onChange(value: string) {
     if (onChangeProp) {
@@ -594,22 +745,17 @@ export function CategoryPicker({
       </button>
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
         <DialogContent
-          // Extra bottom padding on mobile so the last categories can scroll clear of
-          // the floating search bar that overlays the bottom of the sheet.
-          className={cn("sm:max-w-sm", isMobile && "pb-28")}
+          // Extra bottom padding so the last categories can scroll clear of the
+          // floating search bar that overlays the bottom of the sheet.
+          className="pb-28"
           fullHeight
           hideHandle
-          headerAction={isMobile ? filterMenu : undefined}
-          // On mobile the title is rendered by the sheet's own fixed header row,
-          // which reserves space around the close button — a separate in-flow
-          // DialogTitle here would sit right underneath it and visually overlap.
-          title={isMobile ? "Category" : undefined}
+          headerAction={filterMenu}
+          // The title is rendered by the sheet's own fixed header row, which reserves
+          // space around the close button — a separate in-flow DialogTitle here would
+          // sit right underneath it and visually overlap.
+          title="Category"
         >
-          {!isMobile && (
-            <DialogHeader actions={filterMenu}>
-              <DialogTitle>Category</DialogTitle>
-            </DialogHeader>
-          )}
           <CategoryGrid
             categories={categories}
             current={current}
@@ -621,14 +767,14 @@ export function CategoryPicker({
             onClose={() => setOpen(false)}
             search={search}
             onSearchChange={setSearch}
-            // On mobile the search is the floating portal bar below; on desktop it stays
-            // inline at the bottom of the grid (no keyboard to float above).
-            hideSearch={isMobile}
+            // Search lives in the floating portal bar below instead of inline at the
+            // bottom of the grid, so it can sit above the keyboard.
+            hideSearch
           />
         </DialogContent>
       </Dialog>
-      {/* Floating search — mobile only, portalled to <body> so it's viewport-fixed. */}
-      {open && isMobile && <FloatingSearchBar search={search} onSearchChange={setSearch} />}
+      {/* Floating search — portalled to <body> so it's viewport-fixed. */}
+      {open && <FloatingSearchBar search={search} onSearchChange={setSearch} />}
     </>
   );
 }

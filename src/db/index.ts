@@ -146,6 +146,11 @@ addColumnIfMissing("banks", "color", "TEXT");
 addColumnIfMissing("banks", "transfer_kind", "TEXT");
 addColumnIfMissing("transactions", "transfer_type", "TEXT");
 
+// Auto-migrate: bank-reported balance after the transaction, captured on import.
+// Nullable and never backfilled from existing data — rows imported before this column
+// existed simply have no reported balance, which every reader must tolerate.
+addColumnIfMissing("transactions", "reported_balance", "REAL");
+
 // Backfill: "income" is no longer a budgetType value — a category's `group` already
 // marks it as income, so any row still carrying the old inkomen/Income budgetType
 // is reset to null (their income-ness is unaffected, only this redundant field).
@@ -361,6 +366,9 @@ addColumnIfMissing("recurring_items", "end_date", "TEXT");
   addColumnIfMissing("banks", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing("vermogen_accounts", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 1");
 
+  // Auto-migrate: per-asset-account glyph (editable in the account edit sheet)
+  addColumnIfMissing("vermogen_accounts", "icon", "TEXT");
+
   // Auto-migrate: saved manual CSV column-mapping profiles for unrecognized bank formats
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS import_profiles (
@@ -369,6 +377,18 @@ addColumnIfMissing("recurring_items", "end_date", "TEXT");
       header_signature  TEXT    NOT NULL UNIQUE,
       mapping           TEXT    NOT NULL,
       created_at        TEXT    DEFAULT (datetime('now'))
+    )
+  `);
+
+  // Auto-migrate: monthly financial-health snapshots (one row per financial month)
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS financial_health_snapshots (
+      month        TEXT PRIMARY KEY,
+      score        REAL NOT NULL,
+      net_worth    REAL,
+      savings_rate REAL,
+      breakdown    TEXT,
+      updated_at   TEXT DEFAULT (datetime('now'))
     )
   `);
 

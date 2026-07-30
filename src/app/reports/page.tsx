@@ -3,10 +3,12 @@ import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { SearchTriggerButton } from "@/components/search-trigger-button";
+import { PageContainer } from "@/components/page-container";
 import { cookies } from "next/headers";
 import { ReportsTabs } from "./reports-tabs";
 import { TrendsTab, VermogenTab } from "./report-tabs";
 import { AnalyticsTab } from "./analytics-tab";
+import { HealthTab } from "./health-tab";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -53,7 +55,7 @@ export default async function ReportsPage({
   })();
 
   return (
-    <div className="-mt-14 lg:mt-0 min-h-screen">
+    <PageContainer className="px-0 min-h-screen">
 
       <div className="sticky top-[var(--sat)] z-40 bg-background px-4 pt-2 pb-3 space-y-2">
         <div className="flex items-center justify-end">
@@ -71,6 +73,7 @@ export default async function ReportsPage({
       {activeTab === "rapporten" && <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} />}
       {activeTab === "trends" && <TrendsTab from={from} to={to} cmpA={sp.cmpA ?? ""} cmpB={sp.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} />}
       {activeTab === "vermogen" && <VermogenTab />}
-    </div>
+      {activeTab === "health" && <HealthTab />}
+    </PageContainer>
   );
 }

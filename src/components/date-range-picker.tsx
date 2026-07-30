@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useRef } from "react";
 import {
   IconCalendarWeek as CalendarRange,
   IconChevronDownFilled as ChevronDown
@@ -11,7 +10,6 @@ import { DatePicker } from "@/components/date-picker";
 import { cn } from "@/lib/utils";
 import { glassIconButton } from "@/lib/styles";
 import { filterPillClass } from "@/components/filter-pill";
-import { useIsMobile } from "@/lib/use-is-mobile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   financialMonthRange,
@@ -102,34 +100,10 @@ export function DateRangePicker({
   const [open, setOpen] = useState(false);
   const [customFrom, setCustomFrom] = useState(from);
   const [customTo, setCustomTo] = useState(to);
-  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const presets = makePresets(financialMonth);
-  const isMobile = useIsMobile();
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      const target = e.target as Node;
-      if (ref.current?.contains(target) || panelRef.current?.contains(target)) return;
-      if (target instanceof Element && target.closest('[data-slot="popover-content"]')) return;
-      setOpen(false);
-    }
-    if (!isMobile) {
-      document.addEventListener("mousedown", handleClick);
-      return () => document.removeEventListener("mousedown", handleClick);
-    }
-  }, [isMobile]);
 
   function toggleOpen() {
-    if (!isMobile && !open && ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      const panelWidth = 288;
-      setPanelPos({
-        top: rect.bottom + 8,
-        left: Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - 8),
-      });
-    }
     setOpen((v) => !v);
   }
 
@@ -181,8 +155,7 @@ export function DateRangePicker({
     </button>
   );
 
-  if (isMobile) {
-    return (
+  return (
       <div className={`relative ${flat ? "flex-1 min-w-0" : ""}`} ref={ref}>
         {triggerButton}
         <Dialog open={open} onOpenChange={setOpen}>
@@ -235,68 +208,6 @@ export function DateRangePicker({
           </DialogContent>
         </Dialog>
       </div>
-    );
-  }
-
-  return (
-    <div className={`relative ${flat ? "flex-1 min-w-0" : ""}`} ref={ref}>
-      {triggerButton}
-      {open && panelPos && createPortal(
-        <div
-          ref={panelRef}
-          className="fixed z-50 bg-white/60 backdrop-blur-lg rounded-lg p-1 w-72 max-w-[calc(100vw-1rem)] space-y-1 shadow-md text-popover-foreground"
-          style={{ top: panelPos.top, left: Math.max(8, panelPos.left) }}
-        >
-          {presets.map((p) => {
-            const pFrom = p.from();
-            const pTo = p.to();
-            const active = pFrom === from && pTo === to;
-            return (
-              <button
-                key={p.label}
-                onClick={() => navigate(pFrom, pTo)}
-                className={`w-full text-left text-sm px-2.5 py-3 rounded-md transition-colors ${
-                  active
-                    ? "bg-foreground text-primary-foreground font-medium"
-                    : "hover:bg-foreground/5 text-foreground"
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
-
-          <div className="pt-2 border-t border-foreground/5 mx-1.5 space-y-2 pb-1">
-            <p className="text-sm text-foreground font-medium px-1">Aangepast bereik</p>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-sm text-foreground/60 px-1">Van</label>
-                <DatePicker
-                  value={customFrom}
-                  onChange={setCustomFrom}
-                  triggerClassName="text-foreground h-10 w-full rounded-sm px-2 py-1 text-xs bg-white/20 mt-0 mb-0 gap-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm text-foreground/60">Tot</label>
-                <DatePicker
-                  value={customTo}
-                  onChange={setCustomTo}
-                  triggerClassName="text-foreground h-10 w-full rounded-sm px-2 py-1 text-xs bg-white/20 mt-0 mb-0 gap-1"
-                />
-              </div>
-            </div>
-            <button
-              onClick={applyCustom}
-              disabled={!customFrom || !customTo || customFrom > customTo}
-              className="w-full h-10 mt-1 text-sm py-1.5 rounded-sm bg-foreground text-primary-foreground disabled:opacity-40 hover:opacity-90 transition-opacity"
-            >
-              Toepassen
-            </button>
-          </div>
-        </div>,
-        document.body,
-      )}
-    </div>
   );
 }
+

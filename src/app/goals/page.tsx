@@ -1,9 +1,7 @@
 import { db } from "@/db";
 import { goals, categories } from "@/db/schema";
 import { asc } from "drizzle-orm";
-import { PageShell } from "@/components/page-shell";
 import { GoalsMobile } from "./goals-mobile";
-import { GoalsDesktop } from "./goals-desktop";
 import { getCurrentUser } from "@/lib/auth";
 import { getSettingsPanelContent } from "@/app/settings-panel-content";
 import { getFinancialMonthConfig, getBudgetRecurringMode } from "@/lib/app-settings";
@@ -51,9 +49,14 @@ export default async function GoalsPage() {
   const savings = { totalSaved, totalTargetSavings, totalReachedPct, totalMonthly, latestTargetLabel, totalCount: savingsGoalsList.length };
 
   return (
-    <PageShell
-      mobile={<GoalsMobile goals={displayGoals} categories={cats} savings={savings} user={user} settingsPanels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} />}
-      desktop={<GoalsDesktop goals={displayGoals} categories={cats} savings={savings} />}
+    <GoalsMobile
+      goals={displayGoals}
+      categories={cats}
+      savings={savings}
+      user={user}
+      settingsPanels={settingsPanels}
+      financialMonth={financialMonth}
+      budgetRecurringMode={budgetRecurringMode}
     />
   );
 }

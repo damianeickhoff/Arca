@@ -1,19 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Icon } from "@/components/icon";
 import { ProgressRing } from "@/components/progress-ring";
 import { cn } from "@/lib/utils";
 import { formatEur } from "@/lib/format";
 import type { Goal } from "@/db/schema";
-import { goalProgressPct, goalTypeLabel } from "./goal-shared";
+import { goalProgressPct } from "./goal-shared";
 
 export type GoalFilter = "all" | "expense" | "savings";
 
-export const GOAL_FILTERS: { value: GoalFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "expense", label: "Budget" },
-  { value: "savings", label: "Savings" },
+export const GOAL_FILTERS: { value: GoalFilter; labelKey: string }[] = [
+  { value: "all", labelKey: "filterAll" },
+  { value: "expense", labelKey: "filterBudget" },
+  { value: "savings", labelKey: "filterSavings" },
 ];
 
 export function filterGoals(goals: Goal[], filter: GoalFilter): Goal[] {
@@ -31,6 +32,7 @@ export function GoalFilterPills({
   onChange: (v: GoalFilter) => void;
   className?: string;
 }) {
+  const t = useTranslations("goals");
   return (
     <div className={cn("flex items-center gap-1 rounded-full bg-card p-1", className)}>
       {GOAL_FILTERS.map((f) => (
@@ -43,7 +45,7 @@ export function GoalFilterPills({
             value === f.value ? "bg-foreground/8 text-foreground" : "text-foreground/50 hover:text-foreground",
           )}
         >
-          {f.label}
+          {t(f.labelKey)}
         </button>
       ))}
     </div>
@@ -51,9 +53,11 @@ export function GoalFilterPills({
 }
 
 export function GoalRow({ goal, onClick, href }: { goal: Goal; onClick?: () => void; href?: string }) {
+  const t = useTranslations("goals");
   const pct = goalProgressPct(goal);
   const color = goal.color ?? "var(--chart-3)";
-  const verb = goal.goalType === "expense" ? "spent" : "saved";
+  const verb = goal.goalType === "expense" ? t("spent") : t("saved");
+  const typeLabel = goal.goalType === "expense" ? t("typeBudget") : t("typeSavings");
 
   const className = "w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-card text-left active:bg-foreground/[0.03] transition-colors";
 
@@ -65,7 +69,7 @@ export function GoalRow({ goal, onClick, href }: { goal: Goal; onClick?: () => v
       <div className="flex-1 min-w-0">
         <div className="text-base font-medium truncate leading-tight">{goal.name}</div>
         <div className="text-sm text-foreground/55 mt-0.5 truncate">
-          {goalTypeLabel(goal.goalType)}
+          {typeLabel}
           {goal.targetAmount > 0 && ` · ${pct.toFixed(0)}%`}
         </div>
       </div>

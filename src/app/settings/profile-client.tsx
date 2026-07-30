@@ -151,7 +151,7 @@ export function AvatarFormContent({ user }: { user: User }) {
       </div>
 
       <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
-        <DialogContent className="sm:max-w-xs" title="Profile photo">
+        <DialogContent title="Profile photo">
           <div className="flex flex-col gap-2">
             <Button
               type="button"

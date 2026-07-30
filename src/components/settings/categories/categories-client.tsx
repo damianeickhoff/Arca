@@ -10,6 +10,7 @@ import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { groupCategoriesByParent, resolveCategoryColor } from "@/lib/category-tree";
 import { BUDGET_TYPE_LABELS } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { StaggerItem } from "@/components/ui/stagger";
 import type { Category, CategoryRule, Bank } from "@/db/schema";
 
@@ -173,7 +174,9 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
           id so switching categories reseeds the form. */}
       {detail && (
         <div
-          className="fixed inset-0 z-[70] flex flex-col overflow-y-auto rounded-t-4xl bg-[var(--dialog-background)] transition-transform duration-300 ease-out"
+          // `fixed inset-0` escapes the drawer it covers, so it carries the column cap
+          // itself to stay aligned with that drawer on desktop.
+          className={cn(CONTENT_COLUMN, "fixed inset-0 z-[70] flex flex-col overflow-y-auto rounded-t-4xl bg-[var(--dialog-background)] transition-transform duration-300 ease-out")}
           style={{ transform: detailVisible ? "translateX(0)" : "translateX(100%)" }}
         >
           <CategorySettingsClient

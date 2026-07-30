@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { categories, goals } from "@/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { IconArrowDownLeft } from "@tabler/icons-react";
-import { PageShell } from "@/components/page-shell";
+import { PageContainer } from "@/components/page-container";
 import { MobileSubpageHeader } from "@/components/mobile-menu-ui";
 import { formatEur } from "@/lib/format";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
@@ -47,10 +47,5 @@ export default async function NeedsReviewPage() {
     </div>
   );
 
-  return (
-    <PageShell
-      mobile={content}
-      desktop={<div className="mx-auto max-w-2xl">{content}</div>}
-    />
-  );
+  return <PageContainer className="px-0">{content}</PageContainer>;
 }

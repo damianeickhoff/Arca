@@ -138,7 +138,7 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
 
       {/* Edit rule dialog */}
       <Dialog open={editingId !== null} onOpenChange={(v) => !v && setEditingId(null)}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
           <DialogHeader>
             <DialogTitle>Edit rule</DialogTitle>
           </DialogHeader>
@@ -244,7 +244,7 @@ export function BrandIconRuleAddButton({ variant = "default" }: { variant?: "def
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90dvh] overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>New rule</DialogTitle>
           </DialogHeader>

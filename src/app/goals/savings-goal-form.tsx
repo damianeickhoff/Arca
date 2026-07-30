@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconX,
   IconDots,
@@ -37,6 +38,7 @@ import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/moti
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
 import { formatEur, currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { GOAL_COLORS, monthsUntil } from "./goal-shared";
 import type { Category } from "@/db/schema";
 
@@ -50,6 +52,7 @@ function todayISO() {
 // goals still use the older GoalForm — this component is savings-only.
 export function SavingsGoalForm({ categories }: { categories: Category[] }) {
   const router = useRouter();
+  const t = useTranslations("goals");
   const [loading, setLoading] = useState(false);
 
   const [name, setName] = useState("");
@@ -120,23 +123,23 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
     "flex items-center justify-center rounded-2xl h-13 text-foreground/80 bg-foreground/[0.07] active:bg-foreground/15 transition-colors select-none";
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
+    <div className={cn(CONTENT_COLUMN, "fixed inset-0 flex flex-col bg-background")}>
       {/* Header: close (left) + plain title (center) + overflow menu (right) */}
       <div className="flex items-center justify-between px-4 pt-[calc(var(--sat)+0.75rem)] pb-2 shrink-0">
         <button
           type="button"
           onClick={() => router.back()}
-          aria-label="Close"
+          aria-label={t("close")}
           className="glass-icon-btn size-11"
         >
           <IconX className="size-5 text-foreground" />
         </button>
 
-        <h2 className="text-base font-semibold text-foreground">Savings goal</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("savingsGoal")}</h2>
 
         <DropdownMenu>
           <DropdownMenuTrigger
-            aria-label="More options"
+            aria-label={t("moreOptions")}
             className="glass-icon-btn size-11"
           >
             <IconDots className="size-5 text-foreground" />
@@ -144,7 +147,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
           <DropdownMenuContent align="end" sideOffset={8} className="min-w-56 w-auto p-1.5">
             <DropdownMenuItem closeOnClick={false} onClick={() => setCalcEnabled((c) => !c)} className="gap-2.5 py-2.5">
               <IconCalculator className="size-4.5" />
-              <span className="flex-1">Calculator</span>
+              <span className="flex-1">{t("calculator")}</span>
               {calcEnabled && <IconCheck className="size-4 text-foreground/60" />}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -174,7 +177,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             <button
               type="button"
               onClick={() => setIconColorOpen(true)}
-              aria-label="Choose icon and color"
+              aria-label={t("chooseIconColor")}
               className="size-14 rounded-full flex items-center justify-center active:scale-[0.96] transition-transform"
               style={{ backgroundColor: icon ? undefined : "color-mix(in srgb, var(--foreground) 8%, transparent)" }}
             >
@@ -183,7 +186,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. New car"
+              placeholder={t("namePlaceholder")}
               className="w-full max-w-xs mx-auto text-center text-base font-medium text-foreground placeholder:text-foreground/30 bg-transparent outline-none"
             />
           </div>
@@ -230,8 +233,8 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
               <button
                 type="button"
                 onClick={() => setDateOpen(true)}
-                aria-label="Set start and end date"
-                title="Start / end date"
+                aria-label={t("setStartEndDate")}
+                title={t("startEndDate")}
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                   endDate ? "bg-foreground text-background" : "bg-foreground/8 text-foreground active:bg-foreground/15",
@@ -242,8 +245,8 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
               <button
                 type="button"
                 onClick={() => setMonthlyOpen(true)}
-                aria-label={effectiveMonthlyContribution ? `Monthly contribution ${formatEur(effectiveMonthlyContribution)}` : "Set monthly contribution"}
-                title="Monthly contribution"
+                aria-label={effectiveMonthlyContribution ? t("monthlyContributionAmount", { amount: formatEur(effectiveMonthlyContribution) }) : t("setMonthlyContribution")}
+                title={t("monthlyContribution")}
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                   effectiveMonthlyContribution ? "bg-foreground text-background" : "bg-foreground/8 text-foreground active:bg-foreground/15",
@@ -256,8 +259,8 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             <button
               type="button"
               onClick={() => setBalanceOpen(true)}
-              aria-label={balanceVal ? `Starting balance ${formatEur(balanceVal)}` : "Set starting balance"}
-              title="Starting balance"
+              aria-label={balanceVal ? t("startingBalanceAmount", { amount: formatEur(balanceVal) }) : t("setStartingBalance")}
+              title={t("startingBalance")}
               className={cn(
                 "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                 balanceVal ? "bg-foreground text-background" : "bg-foreground/8 text-foreground active:bg-foreground/15",
@@ -281,23 +284,23 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
               <button type="button" onClick={() => press("0")} className={digitKey}>
                 0
               </button>
-              <button type="button" onClick={() => press("back")} aria-label="Backspace" className={digitKey}>
+              <button type="button" onClick={() => press("back")} aria-label={t("backspace")} className={digitKey}>
                 <IconBackspace className="size-6" />
               </button>
             </div>
 
             {calcEnabled && (
               <div className="grid grid-cols-1 gap-2 w-16">
-                <button type="button" onClick={() => press("÷")} aria-label="Divide" className={opKey}>
+                <button type="button" onClick={() => press("÷")} aria-label={t("divide")} className={opKey}>
                   <IconDivide className="size-6" />
                 </button>
-                <button type="button" onClick={() => press("×")} aria-label="Multiply" className={opKey}>
+                <button type="button" onClick={() => press("×")} aria-label={t("multiply")} className={opKey}>
                   <IconMultiply className="size-6" />
                 </button>
-                <button type="button" onClick={() => press("−")} aria-label="Subtract" className={opKey}>
+                <button type="button" onClick={() => press("−")} aria-label={t("subtract")} className={opKey}>
                   <IconMinus className="size-6" />
                 </button>
-                <button type="button" onClick={() => press("+")} aria-label="Add" className={opKey}>
+                <button type="button" onClick={() => press("+")} aria-label={t("add")} className={opKey}>
                   <IconPlus className="size-6" />
                 </button>
               </div>
@@ -311,7 +314,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             categories={categories}
             current={categoryId}
             onChange={setCategoryId}
-            placeholder="Category (optional)"
+            placeholder={t("categoryOptional")}
             showSelectedIcon
             triggerClassName="min-w-0 max-w-[60%] h-11 rounded-full bg-foreground/5 pl-3.5 pr-3 gap-2 text-sm font-medium"
           />
@@ -321,27 +324,27 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             disabled={!canSave}
             className="h-11 px-7 rounded-full bg-foreground text-background text-sm font-semibold shadow-floating active:scale-[0.98] transition-transform disabled:opacity-40 disabled:pointer-events-none shrink-0"
           >
-            {loading ? "Saving…" : "Save"}
+            {loading ? t("saving") : t("save")}
           </button>
         </div>
       </m.div>
 
       <Dialog open={dateOpen} onOpenChange={setDateOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Dates</DialogTitle>
+            <DialogTitle>{t("dates")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-foreground/60 mb-1.5">Start date</p>
+              <p className="text-sm font-medium text-foreground/60 mb-1.5">{t("startDate")}</p>
               <DatePicker value={startDate} onChange={setStartDate} triggerClassName="w-full h-12 rounded-xl bg-foreground/5 px-3.5 mt-0 mb-0" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground/60 mb-1.5">End date (optional)</p>
+              <p className="text-sm font-medium text-foreground/60 mb-1.5">{t("endDateOptional")}</p>
               <DatePicker
                 value={endDate}
                 onChange={setEndDate}
-                placeholder="No end date"
+                placeholder={t("noEndDate")}
                 onClear={() => setEndDate("")}
                 triggerClassName="w-full h-12 rounded-xl bg-foreground/5 px-3.5 mt-0 mb-0"
               />
@@ -352,65 +355,65 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             onClick={() => setDateOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold mt-2"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
 
       <Dialog open={monthlyOpen} onOpenChange={setMonthlyOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Monthly contribution</DialogTitle>
+            <DialogTitle>{t("monthlyContribution")}</DialogTitle>
           </DialogHeader>
           {endDate ? (
             <>
               <p className="text-sm text-foreground/50 -mt-2 mb-1">
-                Auto-calculated from the end date ({formatEur(effectiveMonthlyContribution)}) — clear the end date to set this manually.
+                {t("autoCalc", { amount: formatEur(effectiveMonthlyContribution) })}
               </p>
               <p className="text-center text-3xl font-bold tabular-nums py-8 opacity-50">{formatEur(effectiveMonthlyContribution)}</p>
             </>
           ) : (
-            <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
+            <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} onEnter={() => setMonthlyOpen(false)} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
           )}
           <button
             type="button"
             onClick={() => setMonthlyOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
 
       <Dialog open={balanceOpen} onOpenChange={setBalanceOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Starting balance</DialogTitle>
+            <DialogTitle>{t("startingBalance")}</DialogTitle>
           </DialogHeader>
-          <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
+          <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} onEnter={() => setBalanceOpen(false)} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
           <button
             type="button"
             onClick={() => setBalanceOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
 
       <Dialog open={iconColorOpen} onOpenChange={setIconColorOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Icon &amp; color</DialogTitle>
+            <DialogTitle>{t("iconColor")}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-6">
             <div className="flex-1">
-              <PickerField label="Icon">
+              <PickerField label={t("icon")}>
                 <IconPicker value={icon} onChange={setIcon} previewColor={color} />
               </PickerField>
             </div>
             <div className="flex-1">
-              <PickerField label="Color">
+              <PickerField label={t("color")}>
                 <ColorPicker value={color} onChange={setColor} previewIcon={icon} />
               </PickerField>
             </div>

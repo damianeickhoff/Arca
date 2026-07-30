@@ -393,6 +393,7 @@ export function BankEditDialog({
                 <AmountKeypad
                   expr={balanceExpr}
                   onChange={setBalanceExpr}
+                  onEnter={confirmBalance}
                   sign={balanceSign}
                   positive={balanceSign === "+"}
                   calcEnabled
@@ -443,6 +444,8 @@ export function VermogenEditDialog({
   const [name, setName]               = useState("");
   const [type, setType]               = useState("");
   const [value, setValue]             = useState("");
+  const [icon, setIcon]               = useState<string | null>(null);
+  const [iconOpen, setIconOpen]       = useState(false);
   const [color, setColor]             = useState("#0f9d8c");
   const [notes, setNotes]             = useState("");
   const [lastUpdated, setLastUpdated] = useState("");
@@ -454,6 +457,7 @@ export function VermogenEditDialog({
     setName(account.name);
     setType(account.type);
     setValue(String(account.value));
+    setIcon(account.icon ?? null);
     setColor(account.color ?? "#0f9d8c");
     setNotes(account.notes ?? "");
     setLastUpdated(account.lastUpdated ?? "");
@@ -472,6 +476,7 @@ export function VermogenEditDialog({
         name,
         type,
         value: parseFloat(value) || 0,
+        icon: icon || null,
         color: color || null,
         notes: notes || null,
         lastUpdated: lastUpdated || null,
@@ -521,20 +526,38 @@ export function VermogenEditDialog({
           </Button>
         }
       >
-        {/* Hero — large account glyph + name, matching the bank edit sheet. */}
+        {/* Hero — big account glyph (tap to change icon) + name, matching the bank edit sheet. */}
         <div className="flex flex-col items-center gap-3 pb-6 pt-1">
-          <div className="flex size-20 items-center justify-center rounded-3xl text-white shadow-lg" style={{ backgroundColor: color }}>
-            <Coin className="size-9" />
-          </div>
+          <button
+            type="button"
+            onClick={() => setIconOpen(true)}
+            aria-label="Change icon"
+            className="relative active:scale-95 transition-transform"
+          >
+            {icon ? (
+              <Icon iconKey={icon} color={color} size="xxl" />
+            ) : (
+              <span className="flex size-16 items-center justify-center rounded-3xl text-white shadow-lg" style={{ backgroundColor: color }}>
+                <Coin className="size-8" />
+              </span>
+            )}
+            <span className="absolute -right-1.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-black text-white shadow-md ring-2 ring-background">
+              <Pencil className="size-3.5" />
+            </span>
+          </button>
           <p className="text-xl font-bold text-foreground text-center px-6 truncate max-w-full">
             {name || "Account"}
           </p>
+          {/* Controlled — opened by tapping the hero above. */}
+          <IconPicker value={icon} onChange={setIcon} previewColor={color} open={iconOpen} onOpenChange={setIconOpen} hideDefaultTrigger />
         </div>
 
         <div className="space-y-3 px-5 pb-2">
           <div className="flex flex-wrap items-center gap-x-3">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
-            <ColorPicker value={color} onChange={setColor} inline />
+            {!(icon && isBrandIcon(icon)) && (
+              <ColorPicker value={color} onChange={setColor} inline />
+            )}
           </div>
 
           <Row icon={<CategoryIcon className="size-5" />} label="Type" value={vermogenTypeLabel(type)} onClick={() => openSub("type")} />
@@ -742,6 +765,7 @@ export function AddAccountDialog({
                 <AmountKeypad
                   expr={initialBalanceExpr}
                   onChange={setInitialBalanceExpr}
+                  onEnter={closeSub}
                   sign={initialBalanceSign}
                   positive={initialBalanceSign === "+"}
                   calcEnabled

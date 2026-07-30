@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { roundToCents } from "../transaction-splits";
-import { cleanLines, splitDelimited, type BankParser, type ParsedRow } from "./types";
+import { cleanLines, parseReportedBalance, splitDelimited, type BankParser, type ParsedRow } from "./types";
 
 /**
  * ABN AMRO's plain-text export has NO header row — each line is 8 comma-separated,
@@ -67,6 +67,9 @@ export const abnAmroParser: BankParser = {
         type: "",
         description,
         hash,
+        // The "balance after" field of the layout documented above — same caveat as
+        // the other indices here: verify against a real export before trusting it.
+        reportedBalance: parseReportedBalance(cols[COL.balance]),
       });
     }
     return rows;

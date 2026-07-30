@@ -21,7 +21,13 @@ export function cacheRawImport(text: string): string {
   return id;
 }
 
-export function takeRawImport(rawId: string): string | null {
+/**
+ * Read the cached upload **without consuming it**. Deliberately non-destructive: a manual
+ * import can be rejected (e.g. the chosen date column doesn't parse) and the user then
+ * retries with a corrected mapping against the same rawId. Deleting on read would force a
+ * re-upload on every failed attempt.
+ */
+export function peekRawImport(rawId: string): string | null {
   evictExpired();
   const entry = cache.get(rawId);
   if (!entry) return null;

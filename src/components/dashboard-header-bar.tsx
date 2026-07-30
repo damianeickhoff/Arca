@@ -9,22 +9,27 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { AnchoredTip } from "@/components/anchored-tip";
+import { ContextualTip } from "@/components/contextual-tip";
 import { CurrencyConverterDialog } from "@/components/currency-converter-dialog";
 import { acquireNavHidden } from "@/lib/nav-visibility";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import { BudgetHeaderActionsProvider, BudgetHeaderActionsSlot } from "@/lib/budget-header-actions";
 import { useBudgetPortal } from "@/lib/budget-portal-state";
 import { useReportsPortal } from "@/lib/reports-portal-state";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetRecurringMode } from "@/lib/app-settings";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 
 const REPORT_TABS = [
-  { id: "rapporten", label: "Analytics" },
+  { id: "rapporten", label: "Overview" },
   { id: "trends",    label: "Trends" },
   { id: "vermogen",  label: "Net worth" },
   { id: "prognose",  label: "Forecast" },
+  { id: "health",    label: "Health" },
 ] as const;
 
 interface ReportsContent {
@@ -32,6 +37,7 @@ interface ReportsContent {
   trends: React.ReactNode;
   vermogen: React.ReactNode;
   prognose: React.ReactNode;
+  health: React.ReactNode;
 }
 
 export function DashboardHeaderBar({
@@ -62,6 +68,19 @@ export function DashboardHeaderBar({
 
   const [currencyOpen, setCurrencyOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // The keyboard-shortcuts tip is only worth showing to someone who has a
+  // keyboard: a fine pointer plus a desktop-width viewport. Phones and tablets
+  // never see it, so it doesn't burn its one appearance on a device where none
+  // of it applies.
+  const [hasKeyboard, setHasKeyboard] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: fine) and (min-width: 768px)");
+    const update = () => setHasKeyboard(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   // Reports portal state — shared with the dashboard's Cash Flow Forecast card via
   // ReportsPortalProvider, so that card can open this portal straight onto the
@@ -96,6 +115,12 @@ export function DashboardHeaderBar({
     if (!reportsOpen && !budgetOpen) return;
     return acquireNavHidden();
   }, [reportsOpen, budgetOpen]);
+
+  // Escape closes whichever portal is on top. Registered separately (rather than
+  // one hook over closeActivePortal) so the stack in use-escape-to-close knows
+  // which one is actually the topmost.
+  useEscapeToClose(reportsOpen, closeReports);
+  useEscapeToClose(budgetOpen, closeBudget);
 
   // Single close handler for the morphing back button — routes to whichever
   // portal is actually open.
@@ -145,6 +170,7 @@ export function DashboardHeaderBar({
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={openBudget}
+            data-tip-anchor="budgetButton"
             className={cn("glass-icon-btn size-11", dimClass)}
             aria-label="Budget"
           >
@@ -152,8 +178,9 @@ export function DashboardHeaderBar({
           </button>
           <button
             onClick={() => openReports()}
+            data-tip-anchor="reportsButton"
             className={cn("glass-icon-btn size-11", dimClass)}
-            aria-label="Analytics"
+            aria-label="Insights"
           >
             <ChartBar className="size-6 text-foreground dark:text-gray-300 transition-colors duration-200"/>
           </button>
@@ -168,6 +195,30 @@ export function DashboardHeaderBar({
       </div>
 
       <CurrencyConverterDialog open={currencyOpen} onOpenChange={setCurrencyOpen} />
+
+      {/* Reports and Forecast are two tabs of the same portal, so their tips key off
+          the active tab as well as the portal being open — the Forecast pane is
+          mounted (hidden) alongside the others, so mounting alone means nothing here. */}
+      <ContextualTip id="reports" active={reportsOpen && activeReportTab !== "prognose" && activeReportTab !== "health"} />
+      <ContextualTip id="forecast" active={reportsOpen && activeReportTab === "prognose"} />
+      <ContextualTip id="health" active={reportsOpen && activeReportTab === "health"} />
+
+      {/* Shown on the bare dashboard, not over a portal — the shortcuts it
+          describes are app-wide, so there's nothing to point at. */}
+      <ContextualTip id="keyboardShortcuts" active={hasKeyboard && !anyPortalOpen} />
+
+      {/* Pointer tips for this row's own controls. Suppressed while a portal is open —
+          the row is faded out behind it, so there'd be nothing under the ring. Only one
+          tip is ever on screen (see lib/tips.ts), so these arrive one per dashboard
+          visit rather than all at once. */}
+      <AnchoredTip id="settingsLocation" anchor="settingsTrigger" active={!anyPortalOpen} />
+      <AnchoredTip id="budgetLocation" anchor="budgetButton" active={!anyPortalOpen} />
+      <AnchoredTip id="reportsLocation" anchor="reportsButton" active={!anyPortalOpen} />
+      {/* The card lives in the dashboard's scrollable card row, not in this component —
+          AnchoredTip finds it by its data-tip-anchor anywhere in the DOM. Off to the
+          right of the row on a phone it simply isn't hit-testable, so the tip stands
+          down and stays pending; on a wide screen the row is a grid and it lands. */}
+      <AnchoredTip id="healthCard" anchor="healthCard" active={!anyPortalOpen} />
 
       {/* ── Reports portal — always mounted once so opacity transitions work ──
           z-45: above the dashboard's own sticky header row (page.tsx, z-40) — that
@@ -190,9 +241,10 @@ export function DashboardHeaderBar({
             }}
           />
 
-          {/* Header + tab bar + iframe container */}
+          {/* Header + tab bar + iframe container. The backdrop above stays full-bleed;
+              this content column matches the dashboard's (CONTENT_COLUMN). */}
           <div
-            className="fixed inset-x-0 bottom-0 flex flex-col"
+            className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
             style={{
               top: 0,
               zIndex: 45,
@@ -214,7 +266,7 @@ export function DashboardHeaderBar({
               >
                 <IconX className="size-5" />
               </button>
-              <h1 className="text-lg text-foreground text-center truncate">Analytics</h1>
+              <h1 className="text-lg text-foreground text-center truncate">Insights</h1>
               <div className="size-11" />
             </div>
 
@@ -226,7 +278,9 @@ export function DashboardHeaderBar({
                     key={tab.id}
                     onClick={() => setActiveReportTab(tab.id)}
                     className={cn(
-                      "flex-1 text-sm font-medium py-1.5 rounded-lg transition-all",
+                      // text-xs (was text-sm): five equal-width tabs leave ~65px each on a
+                      // 375px screen, which "Net worth" overflows at 14px.
+                      "flex-1 text-xs font-medium py-1.5 rounded-lg transition-all whitespace-nowrap",
                       activeReportTab === tab.id
                         ? "bg-background text-foreground"
                         : "text-foreground/50 hover:text-foreground/70",
@@ -282,9 +336,9 @@ export function DashboardHeaderBar({
             }}
           />
 
-          {/* Content */}
+          {/* Content — backdrop stays full-bleed, this column matches the dashboard's. */}
           <div
-            className="fixed inset-x-0 bottom-0 flex flex-col"
+            className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
             style={{
               top: 0,
               zIndex: 45,

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { IconAdjustmentsHorizontal as Filter, IconCheck as Check, IconSearch as Search } from "@tabler/icons-react";
 import { RecurringClient, RecurringRestoreButton } from "@/components/settings/recurring/recurring-client";
 import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
+import { ContextualTip } from "@/components/contextual-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import {
   DropdownMenu,
@@ -110,6 +111,7 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
 
   return (
     <>
+      <ContextualTip id="recurring" />
       <PanelHeader
         title="Recurring"
         action={<>{filterMenu}<RecurringClient action="add" variant="default" /></>}

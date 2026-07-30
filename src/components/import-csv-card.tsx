@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconUpload as Upload,
   IconCircleCheckFilled as CheckCircle2,
@@ -13,9 +14,10 @@ import { NewAccountsPrompt } from "@/components/new-accounts-prompt";
 import { ImportColumnMapping, type NeedsMappingResponse } from "@/components/import-column-mapping";
 
 export function ImportCsvCard() {
+  const t = useTranslations("importMapping");
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [result, setResult] = useState<{ imported: number; skipped: number; autoCategorised: number; total: number } | null>(null);
+  const [result, setResult] = useState<{ imported: number; skipped: number; autoCategorised: number; invalidDates?: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [newAccounts, setNewAccounts] = useState<Bank[]>([]);
@@ -104,6 +106,11 @@ export function ImportCsvCard() {
                 )}
                 {result.skipped > 0 && (
                   <p className="text-sm text-muted-foreground">{result.skipped} skipped (already present)</p>
+                )}
+                {/* Only a built-in bank parser can get this far with an unreadable date;
+                    the mapping dialog rejects such files before anything is written. */}
+                {(result.invalidDates ?? 0) > 0 && (
+                  <p className="text-sm text-destructive">{t("rowsSkippedBadDate", { count: result.invalidDates ?? 0 })}</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">{result.total} rows in file</p>
               </div>

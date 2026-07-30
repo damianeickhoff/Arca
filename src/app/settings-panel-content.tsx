@@ -7,6 +7,10 @@ import { CategoriesClient } from "@/components/settings/categories/categories-cl
 import { RecurringMenuClient } from "@/components/settings/recurring/recurring-menu-client";
 import { AccountsOverviewClient } from "@/components/settings/accounts/accounts-overview-client";
 import { MerchantsClient } from "@/components/settings/merchants-client";
+import { DataHealthClient } from "@/components/settings/data-health-client";
+import { ImportProfilesClient } from "@/components/settings/import-profiles-client";
+import { findBrokenDateTransactions } from "@/lib/data-health";
+import { listImportProfiles } from "@/lib/import-profiles";
 import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
@@ -84,6 +88,14 @@ async function MerchantsPanel() {
   return <MerchantsClient initialMerchants={await listMerchants()} />;
 }
 
+async function DataHealthPanel() {
+  return <DataHealthClient rows={await findBrokenDateTransactions()} />;
+}
+
+async function ImportProfilesPanel() {
+  return <ImportProfilesClient profiles={await listImportProfiles()} />;
+}
+
 async function UsersPanel({ currentUserId }: { currentUserId: number }) {
   const allUsers = await db.select().from(users).orderBy(users.email);
   return <UsersClient users={allUsers} currentUserId={currentUserId} />;
@@ -95,6 +107,8 @@ export function getSettingsPanelContent(currentUser: { id: number; isAdmin: bool
     categories: <Suspense key="categories" fallback={<PanelSkeleton />}><CategoriesPanel /></Suspense>,
     recurring: <Suspense key="recurring" fallback={<PanelSkeleton />}><RecurringPanel /></Suspense>,
     merchants: <Suspense key="merchants" fallback={<PanelSkeleton />}><MerchantsPanel /></Suspense>,
+    dataHealth: <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel /></Suspense>,
+    importProfiles: <Suspense key="importProfiles" fallback={<PanelSkeleton />}><ImportProfilesPanel /></Suspense>,
     // Only fetched/embedded for admins — the row that opens this panel is itself
     // admin-gated in SettingsDialog, so non-admins never get the user list in props.
     ...(currentUser.isAdmin

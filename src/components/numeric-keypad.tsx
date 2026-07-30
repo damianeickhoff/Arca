@@ -8,6 +8,7 @@ import {
   IconPlus,
 } from "@tabler/icons-react";
 import { m, spring } from "@/lib/motion";
+import { useKeypadKeyboard } from "@/lib/use-keypad-keyboard";
 
 const DIGIT_GRID = ["7", "8", "9", "4", "5", "6", "1", "2", "3"] as const;
 
@@ -18,17 +19,22 @@ const DIGIT_GRID = ["7", "8", "9", "4", "5", "6", "1", "2", "3"] as const;
 // and the category detail quick-edit keypad.
 export function NumericKeypad({
   onKey,
+  onEnter,
   calcEnabled,
   digitClassName,
   opClassName,
 }: {
   onKey: (key: string) => void;
+  /** Primary action for the Enter key — the surface's Save/Done button. */
+  onEnter?: () => void;
   calcEnabled?: boolean;
   digitClassName: string;
   opClassName?: string;
 }) {
+  const rootRef = useKeypadKeyboard({ calcEnabled, onKey, onEnter });
+
   return (
-    <div className="flex gap-2">
+    <div ref={rootRef} className="flex gap-2">
       <div className="grid grid-cols-3 gap-2 flex-1">
         {DIGIT_GRID.map((d) => (
           <m.button key={d} type="button" whileTap={{ scale: 0.92 }} transition={spring.press} onClick={() => onKey(d)} className={digitClassName}>

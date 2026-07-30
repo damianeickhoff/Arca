@@ -8,18 +8,10 @@ import {
   IconCashBanknote as BankIcon,
   IconCheck as Check,
 } from "@tabler/icons-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { filterPillClass } from "@/components/filter-pill";
 import { cn } from "@/lib/utils";
 import { glassIconButton } from "@/lib/styles";
-import { useIsMobile } from "@/lib/use-is-mobile";
 
 type Props = {
   banks: Bank[];
@@ -34,7 +26,6 @@ type Props = {
 export function BankPicker({ banks, current, mode, action, variant = "default", className, iconClassName }: Props) {
   const router = useRouter();
   const params = useSearchParams();
-  const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   async function onChange(value: string) {
@@ -75,8 +66,7 @@ export function BankPicker({ banks, current, mode, action, variant = "default", 
     </>
   );
 
-  if (isMobile) {
-    return (
+  return (
       <>
         <button
           type="button"
@@ -133,45 +123,5 @@ export function BankPicker({ banks, current, mode, action, variant = "default", 
           </DialogContent>
         </Dialog>
       </>
-    );
-  }
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className={cn(triggerClass, className)}>
-        {triggerContent}
-      </DropdownMenuTrigger>
-
-      <DropdownMenuContent align="start" className="min-w-52 ring-0">
-        <DropdownMenuItem
-          onClick={() => onChange("")}
-          className={!current ? "mt-0 mb-1 bg-foreground text-primary-foreground font-medium focus:bg-foreground focus:text-primary-foreground" : "text-foreground"}
-        >
-          All accounts
-        </DropdownMenuItem>
-
-        {banks.length > 0 && <DropdownMenuSeparator />}
-
-        {banks.map((bank) => {
-          const active = current === (bank.accountNumber ?? String(bank.id));
-          return (
-            <DropdownMenuItem
-              key={bank.id}
-              onClick={() => onChange(bank.accountNumber ?? String(bank.id))}
-              className={active ? "bg-foreground text-primary-foreground font-medium focus:bg-foreground focus:text-primary-foreground" : "text-foreground"}
-            >
-              <div className="flex flex-col min-w-0">
-                <span>{bank.displayName ?? bank.accountNumber ?? `Bank ${bank.id}`}</span>
-                {bank.displayName && bank.accountNumber && (
-                  <span className={cn("text-xs font-mono truncate", active ? "text-primary-foreground/70" : "text-foreground/60")}>
-                    {bank.accountNumber}
-                  </span>
-                )}
-              </div>
-            </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }

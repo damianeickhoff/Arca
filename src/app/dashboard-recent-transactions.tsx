@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { IconReload } from "@tabler/icons-react";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -68,8 +69,15 @@ export function DashboardRecentTransactions({
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 2);
 
+  // The very first row carries the pointer tip's anchor — one row is enough to make
+  // the point, and it's the one guaranteed to be above the fold.
+  const firstRowId = days[0]?.[1][0]?.id;
+
   return (
     <div className="space-y-4">
+      {/* Held back while the detail sheet is open — the tip is about opening it. */}
+      <AnchoredTip id="transactionDetail" anchor="transactionRow" active={detailRow == null} />
+
       {days.map(([date, txs]) => (
 
         <div key={date}>
@@ -80,6 +88,7 @@ export function DashboardRecentTransactions({
                 key={t.id}
                 type="button"
                 onClick={() => setDetailRow(t)}
+                data-tip-anchor={t.id === firstRowId ? "transactionRow" : undefined}
                 className="w-full flex items-center gap-3.5 rounded-xl text-left active:bg-foreground/[0.04] transition-colors"
               >
                 {(() => { const ic = resolveTransactionIcon(t); return (

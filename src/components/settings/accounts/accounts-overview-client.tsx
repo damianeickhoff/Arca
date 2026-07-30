@@ -159,7 +159,8 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
                   subtitle={vermogenTypeLabel(a.type)}
                   amount={a.value}
                   color={a.color ?? "#0f9d8c"}
-                  icon={<Coin className="size-6" />}
+                  icon={a.icon ? <Icon iconKey={a.icon} color={a.color ?? undefined} size="xl" round /> : <Coin className="size-6" />}
+                  bareIcon={!!a.icon}
                   onClick={() => setEditingAsset(a)}
                 />
               ))}

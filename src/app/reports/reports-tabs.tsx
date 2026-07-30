@@ -4,9 +4,10 @@ import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "rapporten", label: "Analytics" },
+  { id: "rapporten", label: "Overview" },
   { id: "trends",    label: "Trends" },
   { id: "vermogen",  label: "Net worth" },
+  { id: "health",    label: "Health" },
 ];
 
 export function ReportsTabs({ active }: { active: string }) {

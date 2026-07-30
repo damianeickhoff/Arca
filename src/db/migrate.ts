@@ -201,6 +201,11 @@ try {
 try {
   sqlite.exec(`ALTER TABLE categories ADD COLUMN exclude_from_spending_row INTEGER NOT NULL DEFAULT 0`);
 } catch { /* column already exists */ }
+try {
+  // Balance the bank reported after this transaction, when the import mapped such a
+  // column. Nullable — pre-existing rows keep no reported balance.
+  sqlite.exec(`ALTER TABLE transactions ADD COLUMN reported_balance REAL`);
+} catch { /* column already exists */ }
 
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS reimbursements (
@@ -360,6 +365,17 @@ sqlite.exec(`
 `);
 
 sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS financial_health_snapshots (
+    month        TEXT PRIMARY KEY,
+    score        REAL NOT NULL,
+    net_worth    REAL,
+    savings_rate REAL,
+    breakdown    TEXT,
+    updated_at   TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+sqlite.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     email         TEXT    NOT NULL UNIQUE,
@@ -488,6 +504,9 @@ try {
 } catch { /* column already exists */ }
 try {
   sqlite.exec(`ALTER TABLE vermogen_accounts ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 1`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE vermogen_accounts ADD COLUMN icon TEXT`);
 } catch { /* column already exists */ }
 
 try {

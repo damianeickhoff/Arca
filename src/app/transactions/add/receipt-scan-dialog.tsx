@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { IconCamera, IconAlertCircleFilled, IconCheck } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ContextualTip } from "@/components/contextual-tip";
 import { formatEur } from "@/lib/format";
 
 export interface ScannedReceipt {
@@ -72,7 +73,9 @@ export function ReceiptScanDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      {/* Portals to <body> itself, so it isn't clipped by the sheet it explains. */}
+      <ContextualTip id="receiptScan" active={open} />
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Scan receipt</DialogTitle>
         </DialogHeader>

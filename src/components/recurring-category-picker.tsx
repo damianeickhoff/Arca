@@ -92,7 +92,7 @@ export function RecurringCategoryPicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{creating ? "New category" : "Choose a category"}</DialogTitle>
         </DialogHeader>

@@ -5,8 +5,11 @@ import { createPortal } from "react-dom";
 import { IconChevronLeft } from "@tabler/icons-react";
 import { useTransactionsPortal } from "@/lib/transactions-portal-state";
 import { acquireNavHidden } from "@/lib/nav-visibility";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
 
 // Dashboard-only entry point for the upcoming-bills view — same slide-up shell as
@@ -41,6 +44,8 @@ export function UpcomingPortal({
     return acquireNavHidden();
   }, [open]);
 
+  useEscapeToClose(open, close);
+
   const springOut = "cubic-bezier(0.32, 0.72, 0, 1)";
   const springIn = "cubic-bezier(0.16, 1, 0.3, 1)";
 
@@ -71,7 +76,7 @@ export function UpcomingPortal({
         }}
       />
       <div
-        className="fixed inset-x-0 bottom-0 flex flex-col"
+        className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
         style={{
           top: 0,
           zIndex: 45,
