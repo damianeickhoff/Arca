@@ -1,7 +1,7 @@
 > **⚠️ Work in Progress**
 >
 > Arca is currently in active development. Expect frequent updates, new features, and occasional breaking changes. If you're using Arca to manage important financial data, make regular backups of your `/data` directory before updating.
-> Arca is also a webapp only for now and is aiming to have a responsive design for mobile and desktop. Though for now only the mobile view is considered 'as good as complete'. Desktop is something I'll be working on these next few weeks.
+> Arca is also a webapp only for now and has a responsive design for mobile and desktop. You can use it as PWA.
 
 
 # 💰 Arca
