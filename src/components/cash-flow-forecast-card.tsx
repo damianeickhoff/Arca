@@ -1,15 +1,21 @@
 "use client";
 
-import { IconTrendingUp, IconTrendingDown, IconAlertTriangleFilled } from "@tabler/icons-react";
 import { signedForecastEur, type ForecastStatus } from "@/lib/cash-flow-forecast-shared";
 import { useReportsPortal } from "@/lib/reports-portal-state";
+import { DASH_CARD_TITLE, DASH_CARD_BODY, DASH_CARD_SUBTITLE, DashCardPill } from "@/components/dashboard-card";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
-const STATUS_STYLES: Record<ForecastStatus, { color: string; icon: typeof IconTrendingUp }> = {
-  healthy: { color: "var(--color-success)", icon: IconTrendingUp },
-  warning: { color: "var(--color-warning)", icon: IconAlertTriangleFilled },
-  critical: { color: "var(--color-danger)", icon: IconTrendingDown },
+// Colour only — the status is carried by the pill next to the title rather than by an
+// icon chip or by tinting the message text (the subtitle slot is a fixed neutral grey
+// in every card in the row).
+const STATUS_COLORS: Record<ForecastStatus, string> = {
+  healthy: "var(--color-success)",
+  warning: "var(--color-warning)",
+  critical: "var(--color-danger)",
+  // "empty" carries no verdict, so it gets the same muted grey the other cards use
+  // for their "not enough data" pill rather than a traffic-light colour.
+  empty: "var(--color-muted-foreground)",
 };
 
 /**
@@ -35,7 +41,7 @@ export function CashFlowForecastCard({
   className?: string;
 }) {
   const { openReports } = useReportsPortal();
-  const { color, icon: StatusIcon } = STATUS_STYLES[status];
+  const color = STATUS_COLORS[status];
   const t = useTranslations("cashFlow");
 
 
@@ -44,31 +50,28 @@ export function CashFlowForecastCard({
       type="button"
       onClick={() => openReports("prognose")}
       className={cn(
-        "flex flex-col justify-center gap-1 mx-3 mt-5 rounded-2xl bg-card p-4 text-left active:scale-[0.98] transition-transform duration-150 w-[calc(100%-1.5rem)]",
+        "flex flex-col gap-1 mx-3 mt-5 rounded-2xl bg-card p-4 text-left active:scale-[0.98] transition-transform duration-150 w-[calc(100%-1.5rem)]",
         className,
       )}
     >
-      <div className="flex items-center gap-2">
-        <span
-          className="size-6 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: `color-mix(in srgb, ${color} 18%, transparent)` }}
-        >
-          <StatusIcon className="size-3.5" style={{ color }} />
-        </span>
-        <p className="text-sm font-semibold text-foreground truncate">{t("title")}</p>
+      {/* items-start, not items-center: the title wraps to two or three lines in some
+          languages and the pill must stay pinned to the card's top-right corner. */}
+      <div className="flex items-start justify-between gap-2">
+        <p className={DASH_CARD_TITLE}>{t("title")}</p>
+        <DashCardPill label={t(`status.${status}`)} color={color} />
       </div>
 
-      <p className="text-2xl font-black tabular-nums tracking-tight text-foreground">
-        {signedForecastEur(current)}
-      </p>
+      <div className={cn(DASH_CARD_BODY, "gap-1")}>
+        <p className="text-xl font-black tabular-nums tracking-tight text-foreground">
+          {signedForecastEur(current)}
+        </p>
 
-      {!hasStartingBalance && (
-        <p className="text-xs text-foreground/40 -mt-0.5">{t("emptySub")}</p>
-      )}
+        {!hasStartingBalance && (
+          <p className="text-[11px] text-foreground/40 -mt-0.5">{t("emptySub")}</p>
+        )}
+      </div>
 
-      <p className="text-sm text-foreground/50 leading-snug line-clamp-2" style={status === "healthy" ? undefined : { color }}>
-        {message}
-      </p>
+      <p className={DASH_CARD_SUBTITLE}>{message}</p>
     </button>
   );
 }

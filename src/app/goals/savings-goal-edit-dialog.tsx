@@ -201,11 +201,11 @@ export function SavingsGoalEditDialog({
         {subpage && (
           <SubSheet title={SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
               {subpage === "amount" && (
-                <AmountKeypad expr={amountExpr} onChange={setAmountExpr} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
+                <AmountKeypad expr={amountExpr} onChange={setAmountExpr} onEnter={closeSub} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
               )}
 
               {subpage === "balance" && (
-                <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
+                <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} onEnter={closeSub} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
               )}
 
               {subpage === "monthly" && (
@@ -218,7 +218,7 @@ export function SavingsGoalEditDialog({
                   {endDate ? (
                     <p className="text-center text-3xl font-bold tabular-nums py-8 opacity-50">{formatEur(effectiveMonthlyContribution)}</p>
                   ) : (
-                    <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
+                    <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} onEnter={closeSub} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
                   )}
                 </div>
               )}

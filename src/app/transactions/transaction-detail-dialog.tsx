@@ -231,7 +231,7 @@ function TransactionDetailBody({
   // The filter button sits in the sheet's header row next to the close button, so it
   // takes the close button's styling.
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: "size-11 rounded-full bg-white/80 shadow-lg text-foreground",
+    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 shadow-lg text-foreground",
   });
   const [excluded, setExcluded] = useState(!!row.excludeFromReports);
   type BulkPrompt = {
@@ -547,7 +547,12 @@ function TransactionDetailBody({
               )}
 
               <Dialog open={showPicker && !row.isSplit} onOpenChange={(v) => !v && setShowPicker(false)}>
+                {/* sheetClassName must match the overlay's z-index: the overlay is
+                    lifted to 65 to sit above the parent sheet (z-50), and without the
+                    same lift here the content stays at 50 — i.e. *under* its own
+                    blurred overlay, which then frosts the picker along with the page. */}
                 <DialogContent
+                  sheetClassName="z-[65]"
                   overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20"
                   fullHeight
                   hideHandle
@@ -649,7 +654,7 @@ function TransactionDetailBody({
               </button>
 
               <Dialog open={showGoalPicker} onOpenChange={setShowGoalPicker}>
-                <DialogContent overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
+                <DialogContent sheetClassName="z-[65]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
                   <DialogTitle>Choose savings goal</DialogTitle>
                   <div className="space-y-1 max-h-[60vh] overflow-y-auto">
                     <button
@@ -765,7 +770,7 @@ function TransactionDetailBody({
 
       {/* Note editor */}
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
+        <DialogContent sheetClassName="z-[65]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
           <DialogHeader>
             <DialogTitle>Note</DialogTitle>
           </DialogHeader>

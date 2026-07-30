@@ -7,8 +7,10 @@ import { Icon } from "@/components/icon";
 import { ListItemRow } from "@/components/list-item-row";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import type { CategorySpendCard } from "@/components/category-spending-row";
 import { acquireNavHidden } from "@/lib/nav-visibility";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
 
 const springOut = "cubic-bezier(0.32, 0.72, 0, 1)";
 const springIn = "cubic-bezier(0.16, 1, 0.3, 1)";
@@ -51,6 +53,8 @@ export function CategorySpendingListPortal({
     return acquireNavHidden();
   }, [open]);
 
+  useEscapeToClose(open, onClose);
+
   return (
     <>
       {mounted &&
@@ -68,7 +72,7 @@ export function CategorySpendingListPortal({
             />
 
             <div
-              className="fixed inset-x-0 bottom-0 flex flex-col overflow-hidden"
+              className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
               style={{
                 top: 0,
                 zIndex: 45,

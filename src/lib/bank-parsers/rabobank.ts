@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { roundToCents } from "../transaction-splits";
-import { cleanLines, isoDateOnly, splitDelimited, type BankParser, type ParsedRow } from "./types";
+import { cleanLines, isoDateOnly, parseReportedBalance, splitDelimited, type BankParser, type ParsedRow } from "./types";
 
 /**
  * Rabobank's "CSV boekingsregels" export. Comma-delimited, quoted fields, header:
@@ -17,6 +17,7 @@ const COL = {
   account: 0,
   date: 4,
   amount: 6,
+  balance: 7, // "Saldo na trn" — the balance Rabobank reports after this transaction
   counterAccount: 8,
   name: 9,
   code: 13,
@@ -72,6 +73,7 @@ export const rabobankParser: BankParser = {
         type: cols[COL.code].trim(),
         description: description || name,
         hash,
+        reportedBalance: parseReportedBalance(cols[COL.balance]),
       });
     }
     return rows;

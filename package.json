@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:init": "node --experimental-strip-types src/db/migrate.ts"
+    "db:init": "node --experimental-strip-types src/db/migrate.ts",
+    "db:seed-demo": "node --experimental-strip-types scripts/seed-demo-data.ts",
+    "db:seed-demo:reset": "node --experimental-strip-types scripts/seed-demo-data.ts --reset"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.81.0",

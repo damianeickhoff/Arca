@@ -15,7 +15,11 @@ export type TipAnchor =
   | "budgetEdit"
   | "reportsButton"
   | "settingsTrigger"
-  | "transactionRow";
+  | "transactionRow"
+  | "healthCard"
+  | "importDatePreview"
+  | "dataHealthMenu"
+  | "transactionListRow";
 
 const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

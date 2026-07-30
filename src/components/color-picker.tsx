@@ -256,7 +256,7 @@ export function ColorPicker({ value, onChange, previewIcon, previewAsBackground 
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="z-[60]" overlayClassName="z-[55] backdrop-blur-lg bg-foreground/20">
+        <DialogContent sheetClassName="z-[60]" overlayClassName="z-[55] backdrop-blur-lg bg-foreground/20">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <DialogTitle>Color kiezen</DialogTitle>

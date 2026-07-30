@@ -7,6 +7,8 @@ import { useTranslations } from "next-intl";
 import { IconChevronLeft, IconPlus } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { MobileTransactionList } from "./mobile-transaction-list";
 import { MobileTransactionsSearch } from "./mobile-transactions-header";
@@ -96,7 +98,7 @@ export function TransactionsMobile({
           element's covered content does — the matching pt-[...] on the content
           wrapper below reserves exactly its height instead, the same technique the
           fixed search/add bar at the bottom already uses with pb-28. */}
-      <div className="sticky top-0 z-40 bg-background">
+      <div className={cn(CONTENT_COLUMN, "sticky top-0 z-40 bg-background")}>
         <div className="relative flex items-center px-4 pt-[calc(var(--sat)+0.75rem)]">
           <button
             type="button"
@@ -129,7 +131,7 @@ export function TransactionsMobile({
 
       {/* pt-[...] clears the fixed header above (back/title row + pills row) so
           content always starts fully below it — never partially hidden underneath. */}
-      <div className="pt-15 px-4 pb-28 space-y-4 lg:max-w-3xl lg:mx-auto bg-background">
+      <div className={cn(CONTENT_COLUMN, "pt-15 px-4 pb-28 space-y-4 bg-background")}>
         {hasActiveFilters && (
           <p className="text-sm text-muted-foreground">
             {t("results", { count: filteredCount })}
@@ -196,7 +198,7 @@ export function TransactionsMobile({
       </div>
 
       {/* Fixed bar at the bottom of the subpage (the mobile nav is hidden here) — search + add. */}
-      <div className="fixed bottom-[var(--sab)] left-4 right-4 z-40 flex items-center gap-3 pb-3">
+      <div className={cn(CONTENT_COLUMN, "fixed bottom-[var(--sab)] inset-x-0 px-4 z-40 flex items-center gap-3 pb-3")}>
         <div className="flex-1 min-w-0">
           <MobileTransactionsSearch search={search} />
         </div>

@@ -193,7 +193,7 @@ export function DebtEditDialog({
         {subpage && (
           <SubSheet title={SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
               {subpage === "amount" && (
-                <AmountKeypad expr={amountExpr} onChange={setAmountExpr} positive={direction === "owed"} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
+                <AmountKeypad expr={amountExpr} onChange={setAmountExpr} onEnter={closeSub} positive={direction === "owed"} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
               )}
 
               {subpage === "direction" && (
@@ -207,7 +207,7 @@ export function DebtEditDialog({
               )}
 
               {subpage === "payment" && (
-                <AmountKeypad expr={paymentExpr} onChange={setPaymentExpr} calcEnabled={paymentCalcEnabled} onToggleCalc={() => setPaymentCalcEnabled((c) => !c)} />
+                <AmountKeypad expr={paymentExpr} onChange={setPaymentExpr} onEnter={closeSub} calcEnabled={paymentCalcEnabled} onToggleCalc={() => setPaymentCalcEnabled((c) => !c)} />
               )}
 
               {subpage === "originalAmount" && (
@@ -215,7 +215,7 @@ export function DebtEditDialog({
                   <p className="text-sm text-foreground/50 -mb-2 text-center">
                     Optional — only needed if tracking started after some of this debt was already paid off. Leave blank to use the starting balance as the total.
                   </p>
-                  <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
+                  <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} onEnter={closeSub} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
                 </div>
               )}
 

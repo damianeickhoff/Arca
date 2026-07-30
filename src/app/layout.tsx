@@ -12,6 +12,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isPublicPath } from "@/lib/public-paths";
 import { maybeRecordDailyNetWorthSnapshot } from "@/lib/net-worth-snapshots";
+import { maybeRecordMonthlyHealthSnapshot } from "@/lib/health-snapshots";
 import { backfillBankAccountNumbers } from "@/lib/bank-account-numbers";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { RefreshOnReturn } from "@/components/refresh-on-return";
@@ -96,6 +97,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // wrapped internally in try/catch so it can never break the layout render.
   if (user) {
     void maybeRecordDailyNetWorthSnapshot();
+    void maybeRecordMonthlyHealthSnapshot();
     void backfillBankAccountNumbers();
   }
 

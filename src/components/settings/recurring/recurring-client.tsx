@@ -318,7 +318,7 @@ export function RecurringClient(props: Props) {
           {subpage && (
             <SubSheet title={SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
                 {subpage === "amount" && (
-                  <AmountKeypad expr={amountExpr} onChange={setAmountExpr} sign={form.type === "income" ? "+" : "−"} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
+                  <AmountKeypad expr={amountExpr} onChange={setAmountExpr} onEnter={closeSub} sign={form.type === "income" ? "+" : "−"} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
                 )}
 
                 {subpage === "period" && (

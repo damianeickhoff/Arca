@@ -340,7 +340,7 @@ export async function AnalyticsTab({
   // /reports route, so it needs the same clearance at every width now. Harmless
   // extra whitespace when embedded (the dashboard portal hides the nav there).
   return (
-    <div className="px-4 pt-1 pb-[calc(8rem+var(--sab))] space-y-4">
+    <div className="px-4 pt-1 pb-[calc(6rem+var(--sab))] space-y-4">
       <AnalyticsFilterBar
         categories={data.allCategories}
         banks={data.allBanks}
@@ -380,6 +380,7 @@ export async function AnalyticsTab({
       </div>
 
       {/* Spending */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
         <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
           <p className="text-md text-foreground/60 mb-1">Spending</p>
@@ -415,7 +416,7 @@ export async function AnalyticsTab({
           total={data.income}
         />
       </div>
-
+      </div>
       {/* Budget ring */}
       {data.budgetOverview?.budget && (
         <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
@@ -442,7 +443,7 @@ export async function AnalyticsTab({
 
       {/* Largest expense / Favorite category — square tiles, same shape as the
           category detail page's stat cards (src/components/category-insight-cards.tsx) */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatTile
           label="Largest expense"
           value={formatCompactEur(data.largestExpense)}
@@ -458,10 +459,8 @@ export async function AnalyticsTab({
             </div>
           )}
         />
-      </div>
 
       {/* Transactions / Popular day — square tiles, same treatment as above */}
-      <div className="grid grid-cols-2 gap-3">
         <StatTile
           label="Transactions"
           value={data.transactionCount}

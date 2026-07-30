@@ -36,6 +36,10 @@ export type TransactionRow = {
   notes: string | null;
   customName: string | null;
   receiptUrl: string | null;
+  // Selected by the transactions page query; `boolean | number` because SQLite hands
+  // flags back as 0/1. Read by the bulk bar to decide whether its button offers to
+  // exclude the selection or put it back.
+  excludeFromReports?: boolean | number;
   goalId: number | null;
   recurringItemId?: number | null;
   recurringName?: string | null;

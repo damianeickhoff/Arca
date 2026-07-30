@@ -67,6 +67,8 @@ const CASH_FLOW_STATUS = {
   healthy:  { label: "Healthy",  color: "var(--color-success)", icon: TrendingUp },
   warning:  { label: "Warning",  color: "var(--color-warning)", icon: AlertTriangle },
   critical: { label: "Critical", color: "var(--color-danger)",  icon: TrendingDown },
+  // Nothing to forecast from yet — neutral, so it doesn't read as a verdict.
+  empty:    { label: "No data",  color: "var(--color-muted-foreground)", icon: TrendingUp },
 } as const;
 
 const FREQ_LABELS: Record<string, string> = {
@@ -378,12 +380,15 @@ export default async function PrognPage({
       <div className="sticky z-40 bg-background px-4 pt-2 pb-3 space-y-2" style={{ top: stickyTop }}>
         {!embedded && <BudgetTabs />}
       </div>
-      <PrognosePeriodPicker current={baseMonth} />
+      {/* Embedded, the picker keeps the month in a cookie instead of the URL — the
+          portal shares the dashboard's "/" route, so a param there would show up in
+          the address bar of the whole app. See the picker's own `embedded` docs. */}
+      <PrognosePeriodPicker current={baseMonth} embedded={embedded} />
 
-      <div className="px-4 pb-6 pt-3 space-y-3">
+      <div className="px-4 pb-28 pt-3 space-y-3">
 
         {/* Summary — 4 stat tiles, same grid as the Trends page */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatTile
             label="Income"
             value={formatEur(totalIncome)}
@@ -459,8 +464,9 @@ export default async function PrognPage({
             </div>
 
             <CashFlowChart points={cashFlow.points} events={cashFlow.events} lowest={cashFlow.lowest} />
+            </div>
 
-            <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
+            <div className="flex flex-wrap gap-4 mt-2 p-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="size-2 rounded-full inline-block" style={{ backgroundColor: "var(--color-income)" }} />
                 Money in
@@ -479,80 +485,149 @@ export default async function PrognPage({
               </span>
             </div>
           </div>
-        </div>
+        
 
-        {/* Cash flow summary — same row treatment as "Budget distribution" below. */}
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4">
-          <div>
-            <p className="text-md mb-1">Cash flow summary</p>
-            <p className="text-xs text-muted-foreground">Next {FORECAST_HORIZON_DAYS} days, from today</p>
-          </div>
-          <div className="flex flex-col gap-2.5">
-            <CashFlowRow label={cashFlowLabel} value={signedForecastEur(cashFlow.current)} />
-            <CashFlowRow
-              label="Lowest point"
-              value={cashFlow.lowest ? signedForecastEur(cashFlow.lowest.amount) : "—"}
-              hint={cashFlow.lowest ? formatForecastDate(cashFlow.lowest.date) : undefined}
-              color={cashFlow.lowest && cashFlow.lowest.amount < 0 ? "var(--color-danger)" : undefined}
-            />
-            <CashFlowRow label="Expected income" value={formatEur(cashFlow.totalIncome)} color="var(--color-income)" />
-            <CashFlowRow label="Expected expenses" value={formatEur(cashFlow.totalExpenses)} color="var(--color-expense)" />
-            <CashFlowRow
-              label="Next income"
-              value={cashFlow.nextIncome ? formatEur(cashFlow.nextIncome.amount) : "—"}
-              hint={cashFlow.nextIncome ? `${cashFlow.nextIncome.name} · ${formatForecastDate(cashFlow.nextIncome.date)}` : undefined}
-            />
-            <CashFlowRow label="Forecast status" value={cashFlowStatus.label} color={cashFlowStatus.color} />
-          </div>
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+          {/* Cash flow summary — same row treatment as "Budget distribution" below. */}
+          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4 h-full flex flex-col">
+            <div>
+              <p className="text-md font-semibold">Cash flow summary</p>
+              <p className="text-xs text-muted-foreground">
+                Next {FORECAST_HORIZON_DAYS} days, from today
+              </p>
+            </div>
 
-        {/* Income vs expenses over the horizon */}
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4">
-          <div>
-            <p className="text-md mb-1">Expected income vs expenses</p>
-            <p className="text-xs text-muted-foreground">Everything scheduled in the forecast period</p>
+            {/* Main forecast */}
+            <div className="rounded-xl bg-[var(--dialog-background)] p-4">
+              <p className="text-xs text-muted-foreground">
+                {cashFlowLabel}
+              </p>
+              <p className="text-2xl font-bold tabular-nums mt-1">
+                {signedForecastEur(cashFlow.current)}
+              </p>
+
+              <div
+                className="mt-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
+                style={{
+                  color: cashFlowStatus.color,
+                  backgroundColor: `color-mix(in srgb, ${cashFlowStatus.color} 15%, transparent)`,
+                }}
+              >
+                {cashFlowStatus.label}
+              </div>
+            </div>
+
+            {/* Key numbers */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Lowest point</p>
+                <p className="font-semibold tabular-nums">
+                  {cashFlow.lowest ? signedForecastEur(cashFlow.lowest.amount) : "—"}
+                </p>
+                {cashFlow.lowest && (
+                  <p className="text-xs text-muted-foreground">
+                    {formatForecastDate(cashFlow.lowest.date)}
+                  </p>
+                )}
+              </div>
+
+              <div className="justify-self-end text-right">
+                <p className="text-xs text-muted-foreground">Next income</p>
+                <p className="font-semibold tabular-nums text-foreground">
+                  {cashFlow.nextIncome ? formatEur(cashFlow.nextIncome.amount) : "—"}
+                </p>
+                {cashFlow.nextIncome && (
+                  <p className="text-xs text-muted-foreground">
+                    {cashFlow.nextIncome.name}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Income / expenses */}
+            <div className="flex justify-between text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Expected income</p>
+                <p className="font-medium text-foreground">
+                  {formatEur(cashFlow.totalIncome)}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Expected expenses</p>
+                <p className="font-medium text-foreground">
+                  {formatEur(cashFlow.totalExpenses)}
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col gap-3">
-            {[
-              { label: "Income", amount: cashFlow.totalIncome, color: "var(--color-income)", icon: IconArrowUpRight },
-              { label: "Expenses", amount: cashFlow.totalExpenses, color: "var(--color-expense)", icon: IconArrowDownRight },
-            ].map((bar) => {
-              const peak = Math.max(cashFlow.totalIncome, cashFlow.totalExpenses, 1);
-              const BarIcon = bar.icon;
-              return (
-                <div key={bar.label}>
-                  <div className="flex items-center gap-2.5 min-w-0 mb-1.5">
-                    <BarIcon className="size-3.5 shrink-0" style={{ color: bar.color }} />
-                    <span className="text-sm font-medium truncate">{bar.label}</span>
-                    <span className="text-sm font-semibold tabular-nums shrink-0 ml-auto" style={{ color: bar.color }}>
-                      {formatEur(bar.amount)}
-                    </span>
+
+          {/* Income vs expenses over the horizon */}
+          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4 h-full flex flex-col">
+            <div>
+              <p className="text-md mb-1">Expected income vs expenses</p>
+              <p className="text-xs text-muted-foreground">
+                Everything scheduled in the forecast period
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 flex-1 justify-center">
+              {[
+                { label: "Income", amount: cashFlow.totalIncome, color: "var(--color-income)", icon: IconArrowUpRight },
+                { label: "Expenses", amount: cashFlow.totalExpenses, color: "#c8cbd0", icon: IconArrowDownRight },
+              ].map((bar) => {
+                const peak = Math.max(cashFlow.totalIncome, cashFlow.totalExpenses, 1);
+                const BarIcon = bar.icon;
+
+                return (
+                  <div key={bar.label}>
+                    <div className="flex items-center gap-2.5 min-w-0 mb-1.5">
+                      <BarIcon
+                        className="size-3.5 shrink-0"
+                        style={{ color: bar.color }}
+                      />
+                      <span className="text-sm font-medium truncate">
+                        {bar.label}
+                      </span>
+                      <span
+                        className="text-sm font-semibold tabular-nums shrink-0 ml-auto"
+                        style={{ color: bar.color }}
+                      >
+                        {formatEur(bar.amount)}
+                      </span>
+                    </div>
+
+                    <div className="h-2 rounded-full overflow-hidden bg-foreground/5">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${(bar.amount / peak) * 100}%`,
+                          backgroundColor: bar.color,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden bg-foreground/5">
-                    <div className="h-full rounded-full" style={{ width: `${(bar.amount / peak) * 100}%`, backgroundColor: bar.color }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-2.5 pt-1">
-            <span className="text-sm font-medium">Net change</span>
-            <span
-              className="text-sm font-semibold tabular-nums ml-auto"
-              style={{ color: cashFlow.netChange >= 0 ? "var(--color-income)" : "var(--color-expense)" }}
-            >
-              {cashFlow.netChange >= 0 ? "+" : "−"}{formatEur(Math.abs(cashFlow.netChange))}
-            </span>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-2.5 pt-4 mt-auto border-t border-border/40">
+              <span className="text-md font-medium">Net change</span>
+              <span
+                className="text-md font-semibold tabular-nums ml-auto text-foreground"
+              >
+                {cashFlow.netChange >= 0 ? "+" : "−"}
+                {formatEur(Math.abs(cashFlow.netChange))}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Cash flow calendar + upcoming events — collapsed by default, matching the
             Categories / Recurring items sections at the bottom of this tab. */}
         <CollapsibleSection title="Cash flow calendar">
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
             <p className="text-xs text-muted-foreground mb-4">Days with money moving in or out</p>
-            <CashFlowCalendar points={cashFlow.points} />
-          </div>
+            <CashFlowCalendar points={cashFlow.points} month={baseMonth}/>
         </CollapsibleSection>
 
         <CollapsibleSection title="Upcoming cash flow">

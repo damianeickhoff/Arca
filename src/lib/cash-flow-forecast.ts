@@ -248,8 +248,18 @@ export async function getCashFlowForecast(
 
   const nextIncome = events.find((e) => e.amount > 0) ?? null;
 
-  const status: ForecastStatus =
-    lowest.amount < 0 ? "critical" : lowest.amount < threshold ? "warning" : "healthy";
+  // Nothing to project from — no known balance and no future movement — so the flat
+  // zero line is an absence of data, not a cash flow problem. Scoring it would warn
+  // every fresh install that it drops below the threshold "today".
+  const hasAnything = hasStartingBalance || events.length > 0;
+
+  const status: ForecastStatus = !hasAnything
+    ? "empty"
+    : lowest.amount < 0
+      ? "critical"
+      : lowest.amount < threshold
+        ? "warning"
+        : "healthy";
 
   return {
     from: today,
@@ -258,7 +268,9 @@ export async function getCashFlowForecast(
     current,
     points,
     events,
-    lowest,
+    // A "lowest point" on a flat line nobody has data for is noise — the detail page
+    // renders an em dash for it instead.
+    lowest: hasAnything ? lowest : null,
     firstNegativeDate,
     nextIncome,
     totalIncome,

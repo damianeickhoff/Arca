@@ -111,7 +111,7 @@ export function IconCropDialog({ imageSrc, open, onOpenChange, onConfirm }: Prop
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-[70]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
+      <DialogContent sheetClassName="z-[70]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
         <DialogHeader>
           <DialogTitle>Icon bijsnijden</DialogTitle>
           <DialogDescription>Sleep om te verplaatsen, gebruik de schuif om in/uit te zoomen.</DialogDescription>

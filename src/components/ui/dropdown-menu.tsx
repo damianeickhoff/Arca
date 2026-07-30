@@ -21,7 +21,7 @@ function DropdownMenuTrigger({ className, ...props }: MenuPrimitive.Trigger.Prop
   return (
     <MenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
-      className={cn("bg-foreground/3", className)}
+      className={cn("bg-black/3", className)}
       {...props}
     />
   )
@@ -42,6 +42,12 @@ function DropdownMenuContent({
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
+        // This content is portalled to <body>, so when the menu is opened from inside
+        // a dialog it sits *outside* that dialog's DOM — every click on a menu item
+        // then reads as an outside-press and vaul dismisses the sheet before the item
+        // can act. The marker tells keepOpenOnOutside (components/ui/dialog.tsx) that
+        // this subtree belongs to the sheet. Inert outside a dialog.
+        data-dialog-keep-open=""
         className="isolate z-[200] outline-none"
         align={align}
         alignOffset={alignOffset}

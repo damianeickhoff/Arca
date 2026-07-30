@@ -3,12 +3,13 @@ import { getDateRange } from "@/lib/date-range";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { TrendsTab, VermogenTab } from "./report-tabs";
 import { AnalyticsTab } from "./analytics-tab";
+import { HealthTab } from "./health-tab";
 import ForecastPage from "@/app/forecast/page";
 
 // Server-rendered content for the reports subpage on the mobile dashboard.
 // Rendered once as part of the dashboard page load and passed down into the
 // client-side DashboardHeaderBar, which toggles visibility between tabs.
-export async function getReportsPortalContent(params?: { cmpA?: string; cmpB?: string; cat?: string; acct?: string; month?: string }) {
+export async function getReportsPortalContent(params?: { cmpA?: string; cmpB?: string; cat?: string; acct?: string }) {
   const cookieStore = await cookies();
   const financialMonth = await getFinancialMonthConfig();
   const { from, to } = getDateRange(
@@ -33,9 +34,19 @@ export async function getReportsPortalContent(params?: { cmpA?: string; cmpB?: s
     rapporten: <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} embedded />,
     trends: <TrendsTab from={trendsFrom} to={trendsTo} cmpA={params?.cmpA ?? ""} cmpB={params?.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} embedded />,
     vermogen: <VermogenTab />,
-    // Sticks ForecastPage's month-picker bar at the top of this pane's own scroll
-    // container (`0px`, same convention as AnalyticsFilterBar's `embedded` stickyTop
-    // above) instead of the standalone page's `var(--sat)` offset.
-    prognose: <ForecastPage searchParams={Promise.resolve({ month: params?.month })} embedded stickyTop="0px" />,
+    // The month comes from the `fc_month` cookie the embedded picker writes, not from
+    // the URL — the portal shares the dashboard's "/" route and a param there would
+    // leak into the address bar of the whole app (see PrognosePeriodPicker).
+    // stickyTop `0px` pins its picker bar to the top of this pane's own scroll
+    // container, same convention as AnalyticsFilterBar's `embedded` stickyTop above,
+    // instead of the standalone page's `var(--sat)` offset.
+    prognose: (
+      <ForecastPage
+        searchParams={Promise.resolve({ month: cookieStore.get("fc_month")?.value })}
+        embedded
+        stickyTop="0px"
+      />
+    ),
+    health: <HealthTab />,
   };
 }

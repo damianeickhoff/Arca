@@ -7,7 +7,13 @@ import { getTranslations } from "next-intl/server";
 
 export const FORECAST_HORIZON_DAYS = 90;
 
-export type ForecastStatus = "healthy" | "warning" | "critical";
+/**
+ * "empty" is not a verdict — it means there is nothing to forecast from (no starting
+ * balance and no future transactions or recurring items). Without it a fresh install
+ * would score its flat zero line as "warning", because zero is below any positive
+ * low-balance threshold.
+ */
+export type ForecastStatus = "healthy" | "warning" | "critical" | "empty";
 
 export interface ForecastEvent {
   /** Stable React key — projections have no row id of their own. */
@@ -81,6 +87,8 @@ export async function forecastMessage({
 }): Promise<string> {
 
   const t = await getTranslations("cashFlow");
+
+  if (status === "empty") return t("alert.empty");
 
   if (status === "critical") {
     const date = firstNegativeDate ?? lowest.date;

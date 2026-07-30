@@ -5,7 +5,10 @@ import { createPortal } from "react-dom";
 import { IconChevronLeft, IconArrowDownLeft } from "@tabler/icons-react";
 import { useTransactionsPortal } from "@/lib/transactions-portal-state";
 import { acquireNavHidden } from "@/lib/nav-visibility";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import { formatEur } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { NeedsReviewList } from "@/app/transactions/needs-review/needs-review-list";
 import type { Category, Goal } from "@/db/schema";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
@@ -39,6 +42,8 @@ export function NeedsReviewPortal({
     return acquireNavHidden();
   }, [open]);
 
+  useEscapeToClose(open, close);
+
   const springOut = "cubic-bezier(0.32, 0.72, 0, 1)";
   const springIn = "cubic-bezier(0.16, 1, 0.3, 1)";
 
@@ -61,7 +66,7 @@ export function NeedsReviewPortal({
         }}
       />
       <div
-        className="fixed inset-x-0 bottom-0 flex flex-col"
+        className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
         style={{
           top: 0,
           zIndex: 45,

@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { ReportsTabs } from "./reports-tabs";
 import { TrendsTab, VermogenTab } from "./report-tabs";
 import { AnalyticsTab } from "./analytics-tab";
+import { HealthTab } from "./health-tab";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ export default async function ReportsPage({
       {activeTab === "rapporten" && <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} />}
       {activeTab === "trends" && <TrendsTab from={from} to={to} cmpA={sp.cmpA ?? ""} cmpB={sp.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} />}
       {activeTab === "vermogen" && <VermogenTab />}
+      {activeTab === "health" && <HealthTab />}
     </PageContainer>
   );
 }

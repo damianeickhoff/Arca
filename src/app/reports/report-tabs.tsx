@@ -522,7 +522,7 @@ export async function TrendsTab({
   // /reports route, so it needs the same clearance at every width now. Harmless
   // extra whitespace when embedded (the dashboard portal hides the nav there).
   return (
-    <div className="px-4 pb-[calc(8rem+var(--sab))] pt-4 space-y-4">
+    <div className="px-4 pb-[calc(6rem+var(--sab))] pt-4 space-y-4">
       <AnalyticsFilterBar
         categories={data.allCats}
         banks={data.allBanksFull}

@@ -27,6 +27,8 @@ import { ListItemRow } from "@/components/list-item-row";
 import { NumericKeypad } from "@/components/numeric-keypad";
 import { AnimatedAmountDisplay } from "@/components/animated-amount-display";
 import { acquireNavHidden } from "@/lib/nav-visibility";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
+import { useOverlayScroll } from "@/lib/use-overlay-scroll";
 import { formatEur } from "@/lib/format";
 import { CategoryPeriodPicker, resolveCategoryPeriod, periodDescriptor, type CategoryPeriod } from "@/components/category-period-picker";
 import { CategorySpendChart } from "@/components/category-spend-chart";
@@ -62,10 +64,10 @@ function nextAmountValue(cur: string, k: string): string {
 
 const NUMPAD_DIGIT_CLASS = "h-14 rounded-xl bg-card text-2xl font-medium flex items-center justify-center active:bg-foreground/10 transition-colors";
 
-function Numpad({ onKey }: { onKey: (k: string) => void }) {
+function Numpad({ onKey, onEnter }: { onKey: (k: string) => void; onEnter?: () => void }) {
   return (
     <div className="px-4">
-      <NumericKeypad onKey={onKey} digitClassName={NUMPAD_DIGIT_CLASS} />
+      <NumericKeypad onKey={onKey} onEnter={onEnter} digitClassName={NUMPAD_DIGIT_CLASS} />
     </div>
   );
 }
@@ -159,6 +161,18 @@ export function CategoryDetailPortal({
     setDetail(null);
   }
 
+  // Escape peels one layer at a time: the budget-edit keypad or the category-edit
+  // step first (they overlay this portal at z-46), then the portal itself. The
+  // hook's own stack handles the ordering — these register as they open.
+  useEscapeToClose(open, close);
+  useEscapeToClose(editBudgetOpen, () => setEditBudgetOpen(false));
+  useEscapeToClose(editCategoryOpen, closeEditCategory);
+
+  // Reached from the reports/trends previews too, which sit inside a sheet — that
+  // sheet's react-remove-scroll lock cancels every wheel/touch outside itself, and
+  // this portal renders into <body>. Same escape hatch MerchantDetailPortal needs.
+  const scrollRootRef = useOverlayScroll(open);
+
   function openEditBudget() {
     setEditBudgetAmount(detail?.budget && detail.budget > 0 ? String(Math.round(detail.budget)) : "0");
     setEditBudgetOpen(true);
@@ -235,9 +249,16 @@ export function CategoryDetailPortal({
               }}
             />
 
-            {/* Content */}
+            {/* Content — this layer stays full-bleed so the colour wash below can run
+                edge to edge like the dashboard's gradient hero. The column cap sits on
+                the header row and on the scroll area's *contents*, deliberately not on
+                a wrapper around the scroll area itself: a capped wrapper leaves the
+                gutters either side of it owned by this `overflow-hidden` div, which has
+                nothing to scroll, so a wheel outside the column does nothing on desktop.
+                Same arrangement as MerchantDetailPortal. */}
             <div
-              className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
+              ref={scrollRootRef}
+              className="fixed inset-x-0 bottom-0 flex flex-col overflow-hidden"
               style={{
                 top: 0,
                 zIndex: 45,
@@ -258,7 +279,7 @@ export function CategoryDetailPortal({
               )}
 
               {/* Header */}
-              <div className="relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9" style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
+              <div className={cn(CONTENT_COLUMN, "relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9")} style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
                 <button
                   type="button"
                   onClick={close}
@@ -312,7 +333,7 @@ export function CategoryDetailPortal({
               {/* Body */}
               <div className="relative flex-1 overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
                 {category && detail && (
-                  <div className="pb-[calc(2rem+var(--sab))]">
+                  <div className={cn(CONTENT_COLUMN, "pb-[calc(2rem+var(--sab))]")}>
                     <div className="flex items-start justify-between px-4">
                       <div>
                         <p className="text-lg text-foreground/60">{spentThisPeriodLabel}</p>
@@ -416,7 +437,10 @@ export function CategoryDetailPortal({
                   </div>
                 </div>
 
-                <Numpad onKey={(k) => setEditBudgetAmount((cur) => nextAmountValue(cur, k))} />
+                <Numpad
+                  onKey={(k) => setEditBudgetAmount((cur) => nextAmountValue(cur, k))}
+                  onEnter={() => { if (!savingBudget) saveBudget(); }}
+                />
 
                 <div className="px-4 pt-3 pb-[calc(0.75rem+var(--sab))]">
                   <button

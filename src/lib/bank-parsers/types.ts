@@ -9,6 +9,11 @@ export interface ParsedRow {
   type: string;
   description: string;
   hash: string;
+  /** The account balance the bank reported after this transaction, when the export
+   *  carries such a column ("Saldo na mutatie", "Balance", …). Optional and null-safe:
+   *  most exports don't have one, and it is stored verbatim rather than recalculated —
+   *  see transactions.reportedBalance in src/db/schema.ts. */
+  reportedBalance?: number | null;
 }
 
 export interface BankParser {
@@ -37,6 +42,20 @@ export function parseLocaleAmount(amountStr: string): number {
   }
   // Dot is the decimal separator (or no separator at all); commas are thousands separators.
   return parseFloat(s.replace(/,/g, ""));
+}
+
+/**
+ * Parse a bank's "balance after this transaction" cell into a number, or null when the
+ * cell is missing, empty or not a number. Never throws and never falls back to a
+ * computed value — a balance we can't read is simply absent, which every consumer of
+ * ParsedRow.reportedBalance already has to handle.
+ */
+export function parseReportedBalance(raw: string | undefined | null): number | null {
+  if (raw == null) return null;
+  const s = raw.trim();
+  if (!s) return null;
+  const n = parseLocaleAmount(s);
+  return Number.isFinite(n) ? n : null;
 }
 
 /** dd-mm-yyyy / dd/mm/yyyy -> yyyy-mm-dd */

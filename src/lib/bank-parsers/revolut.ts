@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { roundToCents } from "../transaction-splits";
-import { cleanLines, isoDateOnly, splitDelimited, type BankParser, type ParsedRow } from "./types";
+import { cleanLines, isoDateOnly, parseReportedBalance, splitDelimited, type BankParser, type ParsedRow } from "./types";
 
 /**
  * Revolut's "Export statement" CSV, comma-delimited, header:
@@ -15,6 +15,7 @@ const COL = {
   amount: 5,
   currency: 7,
   state: 8,
+  balance: 9,
 };
 
 export const revolutParser: BankParser = {
@@ -64,6 +65,9 @@ export const revolutParser: BankParser = {
         type: "",
         description,
         hash,
+        // Trailing column, so it may be missing on older exports — parseReportedBalance
+        // returns null for an absent cell rather than the row failing to import.
+        reportedBalance: parseReportedBalance(cols[COL.balance]),
       });
     }
     return rows;

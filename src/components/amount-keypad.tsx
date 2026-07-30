@@ -8,10 +8,10 @@ import {
   IconPlus,
   IconCalculator,
 } from "@tabler/icons-react";
-import { useEffect } from "react";
 import { m, AnimatePresence, LazyMotion, domMax } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
+import { useKeypadKeyboard } from "@/lib/use-keypad-keyboard";
 import { currencySymbol } from "@/lib/format";
 
 const digitKey =
@@ -26,6 +26,7 @@ const opKey =
 export function AmountKeypad({
   expr,
   onChange,
+  onEnter,
   sign = "",
   positive = false,
   calcEnabled,
@@ -33,6 +34,8 @@ export function AmountKeypad({
 }: {
   expr: string;
   onChange: (next: string) => void;
+  /** Primary action for the Enter key — the surface's Save/Done button. */
+  onEnter?: () => void;
   sign?: "" | "−" | "+";
   /** Colors the running amount green — e.g. a debt someone owes you, like income. */
   positive?: boolean;
@@ -46,33 +49,13 @@ export function AmountKeypad({
   const amountChars = bigDisplay.split("");
   const press = (key: string) => onChange(pressKey(expr, key));
 
-  // Allow hardware keyboard / numpad input so the keypad works on devices with a keyboard.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Don't hijack typing into a real text field.
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-      let key: string | null = null;
-      if (e.key >= "0" && e.key <= "9") key = e.key;
-      else if (e.key === "," || e.key === ".") key = ",";
-      else if (e.key === "Backspace") key = "back";
-      else if (calcEnabled && (e.key === "/" || e.key === "÷")) key = "÷";
-      else if (calcEnabled && (e.key === "*" || e.key === "×")) key = "×";
-      else if (calcEnabled && (e.key === "-" || e.key === "−")) key = "−";
-      else if (calcEnabled && (e.key === "+")) key = "+";
-      if (key === null) return;
-
-      e.preventDefault();
-      onChange(pressKey(expr, key));
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [expr, calcEnabled, onChange]);
+  // Hardware keyboard / numpad input, shared with NumericKeypad — the hook's own
+  // on-screen check is what keeps the several keypads a single edit dialog mounts
+  // (amount, payment, original amount, …) from all reacting to one keystroke.
+  const rootRef = useKeypadKeyboard({ calcEnabled, onKey: press, onEnter });
 
   return (
-    <div className="flex flex-col">
+    <div ref={rootRef} className="flex flex-col">
       {/* Running amount */}
       <div className="flex items-center justify-center py-8 min-h-24">
         <LazyMotion features={domMax}>

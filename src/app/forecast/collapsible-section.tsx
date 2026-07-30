@@ -18,11 +18,11 @@ export function CollapsibleSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="space-y-3">
+    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between w-full rounded-xl px-1 bg-[var(--dialog-content-background)] p-5 px-5"
+        className="flex items-center justify-between w-full p-5"
       >
         <div className="flex items-center gap-2">
           {color && <span className="w-4 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />}
@@ -32,7 +32,7 @@ export function CollapsibleSection({
           <ChevronDown className={cn("size-4 text-foreground/60 transition-transform", open && "rotate-180")} />
         </div>
       </button>
-      {open && <div className="space-y-3">{children}</div>}
+      {open && <div className="px-5 pb-5">{children}</div>}
     </div>
   );
 }

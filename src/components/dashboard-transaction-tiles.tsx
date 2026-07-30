@@ -29,7 +29,7 @@ export function UpcomingBillsTile({
       {icons.length > 0 && (
         <div className="flex shrink-0 -space-x-3">
           {icons.map((u, i) => (
-            <div key={i} className="rounded-xl" style={{ zIndex: icons.length - i }}>
+            <div key={i} className="rounded-xl ring-2 ring-card" style={{ zIndex: icons.length - i }}>
               <Icon iconKey={u.icon} color={u.iconColor} background={u.iconBackground} size="md" />
             </div>
           ))}

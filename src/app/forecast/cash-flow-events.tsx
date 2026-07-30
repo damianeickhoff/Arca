@@ -42,7 +42,7 @@ export function CashFlowEvents({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-2xl bg-[var(--dialog-content-background)] p-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-2xl bg-[var(--dialog-background)] p-8 text-center text-sm text-muted-foreground">
         Nothing scheduled in the forecast period.
       </div>
     );
@@ -54,7 +54,7 @@ export function CashFlowEvents({
         {[...byDate.entries()].map(([date, items]) => {
           const dayNet = items.reduce((sum, e) => sum + e.amount, 0);
           return (
-            <div key={date} className="rounded-2xl bg-[var(--dialog-content-background)] p-4">
+            <div key={date} className="rounded-2xl bg-[var(--dialog-background)] p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-foreground/60">{formatForecastDate(date)}</span>
                 {items.length > 1 && (

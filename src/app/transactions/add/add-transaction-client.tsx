@@ -27,6 +27,7 @@ import { ReceiptScanDialog, type ScannedReceipt } from "./receipt-scan-dialog";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
 import { currencySymbol } from "@/lib/format";
 import type { Category } from "@/db/schema";
@@ -233,7 +234,7 @@ export function AddTransactionClient({
     "flex items-center justify-center rounded-2xl h-13 text-foreground/80 bg-foreground/[0.07] active:bg-foreground/15 transition-colors select-none";
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
+    <div className={cn(CONTENT_COLUMN, "fixed inset-0 flex flex-col bg-background")}>
       {/* Header: close (left) + overflow menu (right). Currency button intentionally omitted. */}
       <div className="flex items-center justify-between px-4 pt-[calc(var(--sat)+0.75rem)] pb-2 shrink-0">
         <button
@@ -468,7 +469,15 @@ export function AddTransactionClient({
 
           {/* Keypad — 3-column digits, plus a 4th operator column when the calculator is on */}
           <div className="shrink-0">
-            <NumericKeypad onKey={press} calcEnabled={calcEnabled} digitClassName={digitKey} opClassName={opKey} />
+            {/* Enter saves, matching the Save button below — gated on canSave the
+                same way, so it can't fire on an empty or incomplete transfer. */}
+            <NumericKeypad
+              onKey={press}
+              onEnter={() => { if (canSave) save(); }}
+              calcEnabled={calcEnabled}
+              digitClassName={digitKey}
+              opClassName={opKey}
+            />
           </div>
         </div>
 

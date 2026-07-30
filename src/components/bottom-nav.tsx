@@ -182,6 +182,26 @@ export function BottomNav() {
     setSearchOpen(true);
   }
 
+  // Ctrl/Cmd+K opens search from anywhere. Skipped while the nav is hidden (a
+  // full-screen portal is up, and this component renders null then — the overlay
+  // it owns wouldn't be on screen to receive the query) or while a dialog is
+  // open, where the key belongs to whatever is in front. Escape closes it again,
+  // via useEscapeToClose inside the overlay itself.
+  useEffect(() => {
+    if (navHidden) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "k" && e.key !== "K") return;
+      if (!e.metaKey && !e.ctrlKey) return;
+      if (e.altKey || e.shiftKey) return;
+      if (document.querySelector('[data-vaul-drawer][data-state="open"]')) return;
+      e.preventDefault();
+      if (searchOpen) return;
+      openSearch();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [navHidden, searchOpen]);
+
   function closeSearch() {
     setSearchOpen(false);
   }

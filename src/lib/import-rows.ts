@@ -7,13 +7,18 @@ import { isOwnAccountTransfer, normalizeAccountNumber } from "@/lib/internal-tra
 import { applyAllBrandRules } from "@/lib/apply-brand-rules";
 import { assignMissingMerchants, getOrCreateMerchantId } from "@/lib/merchants";
 import { deriveMerchantName } from "@/lib/merchant-name";
-import { isNotNull, sql, eq, inArray } from "drizzle-orm";
+import { and, isNotNull, isNull, sql, eq, inArray } from "drizzle-orm";
 import type { ParsedRow } from "@/lib/bank-parsers";
+import { isValidISODate } from "@/lib/date-valid";
 
 export interface ImportResult {
   imported: number;
   skipped: number;
   autoCategorised: number;
+  /** Rows dropped because their date wasn't a real YYYY-MM-DD. Normally 0 — the mapping
+   *  dialog rejects such files up front — but the built-in bank parsers pass unmatched
+   *  date cells straight through, so this is the last line of defence. */
+  invalidDates: number;
   total: number;
   newAccounts: Bank[];
 }
@@ -78,8 +83,17 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
   let imported = 0;
   let skipped = 0;
   let autoCategorised = 0;
+  let invalidDates = 0;
 
   for (const row of rows) {
+    // transactions.date has no CHECK constraint, and the insert below is wrapped in a
+    // catch that treats every failure as "duplicate" — so an unreadable date would be
+    // stored silently and then crash every screen that formats it. Drop it here instead.
+    if (!isValidISODate(row.date)) {
+      invalidDates++;
+      continue;
+    }
+
     // Detect incoming Tikkies (reimbursements) — "Tikkie" in name or description + income direction
     const isTikkie = (row.name + " " + row.description).toLowerCase().includes("tikkie");
     const isReimbursement = row.direction === "income" && isTikkie;
@@ -123,6 +137,8 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
         importHash: row.hash,
         account: normalizeAccountNumber(row.account),
         counterAccount: normalizeAccountNumber(row.counterAccount),
+        // Verbatim from the bank when the file had a balance column; null otherwise.
+        reportedBalance: row.reportedBalance ?? null,
       });
       imported++;
       // Only count categorisations that belong to rows we actually inserted — otherwise
@@ -140,6 +156,16 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
           .update(transactions)
           .set(patch)
           .where(eq(transactions.importHash, row.hash));
+      }
+      // Same idea for the bank-reported balance: a row imported before the balance
+      // column was mapped can still learn it from a re-import. Guarded by IS NULL so a
+      // balance already on record is never overwritten — it's the bank's number, and
+      // the first import of it wins.
+      if (row.reportedBalance != null) {
+        await db
+          .update(transactions)
+          .set({ reportedBalance: row.reportedBalance })
+          .where(and(eq(transactions.importHash, row.hash), isNull(transactions.reportedBalance)));
       }
       skipped++;
     }
@@ -170,5 +196,5 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
   await detectRecurringTransactions();
   await applyAllRules();
 
-  return { imported, skipped, autoCategorised, total: rows.length, newAccounts };
+  return { imported, skipped, autoCategorised, invalidDates, total: rows.length, newAccounts };
 }

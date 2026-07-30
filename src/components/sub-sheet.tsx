@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
 
 /** Slide-in subpage for editing a single field inside an edit dialog — used by the
  * debt/savings-goal/recurring-item/account edit dialogs so tapping any row opens the
@@ -20,6 +21,11 @@ export function SubSheet({
   children: React.ReactNode;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Escape goes back one level (same as the ‹ button) rather than dismissing the
+  // edit dialog this slides over — it's a descendant of that drawer, so Radix has
+  // to be beaten to the key.
+  useEscapeToClose(visible, onClose, { aboveDialog: true });
 
   // Fields that want to be focused as soon as the subpage opens (marked with
   // data-autofocus instead of the native autoFocus attribute) wait until the

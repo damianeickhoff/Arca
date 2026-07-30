@@ -86,8 +86,8 @@ export function BudgetAlertCard({
     >
       <BudgetRing pct={pct} severity={severity} />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-base text-foreground">{title}</p>
-        <p className="text-sm text-foreground/50 mt-1">{description}</p>
+        <p className="font-semibold text-md text-foreground">{title}</p>
+        <p className="text-xs text-foreground/50 mt-1">{description}</p>
       </div>
     </button>
   );

@@ -111,6 +111,17 @@ export const transactions = sqliteTable("transactions", {
   // cash_withdrawal/shared_account/other). Null = derive it from the opposite account's
   // banks.transferKind (see src/lib/internal-transfers.ts effectiveTransferTypeExpr).
   transferType: text("transfer_type"),
+  // The account balance the bank itself reported *after* this transaction ("Saldo na
+  // mutatie" / "Resulting balance"), when the import mapped such a column. Null for
+  // manual entries and for every import whose file has no balance column.
+  //
+  // Written once, at import time, exactly as the bank supplied it — never recalculated,
+  // never derived from `amount`. That's the whole point: it's the institution's own
+  // record of the balance at that moment, which future balance-history, net-worth and
+  // forecasting features can trust as ground truth rather than re-deriving from a
+  // running sum. Everything reading it must handle null (see the backfill in
+  // src/lib/import-rows.ts, which only ever fills a null, never overwrites).
+  reportedBalance: real("reported_balance"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
@@ -388,6 +399,7 @@ export const vermogenAccounts = sqliteTable("vermogen_accounts", {
   name: text("name").notNull(),
   type: text("type").notNull(), // spaarrekening | beleggingen | betaalrekening | bezitting
   value: real("value").notNull().default(0),
+  icon: text("icon"), // account glyph shown in the edit sheet / accounts overview
   color: text("color"),
   notes: text("notes"),
   lastUpdated: text("last_updated"), // ISO date YYYY-MM-DD
@@ -430,6 +442,25 @@ export const netWorthSnapshots = sqliteTable("net_worth_snapshots", {
 });
 export type NetWorthSnapshot = typeof netWorthSnapshots.$inferSelect;
 export type NewNetWorthSnapshot = typeof netWorthSnapshots.$inferInsert;
+
+// ─── Financial health snapshots ───────────────────────────────────────────────
+// One row per financial month (YYYY-MM), keyed by month so there is exactly one
+// entry per month no matter how often it's recorded. The row for the month in
+// progress is refreshed on each visit; once the month rolls over its final value
+// is left frozen. Powers the Health tab's trend chart and month table — without
+// this there is no history, only the live score.
+export const financialHealthSnapshots = sqliteTable("financial_health_snapshots", {
+  month: text("month").primaryKey(), // financial month, YYYY-MM
+  score: real("score").notNull(),
+  netWorth: real("net_worth"),
+  savingsRate: real("savings_rate"), // 0–1, null when it couldn't be measured
+  // JSON: { [categoryKey]: points } — kept so a future breakdown-over-time view
+  // doesn't need a schema change (nothing reads it yet).
+  breakdown: text("breakdown"),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+export type FinancialHealthSnapshot = typeof financialHealthSnapshots.$inferSelect;
+export type NewFinancialHealthSnapshot = typeof financialHealthSnapshots.$inferInsert;
 
 // ─── Users ──────────────────────────────────────────────────────────────────
 export const users = sqliteTable("users", {

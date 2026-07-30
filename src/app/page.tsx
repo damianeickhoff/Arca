@@ -18,6 +18,8 @@ import { DashboardHeaderBar } from "@/components/dashboard-header-bar";
 import { BudgetAlertCard } from "@/components/budget-alert-card";
 import { NoBudgetCard } from "@/components/no-budget-card";
 import { CashFlowForecastCard } from "@/components/cash-flow-forecast-card";
+import { FinancialHealthCard } from "@/components/financial-health-card";
+import { getFinancialHealthScore } from "@/lib/financial-health-data";
 import { getCashFlowForecast } from "@/lib/cash-flow-forecast";
 import { DashboardFlowGlow } from "@/components/dashboard-flow-glow";
 import { DashboardReadySignal } from "@/components/dashboard-ready-signal";
@@ -398,9 +400,11 @@ function monthName(date: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
-// Shared layout override for cards inside the dashboard's horizontal card row: strips
-// each card's standalone margins and gives it a uniform snap width.
-const DASH_CARD = "snap-start shrink-0 m-0 w-[85%] max-w-[22rem]";
+// Shared layout override for cards inside the dashboard's card row: strips each card's
+// standalone margins and gives it a uniform snap width. From md up the row becomes a
+// 3-column grid (see the row itself), so the snap width and shrink-0 are dropped and
+// each card fills its grid cell instead.
+const DASH_CARD = "snap-start shrink-0 m-0 w-[85%] max-w-[22rem] md:w-auto md:max-w-none md:shrink";
 
 function signedEur(amount: number) {
   return `${amount < 0 ? "-" : ""}${formatEur(amount)}`;
@@ -431,10 +435,10 @@ export default async function DashboardPage({
   const currentMonthRange = financialMonthRange(financialMonth, 0);
   const isViewingCurrentMonth = from === currentMonthRange.from && to === currentMonthRange.to;
 
-  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast] = await Promise.all([
+  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast, health] = await Promise.all([
     getDashboardData(from, to, selectedBank, financialMonth),
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
-    getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct, month: sp.month }),
+    getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct }),
     getBudgetPortalContent(),
     getBillStatuses(billMonth, financialMonth),
     getMonthComparison(financialMonth),
@@ -447,6 +451,9 @@ export default async function DashboardPage({
     getAccountBalanceHistory(180),
     getBudgetRecurringMode(),
     getCashFlowForecast(financialMonth),
+    // Score only — the full breakdown is computed again by the Health tab itself,
+    // which is only rendered once the Insights portal is opened.
+    getFinancialHealthScore(financialMonth),
   ]);
 
   // Per-user, not app-wide — each family member picks their own dashboard color fade
@@ -633,7 +640,12 @@ export default async function DashboardPage({
         {/* scroll-px-3 + the trailing spacer below: a scroll container's padding-right
             collapses at the end of the scroll, leaving the last card flush against the
             screen edge, so the gutter has to be restored with a real element. */}
-        <div className="mt-5 flex items-stretch gap-3 overflow-x-auto px-3 pb-1 snap-x snap-mandatory scroll-px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* md is where the shared content column (max-w-3xl) stops widening, so from
+            there the row has the space to lay all three cards out at once: it becomes a
+            3-column grid and the horizontal scroll — snapping, hidden scrollbar, the
+            trailing gutter spacer — all switches off. Below md it stays the scrollable
+            row, unchanged. */}
+        <div className="mt-5 flex items-stretch gap-3 overflow-x-auto px-3 pb-1 snap-x snap-mandatory scroll-px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:overflow-visible md:snap-none md:px-4">
           {budgetOverview && !budgetOverview.budget && <NoBudgetCard className={DASH_CARD} />}
           {budgetOverview?.budget && budgetAlert && (
             <BudgetAlertCard
@@ -651,7 +663,17 @@ export default async function DashboardPage({
             hasStartingBalance={forecast.hasStartingBalance}
             className={DASH_CARD}
           />
-          <div aria-hidden className="shrink-0 w-0.5" />
+          <FinancialHealthCard
+            score={health.score}
+            stateKey={health.stateKey}
+            color={health.color}
+            topOpportunity={health.topOpportunity}
+            className={DASH_CARD}
+          />
+          {/* Restores the row's right-hand gutter, which a scroll container's padding
+              collapses at the end of the scroll. Pure scroll-mode fix — no place in
+              the grid, where it would claim a whole column. */}
+          <div aria-hidden className="shrink-0 w-0.5 md:hidden" />
         </div>
 
         {/* Spending by category — scrollable row of every category with at least one

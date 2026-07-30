@@ -1,25 +1,11 @@
 import { db } from "@/db";
 import { importProfiles } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { roundToCents } from "@/lib/transaction-splits";
+import { eq, desc } from "drizzle-orm";
 import { cleanLines, guessDelimiter, splitDelimited, type ParsedRow } from "@/lib/bank-parsers/types";
+import { parseAmount, parseDate, type ColumnMapping } from "@/lib/import-parse";
 import crypto from "crypto";
 
-export interface ColumnMapping {
-  delimiter: string;
-  dateColumn: number;
-  dateFormat: "iso" | "dmy" | "mdy"; // yyyy-mm-dd | dd-mm-yyyy | mm-dd-yyyy
-  descriptionColumn: number;
-  amountColumn: number;
-  decimalSeparator: "," | ".";
-  directionColumn: number | null;
-  // Value found in directionColumn that means "money left the account"; anything else
-  // in that column means "money came in". Ignored when directionColumn is null (the
-  // amount's own sign decides direction instead — negative = expense).
-  directionExpenseValue: string | null;
-  accountColumn: number | null;
-  counterAccountColumn: number | null;
-}
+export type { ColumnMapping };
 
 function normalizeHeaderSignature(headerLine: string, delimiter: string): string {
   return splitDelimited(headerLine, delimiter)
@@ -58,39 +44,51 @@ export async function saveProfile(label: string, headerLine: string, delimiter: 
     });
 }
 
-function parseAmount(raw: string, decimalSeparator: "," | "."): number {
-  const s = raw.trim().replace(/^\+/, "");
-  if (decimalSeparator === ",") {
-    return roundToCents(parseFloat(s.replace(/\./g, "").replace(",", ".")));
-  }
-  return roundToCents(parseFloat(s.replace(/,/g, "")));
+/** Every saved profile, newest first — backs the "Import profiles" settings panel. */
+export async function listImportProfiles() {
+  const rows = await db.select().from(importProfiles).orderBy(desc(importProfiles.id));
+  return rows.map((row) => ({ ...row, mapping: JSON.parse(row.mapping) as ColumnMapping }));
 }
 
-function parseDate(raw: string, format: ColumnMapping["dateFormat"]): string {
-  const s = raw.trim();
-  if (format === "iso") {
-    const m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-    return m ? `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}` : s;
-  }
-  const m = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
-  if (!m) return s;
-  const [, a, b, year] = m;
-  // dmy: a=day, b=month. mdy: a=month, b=day.
-  const [day, month] = format === "dmy" ? [a, b] : [b, a];
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+/** Forget a saved mapping, so the next import of that file asks again instead of
+ *  silently reapplying a mapping that turned out to be wrong. */
+export async function deleteImportProfile(id: number) {
+  await db.delete(importProfiles).where(eq(importProfiles.id, id));
 }
 
-export function parseWithMapping(raw: string, mapping: ColumnMapping): ParsedRow[] {
+/** A data row whose date cell could not be read — reported back to the user instead of
+ *  being written to the database with a garbage date. */
+export interface InvalidDateRow {
+  /** 1-based line number in the uploaded file, header included. */
+  line: number;
+  value: string;
+}
+
+export interface MappedParseResult {
+  rows: ParsedRow[];
+  invalid: InvalidDateRow[];
+}
+
+export function parseWithMapping(raw: string, mapping: ColumnMapping): MappedParseResult {
   const lines = cleanLines(raw).filter((l) => l.trim());
   if (lines.length < 2) throw new Error("File has no data rows");
 
   const rows: ParsedRow[] = [];
+  const invalid: InvalidDateRow[] = [];
   for (let i = 1; i < lines.length; i++) {
     const cols = splitDelimited(lines[i], mapping.delimiter);
     const maxIdx = Math.max(mapping.dateColumn, mapping.descriptionColumn, mapping.amountColumn);
     if (cols.length <= maxIdx) continue;
 
     const dateRaw = cols[mapping.dateColumn];
+    // A date we can't read is a mapping mistake, not a row to salvage: collect it and
+    // let the caller refuse the whole import rather than storing the raw cell.
+    const date = parseDate(dateRaw, mapping.dateFormat, mapping.customDateFormat);
+    if (date === null) {
+      invalid.push({ line: i + 1, value: (dateRaw ?? "").trim() });
+      continue;
+    }
+
     const description = cols[mapping.descriptionColumn]?.trim() ?? "";
     const amountRaw = cols[mapping.amountColumn];
     const signedAmount = parseAmount(amountRaw, mapping.decimalSeparator);
@@ -106,9 +104,19 @@ export function parseWithMapping(raw: string, mapping: ColumnMapping): ParsedRow
       amount = Math.abs(signedAmount);
     }
 
+    // Stored exactly as the bank supplied it — parsed with the mapping's own decimal
+    // separator and nothing else. No validation against the amount, no recalculation:
+    // a row whose balance cell is empty or unreadable just carries no balance.
+    const balanceRaw = mapping.balanceColumn != null ? cols[mapping.balanceColumn] : undefined;
+    const parsedBalance = balanceRaw?.trim() ? parseAmount(balanceRaw, mapping.decimalSeparator) : NaN;
+    const reportedBalance = Number.isFinite(parsedBalance) ? parsedBalance : null;
+
     const account = mapping.accountColumn !== null ? (cols[mapping.accountColumn]?.trim() ?? "") : "";
     const counterAccount = mapping.counterAccountColumn !== null ? (cols[mapping.counterAccountColumn]?.trim() ?? "") : "";
 
+    // Deliberately excludes the balance: the dedup key must stay identical to what
+    // pre-balance imports produced, so re-importing a file after mapping the balance
+    // column updates the existing rows instead of duplicating them.
     const hash = crypto
       .createHash("sha256")
       .update(`${dateRaw}|${description}|${amountRaw}|${account}`)
@@ -116,7 +124,7 @@ export function parseWithMapping(raw: string, mapping: ColumnMapping): ParsedRow
       .slice(0, 16);
 
     rows.push({
-      date: parseDate(dateRaw, mapping.dateFormat),
+      date,
       name: description,
       account,
       counterAccount,
@@ -126,7 +134,8 @@ export function parseWithMapping(raw: string, mapping: ColumnMapping): ParsedRow
       type: "",
       description,
       hash,
+      reportedBalance,
     });
   }
-  return rows;
+  return { rows, invalid };
 }

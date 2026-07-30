@@ -19,6 +19,7 @@ import { NumericKeypad } from "@/components/numeric-keypad";
 import { AnimatedAmountDisplay } from "@/components/animated-amount-display";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useBudgetPortal } from "@/lib/budget-portal-state";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import {
   IconWallet,
   IconChevronLeft,
@@ -55,10 +56,10 @@ function nextAmountValue(cur: string, k: string): string {
 // Same digit styling as the add-transaction keypad, for a consistent amount-entry feel.
 const NUMPAD_DIGIT_CLASS = "h-13 rounded-2xl bg-foreground/5 text-2xl font-medium text-foreground flex items-center justify-center active:bg-foreground/10 transition-colors select-none";
 
-function Numpad({ onKey, className }: { onKey: (k: string) => void; className?: string }) {
+function Numpad({ onKey, onEnter, className }: { onKey: (k: string) => void; onEnter?: () => void; className?: string }) {
   return (
     <div className={className ?? "px-4"}>
-      <NumericKeypad onKey={onKey} digitClassName={NUMPAD_DIGIT_CLASS} />
+      <NumericKeypad onKey={onKey} onEnter={onEnter} digitClassName={NUMPAD_DIGIT_CLASS} />
     </div>
   );
 }
@@ -422,6 +423,15 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
     });
   }
 
+  // All three of these are body-portalled ABOVE the amount-step Dialog (see the
+  // block comment on that portal below), so they must take Escape from Radix
+  // rather than let it dismiss the sheet they're sitting on top of. The steps
+  // that ARE vaul sheets (step === "amount"/"categories") need nothing here —
+  // Radix already closes them.
+  useEscapeToClose(exceedWarning != null, () => setExceedWarning(null), { aboveDialog: true });
+  useEscapeToClose(strategyOpen, closeStrategyPicker, { aboveDialog: true });
+  useEscapeToClose(editingCat != null, () => setEditingCat(null), { aboveDialog: true });
+
   function openStrategyPicker() {
     setStrategyDraft(strategy);
     setStrategyOpen(true);
@@ -760,7 +770,10 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                 <p className="text-foreground/50 text-sm mt-4">{t("last30", { amount: money(editingCat.last30) })}</p>
               </div>
 
-              <Numpad onKey={(k) => setEditAmount((cur) => nextAmountValue(cur, k))} />
+              <Numpad
+                onKey={(k) => setEditAmount((cur) => nextAmountValue(cur, k))}
+                onEnter={() => { if (!saving) saveEditingCategory(); }}
+              />
 
               <div className="px-4 pt-3 pb-[calc(0.75rem+var(--sab))]">
                 <button
@@ -798,7 +811,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
               onClick={closeStrategyPicker}
             >
               <div
-                className="w-full bg-[var(--dialog-background)] backdrop-blur-3xl rounded-t-3xl p-5 pb-[calc(1.25rem+var(--sab))] transition-transform duration-300 ease-out"
+                className={cn(CONTENT_COLUMN, "bg-[var(--dialog-background)] backdrop-blur-3xl rounded-t-3xl p-5 pb-[calc(1.25rem+var(--sab))] transition-transform duration-300 ease-out")}
                 style={{ transform: strategyVisible ? "translateY(0)" : "translateY(100%)" }}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -918,7 +931,12 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
                 )}
               </div>
 
-              <Numpad className="shrink-0" onKey={(k) => setAmount((cur) => nextAmountValue(cur, k))} />
+              {/* Enter advances to the category step, same as the CTA below. */}
+              <Numpad
+                className="shrink-0"
+                onKey={(k) => setAmount((cur) => nextAmountValue(cur, k))}
+                onEnter={() => { setCategoriesEntry("flow"); setStep("categories"); }}
+              />
             </div>
 
             {/* CTA */}

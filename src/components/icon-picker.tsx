@@ -415,7 +415,7 @@ export function IconPicker({ value, onChange, previewColor, previewBackground, b
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto z-[60]" overlayClassName="z-[55] backdrop-blur-lg bg-foreground/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto" sheetClassName="z-[60]" overlayClassName="z-[55] backdrop-blur-lg bg-foreground/20">
           <DialogHeader>
             <DialogTitle>Icon kiezen</DialogTitle>
           </DialogHeader>

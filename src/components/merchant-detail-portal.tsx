@@ -19,6 +19,8 @@ import { CategorySpendChart } from "@/components/category-spend-chart";
 import { ContextualTip } from "@/components/contextual-tip";
 import { brandColorForIconKey, detectBrandIcon } from "@/lib/brand-detect";
 import { acquireNavHidden } from "@/lib/nav-visibility";
+import { useEscapeToClose } from "@/lib/use-escape-to-close";
+import { useOverlayScroll } from "@/lib/use-overlay-scroll";
 import { formatEur, formatDate } from "@/lib/format";
 import type { MerchantDetail } from "@/lib/merchant-detail";
 
@@ -252,6 +254,19 @@ export function MerchantDetailPortal({
     setRenameOpen(false);
   }
 
+  // aboveDialog: this portal is opened FROM an open sheet that stays open behind it
+  // (the transaction detail dialog, the settings merchants panel) and renders above
+  // it at z-70. Without it, Radix sees the sheet as the top layer and Escape dismisses
+  // that instead — closing the whole stack in one press while the profile is still up.
+  // Rename (z-72) registers later, so it takes Escape first; the profile closes on the
+  // next press, and only then does the sheet underneath get its turn.
+  useEscapeToClose(open, close, { aboveDialog: true });
+  useEscapeToClose(renameOpen, () => setRenameOpen(false), { aboveDialog: true });
+
+  // Same reason: the sheet behind installs a react-remove-scroll lock that cancels
+  // every wheel/touch outside its own content, and this portal is on <body>.
+  const scrollRootRef = useOverlayScroll(open);
+
   const hasVisits = !!detail && detail.visitCount > 0;
 
   return (
@@ -277,9 +292,16 @@ export function MerchantDetailPortal({
                 (the transaction sheet), which stays open behind it. Without the marker
                 every tap in here reads as an outside-interaction and dismisses it — see
                 keepOpenOnOutside in components/ui/dialog.tsx. */}
+            {/* Stays full-bleed so the accent wash below runs edge to edge like the
+                dashboard's gradient hero. The column cap sits on the header row and on
+                the scroll area's *contents* — deliberately not on a wrapper around the
+                scroll area itself. A capped wrapper leaves the full-bleed gutters either
+                side of it owned by this `overflow-hidden` div, which has nothing to
+                scroll, so a wheel anywhere outside the column did nothing on desktop. */}
             <div
+              ref={scrollRootRef}
               data-dialog-keep-open=""
-              className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
+              className="fixed inset-x-0 bottom-0 flex flex-col overflow-hidden"
               style={{
                 top: 0,
                 zIndex: 70,
@@ -300,7 +322,7 @@ export function MerchantDetailPortal({
               )}
 
               {/* Header */}
-              <div className="relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9" style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
+              <div className={cn(CONTENT_COLUMN, "relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9")} style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
                 <button
                   type="button"
                   onClick={close}
@@ -341,7 +363,7 @@ export function MerchantDetailPortal({
               {/* Body */}
               <div className="relative flex-1 overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
                 {detail && (
-                  <div className="pb-[calc(2rem+var(--sab))]">
+                  <div className={cn(CONTENT_COLUMN, "pb-[calc(2rem+var(--sab))]")}>
                     <div className="flex items-start justify-between px-4">
                       <div>
                         <p className="text-lg text-foreground/60">Total spent</p>

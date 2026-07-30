@@ -67,7 +67,14 @@ function SelectContent({
   sideOffset = 4,
   align = "center",
   alignOffset = 0,
-  alignItemWithTrigger = true,
+  // Must stay false for any select rendered inside a dialog — i.e. all of them, since
+  // every dialog in this app is a vaul bottom sheet. With alignItemWithTrigger on,
+  // Select.Trigger's onFocus closes the popup whenever the trigger receives focus
+  // while open ("the popup element shouldn't obscure the focused trigger"), and the
+  // sheet's focus management re-focuses the trigger right after the popup mounts —
+  // so the dropdown opens and shuts again immediately. Rendering as a normal anchored
+  // dropdown below the trigger avoids that path entirely.
+  alignItemWithTrigger = false,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -77,17 +84,24 @@ function SelectContent({
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
+        // This content is portalled to <body>, so when the select is opened from
+        // inside a dialog it sits *outside* that dialog's DOM — every click on an
+        // item would then read as an outside-press and vaul would dismiss the sheet
+        // before the item could act. The marker tells keepOpenOnOutside
+        // (components/ui/dialog.tsx) that this subtree belongs to the sheet. Inert
+        // outside a dialog. See DropdownMenuContent for the same fix.
+        data-dialog-keep-open=""
         side={side}
         sideOffset={sideOffset}
         align={align}
         alignOffset={alignOffset}
         alignItemWithTrigger={alignItemWithTrigger}
-        className="isolate z-50"
+        className="isolate z-[200]"
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
-          className={cn("relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-card-glass text-popover-foreground shadow-overlay ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+          className={cn("relative isolate z-[200] max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-card-glass text-popover-foreground shadow-overlay ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
           {...props}
         >
           <SelectScrollUpButton />

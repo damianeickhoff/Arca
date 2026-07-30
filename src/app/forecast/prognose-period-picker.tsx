@@ -12,7 +12,20 @@ import { bottomDockClass } from "@/components/bottom-nav";
 // — prev/next chevrons around a center pill that opens a dialog list — but behaves like
 // MonthPicker (src/components/month-picker.tsx): picks a single month, restricted to
 // last month, current month, and the next 6 months (8 total), "today"-anchored.
-export function PrognosePeriodPicker({ current }: { current: string }) {
+export function PrognosePeriodPicker({
+  current,
+  embedded = false,
+}: {
+  current: string;
+  /** True inside the dashboard's Insights portal. The portal shares the dashboard's
+   *  own "/" route, so writing the month to the URL there put `?fcMonth=…` on the
+   *  dashboard — visible in the address bar and part of every link the user copies,
+   *  for a control that belongs to one pane of one overlay. Embedded mode stores it
+   *  in a cookie and refreshes the current route instead, never touching the URL —
+   *  the same trade PeriodSelector makes for the Analytics/Trends tabs. The
+   *  standalone /forecast route keeps the shareable `?month=` param. */
+  embedded?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -29,9 +42,20 @@ export function PrognosePeriodPicker({ current }: { current: string }) {
   const currentLabel = index >= 0 ? months[index].label : current;
 
   function navigate(value: string) {
+    if (embedded) {
+      // Read back by getReportsPortalContent (reports-portal-content.tsx), which is
+      // the only thing that looks at this cookie — so the forecast pane re-renders
+      // with the new month and nothing else changes meaning.
+      document.cookie = `fc_month=${value};path=/;max-age=31536000;SameSite=Lax`;
+      router.refresh();
+      return;
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set("month", value);
-    router.push(`?${params.toString()}`);
+    // replace + scroll:false, not push: stepping through months shouldn't stack a
+    // history entry each time (Back would then walk months instead of leaving the
+    // page) or jump the scroll position on every step.
+    router.replace(`?${params.toString()}`, { scroll: false });
   }
 
   function step(direction: 1 | -1) {

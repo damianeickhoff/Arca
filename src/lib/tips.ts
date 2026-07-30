@@ -28,9 +28,16 @@ export type TipId =
   | "budgetStrategy"
   | "reports"
   | "forecast"
+  | "health"
+  | "keyboardShortcuts"
+  | "importBalance"
+  | "dataHealth"
   // pointer tips
+  | "importDatePreview"
+  | "bulkSelect"
   | "budgetLocation"
   | "reportsLocation"
+  | "healthCard"
   | "settingsLocation"
   | "strategyLocation"
   | "transactionDetail";
@@ -45,6 +52,16 @@ interface TipState {
 }
 
 const EMPTY: TipState = { seen: [], disabled: false };
+
+/** Tips for features added after a user could already have pressed "Don't show
+ *  again" — a blanket opt-out taken months ago shouldn't hide something that
+ *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect"];
+
+function isSuppressed(state: TipState, id: TipId): boolean {
+  if (state.seen.includes(id)) return true;
+  return state.disabled && !IGNORES_DISABLED.includes(id);
+}
 
 function readState(): TipState {
   try {
@@ -72,8 +89,7 @@ function writeState(state: TipState) {
 /** Whether a tip is still owed to this user. Lets a caller skip work it would only
  *  need in order to show one — a pointer tip polling the DOM for its anchor, say. */
 export function isTipPending(id: TipId): boolean {
-  const state = readState();
-  return !state.disabled && !state.seen.includes(id);
+  return !isSuppressed(readState(), id);
 }
 
 /** Wipes the record, so every tip is due again. Not wired to any UI yet — kept as
@@ -104,8 +120,7 @@ export function useContextualTip(id: TipId, active: boolean) {
 
   useEffect(() => {
     if (!active) return;
-    const state = readState();
-    if (state.disabled || state.seen.includes(id)) return;
+    if (isSuppressed(readState(), id)) return;
 
     const timer = setTimeout(() => {
       if (slotHolder !== null) return;

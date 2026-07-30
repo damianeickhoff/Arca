@@ -92,13 +92,13 @@ export function NoBudgetCard({ className }: { className?: string }) {
         </div>
       )}
 
-      <p className="text-md text-foreground/55 max-w-[240px] mx-auto">
+      <p className="text-sm text-foreground/55 max-w-[240px] mx-auto">
         Create a budget to stay on top of your finances.
       </p>
       <button
         type="button"
         onClick={openBudgetCreate}
-        className="mt-4 h-11 px-6 rounded-full bg-foreground/10 text-foreground font-semibold text-sm active:scale-[0.97] transition-transform"
+        className="mt-4 h-11 px-6 rounded-full bg-foreground/10 text-foreground font-semibold text-xs active:scale-[0.97] transition-transform"
       >
         Create budget
       </button>

@@ -388,6 +388,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           the bar reads as a visibly blacker patch than the rest of the sheet. */}
       <div
         className={cn(
+          CONTENT_COLUMN,
           "fixed bottom-0 inset-x-0 px-4 pb-[calc(1rem+var(--sab))] pt-3 bg-gradient-to-t to-transparent",
           onClose ? "from-bg-[var(--dialog-background)] via-bg-[var(--dialog-background)]" : "from-background via-background",
         )}

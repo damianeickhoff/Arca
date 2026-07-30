@@ -165,9 +165,17 @@ function DialogContent({
   footer,
   children,
 }: {
+  /** Goes on the inner *scrolling* div, not the sheet. A `z-*` here does nothing —
+   *  that div isn't positioned; use sheetClassName for layering. */
   className?: string;
+  /** Goes on the sheet itself. This is where a `z-*` belongs. */
   sheetClassName?: string;
-  /** Layering escape hatch for nested sheets — see the z-[65]/z-[80] callers. */
+  /** Layering escape hatch for nested sheets — see the z-[65]/z-[80] callers.
+   *
+   *  Lifting the overlay above the parent sheet ALWAYS requires lifting this sheet to
+   *  the same level (or higher) via sheetClassName. The sheet's own base is z-50, so
+   *  an overlay alone at z-65 renders on top of its own content and frosts the whole
+   *  screen — the dialog included. */
   overlayClassName?: string;
   accentColor?: string | null;
   hideHandle?: boolean;

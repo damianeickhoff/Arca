@@ -98,10 +98,38 @@
   "cashFlow": {
     "title": "Cash Flow Vooruitzicht",
     "emptySub": "Geen account balans ingesteld",
+    "status": {
+      "healthy": "Gezond",
+      "warning": "Let op",
+      "critical": "Kritiek",
+      "empty": "Geen data"
+    },
     "alert": {
       "critical": "Je verwachte cashflow bereikt {amount} op {date}",
       "warning": "Je verwachte cashflow daalt onder {amount} op {date}",
-      "healthy": "Je verwachte cashflow blijft positief"
+      "healthy": "Je verwachte cashflow blijft positief",
+      "empty": "Voeg vaste lasten, inkomsten of transacties toe voor een prognose"
+    }
+  },
+  "financialHealth": {
+    "title": "Financiële Gezondheid",
+    "opportunity": "{area} biedt de grootste verbeterkans",
+    "subtitlePerfect": "Elk onderdeel scoort de volle punten",
+    "subtitleEmpty": "Voeg rekeningen en transacties toe voor een score",
+    "dataNeeded": "Data nodig",
+    "state": {
+      "excellent": "Uitstekend",
+      "good": "Goed",
+      "fair": "Redelijk",
+      "attention": "Aandacht nodig"
+    },
+    "category": {
+      "savingsRate": "Spaarquote",
+      "emergencyFund": "Noodfonds",
+      "budgetAdherence": "Budgetdiscipline",
+      "recurringExpenses": "Vaste lasten",
+      "debtRatio": "Schuldenlast",
+      "incomeStability": "Inkomensstabiliteit"
     }
   },
   "dashboard": {
@@ -138,7 +166,18 @@
       "apply": "Toepassen",
       "reset": "{name} wissen",
       "period": "Periode"
-    }
+    },
+    "bulkSelected": "{count, plural, =0 {Niets geselecteerd} one {# geselecteerd} other {# geselecteerd}}",
+    "bulkSelectAll": "Alles selecteren ({count})",
+    "bulkSelectNone": "Wissen",
+    "bulkSelectAllShort": "dag selecteren",
+    "bulkSelectNoneShort": "dag wissen",
+    "bulkCategory": "Categorie",
+    "bulkExclude": "Uitsluiten",
+    "bulkInclude": "Meetellen",
+    "bulkDelete": "Verwijderen",
+    "bulkDone": "Selectiemodus verlaten",
+    "bulkConfirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?"
   },
   "goals": {
     "savings": "Sparen",
@@ -251,9 +290,25 @@
       "title": "Cashflowprognose",
       "body": "Berekent je saldo vooruit op basis van je vaste lasten en gebruikelijke uitgaven, zodat je dips ziet aankomen."
     },
+    "health": {
+      "title": "Financiële gezondheid",
+      "body": "Eén score van 100, opgebouwd uit je sparen, buffer, budget, vaste lasten, schulden en inkomen. De uitsplitsing laat precies zien waar hij vandaan komt."
+    },
+    "keyboardShortcuts": {
+      "title": "Arca met een toetsenbord",
+      "body": "Ctrl+K (⌘K op een Mac) opent zoeken vanaf elke plek, Esc sluit wat er bovenop ligt, en met je numpad typ je bedragen — Enter slaat op."
+    },
+    "importBalance": {
+      "title": "Neem je saldo mee",
+      "body": "Heeft je export een saldokolom? Wijs hem hier aan. Arca bewaart het cijfer van je bank ongewijzigd, klaar voor saldohistorie en betere prognoses."
+    },
     "budgetLocation": {
       "title": "Hier staat je budget",
       "body": "Tik op de portemonnee om een totaallimiet in te stellen en eventueel een doel per categorie."
+    },
+    "healthCard": {
+      "title": "Hoe je er in het geheel voor staat",
+      "body": "Tik voor je financiële gezondheidsscore, wat elk onderdeel bijdraagt, en welke aanpassingen hem het meest verhogen."
     },
     "reportsLocation": {
       "title": "Trends en prognoses",
@@ -270,6 +325,79 @@
     "strategyLocation": {
       "title": "Je verdeling zit hierachter",
       "body": "Tik op bewerken en dan op het schuifjes-icoon om te wijzigen hoe je inkomen over nodig, willen en sparen wordt verdeeld — Arca past het budgetadvies daarop aan."
+    },
+    "importDatePreview": {
+      "title": "Check eerst de datums",
+      "body": "Hier zie je precies wat er van je datumkolom wordt gemaakt. Staat er \"geen datum\", dan heb je de verkeerde kolom of het verkeerde formaat gekozen — pas het hier aan, dan komt er niets kapots binnen."
+    },
+    "dataHealth": {
+      "title": "Import misgegaan?",
+      "body": "Data Health vindt transacties met een onleesbare datum — precies wat een import met de verkeerde kolomkoppeling achterlaat — en laat je ze corrigeren of verwijderen."
+    },
+    "bulkSelect": {
+      "title": "Houd vast om meerdere te kiezen",
+      "body": "Houd een transactie ingedrukt om de selectiemodus aan te zetten. Kies er zoveel je wilt en pas ze in een keer aan, sluit ze uit van rapportages of verwijder ze."
     }
+  },
+  "importMapping": {
+    "title": "Onherkend bankformaat",
+    "description": "We konden deze bank niet automatisch herkennen. Geef aan welke kolom wat is — we onthouden het voor de volgende keer.",
+    "bankName": "Banknaam (optioneel)",
+    "bankNamePlaceholder": "bijv. Mijn Bank",
+    "column": "Kolom {index}",
+    "none": "Geen",
+    "dateColumn": "Datumkolom",
+    "dateFormat": "Datumformaat",
+    "dateFormatIso": "JJJJ-MM-DD",
+    "dateFormatDmy": "DD-MM-JJJJ",
+    "dateFormatMdy": "MM-DD-JJJJ",
+    "dateFormatCustom": "Aangepast…",
+    "customDateFormat": "Aangepast datumformaat",
+    "customDateFormatPlaceholder": "bijv. DD.MM.YYYY",
+    "customDateFormatHint": "Gebruik DD, MM en YYYY (of YY) met een willekeurig scheidingsteken, bijv. DD.MM.YYYY of MM/DD/YY.",
+    "descriptionColumn": "Omschrijvingskolom",
+    "amountColumn": "Bedragkolom",
+    "decimalSeparator": "Decimaalteken",
+    "decimalComma": "Komma (1.234,56)",
+    "decimalDot": "Punt (1,234.56)",
+    "directionHint": "Richting (optioneel — laat op \"Gebruik teken van bedrag\" staan als een negatief bedrag al geld uit betekent)",
+    "directionColumn": "Richtingkolom",
+    "useAmountSign": "Gebruik teken van bedrag",
+    "directionExpenseValue": "Waarde in die kolom die \"geld uit\" betekent",
+    "directionExpenseValuePlaceholder": "bijv. Debet",
+    "accountColumn": "Rekeningkolom (optioneel)",
+    "counterAccountColumn": "Tegenrekening (optioneel)",
+    "balanceColumn": "Resulterend saldo (optioneel)",
+    "balanceColumnHint": "Het saldo dat je bank na elke transactie meldt — vaak Saldo, Saldo na mutatie of Balance genoemd. We bewaren het precies zoals het binnenkomt, voor toekomstige saldohistorie en prognoses.",
+    "cancel": "Annuleren",
+    "import": "Importeren",
+    "importing": "Importeren…",
+    "previewLabel": "Zo worden je datums gelezen",
+    "notADate": "geen datum",
+    "notAnAmount": "geen bedrag",
+    "datePreviewInvalid": "Deze kolom is niet als datum te lezen. Kies een andere kolom of pas het datumformaat aan.",
+    "importBlockedInvalidDates": "{count, plural, one {# regel heeft} other {# regels hebben}} een datum die we niet kunnen lezen (bijvoorbeeld: {samples}). Er is niets geïmporteerd — controleer de datumkolom en het formaat.",
+    "rowsSkippedBadDate": "{count, plural, one {# regel is} other {# regels zijn}} overgeslagen omdat de datum niet gelezen kon worden."
+  },
+  "dataHealth": {
+    "title": "Data Health",
+    "allClear": "Alles ziet er goed uit — geen kapotte transacties.",
+    "brokenDatesTitle": "{count, plural, one {# transactie heeft} other {# transacties hebben}} een onleesbare datum",
+    "brokenDatesBody": "Deze komen uit een import waarbij de datumkolom aan het verkeerde veld is gekoppeld. Ze staan niet in je transactielijst, want die filtert op datum. Geef ze een echte datum of verwijder ze.",
+    "storedAs": "Opgeslagen als",
+    "selectRow": "Selecteer deze transactie",
+    "correctDate": "Juiste datum",
+    "fix": "Herstel",
+    "deleteSelected": "Verwijder selectie ({count})",
+    "deleteAll": "Verwijder alles ({count})",
+    "confirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?"
+  },
+  "importProfiles": {
+    "title": "Importprofielen",
+    "description": "Een opgeslagen profiel onthoudt welke kolom wat is voor een bankexport, en wordt automatisch toegepast op elk bestand met dezelfde kolommen. Verwijder er een om het opnieuw gevraagd te krijgen.",
+    "empty": "Nog geen opgeslagen importprofielen.",
+    "dateColumn": "Datumkolom",
+    "delete": "Profiel verwijderen",
+    "confirmDelete": "Opgeslagen koppeling \"{label}\" verwijderen? Bij de volgende import van dat bestand word je opnieuw om de kolommen gevraagd."
   }
 }

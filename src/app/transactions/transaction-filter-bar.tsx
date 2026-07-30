@@ -73,7 +73,11 @@ export function TransactionFilterBar(props: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
+    // On a phone the pills stay a single swipeable row. On desktop there's no touch
+    // scrolling and scrollbars are hidden app-wide (globals.css), so an overflowing
+    // row would strand the last filters with no way to reach them — wrap instead, so
+    // every filter is visible.
+    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 lg:flex-wrap lg:overflow-x-visible lg:gap-y-2">
       <PeriodPill
         from={props.from}
         to={props.to}

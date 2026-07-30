@@ -38,6 +38,7 @@ import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/moti
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
 import { formatEur, currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CONTENT_COLUMN } from "@/components/page-container";
 import { GOAL_COLORS, monthsUntil } from "./goal-shared";
 import type { Category } from "@/db/schema";
 
@@ -122,7 +123,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
     "flex items-center justify-center rounded-2xl h-13 text-foreground/80 bg-foreground/[0.07] active:bg-foreground/15 transition-colors select-none";
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
+    <div className={cn(CONTENT_COLUMN, "fixed inset-0 flex flex-col bg-background")}>
       {/* Header: close (left) + plain title (center) + overflow menu (right) */}
       <div className="flex items-center justify-between px-4 pt-[calc(var(--sat)+0.75rem)] pb-2 shrink-0">
         <button
@@ -372,7 +373,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
               <p className="text-center text-3xl font-bold tabular-nums py-8 opacity-50">{formatEur(effectiveMonthlyContribution)}</p>
             </>
           ) : (
-            <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
+            <AmountKeypad expr={monthlyExpr} onChange={setMonthlyExpr} onEnter={() => setMonthlyOpen(false)} calcEnabled={monthlyCalcEnabled} onToggleCalc={() => setMonthlyCalcEnabled((c) => !c)} />
           )}
           <button
             type="button"
@@ -389,7 +390,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
           <DialogHeader>
             <DialogTitle>{t("startingBalance")}</DialogTitle>
           </DialogHeader>
-          <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
+          <AmountKeypad expr={balanceExpr} onChange={setBalanceExpr} onEnter={() => setBalanceOpen(false)} calcEnabled={balanceCalcEnabled} onToggleCalc={() => setBalanceCalcEnabled((c) => !c)} />
           <button
             type="button"
             onClick={() => setBalanceOpen(false)}
