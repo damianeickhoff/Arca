@@ -33,7 +33,33 @@ import { formatEur } from "@/lib/format";
 import { evaluateExpression } from "@/lib/amount-expression";
 import { cn } from "@/lib/utils";
 
-interface AddProps { action: "add"; variant?: "default" | "icon" | "fab" }
+/** Starting values for a new recurrence, for callers that already know some of them —
+ *  "make this transaction recurring" fills in the name, amount, category and so on.
+ *  Everything is optional; anything absent falls back to the same defaults a blank form
+ *  would use. Strings throughout, because they seed form fields verbatim. */
+export interface RecurringPrefill {
+  name?: string;
+  type?: string;
+  amount?: string;
+  budgetType?: string;
+  /** ISO date the recurrence starts on. The editor derives dueDay from it on save, so
+   *  passing the source transaction's own date is both the honest value and the one that
+   *  makes the Period row read correctly. Defaults to today. */
+  startDate?: string;
+  matchPattern?: string;
+  matchAmount?: string;
+  categoryId?: string;
+}
+
+interface AddProps {
+  action: "add";
+  variant?: "default" | "icon" | "fab";
+  prefill?: RecurringPrefill;
+  /** Controlled open, for callers with their own trigger (the transaction detail
+   *  dialog's "Make recurring"). When set, no built-in trigger button is rendered. */
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+}
 interface EditProps {
   action: "edit";
   item: RecurringItem;
@@ -96,11 +122,11 @@ function shiftEndDate(origStart: string, origEnd: string, newStart: string): str
 
 export function RecurringClient(props: Props) {
   const router = useRouter();
-  const controlled = props.action === "edit" && props.open !== undefined;
+  const controlled = props.open !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
-  const open = controlled ? (props as EditProps).open! : internalOpen;
+  const open = controlled ? props.open! : internalOpen;
   const setOpen = (v: boolean) => {
-    if (controlled) (props as EditProps).onOpenChange?.(v);
+    if (controlled) props.onOpenChange?.(v);
     else setInternalOpen(v);
   };
   const [loading, setLoading] = useState(false);
@@ -108,6 +134,7 @@ export function RecurringClient(props: Props) {
 
   const isEdit = props.action === "edit";
   const item = isEdit ? props.item : null;
+  const prefill = props.action === "add" ? props.prefill : undefined;
   // End date is owned by a linked debt when explicitly told (opened from the debt detail)
   // or for any debt-type bill (auto-created from a debt) — its end mirrors the debt's
   // computed last-payment date and must not be edited here.
@@ -119,27 +146,29 @@ export function RecurringClient(props: Props) {
     fetch("/api/categories").then((r) => r.json()).then(setCats).catch(() => {});
   }, [open, cats.length]);
 
-  const [amountExpr, setAmountExpr] = useState(item?.amount != null ? String(item.amount).replace(".", ",") : "");
+  const [amountExpr, setAmountExpr] = useState(
+    item?.amount != null ? String(item.amount).replace(".", ",") : (prefill?.amount ?? "").replace(".", ","),
+  );
   const [calcEnabled, setCalcEnabled] = useState(true);
   const [subpage, setSubpage] = useState<string | null>(null);
   const [subVisible, setSubVisible] = useState(false);
 
   const [form, setForm] = useState({
-    name: item?.name ?? "",
-    type: item?.type ?? "bill",
+    name: item?.name ?? prefill?.name ?? "",
+    type: item?.type ?? prefill?.type ?? "bill",
     frequency: item?.frequency ?? "monthly",
-    budgetType: item?.budgetType ?? "nodig",
+    budgetType: item?.budgetType ?? prefill?.budgetType ?? "nodig",
     active: item?.active ?? true,
     notes: item?.notes ?? "",
     dueDay: item?.dueDay?.toString() ?? "",
-    startDate: item?.startDate ?? (isEdit ? "" : todayISO()),
+    startDate: item?.startDate ?? (isEdit ? "" : (prefill?.startDate || todayISO())),
     endDate: item?.endDate ?? "",
-    matchPattern: item?.matchPattern ?? "",
-    matchAmount: item?.matchAmount?.toString() ?? "",
+    matchPattern: item?.matchPattern ?? prefill?.matchPattern ?? "",
+    matchAmount: item?.matchAmount?.toString() ?? prefill?.matchAmount ?? "",
     matchMode: (item?.matchAmountMin != null || item?.matchAmountMax != null) ? "range" : "exact",
     matchAmountMin: item?.matchAmountMin?.toString() ?? "",
     matchAmountMax: item?.matchAmountMax?.toString() ?? "",
-    categoryId: item?.categoryId != null ? String(item.categoryId) : "",
+    categoryId: item?.categoryId != null ? String(item.categoryId) : (prefill?.categoryId ?? ""),
     friendlyName: item?.friendlyName ?? "",
   });
   function set(key: string, value: string | boolean) {

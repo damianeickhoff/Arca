@@ -100,6 +100,10 @@ function TransactionListRow({
       data-tip-anchor={tipAnchor ? "transactionListRow" : undefined}
       className={cn(
         "w-full flex items-center gap-5 px-6 py-2 text-left transition-colors select-none",
+        // iOS raises its own text-selection callout on a held finger, which covers the
+        // row and cancels our gesture; `touch-action: pan-y` keeps the list scrollable
+        // while taking every other touch behaviour off the row.
+        "[-webkit-touch-callout:none] [touch-action:pan-y]",
         selected ? "bg-foreground/[0.07]" : "active:bg-foreground/[0.04]",
       )}
     >

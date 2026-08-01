@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { transactions, banks, vermogenAccounts } from "@/db/schema";
 import type { Bank } from "@/db/schema";
 import { and, eq, getTableColumns, gte, lt, sql } from "drizzle-orm";
+import { roundToCents } from "@/lib/transaction-splits";
 
 // Live account balances + a best-effort balance-over-time series for the Accounts
 // overview. There is no stored per-account balance history, so everything here is
@@ -28,12 +29,17 @@ const signedFlow = sql<number>`CASE
   ELSE -${transactions.amount}
 END`;
 
+// Amounts are REAL, so SUM() over a few hundred of them accumulates binary-float error:
+// a balance that should read 610.06 comes back as 610.0599999999996. Rounding to cents
+// here rather than at each display site means every consumer — the overview, the net
+// worth total, the balance-correction dialog that seeds an editable input from this
+// number — gets a real money value instead of having to hide the noise.
+const liveBalance = sql<number>`ROUND(COALESCE(${banks.startingBalance}, 0) + COALESCE(SUM(${signedFlow}), 0), 2)`;
+
 /** A single bank account's live transaction-derived balance (for balance-correction UI). */
 export async function getBankBalance(bankId: number): Promise<number | null> {
   const [row] = await db
-    .select({
-      balance: sql<number>`COALESCE(${banks.startingBalance}, 0) + COALESCE(SUM(${signedFlow}), 0)`,
-    })
+    .select({ balance: liveBalance })
     .from(banks)
     .leftJoin(transactions, eq(transactions.account, banks.accountNumber))
     .where(eq(banks.id, bankId))
@@ -46,7 +52,7 @@ export async function getBankBalances(): Promise<BankBalance[]> {
   return db
     .select({
       ...getTableColumns(banks),
-      balance: sql<number>`COALESCE(${banks.startingBalance}, 0) + COALESCE(SUM(${signedFlow}), 0)`,
+      balance: liveBalance,
     })
     .from(banks)
     .leftJoin(transactions, eq(transactions.account, banks.accountNumber))
@@ -93,7 +99,7 @@ export async function getAccountBalanceHistory(days = 365): Promise<BalancePoint
     .orderBy(transactions.date);
 
   const netByDate = new Map(daily.map((d) => [d.date, Number(d.net) || 0]));
-  const base = Number(startingSum) + Number(vermogenSum) + Number(priorNet);
+  const base = roundToCents(Number(startingSum) + Number(vermogenSum) + Number(priorNet));
 
   const points: BalancePoint[] = [];
   let running = base;
@@ -101,7 +107,10 @@ export async function getAccountBalanceHistory(days = 365): Promise<BalancePoint
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     const iso = d.toISOString().slice(0, 10);
-    running += netByDate.get(iso) ?? 0;
+    // Rounded every step, not just at the end: this is a running sum of hundreds of
+    // REALs, and the same drift that gave the overview its 13 decimals would otherwise
+    // ride along the whole series.
+    running = roundToCents(running + (netByDate.get(iso) ?? 0));
     points.push({ date: iso, balance: running });
   }
   return points;

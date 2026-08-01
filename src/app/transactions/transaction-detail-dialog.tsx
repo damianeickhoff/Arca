@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Icon, parseImgKey } from "@/components/icon";
 import { formatEur, formatDate, BUDGET_TYPE_LABELS } from "@/lib/format";
+import { isValidISODate } from "@/lib/date-valid";
+import { RecurringClient, type RecurringPrefill } from "@/components/settings/recurring/recurring-client";
 import { resolveTransactionIcon } from "@/lib/auto-brand";
 import { resolveDisplayName } from "@/lib/friendly-names";
 import { getMatchedTransactionInfoFields } from "@/lib/transaction-info-fields";
@@ -76,13 +78,14 @@ export function TransactionDetailDialog({
   // `merchantVersion` tells the body to re-read the field after a pick.
   const [merchantPickerOpen, setMerchantPickerOpen] = useState(false);
   const [merchantVersion, setMerchantVersion] = useState(0);
-  // "Make recurring" — closes this sheet and navigates to the routed add-fixed-cost
-  // form, prefilled from this transaction through the URL. That routed form is the
-  // app's current "add" flow; the old in-place dialog is only used for editing now.
+  // "Make recurring" — opens the same recurrence editor used everywhere else (Settings →
+  // Recurring), prefilled from this transaction, rather than navigating away to the old
+  // routed "Add fixed cost" form. This sheet stays open underneath: the editor is a
+  // dialog above it, so cancelling returns you to the transaction you started from.
+  const [recurringOpen, setRecurringOpen] = useState(false);
   function makeRecurring() {
     if (!shown) return;
-    onClose();
-    router.push(`/settings/recurring/add?${buildRecurringPrefillParams(shown, categories)}`);
+    setRecurringOpen(true);
   }
 
   async function pickMerchant(name: string) {
@@ -198,6 +201,23 @@ export function TransactionDetailDialog({
       onOpenChange={setMerchantPickerOpen}
       onPick={pickMerchant}
     />
+
+    {/* The app's one recurrence editor, opened in "add" mode with this transaction's
+        details filled in. Mounted only while open so it re-seeds from whichever
+        transaction the sheet is showing — its form state is initialised once. */}
+    {recurringOpen && shown && (
+      <RecurringClient
+        action="add"
+        open
+        onOpenChange={(v) => {
+          setRecurringOpen(v);
+          // Saving refreshes the route; closing the transaction sheet too would drop the
+          // user back on the list, so it deliberately stays put.
+          if (!v) router.refresh();
+        }}
+        prefill={buildRecurringPrefill(shown, categories)}
+      />
+    )}
     </>
   );
 }
@@ -999,28 +1019,25 @@ function guessMerchant(description: string): string {
   return brand.join(" ") || description;
 }
 
-// Everything a recurring item can inherit from a single transaction: name, amount,
-// due day (this transaction's day of month), match pattern and category. Anything not
-// derivable (frequency, notes) keeps the add form's own defaults. Serialized as query
-// params because that form is a route, not a dialog — see settings/recurring/add/page.tsx.
-function buildRecurringPrefillParams(row: TransactionDetail, categories: Category[]): string {
+// Everything a recurring item can inherit from a single transaction: name, amount, the
+// date it starts from, match pattern and category. Anything not derivable (frequency,
+// notes) keeps the editor's own defaults.
+function buildRecurringPrefill(row: TransactionDetail, categories: Category[]): RecurringPrefill {
   const category = categories.find((c) => c.id === row.categoryId);
   const amount = row.correctedAmount ?? row.amount;
-  const day = parseInt(row.date.slice(8, 10), 10);
   const budgetType = row.budgetTypeOverride ?? category?.budgetType ?? null;
 
-  const params = new URLSearchParams();
-  const set = (key: string, value: string | null | undefined) => { if (value) params.set(key, value); };
-
-  set("name", resolveDisplayName(row));
-  set("type", row.direction === "income" ? "income" : "bill");
-  set("amount", amount != null ? String(Math.abs(amount)) : "");
-  set("budgetType", budgetType && ["nodig", "willen", "sparen"].includes(budgetType) ? budgetType : null);
-  set("dueDay", Number.isFinite(day) ? String(day) : "");
-  set("matchPattern", guessMerchant(row.description));
-  set("categoryId", row.categoryId != null ? String(row.categoryId) : null);
-
-  return params.toString();
+  return {
+    name: resolveDisplayName(row),
+    type: row.direction === "income" ? "income" : "bill",
+    amount: amount != null ? String(Math.abs(amount)) : undefined,
+    budgetType: budgetType && ["nodig", "willen", "sparen"].includes(budgetType) ? budgetType : undefined,
+    // The editor turns this into dueDay on save. A transaction whose date never parsed
+    // (a mis-mapped CSV import) is left out, so the form falls back to today.
+    startDate: isValidISODate(row.date) ? row.date : undefined,
+    matchPattern: guessMerchant(row.description) || undefined,
+    categoryId: row.categoryId != null ? String(row.categoryId) : undefined,
+  };
 }
 
 // The recurring rule behind a linked transaction: its schedule at a glance, plus the
