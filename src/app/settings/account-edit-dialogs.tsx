@@ -29,6 +29,7 @@ import { AmountKeypad } from "@/components/amount-keypad";
 import { WarningBanner } from "@/components/warning-banner";
 import { evaluateExpression } from "@/lib/amount-expression";
 import { formatEur } from "@/lib/format";
+import { roundToCents } from "@/lib/transaction-splits";
 import { cn } from "@/lib/utils";
 import type { Bank, VermogenAccount } from "@/db/schema";
 import { TRANSFER_TYPES } from "@/lib/transfer-types";
@@ -242,7 +243,10 @@ export function BankEditDialog({
   function openBalanceSub() {
     const base = confirmedBalance ?? liveBalance ?? 0;
     setBalanceSign(base < 0 ? "−" : "+");
-    setBalanceExpr(String(Math.abs(base)).replace(".", ","));
+    // Rounded again on the way into the input: the balance arrives clean from the API,
+    // but `base` can also be a value the user just confirmed here, and this string is
+    // what they see and edit — it must never show float noise.
+    setBalanceExpr(String(roundToCents(Math.abs(base))).replace(".", ","));
     openSub("balance");
   }
 

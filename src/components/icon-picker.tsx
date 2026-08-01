@@ -97,6 +97,7 @@ export const BRAND_ICONS: { key: string; label: string }[] = [
   { key: "revolut",                 label: "Revolut" },
   { key: "n26",                     label: "N26" },
   { key: "bunq",                    label: "Bunq" },
+  { key: "klarna",                  label: "Klarna" },
   // Telecom        
   { key: "vodafone",                label: "Vodafone" },
   { key: "virgin",                  label: "Virgin" },
