@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
   IconAdjustments,
+  IconBrandGoogle,
   IconBuildingStore,
   IconCalendarCheck,
   IconCamera,
@@ -29,6 +30,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   csvImport: IconFileTextFilled,
   recurring: IconReload,
   recurringWholeWord: IconTextWrap,
+  googleLookup: IconBrandGoogle,
   merchant: IconBuildingStore,
   budget: IconWallet,
   budgetStrategy: IconAdjustments,

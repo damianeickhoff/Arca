@@ -133,7 +133,7 @@
     }
   },
   "dashboard": {
-    "upcomingBills": "Upcoming Bills",
+    "upcomingBills": "Upcoming transactions",
     "upcomingCount": "{count, plural, one {# upcoming transaction} other {# upcoming transactions}}<br></br>this month",
     "needsReview": "{count, plural, one {# transaction needs review} other {# transactions need review}}"
   },
@@ -325,6 +325,10 @@
     "transactionDetail": {
       "title": "Tap for the whole story",
       "body": "Open any transaction to recategorise it, split it, attach a receipt or jump to the merchant."
+    },
+    "googleLookup": {
+      "title": "Who charged me?",
+      "body": "Open a transaction and tap the Google button to search the shop name on the web — handy for a charge you don’t recognise."
     },
     "strategyLocation": {
       "title": "Your split lives in here",

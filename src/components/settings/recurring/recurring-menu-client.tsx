@@ -27,10 +27,11 @@ const FILTERS = [
   { value: "bill",         label: "Bills" },
   { value: "subscription", label: "Subscriptions" },
   { value: "debt",         label: "Debts" },
+  { value: "savings",      label: "Savings" },
 ] as const;
 
 const ITEM_LABELS: Record<string, string> = {
-  income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt",
+  income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt", savings: "Savings",
 };
 
 const BUDGET_LABELS: Record<string, string> = {
@@ -85,14 +86,10 @@ export function RecurringMenuClient({ items, categories }: Props) {
   const visible = activeItems
     .filter((i) => (filter === "all" ? true : i.type === filter))
     .filter((i) => !query || i.name.toLowerCase().includes(query))
-    .sort((a, b) => {
-      const da = dueDateByItemId[a.id];
-      const dbb = dueDateByItemId[b.id];
-      if (da && dbb) return da.localeCompare(dbb);
-      if (da) return -1;
-      if (dbb) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    // Alphabetical, so the list is a stable index you can scan for a specific bill.
+    // (It used to lead with whatever was due soonest, which reshuffled as dates passed.)
+    // `base` sensitivity so casing and accents don't split otherwise-adjacent names.
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
   // Monthly total for the header line. For income the total is income items; for any
   // expense-oriented filter (all/bill/subscription/debt) it's the non-income items.

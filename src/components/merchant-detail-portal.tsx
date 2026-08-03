@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Icon, parseImgKey } from "@/components/icon";
 import { getDominantImageColor } from "@/lib/dominant-color";
 import { ListItemRow } from "@/components/list-item-row";
+import { TransactionDetailByIdDialog } from "@/components/transaction-detail-by-id-dialog";
 import { CategorySpendChart } from "@/components/category-spend-chart";
 import { ContextualTip } from "@/components/contextual-tip";
 import { brandColorForIconKey, detectBrandIcon } from "@/lib/brand-detect";
@@ -181,6 +182,10 @@ export function MerchantDetailPortal({
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
 
+  // Drill-down into one of the listed purchases. Kept as an id (not the row) so the
+  // sheet re-reads the transaction rather than trusting this profile's trimmed copy.
+  const [openTransactionId, setOpenTransactionId] = useState<number | null>(null);
+
   function openRename() {
     setRenameValue(detail?.name ?? merchant?.name ?? "");
     setRenameError(null);
@@ -252,6 +257,7 @@ export function MerchantDetailPortal({
     onClose();
     setDetail(null);
     setRenameOpen(false);
+    setOpenTransactionId(null);
   }
 
   // aboveDialog: this portal is opened FROM an open sheet that stays open behind it
@@ -260,7 +266,11 @@ export function MerchantDetailPortal({
   // that instead — closing the whole stack in one press while the profile is still up.
   // Rename (z-72) registers later, so it takes Escape first; the profile closes on the
   // next press, and only then does the sheet underneath get its turn.
-  useEscapeToClose(open, close, { aboveDialog: true });
+  // Suspended while a purchase's transaction sheet is open above this profile: that
+  // sheet is a vaul drawer with its own Escape handling, and aboveDialog deliberately
+  // takes the key away from Radix — without this guard Escape would close the profile
+  // out from under the sheet instead of closing the sheet.
+  useEscapeToClose(open && openTransactionId == null, close, { aboveDialog: true });
   useEscapeToClose(renameOpen, () => setRenameOpen(false), { aboveDialog: true });
 
   // Same reason: the sheet behind installs a react-remove-scroll lock that cancels
@@ -272,6 +282,17 @@ export function MerchantDetailPortal({
   return (
     <>
       <ContextualTip id="merchant" active={open} />
+
+      {/* Tapping a purchase opens the app's transaction sheet right here, over the
+          profile. z-[75] because this profile is a body portal at z-70 — a sheet at
+          its default z-50 would open behind it. Editing from there can move the
+          transaction out of this merchant, so a close refetches the profile. */}
+      <TransactionDetailByIdDialog
+        transactionId={openTransactionId}
+        onClose={() => { setOpenTransactionId(null); setRefreshKey((k) => k + 1); }}
+        sheetClassName="z-[75]"
+        overlayClassName="z-[75] backdrop-blur-lg bg-foreground/20"
+      />
       {mounted &&
         createPortal(
           <>
@@ -446,6 +467,7 @@ export function MerchantDetailPortal({
                                   name={t.name}
                                   subtitle={formatDate(t.date)}
                                   right={<span className="font-semibold text-base tabular-nums">{formatEur(t.amount)}</span>}
+                                  onClick={() => setOpenTransactionId(t.id)}
                                 />
                               ))}
                             </div>

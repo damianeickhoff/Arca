@@ -4,7 +4,8 @@ import { eq, and, gte, lte, desc, like, or, sql, asc, isNotNull, inArray } from 
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { currentFinancialMonth } from "@/lib/date-range";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
-import { getBillStatuses } from "@/lib/bill-status";
+import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
+import { signedBillAmount } from "@/lib/bill-amounts";
 import { normalizeBudgetType } from "@/lib/format";
 import { PageContainer } from "@/components/page-container";
 import { ALL_FROM, todayStr } from "./periods";
@@ -150,7 +151,7 @@ export default async function TransactionsPage({
     getCategories(),
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
     db.select().from(goals).where(and(eq(goals.goalType, "savings"), eq(goals.active, true))).orderBy(asc(goals.name)),
-    getBillStatuses(upcomingMonth, financialMonth),
+    getBillStatuses(upcomingMonth, financialMonth, UPCOMING_TYPES),
   ]);
 
   // Upcoming = active recurring items with a due date this financial month that haven't
@@ -159,7 +160,11 @@ export default async function TransactionsPage({
     .filter((s) => s.dueDate != null && s.paid !== true)
     .sort((a, z) => (a.dueDate! < z.dueDate! ? -1 : 1));
   const upcomingCount = upcomingStatuses.length;
-  const upcomingTotal = upcomingStatuses.reduce((sum, s) => sum + (s.item.amount ?? 0), 0);
+  // Net, so an upcoming salary offsets the bills rather than inflating the figure.
+  const upcomingTotal = upcomingStatuses.reduce(
+    (sum, s) => sum + signedBillAmount({ amount: s.item.amount, isIncome: s.item.type === "income" }),
+    0,
+  );
   // Icons for the first few upcoming bills, previewed on the summary card.
   const upcomingIcons = upcomingStatuses.slice(0, 3).map((s) => ({
     icon: s.icon,

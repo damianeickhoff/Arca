@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/icon";
 import { ListItemRow } from "@/components/list-item-row";
+import { TransactionDetailByIdDialog } from "@/components/transaction-detail-by-id-dialog";
 import { NumericKeypad } from "@/components/numeric-keypad";
 import { AnimatedAmountDisplay } from "@/components/animated-amount-display";
 import { acquireNavHidden } from "@/lib/nav-visibility";
@@ -121,6 +122,10 @@ export function CategoryDetailPortal({
   const [editCategoryData, setEditCategoryData] = useState<{ category: Category; rules: CategoryRule[]; banks: Bank[]; categories: Category[] } | null>(null);
   const [loadingEditCategory, setLoadingEditCategory] = useState(false);
 
+  // Drill-down into one of the listed transactions. Kept as an id (not the row) so the
+  // sheet re-reads the transaction rather than trusting this portal's trimmed copy.
+  const [openTransactionId, setOpenTransactionId] = useState<number | null>(null);
+
   const open = category != null;
 
   // A different category opening always resets back to the default period.
@@ -158,6 +163,7 @@ export function CategoryDetailPortal({
     onClose();
     setEditBudgetOpen(false);
     setEditCategoryOpen(false);
+    setOpenTransactionId(null);
     setDetail(null);
   }
 
@@ -234,6 +240,15 @@ export function CategoryDetailPortal({
 
   return (
     <>
+      {/* Tapping a transaction opens the app's transaction sheet right here, over the
+          profile. No z override needed — this portal is z-45, below a sheet's own
+          z-50. Recategorising can move the transaction out of this category, so a
+          close refetches the detail. */}
+      <TransactionDetailByIdDialog
+        transactionId={openTransactionId}
+        onClose={() => { setOpenTransactionId(null); setRefreshKey((k) => k + 1); }}
+      />
+
       {mounted &&
         createPortal(
           <>
@@ -392,13 +407,18 @@ export function CategoryDetailPortal({
                               <p className="text-sm font-medium text-foreground/60 tabular-nums">{formatEur(g.total)}</p>
                             </div>
                             <div className="rounded-xl bg-[var(--dialog-content-background)] mx-3 overflow-hidden">
-                              {g.rows.map((t) => (
+                              {/* Keyed by position, not id: these rows are split
+                                  allocations, so one transaction split across two
+                                  sub-categories appears twice under a rolled-up
+                                  parent — both carrying the same transaction id. */}
+                              {g.rows.map((t, i) => (
                                 <ListItemRow
-                                  key={t.id}
+                                  key={`${t.id}-${i}`}
                                   icon={<Icon iconKey={category.icon} color={category.color} size="lg" round />}
                                   name={t.name}
                                   subtitle={t.account ?? undefined}
                                   right={<span className="font-semibold text-base tabular-nums">{formatEur(t.amount)}</span>}
+                                  onClick={() => setOpenTransactionId(t.id)}
                                 />
                               ))}
                             </div>

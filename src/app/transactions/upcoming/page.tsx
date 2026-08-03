@@ -1,10 +1,12 @@
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
-import { getBillStatuses } from "@/lib/bill-status";
+import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { PageContainer } from "@/components/page-container";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
+import { signedBillAmount } from "@/lib/bill-amounts";
 import { MobileSubpageHeader } from "@/components/mobile-menu-ui";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +16,7 @@ export default async function UpcomingTransactionsPage() {
   const month = currentFinancialMonth(financialMonth);
   const { from, to } = financialMonthRangeByMonth(month, financialMonth);
 
-  const statuses = await getBillStatuses(month, financialMonth);
+  const statuses = await getBillStatuses(month, financialMonth, UPCOMING_TYPES);
   // Upcoming = has a due date this financial month AND not yet paid.
   const upcoming = statuses.filter((s) => s.dueDate != null && s.paid !== true);
 
@@ -29,6 +31,7 @@ export default async function UpcomingTransactionsPage() {
     paid,
     paidSource,
     overdue,
+    isIncome: item.type === "income",
   }));
 
   // Group the list by due date (ascending), mirroring the transactions list layout.
@@ -39,7 +42,8 @@ export default async function UpcomingTransactionsPage() {
     byDate.set(b.dueDate!, list);
   }
 
-  const total = bills.reduce((sum, b) => sum + (b.amount ?? 0), 0);
+  // Net — income counts towards you, everything else against.
+  const total = bills.reduce((sum, b) => sum + signedBillAmount(b), 0);
 
   const fmtDay = (d: string) =>
     new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" });
@@ -65,7 +69,7 @@ export default async function UpcomingTransactionsPage() {
       ) : (
         <div className="space-y-4 px-4 ">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-foreground px-2">Upcoming bills</h2>
+            <h2 className="text-lg font-bold text-foreground px-2">Upcoming transactions</h2>
             <span className="text-sm text-muted-foreground tabular-nums px-2">{formatEur(total)}</span>
           </div>
           <div className="space-y-4">
@@ -75,7 +79,7 @@ export default async function UpcomingTransactionsPage() {
                   <span className="text-sm text-muted-foreground">{fmtDay(date)}</span>
                   {items.length > 1 && (
                     <span className="text-xs text-muted-foreground tabular-nums">
-                      {formatEur(items.reduce((s, b) => s + (b.amount ?? 0), 0))}
+                      {formatEur(items.reduce((s, b) => s + signedBillAmount(b), 0))}
                     </span>
                   )}
                 </div>
@@ -85,7 +89,9 @@ export default async function UpcomingTransactionsPage() {
                       <Icon iconKey={b.icon} size="md" color={b.iconColor} background={b.iconBackground} />
                       <span className="flex-1 text-sm font-medium truncate">{b.name}</span>
                       {b.amount != null && (
-                        <span className="text-sm tabular-nums text-foreground">{formatEur(b.amount)}</span>
+                        <span className={cn("text-sm tabular-nums", b.isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
+                          {b.isIncome ? "+" : ""}{formatEur(b.amount)}
+                        </span>
                       )}
                     </div>
                   ))}

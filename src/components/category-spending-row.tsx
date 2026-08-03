@@ -29,7 +29,9 @@ export function CategorySpendCardButton({ card, periodElapsedPct, onClick }: { c
     <button
       type="button"
       onClick={onClick}
-      className="snap-start shrink-0 w-40 aspect-square rounded-2xl bg-card p-4 text-left flex flex-col active:scale-[0.98] transition-transform  overflow-hidden"
+      // md:w-full: in the desktop grid the card fills its column instead of holding a
+      // fixed 160px, so five of them span the row exactly.
+      className="snap-start shrink-0 w-40 md:w-full aspect-square rounded-2xl bg-card p-4 text-left flex flex-col active:scale-[0.98] transition-transform  overflow-hidden"
     >
     <ProgressRing pct={card.pct != null ? card.pct * 100 : null} periodElapsedPct={periodElapsedPct} color={card.color}>
       <Icon iconKey={card.icon} color={card.color ?? undefined} size="lg" round />
@@ -94,16 +96,23 @@ export function CategorySpendingRow({
           </button>
         )}
       </div>
-      <div className="flex gap-3 overflow-x-auto ml-3 pr-3 pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Scrollable row on mobile; from md a static 5-column grid — the shared content
+          column is wide enough there to show all ROW_LIMIT cards at once, so the scroll
+          (and its snapping, hidden scrollbar and trailing gutter spacer) switches off.
+          px-3 at every width so the cards' outer edges line up with the Upcoming bills
+          card on the dashboard, which sits at the same inset. */}
+      <div className="flex gap-3 overflow-x-auto px-3 pb-1 snap-x snap-mandatory scroll-px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-5 md:overflow-visible md:snap-none">
         {visible.map((c) => (
           <CategorySpendCardButton key={c.categoryId} card={c} periodElapsedPct={periodElapsedPct} onClick={() => setSelectedId(c.categoryId)} />
         ))}
 
+        {/* Scroll-mode only: a sixth tile would wrap the desktop grid onto a second row,
+            and the header's "View all" already offers the same thing there. */}
         {hasMore && (
           <button
             type="button"
             onClick={() => setShowAll(true)}
-            className="snap-start shrink-0 w-42 aspect-square rounded-2xl bg-card p-4 flex flex-col items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            className="snap-start shrink-0 w-42 aspect-square rounded-2xl bg-card p-4 flex flex-col items-center justify-center gap-2 active:scale-[0.98] transition-transform md:hidden"
           >
             <div className="size-14 rounded-full bg-foreground/10 flex items-center justify-center">
               <IconArrowRight className="size-5" />
@@ -111,6 +120,11 @@ export function CategorySpendingRow({
             <p className="text-sm font-medium text-foreground">Show more</p>
           </button>
         )}
+
+        {/* Restores the row's right-hand gutter, which a scroll container's padding
+            collapses at the end of the scroll. Scroll-mode only — in the grid it would
+            claim a whole column. */}
+        <div aria-hidden className="shrink-0 w-0.5 md:hidden" />
       </div>
 
       <CategorySpendingListPortal

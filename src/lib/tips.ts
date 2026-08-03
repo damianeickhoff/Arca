@@ -33,6 +33,7 @@ export type TipId =
   | "keyboardShortcuts"
   | "importBalance"
   | "dataHealth"
+  | "googleLookup"
   // pointer tips
   | "importDatePreview"
   | "bulkSelect"
@@ -57,7 +58,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord"];
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;

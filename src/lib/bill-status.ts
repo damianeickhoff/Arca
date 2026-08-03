@@ -27,9 +27,20 @@ export type BillStatus = {
  * status is cheaply recomputable for any month from the transactions table, so it's
  * not persisted; only the manual override needs a row.
  */
+/** Recurrence types the "upcoming" surfaces treat as money leaving the account. */
+const EXPENSE_TYPES = ["bill", "subscription", "debt", "savings"];
+
+/** Everything with a schedule worth showing on an upcoming list — expenses plus the
+ *  income you're still waiting on. Income deliberately stays out of the budget's bills
+ *  calendar and the cash-flow forecast, which model it separately. */
+export const UPCOMING_TYPES = [...EXPENSE_TYPES, "income"];
+
 export async function getBillStatuses(
   month: string,
   financialMonth: number | FinancialMonthConfig = 1,
+  /** Which recurrence types to report on. Defaults to outgoing money only — callers
+   *  that show a full "what's still to come this month" list pass UPCOMING_TYPES. */
+  types: readonly string[] = EXPENSE_TYPES,
 ): Promise<BillStatus[]> {
   const { from, to } = financialMonthRangeByMonth(month, financialMonth);
   const startDay = getFinancialMonthStartDay(month, financialMonth);
@@ -38,9 +49,12 @@ export async function getBillStatuses(
 
   const [items, periodTx, payments, cats] = await Promise.all([
     db.select().from(recurringItems).where(eq(recurringItems.active, true)),
-    db.select({ description: transactions.description, amount: transactions.amount })
+    // Both directions: an income recurrence is "paid" (received) by an *income*
+    // transaction, so restricting this to expenses would leave every salary showing as
+    // still outstanding. The direction is carried through and checked per item below.
+    db.select({ description: transactions.description, amount: transactions.amount, direction: transactions.direction })
       .from(transactions)
-      .where(and(gte(transactions.date, from), lte(transactions.date, to), eq(transactions.direction, "expense"))),
+      .where(and(gte(transactions.date, from), lte(transactions.date, to))),
     db.select().from(billPayments).where(eq(billPayments.month, month)),
     db.select({ id: categories.id, icon: categories.icon, color: categories.color }).from(categories),
   ]);
@@ -49,11 +63,16 @@ export async function getBillStatuses(
   const categoriesById = new Map(cats.map((c) => [c.id, { icon: c.icon, color: c.color }]));
 
   function findMatch(item: RecurringItem) {
-    return periodTx.some((t) => transactionMatchesRecurringItem(t.description, t.amount, item));
+    // Only consider transactions moving the way this recurrence does, so a same-named
+    // refund can't mark a bill as paid (or an outgoing transfer mark a salary received).
+    const wantedDirection = item.type === "income" ? "income" : "expense";
+    return periodTx.some(
+      (t) => t.direction === wantedDirection && transactionMatchesRecurringItem(t.description, t.amount, item),
+    );
   }
 
   return items
-    .filter((r) => r.type === "bill" || r.type === "subscription" || r.type === "debt")
+    .filter((r) => types.includes(r.type))
     .map((item) => {
       const manual = paymentByItem.get(item.id);
       const autoMatch = item.matchPattern ? findMatch(item) : null;

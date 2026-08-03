@@ -133,7 +133,7 @@
     }
   },
   "dashboard": {
-    "upcomingBills": "Aankomende rekeningen",
+    "upcomingBills": "Aankomende transacties",
     "upcomingCount": "{count, plural, one {# aankomende transactie} other {# aankomende transacties}}<br></br>deze maand",
     "needsReview": "{count, plural, one {# transactie moet worden gecontroleerd} other {# transacties moeten worden gecontroleerd}}"
   },
@@ -325,6 +325,10 @@
     "transactionDetail": {
       "title": "Tik voor het hele verhaal",
       "body": "Open een transactie om hem te hercategoriseren, te splitsen, een bon toe te voegen of naar de winkel te springen."
+    },
+    "googleLookup": {
+      "title": "Wie heeft dit afgeschreven?",
+      "body": "Open een transactie en tik op de Google-knop om de winkelnaam op internet op te zoeken — handig bij een afschrijving die je niet herkent."
     },
     "strategyLocation": {
       "title": "Je verdeling zit hierachter",

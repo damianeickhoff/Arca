@@ -11,7 +11,7 @@ import { getMonthComparison, pctChange } from "@/lib/month-comparison";
 import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, shiftDate, periodElapsedPct } from "@/lib/date-range";
 import { getFinancialMonthConfig, getBudgetRecurringMode } from "@/lib/app-settings";
 import { authBackgroundStyle, getAuthBackgroundPreset, AUTH_BG_CLASS } from "@/lib/auth-background";
-import { getBillStatuses } from "@/lib/bill-status";
+import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
 import { DashboardHeaderBar } from "@/components/dashboard-header-bar";
@@ -41,6 +41,7 @@ import { UpcomingBillsTile, NeedsReviewTile } from "@/components/dashboard-trans
 import { UpcomingPortal } from "@/components/upcoming-portal";
 import { NeedsReviewPortal } from "@/components/needs-review-portal";
 import type { CalendarBill } from "@/app/budget/bills-calendar";
+import { signedBillAmount } from "@/lib/bill-amounts";
 import { cookies } from "next/headers";
 import { AccountsButton } from "@/app/accounts-button";
 import { selectBankAction } from "@/app/actions/select-bank";
@@ -440,7 +441,7 @@ export default async function DashboardPage({
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
     getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct }),
     getBudgetPortalContent(),
-    getBillStatuses(billMonth, financialMonth),
+    getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
     getMonthComparison(financialMonth),
     getNeedsReviewTransactions(),
     // The overspend alert is only meaningful for "right now" — suppress it when the
@@ -468,7 +469,12 @@ export default async function DashboardPage({
     .filter((s) => s.dueDate != null && s.paid !== true)
     .sort((a, z) => (a.dueDate! < z.dueDate! ? -1 : 1));
   const upcomingIcons = upcomingBills.slice(0, 3).map((s) => ({ icon: s.icon, iconColor: s.iconColor, iconBackground: s.iconBackground }));
-  const upcomingTotal = upcomingBills.reduce((sum, s) => sum + (s.item.amount ?? 0), 0);
+  // Net: an upcoming salary offsets the bills rather than adding to them (see
+  // signedBillAmount). Income joined this list when it stopped being bills-only.
+  const upcomingTotal = upcomingBills.reduce(
+    (sum, s) => sum + signedBillAmount({ amount: s.item.amount, isIncome: s.item.type === "income" }),
+    0,
+  );
 
   // Same shape the standalone /transactions/upcoming route builds, for the dashboard's
   // own in-page Upcoming portal (see upcoming-portal.tsx).
@@ -483,6 +489,7 @@ export default async function DashboardPage({
     paid,
     paidSource,
     overdue,
+    isIncome: item.type === "income",
   }));
 
   // Overall budget alert — the configured overall budget if one exists, else the sum
@@ -640,12 +647,12 @@ export default async function DashboardPage({
         {/* scroll-px-3 + the trailing spacer below: a scroll container's padding-right
             collapses at the end of the scroll, leaving the last card flush against the
             screen edge, so the gutter has to be restored with a real element. */}
-        {/* md is where the shared content column (max-w-3xl) stops widening, so from
-            there the row has the space to lay all three cards out at once: it becomes a
-            3-column grid and the horizontal scroll — snapping, hidden scrollbar, the
+        {/* From md the row has the space to lay all three cards out at once: it becomes
+            a 3-column grid and the horizontal scroll — snapping, hidden scrollbar, the
             trailing gutter spacer — all switches off. Below md it stays the scrollable
-            row, unchanged. */}
-        <div className="mt-5 flex items-stretch gap-3 overflow-x-auto px-3 pb-1 snap-x snap-mandatory scroll-px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:overflow-visible md:snap-none md:px-4">
+            row, unchanged. px-3 at every width so the row's outer edges line up with
+            the Upcoming bills card below (mx-3), rather than insetting further on md. */}
+        <div className="mt-5 flex items-stretch gap-3 overflow-x-auto px-3 pb-1 snap-x snap-mandatory scroll-px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:overflow-visible md:snap-none">
           {budgetOverview && !budgetOverview.budget && <NoBudgetCard className={DASH_CARD} />}
           {budgetOverview?.budget && budgetAlert && (
             <BudgetAlertCard

@@ -6,7 +6,11 @@ import { cn } from "@/lib/utils";
 //
 // Below 768px this is a no-op, so phones are unaffected; above it, content stops
 // widening and centres instead of stretching across the monitor.
-export const CONTENT_COLUMN = "mx-auto w-full max-w-3xl";
+// 4xl (896px) rather than 3xl: the dashboard's "Spending by category" row lays its
+// five cards out side by side at desktop widths, which a 3xl column couldn't fit at a
+// comfortable card size. Every page and sheet shares this column, so it widens as one
+// — the app is still the mobile layout centred, just a little roomier.
+export const CONTENT_COLUMN = "mx-auto w-full max-w-4xl";
 
 // The single content column every page renders into. There is one layout in this app
 // — the mobile one — and on a wide screen it is that same layout centred rather than a

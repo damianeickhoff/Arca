@@ -20,6 +20,10 @@ export type CalendarBill = {
   paid: boolean | null;
   paidSource: "match" | "manual" | null;
   overdue: boolean;
+  /** Money coming in rather than going out. `amount` is unsigned either way, so every
+   *  total over these has to apply the sign itself — see signedBillAmount in
+   *  @/lib/bill-amounts (kept out of this file because it's "use client"). */
+  isIncome?: boolean;
 };
 
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -168,7 +172,11 @@ export function BillsCalendar({
                   <div key={b.id} className="flex items-center gap-2.5 py-1">
                     <Icon iconKey={b.icon} size="sm" color={b.iconColor} background={b.iconBackground} />
                     <span className="flex-1 text-sm truncate">{b.name}</span>
-                    {b.amount != null && <span className="text-sm tabular-nums text-muted-foreground">{formatEur(b.amount)}</span>}
+                    {b.amount != null && (
+                      <span className={cn("text-sm tabular-nums", b.isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
+                        {b.isIncome ? "+" : ""}{formatEur(b.amount)}
+                      </span>
+                    )}
                     {b.paidSource === "match" ? (
                       <span className="text-[11px] font-semibold text-emerald-600">Paid</span>
                     ) : (
@@ -194,7 +202,11 @@ export function BillsCalendar({
               <div key={b.id} className="flex items-center gap-2.5 py-2 border-b border-border/50 last:border-0">
                 <Icon iconKey={b.icon} size="sm" color={b.iconColor} background={b.iconBackground} />
                 <span className="flex-1 text-sm truncate">{b.name}</span>
-                {b.amount != null && <span className="text-sm tabular-nums text-muted-foreground">{formatEur(b.amount)}</span>}
+                {b.amount != null && (
+                      <span className={cn("text-sm tabular-nums", b.isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
+                        {b.isIncome ? "+" : ""}{formatEur(b.amount)}
+                      </span>
+                    )}
                 {b.paidSource === "match" ? (
                   <span className="text-[11px] font-semibold text-emerald-600">Paid</span>
                 ) : (

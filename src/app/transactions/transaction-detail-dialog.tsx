@@ -11,6 +11,7 @@ import { resolveTransactionIcon } from "@/lib/auto-brand";
 import { resolveDisplayName } from "@/lib/friendly-names";
 import { getMatchedTransactionInfoFields } from "@/lib/transaction-info-fields";
 import { getDominantImageColor } from "@/lib/dominant-color";
+import { ContextualTip } from "@/components/contextual-tip";
 import dynamic from "next/dynamic";
 import type { Category, Goal, Merchant, RecurringItem } from "@/db/schema";
 import { MerchantDetailPortal, merchantIcon, type MerchantRef } from "@/components/merchant-detail-portal";
@@ -28,6 +29,7 @@ import {
   IconCameraFilled as Camera,
   IconMessageFilled as MessageSquare,
   IconReload,
+  IconBrandGoogle,
 } from "@tabler/icons-react";
 import type { TransactionDetail } from "./transaction-types";
 
@@ -50,12 +52,20 @@ export function TransactionDetailDialog({
   savingsGoals = [],
   onClose,
   onCategorized,
+  sheetClassName,
+  overlayClassName,
 }: {
   row: TransactionDetail | null;
   categories: Category[];
   savingsGoals?: Goal[];
   onClose: () => void;
   onCategorized: (previousCategoryId: number | null, newCategoryName: string, newCategoryId: number | null) => void;
+  /** Layering escape hatch for callers that open this sheet from a full-screen body
+   *  portal, which sits above the sheet's default z-50 (the merchant profile is z-70).
+   *  Every sheet this one opens in turn is at z-85/z-88, so it stays on top of an
+   *  elevated base. See TransactionDetailByIdDialog, which is what passes these. */
+  sheetClassName?: string;
+  overlayClassName?: string;
 }) {
   const router = useRouter();
   // Remembers the last opened transaction so content stays visible through the close
@@ -99,6 +109,16 @@ export function TransactionDetailDialog({
     setRecurringOpen(true);
   }
 
+  // "What even was this charge?" — searches the cleaned-up merchant guess rather than
+  // the raw bank description, which is both a better query and keeps the counterparty's
+  // IBAN and payment references out of a URL sent to Google. Opens in a new tab, so an
+  // installed PWA hands off to the browser instead of navigating away from the app.
+  const lookupQuery = shown ? (guessMerchant(shown.description) || resolveDisplayName(shown)).trim() : "";
+  function lookUpOnGoogle() {
+    if (!lookupQuery) return;
+    window.open(`https://www.google.com/search?q=${encodeURIComponent(lookupQuery)}`, "_blank", "noopener,noreferrer");
+  }
+
   async function pickMerchant(name: string) {
     if (!shown) return;
     const created = await fetch("/api/merchants", {
@@ -137,6 +157,11 @@ export function TransactionDetailDialog({
 
   return (
     <>
+    {/* One-time explainer for the Google lookup in the header. Only while the sheet is
+        genuinely up — not while the merchant profile has it suspended, which has its
+        own tip. */}
+    <ContextualTip id="googleLookup" active={row != null && openMerchant == null} />
+
     {/* Suspended (not closed) while the merchant profile is up: that profile is a
         full-screen body portal, and leaving this sheet *open* underneath it means its
         focus trap keeps yanking focus back out of the profile's own inputs — the rename
@@ -149,9 +174,22 @@ export function TransactionDetailDialog({
     >
       <DialogContent
         accentColor={washColor}
+        sheetClassName={sheetClassName}
+        overlayClassName={overlayClassName}
         headerAction={
           shown ? (
             <div className="flex items-center gap-2">
+              {lookupQuery && (
+                <button
+                  type="button"
+                  onClick={lookUpOnGoogle}
+                  aria-label={`Look up "${lookupQuery}" on Google`}
+                  title="Look up on Google"
+                  className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                >
+                  <IconBrandGoogle className="size-4.5" stroke={2.5} />
+                </button>
+              )}
               {/* Only offered for transactions that aren't already driven by a recurring
                   rule — for those the recurrence card below is the way in, and creating
                   a second rule off the same transaction would just duplicate it. */}
@@ -607,8 +645,8 @@ function TransactionDetailBody({
                     same lift here the content stays at 50 — i.e. *under* its own
                     blurred overlay, which then frosts the picker along with the page. */}
                 <DialogContent
-                  sheetClassName="z-[65]"
-                  overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20"
+                  sheetClassName="z-[85]"
+                  overlayClassName="z-[85] backdrop-blur-lg bg-foreground/20"
                   fullHeight
                   hideHandle
                   headerAction={filterMenu}
@@ -709,7 +747,7 @@ function TransactionDetailBody({
               </button>
 
               <Dialog open={showGoalPicker} onOpenChange={setShowGoalPicker}>
-                <DialogContent sheetClassName="z-[65]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
+                <DialogContent sheetClassName="z-[85]" overlayClassName="z-[85] backdrop-blur-lg bg-foreground/20">
                   <DialogTitle>Choose savings goal</DialogTitle>
                   <div className="space-y-1 max-h-[60vh] overflow-y-auto">
                     <button
@@ -825,7 +863,7 @@ function TransactionDetailBody({
 
       {/* Note editor */}
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
-        <DialogContent sheetClassName="z-[65]" overlayClassName="z-[65] backdrop-blur-lg bg-foreground/20">
+        <DialogContent sheetClassName="z-[85]" overlayClassName="z-[85] backdrop-blur-lg bg-foreground/20">
           <DialogHeader>
             <DialogTitle>Note</DialogTitle>
           </DialogHeader>
@@ -959,7 +997,7 @@ function MerchantPickerDialog({
       {/* z-[80]: reassignment can be started from the merchant profile, a body portal at
           z-70 that now stays open behind this picker — without it the sheet opens
           underneath the profile and looks like nothing happened. */}
-      <DialogContent sheetClassName="z-[80]" overlayClassName="z-[80] backdrop-blur-lg bg-foreground/20">
+      <DialogContent sheetClassName="z-[88]" overlayClassName="z-[88] backdrop-blur-lg bg-foreground/20">
         <DialogHeader>
           <DialogTitle>Merchant</DialogTitle>
         </DialogHeader>

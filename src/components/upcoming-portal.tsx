@@ -11,6 +11,7 @@ import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CONTENT_COLUMN } from "@/components/page-container";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
+import { signedBillAmount } from "@/lib/bill-amounts";
 
 // Dashboard-only entry point for the upcoming-bills view — same slide-up shell as
 // the Budget/Reports portals, so it opens with the same animation instead of the
@@ -57,7 +58,8 @@ export function UpcomingPortal({
     list.push(b);
     byDate.set(b.dueDate!, list);
   }
-  const total = bills.reduce((sum, b) => sum + (b.amount ?? 0), 0);
+  // Net — income counts towards you, everything else against (see signedBillAmount).
+  const total = bills.reduce((sum, b) => sum + signedBillAmount(b), 0);
   const fmtDay = (d: string) =>
     new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 
@@ -133,7 +135,7 @@ export function UpcomingPortal({
                         <span className="text-sm text-muted-foreground">{fmtDay(date)}</span>
                         {items.length > 1 && (
                           <span className="text-xs text-muted-foreground tabular-nums">
-                            {formatEur(items.reduce((s, b) => s + (b.amount ?? 0), 0))}
+                            {formatEur(items.reduce((s, b) => s + signedBillAmount(b), 0))}
                           </span>
                         )}
                       </div>
@@ -143,7 +145,9 @@ export function UpcomingPortal({
                             <Icon iconKey={b.icon} size="md" color={b.iconColor} background={b.iconBackground} />
                             <span className="flex-1 text-sm font-medium truncate">{b.name}</span>
                             {b.amount != null && (
-                              <span className="text-sm tabular-nums text-foreground">{formatEur(b.amount)}</span>
+                              <span className={cn("text-sm tabular-nums", b.isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
+                                {b.isIncome ? "+" : ""}{formatEur(b.amount)}
+                              </span>
                             )}
                           </div>
                         ))}

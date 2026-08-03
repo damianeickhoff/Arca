@@ -9,14 +9,16 @@ import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import { recurringPeriodStatus, type RecurringPeriodStatus } from "@/lib/recurring-status";
 import type { RecurringItem, Category } from "@/db/schema";
 
-const GROUPS = ["income", "bill", "subscription", "debt"] as const;
+// Savings included, or a scheduled transfer to a savings pot is silently dropped from
+// this list entirely — it groups strictly by these types.
+const GROUPS = ["income", "bill", "subscription", "debt", "savings"] as const;
 // Plural labels used as section headers.
 const GROUP_LABELS: Record<string, string> = {
-  income: "Income", bill: "Bills", subscription: "Subscriptions", debt: "Debts",
+  income: "Income", bill: "Bills", subscription: "Subscriptions", debt: "Debts", savings: "Savings",
 };
 // Singular labels used as the per-card subtitle (like "Cash Account" in the accounts list).
 const ITEM_LABELS: Record<string, string> = {
-  income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt",
+  income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt", savings: "Savings",
 };
 // Single-letter frequency indicator shown as a small pill behind the name.
 const FREQ_INDICATOR: Record<string, string> = {
@@ -34,6 +36,7 @@ const FILTERS = [
   { value: "bill",         label: "Bills" },
   { value: "subscription", label: "Subscriptions" },
   { value: "debt",         label: "Debts" },
+  { value: "savings",      label: "Savings" },
 ] as const;
 
 interface Props {
