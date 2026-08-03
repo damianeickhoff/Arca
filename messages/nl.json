@@ -270,6 +270,10 @@
       "title": "Wat zich herhaalt",
       "body": "Rekeningen, abonnementen en inkomsten die je hier toevoegt worden gekoppeld aan je transacties en tellen mee in je budget en prognose."
     },
+    "recurringWholeWord": {
+      "title": "Op heel woord matchen",
+      "body": "Automatisch matchen kan nu eisen dat je tekst als los woord voorkomt, zodat een korte term niet langere namen meepakt waar hij toevallig in staat."
+    },
     "merchant": {
       "title": "Winkelprofiel",
       "body": "Elke winkel waar je betaalt krijgt een eigen pagina: wat je er uitgeeft, hoe vaak, en hoe dat door de jaren heen is veranderd."

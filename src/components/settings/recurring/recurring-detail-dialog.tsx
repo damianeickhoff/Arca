@@ -116,12 +116,18 @@ export function RecurringDetailDialog({
           }
         >
           <DialogTitle className="sr-only">Recurrence details</DialogTitle>
-          {shown && <DetailBody key={shown.id} item={shown} category={category} categories={categories} dueDate={dueDate} />}
+          {/* Prefixed keys: this and the editor below are siblings in the same child
+              list, so a bare item id would be the same key on both. */}
+          {shown && <DetailBody key={`body-${shown.id}`} item={shown} category={category} categories={categories} dueDate={dueDate} />}
 
           {/* Edit dialog — controlled by the pencil button. Rendered INSIDE this dialog's
               content so it's a nested sheet: closing it returns here instead of tearing
               down the detail dialog too. */}
-          {shown && <RecurringClient action="edit" item={shown} open={editOpen} onOpenChange={setEditOpen} />}
+          {/* Keyed by item id: this dialog is mounted once and re-pointed at whichever
+              item is tapped, but the editor seeds its form state from `item` only on
+              mount — without the key it would keep (and save) the values of the first
+              item opened, e.g. an empty period where the real one has a start date. */}
+          {shown && <RecurringClient key={`edit-${shown.id}`} action="edit" item={shown} open={editOpen} onOpenChange={setEditOpen} />}
         </DialogContent>
       </Dialog>
     </>
@@ -233,11 +239,17 @@ function DetailBody({
       </div>
 
       {/* Dates + notes */}
-      {(isFutureStart || item.dueDay != null || dueDate || item.endDate || item.notes) && (
+      {(item.startDate || item.dueDay != null || dueDate || item.endDate || item.notes) && (
         <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
-          {/* Only meaningful once the recurrence hasn't started yet — otherwise the due
-              day / next transaction already convey the schedule. */}
-          {isFutureStart && <DetailRow label="Start date" value={fmtDate(item.startDate!)} />}
+          {/* Always shown when set — it's the recurrence's anchor, and the one field
+              you go looking for after creating a bill with a specific start date.
+              Flagged when it hasn't arrived yet, since nothing is due before then. */}
+          {item.startDate && (
+            <DetailRow
+              label="Start date"
+              value={isFutureStart ? `${fmtDate(item.startDate)} (starts later)` : fmtDate(item.startDate)}
+            />
+          )}
           {item.dueDay != null && <DetailRow label="Due day" value={`Day ${item.dueDay}`} />}
           {dueDate && <DetailRow label="Next transaction" value={fmtDate(dueDate)} />}
           {item.endDate && <DetailRow label="End date" value={fmtDate(item.endDate)} />}

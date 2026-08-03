@@ -42,6 +42,7 @@ export async function GET() {
       active: recurringItems.active,
       notes: recurringItems.notes,
       matchPattern: recurringItems.matchPattern,
+      matchWholeWord: recurringItems.matchWholeWord,
       matchAmount: recurringItems.matchAmount,
       matchAmountMin: recurringItems.matchAmountMin,
       matchAmountMax: recurringItems.matchAmountMax,

@@ -270,6 +270,10 @@
       "title": "Things that repeat",
       "body": "Bills, subscriptions and income you add here are matched to your transactions and feed your budget and forecast."
     },
+    "recurringWholeWord": {
+      "title": "Match a whole word",
+      "body": "Auto-match can now require your text to stand alone as a word, so a short pattern stops catching longer names it happens to sit inside."
+    },
     "merchant": {
       "title": "Merchant profile",
       "body": "Every shop you pay gets its own page: what you spend there, how often, and how that has changed over the years."

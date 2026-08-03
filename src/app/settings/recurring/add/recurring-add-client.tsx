@@ -61,6 +61,7 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
     notes: "",
     dueDay: prefill?.dueDay ?? "",
     matchPattern: prefill?.matchPattern ?? "",
+    matchWholeWord: false,
     matchMode: "exact" as "exact" | "range",
     matchAmount: prefill?.matchAmount ?? "",
     matchAmountMin: "",
@@ -69,7 +70,7 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
     friendlyName: "",
   });
 
-  function set(key: string, value: string) {
+  function set(key: string, value: string | boolean) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
@@ -87,6 +88,7 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
         frequency: form.frequency,
         notes: form.notes,
         matchPattern: form.matchPattern,
+        matchWholeWord: form.matchWholeWord,
         active: true,
         budgetType: form.type === "income" ? null : form.budgetType,
         amount: form.amount ? parseFloat(form.amount) : null,
@@ -147,7 +149,26 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
 
         <FormField label="Match pattern">
           <Input value={form.matchPattern} onChange={(e) => set("matchPattern", e.target.value)} placeholder="e.g. Allianz, Netflix" />
-          <p className="text-xs text-foreground/60 mt-1">Text within the description</p>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-foreground/5 p-1 mt-2">
+            {([false, true] as const).map((wholeWord) => (
+              <button
+                key={String(wholeWord)}
+                type="button"
+                onClick={() => set("matchWholeWord", wholeWord)}
+                className={cn(
+                  "rounded-md py-1.5 text-sm transition-colors",
+                  form.matchWholeWord === wholeWord ? "bg-background shadow-sm font-medium" : "text-foreground/60",
+                )}
+              >
+                {wholeWord ? "Whole word" : "Contains"}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-foreground/60 mt-1">
+            {form.matchWholeWord
+              ? "Only as a separate word in the description"
+              : "Text within the description"}
+          </p>
         </FormField>
 
         <FormField label="Match amount (optional)">

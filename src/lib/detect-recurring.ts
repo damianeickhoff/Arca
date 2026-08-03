@@ -82,7 +82,8 @@ export async function detectRecurringTransactions(): Promise<number> {
   const activeMatchers: RecurringMatcher[] = existing
     .filter((e) => e.active && !e.dismissed)
     .map((e) => ({
-      id: e.id, name: e.name, matchPattern: e.matchPattern, matchAmount: e.matchAmount,
+      id: e.id, name: e.name, matchPattern: e.matchPattern, matchWholeWord: e.matchWholeWord,
+      matchAmount: e.matchAmount,
       matchAmountMin: e.matchAmountMin, matchAmountMax: e.matchAmountMax,
       categoryId: e.categoryId, friendlyName: e.friendlyName, active: e.active,
     }));
@@ -98,6 +99,9 @@ export async function detectRecurringTransactions(): Promise<number> {
     toCreate.set(sig, item);
     queuedMatchers.push({
       id: -toCreate.size, name: item.name, matchPattern: item.matchPattern,
+      // Detected items always use plain "contains" — the pattern is derived from the
+      // description itself, so a word boundary would only ever narrow a known-good match.
+      matchWholeWord: false,
       matchAmount: item.matchAmount, matchAmountMin: item.matchAmountMin,
       matchAmountMax: item.matchAmountMax, categoryId: null, friendlyName: item.name, active: true,
     });

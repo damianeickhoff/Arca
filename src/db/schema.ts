@@ -171,6 +171,9 @@ export const recurringItems = sqliteTable("recurring_items", {
   icon: text("icon"),
   iconColor: text("icon_color"),
   matchPattern: text("match_pattern"),
+  // true = the pattern must appear as a whole word ("NS" doesn't match "NSPCC"),
+  // false (default) = plain "contains". Same semantics as categoryRules.nameWholeWord.
+  matchWholeWord: integer("match_whole_word", { mode: "boolean" }).notNull().default(false),
   matchAmount: real("match_amount"), // exact-amount mode: also require this amount to match
   // "between" (range) amount mode: match when the amount falls within [min, max]. When either
   // is set it takes precedence over matchAmount. Both null → no amount constraint.

@@ -129,6 +129,9 @@ try {
   sqlite.exec(`ALTER TABLE category_rules ADD COLUMN name_whole_word INTEGER NOT NULL DEFAULT 0`);
 } catch { /* column already exists */ }
 try {
+  sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN match_whole_word INTEGER NOT NULL DEFAULT 0`);
+} catch { /* column already exists */ }
+try {
   sqlite.exec(`ALTER TABLE category_rules ADD COLUMN direction TEXT`);
 } catch { /* column already exists */ }
 try {

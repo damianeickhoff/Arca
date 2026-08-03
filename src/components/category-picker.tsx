@@ -47,6 +47,54 @@ function forceViewportRecompute() {
   requestAnimationFrame(() => meta.setAttribute("content", original));
 }
 
+/**
+ * Everything the picker sheet needs to survive an iOS home-screen PWA while it's open.
+ *
+ * Hides the mobile bottom nav, and handles the keyboard: focusing the (bottom) search
+ * input makes iOS scroll the whole document up (~353px) to reveal it, dragging the list
+ * + page behind it — but iOS has already resized the viewport to sit above the keyboard,
+ * so that scroll is redundant. Pin scrollY back to 0 so the dialog stays put.
+ *
+ * Separately, after the keyboard closes iOS leaves the WKWebView ~62px short of the
+ * screen (window.innerHeight stuck at 894 vs screen 956) — a strip of system background
+ * at the bottom. Only a real gesture makes WebKit recompute its size. Toggling the
+ * viewport <meta> forces that recompute without a scroll; we fire it when the keyboard
+ * closes and again as the picker closes.
+ */
+function useKeyboardSafePicker(open: boolean) {
+  useEffect(() => {
+    if (!open) return;
+    return acquireNavHidden();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const vv = window.visualViewport;
+    let restHeight = vv ? vv.height : window.innerHeight;
+    let keyboardWasOpen = false;
+
+    const pin = () => {
+      if (vv) restHeight = Math.max(restHeight, vv.height);
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      const html = document.documentElement;
+      if (html.scrollTop !== 0) html.scrollTop = 0;
+      if (document.body.scrollTop !== 0) document.body.scrollTop = 0;
+      const keyboardOpen = vv ? vv.height < restHeight - 100 : false;
+      if (keyboardWasOpen && !keyboardOpen) forceViewportRecompute();
+      keyboardWasOpen = keyboardOpen;
+    };
+    window.addEventListener("scroll", pin, true);
+    vv?.addEventListener("scroll", pin);
+    vv?.addEventListener("resize", pin);
+    return () => {
+      window.removeEventListener("scroll", pin, true);
+      vv?.removeEventListener("scroll", pin);
+      vv?.removeEventListener("resize", pin);
+      [50, 350, 700].forEach((d) => setTimeout(forceViewportRecompute, d));
+    };
+  }, [open]);
+}
+
 interface CategoryPickerProps {
   categories: Category[];
   current?: string;
@@ -619,6 +667,74 @@ function CategoryRow({
   );
 }
 
+/**
+ * The picker sheet on its own, without a trigger — the same full-height sheet
+ * (filter menu, rows/grid toggle, floating search bar above the keyboard) that
+ * <CategoryPicker> opens, for callers that already have their own control and just
+ * need to open it. This is the app's single category picker: nothing should
+ * hand-roll a category list dialog beside it.
+ */
+export function CategoryPickerSheet({
+  categories,
+  current,
+  open,
+  onOpenChange,
+  onChange,
+  /** false → no "Alle" (all categories) row; that option only makes sense for filters. */
+  isFormMode = true,
+}: {
+  categories: Category[];
+  current?: string;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onChange: (value: string) => void;
+  isFormMode?: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
+    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-foreground",
+  });
+
+  useKeyboardSafePicker(open);
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setSearch(""); }}>
+        <DialogContent
+          // Extra bottom padding so the last categories can scroll clear of the
+          // floating search bar that overlays the bottom of the sheet.
+          className="pb-28"
+          fullHeight
+          hideHandle
+          headerAction={filterMenu}
+          // The title is rendered by the sheet's own fixed header row, which reserves
+          // space around the close button — a separate in-flow DialogTitle here would
+          // sit right underneath it and visually overlap.
+          title="Category"
+        >
+          <CategoryGrid
+            categories={categories}
+            current={current}
+            isFormMode={isFormMode}
+            fill
+            budgetType={budgetType}
+            showSubcategories={showSubcategories}
+            onChange={onChange}
+            onClose={() => onOpenChange(false)}
+            search={search}
+            onSearchChange={setSearch}
+            // Search lives in the floating portal bar below instead of inline at the
+            // bottom of the grid, so it can sit above the keyboard.
+            hideSearch
+          />
+        </DialogContent>
+      </Dialog>
+      {/* Floating search — portalled to <body> so it's viewport-fixed. */}
+      {open && <FloatingSearchBar search={search} onSearchChange={setSearch} />}
+    </>
+  );
+}
+
 export function CategoryPicker({
   categories,
   current,
@@ -632,55 +748,6 @@ export function CategoryPicker({
   const params = useSearchParams();
   const isFormMode = !!onChangeProp;
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  // The filter button sits in the sheet's header row next to the close button, so it
-  // takes the close button's styling.
-  const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-foreground",
-  });
-
-  // Hide the mobile bottom nav while the picker sheet is open.
-  useEffect(() => {
-    if (!open) return;
-    return acquireNavHidden();
-  }, [open]);
-
-  // iOS home-screen PWA keyboard handling. Focusing the (bottom) search input makes
-  // iOS scroll the whole document up (~353px) to reveal it, dragging the list + page
-  // behind it — but iOS has already resized the viewport to sit above the keyboard,
-  // so that scroll is redundant. Pin scrollY back to 0 so the dialog stays put.
-  //
-  // Separately, after the keyboard closes iOS leaves the WKWebView ~62px short of the
-  // screen (window.innerHeight stuck at 894 vs screen 956) — a strip of system
-  // background at the bottom. Only a real gesture makes WebKit recompute its size.
-  // Toggling the viewport <meta> forces that recompute without a scroll; we fire it
-  // when the keyboard closes and again as the picker closes.
-  useEffect(() => {
-    if (!open) return;
-    const vv = window.visualViewport;
-    let restHeight = vv ? vv.height : window.innerHeight;
-    let keyboardWasOpen = false;
-
-    const pin = () => {
-      if (vv) restHeight = Math.max(restHeight, vv.height);
-      if (window.scrollY !== 0) window.scrollTo(0, 0);
-      const html = document.documentElement;
-      if (html.scrollTop !== 0) html.scrollTop = 0;
-      if (document.body.scrollTop !== 0) document.body.scrollTop = 0;
-      const keyboardOpen = vv ? vv.height < restHeight - 100 : false;
-      if (keyboardWasOpen && !keyboardOpen) forceViewportRecompute();
-      keyboardWasOpen = keyboardOpen;
-    };
-    window.addEventListener("scroll", pin, true);
-    vv?.addEventListener("scroll", pin);
-    vv?.addEventListener("resize", pin);
-    return () => {
-      window.removeEventListener("scroll", pin, true);
-      vv?.removeEventListener("scroll", pin);
-      vv?.removeEventListener("resize", pin);
-      [50, 350, 700].forEach((d) => setTimeout(forceViewportRecompute, d));
-    };
-  }, [open]);
 
   function onChange(value: string) {
     if (onChangeProp) {
@@ -743,38 +810,14 @@ export function CategoryPicker({
       <button type="button" onClick={() => setOpen(true)} className={triggerClass}>
         {triggerContent}
       </button>
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch(""); }}>
-        <DialogContent
-          // Extra bottom padding so the last categories can scroll clear of the
-          // floating search bar that overlays the bottom of the sheet.
-          className="pb-28"
-          fullHeight
-          hideHandle
-          headerAction={filterMenu}
-          // The title is rendered by the sheet's own fixed header row, which reserves
-          // space around the close button — a separate in-flow DialogTitle here would
-          // sit right underneath it and visually overlap.
-          title="Category"
-        >
-          <CategoryGrid
-            categories={categories}
-            current={current}
-            isFormMode={isFormMode}
-            fill
-            budgetType={budgetType}
-            showSubcategories={showSubcategories}
-            onChange={onChange}
-            onClose={() => setOpen(false)}
-            search={search}
-            onSearchChange={setSearch}
-            // Search lives in the floating portal bar below instead of inline at the
-            // bottom of the grid, so it can sit above the keyboard.
-            hideSearch
-          />
-        </DialogContent>
-      </Dialog>
-      {/* Floating search — portalled to <body> so it's viewport-fixed. */}
-      {open && <FloatingSearchBar search={search} onSearchChange={setSearch} />}
+      <CategoryPickerSheet
+        categories={categories}
+        current={current}
+        open={open}
+        onOpenChange={setOpen}
+        onChange={onChange}
+        isFormMode={isFormMode}
+      />
     </>
   );
 }

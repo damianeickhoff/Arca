@@ -13,11 +13,19 @@ export function SubSheet({
   title,
   visible,
   onClose,
+  action,
+  contentClassName,
   children,
 }: {
   title: string;
   visible: boolean;
   onClose: () => void;
+  /** Optional control pinned at the right of the header, opposite the back button —
+   *  e.g. the category picker's filter menu. */
+  action?: React.ReactNode;
+  /** Replaces the default scrolling body classes, for subpages that manage their own
+   *  scrolling (the category grid, which fills the remaining height). */
+  contentClassName?: string;
   children: React.ReactNode;
 }) {
   const contentRef = useRef<HTMLDivElement>(null);
@@ -58,8 +66,12 @@ export function SubSheet({
         >
           <ChevronLeft className="size-5" />
         </button>
+        {action && <div className="absolute top-[20px] right-[21px]">{action}</div>}
       </div>
-      <div ref={contentRef} className="flex-1 overflow-y-auto px-6 pb-[calc(1.5rem+var(--sab))]">
+      <div
+        ref={contentRef}
+        className={contentClassName ?? "flex-1 overflow-y-auto px-6 pb-[calc(1.5rem+var(--sab))]"}
+      >
         {children}
       </div>
     </div>

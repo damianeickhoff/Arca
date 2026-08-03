@@ -98,9 +98,9 @@ export function DashboardRecentTransactions({
                     {t.recurringItemId != null && (
                       <span
                         aria-label="Recurring bill"
-                        className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-[var(--dialog-content-background)]"
+                        className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-foreground dark:bg-foreground"
                       >
-                        <IconReload className="size-3 text-foreground/60" stroke={2.5} />
+                        <IconReload className="size-3 text-background" stroke={2.5} />
                       </span>
                     )}
                   </div>

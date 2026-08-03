@@ -223,7 +223,10 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
             <ChevronDown className={cn("size-4 text-foreground/40 transition-transform", scheduleOpen && "rotate-180")} />
           </button>
           {scheduleOpen && (
-            <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs divide-y divide-border/50">
+            // Scrolls within itself rather than growing the sheet: a payoff schedule
+            // runs one row per month until the debt is cleared, which for a long loan
+            // is hundreds of rows — enough to swamp the sheet's own scrolling.
+            <div className="max-h-[45vh] overflow-y-auto overscroll-contain rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs divide-y divide-border/50">
               {schedule.map((entry, i) => (
                 <DetailRow key={i} label={fmtShortMonth(entry.date)} value={formatEur(entry.amount)} />
               ))}

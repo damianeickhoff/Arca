@@ -362,6 +362,9 @@ addColumnIfMissing("recurring_items", "dismissed", "INTEGER NOT NULL DEFAULT 0")
 addColumnIfMissing("recurring_items", "start_date", "TEXT");
 addColumnIfMissing("recurring_items", "end_date", "TEXT");
 
+// Auto-migrate: whole-word auto-match (same option the category rules already have)
+addColumnIfMissing("recurring_items", "match_whole_word", "INTEGER NOT NULL DEFAULT 0");
+
   // Auto-migrate: per-account "count towards net worth" toggle
   addColumnIfMissing("banks", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing("vermogen_accounts", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 1");

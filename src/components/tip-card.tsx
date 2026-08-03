@@ -17,6 +17,7 @@ import {
   IconScale,
   IconSettings,
   IconStethoscope,
+  IconTextWrap,
   IconTrendingUp,
   IconWallet,
 } from "@tabler/icons-react";
@@ -27,6 +28,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   receiptScan: IconCamera,
   csvImport: IconFileTextFilled,
   recurring: IconReload,
+  recurringWholeWord: IconTextWrap,
   merchant: IconBuildingStore,
   budget: IconWallet,
   budgetStrategy: IconAdjustments,

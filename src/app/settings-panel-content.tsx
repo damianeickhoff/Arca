@@ -14,10 +14,7 @@ import { listImportProfiles } from "@/lib/import-profiles";
 import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
-import { getBillStatuses } from "@/lib/bill-status";
 import { disableExpiredRecurring } from "@/lib/recurring-period";
-import { getFinancialMonthConfig } from "@/lib/app-settings";
-import { currentFinancialMonth } from "@/lib/date-range";
 
 // Server-rendered content for the data-heavy panels of the settings dialog (opened
 // from the dashboard profile button). Rendered once as part of the dashboard page
@@ -52,22 +49,19 @@ async function CategoriesPanel() {
 }
 
 async function RecurringPanel() {
-  const financialMonth = await getFinancialMonthConfig();
-  const month = currentFinancialMonth(financialMonth);
-
   // Auto-disable items whose period end has passed before loading the list.
   await disableExpiredRecurring();
 
-  const [recurringAll, cats, statuses] = await Promise.all([
+  const [recurringAll, cats] = await Promise.all([
     db.select().from(recurringItems).orderBy(recurringItems.type, recurringItems.name),
     db.select().from(categories).orderBy(asc(categories.name)),
-    getBillStatuses(month, financialMonth),
   ]);
 
-  const dueDateByItemId: Record<number, string> = {};
-  for (const s of statuses) if (s.dueDate) dueDateByItemId[s.item.id] = s.dueDate;
-
-  return <RecurringMenuClient items={recurringAll} categories={cats} dueDateByItemId={dueDateByItemId} />;
+  // The "next" date each row shows is derived client-side from the item's own
+  // schedule (see RecurringMenuClient) — the bill-status due date this used to pass
+  // is the occurrence within the *current* financial month, i.e. already in the past
+  // for anything due earlier this month.
+  return <RecurringMenuClient items={recurringAll} categories={cats} />;
 }
 
 async function AccountsPanel() {

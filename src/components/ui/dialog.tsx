@@ -304,7 +304,13 @@ function DialogContent({
         <div
           ref={contentScrollRef}
           className={cn(
-            "relative flex flex-col gap-4 overflow-y-auto px-6",
+            // min-h-0 is what lets this shrink (and therefore scroll) inside the
+            // sheet's capped column flex container. The spec resolves min-height:auto
+            // to 0 for a scroll container, but only once it's actually treated as one —
+            // stating it keeps content that grows *after* the sheet opened (an
+            // expanding section) from pushing the sheet past its cap instead of
+            // scrolling.
+            "relative flex flex-col min-h-0 gap-4 overflow-y-auto px-6",
             // The nav bar is hidden while any dialog is open, so no extra
             // clearance is needed for it — content sits at the natural bottom.
             // flushBottom drops the clearance entirely (content runs to the edge).

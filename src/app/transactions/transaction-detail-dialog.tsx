@@ -64,8 +64,19 @@ export function TransactionDetailDialog({
   // id, not identity: while the sheet is open `row` is used directly, so a new object
   // for the same transaction would only cost a wasted render pass.
   const [lastRow, setLastRow] = useState<TransactionDetail | null>(null);
-  if (row && row.id !== lastRow?.id) setLastRow(row);
-  const shown = row ?? lastRow;
+  // Fields this sheet has changed itself since `row` was handed to it. The list that
+  // opened the sheet keeps its own snapshot of the transaction, so a router.refresh()
+  // re-renders the list but never reaches the object already passed down here —
+  // "Make recurring" would leave the open sheet showing a transaction with no
+  // recurrence. `patchVersion` re-keys the body so its own field state re-seeds too.
+  const [rowPatch, setRowPatch] = useState<Partial<TransactionDetail> | null>(null);
+  const [patchVersion, setPatchVersion] = useState(0);
+  if (row && row.id !== lastRow?.id) {
+    setLastRow(row);
+    if (rowPatch) setRowPatch(null);
+  }
+  const baseRow = row ?? lastRow;
+  const shown = baseRow && rowPatch ? { ...baseRow, ...rowPatch } : baseRow;
   const [washColor, setWashColor] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   // Drilled-down merchant profile. The transaction sheet deliberately stays open
@@ -170,7 +181,7 @@ export function TransactionDetailDialog({
         <DialogTitle className="sr-only">Transaction details</DialogTitle>
         {shown && (
           <TransactionDetailBody
-            key={shown.id}
+            key={`${shown.id}:${patchVersion}`}
             row={shown}
             categories={categories}
             savingsGoals={savingsGoals}
@@ -214,6 +225,27 @@ export function TransactionDetailDialog({
           // Saving refreshes the route; closing the transaction sheet too would drop the
           // user back on the list, so it deliberately stays put.
           if (!v) router.refresh();
+        }}
+        // The API re-runs the rules on save, so this transaction is now linked to the
+        // new item server-side — mirror that here so the open sheet shows the
+        // recurrence card (and its category) straight away instead of after a reopen.
+        onSaved={(item) => {
+          const cat = item.categoryId != null ? categories.find((c) => c.id === item.categoryId) : undefined;
+          setRowPatch({
+            recurringItemId: item.id,
+            recurringName: item.name,
+            recurringFriendlyName: item.friendlyName,
+            ...(cat
+              ? {
+                  categoryId: cat.id,
+                  categoryName: cat.name,
+                  categoryColor: cat.color,
+                  categoryIcon: cat.icon,
+                  categoryBudgetType: cat.budgetType,
+                }
+              : {}),
+          });
+          setPatchVersion((v) => v + 1);
         }}
         prefill={buildRecurringPrefill(shown, categories)}
       />
@@ -489,15 +521,18 @@ function TransactionDetailBody({
         <div className="relative -mx-6 -mt-2 lg:-mx-7 lg:-mt-7 px-6 lg:px-7 pt-2 lg:pt-7">
           <div className="relative flex flex-col items-center text-center gap-1 pb-2">
             {/* Recurring badge on the icon's top-right, same marker the transaction
-                lists draw (see mobile-transaction-list.tsx), scaled to the xxl chip. */}
-            <div className="relative">
+                lists draw (see mobile-transaction-list.tsx), scaled to the xxl chip.
+                mt-1 is what keeps it visible: the hero's -mt-2 is exactly cancelled by
+                its own pt-2, so the icon starts flush with the top of the sheet's
+                scroll area — and a badge offset above that edge is clipped away. */}
+            <div className="relative mt-1">
               <Icon iconKey={detailIcon.iconKey} color={detailIcon.color} background={detailIconBg} initials={detailIcon.initials} round size="xxl" />
               {row.recurringItemId != null && (
                 <span
                   aria-label="Recurring bill"
-                  className="absolute -top-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-[var(--dialog-content-background)]"
+                  className="absolute -top-0.5 -right-0.5 flex size-5 items-center justify-center rounded-full bg-foreground dark:bg-foreground"
                 >
-                  <IconReload className="size-3.5 text-foreground/60" stroke={2.5} />
+                  <IconReload className="size-3.5 text-background" stroke={2.5} />
                 </span>
               )}
             </div>

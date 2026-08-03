@@ -24,7 +24,7 @@ import {
 import { DatePicker } from "@/components/date-picker";
 import { AmountKeypad } from "@/components/amount-keypad";
 import { RecurringMultiPicker } from "@/components/recurring-multi-picker";
-import { RecurringCategoryPicker } from "@/components/recurring-category-picker";
+import { CategoryPickerSheet } from "@/components/category-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { ColorPicker } from "@/components/color-picker";
 import { PickerField } from "@/components/picker-field";
@@ -85,10 +85,19 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
   // minimum payment + start month + notes, and links it — so you don't have to fill it
   // in twice. A category is mandatory before it can be turned on (picked via the popup).
   const [autoCreateBill, setAutoCreateBill] = useState(false);
-  const [recurringCategory, setRecurringCategory] = useState<Category | null>(null);
+  const [recurringCategoryId, setRecurringCategoryId] = useState<string>("");
   const [recurringCatOpen, setRecurringCatOpen] = useState(false);
+  // Loaded here rather than passed down: this page's server component only supplies the
+  // recurring bills, and the shared category picker takes the list as a prop.
+  const [categories, setCategories] = useState<Category[]>([]);
+  const recurringCategory = categories.find((c) => String(c.id) === recurringCategoryId) ?? null;
 
   useEffect(() => acquireNavHidden(), []);
+
+  useEffect(() => {
+    if (!recurringCatOpen || categories.length) return;
+    fetch("/api/categories").then((r) => r.json()).then((c) => setCategories(Array.isArray(c) ? c : [])).catch(() => {});
+  }, [recurringCatOpen, categories.length]);
 
   const result = evaluateExpression(expr);
   const paymentVal = evaluateExpression(paymentExpr);
@@ -319,7 +328,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                   if (autoCreateBill) {
                     // Turn it back off and clear the chosen category.
                     setAutoCreateBill(false);
-                    setRecurringCategory(null);
+                    setRecurringCategoryId("");
                   } else {
                     // A category is mandatory — open the picker; only enable once one is chosen.
                     setRecurringCatOpen(true);
@@ -508,15 +517,19 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       />
 
       {/* Mandatory category for the auto-created recurring bill. Choosing one enables
-          "also create a recurring bill"; cancelling leaves it off. */}
-      <RecurringCategoryPicker
+          "also create a recurring bill"; cancelling leaves it off. The app's one
+          category picker — same sheet as the transaction and recurrence editors. */}
+      <CategoryPickerSheet
+        categories={categories}
+        current={recurringCategoryId || undefined}
         open={recurringCatOpen}
         onOpenChange={setRecurringCatOpen}
-        selectedId={recurringCategory?.id ?? null}
-        onSelect={(cat) => {
-          setRecurringCategory(cat);
-          setAutoCreateBill(true);
-          setRecurringIds([]);
+        onChange={(v) => {
+          // "" is the picker's Uncategorized/cleared value — a category is mandatory
+          // here, so that leaves the toggle off rather than enabling it with none.
+          setRecurringCategoryId(v);
+          setAutoCreateBill(!!v);
+          if (v) setRecurringIds([]);
         }}
       />
     </div>

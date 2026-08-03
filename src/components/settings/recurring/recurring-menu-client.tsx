@@ -16,6 +16,8 @@ import { Icon } from "@/components/icon";
 import { formatEur, toMonthly } from "@/lib/format";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import { recurringPeriodStatus } from "@/lib/recurring-status";
+import { nextOccurrence } from "@/lib/recurring-occurrence";
+import { shiftDate } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 import type { RecurringItem, Category } from "@/db/schema";
 
@@ -43,15 +45,13 @@ const FREQ_LETTER: Record<string, string> = {
 interface Props {
   items: RecurringItem[];
   categories: Category[];
-  /** Map of recurring item id → computed next-due date (YYYY-MM-DD), monthly items only. */
-  dueDateByItemId: Record<number, string>;
 }
 
 function fmtDue(iso: string) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function RecurringMenuClient({ items, categories, dueDateByItemId }: Props) {
+export function RecurringMenuClient({ items, categories }: Props) {
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   // Track just the id, not the item object — otherwise router.refresh() (e.g. after
@@ -60,6 +60,23 @@ export function RecurringMenuClient({ items, categories, dueDateByItemId }: Prop
   const [detailItemId, setDetailItemId] = useState<number | null>(null);
   const detailItem = detailItemId != null ? items.find((i) => i.id === detailItemId) ?? null : null;
   const catById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+
+  // "Next" must be the next date the item is actually still due — the bill-status
+  // due date this used to read is the occurrence inside the *current* financial month,
+  // which is in the past for anything already due this month. Anchored on yesterday so
+  // an item due today still reads as today rather than skipping a whole interval.
+  const dueDateByItemId = useMemo(() => {
+    const anchor = shiftDate(new Date().toISOString().slice(0, 10), -1);
+    const map: Record<number, string> = {};
+    for (const item of items) {
+      // Without an anchor (due day or start date) there's nothing to project from —
+      // showing a made-up "1st of the month" would be worse than showing nothing.
+      if (item.dueDay == null && !item.startDate) continue;
+      const next = nextOccurrence(item, anchor);
+      if (next) map[item.id] = next;
+    }
+    return map;
+  }, [items]);
 
   const activeItems = items.filter((i) => !i.dismissed);
   const query = search.trim().toLowerCase();

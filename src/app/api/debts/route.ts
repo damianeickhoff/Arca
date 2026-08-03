@@ -42,8 +42,10 @@ export async function POST(req: NextRequest) {
     if (existing) {
       if (!linkIds.includes(existing.id)) linkIds.push(existing.id);
     } else {
-      // Period fields (startDate/dueDay/endDate) are set by syncLinkedBillsPeriod below,
-      // which keeps every linked bill aligned with the debt in one place.
+      // syncLinkedBillsPeriod below is what keeps every linked bill aligned with the
+      // debt, but the period is written here too so the row is never briefly (or, if
+      // linking fails, permanently) left without the start date the user just entered.
+      const startDate: string | null = row.startDate ?? (row.startMonth ? `${row.startMonth}-01` : null);
       const [bill] = await db
         .insert(recurringItems)
         .values({
@@ -54,6 +56,8 @@ export async function POST(req: NextRequest) {
           budgetType: recurringBudgetType || "nodig",
           categoryId: recurringCategoryId ?? null,
           notes: data.notes ?? null,
+          startDate,
+          dueDay: startDate ? Number(startDate.slice(8, 10)) || 1 : null,
           active: true,
           source: "manual",
         })
