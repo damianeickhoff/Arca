@@ -461,6 +461,14 @@
     "sharedCost": {
       "title": "Deel een rekening die jij volledig betaalt",
       "body": "Geef aan welk deel huisgenoten of familie aan je terugbetalen. Je cashflow houdt het hele bedrag — dat gaat echt van je rekening af — terwijl rapporten alleen jouw eigen deel kunnen tonen."
+    },
+    "newNavigation": {
+      "title": "Een nieuwe indeling",
+      "body": "Alles staat nu op vier plekken: Home, Activiteit, Plan (budget, schulden en doelen) en Inzichten. Een transactie voeg je toe met de ronde knop."
+    },
+    "planHub": {
+      "title": "Budget, schulden en doelen bij elkaar",
+      "body": "Wissel hier tussen je budget, je schulden en je spaardoelen. Ze vallen nu allemaal onder Plan."
     }
   },
   "importMapping": {
@@ -543,5 +551,34 @@
     "settingNet": "Toon mijn deel",
     "settingNetHint": "Rapporten trekken eraf wat anderen terugbetalen, zodat een gedeelde rekening kost wat hij je echt kost.",
     "settingFooter": "Cashflow, de prognose en de rekeningen-tracker gebruiken altijd het volledige bedrag — dat geld gaat er echt doorheen."
+  },
+  "nav": {
+    "main": "Hoofdmenu",
+    "home": "Home",
+    "activity": "Activiteit",
+    "plan": "Plan",
+    "planItems": {
+      "budget": "Budget",
+      "debts": "Schulden",
+      "goals": "Doelen"
+    },
+    "insights": "Inzichten",
+    "accounts": "Rekeningen",
+    "importCsv": "CSV importeren",
+    "settings": "Instellingen",
+    "addTransaction": "Transactie toevoegen",
+    "search": "Zoeken",
+    "searchPlaceholder": "Zoek transacties, winkels…",
+    "searchShortcut": "⌘K"
+  },
+  "insights": {
+    "title": "Inzichten",
+    "tabs": {
+      "overview": "Overzicht",
+      "trends": "Trends",
+      "netWorth": "Vermogen",
+      "forecast": "Prognose",
+      "health": "Gezondheid"
+    }
   }
 }

@@ -10,6 +10,13 @@ import {
   IconCamera,
   IconChartBar,
   IconChecklist,
+  IconCompass,
+  IconCalendarDue,
+  IconChartDonut,
+  IconLayoutSidebar,
+  IconBolt,
+  IconSun,
+  IconCalendarStats,
   IconFileTextFilled,
   IconHandFinger,
   IconHeartbeat,
@@ -53,6 +60,13 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   settingsLocation: IconSettings,
   strategyLocation: IconAdjustments,
   transactionDetail: IconHandFinger,
+  newNavigation: IconLayoutSidebar,
+  planHub: IconCompass,
+  homeSafeToSpend: IconCalendarStats,
+  homeQuickActions: IconBolt,
+  homeNudge: IconSun,
+  homeComingUp: IconCalendarDue,
+  homeSpending: IconChartDonut,
 };
 
 /**
@@ -93,16 +107,16 @@ export function TipCard({
   const Icon = TIP_ICONS[id];
 
   return (
-    <div className="pointer-events-auto rounded-3xl bg-[var(--dialog-content-background)] shadow-floating p-4">
+    <div className="pointer-events-auto rounded-card border border-line bg-surface shadow-float p-4">
       <div className="flex gap-3">
         {!compact && (
-          <div className="size-10 shrink-0 rounded-full bg-foreground/8 flex items-center justify-center">
-            <Icon className="size-5 text-foreground/70" />
+          <div className="size-10 shrink-0 rounded-full bg-mustard flex items-center justify-center">
+            <Icon className="size-5 text-mustard-ink" />
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="font-heading font-semibold text-[15px] leading-tight">{title ?? t(`${id}.title`)}</p>
-          <p className="mt-1 text-sm text-foreground/60 leading-snug">{body ?? t(`${id}.body`)}</p>
+          <p className="heading text-[15px] leading-tight text-ink">{title ?? t(`${id}.title`)}</p>
+          <p className="mt-1 text-sm text-ink-2 leading-snug">{body ?? t(`${id}.body`)}</p>
         </div>
       </div>
 
@@ -111,14 +125,14 @@ export function TipCard({
           <button
             type="button"
             onClick={onDismissAll}
-            className="h-9 px-3 rounded-full text-sm text-foreground/45 active:scale-[0.97] transition-transform"
+            className="h-9 px-3 rounded-full text-sm font-semibold text-ink-3 active:scale-[0.97] transition-transform"
           >
             {t("dontShowAgain")}
           </button>
           <button
             type="button"
             onClick={onDismiss}
-            className="h-9 px-5 rounded-full bg-foreground text-background text-sm font-semibold active:scale-[0.97] transition-transform"
+            className="h-9 px-5 rounded-full bg-ink text-bg text-sm font-bold active:scale-[0.97] transition-transform"
           >
             {t("gotIt")}
           </button>

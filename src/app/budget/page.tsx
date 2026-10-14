@@ -3,7 +3,8 @@ import { SplitEur } from "@/components/split-eur";
 import { MonthPicker } from "@/components/month-picker";
 import { BudgetCategoriesMobile } from "./target-client";
 import { PageContainer } from "@/components/page-container";
-import { SearchTriggerButton } from "@/components/search-trigger-button";
+import { SearchButton } from "@/components/shell/search-context";
+import { PlanSwitch } from "@/components/shell/plan-switch";
 import { Icon } from "@/components/icon";
 import { getFinancialMonthConfig, getBudgetStrategy, getBudgetRollover } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
@@ -85,10 +86,10 @@ export default async function BudgetPage({
     <PageContainer className="px-0 min-h-screen">
         {/* Top bar — matches dashboard/reports top bar */}
         <div className="sticky top-[var(--sat)] z-40 px-4 pt-2 pb-3 space-y-2">
-          <div className="flex items-center justify-end">
-            <div className="flex items-center gap-3">
-              <SearchTriggerButton />
-            </div>
+          {/* Plan hub — Budget | Debts | Goals */}
+          <div className="flex items-center justify-between gap-3">
+            <PlanSwitch />
+            <SearchButton />
           </div>
           <BudgetTabs />
         </div>

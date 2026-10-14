@@ -1,19 +1,22 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { isChromeless } from "@/components/shell/nav-config";
 import { cn } from "@/lib/utils";
 
-// Reserves --nav-clearance so no page's last row ends up under the floating bottom
-// nav. The nav is the only navigation at every viewport width now (see bottom-nav.tsx),
-// so the clearance is unconditional — except on the auth pages, where the nav hides
-// itself and the padding would otherwise push their full-height layout past the
-// viewport, forcing an unwanted scroll.
+// Keeps page content clear of the app shell (components/shell/app-shell.tsx):
+//   • --nav-clearance at the bottom, so no page's last row ends up under the phone
+//     tab bar (it shrinks to a plain margin from lg up, see globals.css);
+//   • the 240px sidebar's width on the left from lg up.
+// Neither applies on the auth pages or an embedded view, where the shell renders no
+// chrome and the padding would only push a full-height layout past the viewport.
 export function MainContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/offline";
+  const searchParams = useSearchParams();
+  const chromeless = isChromeless(pathname) || searchParams.get("embed") === "1";
 
   return (
-    <main className={cn("flex-1 min-w-0 min-h-0", !isAuthPage && "pb-[var(--nav-clearance)]")}>
+    <main className={cn("flex-1 min-w-0 min-h-0", !chromeless && "pb-[var(--nav-clearance)] lg:pl-60")}>
       {children}
     </main>
   );

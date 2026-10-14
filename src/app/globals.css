@@ -5,11 +5,40 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Fonts — next/font declares --font-dm-sans / --font-dm-mono on <html> (see
+     layout.tsx). The theme keys deliberately use different names: an @theme inline
+     entry that references a variable of its own name recurses forever and OOMs the
+     CSS build. */
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-dm-mono), ui-monospace, monospace;
+  --font-heading: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* ── Mustard design tokens (source values live in :root / .dark as --arca-*) ── */
+  --color-bg: var(--arca-bg);
+  --color-surface: var(--arca-surface);
+  --color-surface-2: var(--arca-surface-2);
+  --color-ink: var(--arca-ink);
+  --color-ink-2: var(--arca-ink-2);
+  --color-ink-3: var(--arca-ink-3);
+  --color-line: var(--arca-line);
+  --color-mustard: var(--arca-accent);
+  --color-mustard-ink: var(--arca-accent-ink);
+  --color-mustard-soft: var(--arca-accent-soft);
+  --color-mustard-strong: var(--arca-accent-strong);
+  --color-positive: var(--arca-positive);
+  --color-positive-soft: var(--arca-positive-soft);
+  --color-negative: var(--arca-negative);
+  --color-negative-soft: var(--arca-negative-soft);
+  --color-warning-soft: var(--arca-warning-soft);
+  --color-info: var(--arca-info);
+  --color-info-soft: var(--arca-info-soft);
+  --radius-card: 18px;
+  --radius-hero: 22px;
+  --shadow-card: var(--arca-shadow-card);
+  --shadow-float: var(--arca-shadow-float);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-heading);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -58,15 +87,42 @@
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
-  /* Vertical space the floating bottom nav occupies, at every viewport width:
-     the pill's own height (h-13 + p-[4px] on both sides = 3.75rem) plus its
-     bottom-5 offset = 5rem to the pill's top edge, plus a 1rem gap so the last
-     row doesn't just touch the pill, plus the home-indicator inset. Pages
-     reserve this at the bottom so their last row never sits under the pill.
-     See bottom-nav.tsx. */
+  /* Vertical space the floating tab bar occupies on phones: the bar's own 60px
+     height plus its 20px bottom offset = 5rem to its top edge, plus a 1rem gap so
+     the last row doesn't just touch it, plus the home-indicator inset. Pages
+     reserve this at the bottom so their last row never sits under the bar. From
+     lg up the bar is replaced by the sidebar and the clearance shrinks to a plain
+     bottom margin (see the media query after this block). See
+     components/shell/app-shell.tsx. */
   --nav-clearance: calc(6rem + var(--sab));
   --container-sm: 25rem;
-  --font-heading: var(--font-sans);
+
+  /* ── Mustard palette — light. The one source of truth for the redesign; the
+     legacy shadcn tokens below are re-pointed at these so older screens pick up the
+     same warm neutrals until they are rebuilt. ── */
+  --arca-bg: #F6F3EC;
+  --arca-surface: #FFFFFF;
+  --arca-surface-2: #F1EDE3;
+  --arca-ink: #1E1A14;
+  --arca-ink-2: #5E574B;
+  --arca-ink-3: #918979;
+  --arca-line: #E6E0D4;
+  --arca-accent: #E3B23A;
+  --arca-accent-ink: #1E1A14;
+  --arca-accent-soft: #FBF0CF;
+  --arca-accent-strong: #B88814;
+  --arca-positive: #2E8B57;
+  --arca-positive-soft: #E2F2E8;
+  --arca-negative: #C8463C;
+  --arca-negative-soft: #F8E3E0;
+  --arca-warning: #B86E12;
+  --arca-warning-soft: #FBEBD6;
+  --arca-info: #3E6E9C;
+  --arca-info-soft: #E2ECF5;
+  --arca-shadow-card: 0 1px 2px rgba(30, 26, 20, 0.04), 0 8px 24px rgba(30, 26, 20, 0.06);
+  --arca-shadow-float: 0 12px 32px rgba(30, 26, 20, 0.12);
+  /* Category icon wash: the category colour at this strength behind its own glyph. */
+  --arca-icon-wash: 13%;
 
   /* Motion — the house easing curve (matches .nav-pill-indicator / search-*-in)
      and the standard duration scale. Spring physics live in src/lib/motion.ts.
@@ -80,48 +136,49 @@
   /* Elevation — the only three shadows the app uses (plus the dark icon-chip one).
      raised = cards/chips at rest, floating = glass/FAB/toasts, overlay = popovers/dialogs.
      Exposed as shadow-raised/-floating/-overlay utilities via @theme inline. */
-  --elevation-raised: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(13, 148, 136, 0.08);
-  --elevation-floating: 0 6px 18px rgba(109, 109, 109, 0.18);
-  --elevation-overlay: 0 8px 40px rgba(13, 148, 136, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --elevation-raised: var(--arca-shadow-card);
+  --elevation-floating: var(--arca-shadow-float);
+  --elevation-overlay: 0 16px 48px rgba(30, 26, 20, 0.16), 0 2px 8px rgba(30, 26, 20, 0.06);
 
-  /* Teal Glassmorphism — light mode (cool neutrals + teal/emerald accent) */
-  --background: #f4f6f6;
-  --foreground: #0e0e0e;
-  --dialog-background: var(--background);
-  --dialog-content-background: var(--card);
-  --card: #ffffff;
-  --card-muted: color-mix(in srgb, var(--foreground) 58%, transparent);
-  --card-foreground: #10201c;
-  --popover: #ffffff;
-  --popover-foreground: #10201c;
-  --primary: #0f766e;
-  --primary-foreground: #ffffff;
-  --secondary: #d1fae5;
-  --secondary-foreground: #065f46;
-  --muted: color-mix(in srgb, var(--foreground) 8%, transparent);
-  --muted-foreground: rgba(73, 73, 73, 0.712);
-  --accent: #ecfdf5;
-  --accent-foreground: #047857;
-  --destructive: #dc2626;
-  --success: #38d052;
-  --danger: #ff0f16;
-  --warning: #ff8d00;
-  --border: color-mix(in srgb, var(--foreground) 20%, transparent);
-  --input: rgba(15, 118, 110, 0.10);
-  --ring: #14b8a6;
-  --chart-1: #0f766e;
-  --chart-2: #f59e0b;
-  --chart-3: #6366f1;
-  --chart-4: #e11d48;
-  --chart-5: #0ea5e9;
-  --radius: 0.875rem;
-  --sidebar: var(--dialog-background);
-  --sidebar-primary-foreground: var(--dialog-content-background);
-  --color-nodig: #0e7490;
-  --color-willen: #7c3aed;
-  --color-sparen: #059669;
-  --color-income: var(--success);
-  --color-expense: #e11d48;
+  /* Legacy shadcn tokens, re-pointed at the mustard palette above. */
+  --background: var(--arca-bg);
+  --foreground: var(--arca-ink);
+  --dialog-background: var(--arca-bg);
+  --dialog-content-background: var(--arca-surface);
+  --card: var(--arca-surface);
+  --card-muted: var(--arca-ink-2);
+  --card-foreground: var(--arca-ink);
+  --popover: var(--arca-surface);
+  --popover-foreground: var(--arca-ink);
+  --primary: var(--arca-accent);
+  --primary-foreground: var(--arca-accent-ink);
+  --secondary: var(--arca-surface-2);
+  --secondary-foreground: var(--arca-ink);
+  --muted: var(--arca-surface-2);
+  --muted-foreground: var(--arca-ink-3);
+  --accent: var(--arca-accent-soft);
+  --accent-foreground: var(--arca-ink);
+  --destructive: var(--arca-negative);
+  --success: var(--arca-positive);
+  --danger: var(--arca-negative);
+  --warning: var(--arca-warning);
+  --border: var(--arca-line);
+  --input: var(--arca-line);
+  --ring: var(--arca-accent);
+  --chart-1: var(--arca-accent);
+  --chart-2: var(--arca-info);
+  --chart-3: var(--arca-positive);
+  --chart-4: var(--arca-negative);
+  --chart-5: var(--arca-ink-2);
+  --radius: 1.125rem;
+  --sidebar: var(--arca-surface);
+  --sidebar-primary-foreground: var(--arca-surface);
+  --color-nodig: var(--arca-info);
+  --color-willen: var(--arca-accent-strong);
+  --color-sparen: var(--arca-positive);
+  --color-income: var(--arca-positive);
+  --color-expense: var(--arca-negative);
+  /* Kept for the (pre-redesign) screens that still read it. */
   --glass-blur: blur(20px);
 
   --color-amber-600: #fe9131;
@@ -184,45 +241,69 @@
     );
 }
 
+/* Desktop: the sidebar replaces the floating tab bar, so pages only need an
+   ordinary bottom margin. */
+@media (min-width: 1024px) {
+  :root {
+    --nav-clearance: calc(2.5rem + var(--sab));
+  }
+}
+
+/* ── Mustard type roles ──────────────────────────────────────────────────────
+   amount   — every money figure: DM Sans 700, tight tracking, tabular digits.
+   heading  — titles: DM Sans 700, -0.02em.
+   mono-label — the small uppercase DM Mono captions for labels, dates and counts. */
+@utility amount {
+  font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+@utility heading {
+  font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+@utility mono-label {
+  font-family: var(--font-dm-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--arca-ink-3);
+}
+
 .dark {
-  /* Teal Glassmorphism — dark mode */
-  --background: #0e0e10;
-  --dialog-background: #1c1c1e;
-  --dialog-content-background: #303032;
-  --foreground: #fdfffe;
-  --card: #1f2123;
-  --card-muted: rgba(217, 242, 234, 0.70);
-  --card-foreground: #d9f2ea;
-  --popover: #1b2723;
-  --popover-foreground: #f2e5d9;
-  --primary: #817fe0;
-  --primary-foreground: #042f2e;
-  --secondary: rgba(45, 212, 191, 0.17);
-  --secondary-foreground: #99f6e4;
-  --muted: rgba(45, 212, 191, 0.13);
-  --muted-foreground: rgba(255, 255, 255, 0.493);
-  --accent: rgba(16, 185, 129, 0.19);
-  --accent-foreground: #6ee7b7;
-  --destructive: #f14254;
-  --success: #38d052;
-  --danger: #ff0f16;
-  --warning: #ff8d00;
-  --border: rgba(190, 227, 216, 0.17);
-  --input: rgba(190, 227, 216, 0.15);
-  --ring: #2dd4bf;
-  --icon-muted: #1f1f1f;
-  --chart-1: #2dd4bf;
-  --chart-2: #fbbf24;
-  --chart-3: #818cf8;
-  --chart-4: #fb7185;
-  --chart-5: #38bdf8;
-  --sidebar: var(--dialog-background);
-  --sidebar-primary-foreground: var(--dialog-content-background);
-  --color-nodig: #22d3ee;
-  --color-willen: #a78bfa;
-  --color-sparen: #34d399;
-  --color-income: var(--success);
-  --color-expense: var(--danger);
+  /* ── Mustard palette — dark. Accent text stays dark ink on the mustard fill. ── */
+  --arca-bg: #16130F;
+  --arca-surface: #1F1B16;
+  --arca-surface-2: #2A251E;
+  --arca-ink: #F4F0E8;
+  --arca-ink-2: #B9B1A2;
+  --arca-ink-3: #7F776A;
+  --arca-line: #332D25;
+  --arca-accent: #E8B944;
+  --arca-accent-ink: #1E1A14;
+  --arca-accent-soft: #3B3116;
+  --arca-accent-strong: #E8B944;
+  --arca-positive: #62C58C;
+  --arca-positive-soft: #17301F;
+  --arca-negative: #E97A6F;
+  --arca-negative-soft: #3C1F1B;
+  --arca-warning: #E6A23C;
+  --arca-warning-soft: #3A2C12;
+  --arca-info: #7FA6D0;
+  --arca-info-soft: #1C2A3A;
+  --arca-shadow-card: none;
+  --arca-shadow-float: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --arca-icon-wash: 20%;
+
+  /* Every legacy token that points at an --arca-* value follows automatically; only
+     the ones whose dark value differs from that mapping are restated here. */
+  --dialog-background: var(--arca-surface);
+  --dialog-content-background: var(--arca-surface-2);
+  --icon-muted: var(--arca-surface-2);
   --gradient-goal-track: linear-gradient(to right, rgba(45, 212, 191, 0.20), rgba(45, 212, 191, 0.10));
   --gradient-goal-fill: linear-gradient(to right, #14b8a6, #2dd4bf, #6ee7b7);
   --goal-icon-bg-from: rgba(45, 212, 191, 0.14);
@@ -230,9 +311,11 @@
   --stat-chip-icon: rgba(255, 255, 255, 0.85);
   --savings-bar-track: rgba(255, 255, 255, 0.10);
   --debt-accent: rgb(126, 166, 240);
-  --elevation-raised: 0 1px 4px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.35);
-  --elevation-floating: 0 6px 18px rgba(0, 0, 0, 0.35);
-  --elevation-overlay: 0 8px 40px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  /* Cards carry no shadow in dark mode (--arca-shadow-card is none); floating
+     chrome and overlays still need one to separate from the page. */
+  --elevation-raised: var(--arca-shadow-card);
+  --elevation-floating: var(--arca-shadow-float);
+  --elevation-overlay: 0 16px 48px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
   --wallet-background:
     linear-gradient(
       to bottom,
@@ -591,6 +674,8 @@ button, a, [role="button"] {
 
   body {
     @apply text-foreground;
+    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+    font-optical-sizing: auto;
     background-color: var(--background);
     position: relative;
     z-index: 0;
@@ -649,23 +734,11 @@ button, a, [role="button"] {
     background: rgba(255, 255, 255, 0.06);
   }
 
-  /* shadcn Card components */
+  /* shadcn Card components — the mustard card: surface, 1px line border, a very
+     soft shadow in light mode and none in dark (--arca-shadow-card is none there). */
   [data-slot="card"] {
-    backdrop-filter: blur(50px);
-    -webkit-backdrop-filter: blur(50px);
-    border: 1px solid rgba(255, 255, 255, 0.68);
-    box-shadow:
-      0 4px 32px rgba(13, 148, 136, 0.10),
-      0 1px 4px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.85);
-  }
-
-  .dark [data-slot="card"] {
-    border-color: rgba(190, 227, 216, 0.16);
-    box-shadow:
-      0 8px 40px rgba(0, 0, 0, 0.6),
-      0 2px 8px rgba(0, 0, 0, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--arca-line);
+    box-shadow: var(--arca-shadow-card);
   }
 
   .dark .rounded-3xl.bg-card,

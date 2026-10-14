@@ -5,38 +5,44 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
+// Mustard buttons are pills: the radius is always half the height. Variants:
+//   default     — ink fill, background-coloured text (the house primary action)
+//   accent      — mustard fill with ink text (the one saturated call to action)
+//   outline     — surface fill with a 1px line border
+//   secondary   — surface-2 fill
+//   ghost       — no fill until hovered
+//   destructive — negative on its soft wash
+//   link        — accent-strong text
 const buttonVariants = cva(
-  "cursor-pointer group/button inline-flex shrink-0 items-center justify-center rounded-xl border border-transparent bg-clip-padding text-base font-medium whitespace-nowrap transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-150 outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:bg-foreground/5 disabled:!text-foreground/30 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "cursor-pointer group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-bold whitespace-nowrap transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-150 outline-none select-none focus-visible:ring-3 focus-visible:ring-mustard/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:bg-surface-2 disabled:!text-ink-3 disabled:border-transparent aria-invalid:border-negative aria-invalid:ring-3 aria-invalid:ring-negative/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-foreground text-white dark:text-black aria-expanded:text-black",
+        default: "bg-ink text-bg hover:bg-ink/90 aria-expanded:bg-ink/90",
+        accent: "bg-mustard text-mustard-ink hover:brightness-[1.03] aria-expanded:brightness-[1.03]",
         outline:
-          "bg-black aria-expanded:bg-muted aria-expanded:text-foreground",
+          "bg-surface border-line text-ink hover:bg-surface-2 aria-expanded:bg-surface-2",
         secondary:
-          "bg-secondary text-secondary-foreground aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+          "bg-surface-2 text-ink hover:bg-line aria-expanded:bg-line",
         ghost:
-          "text-white bg-black aria-expanded:bg-muted aria-expanded:text-foreground",
+          "bg-transparent text-ink hover:bg-surface-2 aria-expanded:bg-surface-2",
         destructive:
-          "bg-destructive/10 text-destructive focus-visible:border-destructive/40 dark:text-white focus-visible:ring-destructive/20 dark:bg-destructive dark:focus-visible:ring-destructive/40",
-        link: "text-primary underline-offset-4",
+          "bg-negative-soft text-negative hover:bg-negative-soft/80 focus-visible:ring-negative/30",
+        link: "h-auto px-0 text-mustard-strong underline-offset-4 hover:underline",
       },
       size: {
         default:
-          "h-12 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 text-[16px]",
-        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-11 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+          "h-12 gap-2 px-5 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4 text-[15px]",
+        xs: "h-6 gap-1 px-2.5 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-8 gap-1.5 px-3.5 text-[13px] has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-11 gap-2 px-[18px] has-data-[icon=inline-end]:pr-3.5 has-data-[icon=inline-start]:pl-3.5",
         icon: "size-8",
-        "icon-xs":
-          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
+        "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-7",
+        "icon-lg": "size-10",
         // 40px hit area (WCAG touch-target minimum) around a visually smaller 14px icon —
         // for icon-sm-density layouts (e.g. transaction list rows) that need real tap targets.
-        "icon-touch":
-          "size-10 rounded-[min(var(--radius-md),12px)] [&_svg:not([class*='size-'])]:size-3.5",
+        "icon-touch": "size-10 [&_svg:not([class*='size-'])]:size-3.5",
       },
     },
     defaultVariants: {

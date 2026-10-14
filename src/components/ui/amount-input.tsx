@@ -1,6 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import type { ComponentProps } from "react";
 
 // Keeps only digits and a single decimal separator (comma normalized to period,
@@ -21,11 +22,13 @@ function sanitizeAmount(raw: string): string {
 // exact key set (extra +/-, "e" for exponents) is up to the OS/keyboard app, not
 // the page. Using `type="text"` + `inputMode="decimal"` instead gives full
 // control over what's accepted: only digits, "." and ",".
-export function AmountInput({ onChange, ...props }: Omit<ComponentProps<typeof Input>, "type">) {
+// Amounts read in the mustard amount style — bold, tight, tabular digits.
+export function AmountInput({ onChange, className, ...props }: Omit<ComponentProps<typeof Input>, "type">) {
   return (
     <Input
       type="text"
       inputMode="decimal"
+      className={cn("font-bold tracking-[-0.02em] tabular-nums", className)}
       onChange={(e) => {
         e.target.value = sanitizeAmount(e.target.value);
         onChange?.(e);

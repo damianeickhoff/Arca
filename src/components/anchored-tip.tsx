@@ -142,14 +142,14 @@ export function AnchoredTip({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={spring.gentle}
-            className="fixed pointer-events-none border-2 border-foreground/35"
+            className="fixed pointer-events-none border-2 border-mustard"
             style={{
               top: placement.anchor.top - 5,
               left: placement.anchor.left - 5,
               width: placement.anchor.width + 10,
               height: placement.anchor.height + 10,
               borderRadius: inflateRadius(placement.anchor.radius, 5),
-              boxShadow: "0 0 0 6px color-mix(in srgb, var(--foreground) 8%, transparent)",
+              boxShadow: "0 0 0 6px color-mix(in srgb, var(--arca-accent) 22%, transparent)",
             }}
           />
 
@@ -165,7 +165,7 @@ export function AnchoredTip({
                 up the card's own background in either theme. */}
             <div
               aria-hidden
-              className="absolute bg-[var(--dialog-content-background)] rotate-45 rounded-[3px]"
+              className="absolute bg-surface border border-line rotate-45 rounded-[3px]"
               style={{
                 width: ARROW,
                 height: ARROW,

@@ -155,6 +155,7 @@ export default async function PrognPage({
   searchParams,
   embedded = false,
   stickyTop = "var(--sat)",
+  dockAboveNav,
 }: {
   searchParams: Promise<{ month?: string }>;
   // True when rendered inside another page's overlay (the dashboard's Analytics
@@ -170,6 +171,8 @@ export default async function PrognPage({
   // its own sticky header instead (see AnalyticsFilterBar's `stickyTop`, same
   // collision it avoids).
   stickyTop?: string;
+  /** Passed through to the month picker — see PrognosePeriodPicker.aboveNav. */
+  dockAboveNav?: boolean;
 }) {
   const sp = await searchParams;
   const [financialMonth, strategy] = await Promise.all([getFinancialMonthConfig(), getBudgetStrategy()]);
@@ -383,7 +386,7 @@ export default async function PrognPage({
       {/* Embedded, the picker keeps the month in a cookie instead of the URL — the
           portal shares the dashboard's "/" route, so a param there would show up in
           the address bar of the whole app. See the picker's own `embedded` docs. */}
-      <PrognosePeriodPicker current={baseMonth} embedded={embedded} />
+      <PrognosePeriodPicker current={baseMonth} embedded={embedded} aboveNav={dockAboveNav} />
 
       <div className="px-4 pb-28 pt-3 space-y-3">
 

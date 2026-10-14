@@ -461,6 +461,14 @@
     "sharedCost": {
       "title": "Split a bill you pay in full",
       "body": "Mark the part housemates or family pay you back. Your cash flow keeps the whole charge — it really leaves your account — while reports can show only your own share."
+    },
+    "newNavigation": {
+      "title": "A new way around",
+      "body": "Everything now lives in four places: Home, Activity, Plan (budget, debts and goals) and Insights. Add a transaction with the round button."
+    },
+    "planHub": {
+      "title": "Budget, debts and goals together",
+      "body": "Switch between your budget, your debts and your savings goals here. They're all part of Plan now."
     }
   },
   "importMapping": {
@@ -543,5 +551,34 @@
     "settingNet": "Show my share",
     "settingNetHint": "Reports subtract what others pay back, so a shared bill costs you what it really costs.",
     "settingFooter": "Cash flow, the forecast and the bill tracker always use the full amount — that money genuinely moves."
+  },
+  "nav": {
+    "main": "Main",
+    "home": "Home",
+    "activity": "Activity",
+    "plan": "Plan",
+    "planItems": {
+      "budget": "Budget",
+      "debts": "Debts",
+      "goals": "Goals"
+    },
+    "insights": "Insights",
+    "accounts": "Accounts",
+    "importCsv": "Import CSV",
+    "settings": "Settings",
+    "addTransaction": "Add transaction",
+    "search": "Search",
+    "searchPlaceholder": "Search transactions, merchants…",
+    "searchShortcut": "⌘K"
+  },
+  "insights": {
+    "title": "Insights",
+    "tabs": {
+      "overview": "Overview",
+      "trends": "Trends",
+      "netWorth": "Net worth",
+      "forecast": "Forecast",
+      "health": "Health"
+    }
   }
 }

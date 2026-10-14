@@ -4,6 +4,7 @@ import { DebtClient } from "./debt-client";
 import { DebtSimulationClient } from "./debt-simulation-client";
 import { DebtSimulationPortal } from "./debt-simulation-portal";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { PlanSwitch } from "@/components/shell/plan-switch";
 import { PageEmptyState } from "@/components/page-empty-state";
 import { IconCreditCardFilled as CreditCard, IconPlus, IconChevronRight } from "@tabler/icons-react";
 import { formatGaugeMoney } from "@/components/gauge-card";
@@ -88,6 +89,10 @@ export function DebtsMobile({
             {rows.length === 0 && <DebtClient action="add" variant="fab" />}
           </div>
         )}
+        {/* Plan hub — Budget | Debts | Goals */}
+        <div className="flex justify-center">
+          <PlanSwitch />
+        </div>
         {rows.length === 0 && (
           <PageEmptyState
             icon={CreditCard}

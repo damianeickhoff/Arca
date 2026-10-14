@@ -1,11 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Fraunces, Geist_Mono } from "next/font/google";
+import { DM_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { MainContent } from "@/components/main-content";
-import { BottomNav } from "@/components/bottom-nav";
+import { AppShell, type ShellAccount } from "@/components/shell/app-shell";
+import { getBankBalances } from "@/lib/account-balances";
+import { db } from "@/db";
+import { vermogenAccounts } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { AppLockGate } from "@/components/app-lock-gate";
 import { getCurrentUser } from "@/lib/auth";
-import { getAppLockConfig, getDefaultCurrency } from "@/lib/app-settings";
+import { getAppLockConfig, getDefaultCurrency, getSidebarSubtitle } from "@/lib/app-settings";
 import { setCurrentCurrency } from "@/lib/format";
 import { CurrencySync } from "@/components/currency-sync";
 import { headers } from "next/headers";
@@ -26,9 +30,12 @@ import { SettingsPortalProvider } from "@/lib/settings-portal-state";
 import { FinishTransitionProvider } from "@/lib/finish-transition-state";
 import { FinishTransitionOverlay } from "@/components/finish-transition-overlay";
 
-const dmSans = DM_Sans({ variable: "--font-sans", subsets: ["latin"] });
-const fraunces = Fraunces({ variable: "--font-heading", subsets: ["latin"], axes: ["opsz"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// DM Sans carries everything — body, headings and amounts — with its optical-size axis
+// (opsz 9..40) and the variable weight axis (the UI uses 400..800). DM Mono is only for the small
+// uppercase labels, dates and counts. The CSS variable names must differ from the
+// @theme keys in globals.css (--font-sans / --font-mono), or the CSS build recurses.
+const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"], axes: ["opsz"] });
+const dmMono = DM_Mono({ variable: "--font-dm-mono", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
   title: "Arca",
@@ -53,8 +60,8 @@ export const metadata: Metadata = {
 // mobile nav menu, which is plain white/near-black).
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f6f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1211" },
+    { media: "(prefers-color-scheme: light)", color: "#F6F3EC" },
+    { media: "(prefers-color-scheme: dark)", color: "#16130F" },
   ],
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
@@ -101,13 +108,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     void backfillBankAccountNumbers();
   }
 
+  // The desktop sidebar lists every account with its balance. Read once per request
+  // here (the shell is a client component); a soft navigation keeps the layout, so a
+  // balance only moves on the next full render or router.refresh().
+  const [shellAccounts, sidebarSubtitle] = user
+    ? await Promise.all([loadShellAccounts(), getSidebarSubtitle()])
+    : [[] as ShellAccount[], ""];
+
   // src/config/categories.ts + src/config/brandIcons.ts sync runs synchronously in
   // src/db/index.ts (module init) — see src/lib/config-sync.ts for why it can't be
   // an awaited call here (layout/page render in parallel in Next, so it would still
   // race the page's own queries and the first render would show stale data).
 
   return (
-    <html lang={locale} suppressHydrationWarning className={`${dmSans.variable} ${fraunces.variable} ${geistMono.variable}`}>
+    <html lang={locale} suppressHydrationWarning className={`${dmSans.variable} ${dmMono.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{__html:`(function(){var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}})()` }} />
       </head>
@@ -134,12 +148,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                     mark — the top of any scrolling page — while the content simply
                     overflowed past it, so the reserved space never landed at the end
                     of the content and the bottom nav covered the last card. */}
-                <div className="flex min-h-dvh">
-                  <MainContent>
-                    <PageTransition>{children}</PageTransition>
-                  </MainContent>
-                </div>
-                <BottomNav />
+                <AppShell
+                  accounts={shellAccounts}
+                  subtitle={sidebarSubtitle}
+                  user={user ? { name: user.firstName ?? user.name, email: user.email, avatarUrl: user.avatarUrl } : null}
+                >
+                  <div className="flex min-h-dvh">
+                    <MainContent>
+                      <PageTransition>{children}</PageTransition>
+                    </MainContent>
+                  </div>
+                </AppShell>
               </AppLockGate>
               {/* Sibling of the page content (not nested inside it) so it survives the
                   /register → "/" client-side navigation — see finish-transition-state.tsx. */}
@@ -153,4 +172,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </body>
     </html>
   );
+}
+
+async function loadShellAccounts(): Promise<ShellAccount[]> {
+  try {
+    const [bankRows, assetRows] = await Promise.all([
+      getBankBalances(),
+      db.select().from(vermogenAccounts).where(eq(vermogenAccounts.active, true)),
+    ]);
+    return [
+      ...bankRows.map((b) => ({ key: `bank-${b.id}`, name: b.displayName ?? b.accountNumber ?? "—", balance: Number(b.balance) || 0 })),
+      ...assetRows.map((a) => ({ key: `asset-${a.id}`, name: a.name, balance: a.value })),
+    ];
+  } catch {
+    // The sidebar is a convenience — never let it take the whole layout down.
+    return [];
+  }
 }

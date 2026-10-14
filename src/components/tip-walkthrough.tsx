@@ -169,14 +169,14 @@ export function TipWalkthrough({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={spring.gentle}
-            className="fixed pointer-events-none border-2 border-foreground/35"
+            className="fixed pointer-events-none border-2 border-mustard"
             style={{
               top: placement.anchor.top - 5,
               left: placement.anchor.left - 5,
               width: placement.anchor.width + 10,
               height: placement.anchor.height + 10,
               borderRadius: inflateRadius(placement.anchor.radius, 5),
-              boxShadow: "0 0 0 6px color-mix(in srgb, var(--foreground) 8%, transparent)",
+              boxShadow: "0 0 0 6px color-mix(in srgb, var(--arca-accent) 22%, transparent)",
             }}
           />
 
@@ -190,7 +190,7 @@ export function TipWalkthrough({
           >
             <div
               aria-hidden
-              className="absolute bg-[var(--dialog-content-background)] rotate-45 rounded-[3px]"
+              className="absolute bg-surface border border-line rotate-45 rounded-[3px]"
               style={{
                 width: ARROW,
                 height: ARROW,
@@ -209,7 +209,7 @@ export function TipWalkthrough({
                 onDismissAll={stop}
                 footer={
                   <div className="mt-3.5 flex items-center justify-between gap-1">
-                    <span className="text-xs text-foreground/40 tabular-nums pl-1">
+                    <span className="font-mono text-[11px] text-ink-3 tabular-nums pl-1">
                       {index + 1}/{steps.length}
                     </span>
                     <div className="flex items-center gap-1">
@@ -232,7 +232,7 @@ export function TipWalkthrough({
                       <button
                         type="button"
                         onClick={isLast ? stop : next}
-                        className="h-9 px-5 rounded-full bg-foreground text-background text-sm font-semibold active:scale-[0.97] transition-transform"
+                        className="h-9 px-5 rounded-full bg-ink text-bg text-sm font-bold active:scale-[0.97] transition-transform"
                       >
                         {isLast ? t("gotIt") : t("next")}
                       </button>

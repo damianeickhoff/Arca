@@ -7,6 +7,7 @@ import type { Category, Goal, User } from "@/db/schema";
 import { PageEmptyState } from "@/components/page-empty-state";
 import { FloatingAddButton } from "@/components/floating-add-button";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { PlanSwitch } from "@/components/shell/plan-switch";
 import { SavingsGoalRows } from "./savings-goal-rows";
 import { GaugeCard, formatGaugeMoney } from "@/components/gauge-card";
 import type { SavingsSummary } from "./goal-shared";
@@ -50,6 +51,11 @@ export function GoalsMobile({
           <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} sharedCostMode={sharedCostMode} iconOnly />
           <h1 className="text-xl text-white text-semibold text-center truncate">{t("savings")}</h1>
           <div className="shrink-0 min-w-11 min-h-11 justify-self-end" />
+        </div>
+
+        {/* Plan hub — Budget | Debts | Goals */}
+        <div className="flex justify-center">
+          <PlanSwitch />
         </div>
 
         {visible.length > 0 && (

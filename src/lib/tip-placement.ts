@@ -19,6 +19,15 @@ export type TipAnchor =
   | "importDatePreview"
   | "dataHealthMenu"
   | "transactionListRow"
+  // Redesigned app shell: the phone tab bar / desktop sidebar nav, and the Plan switch
+  | "mainNav"
+  | "planSwitch"
+  // Redesigned Home sections
+  | "homeHero"
+  | "homeQuickActions"
+  | "homeNudge"
+  | "homeComingUp"
+  | "homeSpending"
   // New-debt form controls (walkthrough)
   | "debtClose"
   | "debtDirection"
@@ -130,5 +139,13 @@ export function samePlacement(a: Placement | null, b: Placement | null) {
 }
 
 export function findAnchor(anchor: TipAnchor): Element | null {
-  return document.querySelector(`[data-tip-anchor="${anchor}"]`);
+  // Several elements can carry the same anchor when one responsive layout renders a
+  // phone and a desktop variant side by side (the tab bar and the sidebar nav, say),
+  // one of them display:none. Point at the one that is actually laid out.
+  const all = document.querySelectorAll(`[data-tip-anchor="${anchor}"]`);
+  for (const el of all) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0 || r.height > 0) return el;
+  }
+  return all[0] ?? null;
 }

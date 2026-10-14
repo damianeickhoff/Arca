@@ -6,7 +6,7 @@ import { IconChevronLeft, IconChevronRight, IconCheck as Check } from "@tabler/i
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MONTH_NAMES } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { bottomDockClass } from "@/components/bottom-nav";
+import { aboveNavDockClass, bottomDockClass } from "@/components/bottom-nav";
 
 // Same floating bottom-bar style as PeriodSelector (src/app/reports/period-selector.tsx)
 // — prev/next chevrons around a center pill that opens a dialog list — but behaves like
@@ -15,6 +15,7 @@ import { bottomDockClass } from "@/components/bottom-nav";
 export function PrognosePeriodPicker({
   current,
   embedded = false,
+  aboveNav,
 }: {
   current: string;
   /** True inside the dashboard's Insights portal. The portal shares the dashboard's
@@ -25,7 +26,12 @@ export function PrognosePeriodPicker({
    *  the same trade PeriodSelector makes for the Analytics/Trends tabs. The
    *  standalone /forecast route keeps the shareable `?month=` param. */
   embedded?: boolean;
+  /** Stack the bar above the phone tab bar rather than on its spot. Defaults to the
+   *  standalone page (not embedded); the Insights page passes it explicitly because
+   *  it is embedded (cookie mode) yet still shows the tab bar. */
+  aboveNav?: boolean;
 }) {
+  const stackAboveNav = aboveNav ?? !embedded;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -67,7 +73,9 @@ export function PrognosePeriodPicker({
   return (
     <>
       {/* Occupies the bottom nav's exact footprint, same convention as PeriodSelector. */}
-      <div className={cn(bottomDockClass, "z-40 h-[3.75rem] flex items-center justify-between gap-2")}>
+      {/* Keeps the last content row from ending up under the stacked bar. */}
+      {stackAboveNav && <div aria-hidden className="h-20 lg:h-16" />}
+      <div className={cn(stackAboveNav ? aboveNavDockClass : bottomDockClass, "z-40 h-[3.75rem] flex items-center justify-between gap-2")}>
         <button
           type="button"
           onClick={() => step(-1)}

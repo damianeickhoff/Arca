@@ -217,7 +217,7 @@ function DialogContent({
 
   return (
     <Drawer.Portal>
-      <Drawer.Overlay className={cn("fixed inset-0 z-50 bg-black/25 backdrop-blur-[22px]", overlayClassName)} />
+      <Drawer.Overlay className={cn("fixed inset-0 z-50 bg-[#1E1A14]/30 backdrop-blur-[6px]", overlayClassName)} />
       <Drawer.Content
         // Don't dismiss when the interaction is with an element the sheet owns but
         // that's portalled outside its DOM (e.g. the category picker's floating
@@ -269,7 +269,7 @@ function DialogContent({
             }}
           >
             {title && (
-              <Drawer.Title className="font-heading text-lg font-semibold text-foreground">{title}</Drawer.Title>
+              <Drawer.Title className="heading text-lg text-ink">{title}</Drawer.Title>
             )}
             {/* Pinned via an explicit top offset (matching the row's own pt- above)
                 instead of flex/align-items centering — centering an absolutely
@@ -280,7 +280,7 @@ function DialogContent({
             <Drawer.Close asChild>
               <button
                 className={cn(
-                  "absolute size-11 left-[21px] rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground transition-colors",
+                  "absolute size-10 left-[21px] rounded-full border border-line bg-surface flex items-center justify-center text-ink transition-colors hover:bg-surface-2",
                   fullHeight ? "top-[calc(var(--sat)+20px)]" : "top-2",
                 )}
                 aria-label="Close"
@@ -422,7 +422,7 @@ function DialogFooter({
 function DialogTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <Drawer.Title
-      className={cn("font-heading text-base leading-none font-medium", className)}
+      className={cn("heading text-base leading-none text-ink", className)}
       {...props}
     />
   );

@@ -2,7 +2,10 @@ import { getDateRange } from "@/lib/date-range";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { DateRangePicker } from "@/components/date-range-picker";
-import { SearchTriggerButton } from "@/components/search-trigger-button";
+import { SearchButton } from "@/components/shell/search-context";
+import { PageHeading } from "@/components/ui/page-heading";
+import { getTranslations } from "next-intl/server";
+import ForecastPage from "@/app/forecast/page";
 import { PageContainer } from "@/components/page-container";
 import { cookies } from "next/headers";
 import { ReportsTabs } from "./reports-tabs";
@@ -21,6 +24,7 @@ export default async function ReportsPage({
   const cookieStore = await cookies();
   const financialMonth = await getFinancialMonthConfig();
   const activeTab = sp.tab ?? "rapporten";
+  const t = await getTranslations("insights");
   const categoryIds = sp.cat ? sp.cat.split(",").map(Number).filter((n) => !Number.isNaN(n)) : undefined;
   const accounts = sp.acct ? sp.acct.split(",").filter(Boolean) : undefined;
 
@@ -57,22 +61,37 @@ export default async function ReportsPage({
   return (
     <PageContainer className="px-0 min-h-screen">
 
-      <div className="sticky top-[var(--sat)] z-40 bg-background px-4 pt-2 pb-3 space-y-2">
-        <div className="flex items-center justify-end">
-          <div className="flex items-center gap-3">
-            {activeTab === "rapporten" && (
-              <DateRangePicker from={from} to={to} financialMonth={financialMonth} iconOnly />
-            )}
-            <SearchTriggerButton />
-          </div>
-        </div>
+      {/* Insights — the one destination for Overview · Trends · Net worth · Forecast ·
+          Health. Not sticky on Forecast, which pins its own month bar instead. */}
+      <div
+        className={activeTab === "prognose" ? "bg-background px-4 pt-[calc(var(--sat)+18px)] pb-3 space-y-3" : "sticky top-0 z-40 bg-background px-4 pt-[calc(var(--sat)+18px)] pb-3 space-y-3"}
+      >
+        <PageHeading
+          title={t("title")}
+          subtitle={activeTab === "prognose" || activeTab === "health" || activeTab === "vermogen" ? undefined : periodLabel}
+          actions={
+            <>
+              {activeTab === "rapporten" && (
+                <DateRangePicker from={from} to={to} financialMonth={financialMonth} iconOnly />
+              )}
+              <SearchButton />
+            </>
+          }
+        />
         <ReportsTabs active={activeTab} />
-        <p className="text-center text-sm font-medium text-foreground/50">{periodLabel}</p>
       </div>
 
       {activeTab === "rapporten" && <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} />}
       {activeTab === "trends" && <TrendsTab from={from} to={to} cmpA={sp.cmpA ?? ""} cmpB={sp.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} />}
       {activeTab === "vermogen" && <VermogenTab />}
+      {activeTab === "prognose" && (
+        <ForecastPage
+          searchParams={Promise.resolve({ month: cookieStore.get("fc_month")?.value })}
+          embedded
+          dockAboveNav
+          stickyTop="var(--sat)"
+        />
+      )}
       {activeTab === "health" && <HealthTab />}
     </PageContainer>
   );

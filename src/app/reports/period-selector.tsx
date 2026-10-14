@@ -6,7 +6,7 @@ import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/date-picker";
 import { cn } from "@/lib/utils";
-import { bottomDockClass } from "@/components/bottom-nav";
+import { aboveNavDockClass, bottomDockClass } from "@/components/bottom-nav";
 import {
   financialMonthRange,
   financialMonthRangeByMonth,
@@ -288,7 +288,9 @@ export function PeriodSelector({
       {/* Occupies the bottom nav's exact footprint (bottomDockClass, 3.75rem/60px
           tall — the pill's height), so it reads as another bar in the same stack
           instead of a bigger, differently-placed control. */}
-      <div className={cn(bottomDockClass, "z-40 h-[3.75rem] flex items-center justify-between gap-2")}>
+      {/* Keeps the last content row from ending up under the stacked bar. */}
+      {!embedded && <div aria-hidden className="h-20 lg:h-16" />}
+      <div className={cn(embedded ? bottomDockClass : aboveNavDockClass, "z-40 h-[3.75rem] flex items-center justify-between gap-2")}>
         <button
           type="button"
           onClick={() => step(-1)}
