@@ -16,6 +16,7 @@ import {
   IconNote as Note,
   IconReload as Repeat,
   IconReceipt2 as Receipt,
+  IconPercentage as Percentage,
 } from "@tabler/icons-react";
 import { DatePicker } from "@/components/date-picker";
 import { AmountKeypad } from "@/components/amount-keypad";
@@ -25,17 +26,23 @@ import { ColorPicker } from "@/components/color-picker";
 import { PickerField } from "@/components/picker-field";
 import { SubSheet } from "@/components/sub-sheet";
 import { Icon } from "@/components/icon";
+import { ContextualTip } from "@/components/contextual-tip";
 import { formatEur } from "@/lib/format";
 import { evaluateExpression } from "@/lib/amount-expression";
 import { cn } from "@/lib/utils";
+import { LinkedPaymentHint } from "./linked-payment-hint";
+import { InterestRateField, parseRatePercent } from "./interest-rate-field";
+import { amountToExpr, linkedBillsMonthlyTotal } from "./debt-shared";
 import type { Debt, RecurringItem } from "@/db/schema";
 
 const SUB_TITLES: Record<string, string> = {
   amount: "Starting balance",
   direction: "Type",
   period: "Start date",
+  balanceDate: "Balance as of",
   payment: "Minimum monthly payment",
   originalAmount: "Original debt amount",
+  interest: "Annual interest rate",
   recurring: "Linked recurring bills",
   name: "Name",
   notes: "Notes",
@@ -79,10 +86,18 @@ export function DebtEditDialog({
   const [direction, setDirection] = useState<"owe" | "owed">((debt.direction as "owe" | "owed") ?? "owe");
   const [name, setName] = useState(debt.name);
   const [startDate, setStartDate] = useState(debt.startDate ?? `${debt.startMonth}-01`);
+  // Existing debts were migrated to balanceDate = startDate, so their figures are
+  // unchanged until this is edited (see the auto-migration in src/db/index.ts).
+  const [balanceDate, setBalanceDate] = useState(debt.balanceDate ?? debt.startDate ?? `${debt.startMonth}-01`);
   const [paymentExpr, setPaymentExpr] = useState(debt.minimumPayment ? String(debt.minimumPayment).replace(".", ",") : "");
   const [paymentCalcEnabled, setPaymentCalcEnabled] = useState(false);
+  // Starts false so changing the linked bills refills the payment from them; only a
+  // manual edit in the payment keypad pins the figure. Opening the dialog never
+  // rewrites a saved payment on its own — the derivation runs on apply, not on mount.
+  const [paymentOverridden, setPaymentOverridden] = useState(false);
   const [originalExpr, setOriginalExpr] = useState(debt.originalAmount != null ? String(debt.originalAmount).replace(".", ",") : "");
   const [originalCalcEnabled, setOriginalCalcEnabled] = useState(false);
+  const [interestRate, setInterestRate] = useState(debt.interestRate != null ? String(debt.interestRate) : "");
   const [notes, setNotes] = useState(debt.notes ?? "");
   const [icon, setIcon] = useState<string | null>(debt.icon ?? null);
   const [color, setColor] = useState(debt.color ?? "#ef4444");
@@ -92,6 +107,21 @@ export function DebtEditDialog({
   const paymentVal = evaluateExpression(paymentExpr);
   const originalVal = evaluateExpression(originalExpr);
   const selectedBills = recurringIds.map((id) => bills.find((b) => b.id === id)).filter((b): b is RecurringItem => !!b);
+  const linkedMonthly = linkedBillsMonthlyTotal(selectedBills);
+
+  // Applying a bill selection derives the minimum payment from it, unless the user has
+  // already typed their own figure.
+  function applyRecurringIds(ids: number[]) {
+    setRecurringIds(ids);
+    if (paymentOverridden) return;
+    const linked = ids.map((id) => bills.find((b) => b.id === id)).filter((b): b is RecurringItem => !!b);
+    setPaymentExpr(amountToExpr(linkedBillsMonthlyTotal(linked)));
+  }
+
+  function useLinkedPayment() {
+    setPaymentExpr(amountToExpr(linkedMonthly));
+    setPaymentOverridden(false);
+  }
 
   function openSub(k: string) {
     setSubpage(k);
@@ -115,8 +145,10 @@ export function DebtEditDialog({
         startingBalance: amountVal,
         originalAmount: originalVal || null,
         minimumPayment: paymentVal || 0,
+        interestRate: parseRatePercent(interestRate),
         startDate,
         startMonth: startDate.slice(0, 7),
+        balanceDate,
         color: color || null,
         icon: icon || null,
         notes: notes.trim() || null,
@@ -177,8 +209,10 @@ export function DebtEditDialog({
           <Row icon={<Coin className="size-5" />} label="Starting balance" value={amountVal != null ? formatEur(amountVal) : "—"} onClick={() => openSub("amount")} />
           <Row icon={<Adjust className="size-5" />} label="Type" value={direction === "owe" ? "I owe" : "I am owed"} onClick={() => openSub("direction")} />
           <Row icon={<Calendar className="size-5" />} label="Start date" value={formatDateLabel(startDate)} onClick={() => openSub("period")} />
+          <Row icon={<Calendar className="size-5" />} label="Balance as of" value={formatDateLabel(balanceDate)} onClick={() => openSub("balanceDate")} />
           <Row icon={<Coin className="size-5" />} label="Minimum monthly payment" value={paymentVal ? formatEur(paymentVal) : "—"} onClick={() => openSub("payment")} />
           <Row icon={<Receipt className="size-5" />} label="Original debt amount" value={originalVal ? formatEur(originalVal) : "—"} onClick={() => openSub("originalAmount")} />
+          <Row icon={<Percentage className="size-5" />} label="Annual interest rate" value={parseRatePercent(interestRate) != null ? `${interestRate}%` : "—"} onClick={() => openSub("interest")} />
           <Row
             icon={<Repeat className="size-5" />}
             label="Linked recurring bills"
@@ -207,7 +241,21 @@ export function DebtEditDialog({
               )}
 
               {subpage === "payment" && (
-                <AmountKeypad expr={paymentExpr} onChange={setPaymentExpr} onEnter={closeSub} calcEnabled={paymentCalcEnabled} onToggleCalc={() => setPaymentCalcEnabled((c) => !c)} />
+                <div className="space-y-3">
+                  <LinkedPaymentHint
+                    linkedMonthly={linkedMonthly}
+                    billCount={selectedBills.length}
+                    overridden={paymentOverridden}
+                    onUse={useLinkedPayment}
+                  />
+                  <AmountKeypad
+                    expr={paymentExpr}
+                    onChange={(next) => { setPaymentExpr(next); setPaymentOverridden(true); }}
+                    onEnter={closeSub}
+                    calcEnabled={paymentCalcEnabled}
+                    onToggleCalc={() => setPaymentCalcEnabled((c) => !c)}
+                  />
+                </div>
               )}
 
               {subpage === "originalAmount" && (
@@ -217,6 +265,26 @@ export function DebtEditDialog({
                   </p>
                   <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} onEnter={closeSub} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
                 </div>
+              )}
+
+              {subpage === "balanceDate" && (
+                <div className="pt-2 space-y-3">
+                  <p className="text-sm text-foreground/50">
+                    The date the starting balance was true. Set it to today and the balance above is
+                    taken as what you owe right now; set it back and the app assumes the monthly
+                    payment was made every month since, unless a linked bill says otherwise.
+                  </p>
+                  <DatePicker granularity="day" value={balanceDate} onChange={(v) => { setBalanceDate(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
+                </div>
+              )}
+
+              {subpage === "interest" && (
+                <InterestRateField
+                  value={interestRate}
+                  onChange={setInterestRate}
+                  balance={amountVal}
+                  payment={paymentVal}
+                />
               )}
 
               {subpage === "name" && (
@@ -262,8 +330,12 @@ export function DebtEditDialog({
           selected={recurringIds}
           open={recurringOpen}
           onOpenChange={setRecurringOpen}
-          onApply={setRecurringIds}
+          onApply={applyRecurringIds}
         />
+
+        {/* Explains that linking a bill also sets the minimum payment — shown the first
+            time the picker is opened, and exempt from "Don't show again" (see tips.ts). */}
+        <ContextualTip id="debtLinkedPayment" active={recurringOpen} />
       </DialogContent>
     </Dialog>
   );

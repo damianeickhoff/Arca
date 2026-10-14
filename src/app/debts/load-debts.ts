@@ -5,7 +5,7 @@ import type { RecurringItem } from "@/db/schema";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
-import { computeDebt, monthsElapsed, fmtShortMonth, debtEffectiveTotal, debtEffectivePaid } from "./debt-shared";
+import { computeDebt, debtBalance, fmtShortMonth, debtEffectiveTotal, debtEffectivePaid } from "./debt-shared";
 import type { DebtsPageData } from "./debt-shared";
 
 // Loads + computes everything the debts UI needs. Extracted from the /debts page so
@@ -37,7 +37,7 @@ export async function loadDebtsData(): Promise<DebtsPageData> {
   const computedAll = rows.map((debt) => {
     const linkedBillIds = linkMap.get(debt.id) ?? [];
     const linkedBills = linkedBillIds.map((id) => billMap.get(id)).filter((b): b is RecurringItem => !!b);
-    return { debt, linkedBills, linkedBillIds, ...computeDebt(debt, paidFor(debt.id, debt.startMonth)) };
+    return { debt, linkedBills, linkedBillIds, ...computeDebt(debt, paidFor(debt)) };
   }).sort((a, b) => b.currentBalance - a.currentBalance);
 
   // Split by direction. The payoff model (progress, snowball, projection chart,
@@ -87,10 +87,10 @@ export async function loadDebtsData(): Promise<DebtsPageData> {
     const endMonth = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, "0")}`;
 
     return oweRows.reduce((sum, debt) => {
-      const billPaid = paidFor(debt.id, debt.startMonth, endMonth);
-      const paid = billPaid ?? monthsElapsed(debt.startMonth, monthEnd) * debt.minimumPayment;
-      const balance = Math.max(debt.startingBalance - Math.min(paid, debt.startingBalance), 0);
-      return sum + balance;
+      // debtBalance applies the interest rate when there is one, so a historical point
+      // reflects the same maths as the live figure rather than a flat subtraction.
+      const { currentBalance } = debtBalance(debt, paidFor(debt, endMonth), monthEnd);
+      return sum + currentBalance;
     }, 0);
   });
 

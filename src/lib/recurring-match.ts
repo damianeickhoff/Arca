@@ -13,6 +13,14 @@ export type RecurringMatcher = {
   categoryId: number | null;
   friendlyName: string | null;
   active: boolean;
+  // Payload rather than matching criteria: these ride along on a match but never affect
+  // whether one happens, so callers that only ask "does anything already cover this?"
+  // (see detect-recurring.ts) can build a matcher without them.
+  /** Incoming money that pays you back rather than real income — matched transactions
+   *  get transactions.isReimbursement so income totals ignore them. */
+  isReimbursement?: boolean;
+  /** The share of a shared bill others pay back; see reimbursedAmountExpr. */
+  sharedReimbursedAmount?: number | null;
 };
 
 /** "netflix" matches "NETFLIX.COM" as a whole word but not "netflixer" — the same
@@ -98,6 +106,8 @@ export async function loadRecurringMatchers(): Promise<RecurringMatcher[]> {
       categoryId: recurringItems.categoryId,
       friendlyName: recurringItems.friendlyName,
       active: recurringItems.active,
+      isReimbursement: recurringItems.isReimbursement,
+      sharedReimbursedAmount: recurringItems.sharedReimbursedAmount,
     })
     .from(recurringItems);
 }

@@ -113,27 +113,59 @@ export function summarizeSplitCategories(names: Array<string | null | undefined>
   return uniqueNames.join(" + ");
 }
 
+export type SplitAllocationOptions = {
+  /** Subtract each expense's `reimbursedAmount` — the part someone else pays back — so
+   *  spend reflects your own share. Off by default: gross is what the bank statement says,
+   *  and only the reporting surfaces that honour shared_cost_mode should turn this on.
+   *  Never enable it for income allocations, row lists, or anything that must tie out. */
+  netReimbursements?: boolean;
+};
+
 // Expands each transaction into one allocation per split (or a single allocation when
-// unsplit), always at the transaction's gross amount (correctedAmount if set, else amount).
-// Reimbursements are never netted out here — spend is reported gross everywhere; a
-// reimbursement receipt shows only in the account balance, not as a reduction of spend.
+// unsplit), at the transaction's gross amount (correctedAmount if set, else amount).
+//
+// Gross is the default everywhere: a reimbursement receipt normally shows only in the
+// account balance, not as a reduction of spend. With `netReimbursements` the caller opts
+// into net spend instead — see getSharedCostMode and reimbursedAmountExpr. Income and
+// reimbursement rows are never netted, and the reimbursed part is clamped to the
+// transaction total so spend can't go negative or flip a category.
 export function buildSplitAllocations<
   TBase extends SplitAwareTransactionBase,
   TSplit extends TransactionSplitRow,
->(transactions: TBase[], splitMap: Map<number, TSplit[]>) {
+>(
+  transactions: TBase[],
+  splitMap: Map<number, TSplit[]>,
+  options: SplitAllocationOptions = {},
+) {
   const allocations: SplitAwareAllocation[] = [];
 
   for (const transaction of transactions) {
     const splits = splitMap.get(transaction.id) ?? [];
     const baseTotal = getTransactionSplitTotal(transaction.amount, transaction.correctedAmount);
 
+    const netting =
+      options.netReimbursements === true &&
+      transaction.direction === "expense" &&
+      transaction.isReimbursement !== true;
+    const reimbursed = netting
+      ? Math.min(Math.max(transaction.reimbursedAmount ?? 0, 0), baseTotal)
+      : 0;
+
     if (splits.length > 0) {
-      for (const split of splits) {
+      // Spread the reimbursed part over the splits in proportion to their size, so a
+      // €103 bill split 60/40 nets to your share of each half and the parts still add up.
+      const splitShares = reimbursed > 0
+        ? allocateByCounts(reimbursed, splits.map((split) => Math.max(0, Math.round(split.amount * 100))))
+        : null;
+
+      for (const [index, split] of splits.entries()) {
         allocations.push({
           transactionId: transaction.id,
           date: transaction.date,
           direction: transaction.direction,
-          amount: roundToCents(split.amount),
+          amount: splitShares
+            ? Math.max(0, roundToCents(split.amount - splitShares[index]))
+            : roundToCents(split.amount),
           isReimbursement: transaction.isReimbursement ?? false,
           isInternalTransfer: transaction.isInternalTransfer ?? false,
           categoryId: split.categoryId,
@@ -150,7 +182,7 @@ export function buildSplitAllocations<
       transactionId: transaction.id,
       date: transaction.date,
       direction: transaction.direction,
-      amount: baseTotal,
+      amount: reimbursed > 0 ? roundToCents(baseTotal - reimbursed) : baseTotal,
       isReimbursement: transaction.isReimbursement ?? false,
       isInternalTransfer: transaction.isInternalTransfer ?? false,
       categoryId: transaction.categoryId ?? null,

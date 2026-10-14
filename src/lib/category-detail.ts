@@ -1,7 +1,9 @@
 import { db } from "@/db";
 import { transactions, categories, budgetTargets, banks } from "@/db/schema";
-import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, inArray } from "drizzle-orm";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
+import { getSharedCostMode } from "@/lib/app-settings";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { resolveDisplayName } from "@/lib/friendly-names";
@@ -88,8 +90,8 @@ export interface CategoryDetail {
 /** Per-category (rolled up to include children) variable-expense spend, honoring
  * splits and internal-transfer exclusion — mirrors variableSpend() in budget-overview.ts
  * but scoped to a single category and returning per-transaction allocations instead of
- * just totals, since the detail page needs the raw list too. Spend is gross;
- * reimbursements are not netted (a reimbursement receipt shows only in the balance). */
+ * just totals, since the detail page needs the raw list too. Spend is gross unless the
+ * shared_cost_mode setting is "net" — see getSharedCostMode. */
 async function categoryAllocations(from: string, to: string, categoryIds: number[], direction: "income" | "expense" = "expense") {
   const rows = await db.select({
     id: transactions.id,
@@ -97,7 +99,7 @@ async function categoryAllocations(from: string, to: string, categoryIds: number
     direction: transactions.direction,
     amount: transactions.amount,
     correctedAmount: transactions.correctedAmount,
-    reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+    reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     isReimbursement: transactions.isReimbursement,
     isInternalTransfer: isInternalTransferExpr,
@@ -109,7 +111,8 @@ async function categoryAllocations(from: string, to: string, categoryIds: number
 
   const splitRows = await getTransactionSplitRows(rows.map((r) => r.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(rows, splitMap);
+  const netReimbursements = (await getSharedCostMode()) === "net";
+  const allocations = buildSplitAllocations(rows, splitMap, { netReimbursements });
   // The transaction's own display name and account live on the base row, not on the
   // per-split allocation — carry them across so the detail list can show them.
   const metaById = new Map(rows.map((r) => [r.id, r]));

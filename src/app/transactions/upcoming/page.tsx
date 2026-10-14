@@ -6,7 +6,7 @@ import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
-import { signedBillAmount } from "@/lib/bill-amounts";
+import { billsDueTotal, hasPayableBill } from "@/lib/bill-amounts";
 import { MobileSubpageHeader } from "@/components/mobile-menu-ui";
 
 export const dynamic = "force-dynamic";
@@ -42,8 +42,9 @@ export default async function UpcomingTransactionsPage() {
     byDate.set(b.dueDate!, list);
   }
 
-  // Net — income counts towards you, everything else against.
-  const total = bills.reduce((sum, b) => sum + signedBillAmount(b), 0);
+  // Expenses only — income is listed and shown on the calendar, but never netted into
+  // the amount still to be paid.
+  const total = billsDueTotal(bills);
 
   const fmtDay = (d: string) =>
     new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" });
@@ -77,9 +78,9 @@ export default async function UpcomingTransactionsPage() {
               <div key={date} className="rounded-lg bg-card p-4">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm text-muted-foreground">{fmtDay(date)}</span>
-                  {items.length > 1 && (
+                  {items.length > 1 && hasPayableBill(items) && (
                     <span className="text-xs text-muted-foreground tabular-nums">
-                      {formatEur(items.reduce((s, b) => s + signedBillAmount(b), 0))}
+                      {formatEur(billsDueTotal(items))}
                     </span>
                   )}
                 </div>

@@ -109,7 +109,11 @@ sqlite.exec(`
     direction        TEXT    NOT NULL DEFAULT 'owe',
     starting_balance REAL    NOT NULL,
     minimum_payment  REAL    NOT NULL DEFAULT 0,
+    -- Optional annual nominal percentage; null = interest-free (lib/debt-interest.ts).
+    interest_rate    REAL,
     start_month      TEXT    NOT NULL,
+    -- Date starting_balance was true; null reads as start_date (debt-shared.ts).
+    balance_date     TEXT,
     color            TEXT,
     notes            TEXT
   );
@@ -449,6 +453,15 @@ try {
 } catch { /* column already exists */ }
 try {
   sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN end_date TEXT`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN shared_reimbursed_amount REAL`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN shared_with_count INTEGER`);
+} catch { /* column already exists */ }
+try {
+  sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN is_reimbursement INTEGER NOT NULL DEFAULT 0`);
 } catch { /* column already exists */ }
 try {
   sqlite.exec(`ALTER TABLE users ADD COLUMN first_name TEXT`);

@@ -4,12 +4,7 @@ import type { Debt } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
-
-export function debtMonthsElapsed(startMonth: string): number {
-  const [sy, sm] = startMonth.split("-").map(Number);
-  const now = new Date();
-  return Math.max(0, (now.getFullYear() - sy) * 12 + (now.getMonth() + 1 - sm));
-}
+import { debtBalance } from "@/app/debts/debt-shared";
 
 export type DebtSummary = {
   totalBalance: number; // money YOU owe (direction 'owe') — the liability side of net worth
@@ -32,14 +27,9 @@ export async function getDebtSummary(): Promise<DebtSummary | null> {
   // debts with no links fall back to the linear minimumPayment × monthsElapsed model.
   const { paidFor } = await getDebtRecurringLinks(financialMonth);
 
-  const computed = debtRows.map((debt: Debt) => {
-    const billPaid = paidFor(debt.id, debt.startMonth);
-    const amountPaid = billPaid !== null
-      ? Math.min(billPaid, debt.startingBalance)
-      : Math.min(debtMonthsElapsed(debt.startMonth) * debt.minimumPayment, debt.startingBalance);
-    const currentBalance = Math.max(debt.startingBalance - amountPaid, 0);
-    return { debt, amountPaid, currentBalance };
-  });
+  // Same maths as the debts page (interest included when the debt carries a rate) —
+  // net worth and the debts page must never disagree about what a debt is worth.
+  const computed = debtRows.map((debt: Debt) => ({ debt, ...debtBalance(debt, paidFor(debt)) }));
 
   // Split by direction: money you owe is a liability (totalBalance), money owed to you
   // is an asset (totalOwed). They must never be lumped together — doing so subtracts

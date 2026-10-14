@@ -1,7 +1,9 @@
 import { db } from "@/db";
 import { transactions, categories, budgetTargets } from "@/db/schema";
-import { eq, and, gte, lte, sql, asc, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, asc, inArray } from "drizzle-orm";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
+import { getSharedCostMode } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, offsetFinancialMonth, type FinancialMonthConfig } from "@/lib/date-range";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
@@ -49,14 +51,14 @@ export async function getBudgetData(
 ) {
   const { from: start, to: end } = financialMonthRangeByMonth(month, financialMonth);
 
-  const [periodRows, allVariableCats, allExpenseCats] = await Promise.all([
+  const [periodRows, allVariableCats, allExpenseCats, sharedCostMode] = await Promise.all([
     db.select({
       id: transactions.id,
       date: transactions.date,
       direction: transactions.direction,
       amount: transactions.amount,
       correctedAmount: transactions.correctedAmount,
-      reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+      reimbursedAmount: reimbursedAmountExpr,
       categoryId: transactions.categoryId,
       categoryName: categories.name,
       categoryColor: categories.color,
@@ -72,11 +74,15 @@ export async function getBudgetData(
       .orderBy(asc(categories.name)),
     db.select().from(categories)
       .where(inArray(categories.budgetType, ["nodig", "willen", "sparen"])),
+    getSharedCostMode(),
   ]);
+
+  // Netting only touches expenses, so the income total below stays gross either way.
+  const netReimbursements = sharedCostMode === "net";
 
   const splitRows = await getTransactionSplitRows(periodRows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(periodRows, splitMap);
+  const allocations = buildSplitAllocations(periodRows, splitMap, { netReimbursements });
 
   // A sub-category's spend counts towards its parent, so the parent's row shows the sum
   // of itself plus all its children and only top-level categories get their own row.
@@ -139,7 +145,7 @@ export async function getBudgetData(
         direction: transactions.direction,
         amount: transactions.amount,
         correctedAmount: transactions.correctedAmount,
-        reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+        reimbursedAmount: reimbursedAmountExpr,
         categoryId: transactions.categoryId,
         categoryGroup: categories.group,
         isReimbursement: transactions.isReimbursement,
@@ -154,7 +160,7 @@ export async function getBudgetData(
 
     const prevSplitRows = await getTransactionSplitRows(prevPeriodRows.map((row) => row.id));
     const prevSplitMap = groupTransactionSplits(prevSplitRows);
-    const prevAllocations = buildSplitAllocations(prevPeriodRows, prevSplitMap);
+    const prevAllocations = buildSplitAllocations(prevPeriodRows, prevSplitMap, { netReimbursements });
     const prevSpendingMap = new Map(
       prevAllocations
         .filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryId != null && variableCatIds.has(row.categoryId))

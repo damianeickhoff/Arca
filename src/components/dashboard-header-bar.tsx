@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { CONTENT_COLUMN } from "@/components/page-container";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
-import type { BudgetRecurringMode } from "@/lib/app-settings";
+import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 
 const REPORT_TABS = [
@@ -47,6 +47,7 @@ export function DashboardHeaderBar({
   settingsPanels,
   financialMonth,
   budgetRecurringMode,
+  sharedCostMode,
 }: {
   reportsContent: ReportsContent;
   budgetContent: React.ReactNode;
@@ -54,6 +55,7 @@ export function DashboardHeaderBar({
   settingsPanels: SettingsPanelContent;
   financialMonth: FinancialMonthConfig;
   budgetRecurringMode: BudgetRecurringMode;
+  sharedCostMode?: SharedCostMode;
 }) {
   // Scroll-aware dim/glassy state
   const [glassy, setGlassy] = useState(false);
@@ -163,6 +165,7 @@ export function DashboardHeaderBar({
             panels={settingsPanels}
             financialMonth={financialMonth}
             budgetRecurringMode={budgetRecurringMode}
+            sharedCostMode={sharedCostMode}
             triggerClassName={dimClass}
           />
         </div>

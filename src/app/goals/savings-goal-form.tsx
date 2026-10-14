@@ -11,6 +11,7 @@ import {
   IconCoinEuro,
   IconWallet,
   IconCalendarEvent,
+  IconHelpCircle,
 } from "@tabler/icons-react";
 import {
   IconBackspace,
@@ -36,15 +37,30 @@ import {
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/motion";
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
+import { useKeypadKeyboard } from "@/lib/use-keypad-keyboard";
 import { formatEur, currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CONTENT_COLUMN } from "@/components/page-container";
+import { TipWalkthrough } from "@/components/tip-walkthrough";
 import { GOAL_COLORS, monthsUntil } from "./goal-shared";
 import type { Category } from "@/db/schema";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
+
+// The walkthrough's running order — each entry needs matching copy at
+// tips.savingsFormTour.steps.<anchor>.
+const SAVING_TOUR_STEPS = [
+  "savingIcon",
+  "savingDates",
+  "savingMonthly",
+  "savingBalance",
+  "savingCategory",
+  "savingMenu",
+  "savingSave",
+  "savingClose",
+] as const;
 
 // The savings-goal add form (behind /goals/add?type=savings) — full-screen calculator
 // style, matching the add-transaction/debt-add pages. Editing an existing savings goal
@@ -71,6 +87,8 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
   const [color, setColor] = useState(GOAL_COLORS[0]);
   const [iconColorOpen, setIconColorOpen] = useState(false);
   const [calcEnabled, setCalcEnabled] = useState(false);
+  // Bumped by the "What do these buttons do?" menu item to replay the walkthrough.
+  const [tourToken, setTourToken] = useState(0);
 
   useEffect(() => acquireNavHidden(), []);
 
@@ -91,6 +109,11 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
   const isZeroDisplay = bigDisplay === "0";
   const amountChars = bigDisplay.split("");
   const press = (key: string) => setExpr((prev) => pressKey(prev, key));
+
+  // Hardware keyboard / numpad entry for this page's own keypad, matching AmountKeypad.
+  // The hook's on-screen check keeps it silent while one of the dialogs above it (monthly
+  // contribution, starting balance) has the keypad the user is actually looking at.
+  const keypadRef = useKeypadKeyboard({ calcEnabled, onKey: press, onEnter: () => { if (canSave) save(); } });
 
   async function save() {
     if (!name.trim() || result === null || result <= 0) return;
@@ -129,6 +152,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
         <button
           type="button"
           onClick={() => router.back()}
+          data-tip-anchor="savingClose"
           aria-label={t("close")}
           className="glass-icon-btn size-11"
         >
@@ -139,6 +163,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger
+            data-tip-anchor="savingMenu"
             aria-label={t("moreOptions")}
             className="glass-icon-btn size-11"
           >
@@ -149,6 +174,11 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
               <IconCalculator className="size-4.5" />
               <span className="flex-1">{t("calculator")}</span>
               {calcEnabled && <IconCheck className="size-4 text-foreground/60" />}
+            </DropdownMenuItem>
+            {/* Keeps the walkthrough reachable after its one automatic run. */}
+            <DropdownMenuItem onClick={() => setTourToken((n) => n + 1)} className="gap-2.5 py-2.5">
+              <IconHelpCircle className="size-4.5" />
+              <span className="flex-1">{t("whatDoButtonsDo")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -177,6 +207,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             <button
               type="button"
               onClick={() => setIconColorOpen(true)}
+              data-tip-anchor="savingIcon"
               aria-label={t("chooseIconColor")}
               className="size-14 rounded-full flex items-center justify-center active:scale-[0.96] transition-transform"
               style={{ backgroundColor: icon ? undefined : "color-mix(in srgb, var(--foreground) 8%, transparent)" }}
@@ -233,6 +264,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
               <button
                 type="button"
                 onClick={() => setDateOpen(true)}
+                data-tip-anchor="savingDates"
                 aria-label={t("setStartEndDate")}
                 title={t("startEndDate")}
                 className={cn(
@@ -245,6 +277,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
               <button
                 type="button"
                 onClick={() => setMonthlyOpen(true)}
+                data-tip-anchor="savingMonthly"
                 aria-label={effectiveMonthlyContribution ? t("monthlyContributionAmount", { amount: formatEur(effectiveMonthlyContribution) }) : t("setMonthlyContribution")}
                 title={t("monthlyContribution")}
                 className={cn(
@@ -259,6 +292,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
             <button
               type="button"
               onClick={() => setBalanceOpen(true)}
+              data-tip-anchor="savingBalance"
               aria-label={balanceVal ? t("startingBalanceAmount", { amount: formatEur(balanceVal) }) : t("setStartingBalance")}
               title={t("startingBalance")}
               className={cn(
@@ -271,7 +305,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
           </div>
 
           {/* Keypad — 3-column digits, plus a 4th operator column when the calculator is on */}
-          <div className="flex gap-2 shrink-0">
+          <div ref={keypadRef} className="flex gap-2 shrink-0">
             <div className="grid grid-cols-3 gap-2 flex-1">
               {["7", "8", "9", "4", "5", "6", "1", "2", "3"].map((d) => (
                 <button key={d} type="button" onClick={() => press(d)} className={digitKey}>
@@ -310,17 +344,21 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
 
         {/* Category + save */}
         <div className="flex items-center justify-between gap-3 px-5 pb-[calc(var(--sab)+1.25rem)] shrink-0">
-          <CategoryPicker
-            categories={categories}
-            current={categoryId}
-            onChange={setCategoryId}
-            placeholder={t("categoryOptional")}
-            showSelectedIcon
-            triggerClassName="min-w-0 max-w-[60%] h-11 rounded-full bg-foreground/5 pl-3.5 pr-3 gap-2 text-sm font-medium"
-          />
+          {/* Wrapped rather than tagged directly: CategoryPicker owns its trigger markup. */}
+          <span data-tip-anchor="savingCategory" className="inline-flex min-w-0 max-w-[60%] rounded-full">
+            <CategoryPicker
+              categories={categories}
+              current={categoryId}
+              onChange={setCategoryId}
+              placeholder={t("categoryOptional")}
+              showSelectedIcon
+              triggerClassName="min-w-0 w-full h-11 rounded-full bg-foreground/5 pl-3.5 pr-3 gap-2 text-sm font-medium"
+            />
+          </span>
           <button
             type="button"
             onClick={save}
+            data-tip-anchor="savingSave"
             disabled={!canSave}
             className="h-11 px-7 rounded-full bg-foreground text-background text-sm font-semibold shadow-floating active:scale-[0.98] transition-transform disabled:opacity-40 disabled:pointer-events-none shrink-0"
           >
@@ -420,6 +458,16 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Every control on this page, once, in the order you meet them — and replayable
+          from the overflow menu. Suppressed while a sub-dialog is open so a card never
+          points at a button hidden behind a sheet. */}
+      <TipWalkthrough
+        id="savingsFormTour"
+        steps={SAVING_TOUR_STEPS}
+        active={!dateOpen && !monthlyOpen && !balanceOpen && !iconColorOpen}
+        replayToken={tourToken}
+      />
     </div>
   );
 }

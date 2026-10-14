@@ -179,6 +179,14 @@
     "bulkDone": "Selectiemodus verlaten",
     "bulkConfirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?"
   },
+  "debts": {
+    "paymentFromLinked": "Overgenomen van de gekoppelde {count, plural, one {vaste last} other {vaste lasten}}: {amount} per maand.",
+    "paymentOverridden": "Je hebt dit bedrag zelf ingesteld. De gekoppelde {count, plural, one {vaste last komt} other {vaste lasten komen}} uit op {amount} per maand.",
+    "useLinkedAmount": "Bedrag van gekoppelde vaste last gebruiken",
+    "interestHelp": "Optioneel. Het jaarlijkse rentepercentage op deze schuld. Elke betaling dekt eerst de rente van die maand; alleen wat overblijft verlaagt het saldo. Laat leeg als er geen rente is.",
+    "interestPerMonth": "Bij het huidige saldo is dat ongeveer {amount} rente in de eerste maand.",
+    "interestTooLow": "De minimale maandelijkse aflossing dekt de rente niet, waardoor dit saldo nooit omlaag gaat."
+  },
   "goals": {
     "savings": "Sparen",
     "monthly": "Maandelijks",
@@ -232,6 +240,7 @@
     "savingsGoal": "Spaardoel",
     "moreOptions": "Meer opties",
     "calculator": "Rekenmachine",
+    "whatDoButtonsDo": "Wat doen deze knoppen?",
     "chooseIconColor": "Kies icoon en kleur",
     "namePlaceholder": "bijv. Nieuwe auto",
     "setStartEndDate": "Start- en einddatum instellen",
@@ -258,6 +267,105 @@
   "tips": {
     "gotIt": "Duidelijk",
     "dontShowAgain": "Niet meer tonen",
+    "next": "Volgende",
+    "back": "Vorige",
+    "skipTour": "Overslaan",
+    "debtFormTour": {
+      "title": "Nieuwe schuld",
+      "body": "",
+      "steps": {
+        "debtDirection": {
+          "title": "Welke kant op?",
+          "body": "Kies of jij dit geld schuldig bent of dat iemand het aan jou schuldig is. Geld dat jij tegoed hebt telt als bezit, niet als schuld."
+        },
+        "debtIcon": {
+          "title": "Icoon en kleur",
+          "body": "Tik om een symbool en kleur te kiezen. Zo herken je deze schuld in lijsten en grafieken."
+        },
+        "debtBalanceDate": {
+          "title": "Saldo per",
+          "body": "Bij welke datum het bedrag hierboven hoort. Laat het op vandaag staan en het is gewoon wat je nu schuldig bent. Zet je het terug, dan gaat de app ervan uit dat er sindsdien elke maand is afgelost."
+        },
+        "debtStartDate": {
+          "title": "Startdatum",
+          "body": "Wanneer de schuld begon. Bepaalt op welke dag van de maand er wordt afgelost en, als je rente toevoegt, wanneer die begint te lopen."
+        },
+        "debtMinPayment": {
+          "title": "Maandelijkse aflossing",
+          "body": "Wat er elke maand wordt afgelost. Dit bepaalt de einddatum. Koppel hieronder een vaste last en dit vult zichzelf in."
+        },
+        "debtOriginalAmount": {
+          "title": "Oorspronkelijk bedrag",
+          "body": "Alleen nodig als je pas bent gaan bijhouden nadat er al een deel was afgelost. Laat leeg om het saldo hierboven als totaal te gebruiken."
+        },
+        "debtInterest": {
+          "title": "Rente",
+          "body": "Optioneel. Vul een jaarpercentage in en elke betaling dekt eerst de rente van die maand, zodat de einddatum klopt met wat je echt schuldig bent."
+        },
+        "debtAutoBill": {
+          "title": "Ook een vaste last aanmaken",
+          "body": "Maakt van deze schuld automatisch een maandelijkse vaste last, zodat de betaling in je kalender en budget staat zonder dubbel invoeren."
+        },
+        "debtNote": {
+          "title": "Notitie",
+          "body": "Alles wat je wilt onthouden over deze schuld — bij wie, welke afspraak, een rekeningnummer."
+        },
+        "debtLinkedBills": {
+          "title": "Bestaande vaste last koppelen",
+          "body": "Heb je hier al een vaste last voor? Koppel die, dan bepalen je echte betalingen de voortgang in plaats van een aangenomen schema."
+        },
+        "debtMenu": {
+          "title": "Meer opties",
+          "body": "Zet de rekenmachine aan om te rekenen tijdens het invoeren, of speel deze uitleg opnieuw af."
+        },
+        "debtSave": {
+          "title": "Opslaan",
+          "body": "Beschikbaar zodra de schuld een naam en een bedrag boven nul heeft."
+        },
+        "debtClose": {
+          "title": "Sluiten",
+          "body": "Verlaat het scherm zonder op te slaan. Dat was alles — je kunt aan de slag."
+        }
+      }
+    },
+    "savingsFormTour": {
+      "title": "Nieuw spaardoel",
+      "body": "",
+      "steps": {
+        "savingIcon": {
+          "title": "Icoon en kleur",
+          "body": "Tik om een symbool en kleur te kiezen voor dit doel. Zo herken je het in je lijst met spaardoelen."
+        },
+        "savingDates": {
+          "title": "Start- en einddatum",
+          "body": "Stel een einddatum in en het maandbedrag wordt voor je berekend — doel min wat je al hebt, verdeeld over de resterende maanden."
+        },
+        "savingMonthly": {
+          "title": "Maandelijkse inleg",
+          "body": "Wat je elke maand opzij wilt zetten. Een einddatum hierboven berekent dit juist voor je, en gaat voor."
+        },
+        "savingBalance": {
+          "title": "Startsaldo",
+          "body": "Hoeveel je al gespaard hebt voor dit doel, zodat de voortgang niet bij nul begint."
+        },
+        "savingCategory": {
+          "title": "Categorie",
+          "body": "Optioneel. Koppel een categorie zodat transacties daarin automatisch meetellen voor dit doel."
+        },
+        "savingMenu": {
+          "title": "Meer opties",
+          "body": "Zet de rekenmachine aan om te rekenen tijdens het invoeren, of speel deze uitleg opnieuw af."
+        },
+        "savingSave": {
+          "title": "Opslaan",
+          "body": "Beschikbaar zodra het doel een naam en een streefbedrag boven nul heeft."
+        },
+        "savingClose": {
+          "title": "Sluiten",
+          "body": "Verlaat het scherm zonder op te slaan. Dat was alles — je kunt aan de slag."
+        }
+      }
+    },
     "receiptScan": {
       "title": "Bon scannen",
       "body": "Maak een foto en Arca vult de winkel, het bedrag en de datum in. Het uitlezen gebeurt op dit apparaat — de foto gaat nergens heen."
@@ -326,6 +434,10 @@
       "title": "Tik voor het hele verhaal",
       "body": "Open een transactie om hem te hercategoriseren, te splitsen, een bon toe te voegen of naar de winkel te springen."
     },
+    "debtLinkedPayment": {
+      "title": "Gekoppelde vaste last bepaalt de aflossing",
+      "body": "Koppel je een vaste last aan een schuld, dan wordt het maandbedrag daarvan de minimale aflossing. Open Minimale maandelijkse aflossing om een ander bedrag in te vullen."
+    },
     "googleLookup": {
       "title": "Wie heeft dit afgeschreven?",
       "body": "Open een transactie en tik op de Google-knop om de winkelnaam op internet op te zoeken — handig bij een afschrijving die je niet herkent."
@@ -345,6 +457,10 @@
     "bulkSelect": {
       "title": "Houd vast om meerdere te kiezen",
       "body": "Houd een transactie ingedrukt om de selectiemodus aan te zetten. Kies er zoveel je wilt en pas ze in een keer aan, sluit ze uit van rapportages of verwijder ze."
+    },
+    "sharedCost": {
+      "title": "Deel een rekening die jij volledig betaalt",
+      "body": "Geef aan welk deel huisgenoten of familie aan je terugbetalen. Je cashflow houdt het hele bedrag — dat gaat echt van je rekening af — terwijl rapporten alleen jouw eigen deel kunnen tonen."
     }
   },
   "importMapping": {
@@ -407,5 +523,25 @@
     "dateColumn": "Datumkolom",
     "delete": "Profiel verwijderen",
     "confirmDelete": "Opgeslagen koppeling \"{label}\" verwijderen? Bij de volgende import van dat bestand word je opnieuw om de kolommen gevraagd."
+  },
+  "sharedCost": {
+    "row": "Gedeelde kosten",
+    "rowNotShared": "Niet gedeeld",
+    "rowPayback": "Geld dat aan mij wordt terugbetaald",
+    "rowYourShare": "Jouw deel {amount}",
+    "sharedToggle": "Anderen betalen mij hiervoor terug",
+    "paidBackLabel": "Elke keer aan mij terugbetaald",
+    "peopleLabel": "Aantal personen (inclusief jij)",
+    "splitEvenly": "Gelijk verdelen",
+    "preview": "Jouw deel: {share} van {total}",
+    "sharedHint": "Het volledige bedrag telt nog steeds mee voor je cashflow en de rekeningen-tracker. Alleen rapporten gebruiken jouw deel, en alleen als je dat instelt bij Instellingen → Budget & Rekeningen.",
+    "paybackToggle": "Dit is geld dat aan mij wordt terugbetaald",
+    "paybackHint": "Telt niet als inkomen in rapporten; telt wel mee in je cashflow.",
+    "settingTitle": "Gedeelde kosten",
+    "settingGross": "Toon het volledige bedrag",
+    "settingGrossHint": "Rapporten tonen wat er echt van je rekening af ging, gelijk aan je bank.",
+    "settingNet": "Toon mijn deel",
+    "settingNetHint": "Rapporten trekken eraf wat anderen terugbetalen, zodat een gedeelde rekening kost wat hij je echt kost.",
+    "settingFooter": "Cashflow, de prognose en de rekeningen-tracker gebruiken altijd het volledige bedrag — dat geld gaat er echt doorheen."
   }
 }

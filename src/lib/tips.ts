@@ -34,6 +34,12 @@ export type TipId =
   | "importBalance"
   | "dataHealth"
   | "googleLookup"
+  | "debtLinkedPayment"
+  | "sharedCost"
+  // stepped walkthroughs (see components/tip-walkthrough.tsx) — copy lives at
+  // tips.<id>.steps.<anchor>, one entry per control
+  | "debtFormTour"
+  | "savingsFormTour"
   // pointer tips
   | "importDatePreview"
   | "bulkSelect"
@@ -58,7 +64,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup"];
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;
@@ -92,6 +98,15 @@ function writeState(state: TipState) {
  *  need in order to show one — a pointer tip polling the DOM for its anchor, say. */
 export function isTipPending(id: TipId): boolean {
   return !isSuppressed(readState(), id);
+}
+
+/** Record a tip as shown without going through useContextualTip — for a surface that
+ *  drives its own visibility (the stepped walkthrough, which stays up across several
+ *  cards and can be replayed on demand from a help button). */
+export function markTipSeen(id: TipId) {
+  const current = readState();
+  if (current.seen.includes(id)) return;
+  writeState({ ...current, seen: [...current.seen, id] });
 }
 
 /** Wipes the record, so every tip is due again. Not wired to any UI yet — kept as

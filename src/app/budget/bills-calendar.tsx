@@ -20,9 +20,9 @@ export type CalendarBill = {
   paid: boolean | null;
   paidSource: "match" | "manual" | null;
   overdue: boolean;
-  /** Money coming in rather than going out. `amount` is unsigned either way, so every
-   *  total over these has to apply the sign itself — see signedBillAmount in
-   *  @/lib/bill-amounts (kept out of this file because it's "use client"). */
+  /** Money coming in rather than going out. Shown on the calendar and in the lists, but
+   *  excluded from every "still to pay" total — see billsDueTotal in @/lib/bill-amounts
+   *  (kept out of this file because it's "use client"). */
   isIncome?: boolean;
 };
 

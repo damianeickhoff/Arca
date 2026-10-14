@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Icon } from "@/components/icon";
 import { RecurringClient } from "./recurring-client";
@@ -146,6 +147,7 @@ function DetailBody({
   dueDate?: string | null;
 }) {
   const router = useRouter();
+  const tShared = useTranslations("sharedCost");
   const [active, setActive] = useState(item.active);
   const [busy, setBusy] = useState(false);
   const [txs, setTxs] = useState<LinkedTx[] | null>(null);
@@ -236,6 +238,20 @@ function DetailBody({
         <DetailRow label="Frequency" value={FREQ_LABELS[freq] ?? freq} />
         <DetailRow label="Type" value={TYPE_LABELS[item.type] ?? item.type} />
         {item.budgetType && <DetailRow label="Budget type" value={BUDGET_TYPE_LABELS[item.budgetType] ?? item.budgetType} />}
+        {/* Shared costs: the amount above stays the gross charge (that's what leaves the
+            account), so spell out what actually lands on you. */}
+        {item.sharedReimbursedAmount != null && item.amount != null && (
+          <>
+            <DetailRow label={tShared("row")} value={tShared("preview", {
+              share: formatEur(Math.max(0, Math.round((item.amount - item.sharedReimbursedAmount) * 100) / 100)),
+              total: formatEur(item.amount),
+            })} />
+            {item.sharedWithCount != null && (
+              <DetailRow label={tShared("peopleLabel")} value={String(item.sharedWithCount)} />
+            )}
+          </>
+        )}
+        {item.isReimbursement && <DetailRow label={tShared("row")} value={tShared("rowPayback")} />}
       </div>
 
       {/* Dates + notes */}

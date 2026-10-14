@@ -19,6 +19,7 @@ import {
   IconCategory2 as CategoryIcon,
   IconNote as Note,
   IconAdjustments as Adjust,
+  IconUsers as Users,
 } from "@tabler/icons-react";
 import type { RecurringItem, Category } from "@/db/schema";
 import { FloatingAddButton } from "@/components/floating-add-button";
@@ -29,6 +30,7 @@ import { WarningBanner } from "@/components/warning-banner";
 import { SubSheet } from "@/components/sub-sheet";
 import { OptionList } from "@/components/option-list";
 import { ContextualTip } from "@/components/contextual-tip";
+import { useTranslations } from "next-intl";
 import { CategoryGrid, useCategoryFilter } from "@/components/category-picker";
 import { formatEur } from "@/lib/format";
 import { evaluateExpression } from "@/lib/amount-expression";
@@ -103,6 +105,19 @@ const SUB_TITLES: Record<string, string> = {
   name: "Name", type: "Type", notes: "Notes & Friendly Name", match: "Auto-match",
 };
 
+/** Your own share of a shared bill: the gross charge minus what everyone else pays back. */
+function ownShare(amount: number | null, reimbursed: string): number | null {
+  if (amount == null) return null;
+  const back = parseFloat(reimbursed.replace(",", "."));
+  if (!Number.isFinite(back) || back <= 0) return amount;
+  return Math.max(0, Math.round((amount - back) * 100) / 100);
+}
+
+/** An even split of `amount` across `people` (you included) — your one share of it. */
+function evenShareBack(amount: number, people: number): number {
+  return Math.round((amount * (people - 1)) / people * 100) / 100;
+}
+
 /** "Bill • Needs" — the row summaries show every value the subpage behind them edits,
  *  so nothing has to be opened just to find out what it's set to. Parts that are empty
  *  drop out; an entirely empty summary reads as "—". */
@@ -134,6 +149,7 @@ function shiftEndDate(origStart: string, origEnd: string, newStart: string): str
 
 export function RecurringClient(props: Props) {
   const router = useRouter();
+  const tShared = useTranslations("sharedCost");
   const controlled = props.open !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlled ? props.open! : internalOpen;
@@ -191,6 +207,10 @@ export function RecurringClient(props: Props) {
     matchAmountMax: item?.matchAmountMax?.toString() ?? "",
     categoryId: item?.categoryId != null ? String(item.categoryId) : (prefill?.categoryId ?? ""),
     friendlyName: item?.friendlyName ?? "",
+    shared: item?.sharedReimbursedAmount != null,
+    sharedReimbursedAmount: item?.sharedReimbursedAmount?.toString() ?? "",
+    sharedWithCount: item?.sharedWithCount?.toString() ?? "",
+    isReimbursement: item?.isReimbursement ?? false,
   });
   function set(key: string, value: string | boolean) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -240,6 +260,10 @@ export function RecurringClient(props: Props) {
       matchAmountMax: form.matchMode === "range" && form.matchAmountMax ? parseFloat(form.matchAmountMax) : null,
       categoryId: form.categoryId ? parseInt(form.categoryId) : null,
       friendlyName: form.friendlyName.trim() || null,
+      // Shared costs only apply to money going out; the payback flag only to money coming in.
+      sharedReimbursedAmount: isSharedCost && form.sharedReimbursedAmount ? parseFloat(form.sharedReimbursedAmount.replace(",", ".")) : null,
+      sharedWithCount: isSharedCost && form.sharedWithCount ? parseInt(form.sharedWithCount) : null,
+      isReimbursement: form.type === "income" && form.isReimbursement,
       ...(isEdit ? { id: item!.id } : {}),
     };
     const res = await fetch("/api/recurring", {
@@ -298,6 +322,16 @@ export function RecurringClient(props: Props) {
   const periodLabel = form.startDate
     ? (form.endDate ? `${fmtShort(form.startDate)} – ${fmtShort(form.endDate)}` : `From ${fmtShort(form.startDate)}`)
     : "—";
+
+  // Sharing a cost is about money leaving your account; an income recurrence gets the
+  // mirror-image option ("this is the payback") in the same row instead.
+  const isSharedCost = form.type !== "income" && form.shared;
+  const myShare = ownShare(amountVal, form.sharedReimbursedAmount);
+  const sharedRowValue = form.type === "income"
+    ? (form.isReimbursement ? tShared("rowPayback") : tShared("rowNotShared"))
+    : isSharedCost && myShare != null
+      ? tShared("rowYourShare", { amount: formatEur(myShare) })
+      : tShared("rowNotShared");
 
   return (
     <>
@@ -384,12 +418,13 @@ export function RecurringClient(props: Props) {
             <Row icon={<Adjust className="size-5" />} label="Type" value={typeRowValue} onClick={() => openSub("type")} />
             <Row icon={<Note className="size-5" />} label="Notes & Friendly Name" value={notesRowValue} onClick={() => openSub("notes")} />
             <Row icon={<Adjust className="size-5" />} label="Auto-match" value={matchRowValue} onClick={() => openSub("match")} />
+            <Row icon={<Users className="size-5" />} label={tShared("row")} value={sharedRowValue} onClick={() => openSub("shared")} />
           </div>
 
           {/* Slide-in subpage — fixed against the (transformed) dialog panel */}
           {subpage && (
             <SubSheet
-              title={SUB_TITLES[subpage]}
+              title={subpage === "shared" ? tShared("row") : SUB_TITLES[subpage]}
               visible={subVisible}
               onClose={closeSub}
               // The category subpage is the shared picker grid: it brings the same
@@ -484,6 +519,83 @@ export function RecurringClient(props: Props) {
                   </div>
                 )}
 
+                {subpage === "shared" && (
+                  <div className="space-y-4 pt-2">
+                    {/* First look at shared costs — anchored here so it lands the moment
+                        the option is actually on screen, dismissed-all or not. */}
+                    <ContextualTip id="sharedCost" active={subVisible} />
+                    {form.type === "income" ? (
+                      <div>
+                        <ToggleRow
+                          label={tShared("paybackToggle")}
+                          checked={form.isReimbursement}
+                          onChange={(v) => set("isReimbursement", v)}
+                        />
+                        <p className="text-xs text-foreground/50 mt-2 px-1">{tShared("paybackHint")}</p>
+                      </div>
+                    ) : (
+                      <>
+                        <ToggleRow
+                          label={tShared("sharedToggle")}
+                          checked={form.shared}
+                          onChange={(v) => set("shared", v)}
+                        />
+                        {form.shared && (
+                          <>
+                            <div>
+                              <p className="text-sm font-medium mb-1.5">{tShared("paidBackLabel")}</p>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                inputMode="decimal"
+                                value={form.sharedReimbursedAmount}
+                                onChange={(e) => set("sharedReimbursedAmount", e.target.value)}
+                                placeholder="0.00"
+                                className="h-12"
+                              />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium mb-1.5">{tShared("peopleLabel")}</p>
+                              <div className="flex gap-3">
+                                <Input
+                                  type="number"
+                                  min="2"
+                                  step="1"
+                                  inputMode="numeric"
+                                  value={form.sharedWithCount}
+                                  onChange={(e) => set("sharedWithCount", e.target.value)}
+                                  placeholder="4"
+                                  className="h-12"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  className="h-12 shrink-0 px-4"
+                                  disabled={amountVal == null || !(parseInt(form.sharedWithCount) >= 2)}
+                                  onClick={() => {
+                                    if (amountVal == null) return;
+                                    const people = parseInt(form.sharedWithCount);
+                                    if (!(people >= 2)) return;
+                                    set("sharedReimbursedAmount", String(evenShareBack(amountVal, people)));
+                                  }}
+                                >
+                                  {tShared("splitEvenly")}
+                                </Button>
+                              </div>
+                            </div>
+                            {amountVal != null && myShare != null && (
+                              <p className="text-sm text-foreground/60 px-1">
+                                {tShared("preview", { share: formatEur(myShare), total: formatEur(amountVal) })}
+                              </p>
+                            )}
+                            <p className="text-xs text-foreground/50 px-1">{tShared("sharedHint")}</p>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {subpage === "notes" && (
                   <div className="space-y-4 pt-2">
                     <div>
@@ -554,6 +666,25 @@ export function RecurringClient(props: Props) {
  *  rules offer (MatchTypePicker in settings/categories/category-client.tsx). There's no
  *  "exact" here: a recurring pattern is matched against a bank description that always
  *  carries extra noise around it, so an exact-equals mode would never fire. */
+/** Plain on/off row — the app has no shared Switch primitive, and the two-button picker
+ *  used for match modes reads oddly for a yes/no question. */
+function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between gap-4 rounded-xl bg-foreground/5 px-4 py-3 text-left"
+    >
+      <span className="text-sm font-medium">{label}</span>
+      <span className={cn("relative h-6 w-10 shrink-0 rounded-full transition-colors", checked ? "bg-foreground" : "bg-foreground/20")}>
+        <span className={cn("absolute top-0.5 size-5 rounded-full bg-background transition-all", checked ? "left-[1.125rem]" : "left-0.5")} />
+      </span>
+    </button>
+  );
+}
+
 function MatchModePicker({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   const options = [
     { wholeWord: false, label: "Contains", hint: "Matches anywhere in the description, even inside a word." },

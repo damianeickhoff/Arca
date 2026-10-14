@@ -3,6 +3,7 @@ import { transactions, categories, recurringItems } from "@/db/schema";
 import { eq, and, gte, sql, asc } from "drizzle-orm";
 import { formatEur, formatCompactEur, BUDGET_TYPE_LABELS, normalizeBudgetType, pctChangeLabel, MONTH_NAMES } from "@/lib/format";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import {
   IconTrendingUp as TrendingUp,
   IconTrendingDown as TrendingDown,
@@ -23,7 +24,7 @@ import { CategoryTrendList } from "./category-trend-list";
 import { MonthComparison } from "./month-comparison";
 import { RecurringCostTrendCard } from "@/app/reports/recurring-cost-trend-card";
 import { SavingsRateTrendCard } from "@/app/reports/savings-rate-trend-card";
-import { getFinancialMonthConfig } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getSharedCostMode } from "@/lib/app-settings";
 import { financialMonthForDate, monthsInRange, precedingMonths } from "@/lib/date-range";
 import { PeriodSelector } from "@/app/reports/period-selector";
 
@@ -135,7 +136,7 @@ export default async function TrendsPage({
     direction: transactions.direction,
     amount: transactions.amount,
     correctedAmount: transactions.correctedAmount,
-    reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+    reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     categoryName: categories.name,
     categoryColor: categories.color,
@@ -154,7 +155,8 @@ export default async function TrendsPage({
   const recurringTypeByTxn = new Map(monthlyRows.map((row) => [row.id, row.recurringType]));
   const splitRows = await getTransactionSplitRows(monthlyRows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(monthlyRows, splitMap);
+  const netReimbursements = (await getSharedCostMode()) === "net";
+  const allocations = buildSplitAllocations(monthlyRows, splitMap, { netReimbursements });
 
   const monthlyMap: Record<string, { income: number; expense: number }> = {};
   for (const m of months24) monthlyMap[m] = { income: 0, expense: 0 };

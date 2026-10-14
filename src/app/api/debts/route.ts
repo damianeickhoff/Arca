@@ -15,7 +15,7 @@ async function syncLinkedBillsPeriod(debt: Debt, billIds: number[]) {
   if (billIds.length === 0) return;
   const startDate = debt.startDate ?? `${debt.startMonth}-01`;
   const dueDay = Number(startDate.slice(8, 10)) || 1;
-  const endDate = computeDebtBillEndDate(startDate, debt.startingBalance, debt.minimumPayment);
+  const endDate = computeDebtBillEndDate(startDate, debt.startingBalance, debt.minimumPayment, debt.interestRate);
   await db.update(recurringItems).set({ startDate, dueDay, endDate }).where(inArray(recurringItems.id, billIds));
 }
 

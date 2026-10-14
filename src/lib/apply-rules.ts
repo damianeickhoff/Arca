@@ -100,6 +100,7 @@ export async function applyAllRules(): Promise<number> {
       account: transactions.account,
       manuallyCategorized: transactions.manuallyCategorized,
       recurringItemId: transactions.recurringItemId,
+      isReimbursement: transactions.isReimbursement,
     })
     .from(transactions);
   const splitRows = await db.select({ transactionId: transactionSplits.transactionId }).from(transactionSplits);
@@ -112,8 +113,16 @@ export async function applyAllRules(): Promise<number> {
     const recurringMatch = matchRecurringItem(row.description, row.amount, recurring);
     const newRecurringItemId = recurringMatch?.id ?? null;
 
-    const patch: { categoryId?: number | null; recurringItemId?: number | null } = {};
+    const patch: { categoryId?: number | null; recurringItemId?: number | null; isReimbursement?: boolean } = {};
     if (newRecurringItemId !== row.recurringItemId) patch.recurringItemId = newRecurringItemId;
+
+    // Flagging the standing payback of a shared bill, so it stops counting as income.
+    // Only ever set — never unset: this runs over the whole table on every rule or
+    // recurring edit, and clearing it would wipe the manual "Mark as reimbursement"
+    // toggle off every Tikkie. Un-flagging stays a per-transaction action.
+    if (recurringMatch?.isReimbursement && row.direction === "income" && !row.isReimbursement) {
+      patch.isReimbursement = true;
+    }
 
     if (recurringMatch?.categoryId != null) {
       // A recurring item's category overrules everything — including a manually assigned

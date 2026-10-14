@@ -12,7 +12,7 @@ import { GaugeCard, formatGaugeMoney } from "@/components/gauge-card";
 import type { SavingsSummary } from "./goal-shared";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 import type { FinancialMonthConfig } from "@/lib/date-range";
-import type { BudgetRecurringMode } from "@/lib/app-settings";
+import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
 import { PageContainer } from "@/components/page-container";
 
 // The /goals page is savings-only — budget (expense) goals now live in the
@@ -25,6 +25,7 @@ export function GoalsMobile({
   settingsPanels,
   financialMonth,
   budgetRecurringMode,
+  sharedCostMode,
 }: {
   goals: Goal[];
   categories: Category[];
@@ -33,6 +34,7 @@ export function GoalsMobile({
   settingsPanels: SettingsPanelContent;
   financialMonth: FinancialMonthConfig;
   budgetRecurringMode?: BudgetRecurringMode;
+  sharedCostMode?: SharedCostMode;
 }) {
   const visible = goals.filter((g) => g.goalType === "savings");
   const t = useTranslations("goals");
@@ -45,7 +47,7 @@ export function GoalsMobile({
       <div className="min-h-screen pt-[var(--sat)] pb-[calc(7rem+var(--sab))]" style={{ background: "var(--savings-background)" }}>
        <PageContainer className="flex flex-col space-y-4">
         <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 mt-3">
-          <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} iconOnly />
+          <SettingsDialog user={user} panels={settingsPanels} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} sharedCostMode={sharedCostMode} iconOnly />
           <h1 className="text-xl text-white text-semibold text-center truncate">{t("savings")}</h1>
           <div className="shrink-0 min-w-11 min-h-11 justify-self-end" />
         </div>

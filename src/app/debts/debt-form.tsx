@@ -13,6 +13,8 @@ import {
   IconCoinEuro,
   IconReceipt2,
   IconReload,
+  IconPercentage,
+  IconHelpCircle,
 } from "@tabler/icons-react";
 import {
   IconBackspace,
@@ -39,10 +41,34 @@ import {
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/motion";
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
+import { useKeypadKeyboard } from "@/lib/use-keypad-keyboard";
 import { formatEur, currencySymbol } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { CONTENT_COLUMN } from "@/components/page-container";
+import { ContextualTip } from "@/components/contextual-tip";
+import { TipWalkthrough } from "@/components/tip-walkthrough";
+import { LinkedPaymentHint } from "./linked-payment-hint";
+import { InterestRateField, parseRatePercent } from "./interest-rate-field";
+import { amountToExpr, linkedBillsMonthlyTotal } from "./debt-shared";
 import type { Category, RecurringItem } from "@/db/schema";
+
+// The walkthrough's running order — roughly top-left to bottom-right, the order you'd
+// fill the form in. Each entry needs matching copy at tips.debtFormTour.steps.<anchor>.
+const DEBT_TOUR_STEPS = [
+  "debtDirection",
+  "debtIcon",
+  "debtBalanceDate",
+  "debtStartDate",
+  "debtMinPayment",
+  "debtOriginalAmount",
+  "debtInterest",
+  "debtAutoBill",
+  "debtNote",
+  "debtLinkedBills",
+  "debtMenu",
+  "debtSave",
+  "debtClose",
+] as const;
 
 function todayISO() {
   const now = new Date();
@@ -65,14 +91,28 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
   const [name, setName] = useState("");
   const [expr, setExpr] = useState("");
   const [startDate, setStartDate] = useState(todayISO());
+  // When the amount above was true. Defaults to today, so entering a debt that began
+  // years ago no longer makes the app assume years of repayments nobody recorded.
+  const [balanceDate, setBalanceDate] = useState(todayISO());
+  const [balanceDateOpen, setBalanceDateOpen] = useState(false);
   const [paymentExpr, setPaymentExpr] = useState("");
   const [paymentCalcEnabled, setPaymentCalcEnabled] = useState(false);
   const [minPaymentOpen, setMinPaymentOpen] = useState(false);
+  // Linking a recurring bill fills the minimum payment from that bill's monthly cost.
+  // Touching the payment keypad by hand switches this on and stops the link from
+  // overwriting the figure again — the "Use linked bill amount" button hands control back.
+  const [paymentOverridden, setPaymentOverridden] = useState(false);
   // Optional true original amount, when it's larger than the balance above because
   // tracking started after some of the debt was already paid off.
   const [originalExpr, setOriginalExpr] = useState("");
   const [originalCalcEnabled, setOriginalCalcEnabled] = useState(false);
   const [originalAmountOpen, setOriginalAmountOpen] = useState(false);
+  // Optional annual nominal interest. Blank = interest-free, which is the maths this
+  // app used for every debt before rates existed (see lib/debt-interest.ts).
+  const [interestRate, setInterestRate] = useState("");
+  const [interestOpen, setInterestOpen] = useState(false);
+  // Bumped by the "What do these buttons do?" menu item to replay the walkthrough.
+  const [tourToken, setTourToken] = useState(0);
   const [notes, setNotes] = useState("");
   const [noteOpen, setNoteOpen] = useState(false);
   const [icon, setIcon] = useState<string | null>(null);
@@ -104,12 +144,33 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
   const originalVal = evaluateExpression(originalExpr);
   const canSave = !loading && !!name.trim() && result !== null && result > 0;
   const selectedBills = recurringIds.map((id) => bills.find((b) => b.id === id)).filter((b): b is RecurringItem => !!b);
+  const linkedMonthly = linkedBillsMonthlyTotal(selectedBills);
+  const interestVal = parseRatePercent(interestRate);
+
+  // Applying a bill selection derives the minimum payment from it, unless the user has
+  // already typed their own figure.
+  function applyRecurringIds(ids: number[]) {
+    setRecurringIds(ids);
+    if (paymentOverridden) return;
+    const linked = ids.map((id) => bills.find((b) => b.id === id)).filter((b): b is RecurringItem => !!b);
+    setPaymentExpr(amountToExpr(linkedBillsMonthlyTotal(linked)));
+  }
+
+  function useLinkedPayment() {
+    setPaymentExpr(amountToExpr(linkedMonthly));
+    setPaymentOverridden(false);
+  }
 
   const hasOps = expr.split("").some(isOperator);
   const bigDisplay = hasOps ? (result === null ? "0" : formatAmount(result)) : expr || "0";
   const isZeroDisplay = bigDisplay === "0";
   const amountChars = bigDisplay.split("");
   const press = (key: string) => setExpr((prev) => pressKey(prev, key));
+
+  // Hardware keyboard / numpad entry for this page's own keypad, matching AmountKeypad.
+  // The hook's on-screen check keeps it silent while one of the dialogs above it (minimum
+  // payment, original amount) has the keypad the user is actually looking at.
+  const keypadRef = useKeypadKeyboard({ calcEnabled, onKey: press, onEnter: () => { if (canSave) save(); } });
 
   async function save() {
     if (!name.trim() || result === null || result <= 0) return;
@@ -123,8 +184,10 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         startingBalance: result,
         originalAmount: originalVal || null,
         minimumPayment: paymentVal || 0,
+        interestRate: interestVal,
         startDate,
         startMonth: startDate.slice(0, 7),
+        balanceDate,
         color: color || null,
         icon: icon || null,
         notes: notes.trim() || null,
@@ -151,6 +214,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         <button
           type="button"
           onClick={() => router.back()}
+          data-tip-anchor="debtClose"
           aria-label="Close"
           className="glass-icon-btn size-11"
         >
@@ -160,7 +224,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         {/* Direction — same segmented-pill style as the Weekly/Monthly toggle on the
             budget page: the active option expands to show its label, the inactive one
             collapses down to just its badge. */}
-        <div className="inline-flex items-center gap-1 rounded-full bg-foreground/8 p-1">
+        <div data-tip-anchor="debtDirection" className="inline-flex items-center gap-1 rounded-full bg-foreground/8 p-1">
           {(
             [
               { key: "owe", label: "I owe", Icon: IconTrendingDown },
@@ -195,6 +259,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
 
         <DropdownMenu>
           <DropdownMenuTrigger
+            data-tip-anchor="debtMenu"
             aria-label="More options"
             className="glass-icon-btn size-11"
           >
@@ -205,6 +270,12 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
               <IconCalculator className="size-4.5" />
               <span className="flex-1">Calculator</span>
               {calcEnabled && <IconCheck className="size-4 text-foreground/60" />}
+            </DropdownMenuItem>
+            {/* Always available, so the walkthrough stays reachable after it has run
+                once (or been skipped) — the tip system's own storage never replays. */}
+            <DropdownMenuItem onClick={() => setTourToken((n) => n + 1)} className="gap-2.5 py-2.5">
+              <IconHelpCircle className="size-4.5" />
+              <span className="flex-1">What do these buttons do?</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -233,6 +304,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             <button
               type="button"
               onClick={() => setIconColorOpen(true)}
+              data-tip-anchor="debtIcon"
               aria-label="Choose icon and color"
               className="size-14 rounded-full flex items-center justify-center active:scale-[0.96] transition-transform"
               style={{ backgroundColor: icon ? undefined : "color-mix(in srgb, var(--foreground) 8%, transparent)" }}
@@ -283,21 +355,39 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
               </m.div>
             </LazyMotion>
             {hasOps && <div className="mt-3 text-base text-foreground/40 tabular-nums">{expr}</div>}
+            {/* States plainly which date the amount above belongs to. The default (today)
+                is what stops the app back-calculating repayments it has no evidence of;
+                moving it back opts into that projection deliberately. */}
+            <button
+              type="button"
+              data-tip-anchor="debtBalanceDate"
+              onClick={() => setBalanceDateOpen(true)}
+              className="mt-3 text-sm text-foreground/45 underline underline-offset-4 decoration-foreground/20"
+            >
+              {balanceDate === todayISO()
+                ? "Balance as of today"
+                : `Balance as of ${formatDateLabel(balanceDate)}`}
+            </button>
           </div>
 
           {/* Controls row: start month + minimum payment (icon-only) on the left, note on the right */}
           <div className="flex items-center justify-between gap-2 pb-3 shrink-0">
             <div className="flex items-center gap-2 min-w-0">
-              <DatePicker
-                value={startDate}
-                onChange={setStartDate}
-                granularity="day"
-                label={formatDateLabel(startDate)}
-                triggerClassName="mt-0 mb-0 h-11 w-auto rounded-full bg-foreground/8 px-4 gap-2"
-              />
+              {/* Wrapped rather than tagged directly: DatePicker owns its own trigger
+                  markup and doesn't forward arbitrary attributes down to it. */}
+              <span data-tip-anchor="debtStartDate" className="inline-flex rounded-full">
+                <DatePicker
+                  value={startDate}
+                  onChange={setStartDate}
+                  granularity="day"
+                  label={formatDateLabel(startDate)}
+                  triggerClassName="mt-0 mb-0 h-11 w-auto rounded-full bg-foreground/8 px-4 gap-2"
+                />
+              </span>
               <button
                 type="button"
                 onClick={() => setMinPaymentOpen(true)}
+                data-tip-anchor="debtMinPayment"
                 aria-label={paymentVal ? `Minimum payment ${formatEur(paymentVal)}` : "Set minimum monthly payment"}
                 title="Minimum monthly payment"
                 className={cn(
@@ -309,6 +399,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
               </button>
               <button
                 type="button"
+                data-tip-anchor="debtOriginalAmount"
                 onClick={() => setOriginalAmountOpen(true)}
                 aria-label={originalVal ? `Original amount ${formatEur(originalVal)}` : "Set original debt amount"}
                 title="Original debt amount"
@@ -318,6 +409,19 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                 )}
               >
                 <IconReceipt2 className="size-5" />
+              </button>
+              <button
+                type="button"
+                data-tip-anchor="debtInterest"
+                onClick={() => setInterestOpen(true)}
+                aria-label={interestVal ? `Interest ${interestVal}%` : "Set an interest rate"}
+                title="Annual interest rate"
+                className={cn(
+                  "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
+                  interestVal ? "bg-foreground text-background" : "glass-icon-btn text-foreground",
+                )}
+              >
+                <IconPercentage className="size-5" />
               </button>
             </div>
 
@@ -334,6 +438,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                     setRecurringCatOpen(true);
                   }
                 }}
+                data-tip-anchor="debtAutoBill"
                 aria-label={autoCreateBill ? "Recurring bill will be created" : "Also create a recurring bill"}
                 title="Also create a recurring bill from this debt"
                 className={cn(
@@ -346,6 +451,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
               <button
                 type="button"
                 onClick={() => setNoteOpen(true)}
+                data-tip-anchor="debtNote"
                 aria-label="Add note"
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
@@ -365,7 +471,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           )}
 
           {/* Keypad — 3-column digits, plus a 4th operator column when the calculator is on */}
-          <div className="flex gap-2 shrink-0">
+          <div ref={keypadRef} className="flex gap-2 shrink-0">
             <div className="grid grid-cols-3 gap-2 flex-1">
               {["7", "8", "9", "4", "5", "6", "1", "2", "3"].map((d) => (
                 <button key={d} type="button" onClick={() => press(d)} className={digitKey}>
@@ -407,6 +513,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           <button
             type="button"
             onClick={() => setRecurringOpen(true)}
+            data-tip-anchor="debtLinkedBills"
             disabled={autoCreateBill}
             title={autoCreateBill ? "Turn off \"Also create a recurring bill\" to link an existing one instead" : undefined}
             className="min-w-0 max-w-[60%] h-11 rounded-full bg-foreground/5 pl-3.5 pr-3 gap-2 text-sm font-medium flex items-center disabled:opacity-40 disabled:pointer-events-none"
@@ -422,6 +529,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           <button
             type="button"
             onClick={save}
+            data-tip-anchor="debtSave"
             disabled={!canSave}
             className="h-11 px-7 rounded-full bg-foreground text-background text-sm font-semibold shadow-floating active:scale-[0.98] transition-transform disabled:opacity-40 disabled:pointer-events-none shrink-0"
           >
@@ -458,7 +566,19 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           <DialogHeader>
             <DialogTitle>Minimum monthly payment</DialogTitle>
           </DialogHeader>
-          <AmountKeypad expr={paymentExpr} onChange={setPaymentExpr} onEnter={() => setMinPaymentOpen(false)} calcEnabled={paymentCalcEnabled} onToggleCalc={() => setPaymentCalcEnabled((c) => !c)} />
+          <LinkedPaymentHint
+            linkedMonthly={linkedMonthly}
+            billCount={selectedBills.length}
+            overridden={paymentOverridden}
+            onUse={useLinkedPayment}
+          />
+          <AmountKeypad
+            expr={paymentExpr}
+            onChange={(next) => { setPaymentExpr(next); setPaymentOverridden(true); }}
+            onEnter={() => setMinPaymentOpen(false)}
+            calcEnabled={paymentCalcEnabled}
+            onToggleCalc={() => setPaymentCalcEnabled((c) => !c)}
+          />
           <button
             type="button"
             onClick={() => setMinPaymentOpen(false)}
@@ -481,6 +601,53 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           <button
             type="button"
             onClick={() => setOriginalAmountOpen(false)}
+            className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
+          >
+            Done
+          </button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={balanceDateOpen} onOpenChange={setBalanceDateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Balance as of</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-foreground/50 -mt-2">
+            The date the amount above was true. Leave it on today to enter what you owe right now.
+            Set it back and the app will assume the monthly payment was made every month since,
+            unless a linked recurring bill says otherwise.
+          </p>
+          <DatePicker
+            granularity="day"
+            value={balanceDate}
+            onChange={(v) => { setBalanceDate(v); setBalanceDateOpen(false); }}
+            triggerClassName="w-full justify-between rounded-xl px-4 h-12 bg-[var(--dialog-content-background)] mt-0 mb-0"
+          />
+          <button
+            type="button"
+            onClick={() => setBalanceDateOpen(false)}
+            className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
+          >
+            Done
+          </button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={interestOpen} onOpenChange={setInterestOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Annual interest rate</DialogTitle>
+          </DialogHeader>
+          <InterestRateField
+            value={interestRate}
+            onChange={setInterestRate}
+            balance={result}
+            payment={paymentVal}
+          />
+          <button
+            type="button"
+            onClick={() => setInterestOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
             Done
@@ -513,7 +680,21 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         selected={recurringIds}
         open={recurringOpen}
         onOpenChange={setRecurringOpen}
-        onApply={setRecurringIds}
+        onApply={applyRecurringIds}
+      />
+
+      {/* Explains that linking a bill also sets the minimum payment — shown the first
+          time the picker is opened, and exempt from "Don't show again" (see tips.ts). */}
+      <ContextualTip id="debtLinkedPayment" active={recurringOpen} />
+
+      {/* Every control on this page, once, in the order you meet them — and replayable
+          from the overflow menu. Suppressed while any sub-dialog is open so a card
+          never points at a button hidden behind a sheet. */}
+      <TipWalkthrough
+        id="debtFormTour"
+        steps={DEBT_TOUR_STEPS}
+        active={!minPaymentOpen && !originalAmountOpen && !interestOpen && !noteOpen && !iconColorOpen && !recurringOpen && !recurringCatOpen && !balanceDateOpen}
+        replayToken={tourToken}
       />
 
       {/* Mandatory category for the auto-created recurring bill. Choosing one enables

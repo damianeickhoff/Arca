@@ -3,6 +3,8 @@ import { transactions, categories, banks, savingsGoals, vermogenAccounts, recurr
 import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
 import { formatEur, BUDGET_TYPE_LABELS, normalizeBudgetType, pctChangeLabel } from "@/lib/format";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
+import { getSharedCostMode } from "@/lib/app-settings";
 import { ExpenseTrendCard } from "./expense-trend-card";
 import { TopExpenseCategoriesCard } from "./top-expense-categories-card";
 import { SplitEur } from "@/components/split-eur";
@@ -105,13 +107,14 @@ function buildTrendData(
 }
 
 async function getReportsData(from: string, to: string, financialMonth: { defaultStartDay: number }) {
-  const [periodRows, netWorthData] = await Promise.all([
+  const [periodRows, netWorthData, sharedCostMode] = await Promise.all([
     db.select({
       id: transactions.id,
       date: transactions.date,
       direction: transactions.direction,
       amount: transactions.amount,
       correctedAmount: transactions.correctedAmount,
+      reimbursedAmount: reimbursedAmountExpr,
       categoryId: transactions.categoryId,
       categoryName: categories.name,
       categoryColor: categories.color,
@@ -125,13 +128,15 @@ async function getReportsData(from: string, to: string, financialMonth: { defaul
       .where(and(gte(transactions.date, from), lte(transactions.date, to)))
       .orderBy(desc(transactions.date)),
     computeNetWorth(),
+    getSharedCostMode(),
   ]);
+  const netReimbursements = sharedCostMode === "net";
   // Spend is broken down by the actual (sub-)category, not rolled up to the parent.
   const allCats = await db.select().from(categories);
   const catById = new Map(allCats.map((c) => [c.id, c]));
   const splitRows = await getTransactionSplitRows(periodRows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const periodAllocations = buildSplitAllocations(periodRows, splitMap);
+  const periodAllocations = buildSplitAllocations(periodRows, splitMap, { netReimbursements });
   const totals = periodAllocations
     .filter((row) => !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings")
     .reduce((acc, row) => { acc[row.direction] = (acc[row.direction] ?? 0) + row.amount; return acc; }, {} as Record<string, number>);
@@ -171,6 +176,7 @@ async function getMonthlySeries(financialMonth: { defaultStartDay: number }) {
     direction: transactions.direction,
     amount: transactions.amount,
     correctedAmount: transactions.correctedAmount,
+    reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     categoryGroup: categories.group,
     // "Fixed costs" is driven off the recurring item a transaction is matched to
@@ -186,7 +192,8 @@ async function getMonthlySeries(financialMonth: { defaultStartDay: number }) {
   const recurringTypeByTxn = new Map(rows.map((row) => [row.id, row.recurringType]));
   const splitRows = await getTransactionSplitRows(rows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(rows, splitMap);
+  const netReimbursements = (await getSharedCostMode()) === "net";
+  const allocations = buildSplitAllocations(rows, splitMap, { netReimbursements });
   const months: string[] = [];
   for (let m = startMonth; months.length < TREND_MONTHS; m = offsetFinancialMonth(m, 1)) months.push(m);
   const buckets = new Map(months.map((m) => [m, { income: 0, expense: 0, bill: 0, subscription: 0, debt: 0 }]));
@@ -246,7 +253,7 @@ async function getTrendsData(
     direction: transactions.direction,
     amount: transactions.amount,
     correctedAmount: transactions.correctedAmount,
-    reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+    reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     categoryName: categories.name,
     categoryColor: categories.color,
@@ -267,7 +274,8 @@ async function getTrendsData(
 
   const splitRows = await getTransactionSplitRows(monthlyRows.map((row) => row.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(monthlyRows, splitMap);
+  const netReimbursements = (await getSharedCostMode()) === "net";
+  const allocations = buildSplitAllocations(monthlyRows, splitMap, { netReimbursements });
 
   const monthlyMap: Record<string, { income: number; expense: number }> = {};
   for (const m of months24) monthlyMap[m] = { income: 0, expense: 0 };

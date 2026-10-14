@@ -317,6 +317,17 @@ addColumnIfMissing("debts", "direction", "TEXT NOT NULL DEFAULT 'owe'");
 addColumnIfMissing("debts", "end_month", "TEXT");
 addColumnIfMissing("debts", "original_amount", "REAL");
 
+// Auto-migrate: optional annual nominal interest rate. Null on every existing row, which
+// is exactly the old interest-free behaviour (see lib/debt-interest.ts).
+addColumnIfMissing("debts", "interest_rate", "REAL");
+
+// Auto-migrate: the date starting_balance was measured on. Backfilled to start_date so
+// every existing debt keeps the exact figures it had — the old behaviour was to measure
+// from the start date. New debts default to today instead (see app/debts/debt-form.tsx),
+// which is what stops the app assuming repayments nobody recorded.
+addColumnIfMissing("debts", "balance_date", "TEXT");
+sqlite.exec(`UPDATE debts SET balance_date = start_date WHERE balance_date IS NULL AND start_date IS NOT NULL`);
+
 // Auto-migrate: day-precise debt start date (mirrored to/from linked recurring bills).
 // Backfill from the existing month-only start_month (first of that month).
 addColumnIfMissing("debts", "start_date", "TEXT");
@@ -364,6 +375,11 @@ addColumnIfMissing("recurring_items", "end_date", "TEXT");
 
 // Auto-migrate: whole-word auto-match (same option the category rules already have)
 addColumnIfMissing("recurring_items", "match_whole_word", "INTEGER NOT NULL DEFAULT 0");
+
+// Auto-migrate: shared costs (a bill others pay you back for)
+addColumnIfMissing("recurring_items", "shared_reimbursed_amount", "REAL");
+addColumnIfMissing("recurring_items", "shared_with_count", "INTEGER");
+addColumnIfMissing("recurring_items", "is_reimbursement", "INTEGER NOT NULL DEFAULT 0");
 
   // Auto-migrate: per-account "count towards net worth" toggle
   addColumnIfMissing("banks", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 0");

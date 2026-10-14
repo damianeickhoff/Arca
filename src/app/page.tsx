@@ -4,12 +4,13 @@ import { eq, and, gte, lte, sql, desc, asc } from "drizzle-orm";
 import { formatEur } from "@/lib/format";
 import { SplitEur } from "@/components/split-eur";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { WalletHero } from "@/components/wallet-hero";
 import Link from "next/link";
 import { ComparisonCard } from "@/components/comparison-card";
 import { getMonthComparison, pctChange } from "@/lib/month-comparison";
 import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, shiftDate, periodElapsedPct } from "@/lib/date-range";
-import { getFinancialMonthConfig, getBudgetRecurringMode } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
 import { authBackgroundStyle, getAuthBackgroundPreset, AUTH_BG_CLASS } from "@/lib/auth-background";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { getBudgetOverview } from "@/lib/budget-overview";
@@ -41,7 +42,7 @@ import { UpcomingBillsTile, NeedsReviewTile } from "@/components/dashboard-trans
 import { UpcomingPortal } from "@/components/upcoming-portal";
 import { NeedsReviewPortal } from "@/components/needs-review-portal";
 import type { CalendarBill } from "@/app/budget/bills-calendar";
-import { signedBillAmount } from "@/lib/bill-amounts";
+import { billsDueTotal } from "@/lib/bill-amounts";
 import { cookies } from "next/headers";
 import { AccountsButton } from "@/app/accounts-button";
 import { selectBankAction } from "@/app/actions/select-bank";
@@ -83,7 +84,7 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
   const chartToStr = chartNow.toISOString().slice(0, 10);
   const chartFromStr = new Date(chartNow.getTime() - 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [periodRows, monthlyRows, goalsRaw, recurringRaw, recurringItemsRaw, last7DaysRaw, recentRows, allCategories, budgetTargetRows, recurringMode] =
+  const [periodRows, monthlyRows, goalsRaw, recurringRaw, recurringItemsRaw, last7DaysRaw, recentRows, allCategories, budgetTargetRows, recurringMode, sharedCostMode] =
     await Promise.all([
       db.select({
         id: transactions.id,
@@ -91,7 +92,7 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
         direction: transactions.direction,
         amount: transactions.amount,
         correctedAmount: transactions.correctedAmount,
-        reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+        reimbursedAmount: reimbursedAmountExpr,
         description: transactions.description,
         categoryId: transactions.categoryId,
         categoryName: categories.name,
@@ -116,7 +117,7 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
         amount: transactions.amount,
         description: transactions.description,
         correctedAmount: transactions.correctedAmount,
-        reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+        reimbursedAmount: reimbursedAmountExpr,
         categoryId: transactions.categoryId,
         categoryName: categories.name,
         categoryColor: categories.color,
@@ -214,14 +215,19 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
         .where(and(eq(budgetTargets.year, 0), eq(budgetTargets.month, 0))),
 
       getBudgetRecurringMode(),
+
+      getSharedCostMode(),
     ]);
+
+  // Only expense allocations are netted, so the income half of `totals` stays gross.
+  const netReimbursements = sharedCostMode === "net";
 
   const splitRows = await getTransactionSplitRows(
     Array.from(new Set([...periodRows.map((row) => row.id), ...monthlyRows.map((row) => row.id), ...recentRows.map((row) => row.id)])),
   );
   const splitMap = groupTransactionSplits(splitRows);
-  const periodAllocations = buildSplitAllocations(periodRows, splitMap);
-  const monthlyAllocations = buildSplitAllocations(monthlyRows, splitMap);
+  const periodAllocations = buildSplitAllocations(periodRows, splitMap, { netReimbursements });
+  const monthlyAllocations = buildSplitAllocations(monthlyRows, splitMap, { netReimbursements });
 
   const totals = periodAllocations
     .filter((row) => !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings")
@@ -436,7 +442,7 @@ export default async function DashboardPage({
   const currentMonthRange = financialMonthRange(financialMonth, 0);
   const isViewingCurrentMonth = from === currentMonthRange.from && to === currentMonthRange.to;
 
-  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast, health] = await Promise.all([
+  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast, health, settingsSharedCostMode] = await Promise.all([
     getDashboardData(from, to, selectedBank, financialMonth),
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
     getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct }),
@@ -455,6 +461,8 @@ export default async function DashboardPage({
     // Score only — the full breakdown is computed again by the Health tab itself,
     // which is only rendered once the Insights portal is opened.
     getFinancialHealthScore(financialMonth),
+
+    getSharedCostMode(),
   ]);
 
   // Per-user, not app-wide — each family member picks their own dashboard color fade
@@ -469,11 +477,10 @@ export default async function DashboardPage({
     .filter((s) => s.dueDate != null && s.paid !== true)
     .sort((a, z) => (a.dueDate! < z.dueDate! ? -1 : 1));
   const upcomingIcons = upcomingBills.slice(0, 3).map((s) => ({ icon: s.icon, iconColor: s.iconColor, iconBackground: s.iconBackground }));
-  // Net: an upcoming salary offsets the bills rather than adding to them (see
-  // signedBillAmount). Income joined this list when it stopped being bills-only.
-  const upcomingTotal = upcomingBills.reduce(
-    (sum, s) => sum + signedBillAmount({ amount: s.item.amount, isIncome: s.item.type === "income" }),
-    0,
+  // Expenses only — an upcoming salary shows on the calendar but is not money you owe,
+  // so it must not offset the bills here (see billsDueTotal).
+  const upcomingTotal = billsDueTotal(
+    upcomingBills.map((s) => ({ amount: s.item.amount, isIncome: s.item.type === "income" })),
   );
 
   // Same shape the standalone /transactions/upcoming route builds, for the dashboard's
@@ -627,6 +634,7 @@ export default async function DashboardPage({
             settingsPanels={settingsPanels}
             financialMonth={financialMonth}
             budgetRecurringMode={budgetRecurringMode}
+            sharedCostMode={settingsSharedCostMode}
           />
         </div>
 

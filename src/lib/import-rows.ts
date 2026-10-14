@@ -94,9 +94,17 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
       continue;
     }
 
-    // Detect incoming Tikkies (reimbursements) — "Tikkie" in name or description + income direction
+    // A matching recurring item (specific pattern + optional amount) sets both the
+    // category and the recurringItemId link, taking priority over generic guessing.
+    const recurringMatch = matchRecurringItem(row.name, row.amount, recurringMatchers);
+
+    // Detect incoming Tikkies (reimbursements) — "Tikkie" in name or description + income
+    // direction — plus the standing paybacks of a shared bill, flagged on their recurring
+    // item. Both are money coming back to you, not income. The direction guard matters:
+    // the shared bill's own outgoing charge must never be flagged.
     const isTikkie = (row.name + " " + row.description).toLowerCase().includes("tikkie");
-    const isReimbursement = row.direction === "income" && isTikkie;
+    const isReimbursement =
+      row.direction === "income" && (isTikkie || recurringMatch?.isReimbursement === true);
     const isInternalTransfer = isOwnAccountTransfer(
       {
         account: row.account,
@@ -107,14 +115,12 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
       ownBanks,
     );
 
-    // A matching recurring item (specific pattern + optional amount) sets both the
-    // category and the recurringItemId link, taking priority over generic guessing.
-    const recurringMatch = matchRecurringItem(row.name, row.amount, recurringMatchers);
     let categoryId = recurringMatch?.categoryId
       ?? guessCategory(row.name, row.description, row.amount, row.direction, normalizeAccountNumber(row.account));
     if (isInternalTransfer) categoryId = null;
-    // Force "Tikkies Inkomst" for auto-detected reimbursements if available
-    if (isReimbursement && tikkiesInkomstId) categoryId = tikkiesInkomstId;
+    // Force "Tikkies Inkomst" for auto-detected reimbursements if available — but not when
+    // a recurring item matched, since its own category is the more deliberate choice.
+    if (isReimbursement && tikkiesInkomstId && recurringMatch?.categoryId == null) categoryId = tikkiesInkomstId;
 
     // Merchant profile for this row. Internal transfers are between your own accounts,
     // so they never get one — the counterparty there is you, not a shop.

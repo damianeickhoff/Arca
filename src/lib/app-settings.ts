@@ -79,6 +79,19 @@ export async function getBudgetRecurringMode(): Promise<BudgetRecurringMode> {
   return value === "always" || value === "exclude" ? value : "budgeted";
 }
 
+// Whether reports show the full amount of a shared bill or only the part you really pay:
+//   "gross" — the amount that left your account, exactly as your bank shows it (default)
+//   "net"   — minus what others pay back (recurringItems.sharedReimbursedAmount, or an
+//             actual linked reimbursement when there is one — see reimbursedAmountSql)
+// Only spend reporting reacts to this. Cash flow, the forecast, the bill tracker and the
+// transaction list stay gross: that money genuinely moves and must tie to the statement.
+export type SharedCostMode = "gross" | "net";
+
+export async function getSharedCostMode(): Promise<SharedCostMode> {
+  const row = await db.select().from(appSettings).where(eq(appSettings.key, "shared_cost_mode")).limit(1);
+  return row[0]?.value === "net" ? "net" : "gross";
+}
+
 // Cash-flow forecast "getting low" line. The forecast is Warning once the projected
 // low point dips under this (and Critical once it goes negative) — see
 // src/lib/cash-flow-forecast.ts.

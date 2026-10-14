@@ -38,7 +38,8 @@ import { Button } from "@/components/ui/button";
 import { logoutAction, updateOwnProfileAction, updateOwnEmailAction, updateOwnPasswordAction } from "@/app/actions/auth";
 import { FinancieleMaandForm, MaandUitzonderingenSubPage } from "@/app/settings/general-client";
 import { BudgetRecurringCard } from "@/components/settings/budget-recurring-card";
-import type { BudgetRecurringMode } from "@/lib/app-settings";
+import { SharedCostCard } from "@/components/settings/shared-cost-card";
+import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
 import { ImportCsvCard } from "@/components/import-csv-card";
 import { ThemeList } from "@/components/theme-toggle";
 import { LanguageList } from "@/components/language-switcher";
@@ -156,6 +157,7 @@ export function SettingsDialog({
   panels,
   financialMonth,
   budgetRecurringMode = "budgeted",
+  sharedCostMode = "gross",
   triggerClassName,
   iconOnly,
 }: {
@@ -163,6 +165,7 @@ export function SettingsDialog({
   panels: SettingsPanelContent;
   financialMonth: FinancialMonthConfig;
   budgetRecurringMode?: BudgetRecurringMode;
+  sharedCostMode?: SharedCostMode;
   triggerClassName?: string;
   iconOnly?: boolean;
 }) {
@@ -394,7 +397,7 @@ export function SettingsDialog({
                 {HEAVY_KEYS.includes(active) ? (
                   panels[active as keyof SettingsPanelContent]
                 ) : (
-                  <InlinePanel panelKey={active} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} />
+                  <InlinePanel panelKey={active} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} sharedCostMode={sharedCostMode} />
                 )}
               </div>
               </PanelChromeContext.Provider>
@@ -425,10 +428,12 @@ function InlinePanel({
   panelKey,
   financialMonth,
   budgetRecurringMode,
+  sharedCostMode,
 }: {
   panelKey: PanelKey;
   financialMonth: FinancialMonthConfig;
   budgetRecurringMode: BudgetRecurringMode;
+  sharedCostMode: SharedCostMode;
 }) {
   const [addOverrideOpen, setAddOverrideOpen] = useState(false);
 
@@ -491,7 +496,14 @@ function InlinePanel({
       );
 
     case "budgetRecurring":
-      return <BudgetRecurringCard initialMode={budgetRecurringMode} />;
+      // Two related "what counts as spending" switches, so they share one panel
+      // rather than adding a key the settings menu would have to grow an entry for.
+      return (
+        <div className="space-y-6 pb-2">
+          <BudgetRecurringCard initialMode={budgetRecurringMode} />
+          <SharedCostCard initialMode={sharedCostMode} />
+        </div>
+      );
 
     case "monthOverrides": {
       const initialOverrides = Object.entries(financialMonth.overrides ?? {}).map(

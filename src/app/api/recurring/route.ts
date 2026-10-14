@@ -57,6 +57,9 @@ export async function GET() {
       dismissed: recurringItems.dismissed,
       startDate: recurringItems.startDate,
       endDate: recurringItems.endDate,
+      sharedReimbursedAmount: recurringItems.sharedReimbursedAmount,
+      sharedWithCount: recurringItems.sharedWithCount,
+      isReimbursement: recurringItems.isReimbursement,
     })
     .from(recurringItems)
     .orderBy(asc(recurringItems.type), asc(recurringItems.name));

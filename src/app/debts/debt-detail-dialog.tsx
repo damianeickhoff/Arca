@@ -12,7 +12,7 @@ import {
   IconChevronDown as ChevronDown,
 } from "@tabler/icons-react";
 import type { RecurringItem } from "@/db/schema";
-import { fmtLongDate, fmtShortMonth, debtPaidPct, computeDebtPayoffSchedule } from "./debt-shared";
+import { fmtLongDate, fmtShortMonth, debtPaidPct, computeDebtPayoffSchedule, debtBalanceDate } from "./debt-shared";
 import type { ComputedDebt } from "./debt-shared";
 import { DebtEditDialog } from "./debt-edit-dialog";
 import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
@@ -118,11 +118,11 @@ export function DebtDetailDialog({
 }
 
 function DetailBody({ computed }: { computed: ComputedDebt }) {
-  const { debt, linkedBills, amountPaid, currentBalance, lastPaymentDate } = computed;
+  const { debt, linkedBills, amountPaid, currentBalance, lastPaymentDate, neverPaysOff, remainingInterest, lastRecordedMonth } = computed;
   const isOwed = debt.direction === "owed";
   const paidPct = Math.round(debtPaidPct(debt, amountPaid, currentBalance));
   const isDone = currentBalance === 0;
-  const schedule = computeDebtPayoffSchedule(debt, currentBalance);
+  const schedule = computeDebtPayoffSchedule(debt, currentBalance, lastRecordedMonth);
   const [scheduleOpen, setScheduleOpen] = useState(false);
 
   // Categories power the recurring-bill detail dialog opened when a linked bill is tapped.
@@ -163,9 +163,36 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
           <DetailRow label="Starting balance" value={formatEur(debt.startingBalance)} />
         )}
         <DetailRow label="Minimum monthly payment" value={formatEur(debt.minimumPayment)} />
+        {debt.interestRate != null && debt.interestRate > 0 && (
+          <>
+            <DetailRow label="Interest rate" value={`${debt.interestRate}% per year`} />
+            {remainingInterest > 0 && (
+              <DetailRow
+                label={isOwed ? "Interest still to receive" : "Interest still to pay"}
+                value={formatEur(remainingInterest)}
+              />
+            )}
+          </>
+        )}
         <DetailRow label="Start date" value={fmtLongDate(new Date(`${debt.startDate ?? `${debt.startMonth}-01`}T00:00:00`))} />
+        {/* Only worth a row when it differs from the start date — otherwise it just
+            repeats the line above. When it does differ it's the date the figures key off. */}
+        {debtBalanceDate(debt) !== (debt.startDate ?? `${debt.startMonth}-01`) && (
+          <DetailRow label="Balance as of" value={fmtLongDate(new Date(`${debtBalanceDate(debt)}T00:00:00`))} />
+        )}
         {lastPaymentDate && !isDone && <DetailRow label="Last payment on" value={fmtLongDate(lastPaymentDate)} />}
       </div>
+
+      {/* A payment at or below the monthly interest never clears the debt, so there is
+          no payoff date to show — say why rather than silently omitting the row. */}
+      {neverPaysOff && (
+        <div className="rounded-2xl bg-destructive/10 px-4 py-3">
+          <p className="text-sm text-destructive leading-snug">
+            The monthly payment of {formatEur(debt.minimumPayment)} does not cover the interest on{" "}
+            {formatEur(currentBalance)} at {debt.interestRate}% per year, so this balance never goes down.
+          </p>
+        </div>
+      )}
 
       {debt.notes && (
         <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
@@ -228,7 +255,14 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
             // is hundreds of rows — enough to swamp the sheet's own scrolling.
             <div className="max-h-[45vh] overflow-y-auto overscroll-contain rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs divide-y divide-border/50">
               {schedule.map((entry, i) => (
-                <DetailRow key={i} label={fmtShortMonth(entry.date)} value={formatEur(entry.amount)} />
+                <DetailRow
+                  key={i}
+                  label={fmtShortMonth(entry.date)}
+                  value={formatEur(entry.amount)}
+                  // With interest, the payment splits — showing only the total hides that
+                  // most of an early payment can be interest rather than progress.
+                  sub={entry.interest > 0 ? `${formatEur(entry.principal)} off · ${formatEur(entry.interest)} interest` : undefined}
+                />
               ))}
             </div>
           )}
@@ -238,12 +272,13 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
       <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
-      <span className="flex items-center gap-1.5 font-light text-right min-w-0">
+      <span className="flex flex-col items-end gap-0.5 font-light text-right min-w-0">
         <span className="truncate text-sm">{value}</span>
+        {sub && <span className="truncate text-xs text-muted-foreground/70">{sub}</span>}
       </span>
     </div>
   );

@@ -2,7 +2,9 @@ import { db } from "@/db";
 import { recurringItems, savingsGoals, goals, debts } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { toMonthly } from "@/lib/format";
-import { debtMonthsElapsed } from "@/lib/debt-calculations";
+import { debtBalance } from "@/app/debts/debt-shared";
+import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
+import { getFinancialMonthConfig } from "@/lib/app-settings";
 
 export type ForecastPoint = { date: string; netWorth: number };
 
@@ -36,9 +38,12 @@ export async function getNetWorthForecast(
 
   // Remaining balance still owed to the user on each "owed" debt, so repayment
   // credit stops once a debt is fully collected instead of forecasting past it.
+  // Uses the debts page's own debtBalance (balance date, interest and all) rather than a
+  // private copy of the maths — the two used to be able to disagree about a debt's worth.
+  const { paidFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
   const owedRemaining = owedDebts.map((d) => ({
     monthlyPayment: d.minimumPayment,
-    remaining: Math.max(0, d.startingBalance - Math.min(debtMonthsElapsed(d.startMonth) * d.minimumPayment, d.startingBalance)),
+    remaining: Math.max(0, debtBalance(d, paidFor(d)).currentBalance),
   }));
 
   if (monthlyIncome <= 0 && monthlySavings <= 0 && owedRemaining.every((d) => d.remaining <= 0)) return [];

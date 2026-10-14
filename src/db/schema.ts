@@ -188,6 +188,20 @@ export const recurringItems = sqliteTable("recurring_items", {
   // Soft-delete for auto items: a dismissed false positive stays as a row (so detection's
   // suppression guard never recreates it) but is inactive and hidden from the active list.
   dismissed: integer("dismissed", { mode: "boolean" }).notNull().default(false),
+  // ── Shared costs ──────────────────────────────────────────────────────────
+  // A bill you pay in full but share with others (housemates, family): `amount` stays the
+  // gross charge that actually leaves the account — cash flow, the forecast and the bill
+  // tracker always use that — while `sharedReimbursedAmount` is the part that comes back
+  // to you. Reports subtract it so a category shows your real share, but only when the
+  // shared_cost_mode setting is "net" (see getSharedCostMode). NULL = not a shared cost.
+  sharedReimbursedAmount: real("shared_reimbursed_amount"),
+  // People sharing the cost, including you. Display + the "Split evenly" helper only;
+  // no calculation depends on it, so an even split that isn't exactly even still works.
+  sharedWithCount: integer("shared_with_count"),
+  // Set on the *incoming* recurrence (the housemates' monthly payback): transactions it
+  // matches are stamped transactions.isReimbursement, which every income total excludes.
+  // The item stays type "income" so the forecast still projects the money arriving.
+  isReimbursement: integer("is_reimbursement", { mode: "boolean" }).notNull().default(false),
 });
 
 // ─── Savings goals ─────────────────────────────────────────────────────────
@@ -278,10 +292,19 @@ export const debts = sqliteTable("debts", {
   // off. Null = keep the old behavior (startingBalance is treated as the total).
   originalAmount: real("original_amount"),
   minimumPayment: real("minimum_payment").notNull().default(0),
+  // Optional annual nominal interest percentage (e.g. 4.5 for 4.5%). Null = no interest,
+  // which keeps the original flat balance ÷ payment payoff maths — see lib/debt-interest.ts.
+  interestRate: real("interest_rate"),
   startMonth: text("start_month").notNull(), // YYYY-MM (kept in sync with startDate's month for month-based payoff maths)
   // Full start date (YYYY-MM-DD) — the editable, day-precise start, mirrored to/from any
   // linked recurring bill's startDate. startMonth is always this value's leading YYYY-MM.
   startDate: text("start_date"),
+  // The date `startingBalance` was actually true (YYYY-MM-DD). Distinct from startDate,
+  // which is when the debt *began*: entering a real origin date used to make the app
+  // back-calculate payments nobody had recorded and silently shrink the balance. New
+  // debts default this to today, so what you type is what you owe. Null reads as
+  // startDate — see debtBalanceDate in app/debts/debt-shared.ts.
+  balanceDate: text("balance_date"),
   endMonth: text("end_month"), // YYYY-MM — optional payoff/payout target, drives the auto-computed monthly amount
   color: text("color"),
   icon: text("icon"),

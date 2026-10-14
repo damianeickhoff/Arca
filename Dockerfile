@@ -31,7 +31,7 @@ COPY --from=builder /app/public ./public
 # Needed at runtime by db:init (src/db/migrate.ts + the src/config it imports).
 COPY --from=builder /app/src ./src
 
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && du -sh node_modules
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh

@@ -1,10 +1,11 @@
 import { db } from "@/db";
 import { transactions, categories, budgetTargets, budgets } from "@/db/schema";
-import { eq, and, gte, lte, sql, asc, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, asc, inArray } from "drizzle-orm";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
-import { getBudgetStrategy, getBudgetRecurringMode } from "@/lib/app-settings";
+import { getBudgetStrategy, getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
 
 const DEFAULT_BUDGET_MONTH = "0000-00";
@@ -37,8 +38,8 @@ function weeklyPeriodRange(now = new Date()): { from: string; to: string } {
 }
 
 /** Per-category variable expense spend over [from,to], honoring splits and
- * internal-transfer exclusion. Spend is gross — reimbursements are never netted out
- * (a reimbursement receipt shows only in the account balance). Each category's spend is
+ * internal-transfer exclusion. Spend is gross unless `netReimbursements` is set, in which
+ * case the part others pay back is subtracted — see getSharedCostMode. Each category's spend is
  * split into `nonRecurring` and `recurring` (transactions matched to a recurring
  * bill/subscription) so the caller can decide whether recurring bills count toward the
  * budget — see getBudgetRecurringMode / resolveSpend in getBudgetOverview. Spend is keyed
@@ -48,14 +49,14 @@ function weeklyPeriodRange(now = new Date()): { from: string; to: string } {
  * have their own budget and should therefore be excluded from the rollup. */
 type CategorySpend = { nonRecurring: number; recurring: number };
 
-async function variableSpend(from: string, to: string, variableIds: Set<number>) {
+async function variableSpend(from: string, to: string, variableIds: Set<number>, netReimbursements = false) {
   const periodRows = await db.select({
     id: transactions.id,
     date: transactions.date,
     direction: transactions.direction,
     amount: transactions.amount,
     correctedAmount: transactions.correctedAmount,
-    reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+    reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     isReimbursement: transactions.isReimbursement,
     isInternalTransfer: isInternalTransferExpr,
@@ -67,7 +68,7 @@ async function variableSpend(from: string, to: string, variableIds: Set<number>)
 
   const splitRows = await getTransactionSplitRows(periodRows.map((r) => r.id));
   const splitMap = groupTransactionSplits(splitRows);
-  const allocations = buildSplitAllocations(periodRows, splitMap);
+  const allocations = buildSplitAllocations(periodRows, splitMap, { netReimbursements });
 
   const byCategory = new Map<number, CategorySpend>();
   for (const row of allocations) {
@@ -124,12 +125,14 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
   const last30From = toDateStr(new Date(now.getTime() - 29 * 86_400_000));
   const last7From = toDateStr(new Date(now.getTime() - 6 * 86_400_000));
 
-  const [allExpenseCats, defaultTargetRows, strategy, recurringMode] = await Promise.all([
+  const [allExpenseCats, defaultTargetRows, strategy, recurringMode, sharedCostMode] = await Promise.all([
     db.select().from(categories).where(inArray(categories.budgetType, [...VARIABLE_TYPES])).orderBy(asc(categories.name)),
     db.select().from(budgetTargets).where(and(eq(budgetTargets.year, 0), eq(budgetTargets.month, 0))),
     getBudgetStrategy(),
     getBudgetRecurringMode(),
+    getSharedCostMode(),
   ]);
+  const netReimbursements = sharedCostMode === "net";
 
   const variableIds = new Set(allExpenseCats.map((c) => c.id));
   const topLevel = allExpenseCats.filter((c) => c.parentCategoryId === null);
@@ -142,9 +145,9 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
   }
 
   const [periodSpend, last30Spend, last7Spend] = await Promise.all([
-    variableSpend(from, to, variableIds),
-    variableSpend(last30From, todayStr, variableIds),
-    variableSpend(last7From, todayStr, variableIds),
+    variableSpend(from, to, variableIds, netReimbursements),
+    variableSpend(last30From, todayStr, variableIds, netReimbursements),
+    variableSpend(last7From, todayStr, variableIds, netReimbursements),
   ]);
 
   // Current financial-month income — used to compute the strategy-based advised amount.
@@ -155,7 +158,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
     direction: transactions.direction,
     amount: transactions.amount,
     correctedAmount: transactions.correctedAmount,
-    reimbursedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id}), 0)`,
+    reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     isReimbursement: transactions.isReimbursement,
     isInternalTransfer: isInternalTransferExpr,

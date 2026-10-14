@@ -2,11 +2,12 @@ import { db } from "@/db";
 import { transactions, categories, recurringItems, budgets, vermogenAccounts } from "@/db/schema";
 import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { getBankBalances } from "@/lib/account-balances";
 import { getDebtSummary } from "@/lib/debt-calculations";
-import { getFinancialMonthConfig } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getSharedCostMode } from "@/lib/app-settings";
 import { toMonthly } from "@/lib/format";
 import {
   currentFinancialMonth,
@@ -112,7 +113,7 @@ async function getMonthTotals(months: string[], financialMonth: FinancialMonthCo
   const from = ranges[0].from;
   const to = ranges[ranges.length - 1].to;
 
-  const [rows, variableCats] = await Promise.all([
+  const [rows, variableCats, sharedCostMode] = await Promise.all([
     db
       .select({
         id: transactions.id,
@@ -120,6 +121,7 @@ async function getMonthTotals(months: string[], financialMonth: FinancialMonthCo
         direction: transactions.direction,
         amount: transactions.amount,
         correctedAmount: transactions.correctedAmount,
+        reimbursedAmount: reimbursedAmountExpr,
         categoryId: transactions.categoryId,
         categoryGroup: categories.group,
         isReimbursement: transactions.isReimbursement,
@@ -132,11 +134,14 @@ async function getMonthTotals(months: string[], financialMonth: FinancialMonthCo
       .select({ id: categories.id })
       .from(categories)
       .where(inArray(categories.budgetType, VARIABLE_BUDGET_TYPES)),
+    getSharedCostMode(),
   ]);
 
   const variableIds = new Set(variableCats.map((c) => c.id));
   const splitMap = groupTransactionSplits(await getTransactionSplitRows(rows.map((r) => r.id)));
-  const allocations = buildSplitAllocations(rows, splitMap);
+  // Netting expenses only — income stays gross, so the savings rate reflects the fact
+  // that a shared bill costs you your share, not the whole charge.
+  const allocations = buildSplitAllocations(rows, splitMap, { netReimbursements: sharedCostMode === "net" });
 
   const totals = new Map<string, MonthTotals>(
     ranges.map((r) => [r.month, { month: r.month, income: 0, expenses: 0, variableSpend: 0 }]),

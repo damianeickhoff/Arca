@@ -20,6 +20,7 @@ import {
   IconStethoscope,
   IconTextWrap,
   IconTrendingUp,
+  IconUsers,
   IconWallet,
 } from "@tabler/icons-react";
 
@@ -31,6 +32,10 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   recurring: IconReload,
   recurringWholeWord: IconTextWrap,
   googleLookup: IconBrandGoogle,
+  debtLinkedPayment: IconReload,
+  debtFormTour: IconHandFinger,
+  savingsFormTour: IconHandFinger,
+  sharedCost: IconUsers,
   merchant: IconBuildingStore,
   budget: IconWallet,
   budgetStrategy: IconAdjustments,
@@ -65,6 +70,9 @@ export function TipCard({
   onDismiss,
   onDismissAll,
   compact = false,
+  title,
+  body,
+  footer,
 }: {
   id: TipId;
   onDismiss: () => void;
@@ -72,6 +80,14 @@ export function TipCard({
   /** Pointer tips sit next to a control rather than across the top, so they drop the
    *  icon chip and run a size tighter — the control they point at is the icon. */
   compact?: boolean;
+  /** Copy overrides. A walkthrough has one card per step, so its text can't come from
+   *  the tip id the way a single-shot tip's does; everything else omits these and gets
+   *  the `tips.<id>` copy as before. */
+  title?: string;
+  body?: string;
+  /** Replaces the "Don't show again" / "Got it" pair — a walkthrough steers with
+   *  Back/Next instead. */
+  footer?: React.ReactNode;
 }) {
   const t = useTranslations("tips");
   const Icon = TIP_ICONS[id];
@@ -85,27 +101,29 @@ export function TipCard({
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="font-heading font-semibold text-[15px] leading-tight">{t(`${id}.title`)}</p>
-          <p className="mt-1 text-sm text-foreground/60 leading-snug">{t(`${id}.body`)}</p>
+          <p className="font-heading font-semibold text-[15px] leading-tight">{title ?? t(`${id}.title`)}</p>
+          <p className="mt-1 text-sm text-foreground/60 leading-snug">{body ?? t(`${id}.body`)}</p>
         </div>
       </div>
 
-      <div className="mt-3.5 flex items-center justify-end gap-1">
-        <button
-          type="button"
-          onClick={onDismissAll}
-          className="h-9 px-3 rounded-full text-sm text-foreground/45 active:scale-[0.97] transition-transform"
-        >
-          {t("dontShowAgain")}
-        </button>
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="h-9 px-5 rounded-full bg-foreground text-background text-sm font-semibold active:scale-[0.97] transition-transform"
-        >
-          {t("gotIt")}
-        </button>
-      </div>
+      {footer ?? (
+        <div className="mt-3.5 flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={onDismissAll}
+            className="h-9 px-3 rounded-full text-sm text-foreground/45 active:scale-[0.97] transition-transform"
+          >
+            {t("dontShowAgain")}
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="h-9 px-5 rounded-full bg-foreground text-background text-sm font-semibold active:scale-[0.97] transition-transform"
+          >
+            {t("gotIt")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

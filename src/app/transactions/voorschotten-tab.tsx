@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { transactions, reimbursements, categories } from "@/db/schema";
+import { transactions, reimbursements, categories, recurringItems } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { formatEur, formatDate } from "@/lib/format";
 import { LinkDialog } from "./link-dialog";
@@ -7,7 +7,11 @@ import { UnlinkButton } from "./unlink-button";
 import { EditExpectedButton } from "./edit-expected-button";
 
 async function getVoorschottenData() {
-  // 1. Tikkies with remaining balance (unlinked or partially allocated)
+  // 1. Tikkies with remaining balance (unlinked or partially allocated).
+  //    The standing payback of a shared bill is excluded: it's a monthly arrangement, not
+  //    an advance you're chasing, so listing it here would grow "still to receive" by the
+  //    same amount every month forever. Its share is already netted off the bill instead
+  //    (see reimbursedAmountExpr) — linking one by hand still works and takes precedence.
   const unlinked = await db
     .select({
       id: transactions.id,
@@ -21,7 +25,12 @@ async function getVoorschottenData() {
     .where(
       and(
         eq(transactions.isReimbursement, true),
-        sql`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactions.id}), 0) < ${transactions.amount} - 0.01`
+        sql`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactions.id}), 0) < ${transactions.amount} - 0.01`,
+        sql`not exists (
+          select 1 from ${recurringItems}
+          where ${recurringItems.id} = ${transactions.recurringItemId}
+            and ${recurringItems.isReimbursement} = 1
+        )`
       )
     )
     .orderBy(sql`${transactions.date} desc`);

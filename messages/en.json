@@ -179,6 +179,14 @@
     "bulkDone": "Leave selection mode",
     "bulkConfirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?"
   },
+  "debts": {
+    "paymentFromLinked": "Taken from the linked recurring {count, plural, one {bill} other {bills}}: {amount} per month.",
+    "paymentOverridden": "You set this amount yourself. The linked recurring {count, plural, one {bill comes} other {bills come}} to {amount} per month.",
+    "useLinkedAmount": "Use linked bill amount",
+    "interestHelp": "Optional. The yearly interest percentage on this debt. Each payment covers that month's interest first, and only what is left over reduces the balance. Leave blank if there is no interest.",
+    "interestPerMonth": "At the current balance that is about {amount} of interest in the first month.",
+    "interestTooLow": "The minimum monthly payment does not cover the interest, so this balance would never go down."
+  },
   "goals": {
     "savings": "Savings",
     "monthly": "Monthly",
@@ -232,6 +240,7 @@
     "savingsGoal": "Savings goal",
     "moreOptions": "More options",
     "calculator": "Calculator",
+    "whatDoButtonsDo": "What do these buttons do?",
     "chooseIconColor": "Choose icon and color",
     "namePlaceholder": "e.g. New car",
     "setStartEndDate": "Set start and end date",
@@ -258,6 +267,105 @@
   "tips": {
     "gotIt": "Got it",
     "dontShowAgain": "Don't show again",
+    "next": "Next",
+    "back": "Back",
+    "skipTour": "Skip",
+    "debtFormTour": {
+      "title": "New debt",
+      "body": "",
+      "steps": {
+        "debtDirection": {
+          "title": "Which way does it go?",
+          "body": "Choose whether you owe this money or someone owes it to you. Money owed to you counts as an asset, not a debt."
+        },
+        "debtIcon": {
+          "title": "Icon and colour",
+          "body": "Tap to pick a symbol and colour. It's how you'll recognise this debt in lists and charts."
+        },
+        "debtBalanceDate": {
+          "title": "Balance as of",
+          "body": "Which date the amount above belongs to. Leave it on today and it's simply what you owe now. Move it back and the app assumes the monthly payment was made every month since."
+        },
+        "debtStartDate": {
+          "title": "Start date",
+          "body": "When the debt began. It sets the day of the month payments fall on and, if you add interest, when it starts accruing."
+        },
+        "debtMinPayment": {
+          "title": "Monthly payment",
+          "body": "What gets paid each month. This drives the payoff date. Link a recurring bill below and this fills in by itself."
+        },
+        "debtOriginalAmount": {
+          "title": "Original amount",
+          "body": "Only needed if you started tracking after already paying part of it off. Leave it alone to use the balance above as the total."
+        },
+        "debtInterest": {
+          "title": "Interest",
+          "body": "Optional. Add a yearly percentage and each payment will cover that month's interest first, so the payoff date reflects what you actually owe."
+        },
+        "debtAutoBill": {
+          "title": "Create a recurring bill too",
+          "body": "Turns this debt into a monthly bill automatically, so the payment shows up on your calendar and budget without entering it twice."
+        },
+        "debtNote": {
+          "title": "Note",
+          "body": "Anything you want to remember about this debt — who it's with, the agreement, an account number."
+        },
+        "debtLinkedBills": {
+          "title": "Link an existing bill",
+          "body": "Already have a recurring bill for this? Link it and your real payments will drive the progress instead of an assumed schedule."
+        },
+        "debtMenu": {
+          "title": "More options",
+          "body": "Turn on the calculator to add or subtract while entering an amount, or replay this walkthrough."
+        },
+        "debtSave": {
+          "title": "Save",
+          "body": "Available once the debt has a name and an amount above zero."
+        },
+        "debtClose": {
+          "title": "Close",
+          "body": "Leaves without saving. That's everything — you're set."
+        }
+      }
+    },
+    "savingsFormTour": {
+      "title": "New saving",
+      "body": "",
+      "steps": {
+        "savingIcon": {
+          "title": "Icon and colour",
+          "body": "Tap to pick a symbol and colour for this goal. It's how you'll spot it in your list of savings."
+        },
+        "savingDates": {
+          "title": "Start and end date",
+          "body": "Set an end date and the monthly amount is worked out for you — target minus what you have, spread over the months left."
+        },
+        "savingMonthly": {
+          "title": "Monthly contribution",
+          "body": "What you plan to put aside each month. Setting an end date above calculates this instead, and takes priority."
+        },
+        "savingBalance": {
+          "title": "Starting balance",
+          "body": "How much you've already saved towards this goal, so progress doesn't start from zero."
+        },
+        "savingCategory": {
+          "title": "Category",
+          "body": "Optional. Link a category so transactions in it count towards this goal automatically."
+        },
+        "savingMenu": {
+          "title": "More options",
+          "body": "Turn on the calculator to add or subtract while entering an amount, or replay this walkthrough."
+        },
+        "savingSave": {
+          "title": "Save",
+          "body": "Available once the goal has a name and a target above zero."
+        },
+        "savingClose": {
+          "title": "Close",
+          "body": "Leaves without saving. That's everything — you're set."
+        }
+      }
+    },
     "receiptScan": {
       "title": "Scan a receipt",
       "body": "Take a photo and Arca fills in the merchant, amount and date. Reading happens on this device — the photo never leaves it."
@@ -269,6 +377,10 @@
     "recurring": {
       "title": "Things that repeat",
       "body": "Bills, subscriptions and income you add here are matched to your transactions and feed your budget and forecast."
+    },
+    "debtLinkedPayment": {
+      "title": "Linked bill sets the payment",
+      "body": "Link a recurring bill to a debt and its monthly amount becomes the debt's minimum payment. Open Minimum monthly payment to enter a different figure."
     },
     "recurringWholeWord": {
       "title": "Match a whole word",
@@ -345,6 +457,10 @@
     "bulkSelect": {
       "title": "Hold to select several",
       "body": "Press and hold any transaction to turn on selection mode. Pick as many as you like, then recategorise, exclude from reports, or delete them all at once."
+    },
+    "sharedCost": {
+      "title": "Split a bill you pay in full",
+      "body": "Mark the part housemates or family pay you back. Your cash flow keeps the whole charge — it really leaves your account — while reports can show only your own share."
     }
   },
   "importMapping": {
@@ -407,5 +523,25 @@
     "dateColumn": "Date column",
     "delete": "Delete profile",
     "confirmDelete": "Delete the saved mapping \"{label}\"? The next import of that file will ask you to map its columns again."
+  },
+  "sharedCost": {
+    "row": "Shared cost",
+    "rowNotShared": "Not shared",
+    "rowPayback": "Money paid back to me",
+    "rowYourShare": "Your share {amount}",
+    "sharedToggle": "Others pay me back for this",
+    "paidBackLabel": "Paid back to me each time",
+    "peopleLabel": "People sharing it (including you)",
+    "splitEvenly": "Split evenly",
+    "preview": "Your share: {share} of {total}",
+    "sharedHint": "The full amount still counts for cash flow and the bill tracker. Only reports use your share, and only when you've set that in Settings → Budget & Bills.",
+    "paybackToggle": "This is money paid back to me",
+    "paybackHint": "Won't count as income in reports; still counts in your cash flow.",
+    "settingTitle": "Shared costs",
+    "settingGross": "Show the full amount",
+    "settingGrossHint": "Reports show what actually left your account, matching your bank.",
+    "settingNet": "Show my share",
+    "settingNetHint": "Reports subtract what others pay back, so a shared bill costs you what it really costs.",
+    "settingFooter": "Cash flow, the forecast and the bill tracker always use the full amount — that money genuinely moves."
   }
 }

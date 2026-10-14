@@ -5,7 +5,7 @@ import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/interna
 import { currentFinancialMonth } from "@/lib/date-range";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
-import { signedBillAmount } from "@/lib/bill-amounts";
+import { billsDueTotal } from "@/lib/bill-amounts";
 import { normalizeBudgetType } from "@/lib/format";
 import { PageContainer } from "@/components/page-container";
 import { ALL_FROM, todayStr } from "./periods";
@@ -160,10 +160,9 @@ export default async function TransactionsPage({
     .filter((s) => s.dueDate != null && s.paid !== true)
     .sort((a, z) => (a.dueDate! < z.dueDate! ? -1 : 1));
   const upcomingCount = upcomingStatuses.length;
-  // Net, so an upcoming salary offsets the bills rather than inflating the figure.
-  const upcomingTotal = upcomingStatuses.reduce(
-    (sum, s) => sum + signedBillAmount({ amount: s.item.amount, isIncome: s.item.type === "income" }),
-    0,
+  // Expenses only — upcoming income belongs on the calendar, not in the amount due.
+  const upcomingTotal = billsDueTotal(
+    upcomingStatuses.map((s) => ({ amount: s.item.amount, isIncome: s.item.type === "income" })),
   );
   // Icons for the first few upcoming bills, previewed on the summary card.
   const upcomingIcons = upcomingStatuses.slice(0, 3).map((s) => ({
