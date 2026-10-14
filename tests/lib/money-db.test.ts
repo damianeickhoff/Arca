@@ -317,17 +317,16 @@ describe("net-worth-forecast: getNetWorthForecast", () => {
   it("adds recurring income, savings contributions and owed repayments each month", async () => {
     const { getNetWorthForecast } = await import("@/lib/net-worth-forecast");
     const points = await getNetWorthForecast(10_000, "2026-03-20", 6);
-    // Monthly: income 2500 + 50 (Piet's recurring income item) + savings goal 100 + Piet's
-    // debt repayment 50 until the 250 he still owes is collected.
-    // CURRENT BEHAVIOUR: Piet's repayment is counted twice — once as recurring income and
-    // once as an owed-debt collection.
+    // Monthly: salary 2500 + savings goal 100 + Piet's repayment 50 until the 250 he still
+    // owes is collected (five months), then nothing from Piet. His recurring income item
+    // is linked to the owed debt, so it is that same repayment and isn't added again.
     expect(points).toEqual([
-      { date: "2026-04-20", netWorth: 12_700 },
-      { date: "2026-05-20", netWorth: 15_400 },
-      { date: "2026-06-20", netWorth: 18_100 },
-      { date: "2026-07-20", netWorth: 20_800 },
-      { date: "2026-08-20", netWorth: 23_500 },
-      { date: "2026-09-20", netWorth: 26_150 },
+      { date: "2026-04-20", netWorth: 12_650 },
+      { date: "2026-05-20", netWorth: 15_300 },
+      { date: "2026-06-20", netWorth: 17_950 },
+      { date: "2026-07-20", netWorth: 20_600 },
+      { date: "2026-08-20", netWorth: 23_250 },
+      { date: "2026-09-20", netWorth: 25_850 },
     ]);
   });
 });

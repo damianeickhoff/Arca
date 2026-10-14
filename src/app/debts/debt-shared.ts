@@ -205,8 +205,13 @@ export function computeDebtBillEndDate(
   // The first instalment falls one month after the start date (scheduledPaymentMonths),
   // so N payments end N months out, not N − 1 — this is what keeps the bill's stored end
   // date equal to the debt's own last-payment date.
+  // The day is clamped to the target month's length (Jan 31 + 10 months is Nov 30, not
+  // Dec 1) — the same clamp computeDebt applies to lastPaymentDate, so the bill's end
+  // date and the debt's own last payment can't land in different months.
   const [y, m, d] = startDate.split("-").map(Number);
-  const end = new Date(y, (m - 1) + months, d || 1);
+  const end = new Date(y, (m - 1) + months, 1);
+  const lastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+  end.setDate(Math.min(d || 1, lastDay));
   return `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
 }
 

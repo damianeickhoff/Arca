@@ -52,9 +52,13 @@ function firstOutstandingMonth(balanceDate: string, lastRecordedMonth: string | 
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 }
 
+/** Mirrors computeDebtBillEndDate's date step: the day is clamped to the target month. */
 function addMonths(startDate: string, n: number): string {
   const [y, m, d] = startDate.split("-").map(Number);
-  return iso(new Date(y, m - 1 + n, d || 1));
+  const end = new Date(y, m - 1 + n, 1);
+  const lastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+  end.setDate(Math.min(d || 1, lastDay));
+  return iso(end);
 }
 
 type DebtRow = {

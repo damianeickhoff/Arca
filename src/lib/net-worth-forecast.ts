@@ -32,7 +32,15 @@ export async function getNetWorthForecast(
     db.select().from(debts).where(eq(debts.direction, "owed")),
   ]);
 
-  const monthlyIncome = incomeItems.reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
+  // Repayments on debts owed TO the user are collected below, capped at what is still
+  // owed. A recurring income item linked to such a debt is that same repayment, so it is
+  // left out of the income total — counting it in both places double-counted it, and
+  // kept counting it after the debt had been fully repaid.
+  const { linkMap, paidFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
+  const repaymentItemIds = new Set(owedDebts.flatMap((d) => linkMap.get(d.id) ?? []));
+  const monthlyIncome = incomeItems
+    .filter((i) => !repaymentItemIds.has(i.id))
+    .reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
   const monthlySavings = savingsGoalRows.reduce((s, g) => s + (g.monthlyContribution ?? 0), 0)
     + savingsTypeGoalRows.reduce((s, g) => s + (g.monthlyContribution ?? 0), 0);
 
@@ -40,7 +48,6 @@ export async function getNetWorthForecast(
   // credit stops once a debt is fully collected instead of forecasting past it.
   // Uses the debts page's own debtBalance (balance date, interest and all) rather than a
   // private copy of the maths — the two used to be able to disagree about a debt's worth.
-  const { paidFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
   const owedRemaining = owedDebts.map((d) => ({
     monthlyPayment: d.minimumPayment,
     remaining: Math.max(0, debtBalance(d, paidFor(d)).currentBalance),

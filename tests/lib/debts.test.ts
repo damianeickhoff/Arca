@@ -185,6 +185,14 @@ describe("debtBalance and computeDebt", () => {
     expect(result.amountPaid).toBeLessThan(300);
   });
 
+  it("computeDebtBillEndDate and computeDebt agree on the last payment for a 31st start", () => {
+    // Balance true on 31 Jan, €1000 at €100/month: ten payments, the last in November.
+    const d = debt({ startDate: "2026-01-31", startMonth: "2026-01", balanceDate: "2026-01-31", startingBalance: 1000 });
+    const last = computeDebt(d, null).lastPaymentDate!;
+    const iso = `${last.getFullYear()}-${String(last.getMonth() + 1).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`;
+    expect(iso).toBe(computeDebtBillEndDate("2026-01-31", 1000, 100));
+  });
+
   it("computeDebt: payoff months, last payment date on the debt's own day, remaining interest", () => {
     const result = computeDebt(debt({}), null);
     expect(result.currentBalance).toBe(600);
@@ -218,9 +226,11 @@ describe("debtBalance and computeDebt", () => {
   });
 
   it("computeDebtBillEndDate projects N payments from the start date", () => {
-    // CURRENT BEHAVIOUR: a 31st start day overflows into the next month (Nov 31 → Dec 1),
-    // while computeDebt's lastPaymentDate clamps the same day to Nov 30.
-    expect(computeDebtBillEndDate("2026-01-31", 1000, 100)).toBe("2026-12-01");
+    // A 31st start day is clamped to the end of a shorter month (Nov 31 → Nov 30), the
+    // same clamp computeDebt applies to lastPaymentDate.
+    expect(computeDebtBillEndDate("2026-01-31", 1000, 100)).toBe("2026-11-30");
+    expect(computeDebtBillEndDate("2026-01-31", 100, 100)).toBe("2026-02-28");
+    expect(computeDebtBillEndDate("2026-01-31", 200, 100)).toBe("2026-03-31");
     expect(computeDebtBillEndDate("2026-01-15", 1000, 100)).toBe("2026-11-15");
     expect(computeDebtBillEndDate("2026-01-15", 1000, 0)).toBeNull();
     expect(computeDebtBillEndDate("2026-01-15", 1000, 5, 12)).toBeNull();

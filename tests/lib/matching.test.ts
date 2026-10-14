@@ -46,9 +46,11 @@ describe("transactionMatchesRecurringItem", () => {
     const item = matcher({ matchPattern: "gym", matchAmount: 29.99 });
     expect(transactionMatchesRecurringItem("Gym", -29.99, item)).toBe(true);
     expect(transactionMatchesRecurringItem("Gym", 29.995, item)).toBe(true);
-    // CURRENT BEHAVIOUR: "within a cent" is float-exclusive: 30.00 vs 29.99 differs by
-    // 0.010000000000001 and does not match.
-    expect(transactionMatchesRecurringItem("Gym", 30.0, item)).toBe(false);
+    // "Within a cent" is inclusive, even though 30.00 − 29.99 is 0.010000000000001 as a float.
+    expect(transactionMatchesRecurringItem("Gym", 30.0, item)).toBe(true);
+    expect(transactionMatchesRecurringItem("Gym", 29.98, item)).toBe(true);
+    expect(transactionMatchesRecurringItem("Gym", 30.01, item)).toBe(false);
+    expect(transactionMatchesRecurringItem("Gym", 29.97, item)).toBe(false);
   });
 
   it("range mode wins over exact mode and is inclusive with a cent of slack", () => {
@@ -117,10 +119,15 @@ describe("matchRules", () => {
     expect(matchRules("Tikkie van Jan", 5, "expense", null, r, noBanks)).toBeNull();
   });
 
-  it("CURRENT BEHAVIOUR: exact amount compares signed values, ranges compare magnitudes", () => {
-    // Unlike the recurring matcher, an exact rule amount is compared with its sign.
-    expect(matchRules("x", -10, "expense", null, [rule({ amount: 10 })], noBanks)).toBeNull();
+  it("compares magnitudes within a cent, for exact amounts and ranges alike", () => {
+    // The same rule as the recurring matcher: the sign doesn't matter.
+    expect(matchRules("x", -10, "expense", null, [rule({ amount: 10 })], noBanks)).toBe(100);
+    expect(matchRules("x", 10, "expense", null, [rule({ amount: -10 })], noBanks)).toBe(100);
     expect(matchRules("x", 10.005, "expense", null, [rule({ amount: 10 })], noBanks)).toBe(100);
+    expect(matchRules("x", 30, "expense", null, [rule({ amount: 29.99 })], noBanks)).toBe(100);
+    expect(matchRules("x", 30.01, "expense", null, [rule({ amount: 29.99 })], noBanks)).toBeNull();
+    expect(matchRules("x", 4.99, "expense", null, [rule({ amountMin: 5 })], noBanks)).toBe(100);
+    expect(matchRules("x", 4.98, "expense", null, [rule({ amountMin: 5 })], noBanks)).toBeNull();
     expect(matchRules("x", -10, "expense", null, [rule({ amountMin: 5, amountMax: 15 })], noBanks)).toBe(100);
     expect(matchRules("x", 20, "expense", null, [rule({ amountMax: 15 })], noBanks)).toBeNull();
   });

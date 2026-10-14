@@ -4,6 +4,11 @@ import { eq } from "drizzle-orm";
 import type { CategoryRule, Bank } from "@/db/schema";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
 
+/** |amount| in whole cents. */
+function cents(amount: number): number {
+  return Math.round(Math.abs(amount) * 100);
+}
+
 /** Returns the categoryId of the first matching rule, or null. */
 export function matchRules(
   description: string,
@@ -31,15 +36,17 @@ export function matchRules(
       : true;
 
     const amountOk = (() => {
-      // Range match takes precedence when either bound is set; magnitude comparison so
-      // the sign of income/expense amounts doesn't matter.
+      // Magnitudes in whole cents throughout — the same rule as recurring matching
+      // (transactionMatchesRecurringItem): the sign of income/expense doesn't matter, and
+      // "within a cent" is inclusive (a float difference of 0.010000000000001 is one cent).
+      // Range match takes precedence when either bound is set.
+      const mag = cents(amount);
       if (rule.amountMin != null || rule.amountMax != null) {
-        const mag = Math.abs(amount);
-        if (rule.amountMin != null && mag < rule.amountMin - 0.01) return false;
-        if (rule.amountMax != null && mag > rule.amountMax + 0.01) return false;
+        if (rule.amountMin != null && mag < cents(rule.amountMin) - 1) return false;
+        if (rule.amountMax != null && mag > cents(rule.amountMax) + 1) return false;
         return true;
       }
-      if (rule.amount != null) return Math.abs(amount - rule.amount) < 0.01;
+      if (rule.amount != null) return Math.abs(mag - cents(rule.amount)) <= 1;
       return true;
     })();
 

@@ -23,6 +23,13 @@ export type RecurringMatcher = {
   sharedReimbursedAmount?: number | null;
 };
 
+/** |amount| in whole cents. Comparing cents rather than floats is what makes "within a
+ *  cent" inclusive: 30.00 − 29.99 is 0.010000000000001 as a float, which used to fail a
+ *  "≤ 0.01" check. */
+function absCents(amount: number): number {
+  return Math.round(Math.abs(amount) * 100);
+}
+
 /** "netflix" matches "NETFLIX.COM" as a whole word but not "netflixer" — the same
  *  boundary rule the category rules use (see matchRules in lib/apply-rules.ts), written
  *  with lookarounds rather than \b so patterns ending in punctuation still work. */
@@ -66,11 +73,11 @@ export function transactionMatchesRecurringItem(
   const pattern = item.matchPattern.toLowerCase().trim();
   if (!pattern) return false;
   if (item.matchWholeWord ? !containsWholeWord(desc, pattern) : !desc.includes(pattern)) return false;
-  const abs = Math.abs(amount);
+  const abs = absCents(amount);
   if (item.matchAmountMin != null || item.matchAmountMax != null) {
-    if (item.matchAmountMin != null && abs < Math.abs(item.matchAmountMin) - 0.01) return false;
-    if (item.matchAmountMax != null && abs > Math.abs(item.matchAmountMax) + 0.01) return false;
-  } else if (item.matchAmount != null && Math.abs(abs - Math.abs(item.matchAmount)) > 0.01) {
+    if (item.matchAmountMin != null && abs < absCents(item.matchAmountMin) - 1) return false;
+    if (item.matchAmountMax != null && abs > absCents(item.matchAmountMax) + 1) return false;
+  } else if (item.matchAmount != null && Math.abs(abs - absCents(item.matchAmount)) > 1) {
     return false;
   }
   return true;
