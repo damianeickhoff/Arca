@@ -528,15 +528,19 @@ function TransactionDetailBody({
   // Wash color: explicit brand/category color first, then (for uploaded images) the
   // image's own dominant color, then a configured icon backdrop, then a neutral tint —
   // so every icon type gets a header wash, not just ones with an explicit brand color.
-  const [dominantColor, setDominantColor] = useState<string | null>(null);
+  // Keyed by the image it was measured from, so a colour from a previous transaction's
+  // icon is never shown for this one — no synchronous reset inside the effect needed.
+  const [measured, setMeasured] = useState<{ key: string; color: string | null } | null>(null);
   const isImgIcon = !!detailIcon.iconKey?.startsWith("img:");
   const isCustomIcon = !!detailIcon.iconKey?.startsWith("custom:");
+  const dominantColor = isImgIcon && measured && measured.key === detailIcon.iconKey ? measured.color : null;
 
   useEffect(() => {
-    if (!isImgIcon || !detailIcon.iconKey) { setDominantColor(null); return; }
-    const { src } = parseImgKey(detailIcon.iconKey);
+    if (!isImgIcon || !detailIcon.iconKey) return;
+    const key = detailIcon.iconKey;
+    const { src } = parseImgKey(key);
     let cancelled = false;
-    getDominantImageColor(src).then((c) => { if (!cancelled) setDominantColor(c); });
+    getDominantImageColor(src).then((c) => { if (!cancelled) setMeasured({ key, color: c }); });
     return () => { cancelled = true; };
   }, [isImgIcon, detailIcon.iconKey]);
 

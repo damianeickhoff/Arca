@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   IconPlusFilled as Plus,
@@ -308,14 +308,17 @@ export function MaandUitzonderingenSubPage({
     weekendRollback: false,
   };
 
-  // When addOpen flips to true, pre-fill the month field
-  const prevAddOpen = useRef(false);
-  if (addOpen && !prevAddOpen.current) {
-    const now = new Date();
-    setNewMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
-    setNewStartDay(String(currentStartDay));
+  // When addOpen flips to true, pre-fill the month field. Tracked in state, not a ref:
+  // refs may not be read or written during render.
+  const [prevAddOpen, setPrevAddOpen] = useState(false);
+  if (addOpen !== prevAddOpen) {
+    setPrevAddOpen(addOpen);
+    if (addOpen) {
+      const now = new Date();
+      setNewMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`);
+      setNewStartDay(String(currentStartDay));
+    }
   }
-  prevAddOpen.current = addOpen;
 
   async function saveOverride(month: string, value: string) {
     if (!isValidMonth(month) || !isValidStartDay(value)) return false;

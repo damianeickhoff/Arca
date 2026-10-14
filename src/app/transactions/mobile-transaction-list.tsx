@@ -209,12 +209,16 @@ export function MobileTransactionList({ rows, categories, savingsGoals }: { rows
 
   // Deep-link support: arriving from the dashboard "Recent transactions" tap
   // (/transactions?tx=<id>) auto-opens that row's detail dialog.
+  // Opened once per ?tx= value, during render rather than from an effect.
   const txParam = searchParams.get("tx");
-  useEffect(() => {
-    if (!txParam) return;
+  const [openedTx, setOpenedTx] = useState<string | null>(null);
+  if (txParam && txParam !== openedTx) {
     const target = rows.find((r) => String(r.id) === txParam);
-    if (target) setDetailRow(target);
-  }, [txParam, rows]);
+    if (target) {
+      setOpenedTx(txParam);
+      setDetailRow(target);
+    }
+  }
 
   function closeDetail() {
     setDetailRow(null);

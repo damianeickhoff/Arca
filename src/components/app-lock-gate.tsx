@@ -47,6 +47,9 @@ export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, pinLen
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Synchronising with the browser after hydration: the server can't know whether this
+    // tab was already unlocked (sessionStorage), so this has to run post-mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
     setMounted(true);
     if (!enabled) {
       setLocked(false);

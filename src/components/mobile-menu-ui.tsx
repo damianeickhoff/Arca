@@ -82,6 +82,9 @@ export function MobileMenuLinkRow({
 export function MobileMenuPrivacyRow() {
   const [blur, setBlur] = useState(false);
   useEffect(() => {
+    // localStorage only exists in the browser; reading it during render would make the
+    // server and client markup disagree.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration sync with localStorage
     setBlur(localStorage.getItem("privacy") === "1");
   }, []);
   function toggle() {

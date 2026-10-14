@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports -- a plain CommonJS Node script, run with `node check-cats.cjs` */
 const Database = require('./node_modules/better-sqlite3');
 const db = new Database('./finance.db');
 const cats = db.prepare('SELECT id, name, \group\, budget_type FROM categories ORDER BY name LIMIT 30').all();

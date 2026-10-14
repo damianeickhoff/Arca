@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import type { Map as LeafletMap } from "leaflet";
 import { parseTransactionLocation } from "@/lib/parse-transaction-location";
 
 type MapState =
@@ -36,7 +37,7 @@ function cleanTransactionName(rawName: string): string {
 export function TransactionMap({ name }: { name: string }) {
   const [state, setState] = useState<MapState>({ status: "loading" });
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
+  const mapInstance = useRef<LeafletMap | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,7 +129,7 @@ export function TransactionMap({ name }: { name: string }) {
     if (state.status !== "found" || !mapRef.current) return;
 
     const mapContainer = mapRef.current;
-    let map: any;
+    let map: LeafletMap | undefined;
 
     (async () => {
       const L = await import("leaflet");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -41,9 +41,7 @@ export function SavingsGoalDetailDialog({
   // this the body unmounts synchronously, collapsing the sheet's height before the
   // slide-down transition finishes.
   const [cached, setCached] = useState(goal);
-  useEffect(() => {
-    if (goal) setCached(goal);
-  }, [goal]);
+  if (goal && goal !== cached) setCached(goal);
   const displayGoal = goal ?? cached;
 
   async function remove() {

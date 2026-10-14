@@ -40,9 +40,7 @@ export function DebtDetailDialog({
   // without this the body unmounts synchronously, collapsing the sheet's height
   // before the slide-down transition finishes.
   const [cached, setCached] = useState(computed);
-  useEffect(() => {
-    if (computed) setCached(computed);
-  }, [computed]);
+  if (computed && computed !== cached) setCached(computed);
   const displayComputed = computed ?? cached;
 
   // Bump on every closed→open transition so DetailBody remounts fresh each time the
@@ -50,9 +48,11 @@ export function DebtDetailDialog({
   // expand/collapse state would carry over from the previous time it was opened.
   const isOpen = computed != null;
   const [openInstance, setOpenInstance] = useState(0);
-  useEffect(() => {
+  const [wasOpen, setWasOpen] = useState(false);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) setOpenInstance((n) => n + 1);
-  }, [isOpen]);
+  }
 
   async function remove() {
     if (!computed) return;

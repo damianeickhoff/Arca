@@ -188,9 +188,11 @@ export function Sparkles() {
 
   const particles = React.useMemo(
     () =>
-      PARTICLES.map((p) => ({
+      PARTICLES.map((p, i) => ({
         ...p,
-        delay: `${-(Math.random() * parseFloat(p.duration))}s`,
+        // Spread the particles through their cycle so they don't all start together.
+        // Deterministic (golden-ratio steps) rather than Math.random(): render must be pure.
+        delay: `${-(((i * 0.618034) % 1) * parseFloat(p.duration)).toFixed(2)}s`,
       })),
     []
   );
