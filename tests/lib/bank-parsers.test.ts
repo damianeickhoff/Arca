@@ -131,16 +131,31 @@ describe("ING", () => {
     ]);
   });
 
-  it("CURRENT BEHAVIOUR: an unquoted row whose last field is empty is dropped", () => {
-    // Each line is trim()med before splitting, which also strips a trailing tab — the row
-    // then has 8 fields instead of 9 and is skipped without any error. Pinned as-is.
+  it("imports an unquoted tab-separated row whose last field is empty", () => {
+    // The trailing tab is the empty Notifications column; it must survive line handling
+    // so the row keeps all 9 fields.
     const english = [
       ["Date", "Name / Description", "Account", "Counterparty", "Code", "Debit/credit", "Amount (EUR)", "Transaction type", "Notifications"].join("\t"),
       ["20260310", "NS Reizigers", "NL11INGB0001234567", "", "BA", "Debit", "4,10", "Payment terminal", ""].join("\t"),
       ["20260311", "Refund shop", "NL11INGB0001234567", "", "OV", "Credit", "15,00", "Transfer", "Refund"].join("\t"),
     ].join("\n");
     const rows = detectAndParse(english)!.rows;
-    expect(rows.map((r) => r.name)).toEqual(["Refund shop"]);
+    expect(rows.map((r) => [r.name, r.amount, r.description])).toEqual([
+      ["NS Reizigers", 4.1, "NS Reizigers"],
+      ["Refund shop", 15, "Refund"],
+    ]);
+  });
+
+  it("reads EU amounts with thousands, dot-decimal amounts, and keeps them unsigned", () => {
+    const head = `"Datum";"Naam / Omschrijving";"Rekening";"Tegenrekening";"Code";"Af Bij";"Bedrag (EUR)";"Mutatiesoort";"Mededelingen"`;
+    const row = (amount: string) => `"20260302";"Shop";"NL11INGB0001234567";"";"BA";"Af";"${amount}";"x";"m"`;
+    const amounts = ["1.234,56", "23,45", "23.45", "0,05", "-12,30"].map((a) => detectAndParse(`${head}\n${row(a)}`)!.rows[0].amount);
+    expect(amounts).toEqual([1234.56, 23.45, 23.45, 0.05, 12.3]);
+  });
+
+  it("does not claim a header whose first column is not the date", () => {
+    const ing = BANK_PARSERS.find((p) => p.key === "ing")!;
+    expect(ing.detect('"IBAN/BBAN","Datum","Tegenrekening IBAN/BBAN"', "")).toBe(false);
   });
 
   it("throws when there is no Datum/Date header", () => {
@@ -161,14 +176,15 @@ describe("Rabobank", () => {
   const rabobank = BANK_PARSERS.find((p) => p.key === "rabobank")!;
   const parse = (csv: string) => rabobank.parse(csv);
 
-  it("CURRENT BEHAVIOUR: auto-detection hands a Rabobank file to the ING parser, which throws", () => {
-    // The header contains both "Datum" and "Tegenrekening IBAN/BBAN", which satisfies the
-    // ING detector — and ING is tried first. ING's parser then can't find a line starting
-    // with "Datum" and throws. Pinned as-is; the Rabobank parser itself works (below).
-    const csv = [header, line("2026-03-02", "-23.45", "+1234.56", "Jumbo", "Boodschappen")].join("\n");
-    expect(rabobank.detect(header, csv)).toBe(true);
-    expect(BANK_PARSERS.find((p) => p.key === "ing")!.detect(header, csv)).toBe(true);
-    expect(() => detectAndParse(csv)).toThrow(/No header found in CSV/);
+  it("is auto-detected as Rabobank, not ING", () => {
+    // The header contains "Datum" and "Tegenrekening IBAN/BBAN"; ING used to claim it
+    // because it is tried first, then threw "No header found".
+    const csv = [header, line("2026-03-02", "-23,45", "+1.234,56", "Jumbo", "Boodschappen")].join("\n");
+    expect(BANK_PARSERS.find((p) => p.key === "ing")!.detect(header, csv)).toBe(false);
+    const result = detectAndParse(csv)!;
+    expect(result.bankKey).toBe("rabobank");
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0]).toMatchObject({ amount: 23.45, direction: "expense", reportedBalance: 1234.56 });
   });
 
   it("parses a quoted comma export with a dot-decimal amount", () => {
@@ -192,15 +208,18 @@ describe("Rabobank", () => {
     expect(result.rows[0].hash).toMatchInlineSnapshot(`"725c66d7ef412332"`);
   });
 
-  it("CURRENT BEHAVIOUR: a comma-decimal amount is truncated to whole euros by parseFloat", () => {
-    // Rabobank's own exports write amounts as "-23,45". The parser uses parseFloat, which
-    // stops at the comma — so this pins today's (questionable) result of 23, not 23.45.
-    // The balance column goes through parseLocaleAmount and is read correctly.
-    const csv = [header, line("2026-03-02", "-23,45", "+1.234,56", "Jumbo", "Boodschappen")].join("\n");
-    const [row] = parse(csv);
-    expect(row.amount).toBe(23);
-    expect(row.direction).toBe("expense");
-    expect(row.reportedBalance).toBe(1234.56);
+  it("reads comma-decimal and thousands-separated amounts with their sign", () => {
+    const cases: [string, number, string][] = [
+      ["-23,45", 23.45, "expense"],
+      ["+1.234,56", 1234.56, "income"],
+      ["-1.234,56", 1234.56, "expense"],
+      ["-0,99", 0.99, "expense"],
+      ["+100.00", 100, "income"],
+    ];
+    for (const [raw, amount, direction] of cases) {
+      const [row] = parse([header, line("2026-03-02", raw, "0,00", "Jumbo", "x")].join("\n"));
+      expect([raw, row.amount, row.direction]).toEqual([raw, amount, direction]);
+    }
   });
 
   it("skips rows with too few columns", () => {
@@ -237,12 +256,19 @@ describe("ABN AMRO", () => {
     expect(result.rows[0].hash).toMatchInlineSnapshot(`"3964549b14b752cc"`);
   });
 
-  it("CURRENT BEHAVIOUR: a comma-decimal amount is truncated by parseFloat", () => {
-    const [row] = detectAndParse(
-      '"NL12ABNA0123456789","EUR","20260301","20260302","1234,56","-23,45","NL98INGB0001234567","AH"',
-    )!.rows;
-    expect(row.amount).toBe(23);
-    expect(row.reportedBalance).toBe(1234.56);
+  it("reads comma-decimal and thousands-separated amounts with their sign", () => {
+    const cases: [string, number, string][] = [
+      ["-23,45", 23.45, "expense"],
+      ["-1.234,56", 1234.56, "expense"],
+      ["1.234,56", 1234.56, "income"],
+      ["2500.00", 2500, "income"],
+    ];
+    for (const [raw, amount, direction] of cases) {
+      const [row] = detectAndParse(
+        `"NL12ABNA0123456789","EUR","20260301","20260302","1234,56","${raw}","NL98INGB0001234567","AH"`,
+      )!.rows;
+      expect([raw, row.amount, row.direction, row.reportedBalance]).toEqual([raw, amount, direction, 1234.56]);
+    }
   });
 
   it("does not claim a file whose first line is not an ABN AMRO line", () => {
@@ -277,6 +303,20 @@ describe("bunq", () => {
     expect(result.rows[1]).toMatchObject({ date: "2026-03-03", name: "Terugbetaling etentje", direction: "income", amount: 50 });
     expect(result.rows[0].hash).toMatchInlineSnapshot(`"30939a3e8478aaf6"`);
   });
+
+  it("reads comma-decimal, thousands-separated and dot-decimal amounts", () => {
+    const head = '"Datum";"Naam tegenpartij";"Rekeningnummer tegenpartij";"Rekeningnummer";"Bedrag";"Omschrijving"';
+    const cases: [string, number, string][] = [
+      ["-23,45", 23.45, "expense"],
+      ["-1.234,56", 1234.56, "expense"],
+      ["+1.234,56", 1234.56, "income"],
+      ["-23.45", 23.45, "expense"],
+    ];
+    for (const [raw, amount, direction] of cases) {
+      const [row] = detectAndParse(`${head}\n"02-03-2026";"Shop";"";"NL77BUNQ0123456789";"${raw}";"x"`)!.rows;
+      expect([raw, row.amount, row.direction]).toEqual([raw, amount, direction]);
+    }
+  });
 });
 
 describe("KNAB", () => {
@@ -305,11 +345,18 @@ describe("KNAB", () => {
     expect(result.rows[0].hash).toMatchInlineSnapshot(`"dd3747122ccb1269"`);
   });
 
-  it("CURRENT BEHAVIOUR: a thousands separator makes the amount read as ~1 euro", () => {
-    // Only the first comma is swapped for a dot, so "1.234,56" becomes "1.234.56" and
-    // parseFloat reads 1.234 — pinned as-is, flagged for review.
-    const csv = [header, "NL66KNAB0123456789;2026-03-02;2026-03-02;-1.234,56;x;;Huur;Betaling;Huur maart"].join("\n");
-    expect(detectAndParse(csv)!.rows[0].amount).toBe(1.23);
+  it("reads thousands-separated and comma-decimal amounts with their sign", () => {
+    const cases: [string, number, string][] = [
+      ["-1.234,56", 1234.56, "expense"],
+      ["-23,45", 23.45, "expense"],
+      ["+1.234,56", 1234.56, "income"],
+      ["12,5", 12.5, "income"],
+    ];
+    for (const [raw, amount, direction] of cases) {
+      const csv = [header, `NL66KNAB0123456789;2026-03-02;2026-03-02;${raw};x;;Huur;Betaling;Huur maart`].join("\n");
+      const [row] = detectAndParse(csv)!.rows;
+      expect([raw, row.amount, row.direction]).toEqual([raw, amount, direction]);
+    }
   });
 });
 
@@ -339,6 +386,20 @@ describe("Revolut", () => {
     // A missing trailing balance column is null, not an error.
     expect(result.rows[2]).toMatchObject({ name: "Old export", reportedBalance: null });
     expect(result.rows[0].hash).toMatchInlineSnapshot(`"85fa394b1c537a01"`);
+  });
+
+  it("reads plain, thousands-separated (quoted) and comma-decimal amounts", () => {
+    const head = "Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance";
+    const cases: [string, number, string][] = [
+      ["-10.99", 10.99, "expense"],
+      ["-1234.56", 1234.56, "expense"],
+      ['"-1,234.56"', 1234.56, "expense"],
+      ['"1.234,56"', 1234.56, "income"],
+    ];
+    for (const [raw, amount, direction] of cases) {
+      const [row] = detectAndParse(`${head}\nCARD_PAYMENT,Current,2026-03-02 10:00:00,2026-03-02 10:00:00,Shop,${raw},0.00,EUR,COMPLETED,1.00`)!.rows;
+      expect([raw, row.amount, row.direction]).toEqual([raw, amount, direction]);
+    }
   });
 });
 

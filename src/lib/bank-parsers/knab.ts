@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { roundToCents } from "../transaction-splits";
-import { cleanLines, isoDateOnly, splitDelimited, type BankParser, type ParsedRow } from "./types";
+import { cleanLines, isoDateOnly, parseLocaleAmount, splitDelimited, type BankParser, type ParsedRow } from "./types";
 
 /**
  * KNAB's CSV export. Semicolon-delimited, header:
@@ -38,15 +38,20 @@ export const knabParser: BankParser = {
 
     const rows: ParsedRow[] = [];
     for (let i = headerIdx + 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+      // Not trim()med: on a tab-separated file that would also strip a trailing tab —
+      // an empty last column — and the row would come up a field short and be dropped.
+      // splitDelimited trims each field instead.
+      const line = lines[i];
+      if (!line.trim()) continue;
 
       const cols = splitDelimited(line, separator);
       if (cols.length <= COL.description) continue;
 
       const dateRaw = cols[COL.date].trim();
       const amountRaw = cols[COL.amount];
-      const amount = roundToCents(parseFloat(amountRaw.replace(",", ".")));
+      // parseLocaleAmount handles the thousands separator too; swapping only the first
+      // comma turned "1.234,56" into "1.234.56", which parsed as 1.234.
+      const amount = roundToCents(parseLocaleAmount(amountRaw));
       const description = cols[COL.description].trim();
       const name = cols[COL.counterName].trim() || description;
 

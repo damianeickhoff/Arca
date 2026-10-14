@@ -1,18 +1,20 @@
 import crypto from "crypto";
-import { ingAmountToNumber, ingDateToISO } from "../format";
+import { ingDateToISO } from "../format";
 import { roundToCents } from "../transaction-splits";
-import { cleanLines, splitDelimited, type BankParser, type ParsedRow } from "./types";
+import { cleanLines, parseLocaleAmount, splitDelimited, type BankParser, type ParsedRow } from "./types";
 
 /**
  * ING's CSV export. Columns: Datum, Naam / Omschrijving, Rekening, Tegenrekening,
  * Code, Af Bij, Bedrag (EUR), Mutatiesoort, Mededelingen. Tab- or semicolon-delimited
  * (language-dependent), Dutch or English headers.
  */
+function isIngHeaderStart(line: string): boolean {
+  const t = line.trim().replace(/^"/, "");
+  return t.startsWith("Datum") || t.startsWith("Date");
+}
+
 function findHeaderIndex(lines: string[]): number {
-  return lines.findIndex((l) => {
-    const t = l.trim().replace(/^"/, "");
-    return t.startsWith("Datum") || t.startsWith("Date");
-  });
+  return lines.findIndex(isIngHeaderStart);
 }
 
 export const ingParser: BankParser = {
@@ -20,7 +22,10 @@ export const ingParser: BankParser = {
   label: "ING",
 
   detect(headerLine) {
-    const hasDateCol = headerLine.includes("Datum") || headerLine.includes("Date");
+    // The date has to be the FIRST column, exactly as parse() requires. Merely containing
+    // "Datum" claimed Rabobank's header too ("…","Datum",…,"Tegenrekening IBAN/BBAN"),
+    // and since ING is tried first, every Rabobank file then failed with "No header found".
+    const hasDateCol = isIngHeaderStart(headerLine);
     const hasIngMarker =
       headerLine.includes("Af Bij") ||
       headerLine.includes("Tegenrekening") ||
@@ -45,8 +50,11 @@ export const ingParser: BankParser = {
     const rows: ParsedRow[] = [];
 
     for (let i = headerIdx + 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+      // Not trim()med: on a tab-separated file that would also strip a trailing tab —
+      // an empty last column — and the row would come up a field short and be dropped.
+      // splitDelimited trims each field instead.
+      const line = lines[i];
+      if (!line.trim()) continue;
 
       const cols = splitDelimited(line, separator);
       if (cols.length < 9) continue;
@@ -54,7 +62,9 @@ export const ingParser: BankParser = {
       const [dateRaw, name, account, counterAccount, code, afBij, bedragRaw, mutatiesoort, mededelingen] = cols;
 
       const date = ingDateToISO(dateRaw.trim());
-      const amount = roundToCents(ingAmountToNumber(bedragRaw.trim()));
+      // ING writes amounts unsigned (Af/Bij carries the direction) and EU-style
+      // ("1.234,56"); parseLocaleAmount also reads a dot-decimal export correctly.
+      const amount = Math.abs(roundToCents(parseLocaleAmount(bedragRaw)));
       const afBijNorm = afBij.trim().toLowerCase();
       const direction: "income" | "expense" =
         afBijNorm === "bij" || afBijNorm === "credit" ? "income" : "expense";

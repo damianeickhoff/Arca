@@ -36,8 +36,11 @@ export const bunqParser: BankParser = {
 
     const rows: ParsedRow[] = [];
     for (let i = headerIdx + 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+      // Not trim()med: on a tab-separated file that would also strip a trailing tab —
+      // an empty last column — and the row would come up a field short and be dropped.
+      // splitDelimited trims each field instead.
+      const line = lines[i];
+      if (!line.trim()) continue;
 
       const cols = splitDelimited(line, separator);
       if (cols.length <= COL.description) continue;

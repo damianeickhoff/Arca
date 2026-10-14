@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { roundToCents } from "../transaction-splits";
-import { cleanLines, isoDateOnly, parseReportedBalance, splitDelimited, type BankParser, type ParsedRow } from "./types";
+import { cleanLines, isoDateOnly, parseLocaleAmount, parseReportedBalance, splitDelimited, type BankParser, type ParsedRow } from "./types";
 
 /**
  * Revolut's "Export statement" CSV, comma-delimited, header:
@@ -33,8 +33,11 @@ export const revolutParser: BankParser = {
 
     const rows: ParsedRow[] = [];
     for (let i = headerIdx + 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+      // Not trim()med: on a tab-separated file that would also strip a trailing tab —
+      // an empty last column — and the row would come up a field short and be dropped.
+      // splitDelimited trims each field instead.
+      const line = lines[i];
+      if (!line.trim()) continue;
 
       const cols = splitDelimited(line, ",");
       if (cols.length <= COL.state) continue;
@@ -44,7 +47,9 @@ export const revolutParser: BankParser = {
 
       const dateRaw = cols[COL.startedDate];
       const amountRaw = cols[COL.amount];
-      const amount = roundToCents(parseFloat(amountRaw));
+      // Same reader as every other parser, so a localised export ("1.234,56") or one
+      // with a thousands comma ("1,234.56") isn't truncated.
+      const amount = roundToCents(parseLocaleAmount(amountRaw));
       const description = cols[COL.description].trim();
       const currency = cols[COL.currency].trim();
 

@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { roundToCents } from "../transaction-splits";
-import { cleanLines, parseReportedBalance, splitDelimited, type BankParser, type ParsedRow } from "./types";
+import { cleanLines, parseLocaleAmount, parseReportedBalance, splitDelimited, type BankParser, type ParsedRow } from "./types";
 
 /**
  * ABN AMRO's plain-text export has NO header row — each line is 8 comma-separated,
@@ -47,7 +47,9 @@ export const abnAmroParser: BankParser = {
 
       const dateRaw = cols[COL.date];
       const amountRaw = cols[COL.amount];
-      const amount = roundToCents(parseFloat(amountRaw));
+      // parseLocaleAmount, not parseFloat: ABN AMRO writes "-23,45", which parseFloat
+      // cut off at the comma (-23).
+      const amount = roundToCents(parseLocaleAmount(amountRaw));
       const description = cols[COL.description].trim();
 
       const hash = crypto
