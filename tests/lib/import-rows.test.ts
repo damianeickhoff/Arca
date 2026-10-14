@@ -70,7 +70,8 @@ describe("importParsedRows", () => {
 
     const result = await importParsedRows(parsed.rows);
     expect(result).toMatchObject({ imported: 6, skipped: 0, invalidDates: 1, total: 7 });
-    // Counted at insert time, before the closing applyAllRules pass (see below).
+    // Read back after the closing rule pass: Albert Heijn (rule), Woonstichting (recurring),
+    // Kiosk (learned), Coolblue (keyword) and the Tikkie. The own-account transfer stays empty.
     expect(result.autoCategorised).toBe(5);
     expect(result.newAccounts.map((b) => b.accountNumber)).toEqual(["NL77BUNQ0123456789"]);
 
@@ -85,14 +86,29 @@ describe("importParsedRows", () => {
     expect(byName.get("Spaarpot")).toMatchObject({ categoryId: null, recurringItemId: null, merchantId: null, counterAccount: "NL88BUNQ0987654321" });
     expect(byName.get("Jan Jansen")).toMatchObject({ isReimbursement: true, direction: "income", type: "inkomen", amount: 12.5 });
 
-    // CURRENT BEHAVIOUR (questionable): categories guessed from learned history, keywords
-    // and the Tikkie rule are assigned on insert, but importParsedRows ends with
-    // applyAllRules(), which resets every non-manual, non-recurring transaction to its
-    // category-rule match — null when no rule matches. So these three end up uncategorised
-    // even though the result above counted them as auto-categorised.
-    expect(byName.get("Kiosk Centraal")!.categoryId).toBeNull();
-    expect(byName.get("Coolblue BV")!.categoryId).toBeNull();
-    expect(byName.get("Jan Jansen")!.categoryId).toBeNull();
+    // Categories guessed from learned history, a keyword match and the Tikkie rule survive
+    // the closing applyAllRules() pass — it only overrides where a rule actually matches.
+    expect(byName.get("Kiosk Centraal")!.categoryId).toBe(ids.snacks);
+    expect(byName.get("Coolblue BV")!.categoryId).toBe(ids.coolblue);
+    expect(byName.get("Jan Jansen")!.categoryId).toBe(ids.tikkies);
+    // …and the reported count is exactly the inserted rows that are categorised now.
+    expect(rows.filter((r) => r.categoryId != null)).toHaveLength(result.autoCategorised);
+  });
+
+  it("a later rule pass overrides only where a rule matches", async () => {
+    const { db } = await import("@/db");
+    const { transactions, categoryRules } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { applyAllRules } = await import("@/lib/apply-rules");
+    // A new rule for Coolblue re-categorises it; every other row keeps its category.
+    await db.insert(categoryRules).values({ categoryId: ids.groceries, namePattern: "coolblue", nameWildcard: true });
+    await applyAllRules();
+    const rows = await db.select().from(transactions).where(eq(transactions.source, "csv_import"));
+    const byName = new Map(rows.map((r) => [r.description, r]));
+    expect(byName.get("Coolblue BV")!.categoryId).toBe(ids.groceries);
+    expect(byName.get("Kiosk Centraal")!.categoryId).toBe(ids.snacks);
+    expect(byName.get("Jan Jansen")!.categoryId).toBe(ids.tikkies);
+    await db.delete(categoryRules).where(eq(categoryRules.namePattern, "coolblue"));
   });
 
   it("skips every row on a re-import of the same file (duplicate detection by importHash)", async () => {

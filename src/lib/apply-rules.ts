@@ -129,11 +129,15 @@ export async function applyAllRules(): Promise<number> {
       // category — for the transactions it matches (its icon does the same at display time).
       if (recurringMatch.categoryId !== row.categoryId) patch.categoryId = recurringMatch.categoryId;
     } else if (!row.manuallyCategorized) {
-      // No recurring category → fall back to generic category rules for auto-categorised rows.
+      // No recurring category → a matching category rule wins for auto-categorised rows.
+      // Only a match overrides: when no rule matches, the category the row already has
+      // stays. Clearing it to null here used to wipe every category the importer had
+      // learned from history, matched by keyword or set by the Tikkie rule — this pass
+      // runs at the end of every import and after every rule or recurring edit.
       const ruleCategoryId = rules.length
         ? matchRules(row.description, row.amount, row.direction, row.account, rules, banksByAccountNumber)
         : null;
-      if (ruleCategoryId !== row.categoryId) patch.categoryId = ruleCategoryId;
+      if (ruleCategoryId !== null && ruleCategoryId !== row.categoryId) patch.categoryId = ruleCategoryId;
     }
 
     if (Object.keys(patch).length > 0) {

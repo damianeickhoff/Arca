@@ -82,8 +82,10 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
 
   let imported = 0;
   let skipped = 0;
-  let autoCategorised = 0;
   let invalidDates = 0;
+  // Ids of the rows this import inserted — the auto-categorised count is read back from
+  // them after the closing rule pass, so it reports what actually stayed categorised.
+  const insertedIds: number[] = [];
 
   for (const row of rows) {
     // transactions.date has no CHECK constraint, and the insert below is wrapped in a
@@ -128,7 +130,7 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
     const merchantId = merchantName ? await getOrCreateMerchantId(merchantName) : null;
 
     try {
-      await db.insert(transactions).values({
+      const [inserted] = await db.insert(transactions).values({
         date: row.date,
         direction: row.direction,
         type: row.direction === "income" ? "inkomen" : "variabel",
@@ -145,11 +147,9 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
         counterAccount: normalizeAccountNumber(row.counterAccount),
         // Verbatim from the bank when the file had a balance column; null otherwise.
         reportedBalance: row.reportedBalance ?? null,
-      });
+      }).returning({ id: transactions.id });
       imported++;
-      // Only count categorisations that belong to rows we actually inserted — otherwise
-      // duplicates (skipped below) inflate the count past `imported`.
-      if (categoryId && !isInternalTransfer) autoCategorised++;
+      insertedIds.push(inserted.id);
     } catch {
       // Transaction already exists — backfill bank metadata for existing pre-feature imports.
       const account = normalizeAccountNumber(row.account);
@@ -201,6 +201,17 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
   // items) and link every transaction to its matching item.
   await detectRecurringTransactions();
   await applyAllRules();
+
+  // Counted only over the rows this import inserted (duplicates never count) and only
+  // after every pass above has run, so the number matches what the user will see.
+  let autoCategorised = 0;
+  for (let i = 0; i < insertedIds.length; i += 500) {
+    const [row] = await db
+      .select({ n: sql<number>`count(*)` })
+      .from(transactions)
+      .where(and(inArray(transactions.id, insertedIds.slice(i, i + 500)), isNotNull(transactions.categoryId)));
+    autoCategorised += Number(row?.n ?? 0);
+  }
 
   return { imported, skipped, autoCategorised, invalidDates, total: rows.length, newAccounts };
 }
