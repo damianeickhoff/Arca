@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:init": "node --experimental-strip-types src/db/migrate.ts",
     "db:seed-demo": "node --experimental-strip-types scripts/seed-demo-data.ts",
-    "db:seed-demo:reset": "node --experimental-strip-types scripts/seed-demo-data.ts --reset"
+    "db:seed-demo:reset": "node --experimental-strip-types scripts/seed-demo-data.ts --reset",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.81.0",
@@ -50,6 +51,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
