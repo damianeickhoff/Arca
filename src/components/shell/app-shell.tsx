@@ -74,7 +74,7 @@ export function AppShell({
   );
 }
 
-function Wordmark() {
+export function Wordmark() {
   return (
     <Link href="/" className="heading inline-flex items-center gap-2 text-2xl font-extrabold tracking-[-0.03em] text-ink">
       <span className="inline-flex size-[25px] items-center justify-center rounded-full bg-mustard text-mustard-ink">

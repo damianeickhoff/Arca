@@ -9,7 +9,12 @@ export const dynamic = "force-dynamic";
 // Persisted under this key via POST /api/settings; "1" = calculator keys shown.
 const CALCULATOR_SETTING_KEY = "add_transaction_calculator";
 
-export default async function AddTransactionPage() {
+export default async function AddTransactionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ scan?: string }>;
+}) {
+  const { scan } = await searchParams;
   // Awaited (not fire-and-forget like the root layout's copy) so a custom account added
   // moments ago is guaranteed to already have its synthetic accountNumber by the time the
   // query below runs — otherwise it could still be excluded by isNotNull() this one time.
@@ -42,6 +47,7 @@ export default async function AddTransactionPage() {
     <AddTransactionClient
       categories={cats}
       calculatorEnabled={calculatorEnabled}
+      openScanner={scan === "1"}
       accounts={accounts.filter((a): a is typeof a & { accountNumber: string } => a.accountNumber !== null)}
     />
   );

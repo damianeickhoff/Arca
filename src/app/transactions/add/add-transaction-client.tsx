@@ -98,10 +98,13 @@ export function AddTransactionClient({
   categories,
   calculatorEnabled: initialCalculatorEnabled,
   accounts,
+  openScanner = false,
 }: {
   categories: Category[];
   calculatorEnabled: boolean;
   accounts: AccountOption[];
+  /** Open the receipt scanner straight away — Home's "Scan receipt" quick action. */
+  openScanner?: boolean;
 }) {
   const router = useRouter();
   const now = new Date().toISOString().split("T")[0];
@@ -122,7 +125,7 @@ export function AddTransactionClient({
   const [pickerFor, setPickerFor] = useState<"single" | "from" | "to" | null>(null);
   const [calcEnabled, setCalcEnabled] = useState(initialCalculatorEnabled);
   const [loading, setLoading] = useState(false);
-  const [scanOpen, setScanOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(openScanner);
 
   const direction: "expense" | "income" = mode === "income" ? "income" : "expense";
   const selectedAccount = accounts.find((a) => a.accountNumber === accountNumber);

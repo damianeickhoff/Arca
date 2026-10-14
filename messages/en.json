@@ -469,6 +469,26 @@
     "planHub": {
       "title": "Budget, debts and goals together",
       "body": "Switch between your budget, your debts and your savings goals here. They're all part of Plan now."
+    },
+    "homeSafeToSpend": {
+      "title": "Safe to spend",
+      "body": "What's left of your budget this month, and per day until it resets. Switch to Balance to see it from your accounts instead. The dial counts the days left."
+    },
+    "homeQuickActions": {
+      "title": "Quick actions",
+      "body": "Import a bank export, add a transaction or scan a receipt straight from Home."
+    },
+    "homeNudge": {
+      "title": "A nudge",
+      "body": "One line on how this week compares to a usual week, worked out from your own spending."
+    },
+    "homeComingUp": {
+      "title": "Coming up",
+      "body": "Bills still to pay this month. Tap the circle to mark one as paid."
+    },
+    "homeSpending": {
+      "title": "Spending",
+      "body": "Each category against its budget. The bar turns orange when a category is nearly used up."
     }
   },
   "importMapping": {
@@ -580,5 +600,94 @@
       "forecast": "Forecast",
       "health": "Health"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Good morning, {name}",
+      "afternoon": "Good afternoon, {name}",
+      "evening": "Good evening, {name}"
+    },
+    "subtitle": "{date} · {count, plural, one {# day} other {# days}} left in this financial month",
+    "addTransaction": "Add transaction",
+    "hero": {
+      "safeToSpend": "Safe to spend",
+      "modeLabel": "Show safe to spend for",
+      "month": "Month",
+      "balance": "Balance",
+      "perDay": "{amount} a day until {date}",
+      "overBudget": "Over budget this month",
+      "noBudget": "No budget set, so this is your cash flow this month",
+      "days": "days",
+      "daysLeft": "{count, plural, one {# day} other {# days}} left",
+      "pace": {
+        "onPace": "On pace",
+        "fast": "Spending fast",
+        "over": "Over budget",
+        "onTrack": "On track",
+        "low": "Low ahead"
+      },
+      "stats": {
+        "budgetUsed": "Budget used",
+        "forecastLow": "Forecast low",
+        "health": "Health score"
+      }
+    },
+    "quick": {
+      "importCsv": "Import CSV",
+      "add": "Add",
+      "scan": "Scan receipt"
+    },
+    "nudge": {
+      "same": "Your spending this week is right on a usual week.",
+      "less": "You spent <b>{amount} less</b> than a usual week.",
+      "lessCategory": "{category} did most of it.",
+      "more": "You spent <b>{amount} more</b> than a usual week.",
+      "moreCategory": "{category} took the biggest share.",
+      "bills": "{count, plural, one {# bill is} other {# bills are}} still due this month, <b>{amount}</b> in total."
+    },
+    "comingUp": {
+      "title": "Coming up",
+      "due": "{amount} due",
+      "all": "All bills",
+      "empty": "Nothing left to pay this month.",
+      "overdue": "Overdue",
+      "today": "Today",
+      "tomorrow": "Tomorrow"
+    },
+    "spending": {
+      "title": "Spending",
+      "all": "All categories",
+      "empty": "No spending yet this month.",
+      "of": "of {budget}",
+      "nearly": "nearly there",
+      "over": "over budget",
+      "tilesTitle": "Spending by category",
+      "tilesAll": "All {count, plural, one {# category} other {# categories}}",
+      "left": "{amount} left"
+    },
+    "cashFlow": {
+      "title": "Cash flow",
+      "link": "Insights",
+      "net": "Net this month"
+    },
+    "needsReview": "{count, plural, one {# transaction needs a category} other {# transactions need a category}}",
+    "latest": {
+      "title": "Latest",
+      "all": "All activity",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "recurring": "Recurring bill",
+      "internalTransfer": "Internal transfer"
+    },
+    "empty": {
+      "title": "No data available yet",
+      "body": "Import a bank export or add your first transaction to fill Home.",
+      "import": "Import a CSV",
+      "create": "Create transaction"
+    }
+  },
+  "bills": {
+    "markPaid": "Mark as paid",
+    "markUnpaid": "Mark as unpaid"
   }
 }

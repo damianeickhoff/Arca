@@ -1,73 +1,52 @@
 import { db } from "@/db";
 import { transactions, categories, goals, recurringItems, banks, merchants, vermogenAccounts, budgetTargets } from "@/db/schema";
-import { eq, and, gte, lte, sql, desc, asc } from "drizzle-orm";
+import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { formatEur } from "@/lib/format";
-import { SplitEur } from "@/components/split-eur";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
-import { WalletHero } from "@/components/wallet-hero";
-import Link from "next/link";
-import { ComparisonCard } from "@/components/comparison-card";
-import { getMonthComparison, pctChange } from "@/lib/month-comparison";
-import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, shiftDate, periodElapsedPct } from "@/lib/date-range";
+import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, shiftDate } from "@/lib/date-range";
 import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
-import { authBackgroundStyle, getAuthBackgroundPreset, AUTH_BG_CLASS } from "@/lib/auth-background";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
-import { DashboardHeaderBar } from "@/components/dashboard-header-bar";
-import { BudgetAlertCard } from "@/components/budget-alert-card";
-import { NoBudgetCard } from "@/components/no-budget-card";
-import { CashFlowForecastCard } from "@/components/cash-flow-forecast-card";
-import { FinancialHealthCard } from "@/components/financial-health-card";
 import { getFinancialHealthScore } from "@/lib/financial-health-data";
 import { getCashFlowForecast } from "@/lib/cash-flow-forecast";
-import { DashboardFlowGlow } from "@/components/dashboard-flow-glow";
 import { DashboardReadySignal } from "@/components/dashboard-ready-signal";
 import { DashboardEmptyState } from "@/app/dashboard-empty-state";
-import { BudgetPortalProvider } from "@/lib/budget-portal-state";
-import { ReportsPortalProvider } from "@/lib/reports-portal-state";
-import { DashboardAnimationProvider } from "@/lib/dashboard-animation";
 import { AccountsCard } from "@/components/accounts-card";
-import { getReportsPortalContent } from "@/app/reports/reports-portal-content";
-import { getBudgetPortalContent } from "@/app/budget-portal-content";
 import { getSettingsPanelContent } from "@/app/settings-panel-content";
 import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { DashboardRecentTransactions } from "@/app/dashboard-recent-transactions";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
-import { CategorySpendingRow } from "@/components/category-spending-row";
-import { TransactionsPortalProvider } from "@/lib/transactions-portal-state";
-import { UpcomingBillsTile, NeedsReviewTile } from "@/components/dashboard-transaction-tiles";
-import { UpcomingPortal } from "@/components/upcoming-portal";
-import { NeedsReviewPortal } from "@/components/needs-review-portal";
-import type { CalendarBill } from "@/app/budget/bills-calendar";
 import { billsDueTotal } from "@/lib/bill-amounts";
-import { cookies } from "next/headers";
-import { AccountsButton } from "@/app/accounts-button";
-import { selectBankAction } from "@/app/actions/select-bank";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
-import { getTranslations } from "next-intl/server";
-import { PageContainer } from "@/components/page-container";
+import { getLocale, getTranslations } from "next-intl/server";
+import Link from "next/link";
+import { IconPlus } from "@tabler/icons-react";
+import { SettingsDialog } from "@/components/settings/settings-dialog";
+import { Wordmark } from "@/components/shell/app-shell";
+import { SearchButton } from "@/components/shell/search-context";
+import { PageHeading, SectionHead } from "@/components/ui/page-heading";
+import { HeroCard, type HeroFigures, type HeroPace } from "@/app/_home/hero-card";
+import { HomeTips } from "@/app/_home/home-tips";
+import { daysInclusive, getWeekNudge, nextDay, todayStr } from "@/app/_home/home-data";
+import {
+  CashFlowCard,
+  CategoryTiles,
+  ComingUp,
+  NeedsReviewLink,
+  NudgeCard,
+  QuickActions,
+  SpendingList,
+  type ComingUpBill,
+} from "@/app/_home/home-sections";
 
 import {
   buildSplitAllocations,
   getDisplayedTransactionCategory,
   groupTransactionSplits,
 } from "@/lib/transaction-splits";
-import type { Viewport } from "next";
-
-// The mobile dashboard hero is a full-bleed gradient that runs to the top of the screen.
-// On iOS the status bar / notch area is OS chrome, not page content, so it can't render the
-// gradient itself — it only takes a single solid colour from the `theme-color` meta. The root
-// layout sets that to white to match every other (plain-background) page, which on the
-// dashboard shows up as the gray strip above the gradient. Override it here, for this route
-// only, to the gradient's start colour (the deep teal at 0%, under where the iOS clock sits)
-// so the bar blends into the gradient instead of clashing. Next.js shallow-merges viewport,
-// so the root's `viewportFit: "cover"` is preserved.
-export const viewport: Viewport = {
-  themeColor: "#0b3b47",
-};
 
 async function getDashboardData(from: string, to: string, selectedBank = "", financialMonth = { defaultStartDay: 1 }) {
   const year = from.slice(0, 4);
@@ -392,361 +371,236 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
   };
 }
 
-function rangeLabel(from: string, to: string): string {
-  const fmt = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  // Same month?
-  if (from.slice(0, 7) === to.slice(0, 7)) {
-    return new Date(from + "T00:00:00").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-  }
-  return `${fmt(from)} – ${fmt(to)}`;
-}
-
-function monthName(date: string): string {
-  const name = new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { month: "long" });
-  return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
-// Shared layout override for cards inside the dashboard's card row: strips each card's
-// standalone margins and gives it a uniform snap width. From md up the row becomes a
-// 3-column grid (see the row itself), so the snap width and shrink-0 are dropped and
-// each card fills its grid cell instead.
-const DASH_CARD = "snap-start shrink-0 m-0 w-[85%] max-w-[22rem] md:w-auto md:max-w-none md:shrink";
-
-function signedEur(amount: number) {
-  return `${amount < 0 ? "-" : ""}${formatEur(amount)}`;
-}
-
 export const dynamic = "force-dynamic";
 
+/**
+ * Home — the redesigned dashboard.
+ *
+ * Phones, top to bottom: the mustard hero, quick actions, a nudge, Coming up, Spending,
+ * the needs-review link and the accounts card. From lg it splits into a main column
+ * (hero, category tiles, cash flow, accounts) and a 380px right column (quick actions,
+ * nudge, every bill coming up, needs review, latest transactions).
+ *
+ * The phone order is produced with `order-*` on the children of two `display: contents`
+ * wrappers, which become the two real columns from lg — one tree, no mobile twin.
+ *
+ * Every figure comes from the existing dashboard calculations: getDashboardData,
+ * getBudgetOverview, getCashFlowForecast, getFinancialHealthScore and getBillStatuses.
+ */
 export default async function DashboardPage({
   searchParams,
 }: {
   searchParams: Promise<{ from?: string; to?: string; month?: string; cmpA?: string; cmpB?: string; cat?: string; acct?: string }>;
 }) {
   const sp = await searchParams;
-  const cookieStore = await cookies();
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const financialMonth = await getFinancialMonthConfig();
   const settingsPanels = getSettingsPanelContent(user);
-  // Dashboard always shows the current financial month by default — it must
-  // not inherit the shared date_from/date_to cookie written by other pages'
-  // date pickers (e.g. Reports), only its own URL query params.
+  // Home shows the current financial month unless the URL asks for another range — it
+  // never inherits the shared date cookie other pages' pickers write.
   const { from, to } = getDateRange(sp, financialMonth);
-  const label = rangeLabel(from, to);
-
-  const selectedBank = cookieStore.get("selected_bank")?.value ?? "";
 
   const billMonth = currentFinancialMonth(financialMonth);
   const currentMonthRange = financialMonthRange(financialMonth, 0);
-  const isViewingCurrentMonth = from === currentMonthRange.from && to === currentMonthRange.to;
 
-  const [data, allBanks, reportsContent, goalsContent, billStatuses, cmp, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast, health, settingsSharedCostMode] = await Promise.all([
-    getDashboardData(from, to, selectedBank, financialMonth),
-    db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
-    getReportsPortalContent({ cmpA: sp.cmpA, cmpB: sp.cmpB, cat: sp.cat, acct: sp.acct }),
-    getBudgetPortalContent(),
+  const [data, billStatuses, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast, health, sharedCostMode, weekNudge] = await Promise.all([
+    getDashboardData(from, to, "", financialMonth),
     getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
-    getMonthComparison(financialMonth),
     getNeedsReviewTransactions(),
-    // The overspend alert is only meaningful for "right now" — suppress it when the
-    // user has picked a historical or custom date range on the dashboard.
-    isViewingCurrentMonth ? getBudgetOverview(financialMonth) : Promise.resolve(null),
+    getBudgetOverview(financialMonth),
     getBankBalances(),
     db.select().from(vermogenAccounts).where(eq(vermogenAccounts.active, true)),
     getAccountBalanceHistory(180),
     getBudgetRecurringMode(),
     getCashFlowForecast(financialMonth),
-    // Score only — the full breakdown is computed again by the Health tab itself,
-    // which is only rendered once the Insights portal is opened.
     getFinancialHealthScore(financialMonth),
-
     getSharedCostMode(),
+    getWeekNudge(),
   ]);
 
-  // Per-user, not app-wide — each family member picks their own dashboard color fade
-  // (see users.authBackground / src/lib/auth-background.ts).
-  const authBackground = getAuthBackgroundPreset(user.authBackground);
+  const locale = await getLocale();
+  const t = await getTranslations("home");
+  const tHealth = await getTranslations("financialHealth");
+  const today = todayStr();
+  const shortDate = (date: string) =>
+    new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00`));
 
-  const needsReviewTotal = needsReview.reduce((sum, r) => sum + (r.correctedAmount ?? r.amount), 0);
-
-  // Upcoming = has a due date this financial month AND not yet paid (same filter as
-  // /transactions/upcoming), same tile as the transactions page's own summary card.
-  const upcomingBills = billStatuses
+  // ── Coming up: unpaid bills with a due date this financial month (the same filter as
+  //    /transactions/upcoming), soonest first. Income stays on the list but out of the
+  //    total — see billsDueTotal.
+  const upcoming = billStatuses
     .filter((s) => s.dueDate != null && s.paid !== true)
     .sort((a, z) => (a.dueDate! < z.dueDate! ? -1 : 1));
-  const upcomingIcons = upcomingBills.slice(0, 3).map((s) => ({ icon: s.icon, iconColor: s.iconColor, iconBackground: s.iconBackground }));
-  // Expenses only — an upcoming salary shows on the calendar but is not money you owe,
-  // so it must not offset the bills here (see billsDueTotal).
-  const upcomingTotal = billsDueTotal(
-    upcomingBills.map((s) => ({ amount: s.item.amount, isIncome: s.item.type === "income" })),
-  );
-
-  // Same shape the standalone /transactions/upcoming route builds, for the dashboard's
-  // own in-page Upcoming portal (see upcoming-portal.tsx).
-  const calendarBills: CalendarBill[] = upcomingBills.map(({ item, icon, iconColor, iconBackground, dueDate, paid, paidSource, overdue }) => ({
-    id: item.id,
-    name: item.friendlyName ?? item.name,
-    amount: item.amount,
-    icon,
-    iconColor,
-    iconBackground,
-    dueDate,
-    paid,
-    paidSource,
-    overdue,
-    isIncome: item.type === "income",
+  const upcomingTotal = billsDueTotal(upcoming.map((s) => ({ amount: s.item.amount, isIncome: s.item.type === "income" })));
+  const upcomingBillCount = upcoming.filter((s) => s.item.type !== "income").length;
+  const comingUp: ComingUpBill[] = upcoming.map((s) => ({
+    id: s.item.id,
+    name: s.item.friendlyName ?? s.item.name,
+    amount: s.item.amount,
+    icon: s.icon,
+    iconColor: s.iconColor,
+    dueDate: s.dueDate!,
+    overdue: s.overdue,
+    isIncome: s.item.type === "income",
   }));
 
-  // Overall budget alert — the configured overall budget if one exists, else the sum
-  // of category budgets. Only surfaced once spend reaches 80% of that target.
-  // Overall budget alert — the configured overall budget if one exists, else the sum
-  // of category budgets.
-  let budgetAlert: {
-    severity: "success" | "warning" | "danger";
-    pct: number;
-    title: string;
-    description: string;
-  } | null = null;
+  // ── Hero, Month mode: what's left of the budget — the overall budget when one is
+  //    set, else the sum of category budgets (the same rule the old budget alert used).
+  //    With no budget at all it falls back to this month's cash flow.
+  const hasOverall = (budgetOverview.budget?.amount ?? 0) > 0;
+  const budgetTarget = hasOverall ? budgetOverview.budget!.amount : budgetOverview.allocated;
+  const budgetSpent = hasOverall ? budgetOverview.totalSpent : budgetOverview.budgetedSpent;
+  const hasBudget = budgetTarget > 0;
 
-  if (budgetOverview) {
-    const hasOverall = (budgetOverview.budget?.amount ?? 0) > 0;
-    const overallTarget = hasOverall ? budgetOverview.budget!.amount : budgetOverview.allocated;
-    const overallSpent = hasOverall ? budgetOverview.totalSpent : budgetOverview.budgetedSpent;
-    const pct = overallTarget > 0 ? overallSpent / overallTarget : 0;
-    const t = await getTranslations("budget");
+  const monthPeriod = hasBudget ? { from: budgetOverview.from, to: budgetOverview.to } : currentMonthRange;
+  const monthTotalDays = Math.max(1, daysInclusive(monthPeriod.from, monthPeriod.to));
+  const monthDaysLeft = Math.max(1, daysInclusive(today < monthPeriod.from ? monthPeriod.from : today, monthPeriod.to));
+  const elapsed = (monthTotalDays - monthDaysLeft + 1) / monthTotalDays;
 
-    const totalDays = Math.max(
-      1,
-      Math.round(
-        (new Date(`${budgetOverview.to}T12:00:00`).getTime() -
-          new Date(`${budgetOverview.from}T12:00:00`).getTime()) /
-          86_400_000,
-      ) + 1,
-    );
-
-    const elapsedPct =
-      ((totalDays - budgetOverview.daysLeft) / totalDays) * 100;
-
-    const phase =
-      elapsedPct < 33
-        ? "early"
-        : elapsedPct < 66
-          ? "around the midpoint"
-          : "toward the end";
-
-    if (pct >= 1) {
-      budgetAlert = {
-        severity: "danger",
-        pct,
-        title: t("alert.over", {amount: formatEur(overallTarget - overallSpent),}),
-        description: t("alert.danger", { phase }),
-      };
-    } else if (pct >= 0.85) {
-      budgetAlert = {
-        severity: "warning",
-        pct,
-        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
-        description: t("alert.warning2", { phase }),
-      };
-    } else if (pct >= 0.7) {
-      budgetAlert = {
-        severity: "warning",
-        pct,
-        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
-        description: `${t("alert.warning1")}`,
-      };
-    } else if (pct >= 0.5) {
-      budgetAlert = {
-        severity: "success",
-        pct,
-        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
-        description: `${t("alert.success3")}`,
-      };
-    } else if (pct >= 0.3) {
-      budgetAlert = {
-        severity: "success",
-        pct,
-        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
-        description: `${t("alert.success2")}`,
-      };
-    } else {
-      budgetAlert = {
-        severity: "success",
-        pct,
-        title: t("alert.left", {amount: formatEur(overallTarget - overallSpent),}),
-        description: `${t("alert.success1")}`,
-      };
-    }
-
+  const monthSafe = hasBudget ? budgetTarget - budgetSpent : data.balance;
+  let monthPace: HeroPace | null = null;
+  if (hasBudget) {
+    const used = budgetSpent / budgetTarget;
+    monthPace = used > 1 ? "over" : used > elapsed + 0.05 ? "fast" : "onPace";
   }
+  const month: HeroFigures = {
+    amount: monthSafe,
+    perDay: hasBudget ? Math.max(0, monthSafe) / monthDaysLeft : null,
+    until: shortDate(nextDay(monthPeriod.to)),
+    pace: monthPace,
+    hint: hasBudget ? (monthSafe < 0 ? t("hero.overBudget") : null) : t("hero.noBudget"),
+    totalDays: monthTotalDays,
+    daysLeft: monthDaysLeft,
+  };
 
-  // Merge the period's per-category spend with whatever budget (if any) that category
-  // has set — most categories have none, in which case the card (and the detail portal
-  // it opens) simply omits the budget-related bits.
-  function withBudget(c: (typeof data.categorySpendingAll)[number]) {
-    const budgetRow = budgetOverview?.categories.find((b) => b.categoryId === c.categoryId);
-    const budget = budgetRow?.budget ?? null;
-    return {
-      ...c,
-      budget,
-      pct: budget != null && budget > 0 ? c.spent / budget : null,
-    };
-  }
-  const categorySpendingRows = data.categorySpending.map(withBudget);
-  const categorySpendingAllRows = data.categorySpendingAll.map(withBudget);
-  const commont = await getTranslations("common");
-  const dasht = await getTranslations("dashboard");
-  // How far into the current financial month "today" is — feeds the small "you are
-  // here" marker on the dashboard's category-spend rings (the detail portal instead
-  // uses whatever period the user has selected there).
-  const monthElapsedPct = periodElapsedPct(currentMonthRange.from, currentMonthRange.to);
+  // ── Hero, Balance mode: what's in the bank accounts minus the bills still due this
+  //    financial month, spread over the days left in it.
+  const fmTotalDays = Math.max(1, daysInclusive(currentMonthRange.from, currentMonthRange.to));
+  const fmDaysLeft = Math.max(1, daysInclusive(today < currentMonthRange.from ? currentMonthRange.from : today, currentMonthRange.to));
+  const bankTotal = bankBalances.reduce((s, b) => s + (Number(b.balance) || 0), 0);
+  const balanceBase = forecast.hasStartingBalance ? forecast.current : bankTotal;
+  const balanceSafe = balanceBase - upcomingTotal;
+  const balance: HeroFigures = {
+    amount: balanceSafe,
+    perDay: Math.max(0, balanceSafe) / fmDaysLeft,
+    until: shortDate(nextDay(currentMonthRange.to)),
+    pace: forecast.status === "empty" ? null : forecast.status === "healthy" ? "onTrack" : "low",
+    hint: null,
+    totalDays: fmTotalDays,
+    daysLeft: fmDaysLeft,
+  };
+
+  const stats = {
+    budgetUsed: hasBudget ? `${formatEur(budgetSpent).replace(/,\d\d$/, "")} · ${Math.round((budgetSpent / budgetTarget) * 100)}%` : "—",
+    forecastLow: forecast.lowest ? `${formatEur(forecast.lowest.amount).replace(/,\d\d$/, "")} · ${shortDate(forecast.lowest.date)}` : "—",
+    health: health.score != null && health.stateKey ? `${health.score} · ${tHealth(`state.${health.stateKey}`)}` : "—",
+  };
+
+  // ── Spending: every category with spend this period, merged with its budget.
+  const spendingRows = data.categorySpending.map((c) => ({
+    categoryId: c.categoryId,
+    categoryName: c.categoryName,
+    color: c.color,
+    icon: c.icon,
+    spent: c.spent,
+    budget: budgetOverview.categories.find((b) => b.categoryId === c.categoryId)?.budget ?? null,
+  }));
+
+  // ── Cash flow: the cumulative net by day, up to today.
+  const cashFlowHistory = data.walletHistory.filter((p) => p.date <= today).map((p) => p.balance);
 
   const accountsTotal = bankBalances.reduce((s, b) => s + b.balance, 0) + vermogenRows.reduce((s, a) => s + a.value, 0);
+  const hasTransactions = data.recent.length > 0;
 
-  const activeGoals = data.goals.filter((g) => g.targetAmount > 0);
-  const sortedGoals = [...activeGoals]
-    .map((g) => ({ ...g, pct: Math.min(100, (g.currentAmount / g.targetAmount) * 100) }))
-    .sort((a, b) => b.pct - a.pct);
+  const hour = new Date().getHours();
+  const greetingKey = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  const firstName = user.firstName ?? user.name.split(" ")[0];
+  const longToday = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
   return (
-    <DashboardAnimationProvider>
-    <ReportsPortalProvider>
-    <BudgetPortalProvider>
-    <TransactionsPortalProvider>
-    <div className={`${AUTH_BG_CLASS} relative isolate mt-[calc(-1.7rem-var(--sat))] pt-[var(--sat)] min-h-dvh `} style={authBackgroundStyle(authBackground, { boxHeight: "110dvh", fadeStop: 50 })}>
+    <div className="mx-auto w-full max-w-[1200px] px-5 pt-[var(--sat)] lg:px-9">
       <DashboardReadySignal />
-      
+      <HomeTips />
 
-      {/* ── DASHBOARD — one tree at every width, centred in the shared column.
-          The gradient hero above stays full-bleed; only the content is capped.
-          MainContent already reserves --nav-clearance at the bottom. ── */}
-      <PageContainer className="px-0 min-h-dvh pt-5">
-
-        {/* Transparent top bar — circular buttons, status-bar height padding.
-            Sticky like the other pages. */}
-        <div className="sticky top-[var(--sat)] z-40 flex items-center justify-between px-4 pt-[11px] pb-3">
-          <DashboardHeaderBar
-            reportsContent={reportsContent}
-            budgetContent={goalsContent}
+      {/* Phone header — wordmark, search and the settings avatar. */}
+      <header className="flex h-[62px] items-center justify-between pt-[18px] lg:hidden">
+        <Wordmark />
+        <div className="flex items-center gap-2">
+          <SearchButton />
+          <SettingsDialog
             user={user}
-            settingsPanels={settingsPanels}
+            panels={settingsPanels}
             financialMonth={financialMonth}
             budgetRecurringMode={budgetRecurringMode}
-            sharedCostMode={settingsSharedCostMode}
+            sharedCostMode={sharedCostMode}
+            iconOnly
           />
         </div>
+      </header>
 
-        {/* Wallet card — gradient hero; tap the amount to cycle cash flow → total
-            balance → each account (see WalletHero). */}
-        <WalletHero
-          cashflowBalance={data.balance}
-          periodLabel={label}
-          walletHistory={data.walletHistory}
-          totalBalance={accountsTotal}
-          accountHistory={accountHistory}
-        />
-
-        {/* Horizontal card row — the overall budget alert (ring + message, or the
-            create-a-budget prompt when none is set) sits alongside the Cash Flow
-            Forecast card. Cards are 85% wide so the next one peeks in and the row
-            reads as scrollable; each card overrides its own standalone margins. */}
-        {/* scroll-px-3 + the trailing spacer below: a scroll container's padding-right
-            collapses at the end of the scroll, leaving the last card flush against the
-            screen edge, so the gutter has to be restored with a real element. */}
-        {/* From md the row has the space to lay all three cards out at once: it becomes
-            a 3-column grid and the horizontal scroll — snapping, hidden scrollbar, the
-            trailing gutter spacer — all switches off. Below md it stays the scrollable
-            row, unchanged. px-3 at every width so the row's outer edges line up with
-            the Upcoming bills card below (mx-3), rather than insetting further on md. */}
-        <div className="mt-5 flex items-stretch gap-3 overflow-x-auto px-3 pb-1 snap-x snap-mandatory scroll-px-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:grid-cols-3 md:overflow-visible md:snap-none">
-          {budgetOverview && !budgetOverview.budget && <NoBudgetCard className={DASH_CARD} />}
-          {budgetOverview?.budget && budgetAlert && (
-            <BudgetAlertCard
-              pct={budgetAlert.pct * 100}
-              severity={budgetAlert.severity}
-              title={budgetAlert.title}
-              description={budgetAlert.description}
-              className={DASH_CARD}
-            />
-          )}
-          <CashFlowForecastCard
-            current={forecast.current}
-            status={forecast.status}
-            message={forecast.message}
-            hasStartingBalance={forecast.hasStartingBalance}
-            className={DASH_CARD}
-          />
-          <FinancialHealthCard
-            score={health.score}
-            stateKey={health.stateKey}
-            color={health.color}
-            topOpportunity={health.topOpportunity}
-            className={DASH_CARD}
-          />
-          {/* Restores the row's right-hand gutter, which a scroll container's padding
-              collapses at the end of the scroll. Pure scroll-mode fix — no place in
-              the grid, where it would claim a whole column. */}
-          <div aria-hidden className="shrink-0 w-0.5 md:hidden" />
-        </div>
-
-        {/* Spending by category — scrollable row of every category with at least one
-            transaction this period (biggest spend first), regardless of whether it has
-            a budget set; tapping a card opens the category detail portal
-            (src/components/category-detail-portal.tsx) */}
-        {categorySpendingAllRows.length > 0 && (
-          <CategorySpendingRow
-            rows={categorySpendingRows}
-            allRows={categorySpendingAllRows}
-            periodElapsedPct={monthElapsedPct}
-            financialMonth={financialMonth}
-            budgetPeriod={budgetOverview ? { from: budgetOverview.from, to: budgetOverview.to } : { from, to }}
-          />
-        )}
-
-        {/* Upcoming transactions — same summary tile as the transactions page */}
-        {upcomingBills.length > 0 && (
+      {/* Desktop header — greeting, the day and how much of the month is left. */}
+      <PageHeading
+        className="hidden h-[84px] lg:flex"
+        title={t(`greeting.${greetingKey}`, { name: firstName })}
+        subtitle={t("subtitle", { date: longToday, count: fmDaysLeft })}
+        actions={
           <>
-            <div className="flex items-center justify-between mx-6 mt-5 mb-2">
-                <h2 className="font-semibold text-base">{dasht("upcomingBills")}</h2>
-            </div>
-            <UpcomingBillsTile count={upcomingBills.length} total={upcomingTotal} icons={upcomingIcons} />
+            <SearchButton />
+            <Link
+              href="/transactions/add"
+              className="inline-flex h-[42px] items-center gap-2 rounded-full bg-mustard px-[18px] text-sm font-bold text-mustard-ink"
+            >
+              <IconPlus size={16} stroke={2} />
+              {t("addTransaction")}
+            </Link>
           </>
-        )}
+        }
+      />
 
-
-        {/* Recent transactions */}
-          <div className="flex items-center justify-between mx-6 mt-5 mb-2">
-            <h2 className="font-semibold text-base">{commont("recentTransactions")}</h2>
-            {data.recent.length > 0 && (
-              <Link href="/transactions" className="text-sm text-muted-foreground active:opacity-70">
-                {commont("showAll")}
-              </Link>
-            )}
+      <div className="mt-4 flex flex-col gap-5 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+        {/* Main column */}
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
+          <div className="order-1 lg:order-none">
+            <HeroCard month={month} balance={balance} stats={stats} />
           </div>
-        {/* Needs review — transactions with no category yet. Hidden when the queue is empty. */}
-        {needsReview.length > 0 && (
-          <NeedsReviewTile count={needsReview.length} total={needsReviewTotal} />
-        )}
-                  
-        <div className="pb-4 mt-3 px-5 mx-3 rounded-xl bg-card backdrop-blur-3xl">
-          {data.recent.length > 0 ? (
-            <DashboardRecentTransactions recent={data.recent} categories={data.categories} savingsGoals={data.goals} />
-          ) : <DashboardEmptyState />}
+          <SpendingList rows={spendingRows} className="order-5 lg:order-none lg:hidden" />
+          <CategoryTiles rows={spendingRows} total={spendingRows.length} className="hidden lg:flex" />
+          <CashFlowCard net={data.balance} history={cashFlowHistory} className="hidden lg:flex" />
+          <div className="order-8 lg:order-none">
+            <AccountsCard bankBalances={bankBalances} vermogenRows={vermogenRows} accountsTotal={accountsTotal} accountHistory={accountHistory} />
+          </div>
         </div>
 
-        {/* Accounts — total saldo across bank + asset accounts, with a running-balance sparkline */}
-        <AccountsCard bankBalances={bankBalances} vermogenRows={vermogenRows} accountsTotal={accountsTotal} accountHistory={accountHistory} />
-
-      </PageContainer>
+        {/* Right column (desktop) */}
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
+          <div className="order-2 lg:order-none">
+            <QuickActions />
+          </div>
+          {!hasTransactions && (
+            <div className="order-3 lg:order-none rounded-card border border-line bg-surface shadow-card">
+              <DashboardEmptyState />
+            </div>
+          )}
+          <div className="order-3 lg:order-none empty:hidden">
+            <NudgeCard nudge={weekNudge} billsDue={{ count: upcomingBillCount, total: upcomingTotal }} />
+          </div>
+          <div className="order-4 lg:order-none">
+            <ComingUp bills={comingUp} month={billMonth} totalDue={upcomingTotal} today={today} />
+          </div>
+          <div className="order-6 lg:order-none empty:hidden">
+            <NeedsReviewLink count={needsReview.length} />
+          </div>
+          {hasTransactions && (
+            <section className="hidden flex-col gap-2.5 lg:flex">
+              <SectionHead title={t("latest.title")} link={t("latest.all")} href="/transactions" />
+              <div className="rounded-card border border-line bg-surface px-[18px] py-1 shadow-card">
+                <DashboardRecentTransactions recent={data.recent.slice(0, 6)} categories={data.categories} savingsGoals={data.goals} />
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
     </div>
-    <UpcomingPortal bills={calendarBills} from={currentMonthRange.from} to={currentMonthRange.to} month={billMonth} />
-    <NeedsReviewPortal rows={needsReview} categories={data.categories} savingsGoals={data.goals} />
-    </TransactionsPortalProvider>
-    </BudgetPortalProvider>
-    </ReportsPortalProvider>
-    </DashboardAnimationProvider>
   );
 }
-

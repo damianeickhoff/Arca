@@ -469,6 +469,26 @@
     "planHub": {
       "title": "Budget, schulden en doelen bij elkaar",
       "body": "Wissel hier tussen je budget, je schulden en je spaardoelen. Ze vallen nu allemaal onder Plan."
+    },
+    "homeSafeToSpend": {
+      "title": "Vrij te besteden",
+      "body": "Wat er deze maand over is van je budget, en per dag tot het opnieuw begint. Kies Saldo om het vanuit je rekeningen te zien. De wijzerplaat telt de resterende dagen."
+    },
+    "homeQuickActions": {
+      "title": "Snelle acties",
+      "body": "Importeer een bankexport, voeg een transactie toe of scan een bon, direct vanaf Home."
+    },
+    "homeNudge": {
+      "title": "Een seintje",
+      "body": "Eén zin over hoe deze week zich verhoudt tot een gewone week, berekend uit je eigen uitgaven."
+    },
+    "homeComingUp": {
+      "title": "Binnenkort",
+      "body": "Rekeningen die deze maand nog betaald moeten worden. Tik op het rondje om er een als betaald te markeren."
+    },
+    "homeSpending": {
+      "title": "Uitgaven",
+      "body": "Elke categorie tegenover haar budget. De balk kleurt oranje als een categorie bijna op is."
     }
   },
   "importMapping": {
@@ -580,5 +600,94 @@
       "forecast": "Prognose",
       "health": "Gezondheid"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Goedemorgen, {name}",
+      "afternoon": "Goedemiddag, {name}",
+      "evening": "Goedenavond, {name}"
+    },
+    "subtitle": "{date} · nog {count, plural, one {# dag} other {# dagen}} in deze financiële maand",
+    "addTransaction": "Transactie toevoegen",
+    "hero": {
+      "safeToSpend": "Vrij te besteden",
+      "modeLabel": "Toon vrij te besteden voor",
+      "month": "Maand",
+      "balance": "Saldo",
+      "perDay": "{amount} per dag tot {date}",
+      "overBudget": "Over je budget deze maand",
+      "noBudget": "Geen budget ingesteld, dus dit is je cashflow deze maand",
+      "days": "dagen",
+      "daysLeft": "nog {count, plural, one {# dag} other {# dagen}}",
+      "pace": {
+        "onPace": "Op schema",
+        "fast": "Snel bezig",
+        "over": "Over budget",
+        "onTrack": "Op koers",
+        "low": "Krap straks"
+      },
+      "stats": {
+        "budgetUsed": "Budget gebruikt",
+        "forecastLow": "Laagste prognose",
+        "health": "Gezondheid"
+      }
+    },
+    "quick": {
+      "importCsv": "CSV importeren",
+      "add": "Toevoegen",
+      "scan": "Bon scannen"
+    },
+    "nudge": {
+      "same": "Je uitgaven deze week zijn precies een gewone week.",
+      "less": "Je gaf <b>{amount} minder</b> uit dan in een gewone week.",
+      "lessCategory": "Vooral {category}.",
+      "more": "Je gaf <b>{amount} meer</b> uit dan in een gewone week.",
+      "moreCategory": "{category} was het grootste deel.",
+      "bills": "{count, plural, one {# rekening staat} other {# rekeningen staan}} deze maand nog open, samen <b>{amount}</b>."
+    },
+    "comingUp": {
+      "title": "Binnenkort",
+      "due": "{amount} te betalen",
+      "all": "Alle rekeningen",
+      "empty": "Deze maand hoef je niets meer te betalen.",
+      "overdue": "Te laat",
+      "today": "Vandaag",
+      "tomorrow": "Morgen"
+    },
+    "spending": {
+      "title": "Uitgaven",
+      "all": "Alle categorieën",
+      "empty": "Nog geen uitgaven deze maand.",
+      "of": "van {budget}",
+      "nearly": "bijna op",
+      "over": "over budget",
+      "tilesTitle": "Uitgaven per categorie",
+      "tilesAll": "Alle {count, plural, one {# categorie} other {# categorieën}}",
+      "left": "{amount} over"
+    },
+    "cashFlow": {
+      "title": "Cashflow",
+      "link": "Inzichten",
+      "net": "Netto deze maand"
+    },
+    "needsReview": "{count, plural, one {# transactie heeft een categorie nodig} other {# transacties hebben een categorie nodig}}",
+    "latest": {
+      "title": "Laatste",
+      "all": "Alle activiteit",
+      "today": "Vandaag",
+      "yesterday": "Gisteren",
+      "recurring": "Vaste last",
+      "internalTransfer": "Eigen overboeking"
+    },
+    "empty": {
+      "title": "Nog geen gegevens",
+      "body": "Importeer een bankexport of voeg je eerste transactie toe om Home te vullen.",
+      "import": "CSV importeren",
+      "create": "Transactie aanmaken"
+    }
+  },
+  "bills": {
+    "markPaid": "Markeer als betaald",
+    "markUnpaid": "Markeer als onbetaald"
   }
 }

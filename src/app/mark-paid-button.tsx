@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { IconCheck as Check } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
 // Manual mark-as-paid/unpaid toggle for a single bill in a single month. Only rendered
 // for bills that aren't already auto-marked paid via a matching transaction — those show
 // the existing static "Paid" tag instead, since there's nothing to toggle.
+// Mustard style: a 28px circle, a line ring while open and filled positive once paid.
 export function MarkPaidButton({
   recurringItemId,
   month,
@@ -17,6 +19,7 @@ export function MarkPaidButton({
   month: string;
   paid: boolean;
 }) {
+  const t = useTranslations("bills");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [optimisticPaid, setOptimisticPaid] = useState(paid);
@@ -37,15 +40,16 @@ export function MarkPaidButton({
       type="button"
       onClick={toggle}
       disabled={pending}
-      aria-label={optimisticPaid ? "Mark as unpaid" : "Mark as paid"}
+      aria-label={optimisticPaid ? t("markUnpaid") : t("markPaid")}
+      aria-pressed={optimisticPaid}
       className={cn(
-        "shrink-0 size-6 rounded-full border flex items-center justify-center transition-colors",
+        "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors",
         optimisticPaid
-          ? "bg-emerald-500 border-emerald-500 text-white"
-          : "border-foreground/20 text-transparent hover:border-foreground/40",
+          ? "border-positive bg-positive text-white"
+          : "border-line text-transparent hover:border-ink-3 hover:text-ink-3",
       )}
     >
-      <Check className="size-3.5" />
+      <Check className="size-3.5" stroke={2.4} />
     </button>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { IconReload } from "@tabler/icons-react";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { Icon } from "@/components/icon";
@@ -24,6 +25,9 @@ export function DashboardRecentTransactions({
   categories: Category[];
   savingsGoals: Goal[];
 }) {
+  // `tl`, not `t`: the row callbacks below already use `t` for the transaction.
+  const tl = useTranslations("home.latest");
+  const locale = useLocale();
   const [detailRow, setDetailRow] = useState<TransactionDetail | null>(null);
   const [categoryOverrides, setCategoryOverrides] = useState<Map<number, number | null>>(new Map());
 
@@ -39,9 +43,9 @@ export function DashboardRecentTransactions({
     return { todayStr: toLocalDateStr(now), yesterdayStr: toLocalDateStr(yesterday) };
   });
   function dayLabel(date: string) {
-    if (date === todayStr) return "Today";
-    if (date === yesterdayStr) return "Yesterday";
-    return new Date(date + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    if (date === todayStr) return tl("today");
+    if (date === yesterdayStr) return tl("yesterday");
+    return new Date(date + "T00:00:00").toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
   }
 
   function resolveRow(t: TransactionDetail): TransactionDetail {
@@ -74,22 +78,22 @@ export function DashboardRecentTransactions({
   const firstRowId = days[0]?.[1][0]?.id;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4 py-3">
       {/* Held back while the detail sheet is open — the tip is about opening it. */}
       <AnchoredTip id="transactionDetail" anchor="transactionRow" active={detailRow == null} />
 
       {days.map(([date, txs]) => (
 
-        <div key={date}>
-        <p className="text-xs font-medium text-foreground/60 uppercase tracking-wide mb-4 pt-5">{dayLabel(date)}</p>
-          <div className="space-y-4">
+        <div key={date} className="flex flex-col gap-1">
+          <p className="mono-label">{dayLabel(date)}</p>
+          <div className="flex flex-col">
             {txs.map((t) => (
               <button
                 key={t.id}
                 type="button"
                 onClick={() => setDetailRow(t)}
                 data-tip-anchor={t.id === firstRowId ? "transactionRow" : undefined}
-                className="w-full flex items-center gap-3.5 rounded-xl text-left active:bg-foreground/[0.04] transition-colors"
+                className="flex min-h-[58px] w-full items-center gap-3 rounded-xl text-left transition-colors active:bg-surface-2"
               >
                 {(() => { const ic = resolveTransactionIcon(t); return (
                   <div className="relative shrink-0">
@@ -97,27 +101,27 @@ export function DashboardRecentTransactions({
                     {/* Same recurring marker as the transactions list. */}
                     {t.recurringItemId != null && (
                       <span
-                        aria-label="Recurring bill"
-                        className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-foreground dark:bg-foreground"
+                        aria-label={tl("recurring")}
+                        className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-ink"
                       >
-                        <IconReload className="size-3 text-background" stroke={2.5} />
+                        <IconReload className="size-3 text-bg" stroke={2.5} />
                       </span>
                     )}
                   </div>
                 ); })()}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate leading-tight">{resolveDisplayName(t)}</p>
+                  <p className="truncate text-sm font-semibold leading-tight text-ink">{resolveDisplayName(t)}</p>
                   {t.isInternalTransfer ? (
-                    <p className="text-xs text-foreground/60 mt-0.5 truncate">
-                      {(t.transferType && TRANSFER_TYPE_LABELS[t.transferType]) || "Internal transfer"}
+                    <p className="mt-[3px] truncate text-xs text-ink-3">
+                      {(t.transferType && TRANSFER_TYPE_LABELS[t.transferType]) || tl("internalTransfer")}
                     </p>
                   ) : t.categoryName ? (
-                    <p className="text-xs text-foreground/60 mt-0.5 truncate">{t.categoryName}</p>
+                    <p className="mt-[3px] truncate text-xs text-ink-3">{t.categoryName}</p>
                   ) : null}
                 </div>
                 <p className={cn(
-                  "text-md font-normal tabular-nums shrink-0",
-                  t.isReimbursement ? "text-amber-600" : t.direction === "income" ? "text-green-500 dark:text-emerald-400" : "text-foreground",
+                  "shrink-0 text-[15px] font-semibold tabular-nums tracking-[-0.01em]",
+                  t.isReimbursement ? "text-warning" : t.direction === "income" ? "text-positive" : "text-ink",
                 )}>
                   {formatEur(t.amount)}
                 </p>
