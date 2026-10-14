@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { useTranslations } from "next-intl";
 import { IconEyeOff, IconEye, IconTrash, IconX } from "@tabler/icons-react";
 import { bottomDockClass } from "@/components/bottom-nav";
@@ -73,6 +74,7 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
         body: JSON.stringify({ ids: selectedIds }),
       });
       if (!res.ok) throw new Error(await res.text());
+      await refreshLayoutAction();
       router.refresh();
       onDone();
     } catch (e) {

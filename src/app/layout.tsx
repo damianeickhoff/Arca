@@ -108,9 +108,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     void backfillBankAccountNumbers();
   }
 
-  // The desktop sidebar lists every account with its balance. Read once per request
-  // here (the shell is a client component); a soft navigation keeps the layout, so a
-  // balance only moves on the next full render or router.refresh().
+  // The desktop sidebar lists every account with its balance. Read here (the shell is a
+  // client component); a soft navigation keeps the layout, so mutations that move a
+  // balance revalidate it — refreshLayoutAction (app/actions/refresh-layout.ts) from the
+  // client flows, and revalidatePath("/", "layout") in the transaction, import, bank and
+  // vermogen API routes.
   const [shellAccounts, sidebarSubtitle] = user
     ? await Promise.all([loadShellAccounts(), getSidebarSubtitle()])
     : [[] as ShellAccount[], ""];

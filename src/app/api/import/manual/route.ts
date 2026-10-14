@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { importParsedRows } from "@/lib/import-rows";
 import { parseWithMapping, saveProfile, type ColumnMapping } from "@/lib/import-profiles";
 import { peekRawImport } from "@/lib/import-raw-cache";
@@ -50,5 +51,7 @@ export async function POST(req: NextRequest) {
   await saveProfile(label || "Custom bank", headerLine, mapping.delimiter, mapping);
 
   const result = await importParsedRows(parsed.rows);
+  // New rows move the sidebar's account balances (root layout).
+  revalidatePath("/", "layout");
   return NextResponse.json(result);
 }

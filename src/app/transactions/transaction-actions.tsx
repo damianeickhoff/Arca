@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import type { Category } from "@/db/schema";
 import { formatEur, currencySymbol } from "@/lib/format";
 import { BrandIconPicker } from "@/components/brand-icon-picker";
@@ -205,6 +206,7 @@ export function TransactionActions({ id, description, amount, correctedAmount, i
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    await refreshLayoutAction();
     setLoading(false);
     router.refresh();
   }

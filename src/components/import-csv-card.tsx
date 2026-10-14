@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { useTranslations } from "next-intl";
 import {
   IconUpload as Upload,
@@ -44,6 +45,8 @@ export function ImportCsvCard() {
       } else {
         setResult(data);
         setStatus("success");
+        // New rows move the sidebar's account balances.
+        void refreshLayoutAction();
         if (data.newAccounts?.length > 0) setNewAccounts(data.newAccounts);
       }
     } catch (e) {

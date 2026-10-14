@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { cn } from "@/lib/utils";
 import { Icon, parseImgKey } from "@/components/icon";
 import { formatEur, formatDate, BUDGET_TYPE_LABELS } from "@/lib/format";
@@ -150,6 +151,7 @@ export function TransactionDetailDialog({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: shown.id }),
     });
+    await refreshLayoutAction();
     setDeleting(false);
     onClose();
     router.refresh();

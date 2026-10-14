@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { detectAndParse } from "@/lib/bank-parsers";
 import { cleanLines, guessDelimiter, splitDelimited } from "@/lib/bank-parsers/types";
 import { importParsedRows } from "@/lib/import-rows";
@@ -64,6 +65,8 @@ export async function POST(req: NextRequest) {
         return needsMapping(text, profile.mapping);
       }
       const result = await importParsedRows(mapped.rows);
+      // New rows move the sidebar's account balances (root layout).
+      revalidatePath("/", "layout");
       return NextResponse.json(result);
     }
   }
@@ -74,5 +77,6 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await importParsedRows(parsed.rows);
+  revalidatePath("/", "layout");
   return NextResponse.json(result);
 }

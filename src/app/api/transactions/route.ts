@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { transactions, categories, transactionSplits } from "@/db/schema";
 import { eq, desc, and, gte, lte, inArray, like } from "drizzle-orm";
@@ -225,6 +226,8 @@ export async function POST(req: NextRequest) {
     await adjustGoalAmount(row.goalId, goalDeltaForTransaction(row.direction, getTransactionSplitTotal(row.amount, row.correctedAmount)));
   }
   await applyAllBrandRules();
+  // The sidebar's account balances (root layout) include this row now.
+  revalidatePath("/", "layout");
   return NextResponse.json(row, { status: 201 });
 }
 
@@ -255,9 +258,11 @@ export async function DELETE(req: NextRequest) {
     if (body.ids.length === 0) return NextResponse.json({ ok: true });
     await reverseGoalContributions(body.ids);
     await db.delete(transactions).where(inArray(transactions.id, body.ids));
+    revalidatePath("/", "layout");
     return NextResponse.json({ ok: true });
   }
   await reverseGoalContributions([body.id]);
   await db.delete(transactions).where(eq(transactions.id, body.id));
+  revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }

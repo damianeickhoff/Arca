@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import {
   IconX,
   IconDots,
@@ -206,6 +207,8 @@ export function AddTransactionClient({
           body: JSON.stringify({ ...base, description: desc, direction: "income", account: transferTo, counterAccount: transferFrom }),
         }),
       ]);
+      // Balances changed: refresh the layout (sidebar accounts) before leaving.
+      await refreshLayoutAction();
       setLoading(false);
       router.back();
       router.refresh();
@@ -226,6 +229,7 @@ export function AddTransactionClient({
         source: "manual",
       }),
     });
+    await refreshLayoutAction();
     setLoading(false);
     router.back();
     router.refresh();

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -222,6 +223,7 @@ export function ImportColumnMapping({ data, onImported, onCancel }: Props) {
         setSubmitting(false);
         return;
       }
+      void refreshLayoutAction();
       onImported(json);
     } catch (e) {
       setError(String(e));
