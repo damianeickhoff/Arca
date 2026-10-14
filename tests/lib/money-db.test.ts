@@ -183,7 +183,7 @@ describe("budget-overview: getBudgetOverview", () => {
     await setSetting("budget_recurring_mode", null);
   });
 
-  it("net shared-cost mode subtracts the shared estimate, but NOT linked reimbursements", async () => {
+  it("net shared-cost mode subtracts linked reimbursements first, then the shared estimate", async () => {
     const { getBudgetOverview } = await import("@/lib/budget-overview");
     await setSetting("shared_cost_mode", "net");
     await setSetting("budget_recurring_mode", "always");
@@ -191,20 +191,17 @@ describe("budget-overview: getBudgetOverview", () => {
       const o = await getBudgetOverview(config);
       // Storage box: 103 − 77.25 shared estimate = 25.75.
       expect(o.categories.find((c) => c.categoryId === cat.storage)!.spent).toBe(25.75);
-      // CURRENT BEHAVIOUR (questionable): the €25 Tikkie linked to Bol.com is ignored here.
-      // budget-overview selects from `transactions` without a join, so Drizzle renders the
-      // columns inside reimbursedAmountExpr unqualified and its reimbursements subquery
-      // compares original_transaction_id with reimbursements.id instead of transactions.id.
-      // getBudgetData (which joins categories) nets the same Tikkie correctly — see below.
-      expect(o.categories.find((c) => c.categoryId === cat.fun)!.spent).toBe(40 + 45 + 50);
-      expect(o.categories.find((c) => c.categoryId === cat.groceries)!.spent).toBe(120 + 30 + 20);
+      // Bol.com 60 split 40/20 with the €25 Tikkie linked → 16.67 / 8.33 netted off the
+      // splits — the same figures getBudgetData produces below.
+      expect(o.categories.find((c) => c.categoryId === cat.fun)!.spent).toBeCloseTo(23.33 + 45 + 50, 2);
+      expect(o.categories.find((c) => c.categoryId === cat.groceries)!.spent).toBeCloseTo(120 + 30 + 11.67, 2);
     } finally {
       await setSetting("shared_cost_mode", null);
       await setSetting("budget_recurring_mode", null);
     }
   });
 
-  it("reimbursedAmountExpr only resolves the linked-reimbursement branch when columns are qualified", async () => {
+  it("reimbursedAmountExpr gives the same answer with or without a join", async () => {
     const { db } = await import("@/db");
     const { transactions, categories } = await import("@/db/schema");
     const { eq } = await import("drizzle-orm");
@@ -216,7 +213,10 @@ describe("budget-overview: getBudgetOverview", () => {
       .leftJoin(categories, eq(transactions.categoryId, categories.id));
     const pick = (rows: { id: number; r: number }[], id: number) => rows.find((row) => row.id === id)!.r;
     expect(pick(joined, tx.bol)).toBe(25);
-    expect(pick(unjoined, tx.bol)).toBe(0);
+    expect(pick(unjoined, tx.bol)).toBe(25);
+    // Nothing linked and no shared bill → 0 either way.
+    expect(pick(joined, tx.ah)).toBe(0);
+    expect(pick(unjoined, tx.ah)).toBe(0);
     // The shared-bill fallback works either way.
     expect(pick(joined, tx.storage)).toBe(77.25);
     expect(pick(unjoined, tx.storage)).toBe(77.25);
