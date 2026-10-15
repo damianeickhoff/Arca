@@ -101,6 +101,13 @@
      bottom margin (see the media query after this block). See
      components/shell/app-shell.tsx. */
   --nav-clearance: calc(6rem + var(--sab));
+  /* A bar docked just above the phone tab bar (Activity's search): it sits 12px above
+     the tab bar's top edge, and a page showing one adds --bottom-bar-clearance on top
+     of --nav-clearance so its last row clears both. Phones only — from lg there is no
+     tab bar and no docked bar. */
+  --bottom-bar-height: 48px;
+  --bottom-bar-offset: calc(var(--nav-clearance) - 4px);
+  --bottom-bar-clearance: calc(var(--bottom-bar-height) + 12px);
   --container-sm: 25rem;
 
   /* ── Mustard palette — light. The one source of truth for the redesign; the
@@ -245,6 +252,11 @@
       #f97316 45%,
       #fdba74 100%
     );
+}
+
+/* Bars docked above the tab bar step aside while any bottom sheet is open. */
+html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
+  display: none;
 }
 
 /* Desktop: the sidebar replaces the floating tab bar, so pages only need an

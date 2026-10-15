@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState, useSyncExternalStore } from "react";
+import { useNavHidden } from "@/lib/nav-visibility";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { IconAdjustmentsHorizontal, IconCamera, IconFileUpload, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
@@ -10,7 +11,6 @@ import { SPLIT_GRID_WIDE } from "@/components/page-container";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { InkLineChart } from "@/components/ui/ink-line-chart";
 import { PageHeading } from "@/components/ui/page-heading";
-import { SearchButton } from "@/components/shell/search-context";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Bank, Category, Goal } from "@/db/schema";
@@ -85,7 +85,9 @@ export function ActivityHeader({
         }
         actions={
           <>
-            <SearchButton />
+            {/* Desktop: the header field filters the list (Cmd/Ctrl+K still opens the
+                global search). Phones search from the bar docked above the tab bar. */}
+            <ActivitySearch search={filters.search} variant="header" />
             <button
               type="button"
               onClick={() => setFiltersOpen(true)}
@@ -134,8 +136,17 @@ export function ActivityHeader({
 
 // ── search ─────────────────────────────────────────────────────────────────────
 
-function ActivitySearch({ search }: { search?: string }) {
-  const t = useTranslations("transactions");
+/**
+ * Searches the transaction list (the `search` URL param, debounced). Two placements:
+ *   • "header" — desktop only, in the page header where the global search pill sits on
+ *     other pages; Cmd/Ctrl+K still opens the global overlay.
+ *   • "bottom" — phones only, a bar docked just above the floating tab bar, out of the
+ *     way of the list and within thumb reach. Hidden during bulk select and while a
+ *     sheet is open.
+ */
+function ActivitySearch({ search, variant }: { search?: string; variant: "header" | "bottom" }) {
+  const t = useTranslations("activity");
+  const tTx = useTranslations("transactions");
   const router = useRouter();
   const params = useSearchParams();
   const [value, setValue] = useState(search ?? "");
@@ -150,8 +161,8 @@ function ActivitySearch({ search }: { search?: string }) {
     router.push(`?${next.toString()}`, { scroll: false });
   }
 
-  return (
-    <div className="relative">
+  const field = (
+    <div className="relative w-full">
       <IconSearch className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
       <input
         type="search"
@@ -164,18 +175,33 @@ function ActivitySearch({ search }: { search?: string }) {
         }}
         placeholder={t("searchPlaceholder")}
         aria-label={t("searchPlaceholder")}
-        className="h-11 w-full rounded-full border border-line bg-surface pl-10 pr-10 text-sm text-ink outline-none placeholder:text-ink-3 focus:border-mustard focus:ring-3 focus:ring-mustard/25"
+        className={cn(
+          "w-full border border-line bg-surface pl-10 pr-10 text-sm text-ink outline-none placeholder:text-ink-3 focus:border-mustard focus:ring-3 focus:ring-mustard/25",
+          variant === "header" ? "h-[42px] rounded-full" : "h-[var(--bottom-bar-height)] rounded-banner shadow-float",
+        )}
       />
       {value && (
         <button
           type="button"
           onClick={() => { setValue(""); push(""); }}
-          aria-label={t("clear")}
+          aria-label={tTx("clear")}
           className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-ink-3 hover:text-ink"
         >
           <IconX className="size-4" />
         </button>
       )}
+    </div>
+  );
+
+  if (variant === "header") return <div className="hidden w-[300px] lg:block">{field}</div>;
+  return (
+    <div
+      data-hide-under-sheet=""
+      data-tip-anchor="activitySearchBar"
+      className="fixed inset-x-4 z-[55] lg:hidden"
+      style={{ bottom: "var(--bottom-bar-offset)" }}
+    >
+      {field}
     </div>
   );
 }
@@ -187,7 +213,7 @@ function SummaryCard({ income, expense, sparkline }: { income: number; expense: 
   const net = income - expense;
   const fig = "amount text-[22px] tabular-nums";
   return (
-    <div className={cn(CARD, "rounded-2xl px-[18px] py-3.5 lg:px-5 lg:py-4")}>
+    <div className={cn(CARD, "px-[18px] py-3.5 lg:px-5 lg:py-4")}>
       <div className="flex items-center gap-3.5 lg:grid lg:grid-cols-3 lg:gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="mono-label">{t("in")}</span>
@@ -255,6 +281,9 @@ export function ActivityView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktop();
+  // The bulk bar takes the bottom of the screen (and hides the tab bar) while bulk
+  // select is on; the docked search bar steps aside with it.
+  const navHidden = useNavHidden();
 
   // Category changes made in the panel show in the list immediately; the list's rows
   // are a server snapshot until the refresh lands.
@@ -319,7 +348,7 @@ export function ActivityView({
   };
 
   return (
-    <div className={SPLIT_GRID_WIDE}>
+    <div className={cn(SPLIT_GRID_WIDE, "pb-[var(--bottom-bar-clearance)] lg:pb-0")}>
       {/* Left: chips, count, entry tiles, search, list */}
       <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-3.5">
         <div className="order-1 flex items-center gap-3 lg:order-none">
@@ -334,9 +363,6 @@ export function ActivityView({
             {needsReviewSlot}
           </div>
         )}
-        <div className="order-4 lg:order-none">
-          <ActivitySearch search={filters.search} />
-        </div>
         <div className={cn("order-5 lg:order-none", "lg:rounded-card lg:border lg:border-line lg:bg-surface lg:px-[22px] lg:py-4 lg:shadow-card")}>
           {filteredCount === 0 ? (
             <div className={cn(CARD, "flex flex-col items-center gap-4 px-6 py-14 text-center lg:border-0 lg:shadow-none")}>
@@ -393,7 +419,11 @@ export function ActivityView({
         </Dialog>
       )}
 
+      {/* Phones: list search docked above the tab bar. */}
+      {!navHidden && <ActivitySearch search={filters.search} variant="bottom" />}
+
       {/* One-time tips for the new pieces — shown even to people who turned tips off. */}
+      <AnchoredTip id="activitySearchBar" anchor="activitySearchBar" active={!isDesktop && !navHidden} />
       <AnchoredTip id="activityFilters" anchor="activityFilters" />
       <AnchoredTip id="activityDetail" anchor="activityDetail" active={isDesktop || sheetRow != null} />
     </div>

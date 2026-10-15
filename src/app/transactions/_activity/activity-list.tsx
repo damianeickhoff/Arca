@@ -117,8 +117,8 @@ function ActivityRow({
   return (
     <div
       className={cn(
-        "group relative -mx-2 flex items-center gap-1 rounded-2xl px-2 transition-colors",
-        selected ? "bg-mustard-soft" : active ? "bg-surface-2" : "hover:bg-surface-2/60",
+        "group relative -mx-2 flex items-center gap-1 rounded-row px-2 transition-colors",
+        selected ? "bg-mustard-soft" : active ? "bg-surface-2" : "hover:bg-surface-2/60 active:bg-surface-2",
       )}
     >
       {/* Desktop checkbox: shown on hover, and always once select mode is on. */}

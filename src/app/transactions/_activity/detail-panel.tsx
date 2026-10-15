@@ -691,7 +691,7 @@ function ChoiceRow({ active, onClick, children }: { active: boolean; onClick: ()
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm transition-colors",
+        "flex w-full items-center gap-2.5 rounded-row px-3 py-2.5 text-left text-sm transition-colors",
         active ? "bg-surface-2 font-semibold text-ink" : "text-ink hover:bg-surface-2/60",
       )}
     >

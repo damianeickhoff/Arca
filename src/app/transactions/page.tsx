@@ -291,7 +291,7 @@ export default async function TransactionsPage({
     upcomingCount > 0 ? (
       <Link
         href="/transactions/upcoming"
-        className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-card transition-colors hover:bg-surface-2"
+        className="flex items-center gap-3 rounded-banner border border-line bg-surface px-4 py-3 shadow-card transition-colors hover:bg-surface-2"
       >
         {upcomingIcons.length > 0 && (
           <span className="flex shrink-0 -space-x-2.5">

@@ -18,6 +18,7 @@ import {
   IconSun,
   IconLayoutSidebarRight,
   IconFilter,
+  IconSearch,
   IconCalendarStats,
   IconFileTextFilled,
   IconHandFinger,
@@ -72,6 +73,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   activityDetail: IconLayoutSidebarRight,
   activityFilters: IconFilter,
   activityBulkSelect: IconChecklist,
+  activitySearchBar: IconSearch,
 };
 
 /**

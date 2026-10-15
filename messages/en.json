@@ -516,6 +516,10 @@
     "activityBulkSelect": {
       "title": "Select several at once",
       "body": "Press and hold a transaction (or tick its checkbox on a computer) to categorise, exclude or delete a whole selection."
+    },
+    "activitySearchBar": {
+      "title": "Search sits at the bottom",
+      "body": "Search your transactions from the bar just above the tab bar, within thumb reach. It filters the list as you type."
     }
   },
   "importMapping": {
@@ -837,6 +841,7 @@
       "cancel": "Cancel",
       "apply": "Save and apply",
       "saving": "Saving…"
-    }
+    },
+    "searchPlaceholder": "Search transactions"
   }
 }

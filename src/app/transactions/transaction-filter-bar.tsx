@@ -408,7 +408,7 @@ function ChoicePill({
                   type="button"
                   onClick={() => { onChange(o.value); setOpen(false); }}
                   className={cn(
-                    "flex items-center rounded-xl px-4 py-3.5 text-sm text-left transition-colors",
+                    "flex items-center rounded-row px-4 py-3.5 text-sm text-left transition-colors",
                     isActive ? "bg-ink text-bg font-semibold" : "hover:bg-surface-2 text-ink",
                   )}
                 >
