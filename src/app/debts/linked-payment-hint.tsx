@@ -27,7 +27,7 @@ export function LinkedPaymentHint({
   if (linkedMonthly <= 0 || billCount === 0) return null;
 
   return (
-    <div className="flex items-start gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3 -mt-1">
+    <div className="flex items-start gap-3 rounded-row border border-line bg-surface px-4 py-3 -mt-1">
       <IconReload className="size-4.5 mt-0.5 shrink-0 text-foreground/40" />
       <div className="min-w-0 flex-1">
         <p className="text-sm text-foreground/60 leading-snug">

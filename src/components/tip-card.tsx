@@ -82,6 +82,9 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   budgetStrategyCard: IconAdjustments,
   budgetMove: IconArrowsExchange,
   budgetBills: IconCalendarDue,
+  debtsDetail: IconLayoutSidebarRight,
+  debtsSimulator: IconTrendingUp,
+  debtsOwed: IconUsers,
 };
 
 /**

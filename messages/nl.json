@@ -546,6 +546,18 @@
     "budgetBills": {
       "title": "De rekeningen van deze maand",
       "body": "Elke rekening op de dag dat hij betaald moet worden. Tik op een dag om alleen die rekeningen te zien, en vink een rekening af als hij betaald is."
+    },
+    "debtsDetail": {
+      "title": "Alles over één schuld",
+      "body": "Kies een schuld in de lijst om de gekoppelde vaste last te zien, hoeveel van elke betaling rente is en wanneer hij is afgelost."
+    },
+    "debtsSimulator": {
+      "title": "Probeer wat extra af te lossen",
+      "body": "Schuif om te zien hoeveel eerder je schuldenvrij bent en hoeveel rente je bespaart. Het verloop erboven beweegt mee."
+    },
+    "debtsOwed": {
+      "title": "Geld dat terugkomt",
+      "body": "Schulden die anderen bij jou hebben en voorschotten die nog maar deels terugbetaald zijn. Vink een voorschot af zodra het is afgehandeld."
     }
   },
   "importMapping": {
@@ -970,6 +982,104 @@
         "noDate": "Geen vaste datum",
         "paidAuto": "Betaald, gekoppeld aan een transactie",
         "showAll": "Alles tonen"
+      }
+    },
+    "debts": {
+      "title": "Schulden",
+      "add": "Schuld toevoegen",
+      "yours": "Je schulden",
+      "count": "{count, plural, =0 {Geen open schulden} one {# schuld} other {# schulden}}",
+      "minimums": "minimaal {amount} per maand",
+      "toReceive": "{count, plural, one {# nog te ontvangen} other {# nog te ontvangen}}",
+      "empty": {
+        "title": "Nog geen schulden",
+        "body": "Voeg een lening, creditcard of geleend geld toe om te zien hoe snel het afneemt en wanneer je schuldenvrij bent."
+      },
+      "owe": {
+        "title": "Je bent schuldig",
+        "paidOff": "{pct}% afgelost",
+        "monthly": "{amount} per maand over {count, plural, one {# schuld} other {# schulden}}"
+      },
+      "owed": {
+        "title": "Te ontvangen",
+        "debtSub": "{pct}% ontvangen",
+        "advanceSub": "Voorschot · {date} · {received} van {expected} terug",
+        "settle": "Markeren als afgehandeld",
+        "settleConfirm": "Het voorschot voor {name} als afgehandeld markeren? De {amount} die nog openstaat telt dan niet meer mee.",
+        "more": "+{count} meer"
+      },
+      "row": {
+        "perMonth": "{amount}/mnd",
+        "freeBy": "vrij {date}",
+        "never": "zo nooit afgelost",
+        "paid": "{pct}% afgelost",
+        "done": "Afgelost",
+        "paidOffSub": "Afgelost · niets meer te betalen"
+      },
+      "detail": {
+        "linked": "Gekoppeld aan de vaste last “{name}” · {amount}",
+        "linkedOn": "Gekoppeld aan de vaste last “{name}” · {amount} op de {day}e",
+        "notLinked": "Niet gekoppeld aan een vaste last · {amount} per maand",
+        "started": "Gestart",
+        "original": "Oorspronkelijk",
+        "interest": "Rente",
+        "perYear": "{rate}% p.j.",
+        "none": "Geen",
+        "debtFree": "Schuldenvrij",
+        "done": "Klaar",
+        "covers": "Je {payment} dekt {interest} rente. {principal} gaat van de schuld af.",
+        "neverCovers": "Je {payment} dekt de maandelijkse rente van {interest} niet, dus deze schuld wordt nooit kleiner.",
+        "noInterest": "Geen rente: je volledige {payment} gaat van de schuld af.",
+        "noPayment": "Geen maandbedrag ingesteld, dus er is nog geen einddatum.",
+        "edit": "Schuld bewerken",
+        "schedule": "Betaalschema"
+      },
+      "payoff": {
+        "title": "Aflossingsverloop",
+        "withExtra": "+{amount}/mnd · {date}",
+        "minimums": "Minimaal · {date}",
+        "minimumsNever": "Minimaal wordt het nooit afgelost"
+      },
+      "simulator": {
+        "title": "Wat als ik extra betaal?",
+        "extra": "Extra per maand",
+        "debtFree": "Schuldenvrij",
+        "sooner": "Eerder klaar",
+        "saved": "Rente bespaard",
+        "months": "{count, plural, one {# maand} other {# maanden}}",
+        "orderOne": "Het extra bedrag gaat direct naar {name}.",
+        "orderRate": "Het extra bedrag gaat eerst naar {first} (hoogste rente), daarna naar {rest}.",
+        "orderBalance": "Het extra bedrag gaat eerst naar {first} (kleinste schuld), daarna naar {rest}."
+      },
+      "sheet": {
+        "title": "Schulddetails",
+        "edit": "Bewerken",
+        "delete": "Verwijderen",
+        "confirmDelete": "De schuld “{name}” verwijderen?",
+        "owe": "Ik ben schuldig",
+        "owed": "Ik krijg nog",
+        "settled": "Afgehandeld",
+        "paidOff": "Afgelost",
+        "pctPaid": "{pct}% afgelost",
+        "pctReceived": "{pct}% ontvangen",
+        "original": "Oorspronkelijk bedrag",
+        "alreadyPaid": "Al betaald",
+        "alreadyReceived": "Al ontvangen",
+        "remaining": "Resterend",
+        "startingBalance": "Beginsaldo",
+        "minimum": "Minimale maandbetaling",
+        "rate": "Rente",
+        "perYear": "{rate}% per jaar",
+        "interestToPay": "Nog te betalen rente",
+        "interestToReceive": "Nog te ontvangen rente",
+        "startDate": "Startdatum",
+        "balanceAsOf": "Saldo per",
+        "lastPayment": "Laatste betaling op",
+        "neverPaysOff": "De maandbetaling van {payment} dekt de rente op {balance} tegen {rate}% per jaar niet, dus deze schuld wordt nooit kleiner.",
+        "notes": "Notities",
+        "linkedBills": "Gekoppelde vaste lasten",
+        "upcoming": "Komende betalingen · {count}",
+        "split": "{principal} aflossing · {interest} rente"
       }
     }
   }

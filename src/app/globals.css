@@ -441,7 +441,13 @@ html.privacy .tabular-nums:hover {
   border-radius: 9999px;
   cursor: pointer;
   transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease, transform 0.15s var(--easing-out-quart);
-  background: rgba(255, 255, 255);
+  /* Mustard: the house round icon button — surface fill, 1px line, ink glyph. */
+  background: var(--arca-surface);
+  border: 1px solid var(--arca-line);
+  color: var(--arca-ink);
+}
+.glass-icon-btn:hover {
+  background: var(--arca-surface-2);
 }
 
 /* "Liquid" press response — the specular highlight brightens and the whole button
@@ -449,10 +455,12 @@ html.privacy .tabular-nums:hover {
 
 /* Dark theme — dimmer tint + softer specular. */
 .dark .glass-icon-btn {
-  background: rgba(255, 255, 255, 0.07);
-  border: none;
+  background: var(--arca-surface);
+  border: 1px solid var(--arca-line);
   box-shadow: none;
-
+}
+.dark .glass-icon-btn:hover {
+  background: var(--arca-surface-2);
 }
 
 .dark .glass-icon-btn::after {

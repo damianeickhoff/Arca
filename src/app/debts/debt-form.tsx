@@ -288,7 +288,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         className="flex-1 flex flex-col min-h-0"
       >
         {/* One card holding the icon/name, the amount, the date/payment/note controls and the keypad */}
-        <div className="relative overflow-hidden flex-1 flex flex-col min-h-0 mx-4 mb-3 rounded-3xl bg-foreground/[0.03] p-4">
+        <div className="relative overflow-hidden flex-1 flex flex-col min-h-0 mx-4 mb-3 rounded-card border border-line bg-surface shadow-card p-4">
           {/* Accent wash from the chosen color — tall enough to reach past the running
               amount below the name, not just the icon/name row, and an ellipse (not a
               circle) so it reaches the card's full width instead of fading out early
@@ -549,7 +549,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             placeholder="Add a note for this debt"
             rows={4}
             autoFocus
-            className="w-full rounded-xl bg-foreground/5 p-3.5 text-sm text-foreground placeholder:text-foreground/40 outline-none resize-none"
+            className="w-full rounded-tile bg-surface-2 p-3.5 text-sm text-foreground placeholder:text-foreground/40 outline-none resize-none"
           />
           <button
             type="button"

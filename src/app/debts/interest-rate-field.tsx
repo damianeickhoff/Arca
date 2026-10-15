@@ -54,7 +54,7 @@ export function InterestRateField({
   return (
     <div className="space-y-3 pt-2">
       <p className="text-sm text-foreground/50">{t("interestHelp")}</p>
-      <div className="flex items-center gap-2 rounded-2xl bg-[var(--dialog-content-background)] px-4 h-14">
+      <div className="flex items-center gap-2 rounded-card border border-line bg-surface px-4 h-14">
         <input
           value={value}
           onChange={(e) => onChange(sanitizeRate(e.target.value))}

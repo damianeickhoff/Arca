@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useIsDesktop } from "@/lib/use-is-desktop";
 import { useNavHidden } from "@/lib/nav-visibility";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -50,18 +51,6 @@ export type ActivityFilters = {
 
 const CARD = "rounded-card border border-line bg-surface shadow-card";
 
-// ── viewport ───────────────────────────────────────────────────────────────────
-
-const DESKTOP_QUERY = "(min-width: 1024px)";
-function subscribeDesktop(cb: () => void) {
-  const mq = window.matchMedia(DESKTOP_QUERY);
-  mq.addEventListener("change", cb);
-  return () => mq.removeEventListener("change", cb);
-}
-/** lg and up: the detail panel sits inline; below it opens as a bottom sheet. */
-function useIsDesktop() {
-  return useSyncExternalStore(subscribeDesktop, () => window.matchMedia(DESKTOP_QUERY).matches, () => false);
-}
 
 // ── header ─────────────────────────────────────────────────────────────────────
 

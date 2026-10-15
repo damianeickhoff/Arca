@@ -380,3 +380,14 @@ describe("financial-health-data: getHealthMetrics", () => {
     `);
   });
 });
+
+describe("open-advances: getOpenAdvances", () => {
+  it("lists expenses whose linked reimbursements fall short of what is expected back", async () => {
+    const { getOpenAdvances } = await import("@/lib/open-advances");
+    const open = await getOpenAdvances();
+    // Bol.com: €60 paid, no expected amount set (so the full €60), €25 back so far.
+    expect(open).toEqual([
+      expect.objectContaining({ transactionId: tx.bol, name: "Bol.com", expected: 60, received: 25, remaining: 35 }),
+    ]);
+  });
+});

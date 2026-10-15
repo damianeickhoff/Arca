@@ -546,6 +546,18 @@
     "budgetBills": {
       "title": "This month's bills",
       "body": "Every bill on its due day. Tap a day to see just its bills, and tick a bill off once it is paid."
+    },
+    "debtsDetail": {
+      "title": "Everything about one debt",
+      "body": "Pick a debt in the list to see its linked bill, how much of each payment is interest and when it is paid off."
+    },
+    "debtsSimulator": {
+      "title": "Try paying a bit extra",
+      "body": "Slide to see how much sooner you are debt-free and how much interest you save. The timeline above follows along."
+    },
+    "debtsOwed": {
+      "title": "Money coming back to you",
+      "body": "Debts others owe you and advances that are only partly paid back. Tick an advance off once it is settled."
     }
   },
   "importMapping": {
@@ -970,6 +982,104 @@
         "noDate": "No fixed date",
         "paidAuto": "Paid, matched to a transaction",
         "showAll": "Show all"
+      }
+    },
+    "debts": {
+      "title": "Debts",
+      "add": "Add a debt",
+      "yours": "Your debts",
+      "count": "{count, plural, =0 {No open debts} one {# debt} other {# debts}}",
+      "minimums": "minimum payments {amount} a month",
+      "toReceive": "{count, plural, one {# still to receive} other {# still to receive}}",
+      "empty": {
+        "title": "No debts yet",
+        "body": "Add a loan, a credit card or money you borrowed to see how fast it goes down and when you are debt-free."
+      },
+      "owe": {
+        "title": "You owe",
+        "paidOff": "{pct}% paid off",
+        "monthly": "{amount} a month across {count, plural, one {# debt} other {# debts}}"
+      },
+      "owed": {
+        "title": "Owed to you",
+        "debtSub": "{pct}% received",
+        "advanceSub": "Advance · {date} · {received} of {expected} back",
+        "settle": "Mark as settled",
+        "settleConfirm": "Mark the advance for {name} as settled? The {amount} still open will no longer be counted.",
+        "more": "+{count} more"
+      },
+      "row": {
+        "perMonth": "{amount}/mo",
+        "freeBy": "free {date}",
+        "never": "never paid off at this rate",
+        "paid": "{pct}% paid",
+        "done": "Paid off",
+        "paidOffSub": "Paid off · nothing left to pay"
+      },
+      "detail": {
+        "linked": "Linked to the recurring bill “{name}” · {amount}",
+        "linkedOn": "Linked to the recurring bill “{name}” · {amount} on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+        "notLinked": "Not linked to a recurring bill · {amount} a month",
+        "started": "Started",
+        "original": "Original",
+        "interest": "Interest",
+        "perYear": "{rate}% p.a.",
+        "none": "None",
+        "debtFree": "Debt-free",
+        "done": "Done",
+        "covers": "Your {payment} covers {interest} interest. {principal} goes to the balance.",
+        "neverCovers": "Your {payment} does not cover the {interest} monthly interest, so this balance never goes down.",
+        "noInterest": "No interest: all of your {payment} goes to the balance.",
+        "noPayment": "No monthly payment set, so there is no payoff date yet.",
+        "edit": "Edit debt",
+        "schedule": "Payment schedule"
+      },
+      "payoff": {
+        "title": "Payoff timeline",
+        "withExtra": "+{amount}/mo · {date}",
+        "minimums": "Minimums · {date}",
+        "minimumsNever": "Minimums never clear it"
+      },
+      "simulator": {
+        "title": "What if I pay extra?",
+        "extra": "Extra each month",
+        "debtFree": "Debt-free",
+        "sooner": "Sooner by",
+        "saved": "Interest saved",
+        "months": "{count, plural, one {# month} other {# months}}",
+        "orderOne": "The extra goes straight to {name}.",
+        "orderRate": "Extra goes to {first} first (highest interest), then {rest}.",
+        "orderBalance": "Extra goes to {first} first (smallest balance), then {rest}."
+      },
+      "sheet": {
+        "title": "Debt details",
+        "edit": "Edit",
+        "delete": "Delete",
+        "confirmDelete": "Delete the debt “{name}”?",
+        "owe": "I owe",
+        "owed": "I am owed",
+        "settled": "Settled",
+        "paidOff": "Paid off",
+        "pctPaid": "{pct}% paid",
+        "pctReceived": "{pct}% received",
+        "original": "Original amount",
+        "alreadyPaid": "Already paid",
+        "alreadyReceived": "Already received",
+        "remaining": "Remaining",
+        "startingBalance": "Starting balance",
+        "minimum": "Minimum monthly payment",
+        "rate": "Interest rate",
+        "perYear": "{rate}% per year",
+        "interestToPay": "Interest still to pay",
+        "interestToReceive": "Interest still to receive",
+        "startDate": "Start date",
+        "balanceAsOf": "Balance as of",
+        "lastPayment": "Last payment on",
+        "neverPaysOff": "The monthly payment of {payment} does not cover the interest on {balance} at {rate}% per year, so this balance never goes down.",
+        "notes": "Notes",
+        "linkedBills": "Linked recurring bills",
+        "upcoming": "Upcoming payments · {count}",
+        "split": "{principal} off · {interest} interest"
       }
     }
   }

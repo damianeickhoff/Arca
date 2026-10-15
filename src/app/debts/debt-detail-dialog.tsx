@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Icon } from "@/components/icon";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -12,7 +13,7 @@ import {
   IconChevronDown as ChevronDown,
 } from "@tabler/icons-react";
 import type { RecurringItem } from "@/db/schema";
-import { fmtLongDate, fmtShortMonth, debtPaidPct, computeDebtPayoffSchedule, debtBalanceDate } from "./debt-shared";
+import { debtPaidPct, computeDebtPayoffSchedule, debtBalanceDate } from "./debt-shared";
 import type { ComputedDebt } from "./debt-shared";
 import { DebtEditDialog } from "./debt-edit-dialog";
 import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
@@ -32,6 +33,7 @@ export function DebtDetailDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("plan.debts.sheet");
   const [deleting, setDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -56,7 +58,7 @@ export function DebtDetailDialog({
 
   async function remove() {
     if (!computed) return;
-    if (!confirm(`Delete debt "${computed.debt.name}"?`)) return;
+    if (!confirm(t("confirmDelete", { name: computed.debt.name }))) return;
     setDeleting(true);
     await fetch("/api/debts", {
       method: "DELETE",
@@ -79,8 +81,8 @@ export function DebtDetailDialog({
               <button
                 type="button"
                 onClick={() => setEditOpen(true)}
-                aria-label="Edit"
-                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                aria-label={t("edit")}
+                className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
               >
                 <Pencil className="size-4.5" />
               </button>
@@ -88,8 +90,8 @@ export function DebtDetailDialog({
                 type="button"
                 onClick={remove}
                 disabled={deleting}
-                aria-label="Delete"
-                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                aria-label={t("delete")}
+                className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
               >
                 <Trash2 className="size-4.5" />
               </button>
@@ -97,7 +99,7 @@ export function DebtDetailDialog({
           ) : undefined
         }
       >
-        <DialogTitle className="sr-only">Debt details</DialogTitle>
+        <DialogTitle className="sr-only">{t("title")}</DialogTitle>
         {displayComputed && <DetailBody key={`${displayComputed.debt.id}-${openInstance}`} computed={displayComputed} />}
 
         {/* Edit dialog — controlled by the pencil button. Rendered INSIDE this dialog's
@@ -118,12 +120,17 @@ export function DebtDetailDialog({
 }
 
 function DetailBody({ computed }: { computed: ComputedDebt }) {
+  const t = useTranslations("plan.debts.sheet");
+  const locale = useLocale();
+  const longDate = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" });
+  const shortMonth = new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" });
   const { debt, linkedBills, amountPaid, currentBalance, lastPaymentDate, neverPaysOff, remainingInterest, lastRecordedMonth } = computed;
   const isOwed = debt.direction === "owed";
   const paidPct = Math.round(debtPaidPct(debt, amountPaid, currentBalance));
   const isDone = currentBalance === 0;
   const schedule = computeDebtPayoffSchedule(debt, currentBalance, lastRecordedMonth);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const startDate = debt.startDate ?? `${debt.startMonth}-01`;
 
   // Categories power the recurring-bill detail dialog opened when a linked bill is tapped.
   const [cats, setCats] = useState<Category[]>([]);
@@ -134,100 +141,84 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
   const detailBill = detailBillId != null ? linkedBills.find((b) => b.id === detailBillId) ?? null : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Hero */}
-      <div className="relative -mx-6 mt-15 mb-15 -mt-2 lg:-mx-7 lg:-mt-7 px-6 lg:px-7 pt-2 lg:pt-7">
-        <div className="flex flex-col items-center text-center gap-1 pb-1">
-          <Icon iconKey={debt.icon ?? linkedBills[0]?.icon ?? null} color={debt.color} round size="xxl" />
-          <p className="text-3xl font-bold tabular-nums mt-3">{formatEur(currentBalance)}</p>
-          <div className="flex items-center gap-2 mt-1.5 text-sm text-foreground/55">
-            <span>{isOwed ? "I am owed" : "I owe"}</span>
-            <span>•</span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-2 rounded-full", isDone ? "bg-emerald-400" : "bg-foreground/30")} />
-              {isDone ? (isOwed ? "Settled" : "Paid off") : `${paidPct}% ${isOwed ? "received" : "paid"}`}
-            </span>
-          </div>
+      <div className="flex flex-col items-center gap-1 pb-1 pt-2 text-center">
+        <CategoryIcon icon={debt.icon ?? linkedBills[0]?.icon ?? null} color={debt.color} size="lg" />
+        <p className="amount mt-3 text-[32px] leading-none tabular-nums text-ink">{formatEur(currentBalance)}</p>
+        <div className="mt-2 flex items-center gap-2 text-[13px] text-ink-2">
+          <span>{isOwed ? t("owed") : t("owe")}</span>
+          <span aria-hidden>·</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={cn("size-2 rounded-full", isDone ? "bg-positive" : "bg-ink-3")} />
+            {isDone ? (isOwed ? t("settled") : t("paidOff")) : isOwed ? t("pctReceived", { pct: paidPct }) : t("pctPaid", { pct: paidPct })}
+          </span>
         </div>
       </div>
 
       {/* Key figures */}
-      <div className="rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
+      <div className="divide-y divide-line rounded-card border border-line bg-surface">
         {debt.originalAmount != null && debt.originalAmount > debt.startingBalance ? (
           <>
-            <DetailRow label="Original amount" value={formatEur(debt.originalAmount)} />
-            <DetailRow label={isOwed ? "Already received" : "Already paid"} value={formatEur(debt.originalAmount - currentBalance)} />
-            <DetailRow label="Remaining" value={formatEur(currentBalance)} />
+            <DetailRow label={t("original")} value={formatEur(debt.originalAmount)} />
+            <DetailRow label={isOwed ? t("alreadyReceived") : t("alreadyPaid")} value={formatEur(debt.originalAmount - currentBalance)} />
+            <DetailRow label={t("remaining")} value={formatEur(currentBalance)} />
           </>
         ) : (
-          <DetailRow label="Starting balance" value={formatEur(debt.startingBalance)} />
+          <DetailRow label={t("startingBalance")} value={formatEur(debt.startingBalance)} />
         )}
-        <DetailRow label="Minimum monthly payment" value={formatEur(debt.minimumPayment)} />
+        <DetailRow label={t("minimum")} value={formatEur(debt.minimumPayment)} />
         {debt.interestRate != null && debt.interestRate > 0 && (
           <>
-            <DetailRow label="Interest rate" value={`${debt.interestRate}% per year`} />
+            <DetailRow label={t("rate")} value={t("perYear", { rate: debt.interestRate.toLocaleString(locale) })} />
             {remainingInterest > 0 && (
-              <DetailRow
-                label={isOwed ? "Interest still to receive" : "Interest still to pay"}
-                value={formatEur(remainingInterest)}
-              />
+              <DetailRow label={isOwed ? t("interestToReceive") : t("interestToPay")} value={formatEur(remainingInterest)} />
             )}
           </>
         )}
-        <DetailRow label="Start date" value={fmtLongDate(new Date(`${debt.startDate ?? `${debt.startMonth}-01`}T00:00:00`))} />
-        {/* Only worth a row when it differs from the start date — otherwise it just
-            repeats the line above. When it does differ it's the date the figures key off. */}
-        {debtBalanceDate(debt) !== (debt.startDate ?? `${debt.startMonth}-01`) && (
-          <DetailRow label="Balance as of" value={fmtLongDate(new Date(`${debtBalanceDate(debt)}T00:00:00`))} />
+        <DetailRow label={t("startDate")} value={longDate.format(new Date(`${startDate}T12:00:00`))} />
+        {/* Only worth a row when it differs from the start date — it's the date the figures key off. */}
+        {debtBalanceDate(debt) !== startDate && (
+          <DetailRow label={t("balanceAsOf")} value={longDate.format(new Date(`${debtBalanceDate(debt)}T12:00:00`))} />
         )}
-        {lastPaymentDate && !isDone && <DetailRow label="Last payment on" value={fmtLongDate(lastPaymentDate)} />}
+        {lastPaymentDate && !isDone && <DetailRow label={t("lastPayment")} value={longDate.format(lastPaymentDate)} />}
       </div>
 
-      {/* A payment at or below the monthly interest never clears the debt, so there is
-          no payoff date to show — say why rather than silently omitting the row. */}
+      {/* A payment at or below the monthly interest never clears the debt — say why
+          rather than silently omitting the payoff date. */}
       {neverPaysOff && (
-        <div className="rounded-2xl bg-destructive/10 px-4 py-3">
-          <p className="text-sm text-destructive leading-snug">
-            The monthly payment of {formatEur(debt.minimumPayment)} does not cover the interest on{" "}
-            {formatEur(currentBalance)} at {debt.interestRate}% per year, so this balance never goes down.
+        <div className="rounded-tile bg-negative-soft px-4 py-3">
+          <p className="text-sm leading-snug text-negative">
+            {t("neverPaysOff", { payment: formatEur(debt.minimumPayment), balance: formatEur(currentBalance), rate: (debt.interestRate ?? 0).toLocaleString(locale) })}
           </p>
         </div>
       )}
 
       {debt.notes && (
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
-          <DetailRow label="Notes" value={debt.notes} />
+        <div className="rounded-card border border-line bg-surface">
+          <DetailRow label={t("notes")} value={debt.notes} />
         </div>
       )}
 
       {/* Linked recurring bills */}
       {linkedBills.length > 0 && (
         <div>
-          <div className="px-3 mb-2">
-            <span className="text-sm font-medium text-foreground/45">Linked recurring bills</span>
-          </div>
+          <p className="mb-2 px-1 mono-label text-[10px]">{t("linkedBills")}</p>
           <div className="space-y-2">
             {linkedBills.map((bill: RecurringItem) => (
-              // Tapping a linked bill opens its recurring-bill detail dialog, nested inside
-              // this detail dialog.
               <button
                 key={bill.id}
                 type="button"
                 onClick={() => setDetailBillId(bill.id)}
-                className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3 text-left active:bg-foreground/[0.05] transition-colors"
+                className="flex w-full items-center gap-3 rounded-row border border-line bg-surface px-4 py-3 text-left transition-colors hover:bg-surface-2"
               >
-                <Icon iconKey={bill.icon} color={bill.iconColor} size="lg" round />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate leading-tight">{bill.name}</p>
-                </div>
-                {bill.amount != null && (
-                  <span className="tabular-nums font-normal text-sm shrink-0">{formatEur(bill.amount)}</span>
-                )}
+                <CategoryIcon icon={bill.icon} color={bill.iconColor} size="sm" />
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{bill.friendlyName ?? bill.name}</span>
+                {bill.amount != null && <span className="shrink-0 text-sm tabular-nums text-ink-2">{formatEur(bill.amount)}</span>}
               </button>
             ))}
           </div>
 
-          {/* Recurring-bill detail dialog for a tapped linked bill. */}
           <RecurringDetailDialog
             item={detailBill}
             category={detailBill?.categoryId != null ? cats.find((c) => c.id === detailBill.categoryId) ?? null : null}
@@ -237,31 +228,22 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
         </div>
       )}
 
-      {/* Upcoming payments — one per month until payoff, last one prorated to
-          whatever balance actually remains rather than always the full minimum. */}
+      {/* Upcoming payments — one per month until payoff, the last one prorated. */}
       {schedule.length > 0 && (
         <div>
-          <button
-            type="button"
-            onClick={() => setScheduleOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-3 mb-2"
-          >
-            <span className="text-sm font-medium text-foreground/45">Upcoming payments</span>
-            <ChevronDown className={cn("size-4 text-foreground/40 transition-transform", scheduleOpen && "rotate-180")} />
+          <button type="button" onClick={() => setScheduleOpen((v) => !v)} aria-expanded={scheduleOpen} className="mb-2 flex w-full items-center justify-between px-1">
+            <span className="mono-label text-[10px]">{t("upcoming", { count: schedule.length })}</span>
+            <ChevronDown className={cn("size-4 text-ink-3 transition-transform", scheduleOpen && "rotate-180")} />
           </button>
           {scheduleOpen && (
-            // Scrolls within itself rather than growing the sheet: a payoff schedule
-            // runs one row per month until the debt is cleared, which for a long loan
-            // is hundreds of rows — enough to swamp the sheet's own scrolling.
-            <div className="max-h-[45vh] overflow-y-auto overscroll-contain rounded-xl bg-[var(--dialog-content-background)] backdrop-blur-xs divide-y divide-border/50">
+            // Scrolls within itself: a long loan is hundreds of rows.
+            <div className="max-h-[45vh] divide-y divide-line overflow-y-auto overscroll-contain rounded-card border border-line bg-surface">
               {schedule.map((entry, i) => (
                 <DetailRow
                   key={i}
-                  label={fmtShortMonth(entry.date)}
+                  label={shortMonth.format(entry.date)}
                   value={formatEur(entry.amount)}
-                  // With interest, the payment splits — showing only the total hides that
-                  // most of an early payment can be interest rather than progress.
-                  sub={entry.interest > 0 ? `${formatEur(entry.principal)} off · ${formatEur(entry.interest)} interest` : undefined}
+                  sub={entry.interest > 0 ? t("split", { principal: formatEur(entry.principal), interest: formatEur(entry.interest) }) : undefined}
                 />
               ))}
             </div>
@@ -275,10 +257,10 @@ function DetailBody({ computed }: { computed: ComputedDebt }) {
 function DetailRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
-      <span className="flex flex-col items-end gap-0.5 font-light text-right min-w-0">
-        <span className="truncate text-sm">{value}</span>
-        {sub && <span className="truncate text-xs text-muted-foreground/70">{sub}</span>}
+      <span className="shrink-0 text-sm text-ink-2">{label}</span>
+      <span className="flex min-w-0 flex-col items-end gap-0.5 text-right">
+        <span className="truncate text-sm font-semibold tabular-nums text-ink">{value}</span>
+        {sub && <span className="truncate text-xs text-ink-3">{sub}</span>}
       </span>
     </div>
   );

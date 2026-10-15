@@ -35,6 +35,10 @@ export type TipAnchor =
   | "activitySearchBar"
   | "activityContext"
   | "activityKeys"
+  // Redesigned Debts
+  | "debtsDetail"
+  | "debtsSimulator"
+  | "debtsOwed"
   // Redesigned Budget
   | "budgetStrategy"
   | "budgetMove"
