@@ -165,7 +165,13 @@
       "to": "To",
       "apply": "Apply",
       "reset": "Reset {name}",
-      "period": "Period"
+      "period": "Period",
+      "needs": "Needs",
+      "wants": "Wants",
+      "save": "Save",
+      "amount": "Amount",
+      "min": "Min",
+      "max": "Max"
     },
     "bulkSelected": "{count, plural, =0 {Nothing selected} one {# selected} other {# selected}}",
     "bulkSelectAll": "Select all ({count})",
@@ -177,7 +183,16 @@
     "bulkInclude": "Include",
     "bulkDelete": "Delete",
     "bulkDone": "Leave selection mode",
-    "bulkConfirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?"
+    "bulkConfirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?",
+    "periods": {
+      "all": "All time",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "this-month": "This month",
+      "prev-month": "Previous month",
+      "half-year": "Half a year",
+      "year": "Year"
+    }
   },
   "debts": {
     "paymentFromLinked": "Taken from the linked recurring {count, plural, one {bill} other {bills}}: {amount} per month.",
@@ -489,6 +504,18 @@
     "homeSpending": {
       "title": "Spending",
       "body": "Each category against its budget. The bar turns orange when a category is nearly used up."
+    },
+    "activityDetail": {
+      "title": "Everything about a transaction",
+      "body": "Category, your share, merchant, note and receipt, plus split, link a Tikkie, make recurring or create a rule. More actions sit behind the ⋯ button."
+    },
+    "activityFilters": {
+      "title": "Filter chips",
+      "body": "Narrow the list by period, account, category, needs/wants/save, recurring, amount or direction. Tap the × on a chip to clear it."
+    },
+    "activityBulkSelect": {
+      "title": "Select several at once",
+      "body": "Press and hold a transaction (or tick its checkbox on a computer) to categorise, exclude or delete a whole selection."
     }
   },
   "importMapping": {
@@ -689,5 +716,127 @@
   "bills": {
     "markPaid": "Mark as paid",
     "markUnpaid": "Mark as unpaid"
+  },
+  "activity": {
+    "title": "Activity",
+    "subtitle": "Every transaction across {accounts, plural, one {# account} other {# accounts}}",
+    "subtitleReview": "{count, plural, one {# needs a category} other {# need a category}}",
+    "filtersButton": "Filters",
+    "clearFilters": "Clear all filters",
+    "scanReceipt": "Scan receipt",
+    "importCsv": "Import CSV",
+    "addTransaction": "Add transaction",
+    "results": "{count, plural, one {# result} other {# results}}",
+    "needsCategory": "Needs a category",
+    "internalTransfer": "Internal transfer",
+    "splitParts": "{count, plural, one {# part} other {# parts}}",
+    "tags": {
+      "paidBack": "Paid back",
+      "split": "Split",
+      "recurring": "Recurring",
+      "notInReports": "Not in reports"
+    },
+    "bulk": {
+      "select": "Select",
+      "deselect": "Deselect"
+    },
+    "summary": {
+      "in": "In",
+      "out": "Out",
+      "net": "Net"
+    },
+    "upcoming": {
+      "title": "{count, plural, one {# upcoming this month} other {# upcoming this month}}",
+      "due": "{amount} still to pay"
+    },
+    "detail": {
+      "title": "Transaction details",
+      "more": "More actions",
+      "confirmDelete": "Delete this transaction?",
+      "internalTransfer": "Internal transfer",
+      "needsCategory": "Needs a category",
+      "splitInto": "Split in {count}",
+      "paidBackPill": "{amount} paid back",
+      "choose": "Choose",
+      "unknown": "Unknown, set one",
+      "notLinked": "Not linked",
+      "addNote": "Add a note",
+      "chooseGoal": "Choose a savings goal",
+      "budgetTypeDefault": "Default ({type})",
+      "transferAuto": "Auto (from account)",
+      "shareAfterPayback": "{amount} · paid back",
+      "shareCorrected": "{amount} · was {original}",
+      "viewReceipt": "View receipt",
+      "removeReceipt": "Remove receipt",
+      "close": "Close",
+      "notePlaceholder": "Add a note…",
+      "noteHint": "Leave empty to remove the note.",
+      "save": "Save",
+      "saving": "Saving…",
+      "originalAmount": "Original amount",
+      "correctedAmount": "Corrected amount",
+      "correctHint": "Leave empty to remove the correction.",
+      "budgetType": {
+        "needs": "Need",
+        "wants": "Want",
+        "save": "Save"
+      },
+      "fields": {
+        "category": "Category",
+        "yourShare": "Your share",
+        "merchant": "Merchant",
+        "budgetType": "Budget type",
+        "transferType": "Transfer type",
+        "savingsGoal": "Savings goal",
+        "note": "Note",
+        "receipt": "Receipt"
+      },
+      "actions": {
+        "split": "Split",
+        "adjustSplit": "Adjust split",
+        "link": "Link reimbursement",
+        "linkHint": "Open the money that came back (the Tikkie) to link it to this expense.",
+        "recurring": "Make recurring",
+        "rule": "Create a rule",
+        "receipt": "Add receipt",
+        "replaceReceipt": "Replace receipt",
+        "exclude": "Exclude from reports",
+        "include": "Include in reports"
+      },
+      "menu": {
+        "correctAmount": "Correct amount",
+        "changeMerchant": "Change merchant",
+        "brandIcon": "Brand icon",
+        "lookUp": "Look up on Google",
+        "markReimbursement": "Mark as reimbursement",
+        "unmarkReimbursement": "Remove reimbursement mark",
+        "markTransfer": "Mark as internal transfer",
+        "unmarkTransfer": "Remove internal transfer mark",
+        "delete": "Delete"
+      }
+    },
+    "rule": {
+      "titleCreate": "Create a rule",
+      "titleAfterChange": "Also apply to other transactions?",
+      "intro": "Transactions whose description matches get this category, now and on every future import.",
+      "pattern": "Description",
+      "chooseCategory": "Choose a category",
+      "match": {
+        "contains": "Contains",
+        "word": "Whole word",
+        "exact": "Exact"
+      },
+      "amount": {
+        "none": "Any amount",
+        "exact": "This amount",
+        "range": "Between"
+      },
+      "min": "Min",
+      "max": "Max",
+      "onlyThis": "Only this one",
+      "cancel": "Cancel",
+      "apply": "Save and apply",
+      "saving": "Saving…"
+    }
   }
 }

@@ -16,6 +16,8 @@ import {
   IconLayoutSidebar,
   IconBolt,
   IconSun,
+  IconLayoutSidebarRight,
+  IconFilter,
   IconCalendarStats,
   IconFileTextFilled,
   IconHandFinger,
@@ -67,6 +69,9 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   homeNudge: IconSun,
   homeComingUp: IconCalendarDue,
   homeSpending: IconChartDonut,
+  activityDetail: IconLayoutSidebarRight,
+  activityFilters: IconFilter,
+  activityBulkSelect: IconChecklist,
 };
 
 /**

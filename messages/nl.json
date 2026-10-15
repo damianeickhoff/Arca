@@ -165,7 +165,13 @@
       "to": "Tot",
       "apply": "Toepassen",
       "reset": "{name} wissen",
-      "period": "Periode"
+      "period": "Periode",
+      "needs": "Nodig",
+      "wants": "Willen",
+      "save": "Sparen",
+      "amount": "Bedrag",
+      "min": "Min",
+      "max": "Max"
     },
     "bulkSelected": "{count, plural, =0 {Niets geselecteerd} one {# geselecteerd} other {# geselecteerd}}",
     "bulkSelectAll": "Alles selecteren ({count})",
@@ -177,7 +183,16 @@
     "bulkInclude": "Meetellen",
     "bulkDelete": "Verwijderen",
     "bulkDone": "Selectiemodus verlaten",
-    "bulkConfirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?"
+    "bulkConfirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?",
+    "periods": {
+      "all": "Alles",
+      "today": "Vandaag",
+      "yesterday": "Gisteren",
+      "this-month": "Deze maand",
+      "prev-month": "Vorige maand",
+      "half-year": "Half jaar",
+      "year": "Jaar"
+    }
   },
   "debts": {
     "paymentFromLinked": "Overgenomen van de gekoppelde {count, plural, one {vaste last} other {vaste lasten}}: {amount} per maand.",
@@ -489,6 +504,18 @@
     "homeSpending": {
       "title": "Uitgaven",
       "body": "Elke categorie tegenover haar budget. De balk kleurt oranje als een categorie bijna op is."
+    },
+    "activityDetail": {
+      "title": "Alles over een transactie",
+      "body": "Categorie, jouw deel, winkel, notitie en bon, plus splitsen, een Tikkie koppelen, vast maken of een regel maken. Meer acties zitten achter de ⋯-knop."
+    },
+    "activityFilters": {
+      "title": "Filterchips",
+      "body": "Verfijn de lijst op periode, rekening, categorie, nodig/willen/sparen, vaste lasten, bedrag of richting. Tik op de × van een chip om hem te wissen."
+    },
+    "activityBulkSelect": {
+      "title": "Meerdere tegelijk selecteren",
+      "body": "Houd een transactie ingedrukt (of vink haar aan op een computer) om een hele selectie te categoriseren, uit te sluiten of te verwijderen."
     }
   },
   "importMapping": {
@@ -689,5 +716,127 @@
   "bills": {
     "markPaid": "Markeer als betaald",
     "markUnpaid": "Markeer als onbetaald"
+  },
+  "activity": {
+    "title": "Activiteit",
+    "subtitle": "Elke transactie op {accounts, plural, one {# rekening} other {# rekeningen}}",
+    "subtitleReview": "{count, plural, one {# heeft een categorie nodig} other {# hebben een categorie nodig}}",
+    "filtersButton": "Filters",
+    "clearFilters": "Alle filters wissen",
+    "scanReceipt": "Bon scannen",
+    "importCsv": "CSV importeren",
+    "addTransaction": "Transactie toevoegen",
+    "results": "{count, plural, one {# resultaat} other {# resultaten}}",
+    "needsCategory": "Heeft een categorie nodig",
+    "internalTransfer": "Eigen overboeking",
+    "splitParts": "{count, plural, one {# deel} other {# delen}}",
+    "tags": {
+      "paidBack": "Terugbetaald",
+      "split": "Gesplitst",
+      "recurring": "Vast",
+      "notInReports": "Niet in rapporten"
+    },
+    "bulk": {
+      "select": "Selecteren",
+      "deselect": "Deselecteren"
+    },
+    "summary": {
+      "in": "In",
+      "out": "Uit",
+      "net": "Netto"
+    },
+    "upcoming": {
+      "title": "{count, plural, one {# komt nog deze maand} other {# komen nog deze maand}}",
+      "due": "nog {amount} te betalen"
+    },
+    "detail": {
+      "title": "Transactiedetails",
+      "more": "Meer acties",
+      "confirmDelete": "Deze transactie verwijderen?",
+      "internalTransfer": "Eigen overboeking",
+      "needsCategory": "Heeft een categorie nodig",
+      "splitInto": "Gesplitst in {count}",
+      "paidBackPill": "{amount} terugbetaald",
+      "choose": "Kiezen",
+      "unknown": "Onbekend, kies er een",
+      "notLinked": "Niet gekoppeld",
+      "addNote": "Notitie toevoegen",
+      "chooseGoal": "Kies een spaardoel",
+      "budgetTypeDefault": "Standaard ({type})",
+      "transferAuto": "Automatisch (van rekening)",
+      "shareAfterPayback": "{amount} · terugbetaald",
+      "shareCorrected": "{amount} · was {original}",
+      "viewReceipt": "Bon bekijken",
+      "removeReceipt": "Bon verwijderen",
+      "close": "Sluiten",
+      "notePlaceholder": "Notitie toevoegen…",
+      "noteHint": "Laat leeg om de notitie te verwijderen.",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "originalAmount": "Oorspronkelijk bedrag",
+      "correctedAmount": "Gecorrigeerd bedrag",
+      "correctHint": "Laat leeg om de correctie te verwijderen.",
+      "budgetType": {
+        "needs": "Nodig",
+        "wants": "Willen",
+        "save": "Sparen"
+      },
+      "fields": {
+        "category": "Categorie",
+        "yourShare": "Jouw deel",
+        "merchant": "Winkel",
+        "budgetType": "Budgettype",
+        "transferType": "Soort overboeking",
+        "savingsGoal": "Spaardoel",
+        "note": "Notitie",
+        "receipt": "Bon"
+      },
+      "actions": {
+        "split": "Splitsen",
+        "adjustSplit": "Splitsing aanpassen",
+        "link": "Terugbetaling koppelen",
+        "linkHint": "Open het geld dat terugkwam (de Tikkie) om het aan deze uitgave te koppelen.",
+        "recurring": "Vast maken",
+        "rule": "Regel maken",
+        "receipt": "Bon toevoegen",
+        "replaceReceipt": "Bon vervangen",
+        "exclude": "Niet in rapporten",
+        "include": "Weer in rapporten"
+      },
+      "menu": {
+        "correctAmount": "Bedrag corrigeren",
+        "changeMerchant": "Winkel wijzigen",
+        "brandIcon": "Merkicoon",
+        "lookUp": "Opzoeken op Google",
+        "markReimbursement": "Markeren als terugbetaling",
+        "unmarkReimbursement": "Terugbetalingsmarkering verwijderen",
+        "markTransfer": "Markeren als eigen overboeking",
+        "unmarkTransfer": "Overboekingsmarkering verwijderen",
+        "delete": "Verwijderen"
+      }
+    },
+    "rule": {
+      "titleCreate": "Regel maken",
+      "titleAfterChange": "Ook op andere transacties toepassen?",
+      "intro": "Transacties waarvan de omschrijving overeenkomt krijgen deze categorie, nu en bij elke volgende import.",
+      "pattern": "Omschrijving",
+      "chooseCategory": "Kies een categorie",
+      "match": {
+        "contains": "Bevat",
+        "word": "Heel woord",
+        "exact": "Exact"
+      },
+      "amount": {
+        "none": "Elk bedrag",
+        "exact": "Dit bedrag",
+        "range": "Tussen"
+      },
+      "min": "Min",
+      "max": "Max",
+      "onlyThis": "Alleen deze",
+      "cancel": "Annuleren",
+      "apply": "Opslaan en toepassen",
+      "saving": "Opslaan…"
+    }
   }
 }

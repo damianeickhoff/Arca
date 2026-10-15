@@ -985,7 +985,7 @@ function TransactionDetailBody({
 // Merchant picker: pick one of the merchants already in use, or type a new name.
 // Both paths go through POST /api/merchants, which get-or-creates by normalized name —
 // so typing "albert heijn" when "Albert Heijn" exists reuses that profile.
-function MerchantPickerDialog({
+export function MerchantPickerDialog({
   open,
   currentId,
   suggestion,
@@ -1087,7 +1087,7 @@ function MerchantPickerBody({
 // Extract the likely merchant/brand name from a raw transaction description.
 // Stops at the first token that contains a digit (store numbers, postal codes, etc.)
 // so "ALDI CUL009 TIEL TIEL NLD" → "ALDI", "Albert Heijn 1177 DOORN NLD" → "Albert Heijn".
-function guessMerchant(description: string): string {
+export function guessMerchant(description: string): string {
   const tokens = description.trim().split(/\s+/);
   const brand: string[] = [];
   for (const t of tokens) {
@@ -1101,7 +1101,7 @@ function guessMerchant(description: string): string {
 // Everything a recurring item can inherit from a single transaction: name, amount, the
 // date it starts from, match pattern and category. Anything not derivable (frequency,
 // notes) keeps the editor's own defaults.
-function buildRecurringPrefill(row: TransactionDetail, categories: Category[]): RecurringPrefill {
+export function buildRecurringPrefill(row: TransactionDetail, categories: Category[]): RecurringPrefill {
   const category = categories.find((c) => c.id === row.categoryId);
   const amount = row.correctedAmount ?? row.amount;
   const budgetType = row.budgetTypeOverride ?? category?.budgetType ?? null;
@@ -1123,7 +1123,7 @@ function buildRecurringPrefill(row: TransactionDetail, categories: Category[]): 
 // two actions worth having in the moment — pause (keeps the rule, stops it matching
 // and projecting) and cancel (removes it entirely; auto-detected items are soft-
 // dismissed server-side so the detector doesn't recreate them).
-function RecurrenceCard({
+export function RecurrenceCard({
   recurringItemId,
   fallbackName,
   categories,

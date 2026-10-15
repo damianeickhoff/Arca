@@ -28,6 +28,10 @@ export type TipAnchor =
   | "homeNudge"
   | "homeComingUp"
   | "homeSpending"
+  // Redesigned Activity
+  | "activityRow"
+  | "activityFilters"
+  | "activityDetail"
   // New-debt form controls (walkthrough)
   | "debtClose"
   | "debtDirection"

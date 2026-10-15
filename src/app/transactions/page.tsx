@@ -7,9 +7,16 @@ import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { billsDueTotal } from "@/lib/bill-amounts";
 import { normalizeBudgetType } from "@/lib/format";
-import { PageContainer } from "@/components/page-container";
+import { PageShell } from "@/components/page-container";
+import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { IconChevronRight } from "@tabler/icons-react";
+import { Icon } from "@/components/icon";
+import { formatEur } from "@/lib/format";
+import { getNeedsReviewTransactions } from "@/lib/needs-review";
+import { NeedsReviewLink } from "@/app/_home/home-sections";
+import { ActivityHeader, ActivityView, type ActivityFilters } from "./_activity/activity-view";
 import { ALL_FROM, todayStr } from "./periods";
-import { TransactionsMobile } from "./mobile";
 import {
   buildSplitAllocations,
   getDisplayedTransactionCategory,
@@ -146,12 +153,13 @@ export default async function TransactionsPage({
 
   const upcomingMonth = currentFinancialMonth(financialMonth);
 
-  const [rows, cats, allBanks, savingsGoalOptions, billStatuses] = await Promise.all([
+  const [rows, cats, allBanks, savingsGoalOptions, billStatuses, needsReview] = await Promise.all([
     getTransactions(from, to, direction, search, accountList, sort, dir, searchAll, recurring, min, max),
     getCategories(),
     db.select().from(banks).orderBy(asc(banks.displayName), asc(banks.accountNumber)),
     db.select().from(goals).where(and(eq(goals.goalType, "savings"), eq(goals.active, true))).orderBy(asc(goals.name)),
     getBillStatuses(upcomingMonth, financialMonth, UPCOMING_TYPES),
+    getNeedsReviewTransactions(),
   ]);
 
   // Upcoming = active recurring items with a due date this financial month that haven't
@@ -244,36 +252,84 @@ export default async function TransactionsPage({
   })();
   const hasMore = filteredRows.length > visibleRows.length;
 
+  // Sparkline: the running net (in − out) across the filtered rows, oldest first,
+  // thinned to at most 60 points so an all-time range stays a readable line.
+  const netByDate = new Map<string, number>();
+  for (const a of allocationRows) {
+    if (a.isInternalTransfer || a.categoryGroup === "savings") continue;
+    if (a.direction === "income" && a.isReimbursement) continue;
+    netByDate.set(a.date, (netByDate.get(a.date) ?? 0) + (a.direction === "income" ? a.amount : -a.amount));
+  }
+  const running: number[] = [];
+  let acc = 0;
+  for (const date of [...netByDate.keys()].sort()) {
+    acc += netByDate.get(date)!;
+    running.push(acc);
+  }
+  const step = Math.max(1, Math.ceil(running.length / 60));
+  const sparkline = running.filter((_, i) => i % step === 0 || i === running.length - 1);
+
+  const t = await getTranslations("activity");
+  const filters: ActivityFilters = {
+    cats,
+    banks: allBanks,
+    from,
+    to,
+    financialMonth,
+    direction,
+    category,
+    account,
+    budgetType: sp.budgetType,
+    recurring,
+    search,
+    min: sp.min,
+    max: sp.max,
+  };
+
+  // Entry points into the Upcoming calendar and the Needs review queue, in the new style.
+  const upcomingSlot =
+    upcomingCount > 0 ? (
+      <Link
+        href="/transactions/upcoming"
+        className="flex items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3 shadow-card transition-colors hover:bg-surface-2"
+      >
+        {upcomingIcons.length > 0 && (
+          <span className="flex shrink-0 -space-x-2.5">
+            {upcomingIcons.map((u, i) => (
+              <span key={i} className="rounded-full ring-2 ring-surface" style={{ zIndex: upcomingIcons.length - i }}>
+                <Icon iconKey={u.icon} color={u.iconColor} background={u.iconBackground} size="sm" round />
+              </span>
+            ))}
+          </span>
+        )}
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-[13px] font-bold text-ink">{t("upcoming.title", { count: upcomingCount })}</span>
+          <span className="text-xs text-ink-3">{t("upcoming.due", { amount: formatEur(upcomingTotal) })}</span>
+        </span>
+        <IconChevronRight size={16} stroke={1.8} className="shrink-0 text-ink-3" />
+      </Link>
+    ) : null;
+  const needsReviewSlot = needsReview.length > 0 ? <NeedsReviewLink count={needsReview.length} /> : null;
+
   return (
-    // MainContent already reserves --nav-clearance at the bottom for every page, so this
-    // root only needs the page background and a full-viewport minimum height.
-    <PageContainer className="px-0 min-h-dvh bg-background">
-    <TransactionsMobile
-      cats={cats}
-      savingsGoals={savingsGoalOptions}
-      allBanks={allBanks}
-      search={search}
-      from={from}
-      to={to}
-      financialMonth={financialMonth}
-      direction={direction}
-      category={category}
-      account={account}
-      budgetType={sp.budgetType}
-      recurring={recurring}
-      min={sp.min}
-      max={sp.max}
-      upcomingCount={upcomingCount}
-      upcomingTotal={upcomingTotal}
-      upcomingIcons={upcomingIcons}
-      filteredCount={filteredRows.length}
-      visibleRows={visibleRows}
-      income={income}
-      expense={expense}
-      showMoreHref={showMoreHref}
-      hasMore={hasMore}
-    />
-    </PageContainer>
+    <PageShell
+      header={<ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} />}
+      bodyClassName="pt-3 lg:pt-1"
+    >
+      <ActivityView
+        filters={filters}
+        categories={cats}
+        savingsGoals={savingsGoalOptions}
+        rows={visibleRows}
+        filteredCount={filteredRows.length}
+        income={income}
+        expense={expense}
+        sparkline={sparkline}
+        showMoreHref={showMoreHref}
+        hasMore={hasMore}
+        upcomingSlot={upcomingSlot}
+        needsReviewSlot={needsReviewSlot}
+      />
+    </PageShell>
   );
 }
-

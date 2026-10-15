@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   IconLinkFilled as Link2
@@ -32,15 +32,36 @@ interface Props {
     date: string;
     allocatedAmount: number;
   };
+  /** Controlled mode (Activity's detail panel opens it from its own action button):
+   *  pass both and no trigger button is rendered. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function LinkDialog({ tikkie }: Props) {
+export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props) {
   const router = useRouter();
   const remainingBalance = tikkie.amount - tikkie.allocatedAmount;
+  const controlled = controlledOpen !== undefined;
 
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlled ? controlledOpen : internalOpen;
+  function setOpen(next: boolean) {
+    if (controlled) onOpenChange?.(next);
+    else setInternalOpen(next);
+  }
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(controlled);
+
+  // Controlled mode has no trigger to load from, so the suggestions load when it opens.
+  useEffect(() => {
+    if (!controlled || !controlledOpen) return;
+    let cancelled = false;
+    fetch(`/api/reimbursements/suggestions?transactionId=${tikkie.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) { setSuggestions(Array.isArray(d) ? d : []); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [controlled, controlledOpen, tikkie.id]);
   const [confirming, setConfirming] = useState<Suggestion | null>(null);
   // How much of THIS TIKKIE goes to the selected expense
   const [tikkiePortion, setTikkiePortion] = useState("");
@@ -98,6 +119,7 @@ export function LinkDialog({ tikkie }: Props) {
 
   return (
     <>
+      {!controlled && (
       <button
         onClick={handleOpen}
         className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors shrink-0"
@@ -105,6 +127,7 @@ export function LinkDialog({ tikkie }: Props) {
         <Link2 className="size-3.5" />
         Koppelen
       </button>
+      )}
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setConfirming(null); }}>
         <DialogContent>

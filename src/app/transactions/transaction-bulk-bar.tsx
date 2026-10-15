@@ -85,18 +85,18 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
   }
 
   const actionClass =
-    "flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-sm font-medium transition-colors active:bg-foreground/10 disabled:opacity-40";
+    "flex h-[42px] flex-1 items-center justify-center gap-1.5 rounded-full border border-line bg-surface px-2 text-[13px] font-semibold text-ink transition-colors hover:bg-surface-2 disabled:opacity-40";
 
   return (
     <div className={cn(bottomDockClass, "z-50")}>
-      <div className="glass-nav rounded-3xl border border-white/10 bg-white/80 dark:bg-white/7 backdrop-blur-lg p-3 shadow-floating">
+      <div className="rounded-card border border-line bg-surface p-3 shadow-float">
         <div className="flex items-center justify-between px-1 pb-2">
-          <p className="text-sm font-semibold">{t("bulkSelected", { count })}</p>
+          <p className="heading text-sm text-ink">{t("bulkSelected", { count })}</p>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={onSelectAll}
-              className="rounded-full px-3 py-1.5 text-xs font-medium text-foreground/70 active:bg-foreground/10"
+              className="rounded-full px-3 py-1.5 text-xs font-semibold text-mustard-strong hover:bg-surface-2"
             >
               {allSelected ? t("bulkSelectNone") : t("bulkSelectAll", { count: total })}
             </button>
@@ -104,14 +104,14 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
               type="button"
               onClick={onDone}
               aria-label={t("bulkDone")}
-              className="rounded-full p-2 text-foreground/70 active:bg-foreground/10"
+              className="rounded-full p-2 text-ink-2 hover:bg-surface-2"
             >
               <IconX className="size-5" />
             </button>
           </div>
         </div>
 
-        <div className="flex items-stretch gap-1">
+        <div className="flex items-stretch gap-2">
           {/* CategoryPicker brings its own trigger button and full-screen sheet, so it
               only needs to be dressed to match the two buttons beside it. Passing
               onChange puts it in form mode: it reports the picked category instead of
@@ -128,13 +128,13 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
             {allExcluded ? t("bulkInclude") : t("bulkExclude")}
           </button>
 
-          <button type="button" onClick={remove} disabled={busy || count === 0} className={cn(actionClass, "text-destructive")}>
+          <button type="button" onClick={remove} disabled={busy || count === 0} className={cn(actionClass, "border-transparent bg-negative-soft text-negative hover:bg-negative-soft/80")}>
             <IconTrash className="size-5" />
             {t("bulkDelete")}
           </button>
         </div>
 
-        {error && <p className="px-1 pt-2 text-xs text-destructive">{error}</p>}
+        {error && <p className="px-1 pt-2 text-xs text-negative">{error}</p>}
       </div>
     </div>
   );

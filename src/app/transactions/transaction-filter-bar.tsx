@@ -12,6 +12,7 @@ import {
   IconSparkles,
   IconReload,
   IconCalendarFilled,
+  IconCurrencyEuro,
 } from "@tabler/icons-react";
 import {
   DropdownMenu,
@@ -25,7 +26,7 @@ import { CategoryMultiPicker } from "@/components/category-multi-picker";
 import { AccountMultiPicker } from "@/components/account-multi-picker";
 import { Icon } from "@/components/icon";
 import { cn } from "@/lib/utils";
-import { BUDGET_TYPE_LABELS } from "@/lib/format";
+import { currencySymbol } from "@/lib/format";
 import { filterPillClass } from "@/components/filter-pill";
 import { transactionPeriods, matchTransactionPeriod, ALL_FROM, todayStr } from "./periods";
 import type { Bank, Category } from "@/db/schema";
@@ -43,12 +44,16 @@ type Props = {
   budgetType?: string;
   recurring?: boolean;
   search?: string;
+  min?: string;
+  max?: string;
+  /** "scroll" (default): one sideways-scrolling row on phones, wrapping from lg.
+   *  "wrap": always wrapped — the phone Filters sheet shows every chip at once. */
+  layout?: "scroll" | "wrap";
 };
 
-// Scrollable row of filter pills — the transactions subpage's replacement for the old
-// single filter-icon-button + full sheet. Each pill applies its change immediately
-// (no batch "Apply" step) and grows a trailing x once active, resetting just that
-// filter back to its default.
+// Activity's filter chips. Each chip applies its change immediately (no batch "Apply"
+// step) and grows a trailing x once active, resetting just that filter back to its
+// default. Every filter lives in the URL, so the server page does the filtering.
 export function TransactionFilterBar(props: Props) {
   const { cats, banks, financialMonth, search } = props;
   const router = useRouter();
@@ -63,6 +68,8 @@ export function TransactionFilterBar(props: Props) {
       account: props.account,
       budgetType: props.budgetType,
       recurring: props.recurring ? "1" : undefined,
+      min: props.min,
+      max: props.max,
       search,
     };
     const merged = { ...base, ...overrides };
@@ -77,7 +84,15 @@ export function TransactionFilterBar(props: Props) {
     // scrolling and scrollbars are hidden app-wide (globals.css), so an overflowing
     // row would strand the last filters with no way to reach them — wrap instead, so
     // every filter is visible.
-    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 lg:flex-wrap lg:overflow-x-visible lg:gap-y-2">
+    <div
+      data-tip-anchor="activityFilters"
+      className={cn(
+        "flex items-center gap-2",
+        props.layout === "wrap"
+          ? "flex-wrap gap-y-2"
+          : "overflow-x-auto scrollbar-hide -mx-5 px-5 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-x-visible lg:gap-y-2",
+      )}
+    >
       <PeriodPill
         from={props.from}
         to={props.to}
@@ -85,10 +100,23 @@ export function TransactionFilterBar(props: Props) {
         onChange={(from, to) => push({ from, to })}
         onReset={() => push({ from: ALL_FROM, to: todayStr() })}
       />
-      <CategoriesPill cats={cats} value={props.category} onChange={(v) => push({ category: v })} />
       <AccountsPill banks={banks} value={props.account} onChange={(v) => push({ account: v })} />
+      <CategoriesPill cats={cats} value={props.category} onChange={(v) => push({ category: v })} />
       <ChoicePill
-        icon={<IconArrowsUpDown className="size-4 shrink-0" />}
+        icon={<IconSparkles className="size-3.5 shrink-0" />}
+        label={t("filters.nature")}
+        value={props.budgetType}
+        options={[
+          { value: "nodig", label: t("filters.needs") },
+          { value: "willen", label: t("filters.wants") },
+          { value: "sparen", label: t("filters.save") },
+        ]}
+        onChange={(v) => push({ budgetType: v })}
+      />
+      <RecurringPill active={!!props.recurring} onToggle={() => push({ recurring: props.recurring ? undefined : "1" })} />
+      <AmountPill min={props.min} max={props.max} onChange={(min, max) => push({ min, max })} />
+      <ChoicePill
+        icon={<IconArrowsUpDown className="size-3.5 shrink-0" />}
         label={t("filters.operationType")}
         value={props.direction}
         options={[
@@ -97,17 +125,6 @@ export function TransactionFilterBar(props: Props) {
         ]}
         onChange={(v) => push({ direction: v })}
       />
-      <ChoicePill
-        icon={<IconSparkles className="size-4 shrink-0" />}
-        label={t("filters.nature")}
-        value={props.budgetType}
-        options={[
-          { value: "nodig", label: BUDGET_TYPE_LABELS.nodig },
-          { value: "willen", label: BUDGET_TYPE_LABELS.willen },
-        ]}
-        onChange={(v) => push({ budgetType: v })}
-      />
-      <RecurringPill active={!!props.recurring} onToggle={() => push({ recurring: props.recurring ? undefined : "1" })} />
     </div>
   );
 }
@@ -135,7 +152,7 @@ function PeriodPill({
   const periods = transactionPeriods(financialMonth);
   const matched = matchTransactionPeriod(financialMonth, from, to);
   const isAll = matched ? matched.key === "all" : false;
-  const label = matched ? matched.label : `${fmtDate(from)} – ${fmtDate(to)}`;
+  const label = matched ? t(`periods.${matched.key}`) : `${fmtDate(from)} – ${fmtDate(to)}`;
 
   function openCustom() {
     setCustomFrom(from);
@@ -152,7 +169,7 @@ function PeriodPill({
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger className={cn(filterPillClass(!isAll, "shrink-0"))}>
-          <IconCalendarFilled className="size-4 shrink-0" />
+          <IconCalendarFilled className="size-3.5 shrink-0" />
           <span>{label}</span>
           {!isAll && (
             <span
@@ -164,14 +181,14 @@ function PeriodPill({
               onClick={(e) => { e.stopPropagation(); onReset(); }}
               className="shrink-0"
             >
-              <IconX className="size-5 bg-white/40 text-foreground rounded-full dark:text-background p-1" />
+              <IconX className="size-[18px] rounded-full bg-bg/20 p-[3px] text-bg" />
             </span>
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" sideOffset={8} className="min-w-48 w-auto p-1.5">
           {periods.map((p) => (
             <DropdownMenuItem key={p.key} onClick={() => onChange(p.from, p.to)}>
-              {p.label}
+              {t(`periods.${p.key}`)}
             </DropdownMenuItem>
           ))}
           <DropdownMenuItem onClick={openCustom}>{t("filters.custom")}</DropdownMenuItem>
@@ -193,7 +210,7 @@ function PeriodPill({
           <button
             type="button"
             onClick={applyCustom}
-            className="mt-4 w-full h-11 rounded-full bg-primary text-primary-foreground text-sm font-semibold"
+            className="mt-4 w-full h-11 rounded-full bg-ink text-bg text-sm font-bold"
           >
             {t("filters.apply")}
           </button>
@@ -237,7 +254,7 @@ function CategoriesPill({
             )}
           </span>
         ) : (
-          <IconCategory className="size-4 shrink-0" />
+          <IconCategory className="size-3.5 shrink-0" />
         )}
         <span>{t("filters.categories")}</span>
         {active && (
@@ -250,7 +267,7 @@ function CategoriesPill({
             onClick={(e) => { e.stopPropagation(); onChange(undefined); }}
             className="shrink-0"
           >
-            <IconX className="size-5 bg-white/40 rounded-full text-background p-1" />
+            <IconX className="size-[18px] rounded-full bg-bg/20 p-[3px] text-bg" />
           </span>
         )}
       </button>
@@ -314,7 +331,7 @@ function AccountsPill({
             )}
           </span>
         ) : (
-          <IconWallet className="size-4 shrink-0" />
+          <IconWallet className="size-3.5 shrink-0" />
         )}
         <span>{t("filters.accounts")}</span>
         {active && (
@@ -327,7 +344,7 @@ function AccountsPill({
             onClick={(e) => { e.stopPropagation(); onChange(undefined); }}
             className="shrink-0"
           >
-            <IconX className="size-5 bg-white/40 rounded-full text-background p-1" />
+            <IconX className="size-[18px] rounded-full bg-bg/20 p-[3px] text-bg" />
           </span>
         )}
       </button>
@@ -376,7 +393,7 @@ function ChoicePill({
             onClick={(e) => { e.stopPropagation(); onChange(undefined); }}
             className="shrink-0"
           >
-            <IconX className="size-5 bg-white/40 rounded-full text-background p-1" />
+            <IconX className="size-[18px] rounded-full bg-bg/20 p-[3px] text-bg" />
           </span>
         )}
       </button>
@@ -392,7 +409,7 @@ function ChoicePill({
                   onClick={() => { onChange(o.value); setOpen(false); }}
                   className={cn(
                     "flex items-center rounded-xl px-4 py-3.5 text-sm text-left transition-colors",
-                    isActive ? "bg-foreground text-primary-foreground font-medium" : "hover:bg-foreground/5 text-foreground",
+                    isActive ? "bg-ink text-bg font-semibold" : "hover:bg-surface-2 text-ink",
                   )}
                 >
                   {o.label}
@@ -406,11 +423,101 @@ function ChoicePill({
   );
 }
 
+// Amount range — sign-agnostic (it matches the size of the operation; the operation
+// type chip decides the sign), the same min/max params the page already understood.
+function AmountPill({
+  min,
+  max,
+  onChange,
+}: {
+  min?: string;
+  max?: string;
+  onChange: (min: string | undefined, max: string | undefined) => void;
+}) {
+  const t = useTranslations("transactions");
+  const [open, setOpen] = useState(false);
+  const [draftMin, setDraftMin] = useState(min ?? "");
+  const [draftMax, setDraftMax] = useState(max ?? "");
+  const active = !!min || !!max;
+  const sym = currencySymbol();
+  const label = active
+    ? min && max
+      ? `${sym}${min}–${sym}${max}`
+      : min
+        ? `≥ ${sym}${min}`
+        : `≤ ${sym}${max}`
+    : t("filters.amount");
+
+  function clean(v: string) {
+    const n = Number(v.replace(",", "."));
+    return v.trim() !== "" && Number.isFinite(n) && n >= 0 ? String(n) : undefined;
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => { setDraftMin(min ?? ""); setDraftMax(max ?? ""); setOpen(true); }}
+        className={filterPillClass(active, "shrink-0")}
+      >
+        <IconCurrencyEuro className="size-3.5 shrink-0" />
+        <span>{label}</span>
+        {active && (
+          <span
+            role="button"
+            tabIndex={0}
+            aria-label={t("filters.reset", { name: t("filters.amount") })}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onChange(undefined, undefined); }}
+            className="shrink-0"
+          >
+            <IconX className="size-[18px] rounded-full bg-bg/20 p-[3px] text-bg" />
+          </span>
+        )}
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent title={t("filters.amount")}>
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <label className="flex flex-col gap-1">
+              <span className="mono-label px-1">{t("filters.min")}</span>
+              <input
+                inputMode="decimal"
+                value={draftMin}
+                onChange={(e) => setDraftMin(e.target.value)}
+                placeholder="0"
+                className="h-11 rounded-[14px] bg-surface-2 px-4 text-sm font-semibold tabular-nums text-ink outline-none focus:ring-3 focus:ring-mustard/25"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="mono-label px-1">{t("filters.max")}</span>
+              <input
+                inputMode="decimal"
+                value={draftMax}
+                onChange={(e) => setDraftMax(e.target.value)}
+                placeholder="∞"
+                className="h-11 rounded-[14px] bg-surface-2 px-4 text-sm font-semibold tabular-nums text-ink outline-none focus:ring-3 focus:ring-mustard/25"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={() => { onChange(clean(draftMin), clean(draftMax)); setOpen(false); }}
+            className="mt-4 w-full h-11 rounded-full bg-ink text-bg text-sm font-bold"
+          >
+            {t("filters.apply")}
+          </button>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function RecurringPill({ active, onToggle }: { active: boolean; onToggle: () => void }) {
   const t = useTranslations("transactions");
   return (
     <button type="button" onClick={onToggle} className={filterPillClass(active, "shrink-0")}>
-      <IconReload className="size-4 shrink-0" />
+      <IconReload className="size-3.5 shrink-0" />
       <span>{t("filters.recurring")}</span>
       {active && (
         <span
@@ -422,7 +529,7 @@ function RecurringPill({ active, onToggle }: { active: boolean; onToggle: () => 
           onClick={(e) => { e.stopPropagation(); onToggle(); }}
           className="shrink-0"
         >
-          <IconX className="size-5 bg-white/40 rounded-full text-background p-1" />
+          <IconX className="size-[18px] rounded-full bg-bg/20 p-[3px] text-bg" />
         </span>
       )}
     </button>
