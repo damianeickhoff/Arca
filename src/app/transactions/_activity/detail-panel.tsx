@@ -55,6 +55,7 @@ import { nextOccurrence } from "@/lib/recurring-occurrence";
 import { cn } from "@/lib/utils";
 import type { Category, Goal, Merchant } from "@/db/schema";
 import { SplitTransactionDialog } from "../split-transaction-dialog";
+import { TransactionMap } from "@/components/transaction-map";
 import { LinkDialog } from "../link-dialog";
 import { MerchantPickerDialog, buildRecurringPrefill, guessMerchant } from "../transaction-detail-dialog";
 import type { TransactionRow } from "../transaction-types";
@@ -705,6 +706,15 @@ export function TransactionDetailPanel({
               )}
             </div>
           </div>
+        </>
+      )}
+
+      {/* 7. Where it happened. Shown directly, as in the old panel; everything else that
+          left the panel lives in the More menu. */}
+      {!row.isInternalTransfer && (
+        <>
+          <div className="-mx-[22px] h-px bg-line" />
+          <TransactionMap name={row.customName || row.description} />
         </>
       )}
     </>
