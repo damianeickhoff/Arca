@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_COLUMN, FULLSCREEN_OVERLAY } from "@/components/page-container";
 import {
   IconChevronLeft,
   IconDotsVertical,
@@ -294,7 +294,7 @@ export function CategoryDetailPortal({
               )}
 
               {/* Header */}
-              <div className={cn(CONTENT_COLUMN, "relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9")} style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
+              <div className={cn(SHEET_COLUMN, "relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9")} style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
                 <button
                   type="button"
                   onClick={close}
@@ -348,7 +348,7 @@ export function CategoryDetailPortal({
               {/* Body */}
               <div className="relative flex-1 overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
                 {category && detail && (
-                  <div className={cn(CONTENT_COLUMN, "pb-[calc(2rem+var(--sab))]")}>
+                  <div className={cn(SHEET_COLUMN, "pb-[calc(2rem+var(--sab))]")}>
                     <div className="flex items-start justify-between px-4">
                       <div>
                         <p className="text-lg text-foreground/60">{spentThisPeriodLabel}</p>
@@ -433,7 +433,7 @@ export function CategoryDetailPortal({
 
             {/* ── Edit budget — numpad overlay, stacked above the detail portal ── */}
             {editBudgetOpen && category && (
-              <div className={cn(CONTENT_COLUMN, "fixed inset-0 z-[46] bg-background flex flex-col")} style={{ paddingTop: "var(--sat)" }}>
+              <div className={cn(FULLSCREEN_OVERLAY, "fixed inset-0 z-[46] bg-background flex flex-col")} style={{ paddingTop: "var(--sat)" }}>
                 <div className="flex items-center justify-between px-4 h-14 shrink-0">
                   <button
                     type="button"
@@ -477,7 +477,7 @@ export function CategoryDetailPortal({
 
             {/* ── Edit category — reuses CategorySettingsClient's embedded mode ── */}
             {editCategoryOpen && (
-              <div className={cn(CONTENT_COLUMN, "fixed inset-0 z-[46] bg-background overflow-y-auto")}>
+              <div className={cn(FULLSCREEN_OVERLAY, "fixed inset-0 z-[46] bg-background overflow-y-auto")}>
                 {loadingEditCategory || !editCategoryData ? (
                   <div className="flex items-center justify-center h-full text-foreground/50 text-sm">Loading…</div>
                 ) : (

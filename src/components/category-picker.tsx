@@ -29,7 +29,7 @@ import { filterPillClass } from "@/components/filter-pill";
 import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_FIXED } from "@/components/page-container";
 import { BUDGET_TYPE_LABELS, normalizeBudgetType } from "@/lib/format";
 import { CategoryClient } from "@/components/settings/categories/category-client";
 import { acquireNavHidden } from "@/lib/nav-visibility";
@@ -368,7 +368,7 @@ function FloatingSearchBar({
       // portalled to <body>, so it would otherwise span the whole monitor instead of
       // lining up with the sheet it belongs to. Vertical position stays on `transform`
       // (see the rAF loop above), which the horizontal centring doesn't disturb.
-      className={cn(CONTENT_COLUMN, "fixed inset-x-0 top-0 px-4 z-[300] pointer-events-none")}
+      className={cn(SHEET_FIXED, "fixed inset-x-0 top-0 px-4 z-[300] pointer-events-none")}
       // Off-screen until the first rAF frame positions it; will-change/translate3d
       // promote it to its own compositor layer so iOS repaints it on its own.
       style={{ transform: "translate3d(0, -9999px, 0)", willChange: "transform" }}

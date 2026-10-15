@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_COLUMN } from "@/components/page-container";
 import { IconChevronLeft, IconDotsVertical, IconPencilFilled, IconSwitchHorizontal } from "@tabler/icons-react";
 import {
   DropdownMenu,
@@ -343,7 +343,7 @@ export function MerchantDetailPortal({
               )}
 
               {/* Header */}
-              <div className={cn(CONTENT_COLUMN, "relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9")} style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
+              <div className={cn(SHEET_COLUMN, "relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 mb-9")} style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
                 <button
                   type="button"
                   onClick={close}
@@ -384,7 +384,7 @@ export function MerchantDetailPortal({
               {/* Body */}
               <div className="relative flex-1 overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
                 {detail && (
-                  <div className={cn(CONTENT_COLUMN, "pb-[calc(2rem+var(--sab))]")}>
+                  <div className={cn(SHEET_COLUMN, "pb-[calc(2rem+var(--sab))]")}>
                     <div className="flex items-start justify-between px-4">
                       <div>
                         <p className="text-lg text-foreground/60">Total spent</p>

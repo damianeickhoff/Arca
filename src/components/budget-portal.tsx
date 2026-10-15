@@ -9,7 +9,7 @@ import { AnchoredTip } from "@/components/anchored-tip";
 import { ContextualTip } from "@/components/contextual-tip";
 import { ProgressRing } from "@/components/progress-ring";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { FULLSCREEN_OVERLAY, SHEET_COLUMN } from "@/components/page-container";
 import { currencySymbol } from "@/lib/format";
 import { BudgetStrategySliders, type BudgetStrategy } from "@/components/budget-strategy-sliders";
 import type { BudgetCategoryRow, BudgetOverview, BudgetPeriod } from "@/lib/budget-overview";
@@ -747,7 +747,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
         <>
           {/* ─────────────── SINGLE-CATEGORY QUICK EDIT ─────────────── */}
           {editingCat && (
-            <div className={cn(CONTENT_COLUMN, "fixed inset-0 z-50 bg-background flex flex-col")} style={{ paddingTop: "var(--sat)", pointerEvents: "auto" }}>
+            <div className={cn(FULLSCREEN_OVERLAY, "fixed inset-0 z-50 bg-background flex flex-col")} style={{ paddingTop: "var(--sat)", pointerEvents: "auto" }}>
               <ColorWash color={editingCat.color} />
               <div className="relative flex items-center justify-between px-4 h-14 shrink-0">
                 <button onClick={() => setEditingCat(null)} aria-label={t("close")} className="glass-icon-btn size-11">
@@ -811,7 +811,7 @@ export function BudgetPortal({ data }: { data: BudgetOverview }) {
               onClick={closeStrategyPicker}
             >
               <div
-                className={cn(CONTENT_COLUMN, "bg-[var(--dialog-background)] backdrop-blur-3xl rounded-t-3xl p-5 pb-[calc(1.25rem+var(--sab))] transition-transform duration-300 ease-out")}
+                className={cn(SHEET_COLUMN, "bg-[var(--dialog-background)] backdrop-blur-3xl rounded-t-3xl p-5 pb-[calc(1.25rem+var(--sab))] transition-transform duration-300 ease-out")}
                 style={{ transform: strategyVisible ? "translateY(0)" : "translateY(100%)" }}
                 onClick={(e) => e.stopPropagation()}
               >

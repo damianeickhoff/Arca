@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { m, AnimatePresence, spring } from "@/lib/motion";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_FIXED } from "@/components/page-container";
 import { TipCard } from "@/components/tip-card";
 import { useContextualTip, type TipId } from "@/lib/tips";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export function ContextualTip({ id, active = true }: { id: TipId; active?: boole
           transition={spring.gentle}
           // pointer-events-none on the positioning wrapper so the full-width column
           // never swallows taps on whatever sits beside the card.
-          className={cn(CONTENT_COLUMN, "fixed inset-x-0 top-0 z-[90] px-4 pointer-events-none")}
+          className={cn(SHEET_FIXED, "fixed inset-x-0 top-0 z-[90] px-4 pointer-events-none")}
           style={{ paddingTop: "calc(var(--sat) + 0.75rem)" }}
           role="status"
           // A tip can be shown over an open vaul sheet (the receipt scanner). Without

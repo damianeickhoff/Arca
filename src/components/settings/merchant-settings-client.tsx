@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BrandIconPicker } from "@/components/brand-icon-picker";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_FIXED } from "@/components/page-container";
 import { PickerField } from "@/components/picker-field";
 import { brandColorForIconKey, detectBrandIcon } from "@/lib/brand-detect";
 import { formatEur, formatDate } from "@/lib/format";
@@ -240,7 +240,7 @@ export function MerchantSettingsOverlay({
     <div
       // `fixed inset-0` escapes the sheet it slides over, so it needs the column cap
       // itself to stay aligned with that sheet on desktop.
-      className={cn(CONTENT_COLUMN, "fixed inset-0 bg-[var(--dialog-background)] overflow-y-auto")}
+      className={cn(SHEET_FIXED, "fixed inset-0 bg-[var(--dialog-background)] overflow-y-auto")}
       style={{
         zIndex,
         transform: shown ? "translateX(0)" : "translateX(100%)",

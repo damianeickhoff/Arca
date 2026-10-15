@@ -9,11 +9,11 @@ import { IconXFilled as XIcon } from "@tabler/icons-react"
 import { acquireNavHidden } from "@/lib/nav-visibility"
 import { useKeyboardHeight } from "@/lib/use-keyboard-height"
 import { useContainerScrolled } from "@/lib/use-scroll-elevation"
-import { CONTENT_COLUMN } from "@/components/page-container"
+import { SHEET_FIXED } from "@/components/page-container"
 
 // Every dialog in the app is a bottom sheet, at every viewport width — there is no
 // centered-modal variant and no viewport branch. On desktop the sheet is capped to
-// the same column the pages use (CONTENT_COLUMN) so it rises inside the app's column
+// a readable centred column over the main area (SHEET_FIXED, clear of the sidebar) so it rises inside the app
 // instead of spanning the whole monitor.
 
 // Mask for the sticky top scroll-blur (see DialogContent's scrollBlur prop): opaque
@@ -228,7 +228,7 @@ function DialogContent({
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 flex flex-col outline-none overflow-hidden will-change-transform",
           "rounded-t-4xl bg-[var(--dialog-background)]",
-          CONTENT_COLUMN,
+          SHEET_FIXED,
           // hideHeaderRow callers render their own header as the first child and own
           // its top spacing entirely — adding this on top just double-pads it.
           // fullHeight sheets sit flush against the true top of the screen (no

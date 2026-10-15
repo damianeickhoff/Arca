@@ -20,7 +20,7 @@ import { ColorPicker } from "@/components/color-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { OptionDropdown } from "@/components/option-dropdown";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_COLUMN, SHEET_FIXED } from "@/components/page-container";
 import { normalizeBudgetType, ruleAmountLabel } from "@/lib/format";
 
 const PRESET_COLORS = [
@@ -201,7 +201,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
   }
 
   return (
-    <div className={cn(CONTENT_COLUMN, "relative min-h-[calc(100dvh-var(--nav-clearance))] pb-[calc(6rem+var(--sab))]")}>
+    <div className={cn(SHEET_COLUMN, "relative min-h-[calc(100dvh-var(--nav-clearance))] pb-[calc(6rem+var(--sab))]")}>
       {/* Color wash — fades from the icon's background color at the top, matching
           the category detail portal's header treatment. */}
       {effectiveColor && (
@@ -388,7 +388,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           the bar reads as a visibly blacker patch than the rest of the sheet. */}
       <div
         className={cn(
-          CONTENT_COLUMN,
+          SHEET_FIXED,
           "fixed bottom-0 inset-x-0 px-4 pb-[calc(1rem+var(--sab))] pt-3 bg-gradient-to-t to-transparent",
           onClose ? "from-bg-[var(--dialog-background)] via-bg-[var(--dialog-background)]" : "from-background via-background",
         )}

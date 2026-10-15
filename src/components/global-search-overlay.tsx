@@ -17,7 +17,7 @@ import {
 import * as Tabler from "@tabler/icons-react";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_COLUMN, SHEET_FIXED } from "@/components/page-container";
 import { pillContainerClass, SearchCloseIcon } from "@/components/bottom-nav";
 import { BrandIcon } from "@/components/brand-icon";
 import { BRAND_MAP } from "@/lib/brand-map";
@@ -207,7 +207,7 @@ export function GlobalSearchOverlay({ open, onClose, originRect }: Props) {
           {/* Content — the root stays full-bleed (its clip-path open/close animation is
               computed in viewport coordinates, so it must span the viewport), and only
               the scrolling content is capped to the shared column. */}
-          <div className={cn(CONTENT_COLUMN, "flex-1 overflow-y-auto px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]")}>
+          <div className={cn(SHEET_COLUMN, "flex-1 overflow-y-auto px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]")}>
 
             {/* Default state — shown when not searching */}
             {!query && (
@@ -371,7 +371,7 @@ export function GlobalSearchOverlay({ open, onClose, originRect }: Props) {
               spot the bottom-nav's search button was tapped from, so it reads as
               that same button continuing its morph rather than a new element. */}
           <div
-            className={cn(CONTENT_COLUMN, "backdrop-blur-lg fixed inset-x-0 px-6 z-10 flex items-center gap-3 search-content-enter")}
+            className={cn(SHEET_FIXED, "backdrop-blur-lg fixed inset-x-0 px-6 z-10 flex items-center gap-3 search-content-enter")}
             style={{ bottom: "max(1.25rem, env(safe-area-inset-bottom))", animationDelay: "80ms" }}
             key={`searchbar-${contentKey}`}
           >

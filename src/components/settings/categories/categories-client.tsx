@@ -10,7 +10,7 @@ import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { groupCategoriesByParent, resolveCategoryColor } from "@/lib/category-tree";
 import { BUDGET_TYPE_LABELS } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_FIXED } from "@/components/page-container";
 import { StaggerItem } from "@/components/ui/stagger";
 import type { Category, CategoryRule, Bank } from "@/db/schema";
 
@@ -176,7 +176,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
         <div
           // `fixed inset-0` escapes the drawer it covers, so it carries the column cap
           // itself to stay aligned with that drawer on desktop.
-          className={cn(CONTENT_COLUMN, "fixed inset-0 z-[70] flex flex-col overflow-y-auto rounded-t-4xl bg-[var(--dialog-background)] transition-transform duration-300 ease-out")}
+          className={cn(SHEET_FIXED, "fixed inset-0 z-[70] flex flex-col overflow-y-auto rounded-t-4xl bg-[var(--dialog-background)] transition-transform duration-300 ease-out")}
           style={{ transform: detailVisible ? "translateX(0)" : "translateX(100%)" }}
         >
           <CategorySettingsClient

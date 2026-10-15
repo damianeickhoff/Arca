@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { IconCalculatorFilled, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { FULLSCREEN_OVERLAY } from "@/components/page-container";
 import { useEscapeToClose } from "@/lib/use-escape-to-close";
 
 const springOut = "cubic-bezier(0.32, 0.72, 0, 1)";
@@ -67,7 +67,7 @@ export function DebtSimulationPortal({ content, triggerClassName }: { content: R
 
             {/* Content */}
             <div
-              className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
+              className={cn(FULLSCREEN_OVERLAY, "fixed inset-x-0 bottom-0 flex flex-col")}
               style={{
                 top: 0,
                 zIndex: 70,

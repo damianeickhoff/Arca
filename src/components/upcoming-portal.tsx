@@ -9,7 +9,7 @@ import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { FULLSCREEN_OVERLAY } from "@/components/page-container";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
 import { billsDueTotal, hasPayableBill } from "@/lib/bill-amounts";
 
@@ -79,7 +79,7 @@ export function UpcomingPortal({
         }}
       />
       <div
-        className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
+        className={cn(FULLSCREEN_OVERLAY, "fixed inset-x-0 bottom-0 flex flex-col")}
         style={{
           top: 0,
           zIndex: 45,

@@ -18,7 +18,7 @@ import { BudgetHeaderActionsProvider, BudgetHeaderActionsSlot } from "@/lib/budg
 import { useBudgetPortal } from "@/lib/budget-portal-state";
 import { useReportsPortal } from "@/lib/reports-portal-state";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { FULLSCREEN_OVERLAY } from "@/components/page-container";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
@@ -245,9 +245,9 @@ export function DashboardHeaderBar({
           />
 
           {/* Header + tab bar + iframe container. The backdrop above stays full-bleed;
-              this content column matches the dashboard's (CONTENT_COLUMN). */}
+              this content column fills the main area next to the sidebar (FULLSCREEN_OVERLAY). */}
           <div
-            className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
+            className={cn(FULLSCREEN_OVERLAY, "fixed inset-x-0 bottom-0 flex flex-col")}
             style={{
               top: 0,
               zIndex: 45,
@@ -341,7 +341,7 @@ export function DashboardHeaderBar({
 
           {/* Content — backdrop stays full-bleed, this column matches the dashboard's. */}
           <div
-            className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col")}
+            className={cn(FULLSCREEN_OVERLAY, "fixed inset-x-0 bottom-0 flex flex-col")}
             style={{
               top: 0,
               zIndex: 45,

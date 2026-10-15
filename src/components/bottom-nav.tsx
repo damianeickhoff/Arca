@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { m, spring, AnimatePresence } from "@/lib/motion";
 import { useEffect, useRef, useState } from "react";
 import { GlobalSearchOverlay } from "@/components/global-search-overlay";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_FIXED } from "@/components/page-container";
 import { useNavHidden } from "@/lib/nav-visibility";
 
 type NavItem = {
@@ -113,14 +113,14 @@ function LiquidTabIndicator({ activeIndex, count }: { activeIndex: number; count
 // reports period selector, the forecast month picker) so all of them occupy the
 // same footprint instead of three hand-tuned inset triples.
 // From lg up the docks sit over the main column, clear of the 240px sidebar.
-export const bottomDockClass = cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-5 px-6 lg:left-60");
+export const bottomDockClass = cn(SHEET_FIXED, "fixed inset-x-0 bottom-5 px-6");
 
 // For a bar that stays up while the phone tab bar is showing (the Insights period
 // pickers on their own pages): stacked just above the 60px tab bar instead of on top
 // of it. From lg there is no tab bar, so it drops back to the bottom.
 export const aboveNavDockClass = cn(
-  CONTENT_COLUMN,
-  "fixed inset-x-0 px-6 bottom-[calc(92px+var(--sab))] lg:bottom-5 lg:left-60",
+  SHEET_FIXED,
+  "fixed inset-x-0 px-6 bottom-[calc(92px+var(--sab))] lg:bottom-5",
 );
 
 export const pillContainerClass = cn(

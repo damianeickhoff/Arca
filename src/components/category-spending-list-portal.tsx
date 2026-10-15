@@ -7,7 +7,7 @@ import { Icon } from "@/components/icon";
 import { ListItemRow } from "@/components/list-item-row";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { CONTENT_COLUMN } from "@/components/page-container";
+import { SHEET_FIXED } from "@/components/page-container";
 import type { CategorySpendCard } from "@/components/category-spending-row";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { useEscapeToClose } from "@/lib/use-escape-to-close";
@@ -72,7 +72,7 @@ export function CategorySpendingListPortal({
             />
 
             <div
-              className={cn(CONTENT_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
+              className={cn(SHEET_FIXED, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
               style={{
                 top: 0,
                 zIndex: 45,

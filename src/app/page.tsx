@@ -28,6 +28,7 @@ import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { Wordmark } from "@/components/shell/app-shell";
 import { SearchButton } from "@/components/shell/search-context";
 import { PageHeading, SectionHead } from "@/components/ui/page-heading";
+import { PageShell } from "@/components/page-container";
 import { HeroCard, type HeroFigures, type HeroPace } from "@/app/_home/hero-card";
 import { HomeTips } from "@/app/_home/home-tips";
 import { daysInclusive, getWeekNudge, nextDay, todayStr } from "@/app/_home/home-data";
@@ -519,12 +520,12 @@ export default async function DashboardPage({
   const longToday = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-5 pt-[var(--sat)] lg:px-9">
-      <DashboardReadySignal />
-      <HomeTips />
-
+    <PageShell
+      bodyClassName="pt-4 lg:pt-1"
+      header={
+        <>
       {/* Phone header — wordmark, search and the settings avatar. */}
-      <header className="flex h-[62px] items-center justify-between pt-[18px] lg:hidden">
+      <header className="flex w-full items-center justify-between lg:hidden">
         <Wordmark />
         <div className="flex items-center gap-2">
           <SearchButton />
@@ -541,7 +542,7 @@ export default async function DashboardPage({
 
       {/* Desktop header — greeting, the day and how much of the month is left. */}
       <PageHeading
-        className="hidden h-[84px] lg:flex"
+        className="hidden w-full lg:flex"
         title={t(`greeting.${greetingKey}`, { name: firstName })}
         subtitle={t("subtitle", { date: longToday, count: fmDaysLeft })}
         actions={
@@ -557,8 +558,13 @@ export default async function DashboardPage({
           </>
         }
       />
+        </>
+      }
+    >
+      <DashboardReadySignal />
+      <HomeTips />
 
-      <div className="mt-4 flex flex-col gap-5 lg:mt-1 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
         {/* Main column */}
         <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
           <div className="order-1 lg:order-none">
@@ -601,6 +607,6 @@ export default async function DashboardPage({
           )}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 }
