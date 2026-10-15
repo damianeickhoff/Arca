@@ -99,7 +99,7 @@ export function RecurringDetailDialog({
                   type="button"
                   onClick={() => setEditOpen(true)}
                   aria-label="Edit"
-                  className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                  className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
                 >
                   <Pencil className="size-4.5" />
                 </button>
@@ -108,7 +108,7 @@ export function RecurringDetailDialog({
                   onClick={remove}
                   disabled={deleting}
                   aria-label="Delete"
-                  className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                  className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
                 >
                   <Trash2 className="size-4.5" />
                 </button>
@@ -212,7 +212,7 @@ function DetailBody({
         <div className="flex flex-col items-center text-center gap-1 pb-1">
           <Icon iconKey={iconKey} color={iconColor} round size="xxl" />
           <p className="text-3xl font-bold tabular-nums mt-3">{item.amount != null ? formatEur(item.amount) : "—"}</p>
-          <div className="flex items-center gap-2 mt-1.5 text-sm text-foreground/55">
+          <div className="flex items-center gap-2 mt-1.5 text-sm text-ink-2">
             <span className="inline-flex items-center gap-1.5">
               <span className={cn("size-2 rounded-full", active ? "bg-emerald-500" : "bg-foreground/30")} />
               {active ? "Active" : "Paused"}
@@ -222,19 +222,19 @@ function DetailBody({
       </div>
 
       {/* Category */}
-      <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
+      <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
         <DetailRow label="Category" valueIcon={<Icon iconKey={iconKey} color={iconColor} size="xs" round />} value={category?.name ?? "Uncategorized"} />
       </div>
 
       {/* Account (derived from a linked transaction) */}
       {derivedAccountLabel && (
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
+        <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
           <DetailRow label="Account" value={derivedAccountLabel} />
         </div>
       )}
 
       {/* Frequency + type + budget type */}
-      <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
+      <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
         <DetailRow label="Frequency" value={FREQ_LABELS[freq] ?? freq} />
         <DetailRow label="Type" value={TYPE_LABELS[item.type] ?? item.type} />
         {item.budgetType && <DetailRow label="Budget type" value={BUDGET_TYPE_LABELS[item.budgetType] ?? item.budgetType} />}
@@ -256,7 +256,7 @@ function DetailBody({
 
       {/* Dates + notes */}
       {(item.startDate || item.dueDay != null || dueDate || item.endDate || item.notes) && (
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] backdrop-blur-xs">
+        <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
           {/* Always shown when set — it's the recurrence's anchor, and the one field
               you go looking for after creating a bill with a specific start date.
               Flagged when it hasn't arrived yet, since nothing is due before then. */}
@@ -275,16 +275,16 @@ function DetailBody({
 
       {/* Linked transactions */}
       {txs === null ? (
-        <p className="text-center text-sm text-foreground/40 py-4">Loading…</p>
+        <p className="text-center text-sm text-ink-3 py-4">Loading…</p>
       ) : groups.length === 0 ? (
-        <p className="text-center text-sm text-foreground/40 py-4">No linked transactions yet</p>
+        <p className="text-center text-sm text-ink-3 py-4">No linked transactions yet</p>
       ) : (
         <div className="space-y-4">
           {groups.map((g) => (
             <div key={g.label}>
               <div className="flex items-center justify-between px-3 mb-2">
-                <span className="text-sm font-medium text-foreground/45">{g.label}</span>
-                <span className="text-xs text-foreground/45 tabular-nums">{formatEur(g.total)}</span>
+                <span className="text-sm font-medium text-ink-3">{g.label}</span>
+                <span className="text-xs text-ink-3 tabular-nums">{formatEur(g.total)}</span>
               </div>
               <div className="space-y-2">
                 {g.rows.map((t) => (
@@ -292,12 +292,12 @@ function DetailBody({
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedTx(t)}
-                    className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3 text-left active:bg-foreground/[0.04] transition-colors"
+                    className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-3 text-left active:bg-surface-2 transition-colors"
                   >
                     <Icon iconKey={iconKey} color={iconColor} size="lg" round />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate leading-tight">{item.friendlyName || item.name}</p>
-                      {(t.bankName || t.account) && <p className="text-sm text-foreground/50 truncate mt-0.5">{t.bankName ?? t.account}</p>}
+                      {(t.bankName || t.account) && <p className="text-sm text-ink-3 truncate mt-0.5">{t.bankName ?? t.account}</p>}
                     </div>
                     <span className="tabular-nums font-normal text-sm shrink-0">{formatEur(t.correctedAmount ?? t.amount)}</span>
                   </button>
@@ -318,7 +318,7 @@ function DetailBody({
           type="button"
           onClick={togglePause}
           disabled={busy}
-          className="fixed bottom-[calc(1.5rem+var(--sab))] left-1/2 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-foreground/8 backdrop-blur-lg px-6 h-12 text-sm font-medium text-foreground active:scale-[0.97] transition-transform disabled:opacity-50 z-50"
+          className="fixed bottom-[calc(1.5rem+var(--sab))] left-1/2 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-foreground/8 backdrop-blur-lg px-6 h-12 text-sm font-medium text-ink active:scale-[0.97] transition-transform disabled:opacity-50 z-50"
         >
           {active ? <Pause className="size-4" /> : <Play className="size-4" />}
           {active ? "Pause the recurrence" : "Resume the recurrence"}
@@ -337,7 +337,7 @@ function DetailBody({
 function DetailRow({ label, value, valueIcon }: { label: string; value: string; valueIcon?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
+      <span className="text-ink-3 shrink-0 text-sm">{label}</span>
       <span className="flex items-center gap-1.5 font-light text-right min-w-0">
         {valueIcon}
         <span className="truncate text-sm">{value}</span>

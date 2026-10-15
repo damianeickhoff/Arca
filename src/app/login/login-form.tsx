@@ -87,7 +87,7 @@ export function LoginForm() {
         </p>
 
         {error && (
-          <div className="mb-4 rounded-xl bg-red-400/15 text-red-200 text-sm px-3.5 py-2.5">
+          <div className="mb-4 rounded-row bg-red-400/15 text-red-200 text-sm px-3.5 py-2.5">
             {error}
           </div>
         )}
@@ -133,12 +133,12 @@ export function LoginForm() {
   return (
     <div>
       {justRegistered && (
-        <div className="mb-4 rounded-xl bg-emerald-400/15 text-emerald-200 text-sm px-3.5 py-2.5">
+        <div className="mb-4 rounded-row bg-emerald-400/15 text-emerald-200 text-sm px-3.5 py-2.5">
           Account created. You can now log in.
         </div>
       )}
       {error && (
-        <div className="mb-4 rounded-xl bg-red-400/15 text-red-200 text-sm px-3.5 py-2.5">
+        <div className="mb-4 rounded-row bg-red-400/15 text-red-200 text-sm px-3.5 py-2.5">
           {error}
         </div>
       )}

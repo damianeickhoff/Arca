@@ -52,7 +52,7 @@ export function MerchantsClient({ initialMerchants, panelHeader = true }: Props)
       <div className="px-4 pt-1 pb-8 space-y-4">
         {merchants.length > 0 && (
           <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-foreground/40" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-ink-3" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -65,8 +65,8 @@ export function MerchantsClient({ initialMerchants, panelHeader = true }: Props)
         {visible.length > 0 ? (
           <section>
             <div className="flex items-baseline justify-between px-1 mb-2.5">
-              <h2 className="text-sm font-medium text-foreground/45">Merchants</h2>
-              <span className="text-sm font-medium text-foreground/45 tabular-nums">{visible.length}</span>
+              <h2 className="text-sm font-medium text-ink-3">Merchants</h2>
+              <span className="text-sm font-medium text-ink-3 tabular-nums">{visible.length}</span>
             </div>
             <div className="space-y-3">
               {visible.map((m) => {
@@ -77,8 +77,8 @@ export function MerchantsClient({ initialMerchants, panelHeader = true }: Props)
                     type="button"
                     onClick={() => { setEditingId(m.id); setEditVisible(true); }}
                     className={cn(
-                      "w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 text-left active:scale-[0.99] transition-transform",
-                      panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-card",
+                      "w-full flex items-center gap-4 rounded-row px-4 py-3.5 text-left active:scale-[0.99] transition-transform",
+                      panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface",
                     )}
                   >
                     <span className="size-12 shrink-0">
@@ -86,18 +86,18 @@ export function MerchantsClient({ initialMerchants, panelHeader = true }: Props)
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-lg truncate leading-tight">{m.name}</p>
-                      <p className="text-sm text-foreground/50 truncate mt-0.5 tabular-nums">
+                      <p className="text-sm text-ink-3 truncate mt-0.5 tabular-nums">
                         {m.transactionCount} {m.transactionCount === 1 ? "transaction" : "transactions"} · {formatEur(m.totalSpent)}
                       </p>
                     </div>
-                    <ChevronRight className="size-4 text-foreground/30 shrink-0" />
+                    <ChevronRight className="size-4 text-ink-3 shrink-0" />
                   </button>
                 );
               })}
             </div>
           </section>
         ) : (
-          <div className={cn("rounded-2xl py-16 text-center text-muted-foreground", panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-card")}>
+          <div className={cn("rounded-card py-16 text-center text-ink-3", panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface")}>
             <p className="text-sm">{term ? "No merchants match that search" : "No merchants yet"}</p>
           </div>
         )}

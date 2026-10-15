@@ -94,24 +94,24 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
-      <span className="text-foreground/40 shrink-0">{icon}</span>
-      <span className="flex-1 font-medium text-foreground">{label}</span>
-      <span className="flex items-center gap-1.5 text-foreground/60 min-w-0">
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-surface-2 transition-colors">
+      <span className="text-ink-3 shrink-0">{icon}</span>
+      <span className="flex-1 font-medium text-ink">{label}</span>
+      <span className="flex items-center gap-1.5 text-ink-2 min-w-0">
         <span className="truncate max-w-[45vw]">{value}</span>
       </span>
-      <ChevronRight className="size-5 text-foreground/30 shrink-0" />
+      <ChevronRight className="size-5 text-ink-3 shrink-0" />
     </button>
   );
 }
 
 function OptionList({ options, value, onSelect }: { options: { value: string; label: string }[]; value: string; onSelect: (v: string) => void }) {
   return (
-    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
+    <div className="rounded-card bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
       {options.map((o) => (
-        <button key={o.value} type="button" onClick={() => onSelect(o.value)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
+        <button key={o.value} type="button" onClick={() => onSelect(o.value)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-surface-2 transition-colors">
           <span className="flex-1 font-medium">{o.label}</span>
-          {value === o.value && <Check className="size-5 text-foreground/70 shrink-0" />}
+          {value === o.value && <Check className="size-5 text-ink-2 shrink-0" />}
         </button>
       ))}
     </div>
@@ -123,7 +123,7 @@ function OptionList({ options, value, onSelect }: { options: { value: string; la
 // transaction page, just reduced to two icon-only segments.
 function SignPill({ value, onChange }: { value: "+" | "−"; onChange: (v: "+" | "−") => void }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-full bg-card p-1">
+    <div className="inline-flex items-center gap-1 rounded-full bg-surface p-1">
       {(["+", "−"] as const).map((s) => {
         const active = value === s;
         return (
@@ -155,10 +155,10 @@ function NetWorthToggleRow({ checked, onChange }: { checked: boolean; onChange: 
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors"
+      className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-surface-2 transition-colors"
     >
-      <span className="text-foreground/40 shrink-0"><Scale className="size-5" /></span>
-      <span className="flex-1 font-medium text-foreground">Include in net worth</span>
+      <span className="text-ink-3 shrink-0"><Scale className="size-5" /></span>
+      <span className="flex-1 font-medium text-ink">Include in net worth</span>
       <ToggleSwitch on={checked} />
     </button>
   );
@@ -318,7 +318,7 @@ export function BankEditDialog({
             type="button"
             onClick={remove}
             aria-label="Delete"
-            className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+            className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-4.5" />
           </button>
@@ -344,7 +344,7 @@ export function BankEditDialog({
             {icon ? (
               <Icon iconKey={icon} color={color} size="xxl" />
             ) : (
-              <span className="flex size-16 items-center justify-center rounded-3xl text-white shadow-lg" style={{ backgroundColor: color }}>
+              <span className="flex size-16 items-center justify-center rounded-card text-white shadow-lg" style={{ backgroundColor: color }}>
                 <CreditCard className="size-8" />
               </span>
             )}
@@ -352,7 +352,7 @@ export function BankEditDialog({
               <Pencil className="size-3.5" />
             </span>
           </button>
-          <p className="text-xl font-bold text-foreground text-center px-6 truncate max-w-full">
+          <p className="text-xl font-bold text-ink text-center px-6 truncate max-w-full">
             {displayName || bank?.accountNumber || "Account"}
           </p>
           {/* Controlled — opened by tapping the hero above. */}
@@ -362,7 +362,7 @@ export function BankEditDialog({
         <div className="space-y-3 px-5 pb-2">
           {/* Name input + color swatch, matching the account edit sheet. */}
           <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
+            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-card bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
             {!(icon && isBrandIcon(icon)) && (
               <ColorPicker value={color} onChange={setColor} inline />
             )}
@@ -382,7 +382,7 @@ export function BankEditDialog({
             )}
             {subpage === "expiration" && (
               <div className="pt-2">
-                <DatePicker value={expiration} onChange={(v) => { setExpiration(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
+                <DatePicker value={expiration} onChange={(v) => { setExpiration(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]" />
               </div>
             )}
             {subpage === "balance" && (
@@ -515,7 +515,7 @@ export function VermogenEditDialog({
             type="button"
             onClick={remove}
             aria-label="Delete"
-            className="size-11 rounded-full bg-foreground/10 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+            className="size-11 rounded-full bg-foreground/10 flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-4.5" />
           </button>
@@ -541,7 +541,7 @@ export function VermogenEditDialog({
             {icon ? (
               <Icon iconKey={icon} color={color} size="xxl" />
             ) : (
-              <span className="flex size-16 items-center justify-center rounded-3xl text-white shadow-lg" style={{ backgroundColor: color }}>
+              <span className="flex size-16 items-center justify-center rounded-card text-white shadow-lg" style={{ backgroundColor: color }}>
                 <Coin className="size-8" />
               </span>
             )}
@@ -549,7 +549,7 @@ export function VermogenEditDialog({
               <Pencil className="size-3.5" />
             </span>
           </button>
-          <p className="text-xl font-bold text-foreground text-center px-6 truncate max-w-full">
+          <p className="text-xl font-bold text-ink text-center px-6 truncate max-w-full">
             {name || "Account"}
           </p>
           {/* Controlled — opened by tapping the hero above. */}
@@ -558,7 +558,7 @@ export function VermogenEditDialog({
 
         <div className="space-y-3 px-5 pb-2">
           <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-card bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
             {!(icon && isBrandIcon(icon)) && (
               <ColorPicker value={color} onChange={setColor} inline />
             )}
@@ -584,7 +584,7 @@ export function VermogenEditDialog({
             )}
             {subpage === "lastUpdated" && (
               <div className="pt-2">
-                <DatePicker value={lastUpdated} onChange={(v) => { setLastUpdated(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
+                <DatePicker value={lastUpdated} onChange={(v) => { setLastUpdated(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]" />
               </div>
             )}
             {subpage === "notes" && (
@@ -726,7 +726,7 @@ export function AddAccountDialog({
             {icon ? (
               <Icon iconKey={icon} color={color} size="xxl" />
             ) : (
-              <span className="flex size-16 items-center justify-center rounded-3xl text-white shadow-lg" style={{ backgroundColor: color }}>
+              <span className="flex size-16 items-center justify-center rounded-card text-white shadow-lg" style={{ backgroundColor: color }}>
                 {isAsset ? <Coin className="size-8" /> : <CreditCard className="size-8" />}
               </span>
             )}
@@ -734,7 +734,7 @@ export function AddAccountDialog({
               <Pencil className="size-3.5" />
             </span>
           </button>
-          <p className="text-xl font-bold text-foreground text-center px-6 truncate max-w-full">
+          <p className="text-xl font-bold text-ink text-center px-6 truncate max-w-full">
             {name || "Account"}
           </p>
           <IconPicker value={icon} onChange={setIcon} previewColor={color} open={iconOpen} onOpenChange={setIconOpen} hideDefaultTrigger />
@@ -742,7 +742,7 @@ export function AddAccountDialog({
 
         <div className="space-y-3 px-5 pb-2">
           <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-2xl bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-card bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
             {!(icon && isBrandIcon(icon)) && (
               <ColorPicker value={color} onChange={setColor} inline />
             )}
@@ -774,7 +774,7 @@ export function AddAccountDialog({
                   positive={initialBalanceSign === "+"}
                   calcEnabled
                 />
-                <p className="text-xs text-foreground/50 text-center">
+                <p className="text-xs text-ink-3 text-center">
                   The initial balance is added to this account&apos;s balance but never affects reports.
                 </p>
               </div>

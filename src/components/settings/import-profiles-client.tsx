@@ -66,19 +66,19 @@ export function ImportProfilesClient({ profiles, panelHeader = true }: { profile
     <>
       {panelHeader && <PanelHeader title={t("title")} />}
       <div className="px-4 pt-1 pb-8 space-y-4">
-        <p className="text-sm text-muted-foreground px-1">{t("description")}</p>
+        <p className="text-sm text-ink-3 px-1">{t("description")}</p>
 
         {profiles.length === 0 ? (
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] py-16 text-center text-muted-foreground">
+          <div className="rounded-card bg-[var(--dialog-content-background)] py-16 text-center text-ink-3">
             <p className="text-sm">{t("empty")}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {profiles.map((profile) => (
-              <div key={profile.id} className="flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3.5">
+              <div key={profile.id} className="flex items-center gap-3 rounded-card bg-[var(--dialog-content-background)] px-4 py-3.5">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold truncate">{profile.label}</p>
-                  <p className="text-sm text-foreground/50 truncate mt-0.5">
+                  <p className="text-sm text-ink-3 truncate mt-0.5">
                     {t("dateColumn")}: {dateColumnLabel(profile)}
                   </p>
                 </div>

@@ -108,15 +108,15 @@ export function RecurringMenuClient({ items, categories }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Filter"
-        className="size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
+        className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
       >
-        <Filter className="size-5 text-foreground" />
+        <Filter className="size-5 text-ink" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {FILTERS.map((f) => (
           <DropdownMenuItem key={f.value} onClick={() => setFilter(f.value)}>
             <span className="flex-1">{f.label}</span>
-            {filter === f.value && <Check className="size-4 text-foreground/70" />}
+            {filter === f.value && <Check className="size-4 text-ink-2" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -134,16 +134,16 @@ export function RecurringMenuClient({ items, categories }: Props) {
       <div className="px-4 pt-3 pb-28 var(--dialog-background)">
         {/* Total line */}
         <div className="mb-6">
-          <p className="text-md text-foreground/50">
-            {filter === "all" ? "Total" : activeFilterLabel} <span className="font-black px-1">·</span> <span className="text-foreground/50"><span className="bg-[var(--dialog-content-background)] px-2 py-0.5 rounded-full">{visible.length}/{activeItems.length}</span> transaction{activeItems.length === 1 ? "" : "s"} active</span>
+          <p className="text-md text-ink-3">
+            {filter === "all" ? "Total" : activeFilterLabel} <span className="font-black px-1">·</span> <span className="text-ink-3"><span className="bg-[var(--dialog-content-background)] px-2 py-0.5 rounded-full">{visible.length}/{activeItems.length}</span> transaction{activeItems.length === 1 ? "" : "s"} active</span>
           </p>
           <p className="text-4xl font-medium tabular-nums tracking-tight py-3">{formatEur(monthlyTotal)}</p>
-          <p className="text-md text-foreground/45 -mt-1">{perMonthLabel}</p>
+          <p className="text-md text-ink-3 -mt-1">{perMonthLabel}</p>
         </div>
 
         {/* List */}
         {visible.length === 0 && dismissedItems.length === 0 ? (
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] py-16 text-center text-muted-foreground">
+          <div className="rounded-card bg-[var(--dialog-content-background)] py-16 text-center text-ink-3">
             <p className="text-sm">No recurring items found</p>
           </div>
         ) : (
@@ -163,7 +163,7 @@ export function RecurringMenuClient({ items, categories }: Props) {
                   onClick={() => setDetailItemId(item.id)}
                   className="block w-full text-left"
                 >
-                    <div className={cn("flex items-top gap-4 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3.5", !item.active && "opacity-50")}>
+                    <div className={cn("flex items-top gap-4 rounded-card bg-[var(--dialog-content-background)] px-4 py-3.5", !item.active && "opacity-50")}>
                       <Icon
                         iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
                         color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
@@ -174,16 +174,16 @@ export function RecurringMenuClient({ items, categories }: Props) {
                         <div className="flex items-center gap-2">
                           <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
                           {/* Single-letter frequency indicator next to the title. */}
-                          <span className="shrink-0 rounded-full bg-foreground/8 text-foreground/55 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                          <span className="shrink-0 rounded-full bg-foreground/8 text-ink-2 text-[10px] font-medium px-1.5 py-0.5 leading-none">
                             {FREQ_LETTER[item.frequency] ?? item.frequency}
                           </span>
                           {status === "future" && (
-                            <span className="shrink-0 rounded-full bg-blue-500/12 text-blue-600 dark:text-blue-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                            <span className="shrink-0 rounded-full bg-info-soft text-info text-[10px] font-medium px-1.5 py-0.5 leading-none">
                               Upcoming
                             </span>
                           )}
                           {status === "expired" && (
-                            <span className="shrink-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+                            <span className="shrink-0 rounded-full bg-warning-soft text-warning text-[10px] font-medium px-1.5 py-0.5 leading-none">
                               Expired
                             </span>
                           )}
@@ -194,11 +194,11 @@ export function RecurringMenuClient({ items, categories }: Props) {
                           )}
                         </div>
                         {/* Under the title: the linked category name. */}
-                        <p className="text-sm text-foreground/50 truncate">
+                        <p className="text-sm text-ink-3 truncate">
                           {cat?.name ?? "No category"}
                           {!item.active && status === "active" && " · Inactive"}
                         </p>
-                        <p className="text-sm text-foreground/50 truncate">
+                        <p className="text-sm text-ink-3 truncate">
                           {due && <> Next {fmtDue(due)}</>}
                         </p>
                       </div>
@@ -207,7 +207,7 @@ export function RecurringMenuClient({ items, categories }: Props) {
                           {item.amount ? formatEur(item.amount) : "—"}
                         </p>
                         {/* Under the amount: transaction type + budget type. */}
-                        <p className="text-xs text-foreground/40 mt-0.5 truncate">{typeBudget}</p>
+                        <p className="text-xs text-ink-3 mt-0.5 truncate">{typeBudget}</p>
                       </div>
                     </div>
                 </button>
@@ -217,13 +217,13 @@ export function RecurringMenuClient({ items, categories }: Props) {
             {/* Dismissed auto-detected items — kept so detection never recreates them, restorable. */}
             {dismissedItems.length > 0 && (
               <section className="pt-4">
-                <h2 className="text-sm font-medium text-foreground/40 px-1 mb-2">Dismissed</h2>
+                <h2 className="text-sm font-medium text-ink-3 px-1 mb-2">Dismissed</h2>
                 <div className="space-y-3">
                   {dismissedItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 rounded-2xl bg-[var(--dialog-content-background)] px-5 py-4 opacity-70">
+                    <div key={item.id} className="flex items-center gap-4 rounded-card bg-[var(--dialog-content-background)] px-5 py-4 opacity-70">
                       <div className="flex-1 min-w-0">
                         <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
-                        <p className="text-sm text-foreground/50 mt-0.5 truncate">
+                        <p className="text-sm text-ink-3 mt-0.5 truncate">
                           {item.matchPattern ? `Pattern: ${item.matchPattern}` : "Won't be auto-detected again"}
                         </p>
                       </div>
@@ -242,12 +242,12 @@ export function RecurringMenuClient({ items, categories }: Props) {
           Categories panel's search + add bar. */}
       <div className="absolute inset-x-0 bottom-[calc(1.5rem+var(--sab))] px-4 z-30">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-ink-3 pointer-events-none" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search recurring"
-            className="h-14 w-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-muted-foreground"
+            className="h-14 w-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-ink-3"
           />
         </div>
       </div>

@@ -110,7 +110,7 @@ export function AvatarFormContent({ user }: { user: User }) {
 
   return (
     <>
-      {error && <div className="mb-3 rounded-lg bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
+      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
 
       <div className="flex justify-center">
         <button
@@ -124,7 +124,7 @@ export function AvatarFormContent({ user }: { user: User }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img src={avatarUrl} alt={user.name} className="size-[140px] rounded-full object-cover" />
           ) : (
-            <div className="size-[140px] rounded-full bg-foreground/10 text-foreground flex items-center justify-center text-3xl font-semibold">
+            <div className="size-[140px] rounded-full bg-foreground/10 text-ink flex items-center justify-center text-3xl font-semibold">
               {user.name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -200,9 +200,9 @@ export function AvatarFormContent({ user }: { user: User }) {
 
 function AvatarForm({ user }: { user: User }) {
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <h2 className="font-semibold text-base">Profile photo</h2>
-      <p className="text-xs text-muted-foreground mb-4">Shown in the sidebar.</p>
+      <p className="text-xs text-ink-3 mb-4">Shown in the sidebar.</p>
       <AvatarFormContent user={user} />
     </div>
   );
@@ -224,15 +224,15 @@ function NameForm({ user }: { user: User }) {
   }
 
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <h2 className="font-semibold text-base">Profile</h2>
-      <p className="text-xs text-muted-foreground mb-4">Change your name.</p>
+      <p className="text-xs text-ink-3 mb-4">Change your name.</p>
 
-      {error && <div className="mb-3 rounded-lg bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm px-3 py-2">Name updated.</div>}
+      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
+      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Name updated.</div>}
 
       <form action={handleSubmit}>
-        <label className="text-sm font-medium text-foreground/80">Name</label>
+        <label className="text-sm font-medium text-ink-2">Name</label>
         <Input type="text" name="name" defaultValue={user.name} required />
         <Button type="submit" disabled={pending} size="lg" variant="default" className="mt-3">
           {pending ? "Saving..." : "Save"}
@@ -261,18 +261,18 @@ function EmailForm({ user }: { user: User }) {
   }
 
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <h2 className="font-semibold text-base">Login email</h2>
-      <p className="text-xs text-muted-foreground mb-4">Change the email address you sign in with.</p>
+      <p className="text-xs text-ink-3 mb-4">Change the email address you sign in with.</p>
 
-      {error && <div className="mb-3 rounded-lg bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm px-3 py-2">Email updated.</div>}
+      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
+      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Email updated.</div>}
 
       <form id="email-form" action={handleSubmit}>
-        <label className="text-sm font-medium text-foreground/80">Email</label>
+        <label className="text-sm font-medium text-ink-2">Email</label>
         <Input type="email" name="email" defaultValue={user.email} required autoComplete="email" />
 
-        <label className="text-sm font-medium text-foreground/80">Current password</label>
+        <label className="text-sm font-medium text-ink-2">Current password</label>
         <Input type="password" name="currentPassword" required autoComplete="current-password" />
 
         <Button type="submit" disabled={pending} size="lg" variant="default" className="mt-1">
@@ -303,15 +303,15 @@ function SidebarSubtitleForm({ initial }: { initial: string }) {
   }
 
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <h2 className="font-semibold text-base">Sidebar</h2>
-      <p className="text-xs text-muted-foreground mb-4">Text shown below &quot;Arca&quot; in the sidebar.</p>
+      <p className="text-xs text-ink-3 mb-4">Text shown below &quot;Arca&quot; in the sidebar.</p>
 
-      {error && <div className="mb-3 rounded-lg bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm px-3 py-2">Updated.</div>}
+      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
+      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Updated.</div>}
 
       <form action={handleSubmit}>
-        <label className="text-sm font-medium text-foreground/80">Subtitle</label>
+        <label className="text-sm font-medium text-ink-2">Subtitle</label>
         <Input type="text" name="subtitle" defaultValue={initial} maxLength={40} required />
         <Button type="submit" disabled={pending} size="lg" variant="default" className="mt-3">
           {pending ? "Saving..." : "Save"}
@@ -462,13 +462,13 @@ export function AppLockSectionContent() {
   }
 
   if (loading) {
-    return <p className="text-xs text-muted-foreground mt-1">Loading...</p>;
+    return <p className="text-xs text-ink-3 mt-1">Loading...</p>;
   }
 
   return (
     <div className="space-y-4">
       {/* Enable toggle */}
-      <div className="h-16 rounded-xl px-4 flex items-center bg-[var(--dialog-content-background)] justify-between gap-4 py-1">
+      <div className="h-16 rounded-row px-4 flex items-center bg-[var(--dialog-content-background)] justify-between gap-4 py-1">
         <div className="flex items-center gap-2">
           <span className="text-md font-medium">App lock</span>
         </div>
@@ -484,7 +484,7 @@ export function AppLockSectionContent() {
         </button>
       </div>
       {!hasPinHash && !enabled && (
-        <p className="text-xs text-muted-foreground -mt-3">Set up a passcode below before enabling app lock.</p>
+        <p className="text-xs text-ink-3 -mt-3">Set up a passcode below before enabling app lock.</p>
       )}
 
       {/* PIN setup */}
@@ -502,7 +502,7 @@ export function AppLockSectionContent() {
           </Button>
         ) : (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-ink-3">
               {pinStep === "enter" ? "Choose a passcode (4–6 digits):" : "Confirm your passcode:"}
             </p>
             <Input
@@ -550,9 +550,9 @@ export function AppLockSectionContent() {
 
 function AppLockSection() {
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <h2 className="font-semibold text-base">App lock</h2>
-      <p className="text-xs text-muted-foreground mb-4">Protect the app with a passcode.</p>
+      <p className="text-xs text-ink-3 mb-4">Protect the app with a passcode.</p>
       <AppLockSectionContent />
     </div>
   );
@@ -577,18 +577,18 @@ function PasswordForm() {
   }
 
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <h2 className="font-semibold text-base">Password</h2>
-      <p className="text-xs text-muted-foreground mb-4">Change your password.</p>
+      <p className="text-xs text-ink-3 mb-4">Change your password.</p>
 
-      {error && <div className="mb-3 rounded-lg bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm px-3 py-2">Password updated.</div>}
+      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
+      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Password updated.</div>}
 
       <form id="password-form" action={handleSubmit}>
-        <label className="text-sm font-medium text-foreground/80">Current password</label>
+        <label className="text-sm font-medium text-ink-2">Current password</label>
         <Input type="password" name="currentPassword" required autoComplete="current-password" />
 
-        <label className="text-sm font-medium text-foreground/80">New password</label>
+        <label className="text-sm font-medium text-ink-2">New password</label>
         <Input type="password" name="newPassword" required autoComplete="new-password" placeholder="At least 8 characters" />
 
         <Button type="submit" disabled={pending} size="lg" className="mt-1">
@@ -670,22 +670,22 @@ export function TwoFactorSectionContent() {
   }
 
   if (loading) {
-    return <p className="text-xs text-muted-foreground mt-1">Loading...</p>;
+    return <p className="text-xs text-ink-3 mt-1">Loading...</p>;
   }
 
   if (step === "qr") {
     return (
       <div className="space-y-3">
         {error && <p className="text-xs text-destructive">{error}</p>}
-        <p className="text-xs text-muted-foreground">Scan deze QR-code met Google Authenticator (of een andere TOTP-app):</p>
+        <p className="text-xs text-ink-3">Scan deze QR-code met Google Authenticator (of een andere TOTP-app):</p>
         {enrollment && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={enrollment.qrDataUrl} alt="QR code" className="mx-auto size-40 rounded-lg bg-white p-2" />
+          <img src={enrollment.qrDataUrl} alt="QR code" className="mx-auto size-40 rounded-tile bg-white p-2" />
         )}
-        <p className="text-xs text-muted-foreground break-all">
+        <p className="text-xs text-ink-3 break-all">
           Of voer handmatig in: <span className="font-mono">{enrollment?.secret}</span>
         </p>
-        <label className="text-sm font-medium text-foreground/80">Bevestig met een 6-cijferige code</label>
+        <label className="text-sm font-medium text-ink-2">Bevestig met een 6-cijferige code</label>
         <Input
           type="text"
           inputMode="numeric"
@@ -717,10 +717,10 @@ export function TwoFactorSectionContent() {
   if (step === "backupCodes") {
     return (
       <div className="space-y-3">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-ink-3">
           Bewaar deze back-upcodes op een veilige plek. Elke code werkt één keer als je geen toegang hebt tot je authenticator-app.
         </p>
-        <div className="grid grid-cols-2 gap-1.5 rounded-lg bg-foreground/5 p-3 font-mono text-sm">
+        <div className="grid grid-cols-2 gap-1.5 rounded-tile bg-surface-2 p-3 font-mono text-sm">
           {backupCodes?.map((c) => <span key={c}>{c}</span>)}
         </div>
         <Button type="button" className="w-full" onClick={finishBackupCodes}>
@@ -734,7 +734,7 @@ export function TwoFactorSectionContent() {
     const submit = step === "disable" ? submitDisable : submitRegenerate;
     return (
       <div className="space-y-2">
-        <p className="text-xs text-muted-foreground">Bevestig met je huidige wachtwoord.</p>
+        <p className="text-xs text-ink-3">Bevestig met je huidige wachtwoord.</p>
         <Input
           type="password"
           autoFocus
@@ -794,9 +794,9 @@ export function TwoFactorSectionContent() {
 
 function TwoFactorSection() {
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <h2 className="font-semibold text-base">Two-factor authentication</h2>
-      <p className="text-xs text-muted-foreground mb-4">Extra beveiliging met een authenticator-app zoals Google Authenticator.</p>
+      <p className="text-xs text-ink-3 mb-4">Extra beveiliging met een authenticator-app zoals Google Authenticator.</p>
       <TwoFactorSectionContent />
     </div>
   );

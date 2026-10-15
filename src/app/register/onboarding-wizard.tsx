@@ -142,7 +142,7 @@ function BirthdayPicker({ value, onChange }: { value: string; onChange: (value: 
     ? parsed.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" })
     : "DD/MM/YYYY";
 
-  const triggerClass = `${glassInputClass} h-13 rounded-xl flex items-center gap-2.5 px-3.5 w-full text-left`;
+  const triggerClass = `${glassInputClass} h-13 rounded-row flex items-center gap-2.5 px-3.5 w-full text-left`;
 
   const calendar = (
     <CalendarContent
@@ -632,7 +632,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="relative z-10 mb-4 rounded-xl bg-red-400/15 text-red-200 text-sm px-3.5 py-2.5"
+            className="relative z-10 mb-4 rounded-row bg-red-400/15 text-red-200 text-sm px-3.5 py-2.5"
           >
             {error}
           </m.div>
@@ -765,7 +765,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
           return (
             <div>
               <StepHeader icon={<ShieldCheck />} title="Save your backup codes" subtitle="Each code works once if you ever lose access to your authenticator app." />
-              <div className="grid grid-cols-2 gap-1.5 rounded-xl bg-white/10 p-3 font-mono text-sm text-white">
+              <div className="grid grid-cols-2 gap-1.5 rounded-row bg-white/10 p-3 font-mono text-sm text-white">
                 {mfaBackupCodes.map((c) => <span key={c}>{c}</span>)}
               </div>
               <PrimaryButton onClick={next}>I&apos;ve saved these</PrimaryButton>
@@ -778,7 +778,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
               <StepHeader icon={<ShieldCheck />} title="Scan the QR code" subtitle="Use Google Authenticator or any TOTP app." />
               {mfaEnrollment && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={mfaEnrollment.qrDataUrl} alt="QR code" className="mx-auto mb-3 size-40 rounded-lg bg-white p-2" />
+                <img src={mfaEnrollment.qrDataUrl} alt="QR code" className="mx-auto mb-3 size-40 rounded-tile bg-white p-2" />
               )}
               <p className="text-xs text-white/45 break-all mb-3">
                 Or enter manually: <span className="font-mono">{mfaEnrollment?.secret}</span>
@@ -871,7 +871,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
                   key={l}
                   type="button"
                   onClick={() => chooseLocale(l)}
-                  className={`h-14 rounded-xl text-sm font-semibold transition-colors border-2 ${
+                  className={`h-14 rounded-row text-sm font-semibold transition-colors border-2 ${
                     locale === l
                       ? "border-blue-400 bg-blue-400/15 text-white"
                       : "border-white/10 text-white/55 hover:bg-white/5"
@@ -910,7 +910,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
                   key={t.value}
                   type="button"
                   onClick={() => setBillType(t.value)}
-                  className={`h-10 rounded-lg text-sm font-medium transition-colors ${
+                  className={`h-10 rounded-tile text-sm font-medium transition-colors ${
                     billType === t.value ? "bg-white text-[#0a1a5c]" : "bg-white/8 text-white/65 hover:bg-white/15"
                   }`}
                 >
@@ -942,7 +942,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
             <StepHeader icon={<Upload />} title="Import your transactions" subtitle="Upload an map your CSV export — or skip and do it later." />
             <div
               onClick={() => importStatus !== "loading" && inputRef.current?.click()}
-              className="rounded-2xl border-2 border-dashed border-white/20 hover:border-white/35 hover:bg-white/5 transition-colors p-8 flex flex-col items-center justify-center gap-3 cursor-pointer text-center"
+              className="rounded-card border-2 border-dashed border-white/20 hover:border-white/35 hover:bg-white/5 transition-colors p-8 flex flex-col items-center justify-center gap-3 cursor-pointer text-center"
             >
               <input
                 ref={inputRef}
@@ -1012,7 +1012,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
                   key={m2}
                   type="button"
                   onClick={() => setThemeMode(m2)}
-                  className={`h-14 rounded-xl flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors border-2 ${
+                  className={`h-14 rounded-row flex flex-col items-center justify-center gap-1 text-xs font-medium transition-colors border-2 ${
                     themeMode === m2
                       ? "border-white bg-white/12 text-white"
                       : "border-white/10 text-white/55 hover:bg-white/5"
@@ -1030,7 +1030,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
                 return (
                   <button key={preset.id} type="button" onClick={() => chooseBackground(preset.id)} className="flex flex-col items-center gap-1.5">
                     <span
-                      className={`h-12 w-full rounded-lg ring-2 ring-offset-2 ring-offset-transparent transition-all ${isSelected ? "ring-white" : "ring-transparent"}`}
+                      className={`h-12 w-full rounded-tile ring-2 ring-offset-2 ring-offset-transparent transition-all ${isSelected ? "ring-white" : "ring-transparent"}`}
                       style={authBackgroundPreviewStyle(preset, { theme: "dark" })}
                     />
                     <span className="text-[11px] text-white/60">{preset.label}</span>
@@ -1080,7 +1080,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
               initial={{ scale: 0.6, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={spring.gentle}
-              className="mx-auto mb-5 inline-flex size-16 items-center justify-center rounded-3xl bg-white/12 text-white shadow-lg [&_svg]:size-8"
+              className="mx-auto mb-5 inline-flex size-16 items-center justify-center rounded-card bg-white/12 text-white shadow-lg [&_svg]:size-8"
             >
               <CheckCircle2 />
             </m.div>

@@ -65,22 +65,22 @@ export function MobileCategoryList({ categories, search: initialSearch }: Props)
     <div className="space-y-4">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-ink-3 pointer-events-none" />
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search"
-          className="h-12 w-full rounded-full bg-card pl-12 pr-4 text-base outline-none placeholder:text-muted-foreground"
+          className="h-12 w-full rounded-full bg-surface pl-12 pr-4 text-base outline-none placeholder:text-ink-3"
         />
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-2xl bg-card py-16 text-center text-muted-foreground">
+        <div className="rounded-card bg-surface py-16 text-center text-ink-3">
           <p className="text-sm">No categories founds</p>
         </div>
       ) : query ? (
         // Searching: flat results — a matching sub-category's parent may not itself match.
-        <div className="rounded-2xl bg-card overflow-hidden divide-y divide-border/50">
+        <div className="rounded-card bg-surface overflow-hidden divide-y divide-border/50">
           {items.map((cat) => (
             <CategoryRow key={cat.id} cat={cat} categories={categories} />
           ))}
@@ -89,7 +89,7 @@ export function MobileCategoryList({ categories, search: initialSearch }: Props)
         <div className="space-y-4 pb-28">
           {topLevel.map((parent, i) => (
             <StaggerItem key={parent.id} index={i}>
-              <div className="rounded-2xl bg-card overflow-hidden divide-y divide-border/50">
+              <div className="rounded-card bg-surface overflow-hidden divide-y divide-border/50">
                 <CategoryRow cat={parent} categories={categories} />
                 {(childrenByParentId.get(parent.id) ?? []).map((child) => (
                   <CategoryRow key={child.id} cat={child} categories={categories} indent />
@@ -120,12 +120,12 @@ function CategoryRow({ cat, categories, indent = false }: { cat: Category; categ
     <div className={cn("flex items-center gap-3 py-3.5", indent ? "pl-4 pr-4" : "px-4")}>
       <Icon iconKey={cat.icon} color={resolveCategoryColor(cat, categories)} round size={indent ? "lg" : "xl"} />
       <div className="min-w-0 flex-1">
-        <p className={cn("font-semibold text-foreground truncate", indent ? "text-base" : "text-lg")}>{cat.name}</p>
+        <p className={cn("font-semibold text-ink truncate", indent ? "text-base" : "text-lg")}>{cat.name}</p>
         {cat.budgetType && (
-          <p className="text-sm text-muted-foreground">{BUDGET_TYPE_LABELS[cat.budgetType] ?? cat.budgetType}</p>
+          <p className="text-sm text-ink-3">{BUDGET_TYPE_LABELS[cat.budgetType] ?? cat.budgetType}</p>
         )}
       </div>
-      <ChevronRight className="size-5 text-muted-foreground shrink-0" />
+      <ChevronRight className="size-5 text-ink-3 shrink-0" />
     </div>
   );
 
@@ -133,7 +133,7 @@ function CategoryRow({ cat, categories, indent = false }: { cat: Category; categ
     <Link
       href={`/settings/categories/${cat.id}`}
       onClick={() => sessionStorage.setItem(SCROLL_KEY, String(window.scrollY))}
-      className="block active:bg-foreground/5 transition-colors"
+      className="block active:bg-surface-2 transition-colors"
     >
       {content}
     </Link>
@@ -147,7 +147,7 @@ function AddSubcategoryRow({ parent, categories }: { parent: Category; categorie
       variant="custom"
       categories={categories}
       defaultParentId={parent.id}
-      className="flex items-center gap-3 px-4 py-3.5 w-full text-left active:bg-foreground/5 transition-colors"
+      className="flex items-center gap-3 px-4 py-3.5 w-full text-left active:bg-surface-2 transition-colors"
     >
       <span className="size-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
         <Plus className="size-5 text-primary" />

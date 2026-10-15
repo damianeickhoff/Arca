@@ -87,8 +87,8 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
     <div className="px-4 pt-1 pb-8 space-y-6">
       {/* ── Total + delta ── */}
       <div>
-        <p className="text-sm text-foreground/50 mb-1">
-          Total · <span className="text-foreground/70 font-medium">{accountCount} account{accountCount === 1 ? "" : "s"}</span>
+        <p className="text-sm text-ink-3 mb-1">
+          Total · <span className="text-ink-2 font-medium">{accountCount} account{accountCount === 1 ? "" : "s"}</span>
         </p>
         <p className="text-5xl font-semibold tabular-nums tracking-tight">{formatEurSignFirst(total)}</p>
         <div className="mt-2 flex items-center gap-2">
@@ -98,7 +98,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
           <span className={cn("text-sm font-medium", up ? "text-success" : "text-destructive")}>
             {up ? "+" : "−"}{formatEur(Math.abs(delta))}
           </span>
-          <span className="text-sm text-foreground/45">vs last month</span>
+          <span className="text-sm text-ink-3">vs last month</span>
         </div>
       </div>
 
@@ -110,7 +110,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
       )}
 
       {/* ── Range selector ── */}
-      <div className="flex gap-1 rounded-full bg-sidebar-primary-foreground p-1">
+      <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
         {RANGES.map((r) => (
           <button
             key={r.key}
@@ -128,7 +128,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
 
       {/* ── Account groups ── */}
       {accountCount === 0 ? (
-        <div className="rounded-2xl bg-sidebar-primary-foreground py-16 text-center text-muted-foreground">
+        <div className="rounded-card border border-line bg-surface py-16 text-center text-ink-3">
           <p className="text-sm">No accounts yet</p>
         </div>
       ) : (
@@ -192,8 +192,8 @@ function AccountGroup({ label, total, children }: { label: string; total: number
   return (
     <section>
       <div className="flex items-baseline justify-between px-1 mb-2.5">
-        <h2 className="text-sm font-medium text-foreground/45">{label}</h2>
-        <span className="text-sm font-medium text-foreground/45 tabular-nums">{formatEurSignFirst(total)}</span>
+        <h2 className="text-sm font-medium text-ink-3">{label}</h2>
+        <span className="text-sm font-medium text-ink-3 tabular-nums">{formatEurSignFirst(total)}</span>
       </div>
       <div className="space-y-3">{children}</div>
     </section>
@@ -223,18 +223,18 @@ function AccountCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-4 rounded-2xl bg-sidebar-primary-foreground px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
+      className="w-full flex items-center gap-4 rounded-row border border-line bg-surface px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
     >
       {bareIcon ? (
         <span className="size-12 shrink-0">{icon}</span>
       ) : (
-        <span className="flex size-12 items-center justify-center rounded-2xl text-white shrink-0" style={{ backgroundColor: color }}>
+        <span className="flex size-12 items-center justify-center rounded-card text-white shrink-0" style={{ backgroundColor: color }}>
           {icon}
         </span>
       )}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-lg truncate leading-tight">{name}</p>
-        {subtitle && <p className="text-sm text-foreground/50 truncate mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-sm text-ink-3 truncate mt-0.5">{subtitle}</p>}
       </div>
       <span className="tabular-nums font-semibold text-lg shrink-0">{formatEurSignFirst(amount)}</span>
     </button>
@@ -274,8 +274,8 @@ function BalanceChart({ data }: { data: BalancePoint[] }) {
           cursor={{ stroke: "currentColor", strokeOpacity: 0.15, strokeWidth: 1 }}
           content={({ active, payload }) =>
             active && payload?.length ? (
-              <div className="rounded-xl bg-card-glass px-3 py-2 text-xs">
-                <p className="text-foreground/60 mb-0.5">{fmtDate(String(payload[0].payload.date))}</p>
+              <div className="rounded-tile border border-line bg-surface px-3 py-2 text-xs shadow-float">
+                <p className="text-ink-2 mb-0.5">{fmtDate(String(payload[0].payload.date))}</p>
                 <p className="font-bold tabular-nums">{formatEurSignFirst(Number(payload[0].value))}</p>
               </div>
             ) : null
@@ -314,9 +314,9 @@ export function AddAccountButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Add account"
-        className="size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
+        className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
       >
-        <Plus className="size-5 text-foreground" />
+        <Plus className="size-5 text-ink" />
       </button>
 
       <AddAccountDialog

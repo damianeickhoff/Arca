@@ -50,16 +50,16 @@ export function PanelHeader({
         type="button"
         onClick={closePanel}
         aria-label={closeIcon ? "Close" : "Back"}
-        className="relative flex items-center justify-center size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm active:scale-[0.97] transition-transform shrink-0"
+        className="relative flex items-center justify-center size-11 rounded-full border border-line bg-surface hover:bg-surface-2 active:scale-[0.97] transition-transform shrink-0"
       >
         {closeIcon ? (
-          <IconXFilled className="size-5 text-foreground" />
+          <IconXFilled className="size-5 text-ink" />
         ) : (
-          <IconChevronLeft className="size-5 text-foreground" />
+          <IconChevronLeft className="size-5 text-ink" />
         )}
       </button>
 
-      <h2 className="relative flex-1 min-w-0 text-center text-xl font-normal text-foreground truncate px-2">
+      <h2 className="heading relative min-w-0 flex-1 truncate px-2 text-center text-lg text-ink">
         {title}
       </h2>
 

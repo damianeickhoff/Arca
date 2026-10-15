@@ -219,7 +219,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           aria-label="Back"
           className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
         >
-          <ChevronLeft className="size-5 text-foreground" />
+          <ChevronLeft className="size-5 text-ink" />
         </button>
         <button
           type="button"
@@ -228,7 +228,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           aria-label="Delete category"
           className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0 disabled:opacity-50"
         >
-          <Trash2 className="size-5 text-foreground" />
+          <Trash2 className="size-5 text-ink" />
         </button>
       </div>
 
@@ -245,7 +245,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
             <Pencil className="size-2.5" />
           </span>
         </button>
-        <span className="text-lg font-semibold text-foreground">{form.name || "Category"}</span>
+        <span className="text-lg font-semibold text-ink">{form.name || "Category"}</span>
         {/* Controlled — opened by tapping the hero above. */}
         <IconPicker value={form.icon} onChange={(v) => setForm((f) => ({ ...f, icon: v }))} previewColor={effectiveColor} hideBrandTab open={iconOpen} onOpenChange={setIconOpen} hideDefaultTrigger />
       </div>
@@ -257,7 +257,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="Name"
-            className="flex-1 h-14 rounded-2xl border-0 px-4 text-base bg-[var(--dialog-content-background)]"
+            className="flex-1 h-14 rounded-card border-0 px-4 text-base bg-[var(--dialog-content-background)]"
           />
           {!isSubcategory && !(form.icon && isBrandIcon(form.icon)) && (
             <ColorPicker value={form.color} onChange={(c) => set("color", c)} inline />
@@ -272,7 +272,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
               onChange={(v) => set("budgetType", v)}
               options={BUDGET_TYPE_OPTIONS}
               title="Budget type"
-              triggerClassName="h-9 w-auto mt-0 justify-end text-foreground/60 font-medium"
+              triggerClassName="h-9 w-auto mt-0 justify-end text-ink-2 font-medium"
             />
           </Row>
           {parentOptions.length > 0 && !hasChildren && (
@@ -287,7 +287,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
                   }}
                   options={[{ value: "", label: "None" }, ...parentOptions.map((c) => ({ value: String(c.id), label: c.name }))]}
                   title="Parent category"
-                  triggerClassName="h-9 w-auto mt-0 justify-end text-foreground/60 font-medium"
+                  triggerClassName="h-9 w-auto mt-0 justify-end text-ink-2 font-medium"
                 />
               </Row>
             </>
@@ -301,24 +301,24 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
             onClick={() => setRulesOpen((v) => !v)}
             className="flex items-center justify-between w-full px-1 pb-1.5 text-left cursor-pointer"
           >
-            <span className="text-xs font-medium uppercase tracking-wide text-foreground/40">
+            <span className="text-xs font-medium uppercase tracking-wide text-ink-3">
               Automatic rules{rules.length > 0 ? ` (${rules.length})` : ""}
             </span>
-            <ChevronDown className={cn("size-3.5 text-foreground/40 transition-transform", rulesOpen && "rotate-180")} />
+            <ChevronDown className={cn("size-3.5 text-ink-3 transition-transform", rulesOpen && "rotate-180")} />
           </button>
           {rulesOpen && (
-            <div className="bg-card/70 dark:bg-[#2c2c2e] rounded-2xl overflow-hidden">
+            <div className="bg-surface dark:bg-[#2c2c2e] rounded-card overflow-hidden">
               {rules.length === 0 && (
-                <p className="px-4 py-3 text-sm text-foreground/50">No rules yet.</p>
+                <p className="px-4 py-3 text-sm text-ink-3">No rules yet.</p>
               )}
               {rules.map((rule) => (
                 <div key={rule.id}>
-                  <div className="flex items-center justify-between bg-[var(--dialog-content-background)] gap-2 m-1 rounded-xl px-4 py-3">
-                    <div className="text-sm text-foreground/60 min-w-0">
+                  <div className="flex items-center justify-between bg-[var(--dialog-content-background)] gap-2 m-1 rounded-row px-4 py-3">
+                    <div className="text-sm text-ink-2 min-w-0">
                       {rule.namePattern && (
                         <span>
                           Name {rule.nameWholeWord ? "whole word" : rule.nameWildcard ? "contains" : "exact"}{" "}
-                          <span className="font-mono text-foreground">&ldquo;{rule.namePattern}&rdquo;</span>
+                          <span className="font-mono text-ink">&ldquo;{rule.namePattern}&rdquo;</span>
                         </span>
                       )}
                       {ruleAmountLabel(rule) && <span className="ml-1 text-xs">· {ruleAmountLabel(rule)}</span>}
@@ -329,7 +329,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
                       })()}
                     </div>
                     <div className="flex gap-1.5 shrink-0">
-                      <button onClick={() => startEdit(rule)} className="size-9 flex items-center justify-center rounded-sm bg-white/5 hover:bg-foreground/10 text-foreground cursor-pointer">
+                      <button onClick={() => startEdit(rule)} className="size-9 flex items-center justify-center rounded-sm bg-white/5 hover:bg-foreground/10 text-ink cursor-pointer">
                         <EllipsisVertical className="size-5" />
                       </button>
                       <button onClick={() => deleteRule(rule.id)} className="size-9 flex items-center justify-center rounded-sm bg-destructive/10 hover:bg-destructive/20 text-destructive cursor-pointer">
@@ -342,7 +342,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
 
               <button
                 onClick={() => { setNewRule(emptyRule); setAddRuleOpen(true); }}
-                className="w-full flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium text-foreground/60 active:bg-black/[0.04] dark:active:bg-white/10 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium text-ink-2 active:bg-black/[0.04] dark:active:bg-white/10 transition-colors cursor-pointer"
               >
                 <Plus className="size-4" />
                 Add rule
@@ -404,8 +404,8 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="px-1 pb-1.5 text-xs font-medium uppercase tracking-wide text-foreground/40">{title}</h3>
-      <div className="bg-card/70 dark:bg-white/7 rounded-2xl overflow-hidden">{children}</div>
+      <h3 className="px-1 pb-1.5 text-xs font-medium uppercase tracking-wide text-ink-3">{title}</h3>
+      <div className="bg-surface dark:bg-white/7 rounded-card overflow-hidden">{children}</div>
     </div>
   );
 }
@@ -413,7 +413,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between bg-[var(--dialog-content-background)] gap-3 px-4 py-3 min-h-[3.25rem]">
-      <span className="text-sm font-medium text-foreground shrink-0">{label}</span>
+      <span className="text-sm font-medium text-ink shrink-0">{label}</span>
       <div className="min-w-0 flex-1 flex justify-end">{children}</div>
     </div>
   );
@@ -459,7 +459,7 @@ function RuleForm({
         <select
           value={value.bankId}
           onChange={(e) => onChange((r) => ({ ...r, bankId: e.target.value }))}
-          className="h-11 w-full rounded-md px-4 text-sm text-foreground bg-[var(--dialog-content-background)]"
+          className="h-11 w-full rounded-md px-4 text-sm text-ink bg-[var(--dialog-content-background)]"
         >
           <option value="">All accounts</option>
           {banks.map((bank) => (

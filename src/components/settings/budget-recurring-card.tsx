@@ -45,7 +45,7 @@ export function BudgetRecurringCard({ initialMode }: { initialMode: BudgetRecurr
   return (
     <div className="px-4 pt-4 space-y-3">
       <OptionList options={OPTIONS} value={mode} onSelect={change} disabled={pending} />
-      <p className="px-2 text-sm text-foreground/50">
+      <p className="px-2 text-sm text-ink-3">
         Recurring bills (rent, insurance, subscriptions) are already tracked separately.
         This decides whether their spending also counts against your category budgets.
       </p>

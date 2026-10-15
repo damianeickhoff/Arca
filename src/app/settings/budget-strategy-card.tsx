@@ -23,10 +23,10 @@ export function BudgetStrategyCard({ initial }: { initial: BudgetStrategy }) {
   }
 
   return (
-    <div className="rounded-2xl bg-[var(--dialog-background)] p-5">
+    <div className="rounded-card bg-[var(--dialog-background)] p-5">
       <div className="mb-4">
         <h2 className="font-semibold text-base">Budget strategy</h2>
-        <p className="text-xs text-muted-foreground">How your income splits across Needs, Wants, and Savings & Debts.</p>
+        <p className="text-xs text-ink-3">How your income splits across Needs, Wants, and Savings & Debts.</p>
       </div>
       <BudgetStrategySliders value={vals} onChange={setVals} />
       <Button onClick={save} disabled={saving || total !== 100} className="w-full mt-4">

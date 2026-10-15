@@ -101,8 +101,8 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
         {rules.length > 0 ? (
           <section>
             <div className="flex items-baseline justify-between px-1 mb-2.5">
-              <h2 className="text-sm font-medium text-foreground/45">Rules</h2>
-              <span className="text-sm font-medium text-foreground/45 tabular-nums">{rules.length}</span>
+              <h2 className="text-sm font-medium text-ink-3">Rules</h2>
+              <span className="text-sm font-medium text-ink-3 tabular-nums">{rules.length}</span>
             </div>
             <div className="space-y-3">
               {rules.map((rule) => (
@@ -111,8 +111,8 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
                   type="button"
                   onClick={() => startEdit(rule)}
                   className={cn(
-                    "w-full flex items-center gap-4 rounded-2xl px-4 py-3.5 text-left active:scale-[0.99] transition-transform",
-                    panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-card",
+                    "w-full flex items-center gap-4 rounded-row px-4 py-3.5 text-left active:scale-[0.99] transition-transform",
+                    panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface",
                   )}
                 >
                   <span className="size-12 shrink-0">
@@ -120,17 +120,17 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-lg truncate leading-tight">{rule.namePattern}</p>
-                    <p className="text-sm text-foreground/50 truncate mt-0.5">
+                    <p className="text-sm text-ink-3 truncate mt-0.5">
                       {rule.nameWholeWord ? "Whole word" : rule.nameWildcard ? "Contains" : "Exact"}
                     </p>
                   </div>
-                  <Pencil className="size-4 text-foreground/30 shrink-0" />
+                  <Pencil className="size-4 text-ink-3 shrink-0" />
                 </button>
               ))}
             </div>
           </section>
         ) : (
-          <div className={cn("rounded-2xl py-16 text-center text-muted-foreground", panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-card")}>
+          <div className={cn("rounded-card py-16 text-center text-ink-3", panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface")}>
             <p className="text-sm">No rules yet</p>
           </div>
         )}
@@ -222,16 +222,16 @@ export function BrandIconRuleAddButton({ variant = "default" }: { variant?: "def
           className="glass-icon-btn size-12"
           aria-label="Add rule"
         >
-          <Plus className="size-5 text-foreground dark:text-gray-300" />
+          <Plus className="size-5 text-ink dark:text-gray-300" />
         </button>
       ) : variant === "header" ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Add rule"
-          className="size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
+          className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
         >
-          <Plus className="size-5 text-foreground" />
+          <Plus className="size-5 text-ink" />
         </button>
       ) : (
         <button

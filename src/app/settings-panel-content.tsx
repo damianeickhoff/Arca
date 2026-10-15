@@ -30,7 +30,7 @@ function PanelSkeleton() {
   return (
     <div className="space-y-3 px-4 pt-2">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-16 rounded-2xl bg-foreground/5 animate-pulse" />
+        <div key={i} className="h-16 rounded-card bg-surface-2 animate-pulse" />
       ))}
     </div>
   );

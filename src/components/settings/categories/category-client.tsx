@@ -287,7 +287,7 @@ export function CategoryClient(props: Props) {
       {isEdit && controlledOpen === undefined ? (
         <button
           onClick={openDialog}
-          className="flex items-center justify-center mt-0 p-1.5 hover:bg-foreground/10 text-foreground rounded-sm bg-foreground/3 hover:text-foreground shrink-0 size-9 cursor-pointer"
+          className="flex items-center justify-center mt-0 p-1.5 hover:bg-foreground/10 text-ink rounded-sm bg-surface-2 hover:text-ink shrink-0 size-9 cursor-pointer"
         >
           <EllipsisVertical className="size-4" />
         </button>
@@ -301,7 +301,7 @@ export function CategoryClient(props: Props) {
           className="glass-icon-btn size-12"
           aria-label="Add category"
         >
-          <Plus className="size-5 text-foreground dark:text-gray-300" />
+          <Plus className="size-5 text-ink dark:text-gray-300" />
         </button>
       ) : !isEdit ? (
         <button
@@ -373,7 +373,7 @@ export function CategoryClient(props: Props) {
                 onClick={() => setRulesOpen((v) => !v)}
                 className="flex items-center justify-between w-full px-3 py-3 text-left cursor-pointer"
               >
-                <span className="text-base text-foreground font-medium">
+                <span className="text-base text-ink font-medium">
                   Automatic rules{rules.length > 0 ? ` (${rules.length})` : ""}
                 </span>
                 <ChevronDown className={`size-4 text-foreground transition-transform ${rulesOpen ? "rotate-180" : ""}`} />
@@ -381,7 +381,7 @@ export function CategoryClient(props: Props) {
               {rulesOpen && (
                 <div className="px-3 pb-3 space-y-2">
                   {!isEdit && (
-                    <p className="text-sm text-foreground/60 mb-5">
+                    <p className="text-sm text-ink-2 mb-5">
                       Rules are created when you save the category.
                     </p>
                   )}
@@ -389,12 +389,12 @@ export function CategoryClient(props: Props) {
                     <div className="rounded-md divide-y text-sm">
                       {rules.map((rule) => (
                         <div key={rule.id} className="py-2">
-                          <div className="bg-foreground/3 rounded-lg h-12 p-3 flex items-center justify-between gap-2">
-                            <div className="text-sm text-foreground/60 min-w-0">
+                          <div className="bg-surface-2 rounded-tile h-12 p-3 flex items-center justify-between gap-2">
+                            <div className="text-sm text-ink-2 min-w-0">
                               {rule.namePattern && (
                                 <span>
                                   Name {rule.nameWholeWord ? "whole word" : rule.nameWildcard ? "contains" : "exact"}{" "}
-                                  <span className="font-mono text-foreground">&ldquo;{rule.namePattern}&rdquo;</span>
+                                  <span className="font-mono text-ink">&ldquo;{rule.namePattern}&rdquo;</span>
                                 </span>
                               )}
                               {ruleAmountLabel(rule) && (
@@ -413,7 +413,7 @@ export function CategoryClient(props: Props) {
                             <div className="flex gap-1.5 shrink-0">
                               <button
                                 onClick={() => startEdit(rule)}
-                                className="flex items-center justify-center mt-0 p-1.5 rounded-sm hover:bg-foreground/10 text-foreground hover:text-foreground shrink-0 size-9 cursor-pointer"
+                                className="flex items-center justify-center mt-0 p-1.5 rounded-sm hover:bg-foreground/10 text-ink hover:text-ink shrink-0 size-9 cursor-pointer"
                               >
                                 <EllipsisVertical className="size-4" />
                               </button>
@@ -440,7 +440,7 @@ export function CategoryClient(props: Props) {
 
             {/* Add rule inline panel */}
             {addRuleOpen && (
-              <div className="rounded-lg border border-foreground/15 p-3 space-y-2 bg-foreground/[0.02]">
+              <div className="rounded-tile border border-foreground/15 p-3 space-y-2 bg-surface-2">
                 <p className="text-md font-medium">New rule</p>
                 <Field label="Name">
                   <Input
@@ -466,7 +466,7 @@ export function CategoryClient(props: Props) {
 
             {/* Edit rule inline panel */}
             {editingRule !== null && (
-              <div className="rounded-lg border border-foreground/15 p-3 space-y-2 bg-foreground/[0.02]">
+              <div className="rounded-tile border border-foreground/15 p-3 space-y-2 bg-surface-2">
                 <p className="text-sm font-medium">Regel bewerken</p>
                 <Field label="Name">
                   <Input
@@ -570,7 +570,7 @@ function BankPicker({ banks, value, onChange }: { banks: Bank[]; value: string; 
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="px-5 mt-2 h-11 w-full rounded-md px-4 py-1.5 text-sm text-foreground bg-background"
+      className="px-5 mt-2 h-11 w-full rounded-md px-4 py-1.5 text-sm text-ink bg-background"
     >
       <option value="">All accounts</option>
       {banks.map((bank) => (
@@ -586,7 +586,7 @@ function BankPicker({ banks, value, onChange }: { banks: Bank[]; value: string; 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium text-muted-foreground">{label}</label>
+      <label className="text-sm font-medium text-ink-3">{label}</label>
       {children}
     </div>
   );

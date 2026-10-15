@@ -38,7 +38,7 @@ export function SharedCostCard({ initialMode }: { initialMode: SharedCostMode })
     <div className="px-4 pt-4 space-y-3">
       <p className="px-2 text-sm font-medium">{t("settingTitle")}</p>
       <OptionList options={options} value={mode} onSelect={change} disabled={pending} />
-      <p className="px-2 text-sm text-foreground/50">{t("settingFooter")}</p>
+      <p className="px-2 text-sm text-ink-3">{t("settingFooter")}</p>
     </div>
   );
 }

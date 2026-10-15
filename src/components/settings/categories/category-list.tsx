@@ -79,7 +79,7 @@ export function CategoryList({ categories, rulesByCat, banks, txCountByCat = {} 
       )}
 
       {withChildren.map((parent) => (
-        <div key={parent.id} className="rounded-2xl bg-card/50 p-3">
+        <div key={parent.id} className="rounded-card bg-surface p-3">
           <div className={gridClass}>
             <DesktopCategoryTile
               cat={parent}
@@ -107,14 +107,14 @@ export function CategoryList({ categories, rulesByCat, banks, txCountByCat = {} 
       ))}
 
       {categories.length === 0 && (
-        <div className="py-16 text-center text-muted-foreground">
+        <div className="py-16 text-center text-ink-3">
           <p className="text-sm">No categories gevonden</p>
         </div>
       )}
 
       {anySelected && (
-        <div className="fixed bottom-24 lg:bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl bg-card border shadow-xl px-4 py-3">
-          <span className="text-sm font-medium text-foreground/70 mr-1">
+        <div className="fixed bottom-24 lg:bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-card bg-surface border shadow-xl px-4 py-3">
+          <span className="text-sm font-medium text-ink-2 mr-1">
             {selected.size} geselecteerd
           </span>
           <div className="flex items-center gap-1.5">
@@ -133,7 +133,7 @@ export function CategoryList({ categories, rulesByCat, banks, txCountByCat = {} 
           </div>
           <button
             onClick={clearSelection}
-            className="ml-1 size-7 flex items-center justify-center rounded-full hover:bg-foreground/10 text-foreground/50 cursor-pointer"
+            className="ml-1 size-7 flex items-center justify-center rounded-full hover:bg-foreground/10 text-ink-3 cursor-pointer"
           >
             <X className="size-4" />
           </button>
@@ -162,8 +162,8 @@ function DesktopCategoryTile({
   return (
     <div
       className={cn(
-        "group relative flex flex-col items-center gap-2 rounded-2xl p-3 pt-4 transition-colors cursor-pointer select-none",
-        isSelected ? "bg-primary/10" : "bg-card hover:bg-muted/40",
+        "group relative flex flex-col items-center gap-2 rounded-card p-3 pt-4 transition-colors cursor-pointer select-none",
+        isSelected ? "bg-mustard-soft" : "bg-surface hover:bg-surface-2",
       )}
       onClick={() => onToggleSelect(cat.id)}
     >
@@ -177,11 +177,11 @@ function DesktopCategoryTile({
         </div>
       )}
 
-      <span className="text-xs font-medium text-center leading-tight line-clamp-2 w-full text-foreground/80">
+      <span className="text-xs font-medium text-center leading-tight line-clamp-2 w-full text-ink-2">
         {cat.name}
       </span>
       {cat.budgetType && (
-        <span className="text-[10px] text-foreground/40 -mt-1">
+        <span className="text-[10px] text-ink-3 -mt-1">
           {BUDGET_TYPE_LABELS[cat.budgetType] ?? cat.budgetType}
         </span>
       )}

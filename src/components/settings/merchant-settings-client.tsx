@@ -118,7 +118,7 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDel
           aria-label="Back"
           className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
         >
-          <ChevronLeft className="size-5 text-foreground" />
+          <ChevronLeft className="size-5 text-ink" />
         </button>
         <button
           type="button"
@@ -127,7 +127,7 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDel
           aria-label="Delete merchant"
           className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0 disabled:opacity-50"
         >
-          <Trash2 className="size-5 text-foreground" />
+          <Trash2 className="size-5 text-ink" />
         </button>
       </div>
 
@@ -144,7 +144,7 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDel
           size="xxl"
           glyphSize={44}
         />
-        <span className="text-lg font-semibold text-foreground">{name || "Merchant"}</span>
+        <span className="text-lg font-semibold text-ink">{name || "Merchant"}</span>
       </div>
 
       <div className="relative z-10 px-4 space-y-6">
@@ -152,7 +152,7 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDel
           value={name}
           onChange={(e) => changeName(e.target.value)}
           placeholder="Name"
-          className="w-full h-14 rounded-2xl border-0 px-4 text-base bg-[var(--dialog-content-background)]"
+          className="w-full h-14 rounded-card border-0 px-4 text-base bg-[var(--dialog-content-background)]"
         />
 
         <PickerField label="Icon">
@@ -168,8 +168,8 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDel
         </PickerField>
 
         <div>
-          <h3 className="px-1 pb-1.5 text-xs font-medium uppercase tracking-wide text-foreground/40">Activity</h3>
-          <div className="bg-card/70 dark:bg-white/7 rounded-2xl overflow-hidden">
+          <h3 className="px-1 pb-1.5 text-xs font-medium uppercase tracking-wide text-ink-3">Activity</h3>
+          <div className="bg-surface dark:bg-white/7 rounded-card overflow-hidden">
             <Row label="Transactions" value={String(merchant.transactionCount)} />
             <Divider />
             <Row label="Total spent" value={formatEur(merchant.totalSpent)} />
@@ -186,7 +186,7 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDel
           <button
             type="button"
             onClick={onViewProfile}
-            className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-[var(--dialog-content-background)] text-sm font-medium active:scale-[0.99] transition-transform"
+            className="w-full flex items-center justify-center gap-2 h-12 rounded-row bg-[var(--dialog-content-background)] text-sm font-medium active:scale-[0.99] transition-transform"
           >
             <ChartLine className="size-4" />
             View spending profile
@@ -256,8 +256,8 @@ export function MerchantSettingsOverlay({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between bg-[var(--dialog-content-background)] gap-3 px-4 py-3 min-h-[3.25rem]">
-      <span className="text-sm font-medium text-foreground shrink-0">{label}</span>
-      <span className="text-sm text-foreground/60 tabular-nums">{value}</span>
+      <span className="text-sm font-medium text-ink shrink-0">{label}</span>
+      <span className="text-sm text-ink-2 tabular-nums">{value}</span>
     </div>
   );
 }

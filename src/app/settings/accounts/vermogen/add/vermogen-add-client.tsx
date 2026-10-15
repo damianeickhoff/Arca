@@ -75,7 +75,7 @@ export function VermogenAddClient() {
             onChange={(v) => set("type", v)}
             options={VERMOGEN_TYPE_OPTIONS}
             title="Type"
-            triggerClassName="bg-foreground/3 px-3.5"
+            triggerClassName="bg-surface-2 px-3.5"
           />
         </FormField>
 

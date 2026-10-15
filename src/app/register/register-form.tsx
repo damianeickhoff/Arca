@@ -30,7 +30,7 @@ export function RegisterForm() {
       <p className="text-sm text-muted-foreground mb-4 lg:mb-8">Enter your details to register.</p>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-destructive/10 text-destructive text-sm px-3 py-2.5">
+        <div className="mb-4 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2.5">
           {error}
         </div>
       )}

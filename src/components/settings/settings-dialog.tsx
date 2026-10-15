@@ -144,7 +144,7 @@ function Avatar({ user, size }: { user: User; size: number }) {
   }
   return (
     <div
-      className="rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0"
+      className="rounded-full bg-mustard text-mustard-ink flex items-center justify-center shrink-0"
       style={{ width: size, height: size }}
     >
       <IconUser className="size-1/2" />
@@ -281,7 +281,7 @@ export function SettingsDialog({
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="px-0" sheetClassName="bg-sidebar" hideHandle hideHeaderRow title="Settings">
+        <DialogContent className="px-0" sheetClassName="bg-bg" hideHandle hideHeaderRow title="Settings">
           {/* ── Root menu ── shares the same sticky header chrome as every sub-panel
               (PanelHeader from settings-panel-chrome.tsx), with the X acting as a
               close button for the whole dialog. Rendered as a sibling of the hero
@@ -303,8 +303,8 @@ export function SettingsDialog({
           <div className="flex flex-col items-center gap-3 pt-2 pb-6 px-5">
             <Avatar user={user} size={88} />
             <div className="text-center">
-              <p className="text-2xl font-bold text-foreground leading-tight">{user.name}</p>
-              <p className="text-sm text-foreground/50">{user.email}</p>
+              <p className="heading text-2xl leading-tight text-ink">{user.name}</p>
+              <p className="text-sm text-ink-3">{user.email}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -319,7 +319,7 @@ export function SettingsDialog({
                 type="button"
                 onClick={() => setEditOpen(true)}
                 aria-label="Edit profile"
-                className="flex items-center justify-center size-10 rounded-full bg-foreground/8 text-foreground active:scale-[0.97] transition-transform"
+                className="flex items-center justify-center size-10 rounded-full bg-foreground/8 text-ink active:scale-[0.97] transition-transform"
               >
                 <IconPencil className="size-4.5" />
               </button>
@@ -331,10 +331,10 @@ export function SettingsDialog({
             <div className="space-y-6">
               {sections.map((section) => (
                 <div key={section.title}>
-                  <p className="px-1 ml-5 mb-2 text-xs font-semibold uppercase tracking-wider text-foreground/40">
+                  <p className="px-1 ml-5 mb-2 mono-label text-[10px]">
                     {section.title}
                   </p>
-                  <div className="rounded-2xl bg-sidebar-primary-foreground overflow-hidden">
+                  <div className="rounded-card border border-line bg-surface overflow-hidden">
                     {section.rows.map(({ key, label, icon: Icon }, index) => {
                       const divider = index !== section.rows.length - 1 && (
                         <span className="absolute bottom-0 left-4 right-0 h-px" />
@@ -352,9 +352,9 @@ export function SettingsDialog({
                           // is undefined on every other row so the selector stays unique.
                           data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : undefined}
                         >
-                          <Icon className="size-6 shrink-0 text-foreground" />
-                          <span className="flex-1 text-base font-normal text-foreground">{label}</span>
-                          <IconChevronRight className="size-5 text-foreground/30 shrink-0" />
+                          <Icon className="size-6 shrink-0 text-ink" />
+                          <span className="flex-1 text-base font-normal text-ink">{label}</span>
+                          <IconChevronRight className="size-5 text-ink-3 shrink-0" />
                           {divider}
                         </button>
                       );
@@ -411,10 +411,10 @@ export function SettingsDialog({
 
           <div className="pt-6 pb-8 flex flex-col items-center gap-2 text-center opacity-40">
             <LogoMark className="size-8" />
-            <p className="text-lg font-medium text-foreground">
+            <p className="text-lg font-medium text-ink">
               Arca
             </p>
-            <p className="text-xs text-muted-foreground">v{packageJson.version}</p>
+            <p className="text-xs text-ink-3">v{packageJson.version}</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -445,7 +445,7 @@ function InlinePanel({
       return (
         <div className="px-4 pt-4 space-y-3">
           <ThemeList />
-          <p className="px-2 text-sm text-foreground/50">
+          <p className="px-2 text-sm text-ink-3">
             Controls the visual appearance of the app. &quot;System Default&quot; follows your device settings.
           </p>
           <AuthBackgroundPicker />
@@ -455,10 +455,10 @@ function InlinePanel({
     case "privacy":
       return (
         <div className="px-4 pt-4 space-y-3">
-          <div className="rounded-2xl bg-sidebar-primary-foreground p-2">
+          <div className="rounded-card border border-line bg-surface p-2">
             <PrivacyToggle variant="row" />
           </div>
-          <p className="px-2 text-sm text-foreground/50">
+          <p className="px-2 text-sm text-ink-3">
             Blurs all amounts across the app so you can use it in public without revealing balances.
           </p>
         </div>
@@ -471,7 +471,7 @@ function InlinePanel({
       return (
         <div className="px-4 pt-4 space-y-3">
           <LanguageList />
-          <p className="px-2 text-sm text-foreground/50">Choose the language for the interface.</p>
+          <p className="px-2 text-sm text-ink-3">Choose the language for the interface.</p>
         </div>
       );
 
@@ -479,14 +479,14 @@ function InlinePanel({
       return (
         <div className="px-4 pt-4 space-y-3">
           <CurrencyList />
-          <p className="px-2 text-sm text-foreground/50">Currency symbol shown on amounts.</p>
+          <p className="px-2 text-sm text-ink-3">Currency symbol shown on amounts.</p>
         </div>
       );
 
     case "financialMonth":
       return (
         <div className="px-4 pt-4">
-          <div className="rounded-2xl bg-sidebar-primary-foreground p-5">
+          <div className="rounded-card border border-line bg-surface p-5">
             <FinancieleMaandForm
               currentStartDay={financialMonth.defaultStartDay}
               currentWeekendRollback={financialMonth.weekendRollback ?? false}
@@ -533,19 +533,19 @@ function InlinePanel({
     case "help":
       return (
         <div className="px-4 pt-4 space-y-3">
-          <div className="rounded-2xl bg-sidebar-primary-foreground p-5">
-            <p className="text-sm font-medium text-foreground mb-1">Questions or problems?</p>
-            <p className="text-sm text-foreground/70">
+          <div className="rounded-card border border-line bg-surface p-5">
+            <p className="text-sm font-medium text-ink mb-1">Questions or problems?</p>
+            <p className="text-sm text-ink-2">
               Email support and we&apos;ll get back to you as soon as possible.
             </p>
           </div>
           <a
             href="mailto:support@arca.app"
-            className="flex items-center gap-3.5 rounded-2xl bg-sidebar-primary-foreground px-4 py-3.5 active:bg-foreground/5 transition-colors"
+            className="flex items-center gap-3.5 rounded-card border border-line bg-surface px-4 py-3.5 active:bg-surface-2 transition-colors"
           >
             <IconHelpCircle className="size-5 text-primary shrink-0" />
-            <span className="flex-1 text-sm font-medium text-foreground">Contact support</span>
-            <IconChevronRight className="size-4 text-foreground/30" />
+            <span className="flex-1 text-sm font-medium text-ink">Contact support</span>
+            <IconChevronRight className="size-4 text-ink-3" />
           </a>
         </div>
       );
@@ -560,7 +560,7 @@ function InlinePanel({
 function EditSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground/40">{title}</h3>
+      <h3 className="mono-label text-[10px]">{title}</h3>
       {children}
     </section>
   );
@@ -610,8 +610,8 @@ function NameForm({ user }: { user: User }) {
 
   return (
     <div className="space-y-3">
-      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{error}</div>}
-      {success && <div className="text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">Name updated.</div>}
+      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-tile px-3 py-2">{error}</div>}
+      {success && <div className="text-sm text-positive bg-positive-soft rounded-tile px-3 py-2">Name updated.</div>}
       <div className="space-y-1">
         <Input value={name} onChange={(e) => { setName(e.target.value); setSuccess(false); }} />
       </div>
@@ -644,14 +644,14 @@ function EmailForm({ user }: { user: User }) {
 
   return (
     <div className="space-y-3">
-      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{error}</div>}
-      {success && <div className="text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">Email updated.</div>}
+      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-tile px-3 py-2">{error}</div>}
+      {success && <div className="text-sm text-positive bg-positive-soft rounded-tile px-3 py-2">Email updated.</div>}
       <div className="space-y-1">
-        <label className="text-sm font-medium text-foreground/80">Email</label>
+        <label className="text-sm font-medium text-ink-2">Email</label>
         <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setSuccess(false); }} autoComplete="email" />
       </div>
       <div className="space-y-1">
-        <label className="text-sm font-medium text-foreground/80">Current password</label>
+        <label className="text-sm font-medium text-ink-2">Current password</label>
         <Input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setSuccess(false); }} autoComplete="current-password" />
       </div>
       <Button onClick={save} disabled={saving || !email.trim() || !password} className="w-full">
@@ -683,14 +683,14 @@ function PasswordForm() {
 
   return (
     <div className="space-y-3">
-      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{error}</div>}
-      {success && <div className="text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-lg px-3 py-2">Password updated.</div>}
+      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-tile px-3 py-2">{error}</div>}
+      {success && <div className="text-sm text-positive bg-positive-soft rounded-tile px-3 py-2">Password updated.</div>}
       <div className="space-y-1">
-        <label className="text-sm font-medium text-foreground/80">Current password</label>
+        <label className="text-sm font-medium text-ink-2">Current password</label>
         <Input type="password" value={current} onChange={(e) => { setCurrent(e.target.value); setSuccess(false); }} autoComplete="current-password" />
       </div>
       <div className="space-y-1">
-        <label className="text-sm font-medium text-foreground/80">New password</label>
+        <label className="text-sm font-medium text-ink-2">New password</label>
         <Input type="password" value={next} onChange={(e) => { setNext(e.target.value); setSuccess(false); }} placeholder="At least 8 characters" autoComplete="new-password" />
       </div>
       <Button onClick={save} disabled={saving || !current || !next} className="w-full">

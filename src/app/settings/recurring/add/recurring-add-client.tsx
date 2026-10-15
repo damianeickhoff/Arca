@@ -121,7 +121,7 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
 
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Type">
-            <OptionDropdown value={form.type} onChange={(v) => set("type", v)} options={TYPE_OPTIONS} triggerClassName="bg-foreground/3 px-3.5" />
+            <OptionDropdown value={form.type} onChange={(v) => set("type", v)} options={TYPE_OPTIONS} triggerClassName="bg-surface-2 px-3.5" />
           </FormField>
           <FormField label="Budget type">
             <OptionDropdown
@@ -129,14 +129,14 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
               onChange={(v) => set("budgetType", v)}
               options={BUDGET_TYPE_OPTIONS}
               disabled={form.type === "income"}
-              triggerClassName="bg-foreground/3 px-3.5"
+              triggerClassName="bg-surface-2 px-3.5"
             />
           </FormField>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Frequency">
-            <OptionDropdown value={form.frequency} onChange={(v) => set("frequency", v)} options={FREQUENCY_OPTIONS} triggerClassName="bg-foreground/3 px-3.5" />
+            <OptionDropdown value={form.frequency} onChange={(v) => set("frequency", v)} options={FREQUENCY_OPTIONS} triggerClassName="bg-surface-2 px-3.5" />
           </FormField>
           <FormField label="Due day (1–31)">
             <Input inputMode="numeric" value={form.dueDay} onChange={(e) => set("dueDay", e.target.value.replace(/[^0-9]/g, ""))} placeholder="e.g. 28" />
@@ -149,7 +149,7 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
 
         <FormField label="Match pattern">
           <Input value={form.matchPattern} onChange={(e) => set("matchPattern", e.target.value)} placeholder="e.g. Allianz, Netflix" />
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-foreground/5 p-1 mt-2">
+          <div className="grid grid-cols-2 gap-1 rounded-tile bg-surface-2 p-1 mt-2">
             {([false, true] as const).map((wholeWord) => (
               <button
                 key={String(wholeWord)}
@@ -164,7 +164,7 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
               </button>
             ))}
           </div>
-          <p className="text-xs text-foreground/60 mt-1">
+          <p className="text-xs text-ink-2 mt-1">
             {form.matchWholeWord
               ? "Only as a separate word in the description"
               : "Text within the description"}
@@ -172,7 +172,7 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
         </FormField>
 
         <FormField label="Match amount (optional)">
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-foreground/5 p-1 mb-2 mt-1">
+          <div className="grid grid-cols-2 gap-1 rounded-tile bg-surface-2 p-1 mb-2 mt-1">
             {(["exact", "range"] as const).map((m) => (
               <button
                 key={m}
@@ -202,14 +202,14 @@ export function RecurringAddClient({ categories, prefill }: { categories: Catego
             categories={categories}
             current={form.categoryId || undefined}
             onChange={(v) => set("categoryId", v)}
-            triggerClassName="h-12 w-full rounded-lg bg-foreground/3 px-3.5 mt-1 text-sm font-normal"
+            triggerClassName="h-12 w-full rounded-tile bg-surface-2 px-3.5 mt-1 text-sm font-normal"
           />
-          <p className="text-xs text-foreground/60 mt-1">Auto-assigned to matches</p>
+          <p className="text-xs text-ink-2 mt-1">Auto-assigned to matches</p>
         </FormField>
 
         <FormField label="Friendly name">
           <Input value={form.friendlyName} onChange={(e) => set("friendlyName", e.target.value)} placeholder="e.g. Amazon Prime" />
-          <p className="text-xs text-foreground/60 mt-1">Overrides name cleanup</p>
+          <p className="text-xs text-ink-2 mt-1">Overrides name cleanup</p>
         </FormField>
       </FormCard>
 

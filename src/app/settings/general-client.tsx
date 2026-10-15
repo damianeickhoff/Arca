@@ -122,7 +122,7 @@ export function FinancieleMaandForm({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="flex items-center gap-3">
             <Input backgroundClassName="bg-[var(--dialog-background)]" type="number" inputMode="numeric" min={1} max={28} value={startDay} onChange={(e) => setStartDay(e.target.value)} className="w-24" placeholder="1" />
-            <span className="text-sm text-foreground/60">of the month (1-28)</span>
+            <span className="text-sm text-ink-2">of the month (1-28)</span>
           </div>
           <Button onClick={saveDefaultStartDay} disabled={savingDefault || !isValidStartDay(startDay)}>
             {savingDefault ? "Saving..." : savedDefault ? "Saved ✓" : "Save"}
@@ -132,12 +132,12 @@ export function FinancieleMaandForm({
       <div className="flex items-center justify-between gap-3 pt-1">
         <span className="text-sm">Shift the start day to Friday when it falls on a weekend</span>
         <Button type="button" variant="ghost" size="icon-sm" onClick={() => toggleWeekendRollback(!weekendRollback)} disabled={savingRollback}
-          className="shrink-0 bg-foreground/3 text-foreground hover:bg-foreground/10 size-9">
+          className="shrink-0 bg-surface-2 text-ink hover:bg-foreground/10 size-9">
           {weekendRollback && <Check className="size-4" />}
         </Button>
       </div>
-      <p className="text-xs text-foreground/60">Current period: {previewRange}</p>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      <p className="text-xs text-ink-2">Current period: {previewRange}</p>
+      {error && <p className="text-sm text-negative">{error}</p>}
     </div>
   );
 }
@@ -216,29 +216,29 @@ export function MaandUitzonderingenForm({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-foreground/60">Only use this for months that deviate from the default.</p>
-        <button onClick={openAddOverride} className="size-9 rounded-full bg-foreground/3 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 cursor-pointer" aria-label="Add override">
+        <p className="text-sm text-ink-2">Only use this for months that deviate from the default.</p>
+        <button onClick={openAddOverride} className="size-9 rounded-full bg-surface-2 hover:bg-foreground/10 text-ink flex items-center justify-center shrink-0 cursor-pointer" aria-label="Add override">
           <Plus className="size-4" />
         </button>
       </div>
       {overrides.length === 0 ? (
-        <p className="text-sm text-foreground/60">No overrides configured yet.</p>
+        <p className="text-sm text-ink-2">No overrides configured yet.</p>
       ) : (
         <div className="space-y-3">
           {overrides.map((override) => (
-            <div key={override.month} className="py-3.5 px-5 rounded-xl bg-foreground/3 flex items-center gap-3">
+            <div key={override.month} className="py-3.5 px-5 rounded-row bg-surface-2 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-base capitalize truncate">{formatMonthLabel(override.month)}</p>
-                <p className="text-sm text-foreground/60 mt-0.5">Startdag {override.startDay} · {formatRange(previewConfig, override.month)}</p>
+                <p className="text-sm text-ink-2 mt-0.5">Startdag {override.startDay} · {formatRange(previewConfig, override.month)}</p>
               </div>
-              <button onClick={() => startEditOverride(override)} className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-foreground rounded-sm bg-foreground/5 hover:text-foreground shrink-0 size-9 cursor-pointer">
+              <button onClick={() => startEditOverride(override)} className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-ink rounded-sm bg-surface-2 hover:text-ink shrink-0 size-9 cursor-pointer">
                 <EllipsisVertical className="size-4" />
               </button>
             </div>
           ))}
         </div>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-negative">{error}</p>}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]">
@@ -260,7 +260,7 @@ export function MaandUitzonderingenForm({
           <DialogHeader><DialogTitle>Edit override</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Field label="Month">
-              <p className="h-12 w-full rounded-lg bg-foreground/3 px-3.5 text-sm mt-1 flex items-center capitalize">{editingMonth ? formatMonthLabel(editingMonth) : ""}</p>
+              <p className="h-12 w-full rounded-tile bg-surface-2 px-3.5 text-sm mt-1 flex items-center capitalize">{editingMonth ? formatMonthLabel(editingMonth) : ""}</p>
             </Field>
             <Field label="Start day">
               <Input type="number" inputMode="numeric" min={1} max={28} value={editStartDay} onChange={(e) => setEditStartDay(e.target.value)} />
@@ -364,23 +364,23 @@ export function MaandUitzonderingenSubPage({
   return (
     <div className="px-4 pb-[calc(1.5rem+var(--sab))] pt-2 space-y-3">
       {overrides.length === 0 ? (
-        <p className="text-sm text-foreground/60 pt-2">No overrides configured yet.</p>
+        <p className="text-sm text-ink-2 pt-2">No overrides configured yet.</p>
       ) : (
         <div className="space-y-3 pt-1">
           {overrides.map((override) => (
-            <div key={override.month} className="py-3.5 px-5 rounded-2xl bg-white dark:bg-white/10 flex items-center gap-3">
+            <div key={override.month} className="py-3.5 px-5 rounded-card bg-white dark:bg-white/10 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold capitalize truncate">{formatMonthLabel(override.month)}</p>
-                <p className="text-sm text-foreground/60 mt-0.5">Startdag {override.startDay} · {formatRange(previewConfig, override.month)}</p>
+                <p className="text-sm text-ink-2 mt-0.5">Startdag {override.startDay} · {formatRange(previewConfig, override.month)}</p>
               </div>
-              <button onClick={() => startEdit(override)} className="flex items-center justify-center rounded-xl bg-foreground/5 hover:bg-foreground/10 text-foreground shrink-0 size-9 cursor-pointer">
+              <button onClick={() => startEdit(override)} className="flex items-center justify-center rounded-row bg-surface-2 hover:bg-foreground/10 text-ink shrink-0 size-9 cursor-pointer">
                 <EllipsisVertical className="size-4" />
               </button>
             </div>
           ))}
         </div>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-negative">{error}</p>}
 
       {/* Add dialog */}
       <Dialog open={addOpen} onOpenChange={onAddOpenChange}>
@@ -404,7 +404,7 @@ export function MaandUitzonderingenSubPage({
           <DialogHeader><DialogTitle>Edit override</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Field label="Month">
-              <p className="h-12 w-full rounded-lg bg-foreground/3 px-3.5 text-sm mt-1 flex items-center capitalize">{editingMonth ? formatMonthLabel(editingMonth) : ""}</p>
+              <p className="h-12 w-full rounded-tile bg-surface-2 px-3.5 text-sm mt-1 flex items-center capitalize">{editingMonth ? formatMonthLabel(editingMonth) : ""}</p>
             </Field>
             <Field label="Start day">
               <Input backgroundClassName="bg-[var(--dialog-content-background)]" type="number" inputMode="text" min={1} max={28} value={editStartDay} onChange={(e) => setEditStartDay(e.target.value)} />
@@ -593,19 +593,19 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
   return (
     <div className="space-y-6">
       {/* Section: Language */}
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-card bg-surface p-5">
         <div className="mb-4">
           <h2 className="font-semibold text-lg mb-1">Language</h2>
-          <p className="text-sm text-foreground/60">Choose the language for the interface.</p>
+          <p className="text-sm text-ink-2">Choose the language for the interface.</p>
         </div>
         <LanguageList />
       </div>
 
       {/* Section: Currency */}
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-card bg-surface p-5">
         <div className="mb-4">
           <h2 className="font-semibold text-lg mb-1">Currency</h2>
-          <p className="text-sm text-foreground/60">
+          <p className="text-sm text-ink-2">
             Choose the currency symbol shown on amounts throughout the app.
           </p>
         </div>
@@ -613,10 +613,10 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
       </div>
 
       {/* Section: Financial month settings */}
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-card bg-surface p-5">
         <div className="mb-4">
           <h2 className="font-semibold text-lg mb-1">Financial month</h2>
-          <p className="text-sm text-foreground/60">
+          <p className="text-sm text-ink-2">
             Set a default start day for your financial month.
           </p>
         </div>
@@ -635,7 +635,7 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
                   className="w-24"
                   placeholder="1"
                 />
-                <span className="text-sm text-foreground/60">of the month (1–28)</span>
+                <span className="text-sm text-ink-2">of the month (1–28)</span>
               </div>
               <Button onClick={saveDefaultStartDay} disabled={savingDefault || !isValidStartDay(startDay)}>
                 {savingDefault ? "Saving..." : savedDefault ? "Saved ✓" : "Save"}
@@ -651,22 +651,22 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
               size="icon-sm"
               onClick={() => toggleWeekendRollback(!weekendRollback)}
               disabled={savingRollback}
-              className="shrink-0 bg-foreground/3 text-foreground hover:bg-foreground/10 size-9"
+              className="shrink-0 bg-surface-2 text-ink hover:bg-foreground/10 size-9"
             >
               {weekendRollback && <Check className="size-4" />}
             </Button>
           </div>
 
-          <p className="text-xs text-foreground/60">
+          <p className="text-xs text-ink-2">
             Current period with these settings: {previewRange}
           </p>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-card bg-surface p-5">
         <div className="mb-4">
           <h2 className="font-semibold text-base">Budget rollover</h2>
-          <p className="text-xs text-muted-foreground">Unused category budget carries into next month.</p>
+          <p className="text-xs text-ink-3">Unused category budget carries into next month.</p>
         </div>
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm">Roll over unused category budgets to next month</span>
@@ -676,7 +676,7 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
             size="icon-sm"
             onClick={() => toggleBudgetRollover(!budgetRollover)}
             disabled={savingBudgetRollover}
-            className="shrink-0 bg-foreground/3 text-foreground hover:bg-foreground/10 size-9"
+            className="shrink-0 bg-surface-2 text-ink hover:bg-foreground/10 size-9"
           >
             {budgetRollover && <Check className="size-4" />}
           </Button>
@@ -684,17 +684,17 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
       </div>
 
       {/* Section: Maanduitzonderingen */}
-      <div className="rounded-2xl bg-card p-5">
+      <div className="rounded-card bg-surface p-5">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="font-semibold text-lg mb-1">Month overrides</h2>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-ink-2">
               Only use this for months that deviate from the default.
             </p>
           </div>
           <button
             onClick={openAddOverride}
-            className="size-9 rounded-full bg-foreground/3 hover:bg-foreground/10 text-foreground flex items-center justify-center shrink-0 cursor-pointer"
+            className="size-9 rounded-full bg-surface-2 hover:bg-foreground/10 text-ink flex items-center justify-center shrink-0 cursor-pointer"
             aria-label="Add override"
           >
             <Plus className="size-4" />
@@ -702,20 +702,20 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
         </div>
 
         {overrides.length === 0 ? (
-          <p className="text-sm text-foreground/60">No overrides configured yet.</p>
+          <p className="text-sm text-ink-2">No overrides configured yet.</p>
         ) : (
           <div className="space-y-3">
             {overrides.map((override) => (
-              <div key={override.month} className="py-3.5 px-5 rounded-xl bg-foreground/3 flex items-center gap-3">
+              <div key={override.month} className="py-3.5 px-5 rounded-row bg-surface-2 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-base capitalize truncate">{formatMonthLabel(override.month)}</p>
-                  <p className="text-sm text-foreground/60 mt-0.5">
+                  <p className="text-sm text-ink-2 mt-0.5">
                     Startdag {override.startDay} · {formatRange(previewConfig, override.month)}
                   </p>
                 </div>
                 <button
                   onClick={() => startEditOverride(override)}
-                  className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-foreground rounded-sm bg-foreground/5 hover:text-foreground shrink-0 size-9 cursor-pointer"
+                  className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-ink rounded-sm bg-surface-2 hover:text-ink shrink-0 size-9 cursor-pointer"
                 >
                   <EllipsisVertical className="size-4" />
                 </button>
@@ -725,7 +725,7 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
         )}
       </div>
 
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-negative">{error}</p> : null}
 
       {/* Add override dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -766,7 +766,7 @@ export function GeneralSettingsClient({ currentStartDay, currentWeekendRollback,
           </DialogHeader>
           <div className="space-y-3">
             <Field label="Month">
-              <p className="h-12 w-full rounded-lg bg-foreground/3 px-3.5 text-sm mt-1 flex items-center capitalize">
+              <p className="h-12 w-full rounded-tile bg-surface-2 px-3.5 text-sm mt-1 flex items-center capitalize">
                 {editingMonth ? formatMonthLabel(editingMonth) : ""}
               </p>
             </Field>

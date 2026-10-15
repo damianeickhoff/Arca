@@ -45,7 +45,7 @@ export function MobileRecurringBottomBar({ search }: Props) {
     // clears exactly --nav-clearance instead of a hand-tuned offset.
     <div className={cn(bottomDockClass, "bottom-[var(--nav-clearance)] z-40 flex items-center gap-3")}>
       <div className="glass-search-bar relative flex-1">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-foreground/40 pointer-events-none" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-ink-3 pointer-events-none" />
         <input
           type="text"
           placeholder="Search vaste kosten..."

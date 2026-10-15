@@ -40,7 +40,7 @@ export function MobileCategoriesHeaderActions({ search, categories }: Props) {
   return (
     <>
       <div className="glass-search-bar relative flex-1">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-foreground/40 pointer-events-none" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-ink-3 pointer-events-none" />
         <input
           type="text"
           placeholder="Search category..."

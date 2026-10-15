@@ -341,7 +341,7 @@ export function RecurringClient(props: Props) {
             {editTrigger}
           </button>
         ) : (
-          <button className="flex items-center justify-center p-1.5 hover:bg-foreground/10 text-foreground rounded-sm bg-foreground/3 hover:text-foreground shrink-0 size-9" onClick={() => setOpen(true)}>
+          <button className="flex items-center justify-center p-1.5 hover:bg-foreground/10 text-ink rounded-sm bg-surface-2 hover:text-ink shrink-0 size-9" onClick={() => setOpen(true)}>
             <EllipsisVertical className="size-4" />
           </button>
         )
@@ -349,12 +349,12 @@ export function RecurringClient(props: Props) {
         <FloatingAddButton onClick={() => setOpen(true)} ariaLabel="Add fixed cost" />
       ) : props.variant === "icon" ? (
         <button onClick={() => setOpen(true)} className="glass-icon-btn size-12" aria-label="Add fixed cost">
-          <Plus className="size-5 text-foreground dark:text-gray-300" />
+          <Plus className="size-5 text-ink dark:text-gray-300" />
         </button>
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center text-foreground active:scale-[0.97] transition-transform shrink-0"
+          className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center text-ink active:scale-[0.97] transition-transform shrink-0"
           aria-label="Add recurrence"
         >
           <Plus className="size-5" />
@@ -381,7 +381,7 @@ export function RecurringClient(props: Props) {
                   onClick={remove}
                   disabled={loading}
                   aria-label="Delete"
-                  className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                  className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
                 >
                   <Trash2 className="size-4.5" />
                 </button>
@@ -453,9 +453,9 @@ export function RecurringClient(props: Props) {
                           // Locked (debt-linked) end date follows the start date immediately.
                           if (endDateLocked && item?.startDate && item?.endDate) set("endDate", shiftEndDate(item.startDate, item.endDate, v));
                         }}
-                        triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]"
+                        triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]"
                       />
-                      <p className="text-xs text-foreground/50 mt-1.5">This becomes the due date of the recurrence.</p>
+                      <p className="text-xs text-ink-3 mt-1.5">This becomes the due date of the recurrence.</p>
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
@@ -467,16 +467,16 @@ export function RecurringClient(props: Props) {
                         )}
                       </div>
                       {endDateLocked ? (
-                        <p className="text-sm text-foreground/45">
+                        <p className="text-sm text-ink-3">
                           {form.endDate ? `Ends ${fmtShort(form.endDate)} — ` : ""}managed by the linked debt&apos;s last-payment date.
                         </p>
                       ) : form.endDate ? (
                         <>
-                          <DatePicker value={form.endDate} onChange={(v) => set("endDate", v)} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
-                          <p className="text-xs text-foreground/50 mt-1.5">After this date the recurrence is automatically disabled.</p>
+                          <DatePicker value={form.endDate} onChange={(v) => set("endDate", v)} triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]" />
+                          <p className="text-xs text-ink-3 mt-1.5">After this date the recurrence is automatically disabled.</p>
                         </>
                       ) : (
-                        <p className="text-sm text-foreground/45">No end date — runs indefinitely.</p>
+                        <p className="text-sm text-ink-3">No end date — runs indefinitely.</p>
                       )}
                     </div>
                   </div>
@@ -531,7 +531,7 @@ export function RecurringClient(props: Props) {
                           checked={form.isReimbursement}
                           onChange={(v) => set("isReimbursement", v)}
                         />
-                        <p className="text-xs text-foreground/50 mt-2 px-1">{tShared("paybackHint")}</p>
+                        <p className="text-xs text-ink-3 mt-2 px-1">{tShared("paybackHint")}</p>
                       </div>
                     ) : (
                       <>
@@ -584,11 +584,11 @@ export function RecurringClient(props: Props) {
                               </div>
                             </div>
                             {amountVal != null && myShare != null && (
-                              <p className="text-sm text-foreground/60 px-1">
+                              <p className="text-sm text-ink-2 px-1">
                                 {tShared("preview", { share: formatEur(myShare), total: formatEur(amountVal) })}
                               </p>
                             )}
-                            <p className="text-xs text-foreground/50 px-1">{tShared("sharedHint")}</p>
+                            <p className="text-xs text-ink-3 px-1">{tShared("sharedHint")}</p>
                           </>
                         )}
                       </>
@@ -605,7 +605,7 @@ export function RecurringClient(props: Props) {
                     <div>
                       <p className="text-sm font-medium mb-1.5">Friendly name</p>
                       <Input value={form.friendlyName} onChange={(e) => set("friendlyName", e.target.value)} placeholder="e.g. Amazon Prime" className="h-12" />
-                      <p className="text-xs text-foreground/50 mt-1.5">Overrides name cleanup on matched transactions.</p>
+                      <p className="text-xs text-ink-3 mt-1.5">Overrides name cleanup on matched transactions.</p>
                     </div>
                   </div>
                 )}
@@ -621,7 +621,7 @@ export function RecurringClient(props: Props) {
                       <MatchModePicker value={form.matchWholeWord} onChange={(v) => set("matchWholeWord", v)} />
                     </div>
                     <div>
-                      <div className="grid grid-cols-2 gap-1 rounded-lg bg-foreground/5 p-1 mb-2">
+                      <div className="grid grid-cols-2 gap-1 rounded-tile bg-surface-2 p-1 mb-2">
                         {(["exact", "range"] as const).map((m) => (
                           <button key={m} type="button" onClick={() => set("matchMode", m)} className={cn("rounded-md py-2 text-sm transition-colors", form.matchMode === m ? "bg-background shadow-sm font-medium" : "text-foreground/60")}>
                             {m === "exact" ? "Exact amount" : "Between"}
@@ -645,7 +645,7 @@ export function RecurringClient(props: Props) {
                           onClick={() => {
                             if (form.matchMode === "exact") set("matchAmount", String(amountVal));
                           }}
-                          className="mt-2 text-xs text-foreground/50 text-left"
+                          className="mt-2 text-xs text-ink-3 text-left"
                         >
                           This recurrence is set to {formatEur(amountVal)}
                           {form.matchMode === "exact" && <span className="underline underline-offset-2 ml-1">use it</span>}
@@ -675,7 +675,7 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between gap-4 rounded-xl bg-foreground/5 px-4 py-3 text-left"
+      className="flex w-full items-center justify-between gap-4 rounded-row bg-surface-2 px-4 py-3 text-left"
     >
       <span className="text-sm font-medium">{label}</span>
       <span className={cn("relative h-6 w-10 shrink-0 rounded-full transition-colors", checked ? "bg-foreground" : "bg-foreground/20")}>
@@ -692,7 +692,7 @@ function MatchModePicker({ value, onChange }: { value: boolean; onChange: (v: bo
   ];
   return (
     <>
-      <div className="grid grid-cols-2 gap-1 rounded-lg bg-foreground/5 p-1 mt-2">
+      <div className="grid grid-cols-2 gap-1 rounded-tile bg-surface-2 p-1 mt-2">
         {options.map((opt) => (
           <button
             key={opt.label}
@@ -707,7 +707,7 @@ function MatchModePicker({ value, onChange }: { value: boolean; onChange: (v: bo
           </button>
         ))}
       </div>
-      <p className="text-xs text-foreground/50 mt-1.5">
+      <p className="text-xs text-ink-3 mt-1.5">
         {options.find((o) => o.wholeWord === value)!.hint}
       </p>
     </>
@@ -728,14 +728,14 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
-      <span className="text-foreground/40 shrink-0">{icon}</span>
-      <span className="flex-1 font-medium text-foreground">{label}</span>
-      <span className="flex items-center gap-1.5 text-foreground/60 min-w-0">
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-surface-2 transition-colors">
+      <span className="text-ink-3 shrink-0">{icon}</span>
+      <span className="flex-1 font-medium text-ink">{label}</span>
+      <span className="flex items-center gap-1.5 text-ink-2 min-w-0">
         {valueIcon}
         <span className="truncate max-w-[45vw]">{value}</span>
       </span>
-      <ChevronRight className="size-5 text-foreground/30 shrink-0" />
+      <ChevronRight className="size-5 text-ink-3 shrink-0" />
     </button>
   );
 }

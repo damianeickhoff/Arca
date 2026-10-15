@@ -51,7 +51,7 @@ interface Props {
 function SectionHeader({ label }: { label: string }) {
   return (
     <div className="flex items-baseline gap-2 px-1 mb-2">
-      <h2 className="text-sm font-medium text-foreground/40">{label}</h2>
+      <h2 className="text-sm font-medium text-ink-3">{label}</h2>
     </div>
   );
 }
@@ -59,10 +59,10 @@ function SectionHeader({ label }: { label: string }) {
 /** Status pill shown after the name for future/expired items. */
 function StatusBadge({ status }: { status: RecurringPeriodStatus }) {
   if (status === "future") {
-    return <span className="shrink-0 rounded-full bg-blue-500/12 text-blue-600 dark:text-blue-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">Upcoming</span>;
+    return <span className="shrink-0 rounded-full bg-info-soft text-info text-[10px] font-medium px-1.5 py-0.5 leading-none">Upcoming</span>;
   }
   if (status === "expired") {
-    return <span className="shrink-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-medium px-1.5 py-0.5 leading-none">Expired</span>;
+    return <span className="shrink-0 rounded-full bg-warning-soft text-warning text-[10px] font-medium px-1.5 py-0.5 leading-none">Expired</span>;
   }
   return null;
 }
@@ -83,7 +83,7 @@ function RecurringCard({ item, cat, status }: { item: RecurringItem; cat: Catego
       action="edit"
       item={item}
       trigger={
-        <div className={`flex items-center gap-4 rounded-2xl bg-card px-5 py-4 ${dim ? "opacity-50" : ""}`}>
+        <div className={`flex items-center gap-4 rounded-row bg-surface px-5 py-4 ${dim ? "opacity-50" : ""}`}>
           <Icon
             iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
             color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
@@ -94,7 +94,7 @@ function RecurringCard({ item, cat, status }: { item: RecurringItem; cat: Catego
             <div className="flex items-center gap-2">
               <p className="text-lg font-semibold truncate leading-tight min-w-0">{item.name}</p>
               {/* Single-letter frequency indicator right after the name. */}
-              <span className="shrink-0 rounded-full bg-foreground/8 text-foreground/55 text-[10px] font-medium px-1.5 py-0.5 leading-none">
+              <span className="shrink-0 rounded-full bg-foreground/8 text-ink-2 text-[10px] font-medium px-1.5 py-0.5 leading-none">
                 {FREQ_INDICATOR[item.frequency] ?? item.frequency}
               </span>
               <StatusBadge status={status} />
@@ -105,7 +105,7 @@ function RecurringCard({ item, cat, status }: { item: RecurringItem; cat: Catego
               )}
             </div>
             {/* Under the title: the linked category name. */}
-            <p className="text-sm text-foreground/50 mt-0.5 truncate">
+            <p className="text-sm text-ink-3 mt-0.5 truncate">
               {cat?.name ?? "No category"}
             </p>
           </div>
@@ -114,7 +114,7 @@ function RecurringCard({ item, cat, status }: { item: RecurringItem; cat: Catego
               {item.amount ? formatEur(monthly) : "—"}
             </p>
             {/* Under the amount: transaction type + budget type. */}
-            <p className="text-xs text-foreground/40 mt-0.5 truncate">{typeBudget}</p>
+            <p className="text-xs text-ink-3 mt-0.5 truncate">{typeBudget}</p>
           </div>
         </div>
       }
@@ -174,11 +174,11 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
       {/* Summary cards — per-category monthly total, one card each. */}
       <div className="grid grid-cols-2 gap-3">
         {GROUPS.map((g) => (
-          <div key={g} className="rounded-2xl bg-card px-4 py-3">
-            <p className="text-xs text-foreground/50 mb-1">{GROUP_LABELS[g]}</p>
+          <div key={g} className="rounded-card bg-surface px-4 py-3">
+            <p className="text-xs text-ink-3 mb-1">{GROUP_LABELS[g]}</p>
             <p className="text-lg font-semibold tabular-nums leading-tight">
               {formatEur(totals[g])}
-              <span className="text-xs font-normal text-foreground/40 ml-0.5">/mnd</span>
+              <span className="text-xs font-normal text-ink-3 ml-0.5">/mnd</span>
             </p>
           </div>
         ))}
@@ -195,7 +195,7 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
               "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors",
               filter === f.value
                 ? "bg-foreground text-primary-foreground"
-                : "bg-card text-foreground/60",
+                : "bg-surface text-ink-2",
             )}
           >
             {f.label}
@@ -204,7 +204,7 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
       </div>
 
       {noResults ? (
-        <div className="rounded-2xl bg-card py-16 text-center text-muted-foreground">
+        <div className="rounded-card bg-surface py-16 text-center text-ink-3">
           <p className="text-sm">No fixed costs found</p>
         </div>
       ) : (
@@ -269,10 +269,10 @@ export function MobileRecurringList({ items, categories = [], search }: Props) {
               <SectionHeader label="Dismissed" />
               <div className="space-y-3">
                 {dismissedItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 rounded-2xl bg-card px-5 py-4 opacity-70">
+                  <div key={item.id} className="flex items-center gap-4 rounded-card bg-surface px-5 py-4 opacity-70">
                     <div className="flex-1 min-w-0">
                       <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
-                      <p className="text-sm text-foreground/50 mt-0.5 truncate">
+                      <p className="text-sm text-ink-3 mt-0.5 truncate">
                         {item.matchPattern ? `Pattern: ${item.matchPattern}` : "Won't be auto-detected again"}
                       </p>
                     </div>

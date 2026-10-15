@@ -90,7 +90,7 @@ export function BankAddClient() {
             onChange={(v) => set("cardType", v)}
             options={CARD_TYPE_OPTIONS}
             title="Card type"
-            triggerClassName="bg-foreground/3 px-3.5"
+            triggerClassName="bg-surface-2 px-3.5"
           />
         </FormField>
 
@@ -104,7 +104,7 @@ export function BankAddClient() {
             onChange={(e) => set("startingBalance", e.target.value)}
             placeholder="0"
           />
-          <p className="text-xs text-foreground/50 mt-1">
+          <p className="text-xs text-ink-3 mt-1">
             Added to this account&apos;s balance, but never affects reports.
           </p>
         </FormField>
@@ -119,9 +119,9 @@ export function BankAddClient() {
             onChange={(v) => set("transferKind", v)}
             options={TRANSFER_KIND_OPTIONS}
             title="Transfer type"
-            triggerClassName="bg-foreground/3 px-3.5"
+            triggerClassName="bg-surface-2 px-3.5"
           />
-          <p className="text-xs text-foreground/50 mt-1">
+          <p className="text-xs text-ink-3 mt-1">
             Transfers to/from this account auto-tag with this type in transaction lists.
           </p>
         </FormField>

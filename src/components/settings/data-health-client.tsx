@@ -85,20 +85,20 @@ export function DataHealthClient({ rows, panelHeader = true }: { rows: BrokenDat
       {panelHeader && <PanelHeader title={t("title")} />}
       <div className="px-4 pt-1 pb-8 space-y-4">
         {rows.length === 0 ? (
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] py-16 text-center">
-            <IconCircleCheck className="size-10 mx-auto text-green-600" />
-            <p className="text-sm text-muted-foreground mt-3">{t("allClear")}</p>
+          <div className="rounded-card bg-[var(--dialog-content-background)] py-16 text-center">
+            <IconCircleCheck className="size-10 mx-auto text-positive" />
+            <p className="text-sm text-ink-3 mt-3">{t("allClear")}</p>
           </div>
         ) : (
           <>
-            <div className="rounded-2xl bg-[var(--dialog-content-background)] p-4 space-y-1">
+            <div className="rounded-card bg-[var(--dialog-content-background)] p-4 space-y-1">
               <p className="font-semibold">{t("brokenDatesTitle", { count: rows.length })}</p>
-              <p className="text-sm text-muted-foreground">{t("brokenDatesBody")}</p>
+              <p className="text-sm text-ink-3">{t("brokenDatesBody")}</p>
             </div>
 
             <div className="space-y-3">
               {rows.map((row) => (
-                <div key={row.id} className="rounded-2xl bg-[var(--dialog-content-background)] p-4 space-y-3">
+                <div key={row.id} className="rounded-card bg-[var(--dialog-content-background)] p-4 space-y-3">
                   <div className="flex items-start gap-3">
                     <input
                       type="checkbox"
@@ -109,7 +109,7 @@ export function DataHealthClient({ rows, panelHeader = true }: { rows: BrokenDat
                     />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate">{row.description || "—"}</p>
-                      <p className="text-sm text-muted-foreground tabular-nums">
+                      <p className="text-sm text-ink-3 tabular-nums">
                         {formatEur(row.direction === "expense" ? -row.amount : row.amount)}
                         {row.account ? ` · ${row.account}` : ""}
                       </p>

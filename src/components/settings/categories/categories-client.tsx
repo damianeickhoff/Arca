@@ -86,7 +86,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
             <button
               type="button"
               onClick={() => setEditMode((m) => !m)}
-              className="px-4 h-9 rounded-full bg-white dark:bg-white/7 text-sm font-medium text-foreground active:scale-[0.97] transition-transform"
+              className="px-4 h-9 rounded-full bg-white dark:bg-white/7 text-sm font-medium text-ink active:scale-[0.97] transition-transform"
             >
               {editMode ? "Done" : "Edit"}
             </button>
@@ -99,7 +99,7 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
           searchResults.length === 0 ? (
             <EmptyState label="No categories found" />
           ) : (
-            <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
+            <div className="rounded-card bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
               {searchResults.map((cat) => (
                 <CategoryRow key={cat.id} cat={cat} categories={categories} onSelect={openDetail} />
               ))}
@@ -115,18 +115,18 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
                 <StaggerItem key={parent.id} index={i}>
                   <section>
                     <div className="flex items-center justify-between px-3 mb-2">
-                      <h2 className="text-sm font-medium text-muted-foreground">{parent.name}</h2>
+                      <h2 className="text-sm font-medium text-ink-3">{parent.name}</h2>
                       {children.length > 0 && (
                         <button
                           type="button"
                           onClick={() => openDetail(parent)}
-                          className="text-sm font-medium text-muted-foreground active:opacity-70"
+                          className="text-sm font-medium text-ink-3 active:opacity-70"
                         >
                           Edit
                         </button>
                       )}
                     </div>
-                    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
+                    <div className="rounded-card bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
                       {children.length > 0 ? (
                         children.map((child) => (
                           <CategoryRow key={child.id} cat={child} categories={categories} indent onSelect={openDetail} />
@@ -149,12 +149,12 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
       <div className="absolute inset-x-0 bottom-[calc(1.5rem+var(--sab))] px-4 z-30">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-ink-3 pointer-events-none" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search categories"
-              className="h-14 w-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-muted-foreground"
+              className="h-14 w-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-ink-3"
             />
           </div>
           <CategoryClient
@@ -208,17 +208,17 @@ function CategoryRow({
     <button
       type="button"
       onClick={() => onSelect(cat)}
-      className="block w-full text-left active:bg-foreground/5 transition-colors"
+      className="block w-full text-left active:bg-surface-2 transition-colors"
     >
       <div className={cn("flex items-center gap-3 py-3.5", indent ? "px-4" : "px-4")}>
         <Icon iconKey={cat.icon} color={resolveCategoryColor(cat, categories)} round size={indent ? "lg" : "xl"} />
         <div className="min-w-0 flex-1">
-          <p className={cn("font-semibold text-foreground truncate", indent ? "text-base" : "text-lg")}>{cat.name}</p>
+          <p className={cn("font-semibold text-ink truncate", indent ? "text-base" : "text-lg")}>{cat.name}</p>
           {cat.budgetType && (
-            <p className="text-sm text-muted-foreground">{BUDGET_TYPE_LABELS[cat.budgetType] ?? cat.budgetType}</p>
+            <p className="text-sm text-ink-3">{BUDGET_TYPE_LABELS[cat.budgetType] ?? cat.budgetType}</p>
           )}
         </div>
-        <ChevronRight className="size-5 text-muted-foreground shrink-0" />
+        <ChevronRight className="size-5 text-ink-3 shrink-0" />
       </div>
     </button>
   );
@@ -231,20 +231,20 @@ function AddSubcategoryRow({ parent, categories }: { parent: Category; categorie
       variant="custom"
       categories={categories}
       defaultParentId={parent.id}
-      className="flex items-center gap-3 px-4 py-3.5 w-full text-left active:bg-foreground/5 transition-colors"
+      className="flex items-center gap-3 px-4 py-3.5 w-full text-left active:bg-surface-2 transition-colors"
     >
       <span className="size-10 rounded-full bg-white/7 flex items-center justify-center shrink-0">
         <Plus className="size-5" />
       </span>
-      <span className="flex-1 text-base font-semibold text-muted-foreground">Add subcategory</span>
-      <ChevronRight className="size-5 text-muted-foreground shrink-0" />
+      <span className="flex-1 text-base font-semibold text-ink-3">Add subcategory</span>
+      <ChevronRight className="size-5 text-ink-3 shrink-0" />
     </CategoryClient>
   );
 }
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="rounded-2xl bg-card py-16 text-center text-muted-foreground">
+    <div className="rounded-card bg-surface py-16 text-center text-ink-3">
       <p className="text-sm">{label}</p>
     </div>
   );

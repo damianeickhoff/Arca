@@ -108,8 +108,8 @@ export default async function SettingsPage({
             </div>
           </ScrollStickyHeader>
           <div className="px-5 pb-3 pt-3">
-            <h1 className="text-2xl font-black tracking-tight text-foreground">{TAB_TITLES[tab] ?? "Settings"}</h1>
-            <p className="text-sm text-foreground/60">{TAB_SUBTITLES[tab] ?? ""}</p>
+            <h1 className="text-2xl font-black tracking-tight text-ink">{TAB_TITLES[tab] ?? "Settings"}</h1>
+            <p className="text-sm text-ink-2">{TAB_SUBTITLES[tab] ?? ""}</p>
           </div>
         </>
       )}
@@ -128,21 +128,21 @@ export default async function SettingsPage({
           <>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="rounded-lg bg-card p-4">
-                <p className="text-xs text-foreground/60 mb-1">Income / mnd</p>
-                <p className="text-xl font-medium tabular-nums text-foreground">{formatEur(totalIncome)}</p>
+              <div className="rounded-tile bg-surface p-4">
+                <p className="text-xs text-ink-2 mb-1">Income / mnd</p>
+                <p className="text-xl font-medium tabular-nums text-ink">{formatEur(totalIncome)}</p>
               </div>
-              <div className="rounded-lg bg-card p-4">
-                <p className="text-xs text-foreground/60 mb-1">Cost / mo</p>
-                <p className="text-xl font-medium tabular-nums text-foreground">{formatEur(totalCosts)}</p>
+              <div className="rounded-tile bg-surface p-4">
+                <p className="text-xs text-ink-2 mb-1">Cost / mo</p>
+                <p className="text-xl font-medium tabular-nums text-ink">{formatEur(totalCosts)}</p>
               </div>
-              <div className="rounded-lg bg-card p-4">
-                <p className="text-xs text-foreground/60 mb-1">Savings / mo</p>
-                <p className="text-xl font-medium tabular-nums text-foreground">{formatEur(totalMonthlySavings)}</p>
+              <div className="rounded-tile bg-surface p-4">
+                <p className="text-xs text-ink-2 mb-1">Savings / mo</p>
+                <p className="text-xl font-medium tabular-nums text-ink">{formatEur(totalMonthlySavings)}</p>
               </div>
-              <div className={`rounded-lg bg-card p-4`}>
-                <p className="text-xs text-foreground/60 mb-1">Net disposable</p>
-                <p className={`text-xl font-medium tabular-nums ${netto >= 0 ? "text-green-600" : "text-red-600"}`}>{formatEur(netto)}</p>
+              <div className={`rounded-card bg-surface p-4`}>
+                <p className="text-xs text-ink-2 mb-1">Net disposable</p>
+                <p className={`text-xl font-medium tabular-nums ${netto >= 0 ? "text-positive" : "text-negative"}`}>{formatEur(netto)}</p>
               </div>
             </div>
 

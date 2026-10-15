@@ -39,11 +39,11 @@ export function VermogenSection({ initialAccounts }: { initialAccounts: Vermogen
   const grandTotal = Object.values(totalByType).reduce((s, v) => s + v, 0);
 
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-semibold text-lg mb-1">Asset accounts</h2>
-          <p className="text-sm text-foreground/60">Tracked manually for the net worth calculation.</p>
+          <p className="text-sm text-ink-2">Tracked manually for the net worth calculation.</p>
         </div>
         {/* Adding now navigates to the routed subpage (shared form style). */}
         <FloatingAddButton href="/settings/accounts/vermogen/add" ariaLabel="Add asset account" />
@@ -52,7 +52,7 @@ export function VermogenSection({ initialAccounts }: { initialAccounts: Vermogen
       {/* Total */}
       {accounts.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          <div className="flex items-center gap-1.5 rounded-sm px-3 py-3 text-xs font-semibold bg-foreground/3 text-foreground">
+          <div className="flex items-center gap-1.5 rounded-sm px-3 py-3 text-xs font-semibold bg-surface-2 text-ink">
             Total: {formatEurSimple(grandTotal)}
           </div>
         </div>
@@ -67,24 +67,24 @@ export function VermogenSection({ initialAccounts }: { initialAccounts: Vermogen
       ) : (
         <div className="space-y-3">
           {accounts.map((account) => (
-            <div key={account.id} className="py-3.5 px-5 rounded-xl bg-foreground/3 flex items-center gap-3">
-              <div className="size-14 rounded-full bg-white dark:bg-white/10 text-foreground flex items-center justify-center shrink-0">
+            <div key={account.id} className="py-3.5 px-5 rounded-row bg-surface-2 flex items-center gap-3">
+              <div className="size-14 rounded-full bg-white dark:bg-white/10 text-ink flex items-center justify-center shrink-0">
                 <Wallet className="size-6" />
               </div>
               <div className={`flex-1 min-w-0 ${!account.active ? "opacity-50" : ""}`}>
                 <p className="font-semibold text-base truncate">{account.name}</p>
-                <p className="text-sm text-foreground/60 mt-0.5 truncate">
+                <p className="text-sm text-ink-2 mt-0.5 truncate">
                   {vermogenTypeLabel(account.type)}
                   {!account.active && " · Inactive"}
                   {account.lastUpdated && ` · ${new Date(account.lastUpdated + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`}
                 </p>
               </div>
-              <span className="tabular-nums font-semibold text-sm text-foreground shrink-0">
+              <span className="tabular-nums font-semibold text-sm text-ink shrink-0">
                 {formatEurSimple(account.value)}
               </span>
               <button
                 onClick={() => setEditing(account)}
-                className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-foreground rounded-sm bg-foreground/5 hover:text-foreground shrink-0 size-9 cursor-pointer"
+                className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-ink rounded-sm bg-surface-2 hover:text-ink shrink-0 size-9 cursor-pointer"
               >
                 <EllipsisVertical className="size-4" />
               </button>
@@ -114,11 +114,11 @@ export function LinkedBanksSection({ initialBanks }: { initialBanks: Bank[] }) {
   useEffect(() => { setBankList(initialBanks); }, [initialBanks]);
 
   return (
-    <div className="rounded-2xl bg-card p-5">
+    <div className="rounded-card bg-surface p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h2 className="font-semibold text-lg mb-1">Linked accounts</h2>
-          <p className="text-sm text-foreground/60">
+          <p className="text-sm text-ink-2">
             Used for CSV imports and category rules.
           </p>
         </div>
@@ -137,7 +137,7 @@ export function LinkedBanksSection({ initialBanks }: { initialBanks: Bank[] }) {
           {bankList.map((bank) => (
             <ListItemRow
               key={bank.id}
-              className="rounded-xl bg-foreground/3"
+              className="rounded-row bg-surface-2"
               icon={<Icon iconKey="IconBuildingBank" round size="xxl" />}
               name={bank.displayName ?? bank.accountNumber ?? `Bank ${bank.id}`}
               subtitle={[
@@ -148,7 +148,7 @@ export function LinkedBanksSection({ initialBanks }: { initialBanks: Bank[] }) {
               right={
                 <button
                   onClick={() => setEditing(bank)}
-                  className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-foreground rounded-sm bg-foreground/5 hover:text-foreground shrink-0 size-9 cursor-pointer"
+                  className="flex items-center justify-center p-1.5 rounded hover:bg-foreground/10 text-ink rounded-sm bg-surface-2 hover:text-ink shrink-0 size-9 cursor-pointer"
                 >
                   <EllipsisVertical className="size-4" />
                 </button>

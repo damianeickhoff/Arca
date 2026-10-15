@@ -31,7 +31,7 @@ export function UsersClient({ users: initialUsers, currentUserId }: Props) {
           />
         ))}
         {users.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-6">No users yet.</p>
+          <p className="text-sm text-ink-3 text-center py-6">No users yet.</p>
         )}
       </div>
     </>
@@ -73,24 +73,24 @@ function UserRow({
   }
 
   return (
-    <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3.5">
+    <div className="rounded-card bg-[var(--dialog-content-background)] px-4 py-3.5">
       <div className="flex items-center gap-4">
-        <span className="flex size-12 items-center justify-center rounded-2xl bg-blue-600 text-white shrink-0">
+        <span className="flex size-12 items-center justify-center rounded-full bg-mustard text-mustard-ink shrink-0">
           <IconUserFilled className="size-6" />
         </span>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-lg truncate leading-tight">{user.name}</p>
-          <p className="text-sm text-foreground/50 truncate mt-0.5">{user.email}</p>
+          <p className="text-sm text-ink-3 truncate mt-0.5">{user.email}</p>
         </div>
         {isSelf ? (
-          <span className="text-xs text-foreground/40 shrink-0">You</span>
+          <span className="text-xs text-ink-3 shrink-0">You</span>
         ) : (
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={toggleAdmin}
               disabled={pending}
-              className="inline-flex items-center rounded-full bg-foreground/8 text-foreground/70 text-xs font-semibold px-2.5 py-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
+              className="inline-flex items-center rounded-full bg-foreground/8 text-ink-2 text-xs font-semibold px-2.5 py-1.5 active:scale-[0.97] transition-transform disabled:opacity-50"
             >
               {user.isAdmin ? "Admin" : "User"}
             </button>
