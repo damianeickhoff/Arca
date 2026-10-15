@@ -88,6 +88,57 @@
   --shadow-raised: var(--elevation-raised);
   --shadow-floating: var(--elevation-floating);
   --shadow-overlay: var(--elevation-overlay);
+
+  /* ── Clear design tokens (the redesign — see "Clear design system" in AGENTS.md) ──
+     Namespaced clear-* so they can live next to the mustard tokens while screens
+     migrate; source values live in :root / .dark as --clr-* (different names, so
+     nothing here references itself). Delete the mustard set once nothing uses it. */
+  --font-clear: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --color-clear-ground: var(--clr-ground);
+  --color-clear-card: var(--clr-card);
+  --color-clear-tile: var(--clr-tile);
+  --color-clear-line: var(--clr-line);
+  --color-clear-ink: var(--clr-ink);
+  --color-clear-ink-2: var(--clr-ink-2);
+  --color-clear-muted: var(--clr-muted);
+  --color-clear-placeholder: var(--clr-placeholder);
+  --color-clear-hero: var(--clr-hero);
+  --color-clear-hero-ink: var(--clr-hero-ink);
+  --color-clear-hero-ink-2: var(--clr-hero-ink-2);
+  --color-clear-primary: var(--clr-primary);
+  --color-clear-primary-ink: var(--clr-primary-ink);
+  --color-clear-ember: var(--clr-ember);
+  --color-clear-ember-ink: var(--clr-ember-ink);
+  --color-clear-ember-text: var(--clr-ember-text);
+  --color-clear-mint: var(--clr-mint);
+  --color-clear-mint-ink: var(--clr-mint-ink);
+  --color-clear-peach: var(--clr-peach);
+  --color-clear-peach-ink: var(--clr-peach-ink);
+  --color-clear-sky: var(--clr-sky);
+  --color-clear-sky-ink: var(--clr-sky-ink);
+  --color-clear-lilac: var(--clr-lilac);
+  --color-clear-lilac-ink: var(--clr-lilac-ink);
+  --color-clear-butter: var(--clr-butter);
+  --color-clear-butter-ink: var(--clr-butter-ink);
+  --color-clear-rose: var(--clr-rose);
+  --color-clear-rose-ink: var(--clr-rose-ink);
+  --color-clear-stone: var(--clr-stone);
+  --color-clear-stone-ink: var(--clr-stone-ink);
+  --color-clear-positive: var(--clr-positive);
+  --color-clear-positive-fill: var(--clr-positive-fill);
+  --color-clear-negative: var(--clr-negative);
+  --color-clear-negative-fill: var(--clr-negative-fill);
+  --color-clear-warning: var(--clr-warning);
+  --color-clear-warning-fill: var(--clr-warning-fill);
+  --color-clear-info: var(--clr-info);
+  --color-clear-info-fill: var(--clr-info-fill);
+  --radius-clear-card: 24px;   /* cards and panels */
+  --radius-clear-dialog: 28px; /* dialogs, sheets, the auth card */
+  --radius-clear-tile: 16px;   /* tiles inside a card, banners, notices */
+  --radius-clear-row: 14px;    /* list-row highlight, menu items, inputs, table header */
+  --radius-clear-icon: 12px;   /* icon tiles, small swatches */
+  --shadow-clear-dialog: var(--clr-shadow-dialog);
+  --shadow-clear-float: var(--clr-shadow-float);
 }
 
 :root {
@@ -136,6 +187,53 @@
   --arca-shadow-float: 0 12px 32px rgba(30, 26, 20, 0.12);
   /* Category icon wash: the category colour at this strength behind its own glyph. */
   --arca-icon-wash: 13%;
+
+  /* ── Clear palette — light. Source of the clear-* theme tokens above. ── */
+  --clr-ground: #F1F1F3;
+  --clr-card: #FFFFFF;
+  --clr-tile: #F6F6F8;
+  --clr-line: #E8E8EC;
+  --clr-ink: #111113;
+  --clr-ink-2: #52525B;
+  --clr-muted: #6B6B76;
+  --clr-placeholder: #8A8A96;
+  /* The "answer" card (Safe to spend): black in light mode, inverted in dark mode. */
+  --clr-hero: #111113;
+  --clr-hero-ink: #FFFFFF;
+  --clr-hero-ink-2: rgba(255, 255, 255, 0.72);
+  --clr-primary: #111113;
+  --clr-primary-ink: #FFFFFF;
+  /* Ember is a fill. Text on it is always ink; orange text on a card uses ember-text. */
+  --clr-ember: #FF5B2E;
+  --clr-ember-ink: #111113;
+  --clr-ember-text: #C2410C;
+  --clr-mint: #DDF4E4;
+  --clr-mint-ink: #0E7A3D;
+  --clr-peach: #FFE4D9;
+  --clr-peach-ink: #B4361A;
+  --clr-sky: #E2EAFD;
+  --clr-sky-ink: #2A4FB8;
+  --clr-lilac: #ECE5FB;
+  --clr-lilac-ink: #6A3DB8;
+  --clr-butter: #FFF2C2;
+  --clr-butter-ink: #8A6100;
+  --clr-rose: #FCE3EE;
+  --clr-rose-ink: #B0245E;
+  --clr-stone: #ECECEF;
+  --clr-stone-ink: #3F3F46;
+  --clr-positive: #0E7A3D;
+  --clr-positive-fill: #12A150;
+  --clr-negative: #C4292E;
+  --clr-negative-fill: #E5484D;
+  --clr-warning: #A35F00;
+  --clr-warning-fill: #F5A524;
+  --clr-info: #2A4FB8;
+  --clr-info-fill: #3D63DD;
+  /* Hatch = "still available / projected" on bars (see the clear-hatch utility). */
+  --clr-hatch-stripe: #FFC9B8;
+  --clr-hatch-gap: #FFFFFF;
+  --clr-shadow-dialog: 0 30px 80px rgba(17, 17, 19, 0.3);
+  --clr-shadow-float: 0 16px 40px rgba(17, 17, 19, 0.22);
 
   /* Motion — the house easing curve (matches .nav-pill-indicator / search-*-in)
      and the standard duration scale. Spring physics live in src/lib/motion.ts.
@@ -250,6 +348,25 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   color: var(--arca-ink-3);
 }
 
+/* ── Clear type and fill roles ─────────────────────────────────────────────────
+   clear-amount — every money figure in the redesign: Plus Jakarta Sans 800, tight
+                  tracking, tabular digits (tabular-nums also drives privacy blur).
+   clear-hatch  — the diagonal stripes for "still available / projected" on bars. */
+@utility clear-amount {
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+@utility clear-hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--clr-hatch-stripe) 0 3px,
+    var(--clr-hatch-gap) 3px 7px
+  );
+}
+
 .dark {
   /* ── Mustard palette — dark. Accent text stays dark ink on the mustard fill. ── */
   --arca-bg: #16130F;
@@ -274,6 +391,48 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   --arca-shadow-card: none;
   --arca-shadow-float: 0 12px 32px rgba(0, 0, 0, 0.5);
   --arca-icon-wash: 20%;
+
+  /* ── Clear palette — dark. The hero inverts to a light card; ember text stays ink. ── */
+  --clr-ground: #0B0B0D;
+  --clr-card: #17171A;
+  --clr-tile: #202024;
+  --clr-line: #2A2A30;
+  --clr-ink: #F4F4F5;
+  --clr-ink-2: #C4C4CC;
+  --clr-muted: #9A9AA5;
+  --clr-placeholder: #7A7A85;
+  --clr-hero: #F4F4F5;
+  --clr-hero-ink: #111113;
+  --clr-hero-ink-2: rgba(17, 17, 19, 0.65);
+  --clr-primary: #F4F4F5;
+  --clr-primary-ink: #111113;
+  --clr-ember-text: #FF9F80;
+  --clr-mint: #12301F;
+  --clr-mint-ink: #6EE7A0;
+  --clr-peach: #3A1C12;
+  --clr-peach-ink: #FF9F80;
+  --clr-sky: #172445;
+  --clr-sky-ink: #9DB7FF;
+  --clr-lilac: #2A1E44;
+  --clr-lilac-ink: #C3A8FF;
+  --clr-butter: #3A300E;
+  --clr-butter-ink: #F5D46B;
+  --clr-rose: #3D1426;
+  --clr-rose-ink: #FF8FBF;
+  --clr-stone: #26262B;
+  --clr-stone-ink: #D4D4DA;
+  --clr-positive: #6EE7A0;
+  --clr-positive-fill: #34C46E;
+  --clr-negative: #FF8A80;
+  --clr-negative-fill: #FF6B6B;
+  --clr-warning: #F5D46B;
+  --clr-warning-fill: #F5A524;
+  --clr-info: #9DB7FF;
+  --clr-info-fill: #6E8FF5;
+  --clr-hatch-stripe: #FF5B2E;
+  --clr-hatch-gap: #3A1C12;
+  --clr-shadow-dialog: 0 30px 80px rgba(0, 0, 0, 0.6);
+  --clr-shadow-float: 0 16px 40px rgba(0, 0, 0, 0.55);
 
   /* Every legacy token that points at an --arca-* value follows automatically; only
      the ones whose dark value differs from that mapping are restated here. */

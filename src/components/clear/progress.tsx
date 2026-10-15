@@ -1,0 +1,51 @@
+import { cn } from "@/lib/utils";
+
+function pct(n: number) {
+  return `${Math.max(0, Math.min(100, n * 100))}%`;
+}
+
+/**
+ * The Clear progress bar. `value` (0–1) is the solid part — spent or saved — and
+ * `reserved` (0–1) an optional hatched part right after it for money that is already
+ * spoken for (bills still to come, projected savings). `marker` (0–1) draws a thin
+ * line, e.g. "today" in the budget period. With `hatchRemainder` the whole empty
+ * track is hatched instead ("still available").
+ *
+ * `fillClassName` overrides the fill colour (category colours, negative when over).
+ * The bar is decorative; put the numbers it shows in text next to it.
+ */
+export function ClearProgress({
+  value,
+  reserved = 0,
+  marker,
+  hatchRemainder = false,
+  size = "md",
+  onHero = false,
+  className,
+  fillClassName,
+}: {
+  value: number;
+  reserved?: number;
+  marker?: number;
+  hatchRemainder?: boolean;
+  size?: "sm" | "md" | "lg";
+  onHero?: boolean;
+  className?: string;
+  fillClassName?: string;
+}) {
+  const height = size === "sm" ? "h-1.5" : size === "lg" ? "h-3.5" : "h-3";
+  const track = hatchRemainder ? "clear-hatch" : onHero ? "bg-clear-hero-ink/12" : "bg-clear-ground";
+
+  return (
+    <div aria-hidden className={cn("relative flex overflow-hidden rounded-full", height, track, className)}>
+      <span className={cn("h-full rounded-full bg-clear-ember", fillClassName)} style={{ width: pct(value) }} />
+      {reserved > 0 && <span className="clear-hatch h-full" style={{ width: pct(reserved) }} />}
+      {marker != null && (
+        <span
+          className={cn("absolute -inset-y-0.5 w-0.5", onHero ? "bg-clear-hero-ink" : "bg-clear-ink")}
+          style={{ left: pct(marker) }}
+        />
+      )}
+    </div>
+  );
+}

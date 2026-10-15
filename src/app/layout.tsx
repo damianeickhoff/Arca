@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, DM_Mono } from "next/font/google";
+import { DM_Sans, DM_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { MainContent } from "@/components/main-content";
 import { AppShell, type ShellAccount } from "@/components/shell/app-shell";
@@ -36,6 +36,9 @@ import { FinishTransitionOverlay } from "@/components/finish-transition-overlay"
 // @theme keys in globals.css (--font-sans / --font-mono), or the CSS build recurses.
 const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"], axes: ["opsz"] });
 const dmMono = DM_Mono({ variable: "--font-dm-mono", subsets: ["latin"], weight: ["400", "500"] });
+// Plus Jakarta Sans is the Clear redesign's only typeface (the font-clear utility). Like
+// the DM fonts, its variable name must differ from the --font-clear @theme key.
+const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Arca",
@@ -123,7 +126,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // race the page's own queries and the first render would show stale data).
 
   return (
-    <html lang={locale} suppressHydrationWarning className={`${dmSans.variable} ${dmMono.variable}`}>
+    <html lang={locale} suppressHydrationWarning className={`${dmSans.variable} ${dmMono.variable} ${jakarta.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{__html:`(function(){var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}})()` }} />
       </head>
