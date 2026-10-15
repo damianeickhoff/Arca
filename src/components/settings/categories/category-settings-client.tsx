@@ -20,7 +20,7 @@ import { ColorPicker } from "@/components/color-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { OptionDropdown } from "@/components/option-dropdown";
 import { cn } from "@/lib/utils";
-import { SHEET_COLUMN, SHEET_FIXED } from "@/components/page-container";
+import { SHEET_COLUMN } from "@/components/page-container";
 import { normalizeBudgetType, ruleAmountLabel } from "@/lib/format";
 
 const PRESET_COLORS = [
@@ -388,7 +388,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
           the bar reads as a visibly blacker patch than the rest of the sheet. */}
       <div
         className={cn(
-          SHEET_FIXED,
+          SHEET_COLUMN,
           "fixed bottom-0 inset-x-0 px-4 pb-[calc(1rem+var(--sab))] pt-3 bg-gradient-to-t to-transparent",
           onClose ? "from-bg-[var(--dialog-background)] via-bg-[var(--dialog-background)]" : "from-background via-background",
         )}

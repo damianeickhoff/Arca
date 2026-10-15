@@ -23,7 +23,7 @@ export function StatTile({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-3 rounded-[18px] p-[18px] font-clear",
+        "flex min-w-0 flex-col gap-2.5 rounded-[18px] p-4 font-clear",
         highlight ? "bg-clear-ember text-clear-ember-ink" : "bg-clear-tile text-clear-ink",
         className,
       )}

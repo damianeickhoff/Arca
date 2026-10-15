@@ -73,9 +73,9 @@ function cardClass() {
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className={cardClass()}>
-      <p className="text-md font-medium text-foreground/60">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-foreground tabular-nums truncate">{value}</p>
-      {sub && <p className="mt-auto text-sm text-foreground/50 leading-snug">{sub}</p>}
+      <p className="text-md font-medium text-clear-ink/60">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-clear-ink tabular-nums truncate">{value}</p>
+      {sub && <p className="mt-auto text-sm text-clear-ink/50 leading-snug">{sub}</p>}
     </div>
   );
 }
@@ -91,7 +91,7 @@ function YearlyTrend({ points, color }: { points: MerchantDetail["yearly"]; colo
       <div className="flex items-end justify-between gap-2 h-32">
         {points.map((p) => (
           <div key={p.year} className="flex-1 flex flex-col items-center justify-end gap-1.5 h-full min-w-0">
-            <span className="text-[10px] tabular-nums text-foreground/50 truncate">{formatEur(p.amount)}</span>
+            <span className="text-xs tabular-nums text-clear-muted truncate">{formatEur(p.amount)}</span>
             <div
               className="w-full rounded-md"
               style={{
@@ -105,7 +105,7 @@ function YearlyTrend({ points, color }: { points: MerchantDetail["yearly"]; colo
       </div>
       <div className="flex justify-between gap-2 mt-2">
         {points.map((p) => (
-          <span key={p.year} className="flex-1 text-center text-xs text-foreground/50 tabular-nums">{p.year}</span>
+          <span key={p.year} className="flex-1 text-center text-xs text-clear-ink/50 tabular-nums">{p.year}</span>
         ))}
       </div>
     </div>
@@ -131,7 +131,7 @@ function CategoryMix({ slices }: { slices: MerchantDetail["categories"] }) {
             <Icon iconKey={s.icon} color={s.color} size="sm" round />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{s.categoryName}</p>
-              <p className="text-xs text-foreground/50 tabular-nums">
+              <p className="text-xs text-clear-ink/50 tabular-nums">
                 {s.visits} {s.visits === 1 ? "visit" : "visits"} · {formatEur(s.amount)}
               </p>
             </div>
@@ -144,7 +144,7 @@ function CategoryMix({ slices }: { slices: MerchantDetail["categories"] }) {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <p className="px-1 pb-2 text-sm font-medium text-foreground/60">{children}</p>;
+  return <p className="px-1 pb-2 text-sm font-medium text-clear-ink/60">{children}</p>;
 }
 
 /** Full-screen merchant profile — the same presentation as CategoryDetailPortal
@@ -291,7 +291,7 @@ export function MerchantDetailPortal({
         transactionId={openTransactionId}
         onClose={() => { setOpenTransactionId(null); setRefreshKey((k) => k + 1); }}
         sheetClassName="z-[75]"
-        overlayClassName="z-[75] backdrop-blur-lg bg-foreground/20"
+        overlayClassName="z-[75] backdrop-blur-lg bg-clear-primary/20"
       />
       {mounted &&
         createPortal(
@@ -352,7 +352,7 @@ export function MerchantDetailPortal({
                 >
                   <IconChevronLeft className="size-5" />
                 </button>
-                <h1 className="text-lg text-foreground text-center truncate">{detail?.name ?? merchant?.name}</h1>
+                <h1 className="text-lg text-clear-ink text-center truncate">{detail?.name ?? merchant?.name}</h1>
                 <div className="flex items-center justify-end gap-2">
                   {/* modal={false}: this portal owns the body-scroll lock, same race as
                       the one documented in category-detail-portal.tsx. */}
@@ -387,7 +387,7 @@ export function MerchantDetailPortal({
                   <div className={cn(SHEET_COLUMN, "pb-[calc(2rem+var(--sab))]")}>
                     <div className="flex items-start justify-between px-4">
                       <div>
-                        <p className="text-lg text-foreground/60">Total spent</p>
+                        <p className="text-lg text-clear-ink/60">Total spent</p>
                         <p className="text-4xl font-semibold tabular-nums tracking-tight mt-1">{formatEur(detail.totalSpent)}</p>
                       </div>
                       <Icon
@@ -475,7 +475,7 @@ export function MerchantDetailPortal({
                         )}
                       </>
                     ) : (
-                      <p className="mt-8 px-6 text-center text-sm text-foreground/50">
+                      <p className="mt-8 px-6 text-center text-sm text-clear-ink/50">
                         No expenses recorded for this merchant yet.
                       </p>
                     )}
@@ -495,11 +495,11 @@ export function MerchantDetailPortal({
               <div
                 data-dialog-keep-open=""
                 style={{ pointerEvents: "auto" }}
-                className="fixed inset-0 z-[72] bg-foreground/20 backdrop-blur-lg flex items-end sm:items-center justify-center"
+                className="fixed inset-0 z-[72] bg-clear-primary/20 backdrop-blur-lg flex items-end sm:items-center justify-center"
                 onClick={() => setRenameOpen(false)}
               >
                 <div
-                  className="w-full sm:max-w-sm m-4 rounded-2xl bg-background p-5 space-y-3 text-sm"
+                  className="w-full sm:max-w-sm m-4 rounded-2xl bg-clear-ground p-5 space-y-3 text-sm"
                   style={{ marginBottom: "calc(1rem + var(--sab))" }}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -508,13 +508,13 @@ export function MerchantDetailPortal({
                     type="text"
                     value={renameValue}
                     onChange={(e) => setRenameValue(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2 text-sm bg-background"
+                    className="w-full border rounded-lg px-3 py-2 text-sm bg-clear-ground"
                     autoFocus
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-clear-muted">
                     Renaming updates every transaction linked to this merchant.
                   </p>
-                  {renameError && <p className="text-xs text-destructive">{renameError}</p>}
+                  {renameError && <p className="text-xs text-clear-negative">{renameError}</p>}
                   <Button onClick={saveRename} disabled={renaming || !renameValue.trim()} className="w-full">
                     {renaming ? "Saving..." : "Save"}
                   </Button>

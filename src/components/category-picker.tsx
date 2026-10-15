@@ -29,7 +29,7 @@ import { filterPillClass } from "@/components/filter-pill";
 import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import { cn } from "@/lib/utils";
-import { SHEET_FIXED } from "@/components/page-container";
+import { SHEET_COLUMN } from "@/components/page-container";
 import { BUDGET_TYPE_LABELS, normalizeBudgetType } from "@/lib/format";
 import { CategoryClient } from "@/components/settings/categories/category-client";
 import { acquireNavHidden } from "@/lib/nav-visibility";
@@ -124,11 +124,11 @@ function FilterMenuItem({
     <DropdownMenuItem
       closeOnClick={false}
       onClick={onClick}
-      className={cn("mt-0.5 gap-2.5 py-2.5", active && "bg-card font-medium")}
+      className={cn("mt-0.5 gap-2.5 py-2.5", active && "bg-clear-card font-medium")}
     >
       {icon}
       <span className="flex-1">{label}</span>
-      {active && <Check className="size-4 text-foreground/60" />}
+      {active && <Check className="size-4 text-clear-ink/60" />}
     </DropdownMenuItem>
   );
 }
@@ -164,7 +164,7 @@ export function CategoryFilterMenu({
           triggerClassName ??
             cn(
               "size-9 rounded-full bg-white dark:bg-white/7",
-              isFiltered ? "bg-white dark:bg-white/7 text-primary-foreground" : "bg-white dark:bg-white/7 text-foreground",
+              isFiltered ? "bg-white dark:bg-white/7 text-clear-ember-ink" : "bg-white dark:bg-white/7 text-clear-ink",
             ),
         )}
       >
@@ -251,7 +251,7 @@ function CategoryLayoutToggle({
     { key: "grid", Icon: LayoutGrid, label: "Show as grid" },
   ];
   return (
-    <div className="inline-flex items-center gap-0.5 rounded-full bg-foreground/5 p-0.5">
+    <div className="inline-flex items-center gap-0.5 rounded-full bg-clear-primary/5 p-0.5">
       {options.map(({ key, Icon: OptIcon, label }) => (
         <button
           key={key}
@@ -261,7 +261,7 @@ function CategoryLayoutToggle({
           aria-pressed={value === key}
           className={cn(
             "flex items-center justify-center size-8 rounded-full transition-colors",
-            value === key ? "bg-card text-foreground" : "text-foreground/40 hover:text-foreground/70",
+            value === key ? "bg-clear-card text-clear-ink" : "text-clear-ink/40 hover:text-clear-ink/70",
           )}
         >
           <OptIcon className="size-4.5" />
@@ -288,14 +288,14 @@ export function CategorySearchBar({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       <div className="relative flex-1">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-foreground/40 pointer-events-none" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-clear-ink/40 pointer-events-none" />
         <input
           type="text"
           placeholder="Search"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           data-no-keyboard-scroll
-          className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-white/7 border border-foreground/10 backdrop-blur-xl backdrop-saturate-150 focus:outline-none"
+          className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-white/7 border border-clear-ink/10 backdrop-blur-xl backdrop-saturate-150 focus:outline-none"
         />
       </div>
       <CategoryClient action="add" variant="icon" categories={categories} />
@@ -368,30 +368,30 @@ function FloatingSearchBar({
       // portalled to <body>, so it would otherwise span the whole monitor instead of
       // lining up with the sheet it belongs to. Vertical position stays on `transform`
       // (see the rAF loop above), which the horizontal centring doesn't disturb.
-      className={cn(SHEET_FIXED, "fixed inset-x-0 top-0 px-4 z-[300] pointer-events-none")}
+      className={cn(SHEET_COLUMN, "fixed inset-x-0 top-0 px-4 z-[300] pointer-events-none")}
       // Off-screen until the first rAF frame positions it; will-change/translate3d
       // promote it to its own compositor layer so iOS repaints it on its own.
       style={{ transform: "translate3d(0, -9999px, 0)", willChange: "transform" }}
     >
       <div
         ref={barRef}
-        className="pointer-events-auto flex items-center h-13 rounded-full pl-4 pr-2 bg-white/7 border border-foreground/10 backdrop-blur-xl backdrop-saturate-180"
+        className="pointer-events-auto flex items-center h-13 rounded-full pl-4 pr-2 bg-white/7 border border-clear-ink/10 backdrop-blur-xl backdrop-saturate-180"
       >
-        <Search className="size-5 text-foreground/40 shrink-0" />
+        <Search className="size-5 text-clear-ink/40 shrink-0" />
         <input
           type="text"
           placeholder="Search category"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           data-no-keyboard-scroll
-          className="flex-1 min-w-0 bg-transparent px-3 outline-none placeholder:text-foreground/40"
+          className="flex-1 min-w-0 bg-transparent px-3 outline-none placeholder:text-clear-ink/40"
         />
         {search && (
           <button
             type="button"
             onClick={() => onSearchChange("")}
             aria-label="Clear search"
-            className="size-9 rounded-full flex items-center justify-center text-foreground/50 hover:bg-foreground/10 shrink-0"
+            className="size-9 rounded-full flex items-center justify-center text-clear-ink/50 hover:bg-clear-primary/10 shrink-0"
           >
             <X className="size-4.5" />
           </button>
@@ -510,7 +510,7 @@ export function CategoryGrid({
               />
             ))}
             {topLevel.length === 0 && (
-              <p className="col-span-full text-sm text-foreground/40 text-center py-6">No categories found</p>
+              <p className="col-span-full text-sm text-clear-ink/40 text-center py-6">No categories found</p>
             )}
           </div>
         ) : (
@@ -561,7 +561,7 @@ export function CategoryGrid({
           })}
 
           {topLevel.length === 0 && (
-            <p className="text-sm text-foreground/40 text-center py-6">No categories found</p>
+            <p className="text-sm text-clear-ink/40 text-center py-6">No categories found</p>
           )}
         </div>
         )}
@@ -602,14 +602,14 @@ function CategoryTile({
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-2 rounded-xl px-2 py-3 transition-colors cursor-pointer text-center",
-        active ? "bg-card ring-2 ring-primary" : "bg-[var(--dialog-content-background)] hover:bg-card",
+        active ? "bg-clear-card ring-2 ring-clear-ember" : "bg-[var(--dialog-content-background)] hover:bg-clear-card",
       )}
     >
       <Icon iconKey={iconKey ?? null} color={color ?? null} round size="lg" />
       <span
         className={cn(
           "block w-full text-xs leading-tight line-clamp-2",
-          active ? "font-semibold text-foreground" : "text-foreground",
+          active ? "font-semibold text-clear-ink" : "text-clear-ink",
         )}
       >
         {label}
@@ -641,24 +641,24 @@ function CategoryRow({
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 rounded-lg px-2 py-2 transition-colors cursor-pointer text-left",
-        active ? "bg-card" : "hover:bg-card",
+        active ? "bg-clear-card" : "hover:bg-clear-card",
       )}
     >
       <span
         className={cn(
           "size-4.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors",
-          active ? "border-primary" : "border-foreground/25",
+          active ? "border-clear-ember" : "border-clear-ink/25",
         )}
       >
-        {active && <span className="size-2.5 rounded-full bg-primary" />}
+        {active && <span className="size-2.5 rounded-full bg-clear-ember" />}
       </span>
       <Icon iconKey={iconKey ?? null} color={color ?? null} round size={iconSize} />
       <span className="flex-1 min-w-0">
-        <span className={cn("block text-sm truncate", active ? "font-semibold text-foreground" : "text-foreground")}>
+        <span className={cn("block text-sm truncate", active ? "font-semibold text-clear-ink" : "text-clear-ink")}>
           {label}
         </span>
         {budgetType && (
-          <span className="block text-xs text-foreground/40">
+          <span className="block text-xs text-clear-ink/40">
             {BUDGET_TYPE_LABELS[normalizeBudgetType(budgetType)] ?? budgetType}
           </span>
         )}
@@ -692,7 +692,7 @@ export function CategoryPickerSheet({
 }) {
   const [search, setSearch] = useState("");
   const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-foreground",
+    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-clear-ink",
   });
 
   useKeyboardSafePicker(open);
@@ -775,7 +775,7 @@ export function CategoryPicker({
     flat
       ? filterPillClass(isFiltered, "flex-1 min-w-0")
       : `flex items-center gap-2 text-sm font-normal rounded-full pl-3 pr-3 py-2 cursor-pointer ${
-          isFiltered ? "text-foreground" : "text-foreground/60"
+          isFiltered ? "text-clear-ink" : "text-clear-ink/60"
         }`,
     triggerClassName,
   );

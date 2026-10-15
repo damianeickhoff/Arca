@@ -38,8 +38,9 @@ export function ClearProgress({
 
   return (
     <div aria-hidden className={cn("relative flex overflow-hidden rounded-full", height, track, className)}>
-      <span className={cn("h-full rounded-full bg-clear-ember", fillClassName)} style={{ width: pct(value) }} />
-      {reserved > 0 && <span className="clear-hatch h-full" style={{ width: pct(reserved) }} />}
+      {/* With a reserved part the two meet flush; the track's own rounding caps the ends. */}
+      <span className={cn("h-full bg-clear-ember", reserved > 0 ? "rounded-none" : "rounded-full", fillClassName)} style={{ width: pct(value) }} />
+      {reserved > 0 && <span className={cn("h-full", onHero ? "clear-hatch-hero" : "clear-hatch")} style={{ width: pct(reserved) }} />}
       {marker != null && (
         <span
           className={cn("absolute -inset-y-0.5 w-0.5", onHero ? "bg-clear-hero-ink" : "bg-clear-ink")}

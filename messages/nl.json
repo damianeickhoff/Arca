@@ -493,33 +493,13 @@
       "title": "Deel een rekening die jij volledig betaalt",
       "body": "Geef aan welk deel huisgenoten of familie aan je terugbetalen. Je cashflow houdt het hele bedrag — dat gaat echt van je rekening af — terwijl rapporten alleen jouw eigen deel kunnen tonen."
     },
-    "newNavigation": {
-      "title": "Een nieuwe indeling",
-      "body": "Alles staat nu op vier plekken: Home, Activiteit, Plan (budget, schulden en doelen) en Inzichten. Een transactie voeg je toe met de ronde knop."
-    },
     "planHub": {
       "title": "Budget, schulden en doelen bij elkaar",
       "body": "Wissel hier tussen je budget, je schulden en je spaardoelen. Ze vallen nu allemaal onder Plan."
     },
-    "homeSafeToSpend": {
-      "title": "Vrij te besteden",
-      "body": "Wat er deze maand over is van je budget, en per dag tot het opnieuw begint. Kies Saldo om het vanuit je rekeningen te zien. De wijzerplaat telt de resterende dagen."
-    },
-    "homeQuickActions": {
-      "title": "Snelle acties",
-      "body": "Importeer een bankexport, voeg een transactie toe of scan een bon, direct vanaf Home."
-    },
-    "homeNudge": {
-      "title": "Een seintje",
-      "body": "Eén zin over hoe deze week zich verhoudt tot een gewone week, berekend uit je eigen uitgaven."
-    },
     "homeComingUp": {
       "title": "Binnenkort",
-      "body": "Rekeningen die deze maand nog betaald moeten worden. Tik op het rondje om er een als betaald te markeren."
-    },
-    "homeSpending": {
-      "title": "Uitgaven",
-      "body": "Elke categorie tegenover haar budget. De balk kleurt oranje als een categorie bijna op is."
+      "body": "De volgende rekeningen van deze maand, de eerste bovenaan. Via de link open je de hele lijst, waar je er een als betaald markeert."
     },
     "activityDetail": {
       "title": "Alles over een transactie",
@@ -592,6 +572,22 @@
     "insightsComingUp": {
       "title": "Wat er aankomt",
       "body": "De eerstvolgende geboekte en verwachte betalingen in je prognose. Open de kalender hieronder voor elke dag waarop er geld beweegt."
+    },
+    "homeSafeToSpendSum": {
+      "title": "Eén bedrag, met de som erbij",
+      "body": "Vrij te besteden is je budget min wat je hebt uitgegeven en de rekeningen die nog komen. De regel onder de balk laat precies die som zien."
+    },
+    "homeIncomeVsSpending": {
+      "title": "Inkomsten en uitgaven",
+      "body": "Zes budgetmaanden naast elkaar: geld erin als donkere staven, geld eruit gestreept. De uitgaven van deze maand zijn de oranje staaf."
+    },
+    "clearNavigation": {
+      "title": "Alles staat in de zijbalk",
+      "body": "Home, Activiteit, Plan en Inzichten staan links, met Importeren, Instellingen, het thema en Uitloggen eronder. Op je telefoon staan ze in de balk onderin."
+    },
+    "homeMoneyFlow": {
+      "title": "Geldstroom",
+      "body": "Geld erin en eruit deze maand, per dag opgeteld. Het verschil tussen de twee lijnen vandaag is wat je tot nu toe hebt overgehouden."
     }
   },
   "importMapping": {
@@ -686,13 +682,19 @@
       "goals": "Doelen"
     },
     "insights": "Inzichten",
-    "accounts": "Rekeningen",
-    "importCsv": "CSV importeren",
-    "settings": "Instellingen",
     "addTransaction": "Transactie toevoegen",
     "search": "Zoeken",
-    "searchPlaceholder": "Zoek transacties, winkels…",
-    "searchShortcut": "⌘K"
+    "searchShortcut": "⌘K",
+    "needsReviewBadge": "{count, plural, one {# transactie heeft een categorie nodig} other {# transacties hebben een categorie nodig}}",
+    "importCsv": "CSV importeren",
+    "settings": "Instellingen",
+    "signOut": "Uitloggen",
+    "theme": {
+      "label": "Thema",
+      "light": "Licht",
+      "system": "Auto",
+      "dark": "Donker"
+    }
   },
   "insights": {
     "title": "Inzichten",
@@ -964,83 +966,126 @@
       "afternoon": "Goedemiddag, {name}",
       "evening": "Goedenavond, {name}"
     },
-    "subtitle": "{date} · nog {count, plural, one {# dag} other {# dagen}} in deze financiële maand",
-    "addTransaction": "Transactie toevoegen",
+    "greetingShort": {
+      "morning": "Goedemorgen",
+      "afternoon": "Goedemiddag",
+      "evening": "Goedenavond"
+    },
+    "subtitle": "{date} · over {count, plural, one {# dag} other {# dagen}} salaris",
+    "review": "Bekijken",
     "hero": {
-      "safeToSpend": "Vrij te besteden",
-      "modeLabel": "Toon vrij te besteden voor",
-      "month": "Maand",
-      "balance": "Saldo",
-      "perDay": "{amount} per dag tot {date}",
-      "overBudget": "Over je budget deze maand",
-      "noBudget": "Geen budget ingesteld, dus dit is je cashflow deze maand",
-      "days": "dagen",
-      "daysLeft": "nog {count, plural, one {# dag} other {# dagen}}",
+      "title": "Vrij te besteden",
       "pace": {
         "onPace": "Op schema",
-        "fast": "Snel bezig",
-        "over": "Over budget",
-        "onTrack": "Op koers",
-        "low": "Krap straks"
+        "fast": "Gaat snel",
+        "over": "Over budget"
       },
-      "stats": {
-        "budgetUsed": "Budget gebruikt",
-        "forecastLow": "Laagste prognose",
-        "health": "Gezondheid"
-      }
-    },
-    "quick": {
+      "perDay": "Ongeveer <b>{amount} per dag</b> tot {date}",
+      "overBudget": "Je hebt meer uitgegeven dan het budget voor deze periode.",
+      "sum": "{spent} uitgegeven · {bills} rekeningen nog te gaan",
+      "budget": "{amount} budget",
+      "add": "Transactie toevoegen",
+      "scan": "Bon scannen",
+      "noBudget": "Stel een budget in om te zien wat je per dag kunt uitgeven.",
+      "setBudget": "Budget instellen",
       "importCsv": "CSV importeren",
-      "add": "Toevoegen",
-      "scan": "Bon scannen"
+      "paceTitle": "Uitgaventempo",
+      "underPace": "{amount} onder een gelijk tempo",
+      "overPace": "{amount} boven een gelijk tempo",
+      "paceDescription": "Lijndiagram van wat je tot nu toe hebt uitgegeven, {spent}, tegenover een gelijk tempo door de budgetperiode, {even} tot vandaag."
     },
-    "nudge": {
-      "same": "Je uitgaven deze week zijn precies een gewone week.",
-      "less": "Je gaf <b>{amount} minder</b> uit dan in een gewone week.",
-      "lessCategory": "Vooral {category}.",
-      "more": "Je gaf <b>{amount} meer</b> uit dan in een gewone week.",
-      "moreCategory": "{category} was het grootste deel.",
-      "bills": "{count, plural, one {# rekening staat} other {# rekeningen staan}} deze maand nog open, samen <b>{amount}</b>."
+    "month": {
+      "title": "Deze maand",
+      "income": "Inkomsten",
+      "spent": "Uitgegeven",
+      "saved": "Gespaard",
+      "billsDue": "Nog te betalen",
+      "vsLastMonth": "t.o.v. vorige maand",
+      "fixed": "waarvan {amount} vaste lasten",
+      "ofIncome": "van je inkomen",
+      "billsBefore": "{count, plural, one {# rekening} other {# rekeningen}} vóór {date}",
+      "noBills": "Niets meer te betalen"
+    },
+    "chart": {
+      "title": "Inkomsten en uitgaven",
+      "subtitle": "De laatste zes budgetmaanden",
+      "legendTitle": "Geld erin en eruit",
+      "in": "Erin",
+      "out": "Eruit",
+      "empty": "Nog niets te laten zien.",
+      "description": "Staafdiagram van geld erin en eruit per budgetmaand (erin / eruit): {months}"
+    },
+    "budget": {
+      "title": "Budget {month}",
+      "titleWeekly": "Budget deze week",
+      "open": "Naar Plan",
+      "spentOf": "<b>{amount}</b> uitgegeven van",
+      "left": "nog {amount}",
+      "over": "{amount} over"
     },
     "comingUp": {
       "title": "Binnenkort",
       "due": "{amount} te betalen",
       "all": "Alle rekeningen",
-      "empty": "Deze maand hoef je niets meer te betalen.",
+      "empty": "Deze maand niets meer te betalen.",
       "overdue": "Te laat",
-      "today": "Vandaag",
-      "tomorrow": "Morgen"
+      "inDays": "{count, plural, =0 {Vandaag} =1 {Morgen} other {Over # dagen}} · {date}"
     },
-    "spending": {
-      "title": "Uitgaven",
-      "all": "Alle categorieën",
-      "empty": "Nog geen uitgaven deze maand.",
-      "of": "van {budget}",
-      "nearly": "bijna op",
-      "over": "over budget",
-      "tilesTitle": "Uitgaven per categorie",
-      "tilesAll": "Alle {count, plural, one {# categorie} other {# categorieën}}",
-      "left": "{amount} over"
+    "activity": {
+      "title": "Recente activiteit",
+      "all": "Alles bekijken",
+      "empty": "Nog geen transacties.",
+      "transaction": "Transactie",
+      "category": "Categorie",
+      "statusColumn": "Status",
+      "date": "Datum",
+      "amount": "Bedrag",
+      "noCategory": "Categorie nodig",
+      "status": {
+        "toReview": "Te bekijken",
+        "recurring": "Terugkerend",
+        "transfer": "Interne overboeking",
+        "paidBack": "Terugbetaald",
+        "booked": "Geboekt"
+      }
     },
-    "cashFlow": {
-      "title": "Cashflow",
-      "link": "Inzichten",
-      "net": "Netto deze maand"
+    "accounts": {
+      "title": "Rekeningen",
+      "total": "{amount} totaal"
+    },
+    "getStarted": {
+      "title": "Aan de slag",
+      "progress": "{done} van {total} klaar",
+      "done": "Klaar",
+      "startHere": "Begin hier",
+      "steps": {
+        "imported": {
+          "title": "Importeer een CSV van je bank",
+          "body": "De meeste Nederlandse banken worden automatisch herkend."
+        },
+        "budget": {
+          "title": "Stel een maandbudget in",
+          "body": "Dan laat Home zien wat je per dag kunt uitgeven."
+        },
+        "bills": {
+          "title": "Voeg je vaste lasten toe",
+          "body": "Huur, abonnementen, verzekeringen — zodat ze nooit verrassen."
+        },
+        "goal": {
+          "title": "Maak een spaardoel",
+          "body": "Zie wanneer je het bereikt in je eigen tempo."
+        }
+      }
     },
     "needsReview": "{count, plural, one {# transactie heeft een categorie nodig} other {# transacties hebben een categorie nodig}}",
-    "latest": {
-      "title": "Laatste",
-      "all": "Alle activiteit",
-      "today": "Vandaag",
-      "yesterday": "Gisteren",
-      "recurring": "Vaste last",
-      "internalTransfer": "Eigen overboeking"
-    },
-    "empty": {
-      "title": "Nog geen gegevens",
-      "body": "Importeer een bankexport of voeg je eerste transactie toe om Home te vullen.",
-      "import": "CSV importeren",
-      "create": "Transactie aanmaken"
+    "flow": {
+      "title": "Geldstroom",
+      "subtitle": "Geld erin en eruit, per dag opgeteld · {from} – {to}",
+      "in": "Erin",
+      "out": "Eruit",
+      "net": "Netto",
+      "empty": "Deze periode is er nog geen geld in of uit gegaan.",
+      "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}."
     }
   },
   "bills": {
@@ -1073,12 +1118,19 @@
     },
     "bulk": {
       "select": "Selecteren",
-      "deselect": "Deselecteren"
+      "deselect": "Deselecteren",
+      "selectRow": "Selecteer {name}"
     },
     "summary": {
       "in": "In",
       "out": "Uit",
-      "net": "Netto"
+      "net": "Netto",
+      "label": "Geld erin en eruit",
+      "inSub": "{count, plural, one {# betaling erin} other {# betalingen erin}}",
+      "outSub": "waarvan {amount} vaste lasten",
+      "outSubNone": "Geen vaste lasten in deze selectie",
+      "netSubPositive": "Over na uitgaven",
+      "netSubNegative": "Meer eruit dan erin"
     },
     "upcoming": {
       "title": "{count, plural, one {# komt nog deze maand} other {# komen nog deze maand}}",
@@ -1167,9 +1219,9 @@
       "paidInYear": "{amount} betaald in {year}",
       "editRecurring": "Vaste last bewerken",
       "details": "Details",
-      "none": "Geen",
       "thisMonth": "{category} deze maand",
-      "other": "Overig"
+      "other": "Overig",
+      "overBudget": "{amount} te veel"
     },
     "rule": {
       "titleCreate": "Regel maken",
@@ -1198,7 +1250,8 @@
     "tiles": {
       "upcoming": "{count} komen nog",
       "upcomingSub": "{amount} vóór {date}",
-      "needsReview": "{count, plural, one {# heeft een categorie nodig} other {# hebben een categorie nodig}}"
+      "needsReview": "{count, plural, one {# heeft een categorie nodig} other {# hebben een categorie nodig}}",
+      "needsReviewSub": "Telt pas mee in budgetten met een categorie"
     },
     "frequency": {
       "daily": "dagelijks",
@@ -1215,6 +1268,14 @@
       "add": "“{name}” toevoegen",
       "loading": "Laden…",
       "none": "Nog geen winkels."
+    },
+    "listTitle": "Transacties",
+    "sort": {
+      "label": "Sorteren: {order}",
+      "newest": "Nieuwste eerst",
+      "oldest": "Oudste eerst",
+      "highest": "Hoogste bedrag",
+      "lowest": "Laagste bedrag"
     }
   },
   "plan": {

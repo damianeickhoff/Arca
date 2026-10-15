@@ -8,8 +8,8 @@ import {
   IconWallet,
 } from "@tabler/icons-react";
 
-// The redesigned information architecture, shared by the phone tab bar and the
-// desktop sidebar so both always agree on what is active:
+// The information architecture, shared by the phone tab bar and the desktop top bar
+// so both always agree on what is active:
 //
 //   Home      /
 //   Activity  /transactions (and everything under it)

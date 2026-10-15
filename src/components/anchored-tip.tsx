@@ -142,7 +142,7 @@ export function AnchoredTip({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={spring.gentle}
-            className="fixed pointer-events-none border-2 border-mustard"
+            className="fixed pointer-events-none border-2 border-clear-ember"
             style={{
               top: placement.anchor.top - 5,
               left: placement.anchor.left - 5,
@@ -165,7 +165,7 @@ export function AnchoredTip({
                 up the card's own background in either theme. */}
             <div
               aria-hidden
-              className="absolute bg-surface border border-line rotate-45 rounded-[3px]"
+              className="absolute bg-clear-card border border-clear-line rotate-45 rounded-[3px]"
               style={{
                 width: ARROW,
                 height: ARROW,

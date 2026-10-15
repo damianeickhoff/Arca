@@ -12,11 +12,11 @@ screen, dialog, empty state and the dark Home are drawn there. Match it; when a 
 has no mockup, build it from the tokens and components below and follow the closest
 drawn screen.
 
-Status: the Clear tokens (`src/app/globals.css`, `clear-*` utilities) and shared
-components (`src/components/clear/`) exist; screens have not been migrated yet. Screens
-that are still on the old mustard design keep working until they are migrated. New UI is
-Clear only — never build new UI with the mustard tokens (`bg-surface`, `text-ink`,
-`bg-mustard`, `rounded-card`, `mono-label`, …).
+Status: the Clear tokens (`src/app/globals.css`, `clear-*` utilities), the shared
+components (`src/components/clear/`), the app shell (sidebar + phone tab bar), Home and Activity
+are on Clear. Every other screen is still on the old mustard design and keeps working
+until it is migrated. New UI is Clear only — never build new UI with the mustard tokens
+(`bg-surface`, `text-ink`, `bg-mustard`, `rounded-card`, `mono-label`, …).
 
 ## Delete what you replace
 
@@ -55,14 +55,14 @@ when the last user of a legacy token (`--arca-*`, the mustard `--color-*` mappin
   banners, notices), `rounded-clear-row` (14px, list-row highlight, menu items, inputs,
   table header), `rounded-clear-icon` (12px, icon tiles). `rounded-full` only for buttons,
   chips, pills, badges, avatars, round icon buttons, toggles, segmented controls,
-  progress bars, the top nav pills, the floating tab bar and the add button.
+  progress bars, the floating tab bar and the add button.
 - Shadows: none on cards; `shadow-clear-dialog` for dialogs and popovers,
   `shadow-clear-float` for the tab bar and toasts.
 - Fills: `clear-hatch` (diagonal stripes).
 
 ## Components (`src/components/clear/`) — use these before writing markup
 
-`ClearButton` / `clearButtonVariants` (primary, secondary, surface, ember, outline,
+`ClearButton` (client) / `clearButtonVariants` (`button-variants.ts`, usable on the server) (primary, secondary, surface, ember, outline,
 danger, ghost), `ClearCard` (+ `hero`), `ClearCardHeader`, `ClearCardLink`, `ClearTile`,
 `StatTile`, `ClearChip`, `DeltaChip`, `StatusDot`, `IconTile`, `Amount`,
 `ClearProgress`, `Segmented`, `ListRow`, `ClearSwitch`, `ClearInput`, `ClearField`,
@@ -72,19 +72,22 @@ contain user-facing text themselves.
 
 ## Layout
 
-- Desktop (`lg`+): a top bar — logo pill left, pill navigation centre (Home · Activity
-  · Plan · Insights, active item black), search and the avatar chip right — then a page
-  heading row (40px title, subtitle, actions). No sidebar. Page padding `24px 32px 48px`,
-  28px between the top bar, heading and content, 20px between cards.
+- Desktop (`lg`+): a floating white sidebar (260px, 16px from the window edges, card
+  radius) with the logo, the signed-in user, the navigation (Home · Activity · Plan ·
+  Insights, active row black; Plan shows Budget · Debts · Goals under it while one is
+  open) and Import CSV, Settings, the theme and Sign out at the bottom. Pages start 276px
+  from the left (MainContent) with `28px 32px 48px` padding: a heading row (40px title,
+  subtitle, actions incl. the round search button), then the cards, 20px apart.
 - Phone: header (avatar/title + round buttons), content in 16px gutters, and the
   floating black tab bar (Home, Activity, ember add button, Plan, Insights). Pages
   reserve space at the bottom so the last row clears the tab bar.
 - Pages fill the available width; content never sets its own max width or centres
   itself (`mx-auto max-w-*`), except single-card pages (sign-in, errors) and dialogs.
-- Multi-column pages are flex rows that wrap: main column `flex: 2 1 640px`, side
-  column `flex: 1 1 380px`, both `min-w-0`; card grids use
-  `repeat(auto-fit, minmax(<n>px, 1fr))`. Never a fixed-width column. Wide tables
-  scroll inside their card.
+- Multi-column pages put all their cards in ONE grid so columns line up from row to
+  row (Home: `lg:grid-cols-2 xl:grid-cols-3`, a card or stacked column spanning
+  `xl:col-span-2` where it needs the width). Cards in a row stretch to the same height;
+  a card that would look empty when stretched gets a flexible element (a chart) that
+  fills the space. Never a fixed-width column. Wide tables scroll inside their card.
 - Plan pages show a Budget · Debts · Goals `Segmented` (links) under the heading;
   Insights pages show the Overview · Trends · Net worth · Forecast · Health tab row.
 - Dialogs: a centred modal (`ClearDialogPanel`, 520–640px wide) on desktop and a

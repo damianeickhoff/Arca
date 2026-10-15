@@ -3,26 +3,15 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { IconCurrencyEuro, IconFileUpload, IconPlus, IconSettings } from "@tabler/icons-react";
+import { IconCurrencyEuro, IconFileUpload, IconLogout, IconPlus, IconSettings } from "@tabler/icons-react";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { Segmented } from "@/components/clear/segmented";
+import { logoutAction } from "@/app/actions/auth";
 import { useNavHidden } from "@/lib/nav-visibility";
-import { formatEurSignFirst } from "@/lib/format";
+import { useTheme, type ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-import {
-  NAV_ITEMS,
-  PLAN_ITEMS,
-  activeNavKey,
-  activePlanKey,
-  isChromeless,
-  type NavItem,
-} from "@/components/shell/nav-config";
+import { NAV_ITEMS, PLAN_ITEMS, activeNavKey, activePlanKey, isChromeless, type NavItem } from "@/components/shell/nav-config";
 import { SearchProvider } from "@/components/shell/search-context";
-
-export interface ShellAccount {
-  key: string;
-  name: string;
-  balance: number;
-}
 
 export interface ShellUser {
   name: string;
@@ -30,31 +19,24 @@ export interface ShellUser {
   avatarUrl: string | null;
 }
 
-// The redesigned app shell — one responsive implementation, no separate mobile files.
+// The Clear app shell — one responsive implementation, no separate mobile files.
 //
-//   Phones (< lg): a floating tab bar at the bottom-left holding Home · Activity · Plan
-//   · Insights (only the active tab shows its label, in a mustard capsule) and a
-//   separate round ink "add" button at the bottom-right.
-//   Desktop (lg+): a 240px sidebar with the wordmark, the same four destinations, the
-//   Plan sub-menu while a Plan page is open, the accounts with their balances, and
-//   Import CSV / Settings / the user at the bottom.
+//   Desktop (lg+): a floating white sidebar on the left — the logo, who is signed in,
+//   the four destinations (Plan opens its Budget · Debts · Goals sub-menu while one of
+//   them is showing, Activity carries the needs-a-category count), then Import CSV,
+//   Settings, the theme and Sign out. Pages sit to its right (MainContent).
+//   Phones (< lg): a floating black tab bar with the four destinations and the ember
+//   add button in the middle.
 //
-// Page content keeps clear of both via MainContent (sidebar offset) and the
-// --nav-clearance bottom padding (tab bar), see globals.css.
-//
-// LAYOUT RULE: pages never set their own max width or centre themselves — they fill
-// everything right of the sidebar (no cap, at every width). Use
-// <PageShell> and the column constants in components/page-container.tsx; see AGENTS.md.
+// Page layout rules are in AGENTS.md ("Clear design system").
 export function AppShell({
   children,
-  accounts,
   user,
-  subtitle,
+  needsReviewCount,
 }: {
   children: React.ReactNode;
-  accounts: ShellAccount[];
   user: ShellUser | null;
-  subtitle?: string;
+  needsReviewCount: number;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -67,141 +49,89 @@ export function AppShell({
       {children}
       {!chromeless && (
         <>
-          <DesktopSidebar pathname={pathname} accounts={accounts} user={user!} subtitle={subtitle} />
+          <DesktopSidebar pathname={pathname} user={user!} needsReviewCount={needsReviewCount} />
           {!navHidden && <PhoneTabBar pathname={pathname} />}
-          {/* The new navigation announces itself once, even to someone who turned tips
-              off before it existed (see IGNORES_DISABLED in lib/tips.ts). */}
-          <AnchoredTip id="newNavigation" anchor="mainNav" active={!navHidden} />
+          {/* The navigation changed; it announces itself once, even to someone who
+              turned tips off (see IGNORES_DISABLED). */}
+          <AnchoredTip id="clearNavigation" anchor="mainNav" active={!navHidden} />
         </>
       )}
     </SearchProvider>
   );
 }
 
-export function Wordmark() {
+/** The Arca logo: an ember coin with the euro sign, then the name. */
+export function Wordmark({ className }: { className?: string }) {
   return (
-    <Link href="/" className="heading inline-flex items-center gap-2 text-2xl font-extrabold tracking-[-0.03em] text-ink">
-      <span className="inline-flex size-[25px] items-center justify-center rounded-full bg-mustard text-mustard-ink">
-        <IconCurrencyEuro size={15} stroke={2} />
+    <Link href="/" className={cn("inline-flex items-center gap-2.5 font-clear text-[19px] font-extrabold tracking-[-0.02em] text-clear-ink no-underline", className)}>
+      <span aria-hidden className="inline-flex size-10 items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink">
+        <IconCurrencyEuro size={22} stroke={2.4} />
       </span>
       Arca
     </Link>
   );
 }
 
-function PhoneTabBar({ pathname }: { pathname: string }) {
-  const t = useTranslations("nav");
-  const active = activeNavKey(pathname);
-
-  return (
-    <>
-      <nav
-        aria-label={t("main")}
-        data-tip-anchor="mainNav"
-        className="fixed left-4 right-[84px] z-[60] flex h-[60px] items-center justify-between rounded-[30px] border border-line bg-surface p-2 shadow-float lg:hidden"
-        style={{ bottom: "calc(20px + var(--sab))" }}
-      >
-        {NAV_ITEMS.map((item) => (
-          <PhoneTab key={item.key} item={item} active={item.key === active} label={t(item.key)} />
-        ))}
-      </nav>
-      <Link
-        href="/transactions/add"
-        aria-label={t("addTransaction")}
-        className="fixed right-4 z-[60] inline-flex size-[60px] items-center justify-center rounded-full bg-ink text-bg shadow-float transition-transform active:scale-95 lg:hidden"
-        style={{ bottom: "calc(20px + var(--sab))" }}
-      >
-        <IconPlus size={26} stroke={1.8} />
-      </Link>
-    </>
-  );
-}
-
-function PhoneTab({ item, active, label }: { item: NavItem; active: boolean; label: string }) {
-  const { Icon } = item;
-  if (active) {
-    return (
-      <Link
-        href={item.href}
-        aria-current="page"
-        className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-full bg-mustard pl-3 pr-3.5 text-[13px] font-bold text-mustard-ink"
-      >
-        <Icon size={20} stroke={1.8} />
-        {label}
-      </Link>
-    );
-  }
-  return (
-    <Link
-      href={item.href}
-      aria-label={label}
-      className="inline-flex size-11 items-center justify-center rounded-full text-ink-3 transition-colors hover:text-ink"
-    >
-      <Icon size={22} stroke={1.8} />
-    </Link>
-  );
-}
-
-function DesktopSidebar({
-  pathname,
-  accounts,
-  user,
-  subtitle,
-}: {
-  pathname: string;
-  accounts: ShellAccount[];
-  user: ShellUser;
-  subtitle?: string;
-}) {
+function DesktopSidebar({ pathname, user, needsReviewCount }: { pathname: string; user: ShellUser; needsReviewCount: number }) {
   const t = useTranslations("nav");
   const active = activeNavKey(pathname);
   const activePlan = activePlanKey(pathname);
+  const { mode, setMode } = useTheme();
+
+  const row = "flex h-12 items-center gap-3 rounded-clear-row px-3.5 text-[15px] no-underline transition-colors";
+  const idle = "font-semibold text-clear-ink-2 hover:bg-clear-tile hover:text-clear-ink";
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col gap-6 overflow-y-auto border-r border-line bg-surface px-4 py-6 lg:flex">
-      <div className="flex flex-col gap-1 px-2">
-        <Wordmark />
-        {subtitle && <span className="pl-[33px] text-xs text-ink-3">{subtitle}</span>}
-      </div>
+    <aside className="fixed inset-y-4 left-4 z-40 hidden w-[260px] flex-col gap-6 overflow-y-auto rounded-clear-card bg-clear-card px-5 py-7 font-clear text-clear-ink lg:flex">
+      <Wordmark className="px-2" />
 
-      <nav aria-label={t("main")} data-tip-anchor="mainNav" className="flex flex-col gap-0.5">
+      <Link href="/settings" className="flex flex-col items-center gap-2 rounded-clear-tile px-2 py-3 text-center text-clear-ink no-underline transition-colors hover:bg-clear-tile">
+        <UserAvatar user={user} size={72} />
+        <span className="flex min-w-0 max-w-full flex-col">
+          <span className="truncate text-[17px] font-extrabold tracking-[-0.01em]">{user.name}</span>
+          <span className="truncate text-[13px] text-clear-muted">{user.email}</span>
+        </span>
+      </Link>
+
+      <span aria-hidden className="h-px bg-clear-line" />
+
+      <nav aria-label={t("main")} data-tip-anchor="mainNav" className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {
           const isActive = item.key === active;
           const { Icon } = item;
           return (
-            <div key={item.key} className="flex flex-col">
+            <div key={item.key} className="flex flex-col gap-1">
               <Link
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "flex h-[42px] items-center gap-3 rounded-row px-3 text-sm font-semibold transition-colors",
-                  isActive ? "bg-mustard-soft text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
-                )}
+                className={cn(row, isActive ? "bg-clear-primary font-bold text-clear-primary-ink" : idle)}
               >
-                <Icon size={19} stroke={1.8} />
-                {t(item.key)}
-                {isActive && <span aria-hidden className="ml-auto size-2 rounded-full bg-mustard" />}
+                <Icon size={20} stroke={1.9} aria-hidden />
+                <span className="flex-1">{t(item.key)}</span>
+                {item.key === "activity" && needsReviewCount > 0 && (
+                  <span
+                    aria-label={t("needsReviewBadge", { count: needsReviewCount })}
+                    className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-clear-ember px-1.5 text-xs font-extrabold text-clear-ember-ink"
+                  >
+                    {needsReviewCount}
+                  </span>
+                )}
               </Link>
               {item.key === "plan" && isActive && (
-                <div className="flex flex-col gap-0.5 pb-1.5 pl-5 pt-0.5">
-                  {PLAN_ITEMS.map((sub) => {
-                    const subActive = sub.key === activePlan;
-                    const SubIcon = sub.Icon;
-                    return (
-                      <Link
-                        key={sub.key}
-                        href={sub.href}
-                        aria-current={subActive ? "page" : undefined}
-                        className={cn(
-                          "flex h-9 items-center gap-2.5 rounded-row px-3 text-[13px] font-semibold transition-colors",
-                          subActive ? "bg-surface-2 text-ink" : "text-ink-3 hover:text-ink",
-                        )}
-                      >
-                        <SubIcon size={16} stroke={1.8} />
-                        {t(`planItems.${sub.key}`)}
-                      </Link>
-                    );
-                  })}
+                <div className="flex flex-col gap-0.5 pb-1 pl-[46px]">
+                  {PLAN_ITEMS.map((sub) => (
+                    <Link
+                      key={sub.key}
+                      href={sub.href}
+                      aria-current={sub.key === activePlan ? "page" : undefined}
+                      className={cn(
+                        "flex h-10 items-center rounded-clear-row px-3 text-sm no-underline transition-colors",
+                        sub.key === activePlan ? "bg-clear-tile font-bold text-clear-ink" : "font-semibold text-clear-muted hover:text-clear-ink",
+                      )}
+                    >
+                      {t(`planItems.${sub.key}`)}
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
@@ -209,48 +139,87 @@ function DesktopSidebar({
         })}
       </nav>
 
-      {accounts.length > 0 && (
-        <div className="flex flex-col gap-2 px-1">
-          <span className="mono-label px-2">{t("accounts")}</span>
-          <div className="flex flex-col">
-            {accounts.map((a) => (
-              <Link
-                key={a.key}
-                href="/settings?tab=banks"
-                className="flex h-7 items-center justify-between gap-2 rounded-row px-2 hover:bg-surface-2"
-              >
-                <span className="truncate text-[13px] text-ink-2">{a.name}</span>
-                <span className="shrink-0 text-xs font-medium tabular-nums text-ink-2">{formatEurSignFirst(a.balance)}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-auto flex flex-col gap-0.5">
-        <Link
-          href="/import"
-          className="flex h-10 items-center gap-3 rounded-row px-3 text-sm font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
-        >
-          <IconFileUpload size={18} stroke={1.8} />
+      <div className="mt-auto flex flex-col gap-1">
+        <span aria-hidden className="mb-3 h-px bg-clear-line" />
+        <Link href="/import" className={cn(row, idle)}>
+          <IconFileUpload size={20} stroke={1.9} aria-hidden />
           {t("importCsv")}
         </Link>
-        <Link
-          href="/settings"
-          className="flex h-10 items-center gap-3 rounded-row px-3 text-sm font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
-        >
-          <IconSettings size={18} stroke={1.8} />
+        <Link href="/settings" className={cn(row, pathname.startsWith("/settings") ? "bg-clear-primary font-bold text-clear-primary-ink" : idle)}>
+          <IconSettings size={20} stroke={1.9} aria-hidden />
           {t("settings")}
         </Link>
-        <div className="flex items-center gap-2.5 px-3 pt-2.5">
-          <UserAvatar user={user} size={32} />
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-[13px] font-semibold text-ink">{user.name}</span>
-            <span className="truncate text-[11px] text-ink-3">{user.email}</span>
-          </span>
+        <div className="flex flex-col gap-2 px-3.5 py-2.5">
+          <span className="text-[13px] font-bold text-clear-muted">{t("theme.label")}</span>
+          <Segmented<ThemeMode>
+            label={t("theme.label")}
+            surface="tile"
+            size="sm"
+            value={mode}
+            onChange={setMode}
+            items={[
+              { value: "light", label: t("theme.light") },
+              { value: "system", label: t("theme.system") },
+              { value: "dark", label: t("theme.dark") },
+            ]}
+          />
         </div>
+        <button
+          type="button"
+          onClick={() => logoutAction()}
+          className={cn(row, "cursor-pointer font-semibold text-clear-negative hover:bg-clear-tile")}
+        >
+          <IconLogout size={20} stroke={1.9} aria-hidden />
+          {t("signOut")}
+        </button>
       </div>
     </aside>
+  );
+}
+
+function PhoneTabBar({ pathname }: { pathname: string }) {
+  const t = useTranslations("nav");
+  const active = activeNavKey(pathname);
+  // Two destinations either side of the add button.
+  const [first, second, ...rest] = NAV_ITEMS;
+
+  return (
+    <nav
+      aria-label={t("main")}
+      data-tip-anchor="mainNav"
+      className="fixed inset-x-4 z-[60] flex h-[68px] items-center justify-between rounded-full bg-clear-primary px-2 font-clear shadow-clear-float lg:hidden"
+      style={{ bottom: "calc(20px + var(--sab))" }}
+    >
+      <PhoneTab item={first} active={first.key === active} label={t(first.key)} />
+      <PhoneTab item={second} active={second.key === active} label={t(second.key)} />
+      <Link
+        href="/transactions/add"
+        aria-label={t("addTransaction")}
+        className="inline-flex size-[54px] items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink transition-transform active:scale-95"
+      >
+        <IconPlus size={24} stroke={2.6} />
+      </Link>
+      {rest.map((item) => (
+        <PhoneTab key={item.key} item={item} active={item.key === active} label={t(item.key)} />
+      ))}
+    </nav>
+  );
+}
+
+function PhoneTab({ item, active, label }: { item: NavItem; active: boolean; label: string }) {
+  const { Icon } = item;
+  return (
+    <Link
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "inline-flex h-[52px] w-16 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition-colors",
+        active ? "bg-clear-card font-extrabold text-clear-ink" : "font-semibold text-clear-primary-ink/80",
+      )}
+    >
+      <Icon size={20} stroke={2} />
+      {label}
+    </Link>
   );
 }
 
@@ -268,10 +237,19 @@ export function UserAvatar({ user, size = 36 }: { user: Pick<ShellUser, "name" |
   }
   return (
     <span
-      className="heading inline-flex shrink-0 items-center justify-center rounded-full bg-mustard text-mustard-ink"
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.42) }}
+      aria-hidden
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-clear-peach font-clear font-extrabold text-clear-ink"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.36) }}
     >
-      {user.name.trim().charAt(0).toUpperCase() || "A"}
+      {initials(user.name)}
     </span>
   );
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "A";
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
+  return (first + last).toUpperCase();
 }

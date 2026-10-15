@@ -34,6 +34,7 @@ interface Props {
  */
 export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDone, onSelectAll, allSelected, total }: Props) {
   const t = useTranslations("transactions");
+  const tActivity = useTranslations("activity");
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,57 +85,57 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
     }
   }
 
+  // The black floating pill from the design: the count in an ember dot, then the
+  // actions as light text buttons. It inverts with the theme (primary colours).
   const actionClass =
-    "flex h-[42px] flex-1 items-center justify-center gap-1.5 rounded-full border border-line bg-surface px-2 text-[13px] font-semibold text-ink transition-colors hover:bg-surface-2 disabled:opacity-40";
+    "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full px-3.5 font-clear text-sm font-bold text-clear-primary-ink transition-colors hover:bg-clear-primary-ink/10 disabled:opacity-40 [&_svg]:size-[17px]";
 
   return (
-    <div className={cn(bottomDockClass, "z-50")}>
-      <div className="rounded-card border border-line bg-surface p-3 shadow-float">
-        <div className="flex items-center justify-between px-1 pb-2">
-          <p className="heading text-sm text-ink">{t("bulkSelected", { count })}</p>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={onSelectAll}
-              className="rounded-full px-3 py-1.5 text-xs font-semibold text-mustard-strong hover:bg-surface-2"
-            >
-              {allSelected ? t("bulkSelectNone") : t("bulkSelectAll", { count: total })}
-            </button>
-            <button
-              type="button"
-              onClick={onDone}
-              aria-label={t("bulkDone")}
-              className="rounded-full p-2 text-ink-2 hover:bg-surface-2"
-            >
-              <IconX className="size-5" />
-            </button>
-          </div>
-        </div>
+    <div className={cn(bottomDockClass, "z-50 flex justify-center")}>
+      <div
+        role="toolbar"
+        aria-label={t("bulkSelected", { count })}
+        className="flex max-w-full flex-wrap items-center justify-center gap-1 rounded-[28px] bg-clear-primary px-2 py-2 text-clear-primary-ink shadow-clear-float"
+      >
+        <span className="mr-1 inline-flex items-center gap-2.5 border-r border-clear-primary-ink/20 pl-1.5 pr-3 text-sm font-bold">
+          <span aria-hidden className="inline-flex size-[30px] items-center justify-center rounded-full bg-clear-ember text-[13px] font-extrabold text-clear-ember-ink">
+            {count}
+          </span>
+          {t("bulkSelected", { count })}
+        </span>
 
-        <div className="flex items-stretch gap-2">
-          {/* CategoryPicker brings its own trigger button and full-screen sheet, so it
-              only needs to be dressed to match the two buttons beside it. Passing
-              onChange puts it in form mode: it reports the picked category instead of
-              writing a `category` search param. */}
-          <CategoryPicker
-            categories={categories}
-            placeholder={t("bulkCategory")}
-            onChange={(value) => patch({ categoryId: value ? Number(value) : null })}
-            triggerClassName={actionClass}
-          />
+        {/* CategoryPicker brings its own trigger button and full-screen sheet, so it
+            only needs to be dressed to match the buttons beside it. Passing onChange
+            puts it in form mode: it reports the picked category instead of writing a
+            `category` search param. */}
+        <CategoryPicker
+          categories={categories}
+          placeholder={t("bulkCategory")}
+          onChange={(value) => patch({ categoryId: value ? Number(value) : null })}
+          triggerClassName={actionClass}
+        />
 
-          <button type="button" onClick={() => patch({ excludeFromReports: !allExcluded })} disabled={busy || count === 0} className={actionClass}>
-            {allExcluded ? <IconEye className="size-5" /> : <IconEyeOff className="size-5" />}
-            {allExcluded ? t("bulkInclude") : t("bulkExclude")}
-          </button>
+        <button type="button" onClick={() => patch({ excludeFromReports: !allExcluded })} disabled={busy || count === 0} className={actionClass}>
+          {allExcluded ? <IconEye /> : <IconEyeOff />}
+          {allExcluded ? t("bulkInclude") : t("bulkExclude")}
+        </button>
 
-          <button type="button" onClick={remove} disabled={busy || count === 0} className={cn(actionClass, "border-transparent bg-negative-soft text-negative hover:bg-negative-soft/80")}>
-            <IconTrash className="size-5" />
-            {t("bulkDelete")}
-          </button>
-        </div>
+        <button type="button" onClick={remove} disabled={busy || count === 0} className={cn(actionClass, "text-clear-negative-fill")}>
+          <IconTrash />
+          {t("bulkDelete")}
+        </button>
 
-        {error && <p className="px-1 pt-2 text-xs text-negative">{error}</p>}
+        {/* Desktop has the select-all checkbox in the list header. */}
+        <button type="button" onClick={onSelectAll} className={cn(actionClass, "lg:hidden")}>
+          {allSelected ? t("bulkSelectNone") : t("bulkSelectAll", { count: total })}
+        </button>
+
+        <button type="button" onClick={onDone} className={cn(actionClass, "ml-1 bg-clear-primary-ink/10")}>
+          <IconX />
+          {tActivity("bulk.deselect")}
+        </button>
+
+        {error && <p className="w-full px-3 pt-1 text-xs text-clear-negative-fill">{error}</p>}
       </div>
     </div>
   );

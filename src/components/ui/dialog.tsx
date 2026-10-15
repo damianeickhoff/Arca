@@ -9,11 +9,11 @@ import { IconXFilled as XIcon } from "@tabler/icons-react"
 import { acquireNavHidden } from "@/lib/nav-visibility"
 import { useKeyboardHeight } from "@/lib/use-keyboard-height"
 import { useContainerScrolled } from "@/lib/use-scroll-elevation"
-import { SHEET_FIXED } from "@/components/page-container"
+import { SHEET_COLUMN } from "@/components/page-container"
 
 // Every dialog in the app is a bottom sheet, at every viewport width — there is no
 // centered-modal variant and no viewport branch. On desktop the sheet is capped to
-// a readable centred column over the main area (SHEET_FIXED, clear of the sidebar) so it rises inside the app
+// a readable centred column (SHEET_COLUMN) so it rises inside the app
 // instead of spanning the whole monitor.
 
 // Mask for the sticky top scroll-blur (see DialogContent's scrollBlur prop): opaque
@@ -227,8 +227,8 @@ function DialogContent({
         onFocusOutside={keepOpenOnOutside}
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 flex flex-col outline-none overflow-hidden will-change-transform",
-          "rounded-t-card bg-[var(--dialog-background)]",
-          SHEET_FIXED,
+          "rounded-t-clear-card bg-[var(--dialog-background)]",
+          SHEET_COLUMN,
           // hideHeaderRow callers render their own header as the first child and own
           // its top spacing entirely — adding this on top just double-pads it.
           // fullHeight sheets sit flush against the true top of the screen (no
@@ -269,7 +269,7 @@ function DialogContent({
             }}
           >
             {title && (
-              <Drawer.Title className="heading text-lg text-ink">{title}</Drawer.Title>
+              <Drawer.Title className="font-extrabold tracking-[-0.02em] text-lg text-clear-ink">{title}</Drawer.Title>
             )}
             {/* Pinned via an explicit top offset (matching the row's own pt- above)
                 instead of flex/align-items centering — centering an absolutely
@@ -280,7 +280,7 @@ function DialogContent({
             <Drawer.Close asChild>
               <button
                 className={cn(
-                  "absolute size-10 left-[21px] rounded-full border border-line bg-surface flex items-center justify-center text-ink transition-colors hover:bg-surface-2",
+                  "absolute size-10 left-[21px] rounded-full border border-clear-line bg-clear-card flex items-center justify-center text-clear-ink transition-colors hover:bg-clear-tile",
                   fullHeight ? "top-[calc(var(--sat)+20px)]" : "top-2",
                 )}
                 aria-label="Close"
@@ -422,7 +422,7 @@ function DialogFooter({
 function DialogTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <Drawer.Title
-      className={cn("heading text-base leading-none text-ink", className)}
+      className={cn("font-extrabold tracking-[-0.02em] text-base leading-none text-clear-ink", className)}
       {...props}
     />
   );
@@ -432,7 +432,7 @@ function DialogDescription({ className, ...props }: React.ComponentProps<"div">)
   return (
     <Drawer.Description
       className={cn(
-        "text-sm text-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        "text-sm text-clear-ink *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-clear-ink",
         className
       )}
       {...props}

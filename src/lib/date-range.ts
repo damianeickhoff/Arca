@@ -54,6 +54,18 @@ export function shiftDate(date: string, days: number) {
   return toDateString(new Date(year, month - 1, day + days));
 }
 
+/** Today in the local calendar, as YYYY-MM-DD. */
+export function todayStr() {
+  return toDateString(new Date());
+}
+
+/** Whole days from `from` to `to`, both inclusive (0 when `to` is before `from`). */
+export function daysInclusive(from: string, to: string) {
+  const a = new Date(`${from}T12:00:00`).getTime();
+  const b = new Date(`${to}T12:00:00`).getTime();
+  return Math.max(0, Math.round((b - a) / 86_400_000) + 1);
+}
+
 export function offsetFinancialMonth(month: string, offset: number) {
   const [year, monthNumber] = month.split("-").map(Number);
   const date = new Date(year, monthNumber - 1 + offset, 1);

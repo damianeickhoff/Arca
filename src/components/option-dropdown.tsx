@@ -5,7 +5,7 @@ import { IconCheck as Check } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-export const FORM_TRIGGER_CLASS = "bg-[var(--dialog-content-background)] px-3 h-12 w-full rounded-lg text-sm mt-1 flex items-center justify-between gap-2.5 outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-foreground/15 cursor-pointer";
+export const FORM_TRIGGER_CLASS = "bg-[var(--dialog-content-background)] px-3 h-12 w-full rounded-lg text-sm mt-1 flex items-center justify-between gap-2.5 outline-none transition-colors focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-clear-ink/15 cursor-pointer";
 
 export function OptionDropdown({
   value,
@@ -51,8 +51,8 @@ export function OptionDropdown({
                   className={cn(
                     "flex items-center justify-between rounded-xl px-4 py-3.5 text-sm transition-colors",
                     value === opt.value
-                      ? "bg-foreground text-primary-foreground font-medium"
-                      : "hover:bg-foreground/5 text-foreground",
+                      ? "bg-clear-primary text-clear-ember-ink font-medium"
+                      : "hover:bg-clear-primary/5 text-clear-ink",
                   )}
                 >
                   <span>{opt.label}</span>

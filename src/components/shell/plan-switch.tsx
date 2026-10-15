@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 /**
  * The Plan hub's segmented switch — Budget | Debts | Goals — shown at the top of each
  * of the three Plan pages. They stay separate routes; the switch is what makes them
- * read as one place, and the desktop sidebar mirrors it as the Plan sub-menu.
+ * read as one place.
  */
 export function PlanSwitch({ className }: { className?: string }) {
   const t = useTranslations("nav");

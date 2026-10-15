@@ -28,7 +28,7 @@ import { ReceiptScanDialog, type ScannedReceipt } from "./receipt-scan-dialog";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { m, AnimatePresence, LazyMotion, domMax, easeOutQuart } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import { SHEET_FIXED } from "@/components/page-container";
+import { SHEET_COLUMN } from "@/components/page-container";
 import { isOperator, evaluateExpression, formatAmount, pressKey } from "@/lib/amount-expression";
 import { currencySymbol } from "@/lib/format";
 import type { Category } from "@/db/schema";
@@ -241,7 +241,7 @@ export function AddTransactionClient({
     "flex items-center justify-center rounded-2xl h-13 text-foreground/80 bg-foreground/[0.07] active:bg-foreground/15 transition-colors select-none";
 
   return (
-    <div className={cn(SHEET_FIXED, "fixed inset-0 flex flex-col bg-background")}>
+    <div className={cn(SHEET_COLUMN, "fixed inset-0 flex flex-col bg-background")}>
       {/* Header: close (left) + overflow menu (right). Currency button intentionally omitted. */}
       <div className="flex items-center justify-between px-4 pt-[calc(var(--sat)+0.75rem)] pb-2 shrink-0">
         <button

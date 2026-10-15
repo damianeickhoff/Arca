@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "@/db";
-import { users, appSettings } from "@/db/schema";
+import { users } from "@/db/schema";
 import { createSession } from "@/lib/auth";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,13 +39,6 @@ export async function POST(req: NextRequest) {
     .returning({ id: users.id });
 
   await createSession(created.id);
-
-  // The sidebar subtitle is a household-global value — only the first user seeds it.
-  // The wizard's final router.refresh() renders it once we land on the dashboard.
-  if (isFirstUser) {
-    await db.insert(appSettings).values({ key: "sidebar_subtitle", value: `${lastName} Family` })
-      .onConflictDoUpdate({ target: appSettings.key, set: { value: `${lastName} Family` } });
-  }
 
   return NextResponse.json({ ok: true, isFirstUser });
 }

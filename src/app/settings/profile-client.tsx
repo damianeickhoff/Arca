@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { updateOwnProfileAction, updateOwnEmailAction, updateOwnPasswordAction, updateSidebarSubtitleAction } from "@/app/actions/auth";
+import { updateOwnProfileAction, updateOwnEmailAction, updateOwnPasswordAction } from "@/app/actions/auth";
 import {
   setAppLockEnabledAction,
   setPinAction,
@@ -53,11 +53,9 @@ function bufToB64(buf: ArrayBuffer): string {
 
 export function ProfileSettingsClient({
   user,
-  sidebarSubtitle,
   budgetStrategy,
 }: {
   user: User;
-  sidebarSubtitle: string;
   budgetStrategy: BudgetStrategy;
 }) {
   return (
@@ -66,7 +64,6 @@ export function ProfileSettingsClient({
       <NameForm user={user} />
       <EmailForm user={user} />
       <PasswordForm />
-      <SidebarSubtitleForm initial={sidebarSubtitle} />
       <BudgetStrategyCard initial={budgetStrategy} />
       <AppLockSection />
       <TwoFactorSection />
@@ -276,44 +273,6 @@ function EmailForm({ user }: { user: User }) {
         <Input type="password" name="currentPassword" required autoComplete="current-password" />
 
         <Button type="submit" disabled={pending} size="lg" variant="default" className="mt-1">
-          {pending ? "Saving..." : "Save"}
-        </Button>
-      </form>
-    </div>
-  );
-}
-
-function SidebarSubtitleForm({ initial }: { initial: string }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  async function handleSubmit(formData: FormData) {
-    setError(null);
-    setSuccess(false);
-    setPending(true);
-    const result = await updateSidebarSubtitleAction(formData);
-    setPending(false);
-    if (result?.error) setError(result.error);
-    else {
-      setSuccess(true);
-      router.refresh();
-    }
-  }
-
-  return (
-    <div className="rounded-card bg-surface p-5">
-      <h2 className="font-semibold text-base">Sidebar</h2>
-      <p className="text-xs text-ink-3 mb-4">Text shown below &quot;Arca&quot; in the sidebar.</p>
-
-      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Updated.</div>}
-
-      <form action={handleSubmit}>
-        <label className="text-sm font-medium text-ink-2">Subtitle</label>
-        <Input type="text" name="subtitle" defaultValue={initial} maxLength={40} required />
-        <Button type="submit" disabled={pending} size="lg" variant="default" className="mt-3">
           {pending ? "Saving..." : "Save"}
         </Button>
       </form>

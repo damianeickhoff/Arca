@@ -1,155 +1,81 @@
+import { redirect } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import { and, desc, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { transactions, categories, goals, recurringItems, banks, merchants, vermogenAccounts, budgetTargets } from "@/db/schema";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
-import { formatEur } from "@/lib/format";
+import { banks, categories, goals, merchants, recurringItems, transactions } from "@/db/schema";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
-import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, shiftDate } from "@/lib/date-range";
+import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, daysInclusive, shiftDate, todayStr } from "@/lib/date-range";
 import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { getBudgetOverview } from "@/lib/budget-overview";
-import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
-import { getFinancialHealthScore } from "@/lib/financial-health-data";
-import { getCashFlowForecast } from "@/lib/cash-flow-forecast";
-import { DashboardReadySignal } from "@/components/dashboard-ready-signal";
-import { DashboardEmptyState } from "@/app/dashboard-empty-state";
-import { AccountsCard } from "@/components/accounts-card";
-import { getSettingsPanelContent } from "@/app/settings-panel-content";
-import { getCurrentUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { DashboardRecentTransactions } from "@/app/dashboard-recent-transactions";
+import { budgetSpendByDay, safeToSpend, type SpendEntry } from "@/lib/safe-to-spend";
+import { getBankBalances } from "@/lib/account-balances";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
 import { billsDueTotal } from "@/lib/bill-amounts";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
-import { getLocale, getTranslations } from "next-intl/server";
-import Link from "next/link";
-import { IconPlus } from "@tabler/icons-react";
+import { buildSplitAllocations, getDisplayedTransactionCategory, groupTransactionSplits } from "@/lib/transaction-splits";
+import { getCurrentUser } from "@/lib/auth";
+import { getSettingsPanelContent } from "@/app/settings-panel-content";
+import { DashboardReadySignal } from "@/components/dashboard-ready-signal";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { Wordmark } from "@/components/shell/app-shell";
 import { SearchButton } from "@/components/shell/search-context";
-import { PageHeading, SectionHead } from "@/components/ui/page-heading";
-import { PageShell, SPLIT_GRID } from "@/components/page-container";
-import { HeroCard, type HeroFigures, type HeroPace } from "@/app/_home/hero-card";
-import { HomeTips } from "@/app/_home/home-tips";
-import { daysInclusive, getWeekNudge, nextDay, todayStr } from "@/app/_home/home-data";
+import { HomeHero } from "@/app/_home/home-hero";
 import {
-  CashFlowCard,
-  CategoryTiles,
-  ComingUp,
-  NeedsReviewLink,
-  NudgeCard,
-  QuickActions,
-  SpendingList,
+  AccountsCard,
+  BudgetCard,
+  ComingUpCard,
+  IncomeSpendingCard,
+  MoneyFlowCard,
+  ReviewLink,
+  ThisMonthCard,
+  type BudgetRow,
   type ComingUpBill,
+  type FlowDay,
+  type MonthBar,
 } from "@/app/_home/home-sections";
+import { HomeRecentActivity } from "@/app/_home/home-recent-activity";
+import { GetStartedCard } from "@/app/_home/get-started";
+import { HomeTips } from "@/app/_home/home-tips";
+import { cn } from "@/lib/utils";
 
-import {
-  buildSplitAllocations,
-  getDisplayedTransactionCategory,
-  groupTransactionSplits,
-} from "@/lib/transaction-splits";
+/** How many budget months the income-vs-spending chart shows. */
+const CHART_MONTHS = 6;
 
-async function getDashboardData(from: string, to: string, selectedBank = "", financialMonth = { defaultStartDay: 1 }) {
-  const year = from.slice(0, 4);
+/**
+ * Money in and out for the Home figures, with the dashboard's spending rules: split
+ * aware, internal transfers and reimbursements left out, and money moved into savings
+ * categories counted as saved rather than spent.
+ */
+async function getHomeData(from: string, to: string, financialMonth: Awaited<ReturnType<typeof getFinancialMonthConfig>>, netReimbursements: boolean) {
+  const chartFrom = financialMonthRange(financialMonth, -(CHART_MONTHS - 1)).from;
+  const chartTo = financialMonthRange(financialMonth, 0).to;
+  // One query covers both the chart's months and the selected period.
+  const rangeFrom = from < chartFrom ? from : chartFrom;
+  const rangeTo = to > chartTo ? to : chartTo;
 
-  // Monthly chart always shows the last 12 financial months (not affected by date filter)
-  const monthlyChartEnd = financialMonthRange(financialMonth, 0).to;
-  const monthlyChartStart = financialMonthRange(financialMonth, -11).from;
-
-
-  // Optional bank account filter
-  const bankFilter = selectedBank ? eq(transactions.account, selectedBank) : undefined;
-
-  const chartNow = new Date();
-  const chartToStr = chartNow.toISOString().slice(0, 10);
-  const chartFromStr = new Date(chartNow.getTime() - 13 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-  const [periodRows, monthlyRows, goalsRaw, recurringRaw, recurringItemsRaw, last7DaysRaw, recentRows, allCategories, budgetTargetRows, recurringMode, sharedCostMode] =
-    await Promise.all([
-      db.select({
+  const [rows, recentRows, allCategories, savingsGoals, recurringCount] = await Promise.all([
+    db
+      .select({
         id: transactions.id,
         date: transactions.date,
         direction: transactions.direction,
         amount: transactions.amount,
         correctedAmount: transactions.correctedAmount,
         reimbursedAmount: reimbursedAmountExpr,
-        description: transactions.description,
         categoryId: transactions.categoryId,
         categoryName: categories.name,
-        categoryColor: categories.color,
-        categoryIcon: categories.icon,
         categoryGroup: categories.group,
-        brandIcon: transactions.brandIcon,
-        brandIconColor: transactions.brandIconColor,
-        brandIconBgColor: transactions.brandIconBgColor,
         isReimbursement: transactions.isReimbursement,
         isInternalTransfer: isInternalTransferExpr,
         recurringItemId: transactions.recurringItemId,
       })
-        .from(transactions)
-        .leftJoin(categories, eq(transactions.categoryId, categories.id))
-        .where(and(gte(transactions.date, from), lte(transactions.date, to), bankFilter))
-        .orderBy(desc(transactions.date), desc(transactions.id)),
-      db.select({
-        id: transactions.id,
-        date: transactions.date,
-        direction: transactions.direction,
-        amount: transactions.amount,
-        description: transactions.description,
-        correctedAmount: transactions.correctedAmount,
-        reimbursedAmount: reimbursedAmountExpr,
-        categoryId: transactions.categoryId,
-        categoryName: categories.name,
-        categoryColor: categories.color,
-        categoryIcon: categories.icon,
-        categoryGroup: categories.group,
-        isReimbursement: transactions.isReimbursement,
-        isInternalTransfer: isInternalTransferExpr,
-      })
-        .from(transactions)
-        .leftJoin(categories, eq(transactions.categoryId, categories.id))
-        .where(and(gte(transactions.date, monthlyChartStart), lte(transactions.date, monthlyChartEnd), bankFilter))
-        .orderBy(desc(transactions.date)),
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .where(and(gte(transactions.date, rangeFrom), lte(transactions.date, rangeTo))),
 
-      db.select().from(goals).where(and(eq(goals.goalType, "savings"), eq(goals.active, true))),
-
-      db.select({
-        type: recurringItems.type,
-        total: sql<number>`sum(${recurringItems.amount})`,
-      })
-        .from(recurringItems)
-        .where(eq(recurringItems.active, true))
-        .groupBy(recurringItems.type),
-
-      db.select({
-        id: recurringItems.id,
-        name: recurringItems.name,
-        amount: recurringItems.amount,
-        type: recurringItems.type,
-        dueDay: recurringItems.dueDay,
-        icon: recurringItems.icon,
-        iconColor: recurringItems.iconColor,
-        matchPattern: recurringItems.matchPattern,
-        matchAmount: recurringItems.matchAmount,
-      })
-        .from(recurringItems)
-        .where(eq(recurringItems.active, true))
-        .orderBy(desc(recurringItems.dueDay)),
-
-      db.select({
-        date: transactions.date,
-        total: sql<number>`sum(${transactions.amount})`,
-      })
-        .from(transactions)
-        .where(and(
-          gte(transactions.date, chartFromStr),
-          lte(transactions.date, chartToStr),
-          eq(transactions.direction, "expense"),
-          bankFilter,
-        ))
-        .groupBy(transactions.date),
-
-      db.select({
+    db
+      .select({
         id: transactions.id,
         date: transactions.date,
         direction: transactions.direction,
@@ -179,434 +105,277 @@ async function getDashboardData(from: string, to: string, selectedBank = "", fin
         merchantIcon: merchants.icon,
         merchantColor: merchants.color,
       })
-        .from(transactions)
-        .leftJoin(categories, eq(transactions.categoryId, categories.id))
-        .leftJoin(banks, eq(transactions.account, banks.accountNumber))
-        .leftJoin(recurringItems, eq(transactions.recurringItemId, recurringItems.id))
-        .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
-        .where(bankFilter)
-        .orderBy(desc(transactions.date), desc(transactions.id))
-        .limit(40),
+      .from(transactions)
+      .leftJoin(categories, eq(transactions.categoryId, categories.id))
+      .leftJoin(banks, eq(transactions.account, banks.accountNumber))
+      .leftJoin(recurringItems, eq(transactions.recurringItemId, recurringItems.id))
+      .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
+      .orderBy(desc(transactions.date), desc(transactions.id))
+      .limit(7),
 
-      db.select().from(categories).orderBy(categories.name),
+    db.select().from(categories).orderBy(categories.name),
+    db.select().from(goals).where(and(eq(goals.goalType, "savings"), eq(goals.active, true))),
+    db.$count(recurringItems, eq(recurringItems.active, true)),
+  ]);
 
-      db.select({ categoryId: budgetTargets.categoryId })
-        .from(budgetTargets)
-        .where(and(eq(budgetTargets.year, 0), eq(budgetTargets.month, 0))),
-
-      getBudgetRecurringMode(),
-
-      getSharedCostMode(),
-    ]);
-
-  // Only expense allocations are netted, so the income half of `totals` stays gross.
-  const netReimbursements = sharedCostMode === "net";
-
-  const splitRows = await getTransactionSplitRows(
-    Array.from(new Set([...periodRows.map((row) => row.id), ...monthlyRows.map((row) => row.id), ...recentRows.map((row) => row.id)])),
+  const splitMap = groupTransactionSplits(
+    await getTransactionSplitRows(Array.from(new Set([...rows.map((r) => r.id), ...recentRows.map((r) => r.id)]))),
   );
-  const splitMap = groupTransactionSplits(splitRows);
-  const periodAllocations = buildSplitAllocations(periodRows, splitMap, { netReimbursements });
-  const monthlyAllocations = buildSplitAllocations(monthlyRows, splitMap, { netReimbursements });
+  const allocations = buildSplitAllocations(rows, splitMap, { netReimbursements });
 
-  const totals = periodAllocations
-    .filter((row) => !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings")
-    .reduce((acc, row) => {
-      acc[row.direction] = (acc[row.direction] ?? 0) + row.amount;
-      return acc;
-    }, {} as Record<string, number>);
+  let income = 0;
+  let spent = 0;
+  let fixed = 0;
+  let saved = 0;
+  const recurringTx = new Set(rows.filter((r) => r.recurringItemId != null).map((r) => r.id));
+  const byMonth = new Map<string, { income: number; expense: number }>();
+  // Every expense, for the hero's pace line (lib/safe-to-spend decides what counts).
+  const expenses: SpendEntry[] = [];
+  // Money in and out per day of the period, for the Money flow chart.
+  const flow = new Map<string, { in: number; out: number }>();
 
-  const income = totals.income ?? 0;
-  const expense = totals.expense ?? 0;
-  const balance = income - expense;
-
-  // Wallet-hero line graph — cumulative net balance day by day across the current
-  // period, ending exactly at `balance` (same in/out filtering as `totals` above).
-  const walletDayNet: Record<string, number> = {};
-  for (const row of periodAllocations) {
-    if (row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
-    walletDayNet[row.date] = (walletDayNet[row.date] ?? 0) + (row.direction === "income" ? row.amount : -row.amount);
-  }
-  const walletHistory: { date: string; balance: number }[] = [];
-  {
-    let running = 0;
-    for (let cursor = from; cursor <= to; cursor = shiftDate(cursor, 1)) {
-      running += walletDayNet[cursor] ?? 0;
-      walletHistory.push({ date: cursor, balance: running });
+  for (const a of allocations) {
+    if (a.isReimbursement || a.isInternalTransfer) continue;
+    if (a.direction === "expense") {
+      expenses.push({ date: a.date, amount: a.amount, categoryId: a.categoryId, recurring: recurringTx.has(a.transactionId) });
+    }
+    const inPeriod = a.date >= from && a.date <= to;
+    if (a.categoryGroup === "savings") {
+      if (inPeriod && a.direction === "expense") saved += a.amount;
+      continue;
+    }
+    if (inPeriod) {
+      const day = flow.get(a.date) ?? { in: 0, out: 0 };
+      if (a.direction === "income") {
+        income += a.amount;
+        day.in += a.amount;
+      } else {
+        spent += a.amount;
+        day.out += a.amount;
+        if (recurringTx.has(a.transactionId)) fixed += a.amount;
+      }
+      flow.set(a.date, day);
+    }
+    if (a.date >= chartFrom && a.date <= chartTo) {
+      const month = financialMonthForDate(a.date, financialMonth);
+      const m = byMonth.get(month) ?? { income: 0, expense: 0 };
+      m[a.direction === "income" ? "income" : "expense"] += a.amount;
+      byMonth.set(month, m);
     }
   }
 
-  const monthMap: Record<string, { income: number; expense: number }> = {};
-  for (const row of monthlyAllocations) {
-    if (row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
-    const month = financialMonthForDate(row.date, financialMonth);
-    if (!monthMap[month]) monthMap[month] = { income: 0, expense: 0 };
-    monthMap[month][row.direction as "income" | "expense"] += row.amount;
-  }
-
-  const monthlyData = Array.from({ length: 12 }, (_, i) => {
-    const month = financialMonthRange(financialMonth, -11 + i).from.slice(0, 7);
-    return {
-      month,
-      income: monthMap[month]?.income ?? 0,
-      expense: monthMap[month]?.expense ?? 0,
-    };
+  const months: MonthBar[] = Array.from({ length: CHART_MONTHS }, (_, i) => {
+    const range = financialMonthRange(financialMonth, -(CHART_MONTHS - 1) + i);
+    const month = range.from.slice(0, 7);
+    return { month, endsOn: range.to, income: byMonth.get(month)?.income ?? 0, expense: byMonth.get(month)?.expense ?? 0 };
   });
+  // Drop leading months with no data, so a new household isn't shown five empty months.
+  const firstWithData = months.findIndex((m) => m.income !== 0 || m.expense !== 0);
+  const chartMonths = firstWithData === -1 ? [] : months.slice(firstWithData);
+  const previous = months[months.length - 2];
 
-  const firstNonZero = monthlyData.findIndex((item) => item.income !== 0 || item.expense !== 0);
-  const lastNonZero = monthlyData.length - 1 - [...monthlyData].reverse().findIndex((item) => item.income !== 0 || item.expense !== 0);
+  const recent = recentRows.map((row) => ({ ...row, ...getDisplayedTransactionCategory(row, splitMap.get(row.id) ?? []) }));
 
-  if (firstNonZero !== -1 && lastNonZero >= firstNonZero) {
-    monthlyData.splice(lastNonZero + 1);
-    monthlyData.splice(0, firstNonZero);
+  const flowDays: FlowDay[] = [];
+  for (let d = from; d <= to; d = shiftDate(d, 1)) {
+    flowDays.push({ date: d, in: flow.get(d)?.in ?? 0, out: flow.get(d)?.out ?? 0 });
   }
-
-  const recent = recentRows.map((row) => ({
-    ...row,
-    ...getDisplayedTransactionCategory(row, splitMap.get(row.id) ?? []),
-  }));
-
-  const incomeTransactions = periodRows
-    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings")
-    .slice(0, 4);
-
-  const topExpenseMap = new Map<string, { categoryId: number | null; categoryName: string | null; color: string | null; icon: string | null; total: number }>();
-  for (const row of periodAllocations) {
-    if (row.direction !== "expense" || row.isInternalTransfer || row.categoryGroup !== "variable") continue;
-    const key = row.categoryId != null ? `id:${row.categoryId}` : `name:${row.categoryName ?? "uncategorized"}`;
-    const current = topExpenseMap.get(key) ?? {
-      categoryId: row.categoryId,
-      categoryName: row.categoryName,
-      color: row.categoryColor,
-      icon: row.categoryIcon,
-      total: 0,
-    };
-    current.total += row.amount;
-    topExpenseMap.set(key, current);
-  }
-
-  const topCategoryMap = new Map<string, { categoryName: string | null; color: string | null; total: number }>();
-  for (const row of periodAllocations) {
-    if (row.direction !== "expense" || row.isInternalTransfer) continue;
-    const key = row.categoryId != null ? `id:${row.categoryId}` : `name:${row.categoryName ?? "uncategorized"}`;
-    const current = topCategoryMap.get(key) ?? {
-      categoryName: row.categoryName,
-      color: row.categoryColor,
-      total: 0,
-    };
-    current.total += row.amount;
-    topCategoryMap.set(key, current);
-  }
-
-  const topExpenses = [...topExpenseMap.values()].sort((left, right) => right.total - left.total).slice(0, 5);
-  const topCategories = [...topCategoryMap.values()].sort((left, right) => right.total - left.total).slice(0, 5);
-
-  // Every category with at least one expense transaction this period — feeds the
-  // dashboard's "Spending by category" row, which (unlike categoryBudgetRows further
-  // down in the page component) isn't limited to categories that have a budget set.
-  // Categories the user has hidden (e.g. rent, which would otherwise always dominate
-  // the row) are tracked with `excluded` so the row/count can skip them while the
-  // "View all" list still shows — and can re-include — every one of them.
-  const excludedCategoryIds = new Set(allCategories.filter((c) => c.excludeFromSpendingRow).map((c) => c.id));
-  // Whether a transaction matched to a recurring bill counts toward its category's spend
-  // follows the budget_recurring_mode setting — kept in lock-step with the budget page
-  // (getBudgetOverview / resolveSpend) so the dashboard's "X of Y used" never disagrees.
-  const recurringTxIds = new Set(periodRows.filter((r) => r.recurringItemId != null).map((r) => r.id));
-  const budgetedCatIds = new Set(budgetTargetRows.map((r) => r.categoryId));
-  const categorySpendingMap = new Map<number, { categoryId: number; categoryName: string; color: string | null; icon: string | null; spent: number; excluded: boolean }>();
-  for (const row of periodAllocations) {
-    if (row.direction !== "expense" || row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings" || row.categoryId == null) continue;
-    if (recurringTxIds.has(row.transactionId)) {
-      const includeRecurring =
-        recurringMode === "always" ||
-        (recurringMode === "budgeted" && budgetedCatIds.has(row.categoryId));
-      if (!includeRecurring) continue;
-    }
-    const current = categorySpendingMap.get(row.categoryId) ?? {
-      categoryId: row.categoryId,
-      categoryName: row.categoryName ?? "Uncategorized",
-      color: row.categoryColor,
-      icon: row.categoryIcon,
-      spent: 0,
-      excluded: excludedCategoryIds.has(row.categoryId),
-    };
-    current.spent += row.amount;
-    categorySpendingMap.set(row.categoryId, current);
-  }
-  const categorySpendingAll = [...categorySpendingMap.values()].sort((a, b) => b.spent - a.spent);
-  const categorySpending = categorySpendingAll.filter((c) => !c.excluded);
-  const periodTx = periodRows
-    .filter((row) => row.direction === "expense" && !row.isInternalTransfer)
-    .map((row) => ({ description: row.description, amount: row.amount }));
-
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(chartNow.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
-    const date = d.toISOString().slice(0, 10);
-    return { date, amount: last7DaysRaw.find((r) => r.date === date)?.total ?? 0 };
-  });
-
-  const prev7DaysTotal = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(chartNow.getTime() - (13 - i) * 24 * 60 * 60 * 1000);
-    const date = d.toISOString().slice(0, 10);
-    return last7DaysRaw.find((r) => r.date === date)?.total ?? 0;
-  }).reduce((s, v) => s + v, 0);
 
   return {
-    income, expense, balance, year,
-    walletHistory,
-    monthlyData,
+    income,
+    previousIncome: previous?.income ?? 0,
+    spent,
+    fixed,
+    saved,
+    chartMonths,
+    expenses,
+    flowDays,
     recent,
-    categories: allCategories,
-    incomeTransactions,
-    goals: goalsRaw,
-    recurringTotals: Object.fromEntries(recurringRaw.map((r) => [r.type, r.total ?? 0])),
-    recurringItems: recurringItemsRaw,
-    periodTx,
-    topExpenses,
-    topCategories,
-    categorySpending,
-    categorySpendingAll,
-    last7Days,
-    prev7DaysTotal,
-    variableCategorySpending: [...topExpenseMap.values()],
+    allCategories,
+    savingsGoals,
+    hasRecurring: recurringCount > 0,
   };
 }
 
 export const dynamic = "force-dynamic";
 
 /**
- * Home — the redesigned dashboard.
- *
- * Phones, top to bottom: the mustard hero, quick actions, a nudge, Coming up, Spending,
- * the needs-review link and the accounts card. From lg it splits into a main column
- * (hero, category tiles, cash flow, accounts) and a 380px right column (quick actions,
- * nudge, every bill coming up, needs review, latest transactions).
- *
- * The phone order is produced with `order-*` on the children of two `display: contents`
- * wrappers, which become the two real columns from lg — one tree, no mobile twin.
- *
- * Every figure comes from the existing dashboard calculations: getDashboardData,
- * getBudgetOverview, getCashFlowForecast, getFinancialHealthScore and getBillStatuses.
+ * Home, on the Clear design. Desktop: the page heading, then Safe to spend, this
+ * month's figures and income vs spending in one row, then the budget and what is
+ * coming up beside recent activity and the accounts. Phones stack the same tree.
+ * Before anything is imported it shows the get-started checklist instead.
  */
-export default async function DashboardPage({
+export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; month?: string; cmpA?: string; cmpB?: string; cat?: string; acct?: string }>;
+  searchParams: Promise<{ from?: string; to?: string }>;
 }) {
   const sp = await searchParams;
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const financialMonth = await getFinancialMonthConfig();
-  const settingsPanels = getSettingsPanelContent(user);
   // Home shows the current financial month unless the URL asks for another range — it
   // never inherits the shared date cookie other pages' pickers write.
   const { from, to } = getDateRange(sp, financialMonth);
-
   const billMonth = currentFinancialMonth(financialMonth);
-  const currentMonthRange = financialMonthRange(financialMonth, 0);
+  const currentMonth = financialMonthRange(financialMonth, 0);
 
-  const [data, billStatuses, needsReview, budgetOverview, bankBalances, vermogenRows, accountHistory, budgetRecurringMode, forecast, health, sharedCostMode, weekNudge] = await Promise.all([
-    getDashboardData(from, to, "", financialMonth),
+  const [sharedCostMode, budgetRecurringMode] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode()]);
+  const [data, billStatuses, needsReview, budgetOverview, bankBalances] = await Promise.all([
+    getHomeData(from, to, financialMonth, sharedCostMode === "net"),
     getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
     getNeedsReviewTransactions(),
     getBudgetOverview(financialMonth),
     getBankBalances(),
-    db.select().from(vermogenAccounts).where(eq(vermogenAccounts.active, true)),
-    getAccountBalanceHistory(180),
-    getBudgetRecurringMode(),
-    getCashFlowForecast(financialMonth),
-    getFinancialHealthScore(financialMonth),
-    getSharedCostMode(),
-    getWeekNudge(),
   ]);
 
   const locale = await getLocale();
   const t = await getTranslations("home");
-  const tHealth = await getTranslations("financialHealth");
   const today = todayStr();
-  const shortDate = (date: string) =>
-    new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00`));
+  const shortDate = (date: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00`));
 
-  // ── Coming up: unpaid bills with a due date this financial month (the same filter as
-  //    /transactions/upcoming), soonest first. Income stays on the list but out of the
-  //    total — see billsDueTotal.
+  // Bills with a due date this financial month that aren't paid yet, soonest first.
+  // Income stays on the list but out of the total — see billsDueTotal.
   const upcoming = billStatuses
     .filter((s) => s.dueDate != null && s.paid !== true)
     .sort((a, z) => (a.dueDate! < z.dueDate! ? -1 : 1));
-  const upcomingTotal = billsDueTotal(upcoming.map((s) => ({ amount: s.item.amount, isIncome: s.item.type === "income" })));
-  const upcomingBillCount = upcoming.filter((s) => s.item.type !== "income").length;
   const comingUp: ComingUpBill[] = upcoming.map((s) => ({
     id: s.item.id,
     name: s.item.friendlyName ?? s.item.name,
-    amount: s.item.amount,
-    icon: s.icon,
-    iconColor: s.iconColor,
+    amount: s.item.amount ?? 0,
     dueDate: s.dueDate!,
     overdue: s.overdue,
     isIncome: s.item.type === "income",
   }));
+  const billsDue = billsDueTotal(comingUp);
+  const billsDueCount = comingUp.filter((b) => !b.isIncome).length;
 
-  // ── Hero, Month mode: what's left of the budget — the overall budget when one is
-  //    set, else the sum of category budgets (the same rule the old budget alert used).
-  //    With no budget at all it falls back to this month's cash flow.
-  const hasOverall = (budgetOverview.budget?.amount ?? 0) > 0;
-  const budgetTarget = hasOverall ? budgetOverview.budget!.amount : budgetOverview.allocated;
-  const budgetSpent = hasOverall ? budgetOverview.totalSpent : budgetOverview.budgetedSpent;
-  const hasBudget = budgetTarget > 0;
+  const hero = safeToSpend(
+    budgetOverview,
+    upcoming.map((s) => ({ categoryId: s.item.categoryId, amount: s.item.amount ?? 0, dueDate: s.dueDate!, isIncome: s.item.type === "income" })),
+    budgetRecurringMode,
+    today,
+  );
+  const spendByDay = hero ? budgetSpendByDay(data.expenses, budgetOverview, budgetRecurringMode, today) : [];
 
-  const monthPeriod = hasBudget ? { from: budgetOverview.from, to: budgetOverview.to } : currentMonthRange;
-  const monthTotalDays = Math.max(1, daysInclusive(monthPeriod.from, monthPeriod.to));
-  const monthDaysLeft = Math.max(1, daysInclusive(today < monthPeriod.from ? monthPeriod.from : today, monthPeriod.to));
-  const elapsed = (monthTotalDays - monthDaysLeft + 1) / monthTotalDays;
+  const budgetRows: BudgetRow[] = budgetOverview.categories
+    .filter((c) => c.budget != null && c.budget > 0)
+    .sort((a, z) => z.spent / z.budget! - a.spent / a.budget!)
+    .slice(0, 4)
+    .map((c) => ({ categoryId: c.categoryId, name: c.categoryName, icon: c.icon, color: c.color, spent: c.spent, budget: c.budget! }));
+  const budgetTitle =
+    budgetOverview.budget?.period === "weekly"
+      ? t("budget.titleWeekly")
+      : // Named after the month the period ends in: 23 Sep – 22 Oct is the October budget.
+        t("budget.title", { month: new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(`${budgetOverview.to}T12:00:00`)) });
 
-  const monthSafe = hasBudget ? budgetTarget - budgetSpent : data.balance;
-  let monthPace: HeroPace | null = null;
-  if (hasBudget) {
-    const used = budgetSpent / budgetTarget;
-    monthPace = used > 1 ? "over" : used > elapsed + 0.05 ? "fast" : "onPace";
-  }
-  const month: HeroFigures = {
-    amount: monthSafe,
-    perDay: hasBudget ? Math.max(0, monthSafe) / monthDaysLeft : null,
-    until: shortDate(nextDay(monthPeriod.to)),
-    pace: monthPace,
-    hint: hasBudget ? (monthSafe < 0 ? t("hero.overBudget") : null) : t("hero.noBudget"),
-    totalDays: monthTotalDays,
-    daysLeft: monthDaysLeft,
-  };
-
-  // ── Hero, Balance mode: what's in the bank accounts minus the bills still due this
-  //    financial month, spread over the days left in it.
-  const fmTotalDays = Math.max(1, daysInclusive(currentMonthRange.from, currentMonthRange.to));
-  const fmDaysLeft = Math.max(1, daysInclusive(today < currentMonthRange.from ? currentMonthRange.from : today, currentMonthRange.to));
-  const bankTotal = bankBalances.reduce((s, b) => s + (Number(b.balance) || 0), 0);
-  const balanceBase = forecast.hasStartingBalance ? forecast.current : bankTotal;
-  const balanceSafe = balanceBase - upcomingTotal;
-  const balance: HeroFigures = {
-    amount: balanceSafe,
-    perDay: Math.max(0, balanceSafe) / fmDaysLeft,
-    until: shortDate(nextDay(currentMonthRange.to)),
-    pace: forecast.status === "empty" ? null : forecast.status === "healthy" ? "onTrack" : "low",
-    hint: null,
-    totalDays: fmTotalDays,
-    daysLeft: fmDaysLeft,
-  };
-
-  const stats = {
-    budgetUsed: hasBudget ? `${formatEur(budgetSpent).replace(/,\d\d$/, "")} · ${Math.round((budgetSpent / budgetTarget) * 100)}%` : "—",
-    forecastLow: forecast.lowest ? `${formatEur(forecast.lowest.amount).replace(/,\d\d$/, "")} · ${shortDate(forecast.lowest.date)}` : "—",
-    health: health.score != null && health.stateKey ? `${health.score} · ${tHealth(`state.${health.stateKey}`)}` : "—",
-  };
-
-  // ── Spending: every category with spend this period, merged with its budget.
-  const spendingRows = data.categorySpending.map((c) => ({
-    categoryId: c.categoryId,
-    categoryName: c.categoryName,
-    color: c.color,
-    icon: c.icon,
-    spent: c.spent,
-    budget: budgetOverview.categories.find((b) => b.categoryId === c.categoryId)?.budget ?? null,
+  const accounts = bankBalances.map((b) => ({
+    key: `bank-${b.id}`,
+    name: b.displayName ?? b.accountNumber ?? "—",
+    suffix: b.accountNumber ? b.accountNumber.slice(-4) : null,
+    balance: Number(b.balance) || 0,
   }));
+  const accountsTotal = accounts.reduce((s, a) => s + a.balance, 0);
 
-  // ── Cash flow: the cumulative net by day, up to today.
-  const cashFlowHistory = data.walletHistory.filter((p) => p.date <= today).map((p) => p.balance);
-
-  const accountsTotal = bankBalances.reduce((s, b) => s + b.balance, 0) + vermogenRows.reduce((s, a) => s + a.value, 0);
   const hasTransactions = data.recent.length > 0;
-
+  const daysToPayday = Math.max(1, daysInclusive(today < currentMonth.from ? currentMonth.from : today, currentMonth.to));
   const hour = new Date().getHours();
   const greetingKey = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   const firstName = user.firstName ?? user.name.split(" ")[0];
   const longToday = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
   return (
-    <PageShell
-      bodyClassName="pt-4 lg:pt-1"
-      header={
-        <>
-      {/* Phone header — wordmark, search and the settings avatar. */}
-      <header className="flex w-full items-center justify-between lg:hidden">
-        <Wordmark />
-        <div className="flex items-center gap-2">
-          <SearchButton />
+    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
+      <DashboardReadySignal />
+      <HomeTips />
+
+      {/* Phone header — the avatar opens Settings; search sits on the right. */}
+      <div className="flex items-center justify-between gap-3 lg:hidden">
+        <div className="flex min-w-0 items-center gap-2.5">
           <SettingsDialog
             user={user}
-            panels={settingsPanels}
+            panels={getSettingsPanelContent(user)}
             financialMonth={financialMonth}
             budgetRecurringMode={budgetRecurringMode}
             sharedCostMode={sharedCostMode}
             iconOnly
           />
+          <span className="flex min-w-0 flex-col leading-tight">
+            <span className="text-[13px] text-clear-ink-2">{t(`greetingShort.${greetingKey}`)}</span>
+            <span className="truncate text-lg font-extrabold tracking-[-0.02em]">{firstName}</span>
+          </span>
         </div>
-      </header>
+        <SearchButton />
+      </div>
 
-      {/* Desktop header — greeting, the day and how much of the month is left. */}
-      <PageHeading
-        className="hidden w-full lg:flex"
-        title={t(`greeting.${greetingKey}`, { name: firstName })}
-        subtitle={t("subtitle", { date: longToday, count: fmDaysLeft })}
-        actions={
-          <>
-            <SearchButton />
-            <Link
-              href="/transactions/add"
-              className="inline-flex h-[42px] items-center gap-2 rounded-full bg-mustard px-[18px] text-sm font-bold text-mustard-ink"
-            >
-              <IconPlus size={16} stroke={2} />
-              {t("addTransaction")}
-            </Link>
-          </>
-        }
-      />
-        </>
-      }
-    >
-      <DashboardReadySignal />
-      <HomeTips />
-
-      <div className={SPLIT_GRID}>
-        {/* Main column */}
-        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
-          <div className="order-1 lg:order-none">
-            <HeroCard month={month} balance={balance} stats={stats} />
-          </div>
-          <SpendingList rows={spendingRows} className="order-5 lg:order-none lg:hidden" />
-          <CategoryTiles rows={spendingRows} total={spendingRows.length} className="hidden lg:flex" />
-          <CashFlowCard net={data.balance} history={cashFlowHistory} className="hidden lg:flex" />
-          <div className="order-8 lg:order-none">
-            <AccountsCard bankBalances={bankBalances} vermogenRows={vermogenRows} accountsTotal={accountsTotal} accountHistory={accountHistory} />
-          </div>
+      {/* Heading — desktop title row; on phones only the review strip shows. */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
+        <div className="hidden flex-col gap-1.5 lg:flex">
+          <h1 className="m-0 text-[40px] font-extrabold tracking-[-0.03em]">{t(`greeting.${greetingKey}`, { name: firstName })}</h1>
+          <span className="text-base text-clear-ink-2">{t("subtitle", { date: longToday, count: daysToPayday })}</span>
         </div>
-
-        {/* Right column (desktop) */}
-        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-5">
-          <div className="order-2 lg:order-none">
-            <QuickActions />
-          </div>
-          {!hasTransactions && (
-            <div className="order-3 lg:order-none rounded-card border border-line bg-surface shadow-card">
-              <DashboardEmptyState />
-            </div>
-          )}
-          <div className="order-3 lg:order-none empty:hidden">
-            <NudgeCard nudge={weekNudge} billsDue={{ count: upcomingBillCount, total: upcomingTotal }} />
-          </div>
-          <div className="order-4 lg:order-none">
-            <ComingUp bills={comingUp} month={billMonth} totalDue={upcomingTotal} today={today} />
-          </div>
-          <div className="order-6 lg:order-none empty:hidden">
-            <NeedsReviewLink count={needsReview.length} />
-          </div>
-          {hasTransactions && (
-            <section className="hidden flex-col gap-2.5 lg:flex">
-              <SectionHead title={t("latest.title")} link={t("latest.all")} href="/transactions" />
-              <div className="rounded-card border border-line bg-surface px-[18px] py-1 shadow-card">
-                <DashboardRecentTransactions recent={data.recent.slice(0, 6)} categories={data.categories} savingsGoals={data.goals} />
-              </div>
-            </section>
-          )}
+        <div className="flex flex-wrap items-center gap-2.5 empty:hidden">
+          <ReviewLink count={needsReview.length} />
+          <SearchButton className="hidden lg:inline-flex" />
         </div>
       </div>
-    </PageShell>
+
+      {/* One grid for every card, so columns line up from row to row: three columns from
+          xl (two from lg). Safe to spend, this month and income vs spending on top; then
+          the budget beside money flow; then what's coming up and the accounts beside
+          recent activity. */}
+      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        <HomeHero figures={hero} resetsOn={hero ? shortDate(hero.resetsOn) : ""} spendByDay={spendByDay} />
+        {hasTransactions ? (
+          <>
+            <ThisMonthCard
+              figures={{
+                income: data.income,
+                incomeChange: data.previousIncome > 0 ? (data.income - data.previousIncome) / data.previousIncome : null,
+                spent: data.spent,
+                fixed: data.fixed,
+                saved: data.saved,
+                billsDue,
+                billsDueCount,
+                billsBy: shortDate(currentMonth.to),
+              }}
+            />
+            <div className="min-w-0 lg:col-span-2 xl:col-span-1 [&>*]:h-full">
+              <IncomeSpendingCard months={data.chartMonths} />
+            </div>
+
+            {/* The budget and money flow share a row, so they're the same height. */}
+            {hero && <BudgetCard title={budgetTitle} target={hero.target} spent={hero.spent} rows={budgetRows} />}
+            <div className={cn("flex min-w-0 xl:col-span-2 [&>*]:flex-1", !hero && "lg:col-span-2 xl:col-span-3")}>
+              <MoneyFlowCard days={data.flowDays} today={today} />
+            </div>
+            {/* Coming up and the accounts share the height of recent activity equally; their
+                tiles grow to fill each card. */}
+            <div className="flex min-w-0 flex-col gap-5">
+              <div className="flex flex-1 flex-col [&>*]:flex-1">
+                <ComingUpCard bills={comingUp.slice(0, 4)} totalDue={billsDue} today={today} />
+              </div>
+              <div className="flex flex-1 flex-col empty:hidden [&>*]:flex-1">
+                <AccountsCard accounts={accounts} total={accountsTotal} />
+              </div>
+            </div>
+            <div className="min-w-0 xl:col-span-2">
+              <HomeRecentActivity recent={data.recent} categories={data.allCategories} savingsGoals={data.savingsGoals} />
+            </div>
+          </>
+        ) : (
+          <div className="min-w-0 xl:col-span-2 [&>*]:h-full">
+            <GetStartedCard
+              steps={{
+                imported: false,
+                budget: hero != null,
+                bills: data.hasRecurring,
+                goal: data.savingsGoals.length > 0,
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

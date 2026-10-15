@@ -8,7 +8,6 @@ import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { billsDueTotal } from "@/lib/bill-amounts";
 import { normalizeBudgetType } from "@/lib/format";
-import { PageShell } from "@/components/page-container";
 import { getLocale } from "next-intl/server";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
 import { ActivityHeader, ActivityView, type ActivityFilters } from "./_activity/activity-view";
@@ -218,12 +217,17 @@ export default async function TransactionsPage({
   // the "show more" limit only affects which rows render, not the summary figures.
   const allocationRows = buildSplitAllocations(filteredRows, splitMap);
 
-  const income = allocationRows
-    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings")
-    .reduce((sum, row) => sum + row.amount, 0);
-  const expense = allocationRows
-    .filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryGroup !== "savings")
-    .reduce((sum, row) => sum + row.amount, 0);
+  const incomeRows = allocationRows.filter(
+    (row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings",
+  );
+  const expenseRows = allocationRows.filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryGroup !== "savings");
+  const income = incomeRows.reduce((sum, row) => sum + row.amount, 0);
+  const expense = expenseRows.reduce((sum, row) => sum + row.amount, 0);
+  // For the summary's explanations: how many payments came in, and how much of the money
+  // out went to recurring bills.
+  const incomeCount = new Set(incomeRows.map((row) => row.transactionId)).size;
+  const recurringIds = new Set(filteredRows.filter((row) => row.recurringItemId != null).map((row) => row.id));
+  const fixed = expenseRows.filter((row) => recurringIds.has(row.transactionId)).reduce((sum, row) => sum + row.amount, 0);
 
   // "Show more" link — bumps the row limit by 50 while keeping every other filter intact.
   const showMoreHref = (() => {
@@ -238,27 +242,12 @@ export default async function TransactionsPage({
     if (recurring) next.set("recurring", "1");
     if (min != null) next.set("min", String(min));
     if (max != null) next.set("max", String(max));
+    if (sort) next.set("sort", sort);
+    if (dir) next.set("dir", dir);
     next.set("limit", String(limit + 50));
     return `?${next.toString()}`;
   })();
   const hasMore = filteredRows.length > visibleRows.length;
-
-  // Sparkline: the running net (in − out) across the filtered rows, oldest first,
-  // thinned to at most 60 points so an all-time range stays a readable line.
-  const netByDate = new Map<string, number>();
-  for (const a of allocationRows) {
-    if (a.isInternalTransfer || a.categoryGroup === "savings") continue;
-    if (a.direction === "income" && a.isReimbursement) continue;
-    netByDate.set(a.date, (netByDate.get(a.date) ?? 0) + (a.direction === "income" ? a.amount : -a.amount));
-  }
-  const running: number[] = [];
-  let acc = 0;
-  for (const date of [...netByDate.keys()].sort()) {
-    acc += netByDate.get(date)!;
-    running.push(acc);
-  }
-  const step = Math.max(1, Math.ceil(running.length / 60));
-  const sparkline = running.filter((_, i) => i % step === 0 || i === running.length - 1);
 
   const filters: ActivityFilters = {
     cats,
@@ -274,6 +263,8 @@ export default async function TransactionsPage({
     search,
     min: sp.min,
     max: sp.max,
+    sort,
+    dir,
   };
 
   // ── Context for the detail panel (see _activity/context.ts and lib/activity-context.ts)
@@ -293,10 +284,8 @@ export default async function TransactionsPage({
   };
 
   return (
-    <PageShell
-      header={<ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} />}
-      bodyClassName="pt-3 lg:pt-1"
-    >
+    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:h-dvh lg:min-h-[720px] lg:gap-7 lg:px-8 lg:pt-7 lg:pb-4">
+      <ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} />
       <ActivityView
         filters={filters}
         categories={cats}
@@ -305,12 +294,13 @@ export default async function TransactionsPage({
         filteredCount={filteredRows.length}
         income={income}
         expense={expense}
-        sparkline={sparkline}
+        fixed={fixed}
+        incomeCount={incomeCount}
         showMoreHref={showMoreHref}
         hasMore={hasMore}
         tiles={tiles}
         context={context}
       />
-    </PageShell>
+    </div>
   );
 }

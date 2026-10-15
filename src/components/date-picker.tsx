@@ -100,7 +100,7 @@ export function CalendarContent({
   /** When provided, an extra "Clear" quick-action shows alongside "Today"/"This month" —
    *  for optional dates (e.g. a goal's end date) that need a way back to "not set". */
   onClear?: () => void;
-  /** Swaps the theme-token colors (text-foreground, bg-foreground/5, ...) for hardcoded
+  /** Swaps the theme-token colors (text-clear-ink, bg-clear-primary/5, ...) for hardcoded
    *  white-on-dark ones — for callers that render this on a forced-dark surface (e.g. the
    *  onboarding wizard's auth-gradient background) where theme tokens would go invisible
    *  in light mode. */
@@ -117,12 +117,12 @@ export function CalendarContent({
         border: "border-white/15",
       }
     : {
-        text: "text-foreground",
-        hoverBg: "hover:bg-foreground/5",
-        selectedBg: "bg-foreground text-primary-foreground",
-        ring: "ring-1 ring-foreground/30",
-        faded: "text-foreground/25",
-        muted: "text-foreground/40",
+        text: "text-clear-ink",
+        hoverBg: "hover:bg-clear-primary/5",
+        selectedBg: "bg-clear-primary text-clear-ember-ink",
+        ring: "ring-1 ring-clear-ink/30",
+        faded: "text-clear-ink/25",
+        muted: "text-clear-ink/40",
         border: "border-border/60",
       };
   const today = new Date();
@@ -248,7 +248,7 @@ export function CalendarContent({
         <>
           <div className="grid grid-cols-7 mb-1">
             {WEEKDAYS.map((w) => (
-              <div key={w} className={cn("text-[11px] font-medium text-center py-1", c.muted)}>{w}</div>
+              <div key={w} className={cn("text-xs font-medium text-center py-1", c.muted)}>{w}</div>
             ))}
           </div>
           <div className="grid grid-cols-7 gap-y-1">
@@ -283,7 +283,7 @@ export function CalendarContent({
           <button
             type="button"
             onClick={() => (granularity === "month" ? pickMonth(today) : pickDate(today))}
-            className={cn("flex-1 text-center text-xs font-medium transition-colors", c.muted, dark ? "hover:text-white" : "hover:text-foreground")}
+            className={cn("flex-1 text-center text-xs font-medium transition-colors", c.muted, dark ? "hover:text-white" : "hover:text-clear-ink")}
           >
             {granularity === "month" ? "This month" : "Today"}
           </button>
@@ -291,7 +291,7 @@ export function CalendarContent({
             <button
               type="button"
               onClick={() => { onClear(); onClose(); }}
-              className={cn("flex-1 text-center text-xs font-medium transition-colors", c.muted, dark ? "hover:text-white" : "hover:text-foreground")}
+              className={cn("flex-1 text-center text-xs font-medium transition-colors", c.muted, dark ? "hover:text-white" : "hover:text-clear-ink")}
             >
               Clear
             </button>
@@ -330,11 +330,11 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
         "h-12 w-full rounded-lg px-3.5 text-sm mt-1 mb-2 flex items-center gap-2.5 outline-none transition-colors focus-visible:ring-1 cursor-pointer",
         dark
           ? "bg-white/7 focus-visible:border-white/40 focus-visible:ring-white/20"
-          : "bg-foreground/3 focus-visible:border-ring focus-visible:ring-foreground/15",
+          : "bg-clear-primary/3 focus-visible:border-ring focus-visible:ring-clear-ink/15",
         triggerClassName,
       )}
     >
-      <CalendarIcon className={cn("size-4 shrink-0", dark ? "text-white" : "text-foreground")} />
+      <CalendarIcon className={cn("size-4 shrink-0", dark ? "text-white" : "text-clear-ink")} />
       <span className="truncate leading-none">{triggerLabel}</span>
     </button>
   );

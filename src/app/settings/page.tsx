@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { categories, categoryRules, recurringItems, savingsGoals, brandIconRules, banks } from "@/db/schema";
 import { asc } from "drizzle-orm";
-import { getFinancialMonthConfig, getSidebarSubtitle, getBudgetRollover, getBudgetStrategy } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getBudgetRollover, getBudgetStrategy } from "@/lib/app-settings";
 import { GeneralSettingsClient } from "./general-client";
 import { BrandIconsClient, BrandIconRuleAddButton } from "./brand-icons-client";
 import { LinkedBanksSection } from "./banks-client";
@@ -51,9 +51,8 @@ export default async function SettingsPage({
   const embedded = embed === "1";
   const tab: Tab = (["categories", "recurring", "brandicons", "banks", "general", "profile"].includes(tabParam ?? "") ? tabParam : "categories") as Tab;
 
-  const [currentUser, sidebarSubtitle, budgetStrategy] = await Promise.all([
+  const [currentUser, budgetStrategy] = await Promise.all([
     tab === "profile" ? getCurrentUser() : Promise.resolve(null),
-    tab === "profile" ? getSidebarSubtitle() : Promise.resolve(""),
     tab === "profile" ? getBudgetStrategy() : Promise.resolve(null),
   ]);
 
@@ -169,7 +168,7 @@ export default async function SettingsPage({
 
         {/* ── Profile ── */}
         {tab === "profile" && currentUser && budgetStrategy && (
-          <ProfileSettingsClient user={currentUser} sidebarSubtitle={sidebarSubtitle} budgetStrategy={budgetStrategy} />
+          <ProfileSettingsClient user={currentUser} budgetStrategy={budgetStrategy} />
         )}
 
         {/* ── General ── */}

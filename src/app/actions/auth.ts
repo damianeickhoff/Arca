@@ -4,9 +4,8 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { users, sessions, appSettings, mfaChallenges } from "@/db/schema";
+import { users, sessions, mfaChallenges } from "@/db/schema";
 import { createSession, destroySession, getCurrentUser, generateSessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { verifyTotpCode, verifyBackupCode } from "@/lib/totp";
 
@@ -154,21 +153,6 @@ export async function updateOwnAuthBackgroundAction(presetId: string): Promise<{
   if (!user) return { error: "Not logged in." };
 
   await db.update(users).set({ authBackground: presetId }).where(eq(users.id, user.id));
-  return { success: true };
-}
-
-export async function updateSidebarSubtitleAction(formData: FormData): Promise<{ error?: string; success?: boolean }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not logged in." };
-
-  const subtitle = String(formData.get("subtitle") ?? "").trim();
-  if (!subtitle) return { error: "Enter some text." };
-  if (subtitle.length > 40) return { error: "Maximaal 40 tekens." };
-
-  await db.insert(appSettings).values({ key: "sidebar_subtitle", value: subtitle })
-    .onConflictDoUpdate({ target: appSettings.key, set: { value: subtitle } });
-
-  revalidatePath("/", "layout");
   return { success: true };
 }
 

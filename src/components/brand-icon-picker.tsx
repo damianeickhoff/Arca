@@ -91,13 +91,13 @@ function SliderRow({ label, value, min, max, step, unit, onChange }: {
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-foreground/50 w-20 shrink-0">{label}</span>
+      <span className="text-xs text-clear-ink/50 w-20 shrink-0">{label}</span>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="flex-1 h-1.5 accent-primary cursor-pointer"
+        className="flex-1 h-1.5 accent-clear-ember cursor-pointer"
       />
-      <span className="text-xs text-foreground/60 w-12 text-right tabular-nums">{value}{unit}</span>
+      <span className="text-xs text-clear-ink/60 w-12 text-right tabular-nums">{value}{unit}</span>
     </div>
   );
 }
@@ -107,11 +107,11 @@ function ImgAdjuster({ value, onChange }: { value: string; onChange: (key: strin
   const hasTransform = scale !== 1 || ox !== 0 || oy !== 0;
   function update(s: number, x: number, y: number) { onChange(buildImgKey(src, s, x, y)); }
   return (
-    <div className="rounded-xl bg-foreground/[0.04] p-3 space-y-3">
+    <div className="rounded-xl bg-clear-primary/[0.04] p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-foreground/60">Formaat &amp; positie</p>
+        <p className="text-xs font-medium text-clear-ink/60">Formaat &amp; positie</p>
         {hasTransform && (
-          <button type="button" onClick={() => update(1, 0, 0)} className="text-xs text-foreground/40 hover:text-foreground/70 cursor-pointer">Reset</button>
+          <button type="button" onClick={() => update(1, 0, 0)} className="text-xs text-clear-ink/40 hover:text-clear-ink/70 cursor-pointer">Reset</button>
         )}
       </div>
       <div className="flex justify-center"><BrandIcon iconKey={value} size="xxl" /></div>
@@ -129,11 +129,11 @@ function BrandAdjuster({ value, onChange }: { value: string; onChange: (key: str
   const hasTransform = scale !== 1 || ox !== 0 || oy !== 0;
   function update(s: number, x: number, y: number) { onChange(buildBrandKey(base, s, x, y)); }
   return (
-    <div className="rounded-xl bg-foreground/[0.04] p-3 space-y-3">
+    <div className="rounded-xl bg-clear-primary/[0.04] p-3 space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-foreground/60">Formaat &amp; positie</p>
+        <p className="text-xs font-medium text-clear-ink/60">Formaat &amp; positie</p>
         {hasTransform && (
-          <button type="button" onClick={() => update(1, 0, 0)} className="text-xs text-foreground/40 hover:text-foreground/70 cursor-pointer">Reset</button>
+          <button type="button" onClick={() => update(1, 0, 0)} className="text-xs text-clear-ink/40 hover:text-clear-ink/70 cursor-pointer">Reset</button>
         )}
       </div>
       <div className="flex justify-center"><BrandIcon iconKey={value} size="xxl" /></div>
@@ -251,7 +251,7 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
         {/* z-90/85: this picker is always the topmost thing on screen when open, and it
             is now opened from editors that themselves stack above full-screen portals
             (merchant editor, z-72) — anything lower would render behind its own host. */}
-        <DialogContent className="max-h-[90dvh] overflow-y-auto" sheetClassName="z-[90]" overlayClassName="z-[85] backdrop-blur-lg bg-foreground/20">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto" sheetClassName="z-[90]" overlayClassName="z-[85] backdrop-blur-lg bg-clear-primary/20">
           <DialogHeader>
             <DialogTitle>Merk kiezen</DialogTitle>
           </DialogHeader>
@@ -259,13 +259,13 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-foreground/40" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-clear-ink/40" />
                 <input
                   type="text"
                   placeholder="Search merk..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-full pl-9 pr-3 py-2 text-sm bg-foreground/5"
+                  className="w-full rounded-full pl-9 pr-3 py-2 text-sm bg-clear-primary/5"
                 />
               </div>
               <Segmented
@@ -294,8 +294,8 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
             )}
 
             {/* Uploaded images */}
-            <div className="border-t border-foreground/10 pt-3 space-y-3">
-              <p className="text-[10px] text-foreground/50 uppercase tracking-wide">Eigen afbeelding</p>
+            <div className="border-t border-clear-ink/10 pt-3 space-y-3">
+              <p className="text-xs font-bold text-clear-muted">Eigen afbeelding</p>
               <div className="flex flex-wrap gap-1.5">
                 {uploadedIcons.map((img) => {
                   const isSelected = selectedImgSrc === img.key.slice(4) || value === img.key;
@@ -309,7 +309,7 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
                       }}
                       className={cn(
                         "rounded-xl p-1.5 transition-colors cursor-pointer",
-                        isSelected ? "ring-2 ring-foreground bg-foreground/5" : "hover:bg-foreground/5",
+                        isSelected ? "ring-2 ring-clear-ink bg-clear-primary/5" : "hover:bg-clear-primary/5",
                       )}
                     >
                       <BrandIcon iconKey={isSelected && value ? value : img.key} size="sm" />
@@ -320,7 +320,7 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="size-10 rounded-xl border border-dashed border-foreground/25 text-foreground/40 hover:border-foreground/50 hover:text-foreground/70 transition-colors flex items-center justify-center disabled:opacity-50 cursor-pointer"
+                  className="size-10 rounded-xl border border-dashed border-clear-ink/25 text-clear-ink/40 hover:border-clear-ink/50 hover:text-clear-ink/70 transition-colors flex items-center justify-center disabled:opacity-50 cursor-pointer"
                   title="Upload image"
                 >
                   {uploading ? "…" : <Plus className="size-4" />}
@@ -335,8 +335,8 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
             </div>
 
             {/* Custom emoji/text icon */}
-            <div className="border-t border-foreground/10 pt-3">
-              <p className="text-[10px] text-foreground/50 uppercase tracking-wide mb-1.5">Eigen icoon (emoji of tekst)</p>
+            <div className="border-t border-clear-ink/10 pt-3">
+              <p className="text-xs font-bold text-clear-muted mb-1.5">Eigen icoon (emoji of tekst)</p>
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -348,14 +348,14 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
                     setCustomInput(v);
                     if (v) onChange(`custom:${v}`);
                   }}
-                  className="w-24 rounded-full px-3 py-1.5 text-sm bg-foreground/5 text-center"
+                  className="w-24 rounded-full px-3 py-1.5 text-sm bg-clear-primary/5 text-center"
                 />
                 {customInput && <BrandIcon iconKey={`custom:${customInput}`} size="sm" />}
                 {value?.startsWith("custom:") && (
                   <button
                     type="button"
                     onClick={() => { setCustomInput(""); onChange(null); }}
-                    className="text-xs text-foreground/50 hover:text-foreground cursor-pointer"
+                    className="text-xs text-clear-ink/50 hover:text-clear-ink cursor-pointer"
                   >
                     Wissen
                   </button>
@@ -365,7 +365,7 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
           </div>
 
           {value && !showAdjuster && (
-            <p className="text-xs text-foreground/50 -mt-1">
+            <p className="text-xs text-clear-ink/50 -mt-1">
               Geselecteerd: {selectedLabel}
             </p>
           )}
@@ -375,7 +375,7 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="w-full rounded-xl bg-foreground text-primary-foreground py-2.5 text-sm font-medium mt-1 cursor-pointer"
+              className="w-full rounded-xl bg-clear-primary text-clear-ember-ink py-2.5 text-sm font-medium mt-1 cursor-pointer"
             >
               Save
             </button>

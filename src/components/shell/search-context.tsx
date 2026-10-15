@@ -59,10 +59,7 @@ export function SearchProvider({ children, enabled }: { children: React.ReactNod
   );
 }
 
-/**
- * The header search control. A 40px round icon button on phones; from lg up, a wide
- * pill that reads like a field and shows the keyboard shortcut.
- */
+/** The header search control: a round button (Ctrl/Cmd+K does the same anywhere). */
 export function SearchButton({ className }: { className?: string }) {
   const t = useTranslations("nav");
   const { openSearch } = useGlobalSearch();
@@ -72,14 +69,11 @@ export function SearchButton({ className }: { className?: string }) {
       onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
       aria-label={t("search")}
       className={cn(
-        "inline-flex h-10 shrink-0 items-center justify-center gap-2.5 rounded-full border border-line bg-surface text-ink transition-colors hover:bg-surface-2",
-        "w-10 lg:w-[300px] lg:justify-start lg:px-4 lg:text-ink-3",
+        "inline-flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-card text-clear-ink transition-colors hover:bg-clear-tile lg:size-11",
         className,
       )}
     >
-      <IconSearch size={18} stroke={1.8} className="shrink-0" />
-      <span className="hidden flex-1 text-left text-[13px] lg:inline">{t("searchPlaceholder")}</span>
-      <span className="hidden font-mono text-[11px] lg:inline">{t("searchShortcut")}</span>
+      <IconSearch size={21} stroke={1.9} />
     </button>
   );
 }

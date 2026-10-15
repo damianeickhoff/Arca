@@ -49,14 +49,13 @@ export type TipId =
   | "settingsLocation"
   | "strategyLocation"
   | "transactionDetail"
-  // redesign (mustard): the new shell and the rebuilt Home
-  | "newNavigation"
+  // redesign: the shell (Clear sidebar) and Home (Clear)
+  | "clearNavigation"
   | "planHub"
-  | "homeSafeToSpend"
-  | "homeQuickActions"
-  | "homeNudge"
+  | "homeSafeToSpendSum"
   | "homeComingUp"
-  | "homeSpending"
+  | "homeIncomeVsSpending"
+  | "homeMoneyFlow"
   // redesign (mustard): Activity
   | "activityDetail"
   | "activityFilters"
@@ -95,7 +94,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "newNavigation", "planHub", "homeSafeToSpend", "homeQuickActions", "homeNudge", "homeComingUp", "homeSpending", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityContext", "activityKeys", "budgetStrategyCard", "budgetMove", "budgetBills", "debtsDetail", "debtsSimulator", "debtsOwed", "goalsContributions", "goalsDetail", "insightsMerchants", "insightsNeedsWants", "insightsHealthCompare", "insightsComingUp"];
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityContext", "activityKeys", "budgetStrategyCard", "budgetMove", "budgetBills", "debtsDetail", "debtsSimulator", "debtsOwed", "goalsContributions", "goalsDetail", "insightsMerchants", "insightsNeedsWants", "insightsHealthCompare", "insightsComingUp"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;

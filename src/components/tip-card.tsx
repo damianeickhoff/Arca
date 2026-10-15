@@ -12,16 +12,14 @@ import {
   IconChecklist,
   IconCompass,
   IconCalendarDue,
-  IconChartDonut,
+  IconCalculator,
   IconLayoutSidebar,
-  IconBolt,
-  IconSun,
+  IconChartLine,
   IconLayoutSidebarRight,
   IconFilter,
   IconSearch,
   IconChartBarPopular,
   IconArrowsVertical,
-  IconCalendarStats,
   IconFileTextFilled,
   IconHandFinger,
   IconHeartbeat,
@@ -66,13 +64,12 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   settingsLocation: IconSettings,
   strategyLocation: IconAdjustments,
   transactionDetail: IconHandFinger,
-  newNavigation: IconLayoutSidebar,
+  clearNavigation: IconLayoutSidebar,
+  homeMoneyFlow: IconChartLine,
   planHub: IconCompass,
-  homeSafeToSpend: IconCalendarStats,
-  homeQuickActions: IconBolt,
-  homeNudge: IconSun,
+  homeSafeToSpendSum: IconCalculator,
   homeComingUp: IconCalendarDue,
-  homeSpending: IconChartDonut,
+  homeIncomeVsSpending: IconChartBar,
   activityDetail: IconLayoutSidebarRight,
   activityFilters: IconFilter,
   activityBulkSelect: IconChecklist,
@@ -131,16 +128,16 @@ export function TipCard({
   const Icon = TIP_ICONS[id];
 
   return (
-    <div className="pointer-events-auto rounded-banner border border-line bg-surface shadow-float p-4">
+    <div className="pointer-events-auto rounded-clear-tile border border-clear-line bg-clear-card shadow-clear-float p-4">
       <div className="flex gap-3">
         {!compact && (
-          <div className="size-10 shrink-0 rounded-full bg-mustard flex items-center justify-center">
-            <Icon className="size-5 text-mustard-ink" />
+          <div className="size-10 shrink-0 rounded-full bg-clear-ember flex items-center justify-center">
+            <Icon className="size-5 text-clear-ember-ink" />
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="heading text-[15px] leading-tight text-ink">{title ?? t(`${id}.title`)}</p>
-          <p className="mt-1 text-sm text-ink-2 leading-snug">{body ?? t(`${id}.body`)}</p>
+          <p className="font-extrabold tracking-[-0.02em] text-[15px] leading-tight text-clear-ink">{title ?? t(`${id}.title`)}</p>
+          <p className="mt-1 text-sm text-clear-ink-2 leading-snug">{body ?? t(`${id}.body`)}</p>
         </div>
       </div>
 
@@ -149,14 +146,14 @@ export function TipCard({
           <button
             type="button"
             onClick={onDismissAll}
-            className="h-9 px-3 rounded-full text-sm font-semibold text-ink-3 active:scale-[0.97] transition-transform"
+            className="h-9 px-3 rounded-full text-sm font-semibold text-clear-muted active:scale-[0.97] transition-transform"
           >
             {t("dontShowAgain")}
           </button>
           <button
             type="button"
             onClick={onDismiss}
-            className="h-9 px-5 rounded-full bg-ink text-bg text-sm font-bold active:scale-[0.97] transition-transform"
+            className="h-9 px-5 rounded-full bg-clear-primary text-clear-primary-ink text-sm font-bold active:scale-[0.97] transition-transform"
           >
             {t("gotIt")}
           </button>

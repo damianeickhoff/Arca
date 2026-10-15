@@ -8,7 +8,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   IconAdjustmentsHorizontal,
-  IconAlertTriangle,
+  IconArrowDownRight,
+  IconArrowUpRight,
+  IconInbox,
+  IconMinus,
   IconCalendarDue,
   IconCamera,
   IconChevronDown,
@@ -21,13 +24,14 @@ import {
 import { AnchoredTip } from "@/components/anchored-tip";
 import { SPLIT_COLUMNS_WIDE } from "@/components/page-container";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { InkLineChart } from "@/components/ui/ink-line-chart";
-import { PageHeading } from "@/components/ui/page-heading";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { Amount } from "@/components/clear/amount";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Bank, Category, Goal } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
-import { TransactionFilterBar } from "../transaction-filter-bar";
+import { TransactionFilterBar, TransactionPeriodCard } from "../transaction-filter-bar";
 import type { TransactionRow } from "../transaction-types";
 import { ActivityList } from "./activity-list";
 import { TransactionDetailPanel } from "./detail-panel";
@@ -47,9 +51,57 @@ export type ActivityFilters = {
   search?: string;
   min?: string;
   max?: string;
+  sort?: string;
+  dir?: string;
 };
 
-const CARD = "rounded-card border border-line bg-surface shadow-card";
+// The list's sort orders, as the page's sort / dir URL params. Newest first is the default.
+const SORTS = [
+  { key: "newest", sort: "date", dir: "desc" },
+  { key: "oldest", sort: "date", dir: "asc" },
+  { key: "highest", sort: "amount", dir: "desc" },
+  { key: "lowest", sort: "amount", dir: "asc" },
+] as const;
+
+/** "Newest first ▾": changes the list's order, keeping every filter. */
+function SortMenu({ sort, dir }: { sort?: string; dir?: string }) {
+  const t = useTranslations("activity.sort");
+  const router = useRouter();
+  const params = useSearchParams();
+  const current = SORTS.find((o) => o.sort === (sort ?? "date") && o.dir === (dir === "asc" ? "asc" : "desc")) ?? SORTS[0];
+
+  function choose(option: (typeof SORTS)[number]) {
+    const next = new URLSearchParams(params.toString());
+    if (option.key === "newest") {
+      next.delete("sort");
+      next.delete("dir");
+    } else {
+      next.set("sort", option.sort);
+      next.set("dir", option.dir);
+    }
+    next.delete("limit");
+    next.delete("tx");
+    router.push(`?${next.toString()}`, { scroll: false });
+  }
+
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger aria-label={t("label", { order: t(current.key) })} className={clearButtonVariants({ variant: "secondary", size: "sm" })}>
+        {t(current.key)}
+        <IconChevronDown aria-hidden stroke={2.2} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="min-w-48 p-1.5">
+        {SORTS.map((o) => (
+          <DropdownMenuItem key={o.key} onClick={() => choose(o)} aria-checked={o.key === current.key} className={o.key === current.key ? "font-bold" : undefined}>
+            {t(o.key)}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+const CARD = "rounded-clear-card bg-clear-card";
 
 
 // ── header ─────────────────────────────────────────────────────────────────────
@@ -70,51 +122,40 @@ export function ActivityHeader({
 }) {
   const t = useTranslations("activity");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const pill =
-    "inline-flex h-[42px] items-center gap-2 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-surface-2";
 
   return (
     <>
-      <PageHeading
-        className="w-full"
-        title={t("title")}
-        subtitle={
-          <span className="hidden lg:inline">
+      <div className="flex flex-wrap items-center justify-between gap-3 lg:items-end lg:gap-4">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[40px]">{t("title")}</h1>
+          <span className="hidden text-base text-clear-ink-2 lg:inline">
             {t("subtitle", { accounts: accountCount })}
             {needsReviewCount > 0 && <> · {t("subtitleReview", { count: needsReviewCount })}</>}
           </span>
-        }
-        actions={
-          <>
-            {/* Desktop: the header field filters the list (Cmd/Ctrl+K still opens the
-                global search). Phones search from the bar docked above the tab bar. */}
-            <ActivitySearch search={filters.search} variant="header" />
-            <button
-              type="button"
-              onClick={() => setFiltersOpen(true)}
-              aria-label={t("filtersButton")}
-              className="inline-flex size-10 items-center justify-center rounded-full border border-line bg-surface text-ink lg:hidden"
-            >
-              <IconAdjustmentsHorizontal size={18} stroke={1.8} />
-            </button>
-            <Link href="/transactions/add?scan=1" className={cn(pill, "hidden lg:inline-flex")}>
-              <IconCamera size={16} stroke={1.8} />
-              {t("scanReceipt")}
-            </Link>
-            <Link href="/import" className={cn(pill, "hidden lg:inline-flex")}>
-              <IconFileUpload size={16} stroke={1.8} />
-              {t("importCsv")}
-            </Link>
-            <Link
-              href="/transactions/add"
-              className="hidden h-[42px] items-center gap-2 whitespace-nowrap rounded-full bg-mustard px-[18px] text-sm font-bold text-mustard-ink lg:inline-flex"
-            >
-              <IconPlus size={16} stroke={2} />
-              {t("addTransaction")}
-            </Link>
-          </>
-        }
-      />
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(true)}
+            aria-label={t("filtersButton")}
+            className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 lg:hidden")}
+          >
+            <IconAdjustmentsHorizontal size={20} stroke={1.9} />
+          </button>
+          <Link href="/transactions/add?scan=1" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
+            <IconCamera aria-hidden />
+            {t("scanReceipt")}
+          </Link>
+          <Link href="/import" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
+            <IconFileUpload aria-hidden />
+            {t("importCsv")}
+          </Link>
+          <Link href="/transactions/add" className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
+            <IconPlus aria-hidden />
+            {t("addTransaction")}
+          </Link>
+        </div>
+      </div>
 
       {/* Phones: every filter at once, wrapped, in a sheet. */}
       <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
@@ -125,7 +166,7 @@ export function ActivityHeader({
           <Link
             href="/transactions"
             onClick={() => setFiltersOpen(false)}
-            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full border border-line bg-surface text-sm font-bold text-ink"
+            className={cn(clearButtonVariants({ variant: "secondary" }), "mt-3 w-full")}
           >
             {t("clearFilters")}
           </Link>
@@ -164,7 +205,7 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "header
 
   const field = (
     <div className="relative w-full">
-      <IconSearch className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
+      <IconSearch className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-clear-muted" />
       <input
         type="search"
         value={value}
@@ -177,8 +218,8 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "header
         placeholder={t("searchPlaceholder")}
         aria-label={t("searchPlaceholder")}
         className={cn(
-          "w-full border border-line bg-surface pl-10 pr-10 text-sm text-ink outline-none placeholder:text-ink-3 focus:border-mustard focus:ring-3 focus:ring-mustard/25",
-          variant === "header" ? "h-[42px] rounded-full" : "h-[var(--bottom-bar-height)] rounded-banner shadow-float",
+          "w-full border-[1.5px] border-transparent bg-clear-card pl-10 pr-10 font-clear text-[15px] text-clear-ink outline-none placeholder:text-clear-placeholder focus:border-clear-ink",
+          variant === "header" ? "h-12 rounded-full" : "h-[var(--bottom-bar-height)] rounded-clear-tile shadow-clear-float",
         )}
       />
       {value && (
@@ -186,7 +227,7 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "header
           type="button"
           onClick={() => { setValue(""); push(""); }}
           aria-label={tTx("clear")}
-          className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-ink-3 hover:text-ink"
+          className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-clear-muted hover:text-clear-ink"
         >
           <IconX className="size-4" />
         </button>
@@ -194,7 +235,7 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "header
     </div>
   );
 
-  if (variant === "header") return <div className="hidden w-[300px] lg:block">{field}</div>;
+  if (variant === "header") return <div className="hidden min-w-0 lg:block lg:flex-[1_1_240px]">{field}</div>;
   return (
     <div
       data-hide-under-sheet=""
@@ -209,35 +250,45 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "header
 
 // ── summary ────────────────────────────────────────────────────────────────────
 
-function SummaryCard({ income, expense, sparkline }: { income: number; expense: number; sparkline: number[] }) {
+/**
+ * In, out and net for everything the filters match: one white card, three columns
+ * with a round icon, the figure and a short explanation (the explanations from sm up).
+ */
+function SummaryCard({ income, expense, fixed, incomeCount }: { income: number; expense: number; fixed: number; incomeCount: number }) {
   const t = useTranslations("activity.summary");
   const net = income - expense;
-  const fig = "amount text-[22px] tabular-nums";
+  const col = "flex min-w-0 flex-col gap-1.5 px-3 sm:px-[18px]";
+  const head = "inline-flex items-center gap-2 text-[13px] font-bold text-clear-ink-2 sm:text-sm";
+  const dot = "hidden size-[26px] shrink-0 items-center justify-center rounded-full sm:inline-flex [&_svg]:size-3.5";
+  const fig = "truncate text-base sm:text-xl xl:text-[24px] 2xl:text-[26px]";
+  const sub = "hidden truncate text-[13px] text-clear-muted sm:block";
   return (
-    <div className={cn(CARD, "px-[18px] py-3.5 lg:flex lg:items-center lg:px-5")}>
-      <div className="flex w-full items-center gap-3.5 lg:grid lg:grid-cols-3 lg:gap-3">
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="mono-label">{t("in")}</span>
-          <span className={cn(fig, "truncate text-positive")}>+{formatEur(income).replace(/,00$/, "")}</span>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5 border-l border-line pl-3.5 lg:pl-3">
-          <span className="mono-label">{t("out")}</span>
-          <span className={cn(fig, "truncate text-ink")}>−{formatEur(expense).replace(/,00$/, "")}</span>
-        </div>
-        <div className="hidden min-w-0 flex-col gap-0.5 border-l border-line pl-3 lg:flex">
-          <span className="mono-label">{t("net")}</span>
-          <span className={cn(fig, "truncate text-mustard-strong")}>
-            {net >= 0 ? "+" : "−"}
-            {formatEur(Math.abs(net)).replace(/,00$/, "")}
-          </span>
-        </div>
-        {sparkline.length > 1 && (
-          <div className="w-[90px] shrink-0 lg:hidden" aria-hidden>
-            <InkLineChart values={sparkline} width={90} height={36} gradientId="activity-sparkline" grid={false} />
-          </div>
-        )}
+    <section aria-label={t("label")} className="grid h-full grid-cols-3 rounded-clear-card bg-clear-card px-1 py-4 font-clear sm:px-2 lg:py-[18px]">
+      <div className={col}>
+        <span className={head}>
+          <span aria-hidden className={cn(dot, "bg-clear-mint text-clear-mint-ink")}><IconArrowDownRight stroke={2.4} /></span>
+          {t("in")}
+        </span>
+        <Amount value={income} className={cn(fig, "text-clear-positive")} />
+        <span className={sub}>{t("inSub", { count: incomeCount })}</span>
       </div>
-    </div>
+      <div className={cn(col, "border-l border-clear-line")}>
+        <span className={head}>
+          <span aria-hidden className={cn(dot, "bg-clear-peach text-clear-negative")}><IconArrowUpRight stroke={2.4} /></span>
+          {t("out")}
+        </span>
+        <Amount value={expense} sign="none" className={fig} />
+        <span className={sub}>{fixed > 0 ? t("outSub", { amount: formatEur(fixed) }) : t("outSubNone")}</span>
+      </div>
+      <div className={cn(col, "border-l border-clear-line")}>
+        <span className={head}>
+          <span aria-hidden className={cn(dot, "bg-clear-tile text-clear-ink")}><IconMinus stroke={2.4} /></span>
+          {t("net")}
+        </span>
+        <Amount value={net} sign="always" className={cn(fig, net >= 0 ? "text-clear-positive" : "text-clear-negative")} />
+        <span className={sub}>{net >= 0 ? t("netSubPositive") : t("netSubNegative")}</span>
+      </div>
+    </section>
   );
 }
 
@@ -258,7 +309,8 @@ export function ActivityView({
   filteredCount,
   income,
   expense,
-  sparkline,
+  fixed,
+  incomeCount,
   showMoreHref,
   hasMore,
   tiles,
@@ -271,7 +323,10 @@ export function ActivityView({
   filteredCount: number;
   income: number;
   expense: number;
-  sparkline: number[];
+  /** The part of `expense` that went to recurring bills. */
+  fixed: number;
+  /** How many incoming transactions `income` adds up. */
+  incomeCount: number;
   showMoreHref: string;
   hasMore: boolean;
   tiles: ActivityTiles;
@@ -384,34 +439,29 @@ export function ActivityView({
     document.querySelector(`[data-row-id="${selectedRowId}"]`)?.scrollIntoView({ block: "nearest" });
   }, [selectedRowId]);
 
-  return (
-    // Desktop: the page itself never scrolls. One grid on the wide split columns, three rows:
-    //   chips             | In / Out / Net
-    //   link tiles (68px) | transaction ─┐ spans both rows, so it is exactly as tall
-    //   list              |              ┘ as the tiles and the list together
-    // The list and the transaction scroll inside their cards. Phones: one column, natural
-    // height, with room at the bottom for the docked search bar.
-    <div
-      className={cn(
-        "flex flex-col gap-5 pb-[var(--bottom-bar-clearance)] lg:grid lg:h-[calc(100dvh-124px-var(--nav-clearance))] lg:min-h-[560px] lg:grid-rows-[auto_68px_minmax(0,1fr)] lg:gap-x-5 lg:gap-y-3.5 lg:pb-0",
-        SPLIT_COLUMNS_WIDE,
-      )}
-    >
-      {/* Row 1, left: the filter chips and the result count */}
-      <div className="order-1 flex items-center gap-3 lg:col-start-1 lg:row-start-1 lg:self-center">
-        <div className="min-w-0 flex-1">
-          <TransactionFilterBar {...filters} />
-        </div>
-        <span className="hidden shrink-0 text-[13px] text-ink-3 lg:inline">{t("results", { count: filteredCount })}</span>
-      </div>
+  // Anything beyond the period narrows the list; "Clear all filters" shows then.
+  const filtered = !!(filters.direction || filters.category || filters.account || filters.budgetType || filters.recurring || filters.search || filters.min || filters.max);
 
-      <div className="contents">
-        {/* Row 2, left: the link tiles */}
-        <div className="order-3 grid grid-cols-1 gap-2 empty:hidden lg:order-none lg:col-start-1 lg:row-start-2 lg:grid-cols-2 lg:gap-3">
+  return (
+    // Desktop: the page itself never scrolls. The summary row and the filter row sit on
+    // top; the list and the transaction share the rest side by side, each scrolling
+    // inside its card. Phones: one column (chips, summary, link tiles, list) at its
+    // natural height, with room at the bottom for the docked search bar.
+    <div className="flex flex-col gap-5 pb-[var(--bottom-bar-clearance)] lg:min-h-0 lg:flex-1 lg:gap-3.5 lg:pb-0">
+      {/* Period · In / Out / Net · upcoming · needs a category */}
+      <div className="order-2 flex flex-col gap-3 lg:order-none lg:flex-row lg:flex-wrap lg:items-stretch">
+        <div className="hidden min-w-0 lg:block lg:flex-[0_1_200px]">
+          <TransactionPeriodCard {...filters} />
+        </div>
+        <div className="min-w-0 lg:flex-[3_1_440px]">
+          <SummaryCard income={income} expense={expense} fixed={fixed} incomeCount={incomeCount} />
+        </div>
+        {/* The two link cards stack in one column beside the summary. */}
+        <div className="flex min-w-0 flex-col gap-3 empty:hidden lg:flex-[1_1_260px]">
           {tiles.upcoming && (
             <LinkTile
               href="/transactions/upcoming"
-              icon={<IconCalendarDue size={17} stroke={1.8} />}
+              icon={<IconCalendarDue size={20} stroke={1.9} />}
               title={t("tiles.upcoming", { count: tiles.upcoming.count })}
               sub={t("tiles.upcomingSub", { amount: formatEur(tiles.upcoming.total), date: tiles.upcoming.until })}
             />
@@ -420,39 +470,54 @@ export function ActivityView({
             <LinkTile
               href="/transactions/needs-review"
               warn
-              icon={<IconAlertTriangle size={17} stroke={1.8} />}
+              icon={<IconInbox size={20} stroke={1.9} />}
               title={t("tiles.needsReview", { count: tiles.needsReview.count })}
-              sub={formatEur(tiles.needsReview.total)}
+              sub={t("tiles.needsReviewSub")}
             />
           )}
         </div>
+      </div>
 
-        {/* Row 1, right: In / Out / Net, level with the chips */}
-        <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-1">
-          <SummaryCard income={income} expense={expense} sparkline={sparkline} />
+      {/* Search (desktop), the filter chips and "Clear all filters" */}
+      <div role="search" className="order-1 flex items-center gap-2.5 lg:order-none lg:flex-wrap">
+        <ActivitySearch search={filters.search} variant="header" />
+        <div className="min-w-0 flex-1 lg:flex-none">
+          <TransactionFilterBar {...filters} periodCardOnDesktop />
         </div>
+        {filtered && (
+          <Link href="/transactions" className="hidden h-12 items-center px-2 text-sm font-bold text-clear-ember-text no-underline hover:underline lg:inline-flex">
+            {t("clearFilters")}
+          </Link>
+        )}
+      </div>
 
+      <div className={cn("order-3 flex flex-col gap-5 lg:order-none lg:grid lg:min-h-0 lg:flex-1", SPLIT_COLUMNS_WIDE)}>
         {/* Row 3, left: the list, scrolling inside its card on desktop */}
-        <div className="relative order-4 lg:order-none lg:col-start-1 lg:row-start-3 lg:min-h-0 lg:overflow-hidden lg:rounded-card lg:border lg:border-line lg:bg-surface lg:shadow-card">
-          <div className="lg:h-full lg:overflow-y-auto lg:px-[22px] lg:pb-10 lg:pt-4 lg:[scrollbar-width:thin]">
+        <div className="relative lg:min-h-0 lg:overflow-hidden lg:rounded-clear-card lg:bg-clear-card">
+          <div className="clear-scrollbar lg:h-full lg:overflow-y-auto lg:px-4 lg:pb-10 lg:pt-5">
             {filteredCount === 0 ? (
               <div className={cn(CARD, "flex flex-col items-center gap-4 px-6 py-14 text-center lg:border-0 lg:shadow-none")}>
-                <p className="text-sm text-ink-3">{tTx("noneFound")}</p>
-                <Link href="/import" className="inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13px] font-bold text-bg">
+                <p className="text-sm text-clear-muted">{tTx("noneFound")}</p>
+                <Link href="/import" className="inline-flex h-10 items-center gap-2 rounded-full bg-clear-primary px-4 text-[13px] font-bold text-clear-primary-ink">
                   <IconFileUpload size={16} stroke={1.8} />
                   {tTx("importCsv")}
                 </Link>
               </div>
             ) : (
               <>
-                <ActivityList rows={resolved} categories={categories} activeId={isDesktop ? desktopRow?.id ?? null : null} onOpen={open} />
+                <ActivityList
+                  rows={resolved}
+                  categories={categories}
+                  activeId={isDesktop ? desktopRow?.id ?? null : null}
+                  onOpen={open}
+                  title={t("listTitle")}
+                  count={t("results", { count: filteredCount })}
+                  headerAction={<SortMenu sort={filters.sort} dir={filters.dir} />}
+                  grouped={(filters.sort ?? "date") === "date"}
+                />
                 {hasMore && (
                   <div className="pt-4 text-center">
-                    <Link
-                      href={showMoreHref}
-                      scroll={false}
-                      className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[13px] font-semibold text-ink hover:bg-surface-2"
-                    >
+                    <Link href={showMoreHref} scroll={false} className={clearButtonVariants({ variant: "secondary", size: "sm" })}>
                       {tTx("showMore", { count: filteredCount - rows.length })}
                       <IconChevronDown size={15} stroke={1.8} />
                     </Link>
@@ -461,12 +526,12 @@ export function ActivityView({
               </>
             )}
           </div>
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-12 rounded-b-card bg-gradient-to-b from-transparent to-surface lg:block" />
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-12 rounded-b-clear-card bg-gradient-to-b from-transparent to-clear-card lg:block" />
         </div>
 
-        {/* Rows 2–3, right: the transaction (desktop), as tall as the tiles + the list */}
+        {/* Right: the transaction (desktop), as tall as the list */}
         {isDesktop && (
-          <div className={cn(CARD, "min-h-0 overflow-hidden lg:col-start-2 lg:row-span-2 lg:row-start-2")}>
+          <div className={cn(CARD, "min-h-0 overflow-hidden")}>
             {desktopRow ? (
               <TransactionDetailPanel
                 key={desktopRow.id}
@@ -482,7 +547,7 @@ export function ActivityView({
                 onDeleted={() => setSelectedId(null)}
               />
             ) : (
-              <p className="p-6 text-sm text-ink-3">{tTx("noneFound")}</p>
+              <p className="p-6 text-sm text-clear-muted">{tTx("noneFound")}</p>
             )}
           </div>
         )}
@@ -529,18 +594,26 @@ function LinkTile({ href, icon, title, sub, warn }: { href: string; icon: React.
     <Link
       href={href}
       className={cn(
-        "flex min-h-[58px] items-center gap-3 rounded-banner border px-4 transition-colors lg:h-full",
-        warn ? "border-transparent bg-warning-soft text-warning" : "border-line bg-surface text-ink hover:bg-surface-2",
+        "flex min-h-[58px] items-center gap-3 rounded-clear-tile px-4 text-clear-ink no-underline transition-colors lg:flex-1",
+        // White cards on the grey ground get a soft ring on hover, not a grey fill (which
+        // would make them disappear into the ground).
+        warn ? "bg-clear-peach hover:ring-2 hover:ring-clear-ember/30" : "bg-clear-card hover:ring-2 hover:ring-clear-ink/10",
       )}
     >
-      <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full", warn ? "text-warning" : "bg-mustard-soft text-mustard-strong")}>
+      <span
+        aria-hidden
+        className={cn(
+          "inline-flex size-9 shrink-0 items-center justify-center rounded-full",
+          warn ? "bg-clear-card text-clear-ember-text" : "bg-clear-sky text-clear-sky-ink",
+        )}
+      >
         {icon}
       </span>
       <span className="flex min-w-0 flex-col gap-px">
         <span className="truncate text-sm font-bold">{title}</span>
-        <span className={cn("truncate text-xs", warn ? "text-warning" : "text-ink-3")}>{sub}</span>
+        <span className="truncate text-[13px] text-clear-ink-2">{sub}</span>
       </span>
-      <IconChevronRight size={16} stroke={1.8} className="ml-auto shrink-0" />
+      <IconChevronRight size={16} stroke={2} aria-hidden className="ml-auto shrink-0 text-clear-muted" />
     </Link>
   );
 }

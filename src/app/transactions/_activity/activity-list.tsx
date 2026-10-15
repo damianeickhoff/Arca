@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { IconCheck, IconReload } from "@tabler/icons-react";
+import { IconReload } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
-import { Pill } from "@/components/ui/pill";
 import { Pressable } from "@/components/ui/pressable";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { formatEur } from "@/lib/format";
@@ -31,23 +30,29 @@ export function needsCategory(row: TransactionRow) {
   return row.categoryId == null && !row.isSplit && !row.isInternalTransfer;
 }
 
-/** "−€42,18" / "+€24,50": the sign leads, typographic minus for money going out. */
-export function signedAmount(row: Pick<TransactionRow, "direction" | "amount" | "correctedAmount" | "isReimbursement">) {
-  const value = row.isReimbursement ? row.amount : row.correctedAmount ?? row.amount;
-  const out = row.direction === "expense" && !row.isReimbursement;
-  return `${out ? "−" : "+"}${formatEur(Math.abs(value))}`;
+/** The amount a row counts for, signed: money out negative, money in positive. */
+function signedValue(row: Pick<TransactionRow, "direction" | "amount" | "correctedAmount" | "isReimbursement">) {
+  const value = Math.abs(row.isReimbursement ? row.amount : row.correctedAmount ?? row.amount);
+  return row.direction === "expense" && !row.isReimbursement ? -value : value;
 }
 
-/** The pills a row carries — Paid back, Split, Recurring, Not in reports. */
-export function RowTags({ row, tr }: { row: TransactionRow; tr: T }) {
-  return (
-    <>
-      {row.isReimbursement && <Pill tone="positive">{tr("tags.paidBack")}</Pill>}
-      {row.isSplit && <Pill>{tr("tags.split")}</Pill>}
-      {row.recurringItemId != null && <Pill>{tr("tags.recurring")}</Pill>}
-      {!!row.excludeFromReports && <Pill>{tr("tags.notInReports")}</Pill>}
-    </>
-  );
+/** "−€42,18" / "+€24,50": the sign leads, typographic minus for money going out. */
+export function signedAmount(row: Pick<TransactionRow, "direction" | "amount" | "correctedAmount" | "isReimbursement">) {
+  const value = signedValue(row);
+  return `${value < 0 ? "−" : "+"}${formatEur(Math.abs(value))}`;
+}
+
+type Tag = { key: string; label: string; tone: string; dot: string };
+
+/** The tags a row carries — Needs a category, Paid back, Split, Recurring, Not in reports. */
+function rowTags(row: TransactionRow, tr: T): Tag[] {
+  const tags: Tag[] = [];
+  if (needsCategory(row)) tags.push({ key: "review", label: tr("needsCategory"), tone: "bg-clear-peach text-clear-ember-text", dot: "bg-clear-ember" });
+  if (row.isReimbursement) tags.push({ key: "paidBack", label: tr("tags.paidBack"), tone: "bg-clear-mint text-clear-mint-ink", dot: "bg-clear-positive-fill" });
+  if (row.isSplit) tags.push({ key: "split", label: tr("tags.split"), tone: "bg-clear-lilac text-clear-lilac-ink", dot: "bg-clear-lilac-ink" });
+  if (row.recurringItemId != null) tags.push({ key: "recurring", label: tr("tags.recurring"), tone: "bg-clear-sky text-clear-sky-ink", dot: "bg-clear-info-fill" });
+  if (row.excludeFromReports) tags.push({ key: "excluded", label: tr("tags.notInReports"), tone: "bg-clear-stone text-clear-stone-ink", dot: "bg-clear-muted" });
+  return tags;
 }
 
 function subline(row: TransactionRow, tr: T): string {
@@ -55,19 +60,22 @@ function subline(row: TransactionRow, tr: T): string {
     ? (row.transferType && TRANSFER_TYPE_LABELS[row.transferType]) || tr("internalTransfer")
     : row.isSplit
       ? row.splitSummary ?? tr("splitParts", { count: row.splitCount })
-      : row.categoryName ?? "";
+      : needsCategory(row)
+        ? tr("needsCategory")
+        : row.categoryName ?? "";
   return [what, row.bankName].filter(Boolean).join(" · ");
 }
 
-/** The 40px row icon: the category / merchant / brand circle, or a dashed warning
- *  circle when the row still needs a category. */
-export function RowIcon({ row, size = "md" }: { row: TransactionRow; size?: "md" | "xl" }) {
+/** The row icon: the category / merchant / brand icon as a rounded tile, or a dashed
+ *  "?" tile while the row still needs a category. `round` keeps the circle. */
+export function RowIcon({ row, size = "md", round = false }: { row: TransactionRow; size?: "md" | "xl"; round?: boolean }) {
   if (needsCategory(row)) {
     return (
       <span
         aria-hidden
         className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-full border-[1.5px] border-dashed border-warning font-bold text-warning",
+          "inline-flex shrink-0 items-center justify-center border-[1.5px] border-dashed border-clear-ember-text bg-clear-peach font-bold text-clear-ember-text",
+          round ? "rounded-full" : "rounded-clear-icon",
           size === "xl" ? "size-12 text-lg" : "size-10",
         )}
       >
@@ -78,10 +86,10 @@ export function RowIcon({ row, size = "md" }: { row: TransactionRow; size?: "md"
   const ic = resolveTransactionIcon(row);
   return (
     <span className="relative inline-flex shrink-0">
-      <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size={size} />
+      <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round={round} size={size} />
       {row.recurringItemId != null && (
-        <span aria-hidden className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-ink">
-          <IconReload className="size-3 text-bg" stroke={2.5} />
+        <span aria-hidden className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-clear-primary ring-2 ring-clear-card">
+          <IconReload className="size-2.5 text-clear-primary-ink" stroke={3} />
         </span>
       )}
     </span>
@@ -98,6 +106,7 @@ function ActivityRow({
   onToggle,
   onStartSelect,
   tipAnchor,
+  dateLabel,
 }: {
   row: TransactionRow;
   tr: T;
@@ -108,34 +117,32 @@ function ActivityRow({
   onToggle: () => void;
   onStartSelect: () => void;
   tipAnchor: boolean;
+  /** In a flat (amount-sorted) list each row shows its own date. */
+  dateLabel?: string;
 }) {
   // Press and hold starts multi-select on phones; on desktop the checkbox does.
   const { longPressProps, consumeClick } = useLongPress(onStartSelect, !selectMode);
-  const review = needsCategory(row);
-  const positive = row.direction === "income" || row.isReimbursement;
+  const value = signedValue(row);
+  const tags = rowTags(row, tr);
+  const name = resolveDisplayName(row);
 
   return (
     <div
       data-row-id={row.id}
       className={cn(
-        "group relative -mx-2 flex items-center gap-1 rounded-row px-2 transition-colors",
-        selected ? "bg-mustard-soft" : active ? "bg-surface-2" : "hover:bg-surface-2/60 active:bg-surface-2",
+        "relative -mx-2 flex items-center gap-3.5 rounded-clear-row px-2 transition-colors lg:mx-0 lg:px-3",
+        // The open row stands apart from the grey day bars: white with an ink outline.
+        selected ? "bg-clear-peach" : active ? "bg-clear-card ring-[1.5px] ring-inset ring-clear-ink" : "hover:bg-clear-tile/70 active:bg-clear-tile",
       )}
     >
-      {/* Desktop checkbox: shown on hover, and always once select mode is on. */}
-      <button
-        type="button"
-        onClick={() => (selectMode ? onToggle() : onStartSelect())}
-        aria-label={tr(selected ? "bulk.deselect" : "bulk.select")}
-        aria-pressed={selected}
-        className={cn(
-          "hidden size-6 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors lg:inline-flex",
-          selected ? "border-ink bg-ink text-bg" : "border-line text-transparent hover:border-ink-3",
-          !selectMode && "lg:opacity-0 lg:group-hover:opacity-100 lg:focus-visible:opacity-100",
-        )}
-      >
-        <IconCheck className="size-3.5" stroke={3} />
-      </button>
+      {/* Desktop: a real checkbox on every row; ticking one starts select mode. */}
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={() => (selectMode ? onToggle() : onStartSelect())}
+        aria-label={tr("bulk.selectRow", { name })}
+        className="hidden size-[18px] shrink-0 cursor-pointer accent-[var(--clr-ink)] lg:block"
+      />
       <Pressable
         scale={0.99}
         type="button"
@@ -150,33 +157,37 @@ function ActivityRow({
         aria-pressed={selectMode ? selected : undefined}
         aria-current={active ? "true" : undefined}
         data-tip-anchor={tipAnchor ? "activityRow" : undefined}
-        className="flex min-h-[58px] min-w-0 flex-1 select-none items-center gap-3 py-1.5 text-left [-webkit-touch-callout:none] [touch-action:pan-y]"
+        className="flex min-h-16 min-w-0 flex-1 select-none items-center gap-3 py-2 text-left [-webkit-touch-callout:none] [touch-action:pan-y]"
       >
         {selectMode && (
           <span
             aria-hidden
             className={cn(
               "flex size-5 shrink-0 items-center justify-center rounded-full border-2 lg:hidden",
-              selected ? "border-ink bg-ink text-bg" : "border-line",
+              selected ? "border-clear-ink bg-clear-primary" : "border-clear-line",
             )}
-          >
-            {selected && <IconCheck className="size-3.5" stroke={3} />}
-          </span>
+          />
         )}
         <RowIcon row={row} />
-        <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-          <span className="truncate text-sm font-semibold text-ink">{resolveDisplayName(row)}</span>
-          <span className={cn("flex min-w-0 items-center gap-1.5 text-xs", review ? "text-warning" : "text-ink-3")}>
-            <span className="truncate">{review ? [tr("needsCategory"), row.bankName].filter(Boolean).join(" · ") : subline(row, tr)}</span>
-            <RowTags row={row} tr={tr} />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="truncate text-[15px] font-bold text-clear-ink">{name}</span>
+          <span className={cn("truncate text-[13px]", needsCategory(row) ? "text-clear-ember-text" : "text-clear-muted")}>
+            {[dateLabel, subline(row, tr)].filter(Boolean).join(" · ")}
           </span>
         </span>
-        <span
-          className={cn(
-            "shrink-0 text-[15px] font-semibold tabular-nums tracking-[-0.01em]",
-            positive ? "text-positive" : "text-ink",
-          )}
-        >
+        {tags.length > 0 && (
+          <span className="hidden shrink-0 flex-wrap justify-end gap-1.5 sm:flex">
+            {tags
+              .filter((tag) => tag.key !== "review")
+              .map((tag) => (
+                <span key={tag.key} className={cn("inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-bold", tag.tone)}>
+                  <span aria-hidden className={cn("size-[7px] rounded-full", tag.dot)} />
+                  {tag.label}
+                </span>
+              ))}
+          </span>
+        )}
+        <span className={cn("w-[104px] shrink-0 text-right text-[15px] font-extrabold tabular-nums", value >= 0 ? "text-clear-positive" : "text-clear-ink")}>
           {signedAmount(row)}
         </span>
       </Pressable>
@@ -185,21 +196,33 @@ function ActivityRow({
 }
 
 /**
- * Activity's list: day groups under a DM Mono date label, one row per transaction.
- * Tapping a row reports it to the page (which shows the detail panel on desktop or the
- * bottom sheet on phones); multi-select starts with a long press on phones or the row
- * checkbox on desktop and keeps every bulk action.
+ * Activity's list: a header (select all on desktop, the title and the count), then day
+ * groups — a grey day bar with that day's net — with one row per transaction. Tapping a
+ * row reports it to the page (which shows the detail panel on desktop or the bottom
+ * sheet on phones); multi-select starts with a long press on phones or a row's checkbox
+ * on desktop, and keeps every bulk action.
  */
 export function ActivityList({
   rows,
   categories,
   activeId,
   onOpen,
+  title,
+  count,
+  headerAction,
+  grouped = true,
 }: {
   rows: TransactionRow[];
   categories: Category[];
   activeId: number | null;
   onOpen: (row: TransactionRow) => void;
+  /** Already translated: the list's heading and its result count. */
+  title: string;
+  count: string;
+  /** Shown at the right of the header (the sort menu). */
+  headerAction?: React.ReactNode;
+  /** Day groups only make sense in date order; sorted by amount the list is flat. */
+  grouped?: boolean;
 }) {
   const tr = useTranslations("activity");
   const tTx = useTranslations("transactions");
@@ -209,6 +232,7 @@ export function ActivityList({
   // Non-null *is* select mode; an empty set means the mode is on with nothing picked.
   const [selectedIds, setSelectedIds] = useState<Set<number> | null>(null);
   const selectMode = selectedIds !== null;
+  const allSelected = selectedIds != null && selectedIds.size === rows.length && rows.length > 0;
 
   function toggle(id: number) {
     setSelectedIds((prev) => {
@@ -229,6 +253,10 @@ export function ActivityList({
       }
       return next;
     });
+  }
+
+  function toggleAll() {
+    setSelectedIds((prev) => (prev && prev.size === rows.length ? null : new Set(rows.map((r) => r.id))));
   }
 
   // Escape leaves select mode — the keyboard equivalent of the bar's close button.
@@ -253,39 +281,66 @@ export function ActivityList({
   const groups: { date: string; rows: TransactionRow[] }[] = [];
   for (const row of rows) {
     const last = groups[groups.length - 1];
-    if (last && last.date === row.date) last.rows.push(row);
-    else groups.push({ date: row.date, rows: [row] });
+    if (grouped && last && last.date === row.date) last.rows.push(row);
+    else if (grouped || groups.length === 0) groups.push({ date: row.date, rows: [row] });
+    else last.rows.push(row);
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {groups.map((group) => (
-        <section key={group.date} className="flex flex-col gap-1">
-          {selectMode ? (
-            <button type="button" onClick={() => toggleGroup(group.rows)} className="mono-label self-start">
-              {dayLabel(group.date)} · {tTx(group.rows.every((r) => selectedIds!.has(r.id)) ? "bulkSelectNoneShort" : "bulkSelectAllShort")}
-            </button>
-          ) : (
-            <h3 className="mono-label">{dayLabel(group.date)}</h3>
-          )}
-          <div className="flex flex-col">
-            {group.rows.map((row) => (
-              <ActivityRow
-                key={row.id}
-                row={row}
-                tr={tr}
-                selectMode={selectMode}
-                selected={selectedIds?.has(row.id) ?? false}
-                active={row.id === activeId}
-                onOpen={() => onOpen(row)}
-                onToggle={() => toggle(row.id)}
-                onStartSelect={() => setSelectedIds(new Set([row.id]))}
-                tipAnchor={row.id === rows[0]?.id}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+    <div className="flex flex-col gap-1.5 font-clear">
+      <div className="flex items-center gap-3.5 px-1 pb-1.5 lg:px-3">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          onChange={toggleAll}
+          aria-label={tTx("bulkSelectAll", { count: rows.length })}
+          className="hidden size-[18px] shrink-0 cursor-pointer accent-[var(--clr-ink)] lg:block"
+        />
+        <h2 className="m-0 min-w-0 flex-1 truncate text-lg font-bold text-clear-ink">
+          {title} <span className="font-semibold text-clear-muted">· {count}</span>
+        </h2>
+        {headerAction}
+      </div>
+
+      {groups.map((group) => {
+        const net = group.rows.reduce((sum, r) => sum + signedValue(r), 0);
+        return (
+          <section key={group.date} className="flex flex-col gap-0.5">
+            {grouped && (
+            <div className="mt-1.5 flex h-[38px] items-center justify-between rounded-clear-icon bg-clear-tile px-3 text-[13px] font-bold text-clear-ink-2">
+              {selectMode ? (
+                <button type="button" onClick={() => toggleGroup(group.rows)} className="cursor-pointer text-left">
+                  {dayLabel(group.date)} · {tTx(group.rows.every((r) => selectedIds!.has(r.id)) ? "bulkSelectNoneShort" : "bulkSelectAllShort")}
+                </button>
+              ) : (
+                <h3 className="m-0 text-[13px] font-bold">{dayLabel(group.date)}</h3>
+              )}
+              <span className={cn("tabular-nums", net >= 0 ? "text-clear-positive" : "text-clear-ink-2")}>
+                {net >= 0 ? "+" : "−"}
+                {formatEur(Math.abs(net))}
+              </span>
+            </div>
+            )}
+            <div className="flex flex-col">
+              {group.rows.map((row) => (
+                <ActivityRow
+                  key={row.id}
+                  row={row}
+                  tr={tr}
+                  selectMode={selectMode}
+                  selected={selectedIds?.has(row.id) ?? false}
+                  active={row.id === activeId}
+                  onOpen={() => onOpen(row)}
+                  onToggle={() => toggle(row.id)}
+                  onStartSelect={() => setSelectedIds(new Set([row.id]))}
+                  tipAnchor={row.id === rows[0]?.id}
+                  dateLabel={grouped ? undefined : dayLabel(row.date)}
+                />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
       {selectMode && (
         <TransactionBulkBar
@@ -293,7 +348,7 @@ export function ActivityList({
           categories={categories}
           allExcluded={selectedIds!.size > 0 && rows.filter((r) => selectedIds!.has(r.id)).every((r) => !!r.excludeFromReports)}
           total={rows.length}
-          allSelected={selectedIds!.size === rows.length && rows.length > 0}
+          allSelected={allSelected}
           onSelectAll={() =>
             setSelectedIds((prev) => (prev && prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id))))
           }

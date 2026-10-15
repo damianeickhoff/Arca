@@ -19,15 +19,14 @@ export type TipAnchor =
   | "importDatePreview"
   | "dataHealthMenu"
   | "transactionListRow"
-  // Redesigned app shell: the phone tab bar / desktop sidebar nav, and the Plan switch
+  // App shell: the phone tab bar / desktop sidebar nav, and the Plan switch
   | "mainNav"
   | "planSwitch"
-  // Redesigned Home sections
+  // Home sections (Clear)
   | "homeHero"
-  | "homeQuickActions"
-  | "homeNudge"
   | "homeComingUp"
-  | "homeSpending"
+  | "homeIncomeVsSpending"
+  | "homeMoneyFlow"
   // Redesigned Activity
   | "activityRow"
   | "activityFilters"

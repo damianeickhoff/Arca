@@ -1,11 +1,10 @@
 import { getLocale } from "next-intl/server";
 import { PageShell } from "@/components/page-container";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
-import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
+import { currentFinancialMonth, daysInclusive, financialMonthRangeByMonth, shiftDate, todayStr } from "@/lib/date-range";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBudgetData } from "@/lib/budget-data";
 import { getBillStatuses } from "@/lib/bill-status";
-import { daysInclusive, nextDay, todayStr } from "@/app/_home/home-data";
 import { BudgetEditorProvider } from "./budget-editor";
 import { BudgetHeader, BudgetView, type BudgetBill, type BudgetSuggestion, type BudgetViewData } from "./budget-view";
 
@@ -92,7 +91,7 @@ export default async function BudgetPage() {
     }))
     .sort((a, z) => (a.dueDate ?? "9999").localeCompare(z.dueDate ?? "9999") || a.name.localeCompare(z.name));
 
-  const resetDate = nextDay(overview.to);
+  const resetDate = shiftDate(overview.to, 1);
   const strategy = overview.strategy;
   const data: BudgetViewData = {
     hasBudget: overview.budget != null,

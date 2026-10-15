@@ -14,21 +14,21 @@ import { cn } from "@/lib/utils"
 //   destructive — negative on its soft wash
 //   link        — accent-strong text
 const buttonVariants = cva(
-  "cursor-pointer group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-bold whitespace-nowrap transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-150 outline-none select-none focus-visible:ring-3 focus-visible:ring-mustard/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:bg-surface-2 disabled:!text-ink-3 disabled:border-transparent aria-invalid:border-negative aria-invalid:ring-3 aria-invalid:ring-negative/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "cursor-pointer group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-bold whitespace-nowrap transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-150 outline-none select-none focus-visible:ring-3 focus-visible:ring-clear-ember/50 active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:bg-clear-tile disabled:!text-clear-muted disabled:border-transparent aria-invalid:border-clear-negative aria-invalid:ring-3 aria-invalid:ring-clear-negative/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-ink text-bg hover:bg-ink/90 aria-expanded:bg-ink/90",
-        accent: "bg-mustard text-mustard-ink hover:brightness-[1.03] aria-expanded:brightness-[1.03]",
+        default: "bg-clear-primary text-clear-primary-ink hover:bg-clear-primary/90 aria-expanded:bg-clear-primary/90",
+        accent: "bg-clear-ember text-clear-ember-ink hover:brightness-[1.03] aria-expanded:brightness-[1.03]",
         outline:
-          "bg-surface border-line text-ink hover:bg-surface-2 aria-expanded:bg-surface-2",
+          "bg-clear-card border-clear-line text-clear-ink hover:bg-clear-tile aria-expanded:bg-clear-tile",
         secondary:
-          "bg-surface-2 text-ink hover:bg-line aria-expanded:bg-line",
+          "bg-clear-tile text-clear-ink hover:bg-clear-line aria-expanded:bg-clear-line",
         ghost:
-          "bg-transparent text-ink hover:bg-surface-2 aria-expanded:bg-surface-2",
+          "bg-transparent text-clear-ink hover:bg-clear-tile aria-expanded:bg-clear-tile",
         destructive:
-          "bg-negative-soft text-negative hover:bg-negative-soft/80 focus-visible:ring-negative/30",
-        link: "h-auto px-0 text-mustard-strong underline-offset-4 hover:underline",
+          "bg-clear-peach text-clear-negative hover:bg-clear-peach/80 focus-visible:ring-clear-negative/30",
+        link: "h-auto px-0 text-clear-ember-text underline-offset-4 hover:underline",
       },
       size: {
         default:

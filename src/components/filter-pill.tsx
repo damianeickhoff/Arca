@@ -6,13 +6,14 @@ import { cn } from "@/lib/utils";
  * Insights filters, …) — change the look here once instead of re-hardcoding it per
  * component.
  *
- * Mustard chip: a 34px pill on surface with a line border; an active chip inverts to
- * ink with background-coloured text.
+ * Clear chip: a 44px (48px from lg) white pill on the grey ground, bold label; an active
+ * chip turns black (the primary colour) with light text.
  */
 export function filterPillClass(active: boolean, className?: string) {
   return cn(
-    "inline-flex h-[34px] items-center justify-between gap-1.5 whitespace-nowrap rounded-full border px-[13px] text-[13px] font-semibold cursor-pointer transition-colors",
-    active ? "border-ink bg-ink text-bg" : "border-line bg-surface text-ink-2 hover:text-ink",
+    "inline-flex h-11 items-center justify-between gap-2 whitespace-nowrap rounded-full px-4 font-clear text-sm font-bold cursor-pointer transition-colors lg:h-12 lg:px-[18px] lg:text-[15px] [&_svg]:size-4",
+    // Inside a white sheet or card (data-surface="card" on an ancestor) the idle chip is grey.
+    active ? "bg-clear-primary text-clear-primary-ink" : "bg-clear-card text-clear-ink hover:bg-clear-tile in-data-[surface=card]:bg-clear-tile",
     className,
   );
 }

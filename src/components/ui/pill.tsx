@@ -3,14 +3,14 @@ import { cn } from "@/lib/utils";
 export type PillTone = "neutral" | "accent" | "positive" | "negative" | "warning" | "info" | "ink";
 
 const TONE_CLASS: Record<PillTone, string> = {
-  neutral: "bg-surface-2 text-ink-2",
-  accent: "bg-mustard-soft text-mustard-strong",
-  positive: "bg-positive-soft text-positive",
-  negative: "bg-negative-soft text-negative",
-  warning: "bg-warning-soft text-warning",
-  info: "bg-info-soft text-info",
+  neutral: "bg-clear-tile text-clear-ink-2",
+  accent: "bg-clear-peach text-clear-ember-text",
+  positive: "bg-clear-mint text-clear-positive",
+  negative: "bg-clear-peach text-clear-negative",
+  warning: "bg-clear-butter text-clear-warning",
+  info: "bg-clear-sky text-clear-info",
   // On the mustard hero: an ink capsule with mustard text.
-  ink: "bg-ink text-mustard",
+  ink: "bg-clear-primary text-clear-ember",
 };
 
 /**
@@ -31,7 +31,7 @@ export function Pill({
   return (
     <span
       className={cn(
-        "inline-flex h-6 shrink-0 items-center gap-[5px] whitespace-nowrap rounded-full px-[9px] text-[11px] font-bold [&_svg]:size-3 [&_svg]:shrink-0",
+        "inline-flex h-6 shrink-0 items-center gap-[5px] whitespace-nowrap rounded-full px-[9px] text-xs font-bold [&_svg]:size-3 [&_svg]:shrink-0",
         TONE_CLASS[tone],
         className,
       )}

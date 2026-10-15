@@ -2,14 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { MainContent } from "@/components/main-content";
-import { AppShell, type ShellAccount } from "@/components/shell/app-shell";
-import { getBankBalances } from "@/lib/account-balances";
-import { db } from "@/db";
-import { vermogenAccounts } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { AppShell } from "@/components/shell/app-shell";
 import { AppLockGate } from "@/components/app-lock-gate";
 import { getCurrentUser } from "@/lib/auth";
-import { getAppLockConfig, getDefaultCurrency, getSidebarSubtitle } from "@/lib/app-settings";
+import { getAppLockConfig, getDefaultCurrency } from "@/lib/app-settings";
+import { getNeedsReviewTransactions } from "@/lib/needs-review";
 import { setCurrentCurrency } from "@/lib/format";
 import { CurrencySync } from "@/components/currency-sync";
 import { headers } from "next/headers";
@@ -30,15 +27,14 @@ import { SettingsPortalProvider } from "@/lib/settings-portal-state";
 import { FinishTransitionProvider } from "@/lib/finish-transition-state";
 import { FinishTransitionOverlay } from "@/components/finish-transition-overlay";
 
-// DM Sans carries everything — body, headings and amounts — with its optical-size axis
-// (opsz 9..40) and the variable weight axis (the UI uses 400..800). DM Mono is only for the small
-// uppercase labels, dates and counts. The CSS variable names must differ from the
-// @theme keys in globals.css (--font-sans / --font-mono), or the CSS build recurses.
+// Plus Jakarta Sans is the Clear typeface and the app-wide body font (font-sans and
+// font-clear). DM Sans and DM Mono remain only for the legacy mustard `amount`, `heading`
+// and `mono-label` utilities on screens not yet migrated; delete them with those. The CSS
+// variable names must differ from the @theme keys in globals.css (--font-sans /
+// --font-mono / --font-clear), or the CSS build recurses.
+const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"] });
 const dmSans = DM_Sans({ variable: "--font-dm-sans", subsets: ["latin"], axes: ["opsz"] });
 const dmMono = DM_Mono({ variable: "--font-dm-mono", subsets: ["latin"], weight: ["400", "500"] });
-// Plus Jakarta Sans is the Clear redesign's only typeface (the font-clear utility). Like
-// the DM fonts, its variable name must differ from the --font-clear @theme key.
-const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Arca",
@@ -56,15 +52,12 @@ export const metadata: Metadata = {
   },
 };
 
-// Matches --background exactly (not the brand purple) so the iOS status bar/toolbar
-// never shows a visible color seam against the app's actual background — a branded
-// accent color only blends where a page happens to have matching decoration right at
-// the very top (e.g. the dashboard's blob), and clashes everywhere else (e.g. the
-// mobile nav menu, which is plain white/near-black).
+// Matches the page ground (--clr-ground) exactly so the iOS status bar/toolbar never
+// shows a visible color seam against the app's actual background.
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F6F3EC" },
-    { media: "(prefers-color-scheme: dark)", color: "#16130F" },
+    { media: "(prefers-color-scheme: light)", color: "#F1F1F3" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B0B0D" },
   ],
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
@@ -111,14 +104,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     void backfillBankAccountNumbers();
   }
 
-  // The desktop sidebar lists every account with its balance. Read here (the shell is a
-  // client component); a soft navigation keeps the layout, so mutations that move a
-  // balance revalidate it — refreshLayoutAction (app/actions/refresh-layout.ts) from the
-  // client flows, and revalidatePath("/", "layout") in the transaction, import, bank and
-  // vermogen API routes.
-  const [shellAccounts, sidebarSubtitle] = user
-    ? await Promise.all([loadShellAccounts(), getSidebarSubtitle()])
-    : [[] as ShellAccount[], ""];
+  // The top bar's Activity tab shows how many transactions still need a category. Read
+  // here (the shell is a client component); a soft navigation keeps the layout, so
+  // categorising revalidates it — refreshLayoutAction (app/actions/refresh-layout.ts)
+  // from the client flows, and revalidatePath("/", "layout") in the transaction routes.
+  const needsReviewCount = user ? await countNeedsReview() : 0;
 
   // src/config/categories.ts + src/config/brandIcons.ts sync runs synchronously in
   // src/db/index.ts (module init) — see src/lib/config-sync.ts for why it can't be
@@ -146,23 +136,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 webAuthnCredentialId={appLock.webAuthnCredentialId}
                 pinLength={appLock.pinLength}
               >
-                {/* min-h-dvh, NOT h-dvh. This wrapper existed to sit the old sidebar
-                    next to <main>, and its fixed height locked <main> to exactly one
-                    viewport (flex items stretch on the cross axis). With border-box
-                    sizing that put MainContent's pb-[--nav-clearance] at the 100dvh
-                    mark — the top of any scrolling page — while the content simply
-                    overflowed past it, so the reserved space never landed at the end
-                    of the content and the bottom nav covered the last card. */}
                 <AppShell
-                  accounts={shellAccounts}
-                  subtitle={sidebarSubtitle}
-                  user={user ? { name: user.firstName ?? user.name, email: user.email, avatarUrl: user.avatarUrl } : null}
+                  needsReviewCount={needsReviewCount}
+                  user={user ? { name: user.name, email: user.email, avatarUrl: user.avatarUrl } : null}
                 >
-                  <div className="flex min-h-dvh">
-                    <MainContent>
-                      <PageTransition>{children}</PageTransition>
-                    </MainContent>
-                  </div>
+                  <MainContent>
+                    <PageTransition>{children}</PageTransition>
+                  </MainContent>
                 </AppShell>
               </AppLockGate>
               {/* Sibling of the page content (not nested inside it) so it survives the
@@ -179,18 +159,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   );
 }
 
-async function loadShellAccounts(): Promise<ShellAccount[]> {
+async function countNeedsReview(): Promise<number> {
   try {
-    const [bankRows, assetRows] = await Promise.all([
-      getBankBalances(),
-      db.select().from(vermogenAccounts).where(eq(vermogenAccounts.active, true)),
-    ]);
-    return [
-      ...bankRows.map((b) => ({ key: `bank-${b.id}`, name: b.displayName ?? b.accountNumber ?? "—", balance: Number(b.balance) || 0 })),
-      ...assetRows.map((a) => ({ key: `asset-${a.id}`, name: a.name, balance: a.value })),
-    ];
+    return (await getNeedsReviewTransactions()).length;
   } catch {
-    // The sidebar is a convenience — never let it take the whole layout down.
-    return [];
+    // The badge is a convenience — never let it take the whole layout down.
+    return 0;
   }
 }

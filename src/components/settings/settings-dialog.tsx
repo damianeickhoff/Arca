@@ -26,7 +26,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { SHEET_FIXED } from "@/components/page-container";
+import { SHEET_COLUMN } from "@/components/page-container";
 import packageJson from "../../../package.json";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
@@ -377,7 +377,7 @@ export function SettingsDialog({
               className={cn(
                 // `fixed inset-0` escapes the sheet it slides over, so it needs the
                 // column cap itself to stay aligned with that sheet on desktop.
-                SHEET_FIXED,
+                SHEET_COLUMN,
                 "fixed inset-0 z-[60] flex flex-col rounded-t-4xl overflow-hidden bg-sidebar",
                 !dragging && "transition-transform duration-300 ease-out",
               )}

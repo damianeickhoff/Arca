@@ -29,7 +29,7 @@ export function MerchantPickerDialog({
       {/* z-[88]: reassignment can be started from the merchant profile, a body portal at
           z-70 that stays open behind this picker — without it the sheet opens underneath
           the profile and looks like nothing happened. */}
-      <DialogContent sheetClassName="z-[88]" overlayClassName="z-[88] backdrop-blur-lg bg-foreground/20">
+      <DialogContent sheetClassName="z-[88]" overlayClassName="z-[88] backdrop-blur-lg bg-clear-primary/20">
         <DialogHeader>
           <DialogTitle>{t("title")}</DialogTitle>
         </DialogHeader>
@@ -75,35 +75,35 @@ function MerchantPickerBody({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={suggestion ? t("searchSuggestion", { suggestion }) : t("search")}
-        className="w-full rounded-tile border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:ring-2 focus:ring-mustard/50"
+        className="w-full rounded-clear-tile border border-clear-line bg-clear-card px-3 py-2 text-sm text-clear-ink outline-none focus:ring-2 focus:ring-clear-ember/50"
       />
       <div className="max-h-[50vh] space-y-1 overflow-y-auto">
         {term && !exact && (
           <button
             type="button"
             onClick={() => onPick(query.trim())}
-            className="flex w-full items-center gap-2.5 rounded-row px-3 py-2.5 text-left text-sm transition-colors hover:bg-surface-2"
+            className="flex w-full items-center gap-2.5 rounded-clear-row px-3 py-2.5 text-left text-sm transition-colors hover:bg-clear-tile"
           >
-            <span className="font-semibold text-ink">{t("add", { name: query.trim() })}</span>
+            <span className="font-semibold text-clear-ink">{t("add", { name: query.trim() })}</span>
           </button>
         )}
-        {loading && <p className="px-3 py-2 text-xs text-ink-3">{t("loading")}</p>}
+        {loading && <p className="px-3 py-2 text-xs text-clear-muted">{t("loading")}</p>}
         {matches.map((m) => (
           <button
             key={m.id}
             type="button"
             onClick={() => onPick(m.name)}
             className={cn(
-              "flex w-full items-center gap-2.5 rounded-row px-3 py-2.5 text-left text-sm transition-colors",
-              m.id === currentId ? "bg-surface-2 font-semibold" : "hover:bg-surface-2",
+              "flex w-full items-center gap-2.5 rounded-clear-row px-3 py-2.5 text-left text-sm transition-colors",
+              m.id === currentId ? "bg-clear-tile font-semibold" : "hover:bg-clear-tile",
             )}
           >
             <CategoryIcon icon={m.icon} color={m.color} size="sm" />
-            <span className="flex-1 truncate text-ink">{m.name}</span>
-            <span className="text-xs tabular-nums text-ink-3">{m.transactionCount}</span>
+            <span className="flex-1 truncate text-clear-ink">{m.name}</span>
+            <span className="text-xs tabular-nums text-clear-muted">{m.transactionCount}</span>
           </button>
         ))}
-        {!loading && matches.length === 0 && !term && <p className="px-3 py-2 text-xs text-ink-3">{t("none")}</p>}
+        {!loading && matches.length === 0 && !term && <p className="px-3 py-2 text-xs text-clear-muted">{t("none")}</p>}
       </div>
     </div>
   );

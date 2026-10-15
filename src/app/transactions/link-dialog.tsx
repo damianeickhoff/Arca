@@ -122,7 +122,7 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
       {!controlled && (
       <button
         onClick={handleOpen}
-        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors shrink-0"
+        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-clear-ember/10 text-clear-ember-text hover:bg-clear-ember/20 transition-colors shrink-0"
       >
         <Link2 className="size-3.5" />
         Koppelen
@@ -138,9 +138,9 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
           </DialogHeader>
 
           {/* Tikkie info */}
-          <div className="rounded-xl bg-muted px-4 py-3 text-sm">
+          <div className="rounded-xl bg-clear-tile px-4 py-3 text-sm">
             <p className="font-semibold">{tikkie.description}</p>
-            <p className="text-muted-foreground mt-0.5">
+            <p className="text-clear-muted mt-0.5">
               {formatDate(tikkie.date)} · <span className="tabular-nums text-green-600 font-semibold">+{formatEur(tikkie.amount)}</span>
               {tikkie.allocatedAmount > 0 && (
                 <> · <span className="tabular-nums text-amber-600 font-semibold">nog {formatEur(remainingBalance)} over</span></>
@@ -151,9 +151,9 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
           {confirming ? (
             /* Confirmation step */
             <div className="space-y-4">
-              <div className="rounded-xl border bg-card px-4 py-3 text-sm">
+              <div className="rounded-xl border bg-clear-card px-4 py-3 text-sm">
                 <p className="font-medium">{confirming.description}</p>
-                <p className="text-muted-foreground mt-0.5">
+                <p className="text-clear-muted mt-0.5">
                   {formatDate(confirming.date)} · <span className="tabular-nums text-red-500 font-semibold">-{formatEur(confirming.amount)}</span>
                   {confirming.categoryName && (
                     <> · <span style={{ color: confirming.categoryColor ?? undefined }}>{confirming.categoryName}</span></>
@@ -166,11 +166,11 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
                 <label className="text-sm font-medium">
                   Hoeveel van deze Tikkie gaat naar deze uitgave?
                 </label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-clear-muted">
                   Nog <span className="tabular-nums">{formatEur(remainingBalance)}</span> beschikbaar van de Tikkie
                 </p>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{currencySymbol()}</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-clear-muted">{currencySymbol()}</span>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -179,7 +179,7 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
                     step={0.01}
                     value={tikkiePortion}
                     onChange={(e) => setTikkiePortion(e.target.value)}
-                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm bg-background"
+                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm bg-clear-ground"
                     autoFocus
                   />
                 </div>
@@ -190,11 +190,11 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
                 <label className="text-sm font-medium">
                   Hoeveel verwacht je totaal terug van deze uitgave?
                 </label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-clear-muted">
                   Jouw deel: <span className="tabular-nums">{formatEur(confirming.amount - parseFloat(expectedBack.replace(",", ".") || "0"))}</span> of <span className="tabular-nums">{formatEur(confirming.amount)}</span>
                 </p>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{currencySymbol()}</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-clear-muted">{currencySymbol()}</span>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -203,7 +203,7 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
                     step={0.01}
                     value={expectedBack}
                     onChange={(e) => setExpectedBack(e.target.value)}
-                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm bg-background"
+                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm bg-clear-ground"
                   />
                 </div>
               </div>
@@ -211,14 +211,14 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
               <div className="flex gap-2">
                 <button
                   onClick={() => setConfirming(null)}
-                  className="flex-1 px-4 py-2 rounded-lg border text-sm hover:bg-muted transition-colors"
+                  className="flex-1 px-4 py-2 rounded-lg border text-sm hover:bg-clear-tile transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={confirmLink}
                   disabled={linking}
-                  className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  className="flex-1 px-4 py-2 rounded-lg bg-clear-ember text-clear-ember-ink text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
                 >
                   {linking ? "Koppelen…" : "Confirm link"}
                 </button>
@@ -228,10 +228,10 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
             /* Expense selection step */
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {loading && (
-                <p className="text-sm text-muted-foreground text-center py-4">Search expenses…</p>
+                <p className="text-sm text-clear-muted text-center py-4">Search expenses…</p>
               )}
               {!loading && suggestions.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
+                <p className="text-sm text-clear-muted text-center py-4">
                   No suggestions found binnen 14 dagen.
                 </p>
               )}
@@ -243,12 +243,12 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
                   <button
                     key={s.id}
                     onClick={() => selectExpense(s)}
-                    className="w-full text-left rounded-xl border bg-card px-4 py-3 hover:bg-muted transition-colors"
+                    className="w-full text-left rounded-xl border bg-clear-card px-4 py-3 hover:bg-clear-tile transition-colors"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{s.description}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-xs text-clear-muted mt-0.5">
                           {formatDate(s.date)}
                           {s.categoryName && (
                             <> · <span style={{ color: s.categoryColor ?? undefined }}>{s.categoryName}</span></>
@@ -258,14 +258,14 @@ export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props
                       <div className="text-right shrink-0">
                         <p className="text-sm font-semibold tabular-nums text-red-500">-{formatEur(s.amount)}</p>
                         {s.alreadyLinked > 0 && (
-                          <p className="text-[10px] tabular-nums text-muted-foreground">
+                          <p className="text-xs tabular-nums text-clear-muted">
                             {pct}% gedekt · nog {formatEur(remaining)}
                           </p>
                         )}
                       </div>
                     </div>
                     {s.alreadyLinked > 0 && (
-                      <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                      <div className="mt-2 h-1 rounded-full bg-clear-tile overflow-hidden">
                         <div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} />
                       </div>
                     )}

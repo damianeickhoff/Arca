@@ -493,33 +493,13 @@
       "title": "Split a bill you pay in full",
       "body": "Mark the part housemates or family pay you back. Your cash flow keeps the whole charge — it really leaves your account — while reports can show only your own share."
     },
-    "newNavigation": {
-      "title": "A new way around",
-      "body": "Everything now lives in four places: Home, Activity, Plan (budget, debts and goals) and Insights. Add a transaction with the round button."
-    },
     "planHub": {
       "title": "Budget, debts and goals together",
       "body": "Switch between your budget, your debts and your savings goals here. They're all part of Plan now."
     },
-    "homeSafeToSpend": {
-      "title": "Safe to spend",
-      "body": "What's left of your budget this month, and per day until it resets. Switch to Balance to see it from your accounts instead. The dial counts the days left."
-    },
-    "homeQuickActions": {
-      "title": "Quick actions",
-      "body": "Import a bank export, add a transaction or scan a receipt straight from Home."
-    },
-    "homeNudge": {
-      "title": "A nudge",
-      "body": "One line on how this week compares to a usual week, worked out from your own spending."
-    },
     "homeComingUp": {
       "title": "Coming up",
-      "body": "Bills still to pay this month. Tap the circle to mark one as paid."
-    },
-    "homeSpending": {
-      "title": "Spending",
-      "body": "Each category against its budget. The bar turns orange when a category is nearly used up."
+      "body": "The next bills this month, soonest first. The link opens the full list, where you can mark one as paid."
     },
     "activityDetail": {
       "title": "Everything about a transaction",
@@ -592,6 +572,22 @@
     "insightsComingUp": {
       "title": "What's coming",
       "body": "The next booked and expected payments in your forecast. Open the calendar below for every day with money moving."
+    },
+    "homeSafeToSpendSum": {
+      "title": "One number, with its sum",
+      "body": "Safe to spend is your budget minus what you've spent and the bills still to come. The line under the bar shows exactly that sum."
+    },
+    "homeIncomeVsSpending": {
+      "title": "Income vs spending",
+      "body": "Six budget months side by side: money in as dark bars, money out striped. This month's spending is the solid orange bar."
+    },
+    "clearNavigation": {
+      "title": "Everything is in the sidebar",
+      "body": "Home, Activity, Plan and Insights sit on the left, with Import, Settings, the theme and Sign out underneath. On a phone they're in the bar at the bottom."
+    },
+    "homeMoneyFlow": {
+      "title": "Money flow",
+      "body": "Money in and money out this month, added up day by day. The gap between the two lines today is what you've kept so far."
     }
   },
   "importMapping": {
@@ -686,13 +682,19 @@
       "goals": "Goals"
     },
     "insights": "Insights",
-    "accounts": "Accounts",
-    "importCsv": "Import CSV",
-    "settings": "Settings",
     "addTransaction": "Add transaction",
     "search": "Search",
-    "searchPlaceholder": "Search transactions, merchants…",
-    "searchShortcut": "⌘K"
+    "searchShortcut": "⌘K",
+    "needsReviewBadge": "{count, plural, one {# transaction needs a category} other {# transactions need a category}}",
+    "importCsv": "Import CSV",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "system": "Auto",
+      "dark": "Dark"
+    }
   },
   "insights": {
     "title": "Insights",
@@ -964,43 +966,62 @@
       "afternoon": "Good afternoon, {name}",
       "evening": "Good evening, {name}"
     },
-    "subtitle": "{date} · {count, plural, one {# day} other {# days}} left in this financial month",
-    "addTransaction": "Add transaction",
+    "greetingShort": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "subtitle": "{date} · payday in {count, plural, one {# day} other {# days}}",
+    "review": "Review",
     "hero": {
-      "safeToSpend": "Safe to spend",
-      "modeLabel": "Show safe to spend for",
-      "month": "Month",
-      "balance": "Balance",
-      "perDay": "{amount} a day until {date}",
-      "overBudget": "Over budget this month",
-      "noBudget": "No budget set, so this is your cash flow this month",
-      "days": "days",
-      "daysLeft": "{count, plural, one {# day} other {# days}} left",
+      "title": "Safe to spend",
       "pace": {
         "onPace": "On pace",
         "fast": "Spending fast",
-        "over": "Over budget",
-        "onTrack": "On track",
-        "low": "Low ahead"
+        "over": "Over budget"
       },
-      "stats": {
-        "budgetUsed": "Budget used",
-        "forecastLow": "Forecast low",
-        "health": "Health score"
-      }
-    },
-    "quick": {
+      "perDay": "About <b>{amount} a day</b> until {date}",
+      "overBudget": "You've spent more than this period's budget.",
+      "sum": "{spent} spent · {bills} bills to come",
+      "budget": "{amount} budget",
+      "add": "Add transaction",
+      "scan": "Scan receipt",
+      "noBudget": "Set a budget to see what you can spend each day.",
+      "setBudget": "Set a budget",
       "importCsv": "Import CSV",
-      "add": "Add",
-      "scan": "Scan receipt"
+      "paceTitle": "Spending pace",
+      "underPace": "{amount} under an even pace",
+      "overPace": "{amount} over an even pace",
+      "paceDescription": "Line chart of spending so far, {spent}, against an even pace through the budget period, {even} by today."
     },
-    "nudge": {
-      "same": "Your spending this week is right on a usual week.",
-      "less": "You spent <b>{amount} less</b> than a usual week.",
-      "lessCategory": "{category} did most of it.",
-      "more": "You spent <b>{amount} more</b> than a usual week.",
-      "moreCategory": "{category} took the biggest share.",
-      "bills": "{count, plural, one {# bill is} other {# bills are}} still due this month, <b>{amount}</b> in total."
+    "month": {
+      "title": "This month",
+      "income": "Income",
+      "spent": "Spent",
+      "saved": "Saved",
+      "billsDue": "Bills to come",
+      "vsLastMonth": "vs last month",
+      "fixed": "{amount} of it fixed costs",
+      "ofIncome": "of income",
+      "billsBefore": "{count, plural, one {# bill} other {# bills}} before {date}",
+      "noBills": "Nothing left to pay"
+    },
+    "chart": {
+      "title": "Income vs spending",
+      "subtitle": "The last six budget months",
+      "legendTitle": "Money in and out",
+      "in": "In",
+      "out": "Out",
+      "empty": "Nothing to show yet.",
+      "description": "Bar chart of money in and out per budget month (in / out): {months}"
+    },
+    "budget": {
+      "title": "{month} budget",
+      "titleWeekly": "This week's budget",
+      "open": "Open Plan",
+      "spentOf": "<b>{amount}</b> spent of",
+      "left": "{amount} left",
+      "over": "{amount} over"
     },
     "comingUp": {
       "title": "Coming up",
@@ -1008,39 +1029,63 @@
       "all": "All bills",
       "empty": "Nothing left to pay this month.",
       "overdue": "Overdue",
-      "today": "Today",
-      "tomorrow": "Tomorrow"
+      "inDays": "{count, plural, =0 {Today} =1 {Tomorrow} other {In # days}} · {date}"
     },
-    "spending": {
-      "title": "Spending",
-      "all": "All categories",
-      "empty": "No spending yet this month.",
-      "of": "of {budget}",
-      "nearly": "nearly there",
-      "over": "over budget",
-      "tilesTitle": "Spending by category",
-      "tilesAll": "All {count, plural, one {# category} other {# categories}}",
-      "left": "{amount} left"
+    "activity": {
+      "title": "Recent activity",
+      "all": "View all",
+      "empty": "No transactions yet.",
+      "transaction": "Transaction",
+      "category": "Category",
+      "statusColumn": "Status",
+      "date": "Date",
+      "amount": "Amount",
+      "noCategory": "Needs a category",
+      "status": {
+        "toReview": "To review",
+        "recurring": "Recurring",
+        "transfer": "Internal transfer",
+        "paidBack": "Paid back",
+        "booked": "Booked"
+      }
     },
-    "cashFlow": {
-      "title": "Cash flow",
-      "link": "Insights",
-      "net": "Net this month"
+    "accounts": {
+      "title": "Accounts",
+      "total": "{amount} total"
+    },
+    "getStarted": {
+      "title": "Get started",
+      "progress": "{done} of {total} done",
+      "done": "Done",
+      "startHere": "Start here",
+      "steps": {
+        "imported": {
+          "title": "Import a bank CSV",
+          "body": "Most Dutch banks are recognised automatically."
+        },
+        "budget": {
+          "title": "Set a monthly budget",
+          "body": "Then Home shows what you can spend each day."
+        },
+        "bills": {
+          "title": "Add your recurring bills",
+          "body": "Rent, subscriptions, insurance — so they're never a surprise."
+        },
+        "goal": {
+          "title": "Create a savings goal",
+          "body": "See when you'll get there at your own pace."
+        }
+      }
     },
     "needsReview": "{count, plural, one {# transaction needs a category} other {# transactions need a category}}",
-    "latest": {
-      "title": "Latest",
-      "all": "All activity",
-      "today": "Today",
-      "yesterday": "Yesterday",
-      "recurring": "Recurring bill",
-      "internalTransfer": "Internal transfer"
-    },
-    "empty": {
-      "title": "No data available yet",
-      "body": "Import a bank export or add your first transaction to fill Home.",
-      "import": "Import a CSV",
-      "create": "Create transaction"
+    "flow": {
+      "title": "Money flow",
+      "subtitle": "Money in and out, added up day by day · {from} – {to}",
+      "in": "In",
+      "out": "Out",
+      "net": "Net",
+      "empty": "No money has moved this period yet.",
+      "description": "Line chart of money in and money out this period, added up per day. So far {in} in and {out} out, a net of {net}."
     }
   },
   "bills": {
@@ -1073,12 +1118,19 @@
     },
     "bulk": {
       "select": "Select",
-      "deselect": "Deselect"
+      "deselect": "Deselect",
+      "selectRow": "Select {name}"
     },
     "summary": {
       "in": "In",
       "out": "Out",
-      "net": "Net"
+      "net": "Net",
+      "label": "Money in and out",
+      "inSub": "{count, plural, one {# payment in} other {# payments in}}",
+      "outSub": "{amount} of it fixed costs",
+      "outSubNone": "No fixed costs in this selection",
+      "netSubPositive": "Left after spending",
+      "netSubNegative": "More went out than came in"
     },
     "upcoming": {
       "title": "{count, plural, one {# upcoming this month} other {# upcoming this month}}",
@@ -1167,9 +1219,9 @@
       "paidInYear": "{amount} paid in {year}",
       "editRecurring": "Edit recurring",
       "details": "Details",
-      "none": "None",
       "thisMonth": "{category} this month",
-      "other": "Other"
+      "other": "Other",
+      "overBudget": "{amount} over"
     },
     "rule": {
       "titleCreate": "Create a rule",
@@ -1198,7 +1250,8 @@
     "tiles": {
       "upcoming": "{count} upcoming",
       "upcomingSub": "{amount} before {date}",
-      "needsReview": "{count, plural, one {# needs a category} other {# need a category}}"
+      "needsReview": "{count, plural, one {# needs a category} other {# need a category}}",
+      "needsReviewSub": "Left out of budgets until sorted"
     },
     "frequency": {
       "daily": "daily",
@@ -1215,6 +1268,14 @@
       "add": "Add “{name}”",
       "loading": "Loading…",
       "none": "No merchants yet."
+    },
+    "listTitle": "Transactions",
+    "sort": {
+      "label": "Sort: {order}",
+      "newest": "Newest first",
+      "oldest": "Oldest first",
+      "highest": "Highest amount",
+      "lowest": "Lowest amount"
     }
   },
   "plan": {

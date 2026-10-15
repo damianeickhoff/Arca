@@ -5,13 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Fonts — next/font declares --font-dm-sans / --font-dm-mono on <html> (see
-     layout.tsx). The theme keys deliberately use different names: an @theme inline
-     entry that references a variable of its own name recurses forever and OOMs the
-     CSS build. */
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  /* Fonts — next/font declares --font-jakarta (the Clear typeface, used app-wide) and
+     the legacy --font-dm-sans / --font-dm-mono on <html> (see layout.tsx). The theme keys
+     deliberately use different names: an @theme inline entry that references a variable
+     of its own name recurses forever and OOMs the CSS build. */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-dm-mono), ui-monospace, monospace;
-  --font-heading: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
   /* ── Mustard design tokens (source values live in :root / .dark as --arca-*) ── */
   --color-bg: var(--arca-bg);
@@ -144,14 +144,13 @@
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
-  /* Vertical space the floating tab bar occupies on phones: the bar's own 60px
-     height plus its 20px bottom offset = 5rem to its top edge, plus a 1rem gap so
-     the last row doesn't just touch it, plus the home-indicator inset. Pages
-     reserve this at the bottom so their last row never sits under the bar. From
-     lg up the bar is replaced by the sidebar and the clearance shrinks to a plain
-     bottom margin (see the media query after this block). See
-     components/shell/app-shell.tsx. */
-  --nav-clearance: calc(6rem + var(--sab));
+  /* Vertical space the floating tab bar occupies on phones: the bar's own 68px
+     height plus its 20px bottom offset to its top edge, plus a 16px gap so the last
+     row doesn't just touch it, plus the home-indicator inset. Pages reserve this at
+     the bottom so their last row never sits under the bar. From lg up there is no tab
+     bar (the top bar holds the navigation) and the clearance shrinks to a plain bottom
+     margin (see the media query after this block). See components/shell/app-shell.tsx. */
+  --nav-clearance: calc(6.5rem + var(--sab));
   /* A bar docked just above the phone tab bar (Activity's search): it sits 12px above
      the tab bar's top edge, and a page showing one adds --bottom-bar-clearance on top
      of --nav-clearance so its last row clears both. Phones only — from lg there is no
@@ -248,40 +247,41 @@
   --elevation-floating: var(--arca-shadow-float);
   --elevation-overlay: 0 16px 48px rgba(30, 26, 20, 0.16), 0 2px 8px rgba(30, 26, 20, 0.06);
 
-  /* Legacy shadcn tokens, re-pointed at the mustard palette above. */
-  --background: var(--arca-bg);
-  --foreground: var(--arca-ink);
-  --dialog-background: var(--arca-bg);
-  --dialog-content-background: var(--arca-surface);
-  --card: var(--arca-surface);
-  --card-foreground: var(--arca-ink);
-  --popover: var(--arca-surface);
-  --popover-foreground: var(--arca-ink);
-  --primary: var(--arca-accent);
-  --primary-foreground: var(--arca-accent-ink);
-  --secondary: var(--arca-surface-2);
-  --secondary-foreground: var(--arca-ink);
-  --muted: var(--arca-surface-2);
-  --muted-foreground: var(--arca-ink-3);
-  --accent: var(--arca-accent-soft);
-  --accent-foreground: var(--arca-ink);
-  --destructive: var(--arca-negative);
-  --success: var(--arca-positive);
-  --danger: var(--arca-negative);
-  --warning: var(--arca-warning);
-  --border: var(--arca-line);
-  --input: var(--arca-line);
-  --ring: var(--arca-accent);
-  --chart-1: var(--arca-accent);
-  --chart-2: var(--arca-info);
-  --chart-3: var(--arca-positive);
-  --chart-4: var(--arca-negative);
-  --chart-5: var(--arca-ink-2);
+  /* Legacy shadcn tokens, re-pointed at the Clear palette so the primitives that still
+     use them (dialogs, menus, inputs, the shadcn-style components) look Clear. */
+  --background: var(--clr-ground);
+  --foreground: var(--clr-ink);
+  --dialog-background: var(--clr-card);
+  --dialog-content-background: var(--clr-tile);
+  --card: var(--clr-card);
+  --card-foreground: var(--clr-ink);
+  --popover: var(--clr-card);
+  --popover-foreground: var(--clr-ink);
+  --primary: var(--clr-ember);
+  --primary-foreground: var(--clr-ember-ink);
+  --secondary: var(--clr-tile);
+  --secondary-foreground: var(--clr-ink);
+  --muted: var(--clr-tile);
+  --muted-foreground: var(--clr-muted);
+  --accent: var(--clr-peach);
+  --accent-foreground: var(--clr-ink);
+  --destructive: var(--clr-negative);
+  --success: var(--clr-positive);
+  --danger: var(--clr-negative);
+  --warning: var(--clr-warning);
+  --border: var(--clr-line);
+  --input: var(--clr-line);
+  --ring: var(--clr-ember);
+  --chart-1: var(--clr-ember);
+  --chart-2: var(--clr-info-fill);
+  --chart-3: var(--clr-positive-fill);
+  --chart-4: var(--clr-negative-fill);
+  --chart-5: var(--clr-ink-2);
   --radius: 1.125rem;
-  --sidebar: var(--arca-surface);
-  --sidebar-primary-foreground: var(--arca-surface);
-  --color-income: var(--arca-positive);
-  --color-expense: var(--arca-negative);
+  --sidebar: var(--clr-card);
+  --sidebar-primary-foreground: var(--clr-card);
+  --color-income: var(--clr-positive);
+  --color-expense: var(--clr-negative);
   /* Kept for the (pre-redesign) screens that still read it. */
   --glass-blur: blur(20px);
 
@@ -315,11 +315,11 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   display: none;
 }
 
-/* Desktop: the sidebar replaces the floating tab bar, so pages only need an
-   ordinary bottom margin. */
+/* Desktop: the sidebar replaces the floating tab bar, so nothing needs clearing; each
+   page sets its own bottom padding (a full-height page like Activity needs none). */
 @media (min-width: 1024px) {
   :root {
-    --nav-clearance: calc(2.5rem + var(--sab));
+    --nav-clearance: 0px;
   }
 }
 
@@ -364,6 +364,15 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
     135deg,
     var(--clr-hatch-stripe) 0 3px,
     var(--clr-hatch-gap) 3px 7px
+  );
+}
+/* The same stripes on the hero card: ember on a faint hero-ink gap, so they read on the
+   black card (and on the light one in dark mode). */
+@utility clear-hatch-hero {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--clr-ember) 0 3px,
+    color-mix(in srgb, var(--clr-hero-ink) 15%, transparent) 3px 7px
   );
 }
 
@@ -434,10 +443,8 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   --clr-shadow-dialog: 0 30px 80px rgba(0, 0, 0, 0.6);
   --clr-shadow-float: 0 16px 40px rgba(0, 0, 0, 0.55);
 
-  /* Every legacy token that points at an --arca-* value follows automatically; only
+  /* Every legacy token that points at an --arca-* or --clr-* value follows automatically;
      the ones whose dark value differs from that mapping are restated here. */
-  --dialog-background: var(--arca-surface);
-  --dialog-content-background: var(--arca-surface-2);
   --icon-muted: var(--arca-surface-2);
   /* Cards carry no shadow in dark mode (--arca-shadow-card is none); floating
      chrome and overlays still need one to separate from the page. */
@@ -504,6 +511,21 @@ html.privacy .tabular-nums:hover {
 }
 *::-webkit-scrollbar {
   display: none;
+}
+
+/* Opt back in to a scrollbar where one helps (a long list inside a card on desktop):
+   thin, in the line colour, on a transparent track. Beats the app-wide rule above. */
+.clear-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--clr-line) transparent;
+}
+.clear-scrollbar::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+.clear-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--clr-line);
+  border-radius: 999px;
 }
 
 /* Revolut-style "liquid glass" circular icon buttons (mobile header). Pure-CSS
@@ -703,9 +725,9 @@ button, a, [role="button"] {
 
   body {
     @apply text-foreground;
-    font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
     font-optical-sizing: auto;
-    background-color: var(--background);
+    background-color: var(--clr-ground);
     position: relative;
     z-index: 0;
     /* No overflow-x here: setting overflow on <body> turns it into its own
@@ -744,7 +766,7 @@ button, a, [role="button"] {
     /* With the translucent iOS status bar, content bleeds under the notch. On every page but
        the dashboard (which paints its own gradient there) this is the background that shows in
        that band; the top edge-fade keeps the white status icons legible over it. */
-    background-color: var(--background);
+    background-color: var(--clr-ground);
   }
 
   /* ── Glassmorphism ─────────────────────────────────────────────────── */

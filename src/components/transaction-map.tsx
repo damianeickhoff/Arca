@@ -175,7 +175,7 @@ export function TransactionMap({ name }: { name: string }) {
   if (state.status === "none") return null;
 
   if (state.status === "loading") {
-    return <div className="h-36 rounded-xl bg-foreground/[0.04] animate-pulse" />;
+    return <div className="h-36 rounded-xl bg-clear-primary/[0.04] animate-pulse" />;
   }
 
   return (
@@ -186,8 +186,8 @@ export function TransactionMap({ name }: { name: string }) {
       />
       
       <div className="flex justify-between items-center gap-2">
-        <p className="text-xs text-muted-foreground truncate">{state.label}</p>
-        <span className="text-[10px] text-muted-foreground/40 shrink-0">© OpenStreetMap</span>
+        <p className="text-xs text-clear-muted truncate">{state.label}</p>
+        <span className="text-xs text-clear-muted shrink-0">© OpenStreetMap</span>
       </div>
     </div>
   );

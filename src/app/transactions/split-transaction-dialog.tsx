@@ -200,8 +200,8 @@ export function SplitTransactionDialog({
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
-          <div className="rounded-xl bg-muted px-4 py-3">
-            <p className="text-xs text-muted-foreground mb-1">Amount to split</p>
+          <div className="rounded-xl bg-clear-tile px-4 py-3">
+            <p className="text-xs text-clear-muted mb-1">Amount to split</p>
             <p className="font-semibold tabular-nums text-base">{formatEur(totalAmount)}</p>
           </div>
 
@@ -218,15 +218,15 @@ export function SplitTransactionDialog({
                   onClick={() => setMode(value)}
                   className={`flex-1 px-3 py-2 transition-colors ${
                     mode === value
-                      ? "bg-primary text-primary-foreground font-medium"
-                      : "bg-background text-muted-foreground hover:bg-muted"
+                      ? "bg-clear-ember text-clear-ember-ink font-medium"
+                      : "bg-clear-ground text-clear-muted hover:bg-clear-tile"
                   } ${index > 0 ? "border-l" : ""}`}
                 >
                   {label}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-clear-muted">
               {mode === "amount"
                 ? "Enter the exact amount for each share."
                 : "Give each share a count. The amount will be split automatically."}
@@ -243,7 +243,7 @@ export function SplitTransactionDialog({
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-medium">Deel {index + 1}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-clear-muted">
                         {mode === "count" ? `${formatEur(computedAmount)} automatisch berekend` : "Choose category and amount"}
                       </p>
                     </div>
@@ -251,7 +251,7 @@ export function SplitTransactionDialog({
                       type="button"
                       onClick={() => removeSplit(index)}
                       disabled={splits.length <= 2}
-                      className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="rounded-md p-2 text-clear-muted hover:bg-clear-tile hover:text-clear-ink disabled:opacity-30 disabled:cursor-not-allowed"
                       title={splits.length <= 2 ? "A split has at least 2 shares" : `Delete share ${index + 1}`}
                     >
                       <Trash2 className="size-4" />
@@ -262,21 +262,21 @@ export function SplitTransactionDialog({
                     <div className="space-y-1.5">
                       <label className="font-medium">Categorie</label>
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="w-full border rounded-md px-3 py-2 bg-background flex items-center justify-between gap-2">
-                          <span className={`flex items-center gap-2 min-w-0 ${selectedCategory ? "" : "text-muted-foreground"}`}>
+                        <DropdownMenuTrigger className="w-full border rounded-md px-3 py-2 bg-clear-ground flex items-center justify-between gap-2">
+                          <span className={`flex items-center gap-2 min-w-0 ${selectedCategory ? "" : "text-clear-muted"}`}>
                             {selectedCategory?.color && (
                               <span className="inline-block size-2 rounded-full shrink-0" style={{ backgroundColor: selectedCategory.color }} />
                             )}
                             <span className="truncate">{selectedCategory ? selectedCategory.name : "— Choose category —"}</span>
                           </span>
-                          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+                          <ChevronDown className="size-4 text-clear-muted shrink-0" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="min-w-56 max-h-80 overflow-y-auto">
                           {categories.map((category) => (
                             <DropdownMenuItem
                               key={category.id}
                               onClick={() => updateSplit(index, { categoryId: String(category.id) })}
-                              className={String(category.id) === split.categoryId ? "bg-muted" : ""}
+                              className={String(category.id) === split.categoryId ? "bg-clear-tile" : ""}
                             >
                               {category.color && (
                                 <span className="inline-block size-2 rounded-full shrink-0" style={{ backgroundColor: category.color }} />
@@ -292,7 +292,7 @@ export function SplitTransactionDialog({
                       <label className="font-medium">{mode === "amount" ? "Amount" : "Count"}</label>
                       <div className="relative">
                         {mode === "amount" && (
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">{currencySymbol()}</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-clear-muted">{currencySymbol()}</span>
                         )}
                         <Input
                           type="number"
@@ -304,7 +304,7 @@ export function SplitTransactionDialog({
                         />
                       </div>
                       {mode === "count" ? (
-                        <p className="text-xs text-muted-foreground tabular-nums">{formatEur(computedAmount)}</p>
+                        <p className="text-xs text-clear-muted tabular-nums">{formatEur(computedAmount)}</p>
                       ) : null}
                     </div>
                   </div>
@@ -320,17 +320,17 @@ export function SplitTransactionDialog({
             </Button>
 
             <div className="text-right">
-              <p className={`text-sm font-medium tabular-nums ${totalMatches ? "text-foreground" : "text-destructive"}`}>
+              <p className={`text-sm font-medium tabular-nums ${totalMatches ? "text-clear-ink" : "text-clear-negative"}`}>
                 Total: {formatEur(enteredTotal)} / {formatEur(totalAmount)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-clear-muted">
                 {mode === "count" ? "Automatically balanced to add up exactly." : "All shares together must add up exactly."}
               </p>
             </div>
           </div>
 
           {error && (
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            <div className="rounded-xl border border-clear-negative/20 bg-clear-negative-fill/5 px-3 py-2 text-sm text-clear-negative">
               {error}
             </div>
           )}

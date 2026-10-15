@@ -30,15 +30,6 @@ export async function getDefaultCurrency(): Promise<string> {
   return value === "USD" || value === "GBP" ? value : "EUR";
 }
 
-export const DEFAULT_SIDEBAR_SUBTITLE = "";
-
-// Caption shown under the "Arca" wordmark in the sidebar (src/components/brand-mark.tsx),
-// editable from the profile settings page.
-export async function getSidebarSubtitle(): Promise<string> {
-  const row = await db.select().from(appSettings).where(eq(appSettings.key, "sidebar_subtitle")).limit(1);
-  return row[0]?.value?.trim() || DEFAULT_SIDEBAR_SUBTITLE;
-}
-
 export async function getStartDay(): Promise<number> {
   const config = await getFinancialMonthConfig();
   return config.defaultStartDay;

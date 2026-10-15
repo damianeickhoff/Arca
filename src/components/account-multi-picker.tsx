@@ -56,7 +56,7 @@ export function AccountMultiPicker({
             type="button"
             onClick={confirm}
             aria-label="Confirm"
-            className="size-11 rounded-full bg-foreground text-background flex items-center justify-center"
+            className="size-11 rounded-full bg-clear-primary text-clear-card flex items-center justify-center"
           >
             <Check className="size-5" />
           </button>
@@ -65,7 +65,7 @@ export function AccountMultiPicker({
           <button
             type="button"
             onClick={toggleAll}
-            className="w-full h-11 rounded-full bg-foreground text-sm font-semibold text-background"
+            className="w-full h-11 rounded-full bg-clear-primary text-sm font-semibold text-clear-card"
           >
             {allSelected ? "Deselect All" : "Select All"}
           </button>
@@ -86,13 +86,13 @@ export function AccountMultiPicker({
                 <div className="flex-1 min-w-0">
                   <span className="block text-sm font-medium truncate">{bank.displayName ?? accountNumber}</span>
                   {bank.displayName && (
-                    <span className="block text-xs font-mono text-foreground/50 truncate mt-0.5">{accountNumber}</span>
+                    <span className="block text-xs text-clear-muted truncate mt-0.5">{accountNumber}</span>
                   )}
                 </div>
                 <span
                   className={cn(
                     "size-6 rounded-md border flex items-center justify-center shrink-0",
-                    active ? "bg-foreground text-background" : "",
+                    active ? "bg-clear-primary text-clear-card" : "",
                   )}
                 >
                   {active && <Check className="size-4" />}
@@ -100,7 +100,7 @@ export function AccountMultiPicker({
               </button>
             );
           })}
-          {banks.length === 0 && <p className="text-sm text-foreground/40 text-center py-6">No accounts</p>}
+          {banks.length === 0 && <p className="text-sm text-clear-ink/40 text-center py-6">No accounts</p>}
         </div>
       </DialogContent>
     </Dialog>
