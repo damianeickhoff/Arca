@@ -35,6 +35,9 @@ export const SPLIT_GRID =
   "flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(380px,1fr)] lg:items-start";
 export const SPLIT_GRID_WIDE =
   "flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(460px,2fr)] lg:items-start";
+/** Just the column template of SPLIT_GRID_WIDE, for a grid that defines its own rows
+ *  (Activity: link tiles | summary, then list | transaction). */
+export const SPLIT_COLUMNS_WIDE = "lg:grid-cols-[minmax(0,3fr)_minmax(460px,2fr)]";
 
 /** For `fixed inset-0` / `fixed inset-x-0` page-like overlays: start right of the sidebar. */
 export const FULLSCREEN_OVERLAY = "lg:left-60";

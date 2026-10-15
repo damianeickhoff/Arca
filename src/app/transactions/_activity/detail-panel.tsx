@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  IconArrowUp,
+  IconArrowDown,
   IconArrowsLeftRight,
   IconBrandGoogle,
+  IconBuildingStore,
   IconCamera,
-  IconChevronRight,
+  IconChevronDown,
+  IconChevronUp,
   IconDots,
   IconEye,
   IconEyeOff,
@@ -19,7 +24,7 @@ import {
   IconTrash,
   IconArrowsSplit2,
   IconBolt,
-  IconBuildingStore,
+  IconTransfer,
   IconX,
 } from "@tabler/icons-react";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
@@ -37,9 +42,8 @@ import {
 import { CategoryGrid, useCategoryFilter } from "@/components/category-picker";
 import { OptionDropdown } from "@/components/option-dropdown";
 import { BrandIconPicker } from "@/components/brand-icon-picker";
-import { MerchantDetailPortal, merchantIcon, type MerchantRef } from "@/components/merchant-detail-portal";
+import { MerchantDetailPortal, type MerchantRef } from "@/components/merchant-detail-portal";
 import { RecurringClient } from "@/components/settings/recurring/recurring-client";
-import { TransactionMap } from "@/components/transaction-map";
 import { formatEur, normalizeBudgetType, currencySymbol } from "@/lib/format";
 import { isValidISODate } from "@/lib/date-valid";
 import { resolveDisplayName } from "@/lib/friendly-names";
@@ -47,18 +51,22 @@ import { resolveTransactionIcon } from "@/lib/auto-brand";
 import { getMatchedTransactionInfoFields } from "@/lib/transaction-info-fields";
 import { TRANSFER_TYPES, TRANSFER_TYPE_LABELS } from "@/lib/transfer-types";
 import { getTransactionSplitTotal } from "@/lib/transaction-splits";
+import { nextOccurrence } from "@/lib/recurring-occurrence";
 import { cn } from "@/lib/utils";
 import type { Category, Goal, Merchant } from "@/db/schema";
 import { SplitTransactionDialog } from "../split-transaction-dialog";
 import { LinkDialog } from "../link-dialog";
-import {
-  MerchantPickerDialog,
-  RecurrenceCard,
-  buildRecurringPrefill,
-  guessMerchant,
-} from "../transaction-detail-dialog";
+import { MerchantPickerDialog, buildRecurringPrefill, guessMerchant } from "../transaction-detail-dialog";
 import type { TransactionRow } from "../transaction-types";
 import { RowIcon, needsCategory, signedAmount } from "./activity-list";
+import type { ActivityContext } from "./context";
+
+// Loaded lazily, as in the old detail sheet: the recurring sheet lists linked
+// transactions and can open transaction sheets in turn — a module cycle otherwise.
+const RecurringDetailDialog = dynamic(
+  () => import("@/components/settings/recurring/recurring-detail-dialog").then((m) => m.RecurringDetailDialog),
+  { ssr: false },
+);
 
 // Nested sheets open above the phone detail sheet (z-50); harmless on desktop.
 const NESTED = { sheetClassName: "z-[85]", overlayClassName: "z-[85] backdrop-blur-lg bg-foreground/20" } as const;
@@ -66,6 +74,10 @@ const NESTED = { sheetClassName: "z-[85]", overlayClassName: "z-[85] backdrop-bl
 const BUDGET_KEY: Record<string, "needs" | "wants" | "save"> = { nodig: "needs", willen: "wants", sparen: "save" };
 
 type ReimbursementLink = { amount: number; reimbursementTransactionId: number; originalTransactionId: number };
+type Charge = { date: string; amount: number; correctedAmount: number | null };
+
+/** Distinct, theme-aware colours for the merchant segments of the category bar. */
+const SEGMENT_COLORS = ["var(--arca-info)", "var(--arca-positive)", "var(--arca-negative)", "var(--arca-warning)", "var(--arca-accent-strong)"];
 
 async function patchTransaction(body: Record<string, unknown>) {
   await fetch("/api/transactions", {
@@ -75,30 +87,53 @@ async function patchTransaction(body: Record<string, unknown>) {
   });
 }
 
+function isoToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function daysUntil(date: string) {
+  const a = new Date(`${isoToday()}T12:00:00`).getTime();
+  const b = new Date(`${date}T12:00:00`).getTime();
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+const compactEur = (n: number) => formatEur(n).replace(/,00$/, "");
+
 /**
- * The transaction detail panel of the redesigned Activity page. Desktop shows it inline
- * in the right column for the selected row; phones show the same component in a bottom
- * sheet. Everything the old detail sheet could do is here: category (with "apply to
- * others"), merchant, budget type, transfer type, savings goal, note, receipt, recurrence,
- * plus the action grid (Split, Link reimbursement, Make recurring, Create a rule, Add
- * receipt, Exclude from reports) and an overflow menu for the rest (correct amount,
- * change merchant, brand icon, reimbursement / internal-transfer marks, look up, delete).
+ * The Activity transaction detail (design H3). Desktop renders it as the right-hand card
+ * — fixed height, the body scrolling inside and the quick actions pinned at the bottom;
+ * phones render the same sections in a bottom sheet with the actions at the end.
+ *
+ * Top to bottom: position and ↑/↓ navigation; the transaction with its tags; Budget
+ * impact and Next charge tiles; the last 12 charges of a recurring item; the four detail
+ * tiles (Category, Budget type, Savings goal, Note); this month's spend in the category,
+ * by merchant; and the quick actions (Split, Create a rule, Add receipt, More). Every
+ * editor and action of the earlier panel is still here: merchant via the merchant name,
+ * the rest in More.
  */
 export function TransactionDetailPanel({
   row,
   categories,
   savingsGoals,
+  context,
+  position,
+  layout,
   onCategorized,
   onDeleted,
 }: {
   row: TransactionRow;
   categories: Category[];
   savingsGoals: Goal[];
+  context: ActivityContext;
+  position?: { index: number; total: number; onPrev?: () => void; onNext?: () => void };
+  layout: "card" | "sheet";
   onCategorized: (id: number, categoryId: number | null) => void;
   onDeleted: () => void;
 }) {
   const t = useTranslations("activity.detail");
   const tTags = useTranslations("activity.tags");
+  const tFreq = useTranslations("activity.frequency");
   const locale = useLocale();
   const router = useRouter();
 
@@ -111,14 +146,13 @@ export function TransactionDetailPanel({
   const [notes, setNotes] = useState<string | null>(row.notes);
   const [excluded, setExcluded] = useState(!!row.excludeFromReports);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(row.receiptUrl);
-  const [recurring, setRecurring] = useState<{ id: number; name: string } | null>(
-    row.recurringItemId != null ? { id: row.recurringItemId, name: row.recurringFriendlyName || row.recurringName || "" } : null,
-  );
+  const [recurringId, setRecurringId] = useState<number | null>(row.recurringItemId ?? null);
 
   // ── fetched per transaction
   const [merchant, setMerchant] = useState<Merchant | null>(null);
   const [merchantVersion, setMerchantVersion] = useState(0);
   const [links, setLinks] = useState<ReimbursementLink[] | null>(null);
+  const [charges, setCharges] = useState<Charge[] | null>(null);
 
   useEffect(() => {
     if (row.isInternalTransfer) return;
@@ -126,7 +160,7 @@ export function TransactionDetailPanel({
     fetch(`/api/merchants/for-transaction?transactionId=${row.id}`)
       .then((r) => r.json())
       .then((d) => { if (!cancelled) setMerchant(d.merchant ?? null); })
-      .catch(() => { /* leave the field empty rather than break the panel */ });
+      .catch(() => { /* leave the name as the description rather than break the panel */ });
     return () => { cancelled = true; };
   }, [row.id, row.isInternalTransfer, merchantVersion]);
 
@@ -139,18 +173,31 @@ export function TransactionDetailPanel({
     return () => { cancelled = true; };
   }, [row.id]);
 
+  useEffect(() => {
+    if (recurringId == null) return;
+    let cancelled = false;
+    fetch(`/api/recurring/transactions?itemId=${recurringId}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setCharges(Array.isArray(d) ? d : []); })
+      .catch(() => { if (!cancelled) setCharges([]); });
+    return () => { cancelled = true; };
+  }, [recurringId]);
+
   const paidBack = (links ?? []).filter((l) => l.originalTransactionId === row.id).reduce((s, l) => s + l.amount, 0);
   const allocated = (links ?? []).filter((l) => l.reimbursementTransactionId === row.id).reduce((s, l) => s + l.amount, 0);
 
   // ── sheets and dialogs
   const [pickerOpen, setPickerOpen] = useState(false);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [budgetTypeOpen, setBudgetTypeOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [correctOpen, setCorrectOpen] = useState(false);
   const [iconOpen, setIconOpen] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
   const [linkOpen, setLinkOpen] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
+  const [recurringDetailOpen, setRecurringDetailOpen] = useState(false);
   const [merchantPickerOpen, setMerchantPickerOpen] = useState(false);
   const [openMerchant, setOpenMerchant] = useState<MerchantRef | null>(null);
   const [rule, setRule] = useState<RuleDraft | null>(null);
@@ -163,6 +210,8 @@ export function TransactionDetailPanel({
   const total = getTransactionSplitTotal(row.amount, row.correctedAmount);
   const lookupQuery = (guessMerchant(row.description) || resolveDisplayName(row)).trim();
   const infoFields = getMatchedTransactionInfoFields(row.rawDescription);
+  const recurringItem = recurringId != null ? context.recurring[recurringId] ?? null : null;
+  const goal = savingsGoals.find((g) => g.id === goalId) ?? null;
 
   const icon = resolveTransactionIcon({
     ...row,
@@ -173,9 +222,49 @@ export function TransactionDetailPanel({
     transferType,
   });
 
-  const dateLabel = isValidISODate(row.date)
-    ? new Date(`${row.date}T12:00:00`).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short", year: "numeric" })
-    : row.date;
+  const fmtDay = (date: string, opts: Intl.DateTimeFormatOptions) =>
+    isValidISODate(date) ? new Date(`${date}T12:00:00`).toLocaleDateString(locale, opts) : date;
+  const dateLabel = fmtDay(row.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const frequencyLabel = (f: string) => (["daily", "weekly", "monthly", "quarterly", "yearly", "once"].includes(f) ? tFreq(f) : f);
+
+  // ── Budget impact
+  const budget = categoryId != null ? context.budgets[categoryId] : undefined;
+  const showBudget = isExpense && !row.isInternalTransfer && !row.isSplit && budget?.budget != null && budget.budget > 0;
+  const budgetPct = showBudget ? (budget!.spent / budget!.budget!) * 100 : 0;
+
+  // ── Next charge
+  const nextDate = recurringItem && recurringItem.active ? nextOccurrence(recurringItem) : null;
+
+  // ── Last 12 charges, oldest first
+  const last12 = (charges ?? [])
+    .filter((c) => isValidISODate(c.date))
+    .slice(0, 12)
+    .reverse()
+    .map((c) => ({ date: c.date, value: Math.abs(c.correctedAmount ?? c.amount) }));
+  let priceChange: { diff: number; date: string } | null = null;
+  for (let i = last12.length - 1; i > 0; i--) {
+    const diff = Math.round(last12[i].value * 100) - Math.round(last12[i - 1].value * 100);
+    if (diff !== 0) {
+      priceChange = { diff: diff / 100, date: last12[i].date };
+      break;
+    }
+  }
+  const year = new Date().getFullYear();
+  const paidThisYear = (charges ?? [])
+    .filter((c) => c.date.startsWith(String(year)))
+    .reduce((s, c) => s + Math.abs(c.correctedAmount ?? c.amount), 0);
+
+  // ── Category context (expenses in a category only)
+  const showContext = isExpense && !row.isInternalTransfer && !row.isSplit && categoryId != null;
+  const merchants = showContext ? context.merchantSpend[categoryId!] ?? [] : [];
+  const monthTotal = merchants.reduce((s, m) => s + m.amount, 0);
+  const segments = [
+    ...merchants.slice(0, 4),
+    ...(merchants.length > 4 ? [{ name: t("other"), amount: merchants.slice(4).reduce((s, m) => s + m.amount, 0) }] : []),
+  ];
+  const contextBudget = budget?.budget != null && budget.budget > 0 ? budget.budget : null;
+  const denominator = Math.max(contextBudget ?? 0, monthTotal) || 1;
+  const ownMerchant = (merchant?.name ?? row.merchantName ?? "").toLowerCase();
 
   // ── actions
   async function applyCategory(value: string) {
@@ -187,20 +276,20 @@ export function TransactionDetailPanel({
     router.refresh();
     // Offer to apply the same category to similar transactions — unless a recurring
     // item already drives this row's category, which would make it redundant.
-    if (next != null && recurring == null) setRule(newRuleDraft(row, next, "afterChange"));
+    if (next != null && recurringId == null) setRule(newRuleDraft(row, next, "afterChange"));
   }
 
-  async function saveBudgetType(value: string) {
-    const next = value || null;
-    setBudgetTypeOverride(next);
-    await patchTransaction({ id: row.id, budgetTypeOverride: next });
+  async function saveBudgetType(value: string | null) {
+    setBudgetTypeOpen(false);
+    setBudgetTypeOverride(value);
+    await patchTransaction({ id: row.id, budgetTypeOverride: value });
     router.refresh();
   }
 
-  async function saveTransferType(value: string) {
-    const next = value || null;
-    setTransferType(next);
-    await patchTransaction({ id: row.id, transferType: next });
+  async function saveTransferType(value: string | null) {
+    setTransferOpen(false);
+    setTransferType(value);
+    await patchTransaction({ id: row.id, transferType: value });
     router.refresh();
   }
 
@@ -276,259 +365,365 @@ export function TransactionDetailPanel({
     router.refresh();
   }
 
-  // ── render
-  const actionClass =
-    "flex h-[42px] items-center gap-2.5 rounded-full border border-line bg-surface px-3.5 text-left text-[13px] font-semibold text-ink transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-45";
+  // ── pieces ─────────────────────────────────────────────────────────────────────
+  const quickBtn =
+    "inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-full border border-line bg-surface px-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-45";
 
-  return (
-    <div data-tip-anchor="activityDetail" className="flex flex-col gap-[18px]">
-      {/* Header: icon, merchant, date · account, amount, overflow menu */}
-      <div className="flex items-center gap-3.5">
-        {needsCategory({ ...row, categoryId }) ? (
-          <RowIcon row={{ ...row, categoryId }} size="xl" />
-        ) : (
-          <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} initials={icon.initials} round size="xl" />
-        )}
-        <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-          <h2 className="heading truncate text-xl text-ink">{resolveDisplayName(row)}</h2>
-          <span className="truncate text-[13px] text-ink-3">{[dateLabel, row.bankName].filter(Boolean).join(" · ")}</span>
-        </div>
-        <span className={cn("amount shrink-0 text-[26px]", isExpense ? "text-ink" : "text-positive")}>{signedAmount(row)}</span>
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger
-            aria-label={t("more")}
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink hover:bg-surface-2"
-          >
-            <IconDots className="size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-56">
-            <DropdownMenuItem onClick={() => setCorrectOpen(true)}>
-              <IconPencil className="size-4" />
-              {t("menu.correctAmount")}
-            </DropdownMenuItem>
-            {!row.isInternalTransfer && (
-              <DropdownMenuItem onClick={() => setMerchantPickerOpen(true)}>
-                <IconBuildingStore className="size-4" />
-                {t("menu.changeMerchant")}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onClick={() => setIconOpen(true)}>
-              <IconPhoto className="size-4" />
-              {t("menu.brandIcon")}
-            </DropdownMenuItem>
-            {lookupQuery && (
-              <DropdownMenuItem
-                onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(lookupQuery)}`, "_blank", "noopener,noreferrer")}
-              >
-                <IconBrandGoogle className="size-4" />
-                {t("menu.lookUp")}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => toggleFlag("isReimbursement", !row.isReimbursement)}>
-              <IconReceiptRefund className="size-4" />
-              {row.isReimbursement ? t("menu.unmarkReimbursement") : t("menu.markReimbursement")}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => toggleFlag("isManualTransfer", !row.isManualTransfer)}
-              disabled={row.isInternalTransfer && !row.isManualTransfer}
-            >
-              <IconArrowsLeftRight className="size-4" />
-              {row.isManualTransfer ? t("menu.unmarkTransfer") : t("menu.markTransfer")}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={remove} className="text-negative">
-              <IconTrash className="size-4" />
-              {t("menu.delete")}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Pills: category, budget type, split / paid back / recurring / transfer */}
-      <div className="flex flex-wrap gap-2">
-        {row.isInternalTransfer ? (
-          <Pill tone="info">{(transferType && TRANSFER_TYPE_LABELS[transferType]) || t("internalTransfer")}</Pill>
-        ) : currentCat ? (
-          <button type="button" onClick={() => !row.isSplit && setPickerOpen(true)} className="inline-flex">
-            <Pill>{currentCat.name}</Pill>
-          </button>
-        ) : row.isSplit ? null : (
-          <button type="button" onClick={() => setPickerOpen(true)} className="inline-flex">
-            <Pill tone="warning">{t("needsCategory")}</Pill>
-          </button>
-        )}
-        {effectiveBudgetType && BUDGET_KEY[effectiveBudgetType] && (
-          <Pill tone={effectiveBudgetType === "nodig" ? "info" : effectiveBudgetType === "sparen" ? "positive" : "accent"}>
-            {t(`budgetType.${BUDGET_KEY[effectiveBudgetType]}`)}
-          </Pill>
-        )}
-        {row.isSplit && <Pill>{t("splitInto", { count: row.splitCount })}</Pill>}
-        {paidBack > 0 && <Pill tone="positive" icon={<IconReceiptRefund />}>{t("paidBackPill", { amount: formatEur(paidBack) })}</Pill>}
-        {row.isReimbursement && <Pill tone="positive">{tTags("paidBack")}</Pill>}
-        {recurring && <Pill icon={<IconRepeat />}>{tTags("recurring")}</Pill>}
-        {excluded && <Pill>{tTags("notInReports")}</Pill>}
-      </div>
-
-      {/* Fields */}
-      <div className="flex flex-col">
-        {!row.isInternalTransfer && !row.isSplit && (
-          <FieldButton label={t("fields.category")} onClick={() => setPickerOpen(true)}>
-            {currentCat ? (
-              <span className="flex items-center gap-1.5">
-                <Icon iconKey={currentCat.icon} color={currentCat.color} size="xs" round />
-                {currentCat.name}
-              </span>
-            ) : (
-              <span className="text-warning">{t("choose")}</span>
-            )}
-          </FieldButton>
-        )}
-        {isExpense && (
-          <Field
-            label={t("fields.yourShare")}
-            tone={paidBack > 0 ? "positive" : undefined}
-          >
-            {paidBack > 0
-              ? t("shareAfterPayback", { amount: formatEur(Math.max(0, total - paidBack)) })
-              : row.correctedAmount != null
-                ? t("shareCorrected", { amount: formatEur(row.correctedAmount), original: formatEur(row.amount) })
-                : formatEur(total)}
-          </Field>
-        )}
+  const moreMenu = (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger
+        aria-label={t("more")}
+        className="ml-auto inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink hover:bg-surface-2"
+      >
+        <IconDots className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side="top" className="min-w-60">
+        <DropdownMenuItem onClick={() => setLinkOpen(true)} disabled={row.direction !== "income"}>
+          <IconLink className="size-4" />
+          {t("actions.link")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setRecurringOpen(true)} disabled={recurringId != null}>
+          <IconRepeat className="size-4" />
+          {t("actions.recurring")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={toggleExcluded}>
+          {excluded ? <IconEye className="size-4" /> : <IconEyeOff className="size-4" />}
+          {excluded ? t("actions.include") : t("actions.exclude")}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setCorrectOpen(true)}>
+          <IconPencil className="size-4" />
+          {t("menu.correctAmount")}
+        </DropdownMenuItem>
         {!row.isInternalTransfer && (
-          <FieldButton
-            label={t("fields.merchant")}
-            onClick={() => (merchant ? setOpenMerchant({ id: merchant.id, name: merchant.name }) : setMerchantPickerOpen(true))}
-          >
-            {merchant ? (
-              <span className="flex min-w-0 items-center gap-1.5">
-                {(() => {
-                  const mi = merchantIcon(merchant);
-                  return <Icon iconKey={mi.iconKey} color={mi.color} background={mi.background} size="xs" round />;
-                })()}
-                <span className="truncate text-mustard-strong">{merchant.name}</span>
-              </span>
-            ) : (
-              <span className="text-ink-3">{t("unknown")}</span>
-            )}
-          </FieldButton>
-        )}
-        {!row.isInternalTransfer && currentCat?.budgetType && (
-          <Field label={t("fields.budgetType")}>
-            <OptionDropdown
-              value={budgetTypeOverride ?? ""}
-              onChange={saveBudgetType}
-              options={[
-                {
-                  value: "",
-                  label: t("budgetTypeDefault", {
-                    type: BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]
-                      ? t(`budgetType.${BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]}`)
-                      : currentCat.budgetType,
-                  }),
-                },
-                { value: "nodig", label: t("budgetType.needs") },
-                { value: "willen", label: t("budgetType.wants") },
-                { value: "sparen", label: t("budgetType.save") },
-              ]}
-              triggerClassName="h-8 w-auto text-[13px] font-semibold text-ink"
-            />
-          </Field>
+          <DropdownMenuItem onClick={() => setMerchantPickerOpen(true)}>
+            <IconBuildingStore className="size-4" />
+            {t("menu.changeMerchant")}
+          </DropdownMenuItem>
         )}
         {!!row.isInternalTransfer && (
-          <Field label={t("fields.transferType")}>
-            <OptionDropdown
-              value={transferType ?? ""}
-              onChange={saveTransferType}
-              options={[{ value: "", label: t("transferAuto") }, ...TRANSFER_TYPES.map((x) => ({ value: x.value, label: x.label }))]}
-              triggerClassName="h-8 w-auto text-[13px] font-semibold text-ink"
-            />
-          </Field>
+          <DropdownMenuItem onClick={() => setTransferOpen(true)}>
+            <IconTransfer className="size-4" />
+            {t("fields.transferType")}
+          </DropdownMenuItem>
         )}
-        {!row.isInternalTransfer && savingsGoals.length > 0 && (
-          <FieldButton label={t("fields.savingsGoal")} onClick={() => setGoalOpen(true)}>
-            {(() => {
-              const goal = savingsGoals.find((g) => g.id === goalId);
-              return goal ? goal.name : <span className="text-ink-3">{t("notLinked")}</span>;
-            })()}
-          </FieldButton>
-        )}
-        <FieldButton label={t("fields.note")} onClick={() => setNoteOpen(true)}>
-          {notes ? <span className="line-clamp-1 break-all">{notes}</span> : <span className="text-ink-3">{t("addNote")}</span>}
-        </FieldButton>
+        <DropdownMenuItem onClick={() => setIconOpen(true)}>
+          <IconPhoto className="size-4" />
+          {t("menu.brandIcon")}
+        </DropdownMenuItem>
         {receiptUrl && (
-          <Field label={t("fields.receipt")}>
-            <span className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setViewingReceipt(true)}
-                className="size-9 overflow-hidden rounded-lg border border-line"
-                aria-label={t("viewReceipt")}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded receipt */}
-                <img src={receiptUrl} alt="" className="size-full object-cover" />
-              </button>
-              <button type="button" onClick={removeReceipt} aria-label={t("removeReceipt")} className="rounded-full p-1.5 text-negative hover:bg-negative-soft">
-                <IconTrash className="size-3.5" />
-              </button>
-            </span>
-          </Field>
+          <>
+            <DropdownMenuItem onClick={() => setViewingReceipt(true)}>
+              <IconCamera className="size-4" />
+              {t("viewReceipt")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={removeReceipt}>
+              <IconX className="size-4" />
+              {t("removeReceipt")}
+            </DropdownMenuItem>
+          </>
         )}
-        {infoFields.map((f) => (
-          <Field key={f.key} label={f.label}>
-            {f.value}
-          </Field>
-        ))}
-      </div>
-
-      {/* Actions */}
-      <div className="grid grid-cols-2 gap-2">
-        <button type="button" className={actionClass} disabled={!!row.isInternalTransfer} onClick={() => setSplitOpen(true)}>
-          <IconArrowsSplit2 className="size-4 shrink-0" />
-          {row.isSplit ? t("actions.adjustSplit") : t("actions.split")}
-        </button>
-        <button
-          type="button"
-          className={actionClass}
-          disabled={row.direction !== "income"}
-          title={row.direction !== "income" ? t("actions.linkHint") : undefined}
-          onClick={() => setLinkOpen(true)}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => toggleFlag("isReimbursement", !row.isReimbursement)}>
+          <IconReceiptRefund className="size-4" />
+          {row.isReimbursement ? t("menu.unmarkReimbursement") : t("menu.markReimbursement")}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => toggleFlag("isManualTransfer", !row.isManualTransfer)}
+          disabled={row.isInternalTransfer && !row.isManualTransfer}
         >
-          <IconLink className="size-4 shrink-0" />
-          {t("actions.link")}
-        </button>
-        <button type="button" className={actionClass} disabled={recurring != null} onClick={() => setRecurringOpen(true)}>
-          <IconRepeat className="size-4 shrink-0" />
-          {t("actions.recurring")}
-        </button>
-        <button
-          type="button"
-          className={actionClass}
-          onClick={() => setRule(newRuleDraft(row, categoryId, "create"))}
-        >
-          <IconBolt className="size-4 shrink-0" />
-          {t("actions.rule")}
-        </button>
-        <button type="button" className={actionClass} onClick={() => fileRef.current?.click()}>
-          <IconCamera className="size-4 shrink-0" />
-          {receiptUrl ? t("actions.replaceReceipt") : t("actions.receipt")}
-        </button>
-        <button type="button" className={actionClass} onClick={toggleExcluded} aria-pressed={excluded}>
-          {excluded ? <IconEye className="size-4 shrink-0" /> : <IconEyeOff className="size-4 shrink-0" />}
-          {excluded ? t("actions.include") : t("actions.exclude")}
-        </button>
-      </div>
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={uploadReceipt} />
+          <IconArrowsLeftRight className="size-4" />
+          {row.isManualTransfer ? t("menu.unmarkTransfer") : t("menu.markTransfer")}
+        </DropdownMenuItem>
+        {lookupQuery && (
+          <DropdownMenuItem
+            onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(lookupQuery)}`, "_blank", "noopener,noreferrer")}
+          >
+            <IconBrandGoogle className="size-4" />
+            {t("menu.lookUp")}
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={remove} className="text-negative">
+          <IconTrash className="size-4" />
+          {t("menu.delete")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
-      {/* Recurrence — the rule behind a linked transaction, pausable in place. */}
-      {recurring && <RecurrenceCard recurringItemId={recurring.id} fallbackName={recurring.name} categories={categories} />}
+  const quickActions = (
+    <div className="flex items-center gap-2">
+      <button type="button" className={quickBtn} disabled={!!row.isInternalTransfer} onClick={() => setSplitOpen(true)}>
+        <IconArrowsSplit2 className="size-4 shrink-0" />
+        {row.isSplit ? t("actions.adjustSplit") : t("actions.split")}
+      </button>
+      <button type="button" className={quickBtn} onClick={() => setRule(newRuleDraft(row, categoryId, "create"))}>
+        <IconBolt className="size-4 shrink-0" />
+        {t("actions.rule")}
+      </button>
+      <button type="button" className={quickBtn} onClick={() => fileRef.current?.click()}>
+        <IconCamera className="size-4 shrink-0" />
+        {receiptUrl ? t("actions.replaceReceipt") : t("actions.receipt")}
+      </button>
+      {moreMenu}
+    </div>
+  );
 
-      {!row.isInternalTransfer && <TransactionMap name={row.customName || row.description} />}
+  const nameNode = row.isInternalTransfer ? (
+    <h2 className="heading truncate text-xl text-ink">{resolveDisplayName(row)}</h2>
+  ) : (
+    <button
+      type="button"
+      onClick={() => (merchant ? setOpenMerchant({ id: merchant.id, name: merchant.name }) : setMerchantPickerOpen(true))}
+      title={merchant ? t("openMerchant") : t("setMerchant")}
+      className="heading min-w-0 truncate text-left text-xl text-ink underline-offset-4 hover:underline"
+    >
+      {resolveDisplayName(row)}
+    </button>
+  );
 
-      {row.rawDescription && row.rawDescription !== row.description && (
-        <p className="break-all font-mono text-[11px] text-ink-3">{row.rawDescription}</p>
+  const body = (
+    <>
+      {/* 1. Position and navigation */}
+      {position && (
+        <div className="flex items-center justify-between gap-3">
+          <span className="mono-label text-[10px]">{t("position", { index: position.index, total: position.total })}</span>
+          <div className="flex items-center gap-1.5" data-tip-anchor="activityKeys">
+            <span className="mono-label hidden text-[10px] lg:inline">{t("keysHint")}</span>
+            <button
+              type="button"
+              onClick={position.onPrev}
+              disabled={!position.onPrev}
+              aria-label={t("previous")}
+              className="inline-flex size-8 items-center justify-center rounded-full border border-line bg-surface text-ink disabled:opacity-40"
+            >
+              <IconChevronUp className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={position.onNext}
+              disabled={!position.onNext}
+              aria-label={t("next")}
+              className="inline-flex size-8 items-center justify-center rounded-full border border-line bg-surface text-ink disabled:opacity-40"
+            >
+              <IconChevronDown className="size-4" />
+            </button>
+          </div>
+        </div>
       )}
+
+      {/* 2. The transaction and its tags */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3.5">
+          {needsCategory({ ...row, categoryId }) ? (
+            <RowIcon row={{ ...row, categoryId }} size="xl" />
+          ) : (
+            <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} initials={icon.initials} round size="xl" />
+          )}
+          <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+            {nameNode}
+            <span className="truncate text-[13px] text-ink-3">{[dateLabel, row.bankName].filter(Boolean).join(" · ")}</span>
+          </div>
+          <span className={cn("amount shrink-0 text-[32px]", isExpense ? "text-ink" : "text-positive")}>{signedAmount(row)}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {row.isInternalTransfer ? (
+            <Pill tone="info">{(transferType && TRANSFER_TYPE_LABELS[transferType]) || t("internalTransfer")}</Pill>
+          ) : currentCat ? (
+            <Pill>{currentCat.name}</Pill>
+          ) : row.isSplit ? null : (
+            <Pill tone="warning">{t("needsCategory")}</Pill>
+          )}
+          {effectiveBudgetType && BUDGET_KEY[effectiveBudgetType] && (
+            <Pill tone="accent">{t(`budgetType.${BUDGET_KEY[effectiveBudgetType]}`)}</Pill>
+          )}
+          {recurringId != null && <Pill tone="info" icon={<IconRepeat />}>{tTags("recurring")}</Pill>}
+          {row.isSplit && <Pill>{t("splitInto", { count: row.splitCount })}</Pill>}
+          {(row.isReimbursement || paidBack > 0) && (
+            <Pill tone="positive" icon={<IconReceiptRefund />}>
+              {paidBack > 0 ? t("paidBackPill", { amount: formatEur(paidBack) }) : tTags("paidBack")}
+            </Pill>
+          )}
+          {excluded && <Pill>{tTags("notInReports")}</Pill>}
+        </div>
+      </div>
+
+      {/* 3. Budget impact and next charge */}
+      {(showBudget || nextDate) && (
+        <div className={cn("grid gap-2.5", showBudget && nextDate ? "grid-cols-2" : "grid-cols-1")}>
+          {showBudget && (
+            <div className="flex items-center gap-3.5 rounded-tile bg-surface-2 p-3.5">
+              <Ring pct={budgetPct} color={budgetPct >= 98 ? "var(--arca-warning)" : currentCat?.color ?? "var(--arca-accent)"} />
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="mono-label text-[10px]">{t("budgetImpact")}</span>
+                <span className="text-sm font-bold text-ink">
+                  {t("budgetOf", { spent: compactEur(budget!.spent), budget: compactEur(budget!.budget!) })}{" "}
+                  <span className="font-medium text-ink-3">
+                    · {currentCat?.name} · {t("left", { amount: compactEur(Math.max(0, budget!.budget! - budget!.spent)) })}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+          {nextDate && recurringItem && (
+            <div className="flex flex-col gap-0.5 rounded-tile bg-surface-2 p-3.5">
+              <span className="mono-label text-[10px]">{t("nextCharge")}</span>
+              <span className="text-sm font-bold text-ink">
+                {fmtDay(nextDate, { weekday: "short", day: "numeric", month: "short" })} · {formatEur(recurringItem.amount ?? 0)}
+              </span>
+              <span className="text-xs text-ink-3">
+                {t("inDays", { count: daysUntil(nextDate) })} · {frequencyLabel(recurringItem.frequency)}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. The last 12 charges of a recurring item */}
+      {recurringId != null && last12.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="mono-label">{t("last12")}</span>
+            {priceChange && (
+              <Pill tone="warning" icon={priceChange.diff > 0 ? <IconArrowUp /> : <IconArrowDown />}>
+                {t(priceChange.diff > 0 ? "priceUp" : "priceDown", {
+                  amount: formatEur(Math.abs(priceChange.diff)),
+                  month: fmtDay(priceChange.date, { month: "long" }),
+                })}
+              </Pill>
+            )}
+          </div>
+          <ChargesChart
+            charges={last12}
+            next={nextDate && recurringItem ? { date: nextDate, value: Math.abs(recurringItem.amount ?? last12[last12.length - 1].value) } : null}
+            locale={locale}
+          />
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs leading-normal text-ink-3">
+              {[
+                recurringItem ? recurringItem.friendlyName || recurringItem.name : null,
+                recurringItem
+                  ? recurringItem.startDate && isValidISODate(recurringItem.startDate)
+                    ? t("since", { frequency: frequencyLabel(recurringItem.frequency), date: fmtDay(recurringItem.startDate, { month: "long", year: "numeric" }) })
+                    : frequencyLabel(recurringItem.frequency)
+                  : null,
+                paidThisYear > 0 ? t("paidInYear", { amount: formatEur(paidThisYear), year }) : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+            {recurringItem && (
+              <button type="button" onClick={() => setRecurringDetailOpen(true)} className="shrink-0 text-[13px] font-semibold text-mustard-strong hover:underline">
+                {t("editRecurring")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Details */}
+      <div className="-mx-[22px] h-px bg-line" />
+      <span className="mono-label">{t("details")}</span>
+      <div className="grid grid-cols-2 gap-2">
+        <KvTile
+          label={t("fields.category")}
+          onClick={row.isInternalTransfer || row.isSplit ? undefined : () => setPickerOpen(true)}
+          tone={!currentCat && !row.isSplit && !row.isInternalTransfer ? "warning" : undefined}
+        >
+          {row.isInternalTransfer
+            ? (transferType && TRANSFER_TYPE_LABELS[transferType]) || t("internalTransfer")
+            : row.isSplit
+              ? row.splitSummary ?? t("splitInto", { count: row.splitCount })
+              : currentCat?.name ?? t("choose")}
+        </KvTile>
+        <KvTile label={t("fields.budgetType")} onClick={currentCat?.budgetType ? () => setBudgetTypeOpen(true) : undefined}>
+          {effectiveBudgetType && BUDGET_KEY[effectiveBudgetType] ? t(`budgetType.${BUDGET_KEY[effectiveBudgetType]}`) : "—"}
+        </KvTile>
+        <KvTile label={t("fields.savingsGoal")} onClick={savingsGoals.length > 0 && !row.isInternalTransfer ? () => setGoalOpen(true) : undefined}>
+          {goal?.name ?? t("none")}
+        </KvTile>
+        <KvTile label={t("fields.note")} onClick={() => setNoteOpen(true)} muted={!notes}>
+          {notes ?? t("addNote")}
+        </KvTile>
+      </div>
+      {(infoFields.length > 0 || (row.rawDescription && row.rawDescription !== row.description)) && (
+        <div className="flex flex-col gap-1">
+          {infoFields.map((f) => (
+            <span key={f.key} className="text-xs text-ink-3">
+              {f.label}: <span className="font-semibold text-ink-2">{f.value}</span>
+            </span>
+          ))}
+          {row.rawDescription && row.rawDescription !== row.description && (
+            <p className="break-all font-mono text-[11px] text-ink-3">{row.rawDescription}</p>
+          )}
+        </div>
+      )}
+
+      {/* 6. The category this month, by merchant */}
+      {showContext && currentCat && monthTotal > 0 && (
+        <>
+          <div className="-mx-[22px] h-px bg-line" />
+          <div className="flex flex-col gap-2.5" data-tip-anchor="activityContext">
+            <div className="flex items-center justify-between gap-3">
+              <span className="mono-label">{t("thisMonth", { category: currentCat.name })}</span>
+              <span className="text-xs font-bold tabular-nums text-ink">
+                {contextBudget != null
+                  ? t("budgetOf", { spent: formatEur(monthTotal), budget: compactEur(contextBudget) })
+                  : formatEur(monthTotal)}
+              </span>
+            </div>
+            <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-surface-2">
+              {segments.map((s, i) => {
+                const own = s.name.toLowerCase() === ownMerchant;
+                return (
+                  <span
+                    key={s.name}
+                    title={`${s.name} ${formatEur(s.amount)}`}
+                    style={{
+                      width: `${Math.min(100, (s.amount / denominator) * 100).toFixed(1)}%`,
+                      background: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
+                      boxShadow: own ? "inset 0 0 0 2px var(--arca-accent)" : undefined,
+                      opacity: own ? 1 : 0.75,
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {segments.map((s, i) => {
+                const own = s.name.toLowerCase() === ownMerchant;
+                return (
+                  <span key={s.name} className={cn("inline-flex items-center gap-1.5 text-xs", own ? "font-bold text-ink" : "font-medium text-ink-2")}>
+                    <span className="size-2 rounded-full" style={{ background: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }} />
+                    {s.name} {formatEur(s.amount)}
+                  </span>
+                );
+              })}
+              {contextBudget != null && (
+                <span className="text-xs text-ink-3">· {t("left", { amount: compactEur(Math.max(0, contextBudget - monthTotal)) })}</span>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+
+  return (
+    <>
+      {layout === "card" ? (
+        <div className="flex h-full min-h-0 flex-col" data-tip-anchor="activityDetail">
+          <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto px-[22px] pb-[22px] pt-[18px] [scrollbar-width:thin]">{body}</div>
+          <div className="shrink-0 border-t border-line bg-surface-2 px-[22px] py-3.5">{quickActions}</div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-[18px]" data-tip-anchor="activityDetail">
+          {body}
+          <div className="sticky bottom-0 -mx-6 mt-1 border-t border-line bg-surface-2 px-6 py-3.5">{quickActions}</div>
+        </div>
+      )}
+      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={uploadReceipt} />
 
       {/* ── dialogs ─────────────────────────────────────────────────────────── */}
       <CategoryPickerSheet
@@ -546,10 +741,44 @@ export function TransactionDetailPanel({
             <ChoiceRow active={goalId == null} onClick={() => applyGoal(null)}>
               {t("notLinked")}
             </ChoiceRow>
-            {savingsGoals.map((goal) => (
-              <ChoiceRow key={goal.id} active={goalId === goal.id} onClick={() => applyGoal(goal.id)}>
-                <Icon iconKey={goal.icon} color={goal.color} size="xs" round />
-                {goal.name}
+            {savingsGoals.map((g) => (
+              <ChoiceRow key={g.id} active={goalId === g.id} onClick={() => applyGoal(g.id)}>
+                <Icon iconKey={g.icon} color={g.color} size="xs" round />
+                {g.name}
+              </ChoiceRow>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={budgetTypeOpen} onOpenChange={setBudgetTypeOpen}>
+        <DialogContent {...NESTED} title={t("fields.budgetType")}>
+          <div className="flex flex-col gap-1">
+            <ChoiceRow active={budgetTypeOverride == null} onClick={() => saveBudgetType(null)}>
+              {t("budgetTypeDefault", {
+                type: currentCat?.budgetType && BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]
+                  ? t(`budgetType.${BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]}`)
+                  : "—",
+              })}
+            </ChoiceRow>
+            {(["nodig", "willen", "sparen"] as const).map((key) => (
+              <ChoiceRow key={key} active={normalizeBudgetType(budgetTypeOverride) === key} onClick={() => saveBudgetType(key)}>
+                {t(`budgetType.${BUDGET_KEY[key]}`)}
+              </ChoiceRow>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
+        <DialogContent {...NESTED} title={t("fields.transferType")}>
+          <div className="flex flex-col gap-1">
+            <ChoiceRow active={transferType == null} onClick={() => saveTransferType(null)}>
+              {t("transferAuto")}
+            </ChoiceRow>
+            {TRANSFER_TYPES.map((x) => (
+              <ChoiceRow key={x.value} active={transferType === x.value} onClick={() => saveTransferType(x.value)}>
+                {x.label}
               </ChoiceRow>
             ))}
           </div>
@@ -621,12 +850,19 @@ export function TransactionDetailPanel({
             if (!v) router.refresh();
           }}
           onSaved={(item) => {
-            setRecurring({ id: item.id, name: item.friendlyName || item.name });
+            setRecurringId(item.id);
             if (item.categoryId != null) setCategoryId(item.categoryId);
           }}
           prefill={buildRecurringPrefill(row, categories)}
         />
       )}
+
+      <RecurringDetailDialog
+        item={recurringDetailOpen ? recurringItem : null}
+        category={categories.find((c) => c.id === recurringItem?.categoryId) ?? null}
+        categories={categories}
+        onClose={() => { setRecurringDetailOpen(false); router.refresh(); }}
+      />
 
       <RuleDialog draft={rule} categories={categories} onClose={() => { setRule(null); router.refresh(); }} />
 
@@ -653,37 +889,120 @@ export function TransactionDetailPanel({
           <img src={receiptUrl} alt="" className="max-h-full max-w-full object-contain" />
         </div>
       )}
+    </>
+  );
+}
 
+// ── tiles and charts ───────────────────────────────────────────────────────────
+
+function KvTile({
+  label,
+  children,
+  onClick,
+  tone,
+  muted,
+}: {
+  label: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+  tone?: "warning";
+  muted?: boolean;
+}) {
+  const inner = (
+    <>
+      <span className="mono-label text-[10px]">{label}</span>
+      <span className={cn("truncate text-sm font-bold", tone === "warning" ? "text-warning" : muted ? "text-ink-3" : "text-ink")}>{children}</span>
+    </>
+  );
+  const cls = "flex min-w-0 flex-col gap-1 rounded-tile bg-surface-2 px-3.5 py-3 text-left";
+  return onClick ? (
+    <button type="button" onClick={onClick} className={cn(cls, "transition-colors hover:bg-line/60")}>
+      {inner}
+    </button>
+  ) : (
+    <div className={cls}>{inner}</div>
+  );
+}
+
+function Ring({ pct, color, size = 44, stroke = 5 }: { pct: number; color: string; size?: number; stroke?: number }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <span className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden className="absolute inset-0 -rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--arca-line)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${((c * Math.min(pct, 100)) / 100).toFixed(1)} ${c.toFixed(1)}`}
+        />
+      </svg>
+      <span className="font-mono text-[10px] text-ink">{Math.round(pct)}%</span>
+    </span>
+  );
+}
+
+/** Bars for the last 12 charges: the current price in mustard, older prices in
+ *  surface-2, and the next charge as a dashed outline. Month initials underneath. */
+function ChargesChart({
+  charges,
+  next,
+  locale,
+}: {
+  charges: { date: string; value: number }[];
+  next: { date: string; value: number } | null;
+  locale: string;
+}) {
+  const bars = [...charges.map((c) => ({ ...c, next: false })), ...(next ? [{ ...next, next: true }] : [])];
+  const values = bars.map((b) => b.value);
+  const max = Math.max(...values, 0.01);
+  const min = Math.min(...values);
+  const lo = min === max ? 0 : Math.max(0, min - (max - min) * 1.5);
+  const current = charges.length > 0 ? Math.round(charges[charges.length - 1].value * 100) : null;
+  const w = 560;
+  const h = 72;
+  const gap = 6;
+  const bw = (w - gap * (bars.length - 1)) / bars.length;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <svg viewBox={`0 0 ${w} ${h}`} aria-hidden className="block h-auto w-full overflow-visible">
+        {bars.map((b, i) => {
+          const hh = Math.max(4, ((b.value - lo) / (max - lo || 1)) * h);
+          const x = i * (bw + gap);
+          const isCurrent = !b.next && Math.round(b.value * 100) === current;
+          return (
+            <rect
+              key={i}
+              x={x.toFixed(1)}
+              y={(h - hh).toFixed(1)}
+              width={bw.toFixed(1)}
+              height={hh.toFixed(1)}
+              rx={4}
+              fill={b.next ? "none" : isCurrent ? "var(--arca-accent)" : "var(--arca-surface-2)"}
+              stroke={b.next ? "var(--arca-accent-strong)" : undefined}
+              strokeDasharray={b.next ? "3 3" : undefined}
+              strokeWidth={b.next ? 1.5 : undefined}
+            />
+          );
+        })}
+      </svg>
+      <div className="flex justify-between">
+        {bars.map((b, i) => (
+          <span key={i} className={cn("text-center font-mono text-[9px]", b.next ? "text-mustard-strong" : "text-ink-3")} style={{ width: `${100 / bars.length}%` }}>
+            {new Date(`${b.date}T12:00:00`).toLocaleDateString(locale, { month: "narrow" })}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
 // ── small building blocks ──────────────────────────────────────────────────────
-
-function Field({ label, children, tone }: { label: string; children: React.ReactNode; tone?: "positive" }) {
-  return (
-    <div className="flex min-h-[42px] items-center justify-between gap-3 border-b border-line py-1.5">
-      <span className="shrink-0 text-[13px] text-ink-3">{label}</span>
-      <span className={cn("min-w-0 text-right text-[13px] font-semibold", tone === "positive" ? "text-positive" : "text-ink")}>{children}</span>
-    </div>
-  );
-}
-
-function FieldButton({ label, children, onClick }: { label: string; children: React.ReactNode; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex min-h-[42px] items-center justify-between gap-3 border-b border-line py-1.5 text-left transition-colors hover:bg-surface-2/50"
-    >
-      <span className="shrink-0 text-[13px] text-ink-3">{label}</span>
-      <span className="flex min-w-0 items-center gap-1 text-[13px] font-semibold text-ink">
-        {children}
-        <IconChevronRight className="size-3.5 shrink-0 text-ink-3" />
-      </span>
-    </button>
-  );
-}
 
 function ChoiceRow({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (

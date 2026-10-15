@@ -2,20 +2,17 @@ import { db } from "@/db";
 import { transactions, categories, banks, goals, merchants, recurringItems } from "@/db/schema";
 import { eq, and, gte, lte, desc, like, or, sql, asc, isNotNull, inArray } from "drizzle-orm";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
-import { currentFinancialMonth } from "@/lib/date-range";
+import { currentFinancialMonth, financialMonthRange, shiftDate } from "@/lib/date-range";
+import { getBudgetOverview } from "@/lib/budget-overview";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { billsDueTotal } from "@/lib/bill-amounts";
 import { normalizeBudgetType } from "@/lib/format";
 import { PageShell } from "@/components/page-container";
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import { IconChevronRight } from "@tabler/icons-react";
-import { Icon } from "@/components/icon";
-import { formatEur } from "@/lib/format";
+import { getLocale } from "next-intl/server";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
-import { NeedsReviewLink } from "@/app/_home/home-sections";
 import { ActivityHeader, ActivityView, type ActivityFilters } from "./_activity/activity-view";
+import type { ActivityContext } from "./_activity/context";
 import { ALL_FROM, todayStr } from "./periods";
 import {
   buildSplitAllocations,
@@ -106,6 +103,7 @@ async function getTransactions(
       recurringFriendlyName: recurringItems.friendlyName,
       merchantIcon: merchants.icon,
       merchantColor: merchants.color,
+      merchantName: merchants.name,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -172,12 +170,6 @@ export default async function TransactionsPage({
   const upcomingTotal = billsDueTotal(
     upcomingStatuses.map((s) => ({ amount: s.item.amount, isIncome: s.item.type === "income" })),
   );
-  // Icons for the first few upcoming bills, previewed on the summary card.
-  const upcomingIcons = upcomingStatuses.slice(0, 3).map((s) => ({
-    icon: s.icon,
-    iconColor: s.iconColor,
-    iconBackground: s.iconBackground,
-  }));
 
   const splitRows = await getTransactionSplitRows(rows.map((row) => row.id));
 
@@ -269,7 +261,6 @@ export default async function TransactionsPage({
   const step = Math.max(1, Math.ceil(running.length / 60));
   const sparkline = running.filter((_, i) => i % step === 0 || i === running.length - 1);
 
-  const t = await getTranslations("activity");
   const filters: ActivityFilters = {
     cats,
     banks: allBanks,
@@ -286,30 +277,62 @@ export default async function TransactionsPage({
     max: sp.max,
   };
 
-  // Entry points into the Upcoming calendar and the Needs review queue, in the new style.
-  const upcomingSlot =
-    upcomingCount > 0 ? (
-      <Link
-        href="/transactions/upcoming"
-        className="flex items-center gap-3 rounded-banner border border-line bg-surface px-4 py-3 shadow-card transition-colors hover:bg-surface-2"
-      >
-        {upcomingIcons.length > 0 && (
-          <span className="flex shrink-0 -space-x-2.5">
-            {upcomingIcons.map((u, i) => (
-              <span key={i} className="rounded-full ring-2 ring-surface" style={{ zIndex: upcomingIcons.length - i }}>
-                <Icon iconKey={u.icon} color={u.iconColor} background={u.iconBackground} size="sm" round />
-              </span>
-            ))}
-          </span>
-        )}
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-[13px] font-bold text-ink">{t("upcoming.title", { count: upcomingCount })}</span>
-          <span className="text-xs text-ink-3">{t("upcoming.due", { amount: formatEur(upcomingTotal) })}</span>
-        </span>
-        <IconChevronRight size={16} stroke={1.8} className="shrink-0 text-ink-3" />
-      </Link>
-    ) : null;
-  const needsReviewSlot = needsReview.length > 0 ? <NeedsReviewLink count={needsReview.length} /> : null;
+  // ── Context for the detail panel (see _activity/context.ts) ──────────────────
+  const monthRange = financialMonthRange(financialMonth, 0);
+  const linkedRecurringIds = [...new Set(visibleRows.map((r) => r.recurringItemId).filter((id): id is number => id != null))];
+  const [budgetOverview, monthRows, recurringRows, locale] = await Promise.all([
+    getBudgetOverview(financialMonth),
+    db
+      .select({
+        id: transactions.id,
+        date: transactions.date,
+        direction: transactions.direction,
+        amount: transactions.amount,
+        correctedAmount: transactions.correctedAmount,
+        categoryId: transactions.categoryId,
+        description: transactions.description,
+        merchantName: merchants.name,
+        isReimbursement: transactions.isReimbursement,
+        isInternalTransfer: isInternalTransferExpr,
+      })
+      .from(transactions)
+      .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
+      .where(and(gte(transactions.date, monthRange.from), lte(transactions.date, monthRange.to), eq(transactions.direction, "expense"))),
+    linkedRecurringIds.length > 0
+      ? db.select().from(recurringItems).where(inArray(recurringItems.id, linkedRecurringIds))
+      : Promise.resolve([]),
+    getLocale(),
+  ]);
+
+  // This financial month's expense per category, split by merchant (split-aware).
+  const monthSplits = groupTransactionSplits(await getTransactionSplitRows(monthRows.map((r) => r.id)));
+  const merchantOf = new Map(monthRows.map((r) => [r.id, r.merchantName ?? r.description]));
+  const byCategory = new Map<number, Map<string, number>>();
+  for (const a of buildSplitAllocations(monthRows, monthSplits)) {
+    if (a.direction !== "expense" || a.isInternalTransfer || a.isReimbursement || a.categoryId == null) continue;
+    const name = merchantOf.get(a.transactionId) ?? "";
+    const cat = byCategory.get(a.categoryId) ?? new Map<string, number>();
+    cat.set(name, (cat.get(name) ?? 0) + a.amount);
+    byCategory.set(a.categoryId, cat);
+  }
+  const context: ActivityContext = {
+    budgets: Object.fromEntries(budgetOverview.categories.map((c) => [c.categoryId, { budget: c.budget, spent: c.spent }])),
+    merchantSpend: Object.fromEntries(
+      [...byCategory].map(([id, m]) => [id, [...m].map(([name, amount]) => ({ name, amount })).sort((a, z) => z.amount - a.amount)]),
+    ),
+    recurring: Object.fromEntries(recurringRows.map((r) => [r.id, r])),
+  };
+
+  // ── The two link tiles ─────────────────────────────────────────────────────
+  const resetDate = shiftDate(monthRange.to, 1);
+  const until = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${resetDate}T12:00:00`));
+  const tiles = {
+    upcoming: upcomingCount > 0 ? { count: upcomingCount, total: upcomingTotal, until } : null,
+    needsReview:
+      needsReview.length > 0
+        ? { count: needsReview.length, total: needsReview.reduce((sum, r) => sum + (r.correctedAmount ?? r.amount), 0) }
+        : null,
+  };
 
   return (
     <PageShell
@@ -327,8 +350,8 @@ export default async function TransactionsPage({
         sparkline={sparkline}
         showMoreHref={showMoreHref}
         hasMore={hasMore}
-        upcomingSlot={upcomingSlot}
-        needsReviewSlot={needsReviewSlot}
+        tiles={tiles}
+        context={context}
       />
     </PageShell>
   );

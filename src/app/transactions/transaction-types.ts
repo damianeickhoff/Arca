@@ -21,6 +21,8 @@ export type TransactionRow = {
   // (see resolveTransactionIcon in src/lib/auto-brand.ts).
   merchantIcon?: string | null;
   merchantColor?: string | null;
+  /** The linked merchant profile's name (Activity's category-context bar). */
+  merchantName?: string | null;
   source: string | null;
   correctedAmount: number | null;
   isReimbursement: boolean;

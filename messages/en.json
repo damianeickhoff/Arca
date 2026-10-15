@@ -520,6 +520,14 @@
     "activitySearchBar": {
       "title": "Search sits at the bottom",
       "body": "Search your transactions from the bar just above the tab bar, within thumb reach. It filters the list as you type."
+    },
+    "activityContext": {
+      "title": "The category this month",
+      "body": "How this month's spend in the category is made up, merchant by merchant, against its budget. This transaction's merchant is outlined."
+    },
+    "activityKeys": {
+      "title": "Move with the arrow keys",
+      "body": "Press ↑ and ↓ to step through the list; the transaction on the right follows."
     }
   },
   "importMapping": {
@@ -817,7 +825,28 @@
         "markTransfer": "Mark as internal transfer",
         "unmarkTransfer": "Remove internal transfer mark",
         "delete": "Delete"
-      }
+      },
+      "position": "Transaction · {index} of {total}",
+      "keysHint": "↑ ↓ to move",
+      "previous": "Previous transaction",
+      "next": "Next transaction",
+      "openMerchant": "Open the merchant profile",
+      "setMerchant": "Set a merchant",
+      "budgetImpact": "Budget impact",
+      "budgetOf": "{spent} of {budget}",
+      "left": "{amount} left",
+      "nextCharge": "Next charge",
+      "inDays": "{count, plural, =0 {today} one {in # day} other {in # days}}",
+      "last12": "Last 12 charges",
+      "priceUp": "Price went up {amount} in {month}",
+      "priceDown": "Price went down {amount} in {month}",
+      "since": "{frequency} since {date}",
+      "paidInYear": "{amount} paid in {year}",
+      "editRecurring": "Edit recurring",
+      "details": "Details",
+      "none": "None",
+      "thisMonth": "{category} this month",
+      "other": "Other"
     },
     "rule": {
       "titleCreate": "Create a rule",
@@ -842,6 +871,19 @@
       "apply": "Save and apply",
       "saving": "Saving…"
     },
-    "searchPlaceholder": "Search transactions"
+    "searchPlaceholder": "Search transactions",
+    "tiles": {
+      "upcoming": "{count} upcoming",
+      "upcomingSub": "{amount} before {date}",
+      "needsReview": "{count, plural, one {# needs a category} other {# need a category}}"
+    },
+    "frequency": {
+      "daily": "daily",
+      "weekly": "weekly",
+      "monthly": "monthly",
+      "quarterly": "quarterly",
+      "yearly": "yearly",
+      "once": "one-off"
+    }
   }
 }

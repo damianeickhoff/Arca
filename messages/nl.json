@@ -520,6 +520,14 @@
     "activitySearchBar": {
       "title": "Zoeken zit onderin",
       "body": "Zoek in je transacties met de balk vlak boven de tabbalk, binnen bereik van je duim. De lijst filtert terwijl je typt."
+    },
+    "activityContext": {
+      "title": "De categorie deze maand",
+      "body": "Hoe de uitgaven in deze categorie deze maand zijn opgebouwd, per winkel, tegenover het budget. De winkel van deze transactie is omlijnd."
+    },
+    "activityKeys": {
+      "title": "Bladeren met de pijltjestoetsen",
+      "body": "Druk op ↑ en ↓ om door de lijst te gaan; de transactie rechts volgt mee."
     }
   },
   "importMapping": {
@@ -817,7 +825,28 @@
         "markTransfer": "Markeren als eigen overboeking",
         "unmarkTransfer": "Overboekingsmarkering verwijderen",
         "delete": "Verwijderen"
-      }
+      },
+      "position": "Transactie · {index} van {total}",
+      "keysHint": "↑ ↓ om te bladeren",
+      "previous": "Vorige transactie",
+      "next": "Volgende transactie",
+      "openMerchant": "Winkelprofiel openen",
+      "setMerchant": "Winkel kiezen",
+      "budgetImpact": "Effect op budget",
+      "budgetOf": "{spent} van {budget}",
+      "left": "{amount} over",
+      "nextCharge": "Volgende afschrijving",
+      "inDays": "{count, plural, =0 {vandaag} one {over # dag} other {over # dagen}}",
+      "last12": "Laatste 12 afschrijvingen",
+      "priceUp": "Prijs ging {amount} omhoog in {month}",
+      "priceDown": "Prijs ging {amount} omlaag in {month}",
+      "since": "{frequency} sinds {date}",
+      "paidInYear": "{amount} betaald in {year}",
+      "editRecurring": "Vaste last bewerken",
+      "details": "Details",
+      "none": "Geen",
+      "thisMonth": "{category} deze maand",
+      "other": "Overig"
     },
     "rule": {
       "titleCreate": "Regel maken",
@@ -842,6 +871,19 @@
       "apply": "Opslaan en toepassen",
       "saving": "Opslaan…"
     },
-    "searchPlaceholder": "Zoek transacties"
+    "searchPlaceholder": "Zoek transacties",
+    "tiles": {
+      "upcoming": "{count} komen nog",
+      "upcomingSub": "{amount} vóór {date}",
+      "needsReview": "{count, plural, one {# heeft een categorie nodig} other {# hebben een categorie nodig}}"
+    },
+    "frequency": {
+      "daily": "dagelijks",
+      "weekly": "wekelijks",
+      "monthly": "maandelijks",
+      "quarterly": "per kwartaal",
+      "yearly": "jaarlijks",
+      "once": "eenmalig"
+    }
   }
 }

@@ -33,6 +33,8 @@ export type TipAnchor =
   | "activityFilters"
   | "activityDetail"
   | "activitySearchBar"
+  | "activityContext"
+  | "activityKeys"
   // New-debt form controls (walkthrough)
   | "debtClose"
   | "debtDirection"

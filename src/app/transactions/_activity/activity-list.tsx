@@ -116,6 +116,7 @@ function ActivityRow({
 
   return (
     <div
+      data-row-id={row.id}
       className={cn(
         "group relative -mx-2 flex items-center gap-1 rounded-row px-2 transition-colors",
         selected ? "bg-mustard-soft" : active ? "bg-surface-2" : "hover:bg-surface-2/60 active:bg-surface-2",
