@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { transactionIdRef } from "@/lib/reimbursed-amount";
 import { db } from "@/db";
 import { transactions, reimbursements, categories } from "@/db/schema";
 import { eq, and, lte, gte, sql } from "drizzle-orm";
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
       id: transactions.id,
       date: transactions.date,
       amount: transactions.amount,
-      allocatedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactions.id}), 0)`,
+      allocatedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactionIdRef}), 0)`,
     })
     .from(transactions)
     .where(eq(transactions.id, Number(transactionId)))
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest) {
       categoryColor: categories.color,
       alreadyLinked: sql<number>`COALESCE((
         SELECT sum(r.amount) FROM reimbursements r
-        WHERE r.original_transaction_id = ${transactions.id}
+        WHERE r.original_transaction_id = ${transactionIdRef}
       ), 0)`,
     })
     .from(transactions)
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
         // remaining capacity (uses expectedReimbursement if set) must fit the remaining balance
         sql`(COALESCE(${transactions.expectedReimbursement}, ${transactions.amount}) - COALESCE((
           SELECT sum(r.amount) FROM reimbursements r
-          WHERE r.original_transaction_id = ${transactions.id}
+          WHERE r.original_transaction_id = ${transactionIdRef}
         ), 0)) >= ${remainingBalance - 0.01}`
       )
     )

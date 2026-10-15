@@ -217,6 +217,18 @@ describe("budget-overview: getBudgetOverview", () => {
     // Nothing linked and no shared bill → 0 either way.
     expect(pick(joined, tx.ah)).toBe(0);
     expect(pick(unjoined, tx.ah)).toBe(0);
+    // Hand-written subqueries (the reimbursement routes) use transactionIdRef for the same
+    // reason: in a single-table select a bare ${transactions.id} meant reimbursements.id.
+    const { transactionIdRef } = await import("@/lib/reimbursed-amount");
+    const { sql } = await import("drizzle-orm");
+    const allocated = await db
+      .select({
+        id: transactions.id,
+        allocated: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactionIdRef}), 0)`,
+      })
+      .from(transactions);
+    expect(pick(allocated.map((a) => ({ id: a.id, r: a.allocated })), tx.tikkie)).toBe(25);
+    expect(pick(allocated.map((a) => ({ id: a.id, r: a.allocated })), tx.bol)).toBe(0);
     // The shared-bill fallback works either way.
     expect(pick(joined, tx.storage)).toBe(77.25);
     expect(pick(unjoined, tx.storage)).toBe(77.25);

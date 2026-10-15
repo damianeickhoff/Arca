@@ -28,6 +28,11 @@ const TX = "transactions";
 const RB = "reimbursements";
 const RI = "recurring_items";
 
+/** transactions.id, always table-qualified — for hand-written subqueries over the
+ *  reimbursements table, where a bare "id" would resolve to reimbursements.id (see the
+ *  note above). Use it instead of ${transactions.id} inside such a subquery. */
+export const transactionIdRef = col(TX, "id");
+
 export const reimbursedAmountExpr = sql<number>`COALESCE(
   (
     select sum(${col(RB, "amount")})

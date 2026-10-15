@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { transactionIdRef } from "@/lib/reimbursed-amount";
 import { transactions, reimbursements, categories, recurringItems } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { formatEur, formatDate } from "@/lib/format";
@@ -19,13 +20,13 @@ async function getVoorschottenData() {
       amount: transactions.amount,
       description: transactions.description,
       rawDescription: transactions.rawDescription,
-      allocatedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactions.id}), 0)`,
+      allocatedAmount: sql<number>`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactionIdRef}), 0)`,
     })
     .from(transactions)
     .where(
       and(
         eq(transactions.isReimbursement, true),
-        sql`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactions.id}), 0) < ${transactions.amount} - 0.01`,
+        sql`COALESCE((SELECT sum(r.amount) FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactionIdRef}), 0) < ${transactions.amount} - 0.01`,
         sql`not exists (
           select 1 from ${recurringItems}
           where ${recurringItems.id} = ${transactions.recurringItemId}
@@ -47,13 +48,13 @@ async function getVoorschottenData() {
       expectedReimbursement: transactions.expectedReimbursement,
       linkedAmount: sql<number>`COALESCE((
         SELECT sum(r2.amount) FROM reimbursements r2
-        WHERE r2.original_transaction_id = ${transactions.id}
+        WHERE r2.original_transaction_id = ${transactionIdRef}
       ), 0)`,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
     .where(
-      sql`EXISTS (SELECT 1 FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id})`
+      sql`EXISTS (SELECT 1 FROM reimbursements r WHERE r.original_transaction_id = ${transactionIdRef})`
     )
     .orderBy(sql`${transactions.date} desc`);
 

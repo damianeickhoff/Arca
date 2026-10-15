@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { transactionIdRef } from "@/lib/reimbursed-amount";
 import { db } from "@/db";
 import { transactions, reimbursements, categories } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
       .where(
         and(
           eq(transactions.isReimbursement, true),
-          sql`NOT EXISTS (SELECT 1 FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactions.id})`
+          sql`NOT EXISTS (SELECT 1 FROM reimbursements r WHERE r.reimbursement_transaction_id = ${transactionIdRef})`
         )
       )
       .orderBy(sql`${transactions.date} desc`);
@@ -41,12 +42,12 @@ export async function GET(req: NextRequest) {
         description: transactions.description,
         categoryName: categories.name,
         categoryColor: categories.color,
-        linkedAmount: sql<number>`COALESCE((SELECT sum(r2.amount) FROM reimbursements r2 WHERE r2.original_transaction_id = ${transactions.id}), 0)`,
+        linkedAmount: sql<number>`COALESCE((SELECT sum(r2.amount) FROM reimbursements r2 WHERE r2.original_transaction_id = ${transactionIdRef}), 0)`,
       })
       .from(transactions)
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
       .where(
-        sql`EXISTS (SELECT 1 FROM reimbursements r WHERE r.original_transaction_id = ${transactions.id})`
+        sql`EXISTS (SELECT 1 FROM reimbursements r WHERE r.original_transaction_id = ${transactionIdRef})`
       )
       .orderBy(sql`${transactions.date} desc`);
 
