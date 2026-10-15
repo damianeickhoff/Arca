@@ -85,6 +85,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   debtsDetail: IconLayoutSidebarRight,
   debtsSimulator: IconTrendingUp,
   debtsOwed: IconUsers,
+  goalsContributions: IconChartBar,
+  goalsDetail: IconLayoutSidebarRight,
 };
 
 /**

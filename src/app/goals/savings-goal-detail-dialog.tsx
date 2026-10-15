@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Icon } from "@/components/icon";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -70,7 +71,7 @@ export function SavingsGoalDetailDialog({
                 type="button"
                 onClick={() => setEditOpen(true)}
                 aria-label={t("edit")}
-                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
               >
                 <Pencil className="size-4.5" />
               </button>
@@ -79,7 +80,7 @@ export function SavingsGoalDetailDialog({
                 onClick={remove}
                 disabled={deleting}
                 aria-label={t("delete")}
-                className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+                className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
               >
                 <Trash2 className="size-4.5" />
               </button>
@@ -116,15 +117,15 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
   return (
     <div className="space-y-4">
       {/* Hero */}
-      <div className="relative -mx-6 mt-15 mb-15 lg:-mx-7 lg:-mt-7 px-6 lg:px-7 pt-2 lg:pt-7">
+      <div className="pt-2">
         <div className="flex flex-col items-center text-center gap-1 pb-1">
-          <Icon iconKey={goal.icon} color={goal.color} round size="xxl" />
-          <p className="text-3xl font-bold tabular-nums mt-3">{formatEur(goal.currentAmount)}</p>
-          <div className="flex items-center gap-2 mt-1.5 text-sm text-foreground/55">
+          <CategoryIcon icon={goal.icon} color={goal.color} size="lg" />
+          <p className="amount mt-3 text-[32px] leading-none tabular-nums text-ink">{formatEur(goal.currentAmount)}</p>
+          <div className="mt-2 flex items-center gap-2 text-[13px] text-ink-2">
             <span>{t("ofAmount", { amount: formatEur(goal.targetAmount) })}</span>
             <span>•</span>
             <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-2 rounded-full", isDone ? "bg-emerald-500" : "bg-foreground/30")} />
+              <span className={cn("size-2 rounded-full", isDone ? "bg-positive" : "bg-ink-3")} />
               {isDone ? t("reached") : t("savedPct", { pct })}
             </span>
           </div>
@@ -132,7 +133,7 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
       </div>
 
       {/* Key figures */}
-      <div className="rounded-2xl p-2 bg-[var(--dialog-content-background)]">
+      <div className="divide-y divide-line rounded-card border border-line bg-surface">
         <DetailRow label={t("targetAmount")} value={formatEur(goal.targetAmount)} />
         <DetailRow label={t("monthlyContribution")} value={goal.monthlyContribution != null ? formatEur(goal.monthlyContribution) : "—"} />
         {goal.startDate && <DetailRow label={t("startDate")} value={fmtDay(goal.startDate, dateLocale)} />}
@@ -142,7 +143,7 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
       </div>
 
       {category && (
-        <div className="rounded-2xl bg-[var(--dialog-content-background)]">
+        <div className="rounded-card border border-line bg-surface">
           <DetailRow label={t("category")} valueIcon={<Icon iconKey={category.icon} color={category.color} size="xs" round />} value={category.name} />
         </div>
       )}
@@ -153,10 +154,10 @@ function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }
 function DetailRow({ label, value, valueIcon }: { label: string; value: string; valueIcon?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
-      <span className="flex items-center gap-1.5 font-light text-right min-w-0">
+      <span className="shrink-0 text-sm text-ink-2">{label}</span>
+      <span className="flex min-w-0 items-center gap-1.5 text-right">
         {valueIcon}
-        <span className="truncate text-sm">{value}</span>
+        <span className="truncate text-sm font-semibold text-ink">{value}</span>
       </span>
     </div>
   );

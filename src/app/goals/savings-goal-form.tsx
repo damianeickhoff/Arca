@@ -191,7 +191,7 @@ export function SavingsGoalForm({ categories }: { categories: Category[] }) {
         className="flex-1 flex flex-col min-h-0"
       >
         {/* One card holding the icon/name, the target amount, the date/contribution/balance controls and the keypad */}
-        <div className="relative overflow-hidden flex-1 flex flex-col min-h-0 mx-4 mb-3 rounded-3xl bg-foreground/[0.03] p-4">
+        <div className="relative overflow-hidden flex-1 flex flex-col min-h-0 mx-4 mb-3 rounded-card border border-line bg-surface shadow-card p-4">
           {/* Accent wash from the chosen color — tall enough to reach past the running
               amount below the name, not just the icon/name row, and an ellipse (not a
               circle) so it reaches the card's full width instead of fading out early

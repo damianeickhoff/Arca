@@ -558,6 +558,14 @@
     "debtsOwed": {
       "title": "Geld dat terugkomt",
       "body": "Schulden die anderen bij jou hebben en voorschotten die nog maar deels terugbetaald zijn. Vink een voorschot af zodra het is afgehandeld."
+    },
+    "goalsContributions": {
+      "title": "Wat je opzij zet",
+      "body": "Twaalf maanden geld dat naar je doelen ging, op basis van de gekoppelde transacties. Deze maand is de felste balk."
+    },
+    "goalsDetail": {
+      "title": "Wanneer je er bent",
+      "body": "Kies een doel om de geschiedenis te zien en, bij je maandbedrag, de maand waarin je het bereikt."
     }
   },
   "importMapping": {
@@ -1080,6 +1088,49 @@
         "linkedBills": "Gekoppelde vaste lasten",
         "upcoming": "Komende betalingen · {count}",
         "split": "{principal} aflossing · {interest} rente"
+      }
+    },
+    "goals": {
+      "title": "Spaardoelen",
+      "add": "Nieuw doel",
+      "yours": "Je doelen",
+      "count": "{count, plural, =0 {Geen doelen} one {# doel} other {# doelen}}",
+      "next": "eerstvolgende bereikt {date}",
+      "empty": {
+        "title": "Nog geen spaardoelen",
+        "body": "Spaar voor iets — een buffer, een reis, een nieuwe laptop — en zie wanneer je er bent in het tempo waarin je spaart."
+      },
+      "saved": {
+        "title": "Gespaard voor {count, plural, one {# doel} other {# doelen}}",
+        "thisMonth": "{amount} deze maand",
+        "plan": "{amount} per maand",
+        "planShare": "{amount} per maand · {pct}% van je inkomen",
+        "contributions": "Inleg · 12 maanden"
+      },
+      "card": {
+        "perMonth": "{amount} per maand",
+        "noMonthly": "Geen maandbedrag",
+        "by": "vóór {date}",
+        "reached": "bereikt",
+        "of": "van {amount}"
+      },
+      "recent": {
+        "title": "Recente inleg",
+        "empty": "De afgelopen 12 maanden is niets aan een doel gekoppeld. Koppel een transactie aan een doel via de details in Activiteit."
+      },
+      "detail": {
+        "account": "Gekoppeld aan {name}",
+        "category": "categorie “{name}”",
+        "noLinks": "Geen rekening of categorie gekoppeld",
+        "target": "Doel",
+        "monthly": "Per maand",
+        "started": "Gestart",
+        "reachedBy": "Bereikt in",
+        "reached": "Bereikt",
+        "projected": "Verwacht · bereikt {date}",
+        "noProjection": "Stel een maandbedrag in om een verwachting te zien",
+        "edit": "Doel bewerken",
+        "details": "Details"
       }
     }
   }

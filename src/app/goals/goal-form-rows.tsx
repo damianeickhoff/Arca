@@ -31,16 +31,16 @@ export function fmtDate(value: string | null, dateLocale = "en-GB"): string {
 }
 
 export function Card({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl bg-card overflow-hidden">{children}</div>;
+  return <div className="rounded-card border border-line bg-surface overflow-hidden">{children}</div>;
 }
 
 export function Divider() {
-  return <div className="mx-4 h-px bg-foreground/8" />;
+  return <div className="mx-4 h-px bg-line" />;
 }
 
 export function RowIcon({ children }: { children: React.ReactNode }) {
   return (
-    <span className="size-9 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+    <span className="size-9 shrink-0 rounded-full bg-mustard-soft text-mustard-strong flex items-center justify-center">
       {children}
     </span>
   );
@@ -231,9 +231,9 @@ export function TypeCard({ icon, title, subtitle, onClick }: { icon: React.React
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-4 rounded-2xl bg-card px-4 py-4 text-left active:bg-foreground/[0.03] transition-colors"
+      className="w-full flex items-center gap-4 rounded-row border border-line bg-surface px-4 py-4 text-left active:bg-foreground/[0.03] transition-colors"
     >
-      <span className="size-11 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center">{icon}</span>
+      <span className="size-11 shrink-0 rounded-full bg-mustard-soft text-mustard-strong flex items-center justify-center">{icon}</span>
       <span className="flex-1 min-w-0">
         <span className="block text-lg font-semibold text-foreground">{title}</span>
         <span className="block text-sm text-foreground/55 leading-snug">{subtitle}</span>

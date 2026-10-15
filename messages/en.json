@@ -558,6 +558,14 @@
     "debtsOwed": {
       "title": "Money coming back to you",
       "body": "Debts others owe you and advances that are only partly paid back. Tick an advance off once it is settled."
+    },
+    "goalsContributions": {
+      "title": "What you put aside",
+      "body": "Twelve months of money moved into your goals, from the transactions linked to them. This month is the bright bar."
+    },
+    "goalsDetail": {
+      "title": "When you get there",
+      "body": "Pick a goal to see its history and, at your monthly amount, the month you reach it."
     }
   },
   "importMapping": {
@@ -1080,6 +1088,49 @@
         "linkedBills": "Linked recurring bills",
         "upcoming": "Upcoming payments · {count}",
         "split": "{principal} off · {interest} interest"
+      }
+    },
+    "goals": {
+      "title": "Savings goals",
+      "add": "New goal",
+      "yours": "Your goals",
+      "count": "{count, plural, =0 {No goals} one {# goal} other {# goals}}",
+      "next": "next one reached {date}",
+      "empty": {
+        "title": "No savings goals yet",
+        "body": "Save towards something — a buffer, a trip, a new laptop — and see when you get there at the pace you are saving."
+      },
+      "saved": {
+        "title": "Saved across {count, plural, one {# goal} other {# goals}}",
+        "thisMonth": "{amount} this month",
+        "plan": "{amount} a month",
+        "planShare": "{amount} a month · {pct}% of income",
+        "contributions": "Contributions · 12 months"
+      },
+      "card": {
+        "perMonth": "{amount} a month",
+        "noMonthly": "No monthly amount",
+        "by": "by {date}",
+        "reached": "reached",
+        "of": "of {amount}"
+      },
+      "recent": {
+        "title": "Recent contributions",
+        "empty": "Nothing linked to a goal in the last 12 months. Link a transaction to a goal from its details in Activity."
+      },
+      "detail": {
+        "account": "Linked to {name}",
+        "category": "category “{name}”",
+        "noLinks": "No account or category linked",
+        "target": "Target",
+        "monthly": "Monthly",
+        "started": "Started",
+        "reachedBy": "Reached by",
+        "reached": "Reached",
+        "projected": "Projected · reached {date}",
+        "noProjection": "Set a monthly amount to see a projection",
+        "edit": "Edit goal",
+        "details": "Details"
       }
     }
   }

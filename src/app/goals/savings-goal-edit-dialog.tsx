@@ -155,7 +155,7 @@ export function SavingsGoalEditDialog({
             onClick={remove}
             disabled={loading}
             aria-label={t("delete")}
-            className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-foreground active:scale-[0.95] transition-transform"
+            className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-5" />
           </button>
@@ -272,7 +272,7 @@ export function SavingsGoalEditDialog({
 
               {subpage === "iconColor" && (
               <div className="space-y-3">
-                <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
+                <div className="rounded-row border border-line bg-surface px-4 py-3">
                   <PickerField label={t("icon")}>
                     <IconPicker
                       value={icon}
@@ -282,7 +282,7 @@ export function SavingsGoalEditDialog({
                   </PickerField>
                 </div>
 
-                <div className="rounded-2xl bg-[var(--dialog-content-background)] px-4 py-3">
+                <div className="rounded-row border border-line bg-surface px-4 py-3">
                   <PickerField label={t("color")}>
                     <ColorPicker
                       value={color}
@@ -314,7 +314,7 @@ function Row({
   onClick: () => void;
 }) {
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-2xl bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-row border border-line bg-surface px-4 py-4 text-left active:bg-foreground/[0.04] transition-colors">
       <span className="text-foreground/40 shrink-0">{icon}</span>
       <span className="flex-1 font-medium text-foreground">{label}</span>
       <span className="flex items-center gap-1.5 text-foreground/60 min-w-0">
@@ -328,7 +328,7 @@ function Row({
 
 function OptionList({ options, value, onSelect }: { options: { value: string; label: string }[]; value: string; onSelect: (v: string) => void }) {
   return (
-    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
+    <div className="rounded-card border border-line bg-surface overflow-hidden divide-y divide-line">
       {options.map((o) => (
         <button key={o.value} type="button" onClick={() => onSelect(o.value)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-foreground/[0.04] transition-colors">
           <span className="flex-1 font-medium">{o.label}</span>
