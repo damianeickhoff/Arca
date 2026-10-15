@@ -11,14 +11,14 @@ import { cn } from "@/lib/utils";
 export function CategoryGroup({ name, children }: { name: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-xl bg-[var(--dialog-background)] overflow-hidden">
+    <div className="overflow-hidden rounded-row border border-line bg-surface">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex items-center justify-between w-full px-4 py-3"
       >
-        <p className="text-xs font-medium text-foreground/50">{name}</p>
-        <ChevronDown className={cn("size-3.5 text-foreground/40 transition-transform", open && "rotate-180")} />
+        <p className="mono-label text-[10px]">{name}</p>
+        <ChevronDown className={cn("size-3.5 text-ink-3 transition-transform", open && "rotate-180")} />
       </button>
       {open && <div className="px-4 pb-3 space-y-2">{children}</div>}
     </div>

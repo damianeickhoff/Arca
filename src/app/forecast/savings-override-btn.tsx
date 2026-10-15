@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconXFilled as X,
   IconCheckFilled as Check
@@ -21,6 +22,7 @@ interface Props {
 // Tapping the whole card opens the override popover — no separate dots trigger.
 export function SavingsPrognoseOverrideBtn({ goalId, goalName, month, defaultAmount, overrideAmount, icon, subtitle }: Props) {
   const router = useRouter();
+  const t = useTranslations("insights.forecast.override");
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(String(overrideAmount ?? defaultAmount));
   const [saving, setSaving] = useState(false);
@@ -98,18 +100,18 @@ export function SavingsPrognoseOverrideBtn({ goalId, goalName, month, defaultAmo
         tabIndex={0}
         onClick={openPopover}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPopover(); } }}
-        title={`Override bijdrage voor ${goalName} deze maand`}
-        className="w-full flex items-center gap-3 rounded-2xl bg-card px-4 py-3 text-left active:bg-foreground/[0.03] transition-colors cursor-pointer"
+        title={t("cardTitle", { name: goalName })}
+        className="w-full flex items-center gap-3 rounded-row bg-surface px-4 py-3 text-left hover:bg-surface-2 transition-colors cursor-pointer"
       >
         {icon}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{goalName}</p>
-          <div className="text-xs text-foreground/60 mt-0.5 truncate">{subtitle}</div>
+          <p className="truncate text-sm font-semibold text-ink">{goalName}</p>
+          <div className="mt-0.5 truncate text-xs text-ink-3">{subtitle}</div>
         </div>
         {hasOverride && (
-          <div className="flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs px-2 py-0.5 font-medium shrink-0">
+          <div className="flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning">
             <span className="tabular-nums">{formatEur(overrideAmount!)}</span>
-            <button onClick={(e) => { e.stopPropagation(); clearOverride(); }} disabled={saving} className="hover:text-amber-900 dark:hover:text-amber-200 transition-colors" title="Delete override">
+            <button onClick={(e) => { e.stopPropagation(); clearOverride(); }} disabled={saving} className="transition-opacity hover:opacity-70" title={t("clear")}>
               <X className="size-3" />
             </button>
           </div>
@@ -117,14 +119,12 @@ export function SavingsPrognoseOverrideBtn({ goalId, goalName, month, defaultAmo
       </div>
 
       {open && (
-        <div ref={popoverRef} style={popoverStyle} className="bg-background border rounded-xl shadow-lg p-3 w-52 space-y-2">
-          <p className="text-xs font-medium text-foreground truncate">{goalName}</p>
-          <p className="text-[10px] text-muted-foreground">
-            Override voor {month} (standaard: <span className="tabular-nums">{formatEur(defaultAmount)}</span>/mnd)
-          </p>
+        <div ref={popoverRef} style={popoverStyle} className="w-52 space-y-2 rounded-tile border border-line bg-surface p-3 shadow-float">
+          <p className="truncate text-xs font-semibold text-ink">{goalName}</p>
+          <p className="text-[10px] text-ink-3">{t("forMonth", { month })} · {t("defaultAmount", { amount: formatEur(defaultAmount) })}</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{currencySymbol()}</span>
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-ink-3">{currencySymbol()}</span>
               <input
                 ref={inputRef}
                 type="number"
@@ -134,13 +134,13 @@ export function SavingsPrognoseOverrideBtn({ goalId, goalName, month, defaultAmo
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full border rounded-lg pl-5 pr-2 py-1.5 text-sm bg-background"
+                className="w-full rounded-tile border border-transparent bg-surface-2 py-1.5 pl-5 pr-2 text-sm text-ink outline-none focus:border-line"
               />
             </div>
             <button
               onClick={save}
               disabled={saving}
-              className="p-1.5 rounded-lg bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ink text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               <Check className="size-4" />
             </button>

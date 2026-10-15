@@ -34,13 +34,13 @@ export function NetworthChart({ data }: { data: DataPoint[] }) {
         <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="currentColor" strokeOpacity={0} />
         <XAxis
           dataKey="monthLabel"
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+          tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           tickFormatter={fmtEur}
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+          tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
           axisLine={false}
           tickLine={false}
           width={36}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -44,23 +45,8 @@ function spanDays(from: string, to: string) {
   return Math.round((new Date(`${to}T00:00:00`).getTime() - new Date(`${from}T00:00:00`).getTime()) / 86_400_000) + 1;
 }
 
-const PRESET_OPTIONS: { value: Exclude<Preset, "custom" | "budget">; label: string }[] = [
-  { value: "month", label: "Month" },
-  { value: "week", label: "Week" },
-  { value: "3m", label: "Last 3 months" },
-  { value: "6m", label: "Last 6 months" },
-  { value: "year", label: "Year" },
-];
-
-const PRESET_LABEL: Record<Preset, string> = {
-  budget: "Budget",
-  week: "Week",
-  month: "Month",
-  "3m": "Last 3 months",
-  "6m": "Last 6 months",
-  year: "Year",
-  custom: "Custom",
-};
+// Labels live at insights.period.presets.<value>.
+const PRESET_OPTIONS: Exclude<Preset, "custom" | "budget">[] = ["month", "week", "3m", "6m", "year"];
 
 /** [from,to] for every preset except "custom" — anchored to *today*, same as the
  * initial "Last 3 months"/"Last 6 months" always end at the current month. Used
@@ -193,8 +179,8 @@ function shiftRange(preset: Preset, from: string, to: string, direction: 1 | -1,
   }
 }
 
-function fmtRange(from: string, to: string) {
-  const f = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+function fmtRange(from: string, to: string, locale: string) {
+  const f = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "short" });
   return `${f(from)} – ${f(to)}`;
 }
 
@@ -231,6 +217,8 @@ export function PeriodSelector({
    * the current route instead of touching the URL at all. */
   embedded?: boolean;
 }) {
+  const t = useTranslations("insights.period");
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -294,8 +282,8 @@ export function PeriodSelector({
         <button
           type="button"
           onClick={() => step(-1)}
-          aria-label="Previous period"
-          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0"
+          aria-label={t("previous")}
+          className="flex aspect-square h-full shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-float transition-transform active:scale-95"
         >
           <IconChevronLeft className="size-4" />
         </button>
@@ -303,18 +291,18 @@ export function PeriodSelector({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex-1 min-w-0 h-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg px-4 flex flex-col items-center justify-center active:scale-[0.98] transition-transform"
+          className="flex h-full min-w-0 flex-1 flex-col items-center justify-center rounded-full border border-line bg-surface px-4 shadow-float transition-transform active:scale-[0.98]"
         >
-          <p className="text-[11px] leading-tight text-foreground/50">{PRESET_LABEL[preset]}</p>
-          <p className="text-sm font-semibold leading-tight truncate">{fmtRange(from, to)}</p>
+          <p className="mono-label text-[10px] leading-tight">{t(`presets.${preset}`)}</p>
+          <p className="truncate text-sm font-semibold leading-tight text-ink">{fmtRange(from, to, locale)}</p>
         </button>
 
         <button
           type="button"
           onClick={() => step(1)}
           disabled={!canGoNext}
-          aria-label="Next period"
-          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
+          aria-label={t("next")}
+          className="flex aspect-square h-full shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-float transition-transform active:scale-95 disabled:cursor-not-allowed"
         >
           <IconChevronRight className={cn("size-4", !canGoNext && "opacity-30")} />
         </button>
@@ -323,7 +311,7 @@ export function PeriodSelector({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Period</DialogTitle>
+            <DialogTitle>{t("title")}</DialogTitle>
           </DialogHeader>
 
           <div className="flex flex-col gap-1 -mx-1">
@@ -332,47 +320,47 @@ export function PeriodSelector({
                 type="button"
                 onClick={pickBudget}
                 className={cn(
-                  "w-full text-left text-sm px-4 py-3.5 rounded-xl transition-colors",
-                  preset === "budget" ? "bg-foreground text-primary-foreground font-medium" : "hover:bg-foreground/5 text-foreground",
+                  "w-full rounded-row px-4 py-3.5 text-left text-sm transition-colors",
+                  preset === "budget" ? "bg-ink font-semibold text-bg" : "text-ink hover:bg-surface-2",
                 )}
               >
-                Budget period
+                {t("budgetPeriod")}
               </button>
             )}
             {PRESET_OPTIONS.map((opt) => (
               <button
-                key={opt.value}
+                key={opt}
                 type="button"
-                onClick={() => pick(opt.value)}
+                onClick={() => pick(opt)}
                 className={cn(
-                  "w-full text-left text-sm px-4 py-3.5 rounded-xl transition-colors",
-                  preset === opt.value ? "bg-foreground text-primary-foreground font-medium" : "hover:bg-foreground/5 text-foreground",
+                  "w-full rounded-row px-4 py-3.5 text-left text-sm transition-colors",
+                  preset === opt ? "bg-ink font-semibold text-bg" : "text-ink hover:bg-surface-2",
                 )}
               >
-                {opt.label}
+                {t(`presets.${opt}`)}
               </button>
             ))}
             <button
               type="button"
               onClick={() => setShowCustom((v) => !v)}
               className={cn(
-                "w-full text-left text-sm px-4 py-3.5 rounded-xl transition-colors",
-                preset === "custom" ? "bg-foreground text-primary-foreground font-medium" : "hover:bg-foreground/5 text-foreground",
+                "w-full rounded-row px-4 py-3.5 text-left text-sm transition-colors",
+                preset === "custom" ? "bg-ink font-semibold text-bg" : "text-ink hover:bg-surface-2",
               )}
             >
-              Custom
+              {t("presets.custom")}
             </button>
           </div>
 
           {showCustom && (
-            <div className="pt-3 border-t border-foreground/10 space-y-3">
+            <div className="space-y-3 border-t border-line pt-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-foreground/60 px-1">From</label>
+                  <label className="px-1 text-xs text-ink-2">{t("from")}</label>
                   <DatePicker value={customFrom} onChange={setCustomFrom} triggerClassName="h-10 text-xs mt-0 mb-0" />
                 </div>
                 <div>
-                  <label className="text-xs text-foreground/60">To</label>
+                  <label className="text-xs text-ink-2">{t("to")}</label>
                   <DatePicker value={customTo} onChange={setCustomTo} triggerClassName="h-10 text-xs mt-0 mb-0" />
                 </div>
               </div>
@@ -380,9 +368,9 @@ export function PeriodSelector({
                 type="button"
                 onClick={applyCustom}
                 disabled={!customFrom || !customTo || customFrom > customTo}
-                className="w-full h-12 text-sm rounded-xl bg-foreground text-primary-foreground disabled:opacity-40 hover:opacity-90 transition-opacity"
+                className="h-12 w-full rounded-full bg-ink text-sm font-bold text-bg transition-opacity hover:opacity-90 disabled:opacity-40"
               >
-                Apply
+                {t("apply")}
               </button>
             </div>
           )}

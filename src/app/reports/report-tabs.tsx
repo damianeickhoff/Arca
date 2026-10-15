@@ -1,227 +1,44 @@
 import { db } from "@/db";
-import { transactions, categories, banks, savingsGoals, vermogenAccounts, recurringItems, goals } from "@/db/schema";
-import { eq, and, gte, lte, desc, asc, sql } from "drizzle-orm";
-import { formatEur, BUDGET_TYPE_LABELS, normalizeBudgetType, pctChangeLabel } from "@/lib/format";
+import { transactions, categories, banks, savingsGoals, vermogenAccounts, goals } from "@/db/schema";
+import { eq, and, gte, asc, sql } from "drizzle-orm";
+import { getLocale, getTranslations } from "next-intl/server";
+import { formatEur, formatEurWhole, BUDGET_TYPE_LABELS, normalizeBudgetType, pctChangeLabel } from "@/lib/format";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getSharedCostMode } from "@/lib/app-settings";
-import { ExpenseTrendCard } from "./expense-trend-card";
-import { TopExpenseCategoriesCard } from "./top-expense-categories-card";
-import { SplitEur } from "@/components/split-eur";
-import { RecurringCostTrendCard } from "./recurring-cost-trend-card";
-import { SavingsRateTrendCard } from "./savings-rate-trend-card";
-import {
-  financialMonthForDate,
-  offsetFinancialMonth,
-  currentFinancialMonth,
-  financialMonthRangeByMonth,
-  monthsInRange,
-  precedingMonths,
-  type FinancialMonthConfig,
-} from "@/lib/date-range";
+import { monthsInRange, precedingMonths, type FinancialMonthConfig } from "@/lib/date-range";
 import { getDebtSummary } from "@/lib/debt-calculations";
 import { getBankBalances } from "@/lib/account-balances";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
-import { getNetWorthHistory, computeNetWorth } from "@/lib/net-worth-snapshots";
+import { getNetWorthHistory } from "@/lib/net-worth-snapshots";
 import { getNetWorthForecast } from "@/lib/net-worth-forecast";
-import { NetWorthTrendChart } from "./net-worth-trend-chart";
 import {
-  IconArrowDownRight as ArrowDownRight,
-  IconArrowUpRight as ArrowUpRight,
   IconTrendingDown as TrendingDown,
   IconTrendingUp as TrendingUp,
   IconWallet as Wallet,
-  IconScaleFilled as Scale,
   IconPigFilled as PiggyBank,
   IconDiamondFilled as Gem,
   IconArrowRight as ArrowRight,
 } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
+import { SPLIT_GRID } from "@/components/page-container";
+import { SectionHead } from "@/components/ui/page-heading";
+import { Stat } from "@/components/ui/stat";
+import { Bar } from "@/components/ui/ring";
+import { AxisLabels, Donut, LayeredArea, StackedBars, spreadLabels } from "@/components/ui/charts";
 import { MonthlyLineChart } from "@/components/dashboard-charts";
 import { ComparisonPicker } from "@/app/trends/comparison-picker";
 import { CategoryTrendList } from "@/app/trends/category-trend-list";
 import { ChangeRow } from "@/components/change-pill";
-import { StatTile, TileBadge } from "@/components/stat-tile";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { PeriodSelector } from "./period-selector";
 import { AnalyticsFilterBar } from "./analytics-filter-bar";
-import Link from "next/link";
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function rangeLabel(from: string, to: string): string {
-  const fmt = (d: string) =>
-    new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  if (from.slice(0, 7) === to.slice(0, 7)) {
-    return new Date(`${from}T00:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-  }
-  return `${fmt(from)} – ${fmt(to)}`;
-}
-
-// Classify an expense as a "need" (nodig) or "want" (willen) from its category's
-// budget type. Anything not explicitly a need falls into wants.
-function classifyBudget(budgetType: string | null | undefined): "nodig" | "willen" {
-  return normalizeBudgetType(budgetType) === "nodig" ? "nodig" : "willen";
-}
-
-function buildTrendData(
-  from: string,
-  to: string,
-  allocations: { date: string; direction: string; amount: number; isReimbursement: boolean; isInternalTransfer: boolean; categoryId: number | null; categoryGroup: string | null }[],
-  financialMonth: { defaultStartDay: number },
-  budgetTypeOf: (categoryId: number | null) => string | null | undefined,
-) {
-  const fromDate = new Date(`${from}T00:00:00`);
-  const toDate = new Date(`${to}T00:00:00`);
-  const spanDays = Math.round((toDate.getTime() - fromDate.getTime()) / 86400000) + 1;
-  const relevant = allocations.filter(
-    (row) => row.direction === "expense" && !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings",
-  );
-  const isSingleFinancialMonth = financialMonthForDate(from, financialMonth) === financialMonthForDate(to, financialMonth);
-  if (spanDays <= 31 || isSingleFinancialMonth) {
-    const dayMap: Record<string, { nodig: number; willen: number }> = {};
-    for (const row of relevant) {
-      if (!dayMap[row.date]) dayMap[row.date] = { nodig: 0, willen: 0 };
-      dayMap[row.date][classifyBudget(budgetTypeOf(row.categoryId))] += row.amount;
-    }
-    const points: { month: string; nodig: number; willen: number }[] = [];
-    for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      points.push({ month: key, nodig: dayMap[key]?.nodig ?? 0, willen: dayMap[key]?.willen ?? 0 });
-    }
-    return points;
-  }
-  const monthMap: Record<string, { nodig: number; willen: number }> = {};
-  for (const row of relevant) {
-    const month = financialMonthForDate(row.date, financialMonth);
-    if (!monthMap[month]) monthMap[month] = { nodig: 0, willen: 0 };
-    monthMap[month][classifyBudget(budgetTypeOf(row.categoryId))] += row.amount;
-  }
-  const startMonth = financialMonthForDate(from, financialMonth);
-  const endMonth = financialMonthForDate(to, financialMonth);
-  const months: string[] = [];
-  for (let m = startMonth; months.length < 36; m = offsetFinancialMonth(m, 1)) {
-    months.push(m);
-    if (m === endMonth) break;
-  }
-  return months.map((month) => ({ month, nodig: monthMap[month]?.nodig ?? 0, willen: monthMap[month]?.willen ?? 0 }));
-}
-
-async function getReportsData(from: string, to: string, financialMonth: { defaultStartDay: number }) {
-  const [periodRows, netWorthData, sharedCostMode] = await Promise.all([
-    db.select({
-      id: transactions.id,
-      date: transactions.date,
-      direction: transactions.direction,
-      amount: transactions.amount,
-      correctedAmount: transactions.correctedAmount,
-      reimbursedAmount: reimbursedAmountExpr,
-      categoryId: transactions.categoryId,
-      categoryName: categories.name,
-      categoryColor: categories.color,
-      categoryIcon: categories.icon,
-      categoryGroup: categories.group,
-      isReimbursement: transactions.isReimbursement,
-      isInternalTransfer: isInternalTransferExpr,
-    })
-      .from(transactions)
-      .leftJoin(categories, eq(transactions.categoryId, categories.id))
-      .where(and(gte(transactions.date, from), lte(transactions.date, to)))
-      .orderBy(desc(transactions.date)),
-    computeNetWorth(),
-    getSharedCostMode(),
-  ]);
-  const netReimbursements = sharedCostMode === "net";
-  // Spend is broken down by the actual (sub-)category, not rolled up to the parent.
-  const allCats = await db.select().from(categories);
-  const catById = new Map(allCats.map((c) => [c.id, c]));
-  const splitRows = await getTransactionSplitRows(periodRows.map((row) => row.id));
-  const splitMap = groupTransactionSplits(splitRows);
-  const periodAllocations = buildSplitAllocations(periodRows, splitMap, { netReimbursements });
-  const totals = periodAllocations
-    .filter((row) => !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings")
-    .reduce((acc, row) => { acc[row.direction] = (acc[row.direction] ?? 0) + row.amount; return acc; }, {} as Record<string, number>);
-  const income = totals.income ?? 0;
-  const expense = totals.expense ?? 0;
-  const budgetTypeOf = (categoryId: number | null) => (categoryId != null ? catById.get(categoryId)?.budgetType : null);
-  const monthlyData = buildTrendData(from, to, periodAllocations, financialMonth, budgetTypeOf);
-  function topCategories(direction: "income" | "expense") {
-    const map = new Map<string, { name: string; color: string | null; icon: string | null; budgetType: string | null; total: number }>();
-    for (const row of periodAllocations) {
-      if (row.direction !== direction || row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
-      // Break down by the actual (sub-)category the spend is tagged with.
-      const cat = row.categoryId != null ? catById.get(row.categoryId) : undefined;
-      const key = row.categoryId != null ? `id:${row.categoryId}` : `name:${row.categoryName ?? "unknown"}`;
-      const current = map.get(key) ?? { name: cat?.name ?? row.categoryName ?? "Unknown", color: cat?.color ?? row.categoryColor, icon: cat?.icon ?? row.categoryIcon, budgetType: cat?.budgetType ?? null, total: 0 };
-      current.total += row.amount;
-      map.set(key, current);
-    }
-    return [...map.values()].sort((a, b) => b.total - a.total);
-  }
-  const expenseCategories = topCategories("expense");
-  const incomeCategories = topCategories("income");
-  const { totalAssets, totalDebt, netWorth } = netWorthData;
-  return { income, expense, monthlyData, expenseCategories, incomeCategories, totalAssets, totalDebt, netWorth };
-}
-
-const TREND_MONTHS = 12;
-
-async function getMonthlySeries(financialMonth: { defaultStartDay: number }) {
-  const endMonth = currentFinancialMonth(financialMonth);
-  const startMonth = offsetFinancialMonth(endMonth, -(TREND_MONTHS - 1));
-  const from = financialMonthRangeByMonth(startMonth, financialMonth).from;
-  const to = financialMonthRangeByMonth(endMonth, financialMonth).to;
-  const rows = await db.select({
-    id: transactions.id,
-    date: transactions.date,
-    direction: transactions.direction,
-    amount: transactions.amount,
-    correctedAmount: transactions.correctedAmount,
-    reimbursedAmount: reimbursedAmountExpr,
-    categoryId: transactions.categoryId,
-    categoryGroup: categories.group,
-    // "Fixed costs" is driven off the recurring item a transaction is matched to
-    // (bill | subscription | debt), since categories no longer carry those groups.
-    recurringType: recurringItems.type,
-    isReimbursement: transactions.isReimbursement,
-    isInternalTransfer: isInternalTransferExpr,
-  })
-    .from(transactions)
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .leftJoin(recurringItems, eq(transactions.recurringItemId, recurringItems.id))
-    .where(and(gte(transactions.date, from), lte(transactions.date, to)));
-  const recurringTypeByTxn = new Map(rows.map((row) => [row.id, row.recurringType]));
-  const splitRows = await getTransactionSplitRows(rows.map((row) => row.id));
-  const splitMap = groupTransactionSplits(splitRows);
-  const netReimbursements = (await getSharedCostMode()) === "net";
-  const allocations = buildSplitAllocations(rows, splitMap, { netReimbursements });
-  const months: string[] = [];
-  for (let m = startMonth; months.length < TREND_MONTHS; m = offsetFinancialMonth(m, 1)) months.push(m);
-  const buckets = new Map(months.map((m) => [m, { income: 0, expense: 0, bill: 0, subscription: 0, debt: 0 }]));
-  for (const row of allocations) {
-    if (row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
-    const month = financialMonthForDate(row.date, financialMonth);
-    const bucket = buckets.get(month);
-    if (!bucket) continue;
-    if (row.direction === "income" || row.direction === "expense") bucket[row.direction] += row.amount;
-    const recurringType = recurringTypeByTxn.get(row.transactionId);
-    if (recurringType === "bill" || recurringType === "subscription" || recurringType === "debt") {
-      bucket[recurringType] += row.amount;
-    }
-  }
-  return months.map((month) => {
-    const b = buckets.get(month)!;
-    return { month, bill: b.bill, subscription: b.subscription, debt: b.debt, savingsRatePct: b.income > 0 ? ((b.income - b.expense) / b.income) * 100 : null };
-  });
-}
+import { CARD, Kpi } from "./insights-ui";
 
 // ── Trends helpers ────────────────────────────────────────────────────────────
 
 const BUDGET_GROUPS = ["nodig", "willen"] as const;
-
-function longMonth(ym: string) {
-  const [y, m] = ym.split("-");
-  return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-}
 
 function prevMonth(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
@@ -410,14 +227,16 @@ async function getTrendsData(
 
 // ── Net worth helpers ─────────────────────────────────────────────────────
 
+// The kinds of tracked account, in the V5 categorical colours. Labels live at
+// insights.netWorth.types.<value>.
 const VERMOGEN_TYPES = [
-  { value: "spaarrekening",  label: "Savings account",  color: "#b81414", icon: PiggyBank },
-  { value: "beleggingen",    label: "Investments",    color: "#a855f7", icon: TrendingUp },
-  { value: "betaalrekening", label: "Checking account", color: "#3b82f6", icon: Wallet },
-  { value: "bezitting",      label: "Possession",      color: "#f59e0b", icon: Gem },
+  { value: "spaarrekening",  color: "#1F8F8A", icon: PiggyBank },
+  { value: "beleggingen",    color: "#6B5BD2", icon: TrendingUp },
+  { value: "betaalrekening", color: "var(--arca-accent-strong)", icon: Wallet },
+  { value: "bezitting",      color: "#6E7A86", icon: Gem },
 ];
 
-async function getNetWorthData() {
+export async function getNetWorthData() {
   const [savingsGoalRows, savingsTypeGoalRows, debtSummary, accounts, bankBalances] = await Promise.all([
     db.select().from(savingsGoals).where(eq(savingsGoals.active, true)),
     db.select().from(goals).where(and(eq(goals.active, true), eq(goals.goalType, "savings"))),
@@ -447,58 +266,6 @@ async function getNetWorthData() {
   return { goals: goalList, debtSummary, totalSavings, totalAccounts, totalAssets, totalDebt, netWorth, accounts, netWorthBanks };
 }
 
-// ── Reports tab ────────────────────────────────────────────────────────────
-
-export async function RapportenTab({ from, to, financialMonth }: { from: string; to: string; financialMonth: { defaultStartDay: number } }) {
-  const data = await getReportsData(from, to, financialMonth);
-  const series = await getMonthlySeries(financialMonth);
-  const periodLabel = rangeLabel(from, to);
-
-  // Snapshot recording moved to the root layout (runs once/day for any logged-in
-  // page view, not just when Reports happens to be opened) — see maybeRecordDailyNetWorthSnapshot().
-  const history = await getNetWorthHistory(30);
-  const hasTrend = history.length >= 2;
-  const firstNetWorth = history[0]?.netWorth ?? data.netWorth;
-  const changePct = hasTrend && firstNetWorth !== 0 ? ((data.netWorth - firstNetWorth) / Math.abs(firstNetWorth)) * 100 : 0;
-  const isUp = changePct >= 0;
-  const forecast = hasTrend ? await getNetWorthForecast(data.netWorth, history[history.length - 1].date) : [];
-
-  return (
-    <div className="px-4 pt-3 pb-4 space-y-4">
-      {/* Net worth hero */}
-      <div className="rounded-2xl p-5 bg-white dark:bg-white/[0.06]">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm text-foreground dark:text-white/65">Total net worth</p>
-        </div>
-        <div className="flex items-center gap-2 mb-1">
-          <p className={`text-4xl tabular-nums tracking-tight ${data.netWorth < 0 ? "text-foreground dark:text-rose-400" : "text-foreground/90 dark:text-white"}`}>
-            <SplitEur formatted={`${data.netWorth < 0 ? "-" : ""}${formatEur(data.netWorth)}`} />
-          </p>
-          {hasTrend && (
-            <span className={`flex items-center gap-0.5 text-base font-semibold rounded-full py-1 ${isUp ? "text-green-500 dark:bg-green-900/30 dark:text-emerald-400" : "text-red-100 dark:bg-red-900/30 dark:text-red-400"}`}>
-              {isUp ? <ArrowUpRight className="size-4" /> : <ArrowDownRight className="size-4" />}
-              {Math.abs(changePct).toFixed(1)}%
-            </span>
-          )}
-        </div>
-        {hasTrend ? (
-          <div className="mt-2 -mx-1">
-            <NetWorthTrendChart data={history.map((h) => ({ date: h.date, netWorth: h.netWorth }))} forecast={forecast} />
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground mt-3">The trend chart is being built — come back tomorrow for your first comparison.</p>
-        )}
-      </div>
-
-      <ExpenseTrendCard data={data.monthlyData} periodLabel={periodLabel} />
-
-      <TopExpenseCategoriesCard categories={data.expenseCategories} periodLabel={periodLabel} />
-      <RecurringCostTrendCard data={series} />
-      <SavingsRateTrendCard data={series.map((s) => ({ month: s.month, savingsRatePct: s.savingsRatePct }))} />
-    </div>
-  );
-}
-
 // ── Trends tab ────────────────────────────────────────────────────────────────
 
 export async function TrendsTab({
@@ -524,160 +291,149 @@ export async function TrendsTab({
 }) {
   const data = await getTrendsData(from, to, cmpA, cmpB, categoryIds, accounts);
   const chartedPeriod = { from, to };
+  const t = await getTranslations("insights.trends");
+  const locale = await getLocale();
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
+  const monthShort = (ym: string) => new Date(`${ym}-15T12:00:00`).toLocaleDateString(dateLocale, { month: "short" });
+  const monthLong = (ym: string) => new Date(`${ym}-15T12:00:00`).toLocaleDateString(dateLocale, { month: "long", year: "numeric" });
 
-  // pb was previously reduced on desktop (lg:pb-5) back when desktop had a sidebar
-  // instead of a floating bottom nav — the nav is never hidden on the standalone
-  // /reports route, so it needs the same clearance at every width now. Harmless
-  // extra whitespace when embedded (the dashboard portal hides the nav there).
+  // Needs and wants per month, from the same rolled-up category totals as the list.
+  const groupTotal = (group: string, m: string) =>
+    data.grouped.filter((g) => g.group === group).flatMap((g) => g.categories).reduce((s, c) => s + (c.monthly[m] ?? 0), 0);
+  const needsWants = data.months.map((m) => [groupTotal("nodig", m), groupTotal("willen", m)]);
+
   return (
-    <div className="px-4 pb-[calc(6rem+var(--sab))] pt-4 space-y-4">
+    <div className="flex flex-col gap-5">
       <AnalyticsFilterBar
         categories={data.allCats}
         banks={data.allBanksFull}
-        stickyTop={embedded ? "0px" : "calc(var(--sat) + 9rem)"}
+        stickyTop={embedded ? "0px" : "calc(var(--sat) + 50px)"}
       />
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold text-foreground/60">
-            {data.months.length} month{data.months.length === 1 ? "" : "s"}
-          </h2>
-        </div>
-      </div>
+      <p className="mono-label -mb-2 text-[11px]">{t("months", { count: data.months.length })}</p>
 
-      {/* KPI cards — same theme-static "photo card" tiles as the Largest expense
-          stat tile on the Analytics tab. */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatTile
-          label="Avg. income"
-          value={formatEur(data.avgIncome)}
-          valueClassName="text-xl font-bold tabular-nums"
-          badge={<TileBadge icon={TrendingUp} color="var(--color-income)" />}
-        />
-        <StatTile
-          label="Avg. expenses"
-          value={formatEur(data.avgExpense)}
-          valueClassName="text-xl font-bold tabular-nums"
-          badge={<TileBadge icon={TrendingDown} color="var(--color-expense)" />}
-        />
-        <StatTile
-          label="Avg. saldo"
-          value={formatEur(data.avgBalance)}
-          valueClassName="text-xl font-bold tabular-nums"
-          badge={<TileBadge icon={Scale} color={data.avgBalance >= 0 ? "var(--color-income)" : "var(--color-expense)"} />}
-        />
-        {/* Transaction-card style (no badge, footer shows the vs-last-period pill) —
-            same treatment as Analytics' "Transactions" tile. */}
-        <StatTile
-          label="Total expenses"
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3.5">
+        <Kpi label={t("avgIncome")} value={formatEur(data.avgIncome)} tone="positive" change={null} />
+        <Kpi label={t("avgExpenses")} value={formatEur(data.avgExpense)} change={null} />
+        <Kpi label={t("avgBalance")} value={formatEur(data.avgBalance)} tone={data.avgBalance >= 0 ? "accent" : "default"} change={data.balanceChange} />
+        <Kpi
+          label={t("totalExpenses")}
           value={formatEur(data.totalExpense)}
-          valueClassName="text-xl font-bold tabular-nums"
-          footerAtBottom
-          footer={data.expenseChange
-            ? <ChangeRow change={{ ...data.expenseChange, up: !data.expenseChange.up }} />
-            : "vs last period — no data"}
+          change={data.expenseChange ? { ...data.expenseChange, up: !data.expenseChange.up } : null}
+          note={data.expenseChange ? undefined : t("noPrevious")}
         />
       </div>
 
-      {/* Income vs Expenses — Cashflow's nested two-tone shell, kept as a line chart. */}
-      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
-          <p className="text-md text-foreground/60 mb-1">Income vs Expenses</p>
-          <p
-            className="text-2xl font-semibold tabular-nums tracking-tight"
-            style={{ color: data.avgBalance >= 0 ? "var(--color-income)" : "bg-foreground" }}
-          >
-            {formatEur(data.totalIncome - data.totalExpense)}
-          </p>
-          <ChangeRow change={data.balanceChange} caption={`${data.months.length} month${data.months.length === 1 ? "" : "s"}`} className="mt-1 mb-5" />
-          <MonthlyLineChart data={data.chartData} />
+      <div className={SPLIT_GRID}>
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* Needs and wants per month */}
+          <section data-tip-anchor="insightsNeedsWants" className={cn(CARD, "flex flex-col gap-3.5 p-[18px] lg:px-5")}>
+            <SectionHead title={t("needsWants")} size="sm" />
+            <StackedBars
+              columns={needsWants}
+              colors={["var(--arca-ink)", "var(--arca-accent)"]}
+              height={170}
+              gap={data.months.length > 8 ? 8 : 20}
+              titles={data.months.map((m, i) => `${monthLong(m)} · ${t("needs")} ${formatEur(needsWants[i][0])} · ${t("wants")} ${formatEur(needsWants[i][1])}`)}
+            />
+            <AxisLabels labels={spreadLabels(data.months, Math.min(6, data.months.length)).map(monthShort)} />
+            <div className="flex gap-3.5">
+              <span className="mono-label inline-flex items-center gap-1.5 text-[10px] text-ink"><span className="size-2 rounded-full bg-ink" />{t("needs")}</span>
+              <span className="mono-label inline-flex items-center gap-1.5 text-[10px] text-mustard-strong"><span className="size-2 rounded-full bg-mustard" />{t("wants")}</span>
+            </div>
+          </section>
+
+          {/* Income vs expenses — the existing line chart, in V5 colours. */}
+          <section className={cn(CARD, "flex flex-col gap-3 p-[18px] lg:px-5")}>
+            <SectionHead
+              title={t("incomeVsExpenses")}
+              size="sm"
+              link={
+                <span className="inline-flex items-center gap-3 text-ink-2">
+                  <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-positive" />{t("income")}</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" />{t("expenses")}</span>
+                </span>
+              }
+            />
+            <div className="flex flex-wrap items-baseline gap-2">
+              <span className={cn("amount text-[26px] tabular-nums", data.totalIncome - data.totalExpense < 0 ? "text-negative" : "text-ink")}>
+                {formatEur(data.totalIncome - data.totalExpense)}
+              </span>
+              <ChangeRow change={data.balanceChange} caption={t("months", { count: data.months.length })} className="" />
+            </div>
+            <MonthlyLineChart data={data.chartData} labels={{ income: t("income"), expenses: t("expenses") }} />
+            <div className="grid grid-cols-2 gap-2">
+              <Stat label={t("expenses")} value={formatEur(data.totalExpense)} />
+              <Stat label={t("income")} value={`+${formatEur(data.totalIncome)}`} tone="positive" />
+            </div>
+          </section>
         </div>
 
-        <div className="rounded-2xl px-4 mt-3 flex items-center justify-between">
-          <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full bg-foreground/30" /> Expenses
-          </span>
-          <span className="text-md tabular-nums">{formatEur(data.totalExpense)}</span>
-        </div>
-        <div className="rounded-2xl px-4 py-1 mb-2 flex items-center justify-between">
-          <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full" style={{ backgroundColor: "var(--color-income)" }} /> Income
-          </span>
-          <span className="text-md tabular-nums" style={{ color: "var(--color-income)" }}>+{formatEur(data.totalIncome)}</span>
+        <div className="flex min-w-0 flex-col gap-5">
+          <CategoryTrendList groups={data.groupedDetailed} months={data.months} financialMonth={financialMonth} periodRange={chartedPeriod} />
         </div>
       </div>
 
-      <CategoryTrendList groups={data.groupedDetailed} months={data.months} financialMonth={financialMonth} periodRange={chartedPeriod} />
-
-      {/* Maandvergelijking */}
-      <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
-        <div className="px-5 py-4 border-b border-foreground/5 flex flex-col items-center gap-2 text-center">
-          <h2 className="font-semibold text-sm">Month comparison</h2>
+      {/* Month comparison */}
+      <section className={cn(CARD, "flex flex-col gap-4 p-[18px] lg:px-5")}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SectionHead title={t("comparison")} size="sm" />
           <ComparisonPicker cmpA={data.cmpA} cmpB={data.cmpB} />
         </div>
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Income", a: data.statsA.income, b: data.statsB.income },
-              { label: "Expenses", a: data.statsA.expense, b: data.statsB.expense },
-              { label: "Balance", a: data.statsA.balance, b: data.statsB.balance },
-            ].map(({ label, a, b }) => {
-              const diff = a - b;
-              const diffPct = b !== 0 ? Math.round((diff / Math.abs(b)) * 100) : null;
-              return (
-                <div key={label} className="rounded-xl bg-[var(--dialog-background)] p-3">
-                  <p className="text-xs text-foreground/60 mb-1">{label}</p>
-                  <div className="flex items-end justify-between gap-1 flex-wrap">
-                    <div>
-                      <p className="text-base font-bold tabular-nums">{formatEur(a)}</p>
-                      <p className="text-[10px] text-foreground/50 tabular-nums">{longMonth(data.cmpA)}: {formatEur(b)}</p>
-                    </div>
-                    {diffPct !== null && (
-                      <span
-                        className="text-[11px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full"
-                        style={diff > 0
-                          ? { background: "color-mix(in srgb, var(--color-income) 15%, transparent)", color: "var(--color-income)" }
-                          : diff < 0
-                          ? { background: "color-mix(in srgb, var(--color-expense) 15%, transparent)", color: "var(--color-expense)" }
-                          : undefined}
-                      >
-                        {diff > 0 ? "+" : ""}{diffPct}%
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[{ label: longMonth(data.cmpB), stats: data.statsA }, { label: longMonth(data.cmpA), stats: data.statsB }].map(({ label, stats }) => (
-              <div key={label}>
-                <p className="text-xs font-medium text-foreground/60 mb-2">{label}</p>
-                {stats.topCats.length > 0 ? (
-                  <div className="space-y-1.5">
-                    {stats.topCats.map((cat) => {
-                      const maxTotal = Math.max(...stats.topCats.map((c) => c.total), 1);
-                      return (
-                        <div key={cat.id}>
-                          <div className="flex items-center justify-between text-xs mb-0.5">
-                            <span className="truncate max-w-[120px]">{cat.name}</span>
-                            <span className="tabular-nums text-foreground/50">{formatEur(cat.total)}</span>
-                          </div>
-                          <div className="h-1 rounded-full bg-foreground/8 overflow-hidden">
-                            <div className="h-full rounded-full transition-all bg-foreground/60" style={{ width: `${(cat.total / maxTotal) * 100}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs text-foreground/50">No data</p>
-                )}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {[
+            { label: t("income"), a: data.statsA.income, b: data.statsB.income },
+            { label: t("expenses"), a: data.statsA.expense, b: data.statsB.expense },
+            { label: t("balance"), a: data.statsA.balance, b: data.statsB.balance },
+          ].map(({ label, a, b }) => {
+            const diff = a - b;
+            const diffPct = b !== 0 ? Math.round((diff / Math.abs(b)) * 100) : null;
+            return (
+              <div key={label} className="flex min-w-0 flex-col gap-1 rounded-tile bg-surface-2 px-3.5 py-3">
+                <span className="mono-label text-[10px]">{label}</span>
+                <span className="flex items-end justify-between gap-2">
+                  <span className="amount text-[17px] tabular-nums text-ink">{formatEur(a)}</span>
+                  {diffPct !== null && (
+                    <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums", diff > 0 ? "bg-positive-soft text-positive" : diff < 0 ? "bg-negative-soft text-negative" : "bg-surface text-ink-2")}>
+                      {diff > 0 ? "+" : ""}
+                      {diffPct}%
+                    </span>
+                  )}
+                </span>
+                <span className="text-[11px] tabular-nums text-ink-3">{monthLong(data.cmpB)}: {formatEur(b)}</span>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      </div>
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { label: monthLong(data.cmpA), stats: data.statsA },
+            { label: monthLong(data.cmpB), stats: data.statsB },
+          ].map(({ label, stats }) => (
+            <div key={label} className="flex min-w-0 flex-col gap-2">
+              <span className="mono-label text-[10px]">{label}</span>
+              {stats.topCats.length > 0 ? (
+                stats.topCats.map((cat) => {
+                  const maxTotal = Math.max(...stats.topCats.map((c) => c.total), 1);
+                  return (
+                    <div key={cat.id} className="flex flex-col gap-1">
+                      <span className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate text-ink">{cat.name}</span>
+                        <span className="shrink-0 tabular-nums text-ink-3">{formatEur(cat.total)}</span>
+                      </span>
+                      <Bar pct={(cat.total / maxTotal) * 100} color={cat.color ?? "var(--arca-ink)"} height={5} />
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-ink-3">{t("noData")}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <AnchoredTip id="insightsNeedsWants" anchor="insightsNeedsWants" />
 
       <PeriodSelector from={from} to={to} financialMonth={financialMonth} budgetPeriod={null} tab="trends" embedded={embedded} />
     </div>
@@ -691,207 +447,202 @@ export async function VermogenTab() {
     getNetWorthData(),
     getNetWorthHistory(90),
   ]);
+  const t = await getTranslations("insights.netWorth");
+  const locale = await getLocale();
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
 
   const hasHistory = history.length >= 2;
   const firstNetWorth = history[0]?.netWorth ?? netWorth;
   const historyChange = hasHistory ? pctChangeLabel(netWorth, firstNetWorth) : null;
+  const historyDelta = hasHistory ? netWorth - firstNetWorth : null;
   const forecast = hasHistory ? await getNetWorthForecast(netWorth, history[history.length - 1].date) : [];
+  const projected = forecast.length > 0 ? forecast[forecast.length - 1] : null;
+  const shortDate = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(dateLocale, { day: "numeric", month: "short" });
 
-  const groupedAccounts = VERMOGEN_TYPES.map((t) => ({
-    ...t,
-    items: accounts.filter((a) => a.type === t.value),
+  const groupedAccounts = VERMOGEN_TYPES.map((type) => ({
+    ...type,
+    items: accounts.filter((a) => a.type === type.value),
   })).filter((g) => g.items.length > 0);
 
-  // Assets composition — savings goals plus each vermogen-account group, for the
-  // donut below the history chart ("other useful graphs"). The slices must sum to
-  // the exact `totalAssets` the donut is scaled to, otherwise the gray background
-  // track shows through the gap. That means covering the two things totalAssets
-  // includes but the groups above don't: accounts whose type isn't one of the
-  // VERMOGEN_TYPES (bucketed into "Other"), and money owed to the user (a
-  // receivable asset, "Owed to you"). See getNetWorthData for totalAssets' makeup.
+  // What makes up total assets — savings goals, each kind of tracked account, the bank
+  // accounts counted in net worth, money owed to you, and any other account. The parts
+  // add up to exactly totalAssets (see getNetWorthData), which the donut is scaled to.
   const totalNetWorthBanks = netWorthBanks.reduce((s, b) => s + b.balance, 0);
-  const knownTypes = new Set(VERMOGEN_TYPES.map((t) => t.value));
+  const knownTypes = new Set(VERMOGEN_TYPES.map((v) => v.value));
   const otherAccountsTotal = accounts.filter((a) => !knownTypes.has(a.type)).reduce((s, a) => s + a.value, 0);
   const totalOwed = debtSummary?.totalOwed ?? 0;
   const assetSlices = [
-    ...(totalSavings > 0 ? [{ name: "Savings goals", value: totalSavings, color: "var(--color-success)" }] : []),
-    ...groupedAccounts.map((g) => ({ name: g.label, value: g.items.reduce((s, a) => s + a.value, 0), color: g.color })),
-    ...(totalNetWorthBanks > 0 ? [{ name: "Bank accounts", value: totalNetWorthBanks, color: "#3b82f6" }] : []),
-    ...(totalOwed > 0 ? [{ name: "Owed to you", value: totalOwed, color: "#6e8185" }] : []),
-    ...(otherAccountsTotal > 0 ? [{ name: "Other", value: otherAccountsTotal, color: "#64748b" }] : []),
+    ...(totalSavings > 0 ? [{ key: "goals", name: t("savingsGoals"), sub: goals.map((g) => g.name).join(" · "), value: totalSavings, color: "#1F8F8A", Icon: PiggyBank }] : []),
+    ...groupedAccounts.map((g) => ({
+      key: g.value,
+      name: t(`types.${g.value}`),
+      sub: g.items.map((a) => a.name).join(" · "),
+      value: g.items.reduce((s, a) => s + a.value, 0),
+      color: g.color,
+      Icon: g.icon,
+    })),
+    ...(totalNetWorthBanks > 0
+      ? [{ key: "banks", name: t("bankAccounts"), sub: netWorthBanks.map((b) => b.displayName ?? b.accountNumber ?? "").filter(Boolean).join(" · "), value: totalNetWorthBanks, color: "var(--arca-accent-strong)", Icon: Wallet }]
+      : []),
+    ...(totalOwed > 0 ? [{ key: "owed", name: t("owedToYou"), sub: "", value: totalOwed, color: "#6E7A86", Icon: ArrowRight }] : []),
+    ...(otherAccountsTotal > 0 ? [{ key: "other", name: t("other"), sub: "", value: otherAccountsTotal, color: "#A9A294", Icon: Gem }] : []),
   ].filter((s) => s.value > 0);
 
   return (
-    <div className="px-5 pb-5 pt-3 space-y-5">
-      {/* Net worth history — Cashflow's nested two-tone shell, kept as a line chart. */}
-      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
-          <p className="text-md text-foreground/60 mb-1">Net worth</p>
-          <p
-            className="text-2xl font-semibold tabular-nums tracking-tight"
-            style={{ color: netWorth >= 0 ? "var(--color-income)" : "var(--color-expense)" }}
-          >
-            {formatEur(netWorth)}
-          </p>
-          <ChangeRow change={historyChange} caption={`vs ${history.length} days ago`} className="mt-1 mb-5" />
-          {hasHistory ? (
-            <NetWorthTrendChart data={history.map((h) => ({ date: h.date, netWorth: h.netWorth }))} forecast={forecast} />
-          ) : (
-            <p className="text-xs text-foreground/50 py-10 text-center">The trend chart is being built — come back tomorrow for your first comparison.</p>
-          )}
-        </div>
-
-        {/* Current totals summarising the net worth above (assets − debts) — plain
-            label/value rows, deliberately with no colored dots so they don't read as
-            a legend for lines the single-line chart never plots. */}
-        <div className="px-4 mt-3 flex items-center justify-between">
-          <span className="text-md text-foreground/60">Assets</span>
-          <span className="text-md tabular-nums text-foreground">{formatEur(totalAssets)}</span>
-        </div>
-        <div className="px-4 py-1 mb-2 flex items-center justify-between">
-          <span className="text-md text-foreground/60">Debts</span>
-          <span className="text-md tabular-nums text-foreground">{formatEur(totalDebt)}</span>
-        </div>
-      </div>
-
-      {/* Assets composition donut */}
-      {assetSlices.length > 0 && (
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
-          <h2 className="font-semibold text-sm mb-4">Assets composition</h2>
-          <AssetsDonut slices={assetSlices} total={totalAssets} />
-        </div>
-      )}
-
-      {/* Assets */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-base">Assets</h2>
-            <Link href="/settings?tab=banks" className="flex items-center gap-1 font-semibold text-xs text-muted-foreground transition-opacity">
-              <p className="bg-[var(--dialog-background)]/40 p-2 rounded-md">Manage</p>
-            </Link>
-          </div>
-          {goals.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Savings goals</p>
-              {goals.map((goal) => {
-                const pct = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
-                return (
-                  <div key={goal.id}>
-                    <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="font-medium truncate flex-1 mr-2">{goal.name}</span>
-                      <span className="tabular-nums font-semibold shrink-0">{formatEur(goal.currentAmount)}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-white/7 overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: "#c8cbd0" }} />
-                    </div>
-                    <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 tabular-nums">
-                      <span>{pct.toFixed(0)}% of goal</span>
-                      <span>{formatEur(goal.targetAmount)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-
-            </div>
-          )}
-
-          {goals.length === 0 && groupedAccounts.length === 0 && netWorthBanks.length === 0 && (
-            <p className="text-sm text-muted-foreground">No assets found.</p>
-          )}
-          <div className="border-t pt-3 mt-4 flex items-center justify-between text-sm font-semibold">
-            <span>Total</span>
-            <span className="tabular-nums text-lg">{formatEur(totalAssets)}</span>
-          </div>
-        </div>
-
-        {/* Liabilities */}
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-base">Debts</h2>
-            <Link href="/debts" className="flex items-center gap-1 font-semibold text-xs text-muted-foreground hover:opacity-75 transition-opacity">
-              <p className="bg-[var(--dialog-background)]/40 p-2 rounded-md">Manage</p>
-            </Link>
-          </div>
-          {debtSummary ? (
-            <div className="space-y-3">
-              {debtSummary.debts.map(({ debt, currentBalance, amountPaid }) => {
-                const pct = debt.startingBalance > 0 ? Math.min(100, (amountPaid / debt.startingBalance) * 100) : 100;
-                return (
-                  <div key={debt.id}>
-                    <div className="flex items-center justify-between text-sm mb-1.5">
-                      <span className="font-medium truncate flex-1 mr-2">{debt.name}</span>
-                      <span className="tabular-nums font-semibold shrink-0">{formatEur(currentBalance)}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-white/7 overflow-hidden">
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: "#c8cbd0" }} />
-                    </div>
-                    <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5 tabular-nums">
-                      <span>{pct.toFixed(0)}% paid</span>
-                      <span>{formatEur(debt.startingBalance)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="border-t pt-3 mt-3 flex items-center justify-between text-sm font-semibold">
-                <span>Total</span>
-                <span className="tabular-nums text-lg">{formatEur(totalDebt)}</span>
+    <div className="flex flex-col gap-5">
+      <div className={SPLIT_GRID}>
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* Net worth with assets against debts over the recorded snapshots. */}
+          <section className={cn(CARD, "flex flex-col gap-4 p-[18px] lg:px-6 lg:py-[22px]")}>
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+              <div className="flex flex-col gap-2">
+                <span className="text-[13px] font-semibold text-ink-2">{t("title")}</span>
+                <span className={cn("amount text-[40px] leading-none tracking-[-0.035em] lg:text-[54px]", netWorth < 0 ? "text-negative" : "text-ink")}>
+                  {formatEurWhole(netWorth)}
+                </span>
+                <ChangeRow change={historyChange} caption={t("vsDaysAgo", { count: history.length })} className="" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <Stat label={t("assets")} value={formatEurWhole(totalAssets)} />
+                <Stat label={t("debts")} value={formatEurWhole(-totalDebt)} tone="negative" />
+                <Stat
+                  label={t("days", { count: history.length })}
+                  value={historyDelta == null ? "—" : `${historyDelta >= 0 ? "+" : ""}${formatEurWhole(historyDelta)}`}
+                  tone={historyDelta == null ? "default" : historyDelta >= 0 ? "positive" : "negative"}
+                />
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No debts.</p>
+            {hasHistory ? (
+              <>
+                <LayeredArea
+                  a={history.map((h) => h.totalAssets)}
+                  b={history.map((h) => h.totalDebt)}
+                  gradientId="networth-assets"
+                  height={180}
+                />
+                <AxisLabels labels={spreadLabels(history.map((h) => shortDate(h.date)), 5)} />
+                <div className="flex gap-3.5">
+                  <span className="mono-label inline-flex items-center gap-1.5 text-[10px] text-ink"><span className="size-2 rounded-full bg-ink" />{t("assets")}</span>
+                  <span className="mono-label inline-flex items-center gap-1.5 text-[10px] text-negative"><span className="size-2 rounded-full bg-negative" />{t("debts")}</span>
+                </div>
+              </>
+            ) : (
+              <p className="py-8 text-center text-xs text-ink-3">{t("building")}</p>
+            )}
+          </section>
+
+          {/* Where it is heading — the existing net worth forecast. */}
+          {projected && (
+            <section className={cn(CARD, "flex flex-col gap-1.5 px-[18px] py-4 lg:px-[22px]")}>
+              <span className="mono-label text-[10px]">{t("projection", { count: forecast.length })}</span>
+              <span className="amount text-xl text-ink">
+                {t("projectedBy", { amount: formatEurWhole(projected.netWorth), date: new Date(`${projected.date}T12:00:00`).toLocaleDateString(dateLocale, { month: "long", year: "numeric" }) })}
+              </span>
+              <span className="text-xs leading-[1.5] text-ink-2">{t("projectionNote")}</span>
+            </section>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// Assets-by-type donut, same construction as the Trends tab's category pie
-// (stroked-circle segments) — used here to break the "Total assets" figure down
-// by savings goals vs. each vermogen-account group.
-function AssetsDonut({ slices, total }: { slices: { name: string; value: number; color: string }[]; total: number }) {
-  const r = 70, cx = 90, cy = 90, stroke = 10;
-  const circ = 2 * Math.PI * r;
-  const withOffset = slices.reduce<{ name: string; value: number; color: string; pct: number; offset: number }[]>((acc, s) => {
-    const pct = total > 0 ? (s.value / total) * 100 : 0;
-    const offset = acc.length > 0 ? acc[acc.length - 1].offset + acc[acc.length - 1].pct : 0;
-    return [...acc, { ...s, pct, offset }];
-  }, []);
+          {/* Savings goals and debts, each with its progress. */}
+          <div className="grid gap-5 md:grid-cols-2">
+            <section className={cn(CARD, "flex flex-col gap-3 px-[18px] py-4 lg:px-5")}>
+              <SectionHead title={t("savingsGoals")} size="sm" link={t("manage")} href="/goals" />
+              {goals.length === 0 ? (
+                <p className="text-[13px] text-ink-3">{t("noGoals")}</p>
+              ) : (
+                goals.map((goal) => {
+                  const pct = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
+                  return (
+                    <div key={`${goal.id}-${goal.name}`} className="flex flex-col gap-1.5">
+                      <span className="flex items-center justify-between gap-2 text-sm">
+                        <span className="truncate font-semibold text-ink">{goal.name}</span>
+                        <span className="shrink-0 font-semibold tabular-nums text-ink">{formatEur(goal.currentAmount)}</span>
+                      </span>
+                      <Bar pct={pct} color={goal.color ?? "#1F8F8A"} height={6} />
+                      <span className="flex justify-between text-[11px] tabular-nums text-ink-3">
+                        <span>{t("ofGoal", { pct: pct.toFixed(0) })}</span>
+                        <span>{formatEur(goal.targetAmount)}</span>
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </section>
 
-  return (
-    <div className="flex items-center gap-6 flex-wrap">
-      <svg viewBox="0 0 180 180" className="size-40 shrink-0">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeOpacity="0.06" strokeWidth={stroke} />
-        {withOffset.map((s) => {
-          const dash = (s.pct / 100) * circ;
-          return (
-            <circle
-              key={s.name}
-              cx={cx} cy={cy} r={r}
-              fill="none"
-              stroke={s.color}
-              strokeWidth={stroke}
-              strokeDasharray={`${dash} ${circ}`}
-              strokeDashoffset={-s.offset * circ / 100}
-              transform={`rotate(-90 ${cx} ${cy})`}
-            />
-          );
-        })}
-        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="20" fontWeight="bold" fill="currentColor">
-          {formatEur(total).replace(",00", "")}
-        </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="12" fill="currentColor" fillOpacity="0.5">total assets</text>
-      </svg>
-      <div className="flex-1 min-w-0 space-y-2">
-        {withOffset.map((s) => (
-          <div key={s.name} className="flex items-center gap-2 text-sm">
-            <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-            <span className="flex-1 truncate text-muted-foreground">{s.name}</span>
-            <span className="font-medium tabular-nums">{formatEur(s.value)}</span>
-            <span className="text-xs tabular-nums text-muted-foreground w-10 text-right">{s.pct.toFixed(1)}%</span>
+            <section className={cn(CARD, "flex flex-col gap-3 px-[18px] py-4 lg:px-5")}>
+              <SectionHead title={t("debts")} size="sm" link={t("manage")} href="/debts" />
+              {debtSummary && debtSummary.debts.length > 0 ? (
+                <>
+                  {debtSummary.debts.map(({ debt, currentBalance, amountPaid }) => {
+                    const pct = debt.startingBalance > 0 ? Math.min(100, (amountPaid / debt.startingBalance) * 100) : 100;
+                    return (
+                      <div key={debt.id} className="flex flex-col gap-1.5">
+                        <span className="flex items-center justify-between gap-2 text-sm">
+                          <span className="truncate font-semibold text-ink">{debt.name}</span>
+                          <span className="shrink-0 font-semibold tabular-nums text-ink">{formatEur(currentBalance)}</span>
+                        </span>
+                        <Bar pct={pct} color={debt.color ?? "var(--arca-ink-3)"} height={6} />
+                        <span className="flex justify-between text-[11px] tabular-nums text-ink-3">
+                          <span>{t("paidPct", { pct: pct.toFixed(0) })}</span>
+                          <span>{formatEur(debt.startingBalance)}</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="mt-1 flex items-center justify-between border-t border-line pt-3 text-sm font-semibold text-ink">
+                    <span>{t("total")}</span>
+                    <span className="amount tabular-nums">{formatEur(totalDebt)}</span>
+                  </div>
+                </>
+              ) : (
+                <p className="text-[13px] text-ink-3">{t("noDebts")}</p>
+              )}
+            </section>
           </div>
-        ))}
+        </div>
+
+        {/* What you own and owe — the assets composition, then the debts. */}
+        <section className={cn(CARD, "flex flex-col gap-2 px-[18px] py-4 lg:px-5")}>
+          <SectionHead title={t("ownOwe")} size="sm" link={t("accounts")} href="/settings?tab=banks" />
+          {assetSlices.length > 0 && (
+            <div className="flex justify-center py-2">
+              <Donut parts={assetSlices.map((s) => ({ value: s.value, color: s.color }))} size={150}>
+                <span className="amount text-lg leading-none text-ink">{formatEurWhole(totalAssets)}</span>
+                <span className="mono-label mt-1 text-[9px]">{t("totalAssets")}</span>
+              </Donut>
+            </div>
+          )}
+          {assetSlices.map((s) => (
+            <div key={s.key} className="flex min-h-[54px] items-center gap-3">
+              <span
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full"
+                style={{ background: `color-mix(in srgb, ${s.color} var(--arca-icon-wash), transparent)`, color: s.color }}
+              >
+                <s.Icon className="size-[17px]" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-sm font-semibold text-ink">{s.name}</span>
+                {s.sub && <span className="truncate text-xs text-ink-3">{s.sub}</span>}
+              </span>
+              <span className="flex shrink-0 flex-col items-end">
+                <span className="text-sm font-semibold tabular-nums text-ink">{formatEur(s.value)}</span>
+                <span className="text-[11px] tabular-nums text-ink-3">{totalAssets > 0 ? `${((s.value / totalAssets) * 100).toFixed(1)}%` : ""}</span>
+              </span>
+            </div>
+          ))}
+          {totalDebt > 0 && (
+            <div className="flex min-h-[54px] items-center gap-3">
+              <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-negative-soft text-negative">
+                <TrendingDown className="size-[17px]" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-sm font-semibold text-ink">{t("debts")}</span>
+                <span className="truncate text-xs text-ink-3">{debtSummary?.debts.map((d) => d.debt.name).join(" · ")}</span>
+              </span>
+              <span className="shrink-0 text-sm font-semibold tabular-nums text-negative">{formatEur(-totalDebt)}</span>
+            </div>
+          )}
+          {assetSlices.length === 0 && totalDebt === 0 && <p className="text-[13px] text-ink-3">{t("noAssets")}</p>}
+        </section>
       </div>
     </div>
   );

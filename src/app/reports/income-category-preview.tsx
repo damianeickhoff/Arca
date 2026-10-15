@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/icon";
+import { useTranslations } from "next-intl";
+import { SectionHead } from "@/components/ui/page-heading";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { formatEur } from "@/lib/format";
 import { CategorySpendingListPortal } from "@/components/category-spending-list-portal";
 import { CategoryDetailPortal } from "@/components/category-detail-portal";
@@ -25,6 +27,7 @@ export function IncomeCategoryPreview({
   emptyLabel: string;
   total?: number;
 }) {
+  const t = useTranslations("insights.overview");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const selected = rows.find((r) => r.categoryId === selectedId) ?? null;
@@ -33,12 +36,10 @@ export function IncomeCategoryPreview({
   const hasMore = rows.length > top.length;
 
   return (
-    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
-      <div className="flex items-center justify-between px-5 pt-4 pb-2 gap-3">
-        <p className="text-sm text-muted-foreground">Income by category</p>
-      </div>
+    <section className="flex flex-col gap-2 rounded-card border border-line bg-surface px-[18px] pb-2 pt-[18px] shadow-card lg:px-5">
+      <SectionHead title={t("incomeByCategory")} size="sm" link={hasMore ? t("viewAll") : undefined} onClick={hasMore ? () => setShowAll(true) : undefined} />
       {top.length === 0 ? (
-        <p className="text-sm text-foreground/50 px-5 pb-4">{emptyLabel}</p>
+        <p className="pb-2 text-[13px] text-ink-3">{emptyLabel}</p>
       ) : (
         <>
           <div>
@@ -47,35 +48,23 @@ export function IncomeCategoryPreview({
                 <button
                   type="button"
                   onClick={() => setSelectedId(row.categoryId)}
-                  className="w-full flex items-center gap-3 px-5 py-3 text-left active:bg-foreground/5 transition-colors"
+                  className="-mx-2 flex min-h-[52px] w-[calc(100%+1rem)] items-center gap-3 rounded-row px-2 text-left transition-colors hover:bg-surface-2"
                 >
-                  <Icon iconKey={row.icon} color={row.color ?? undefined} size="sm" round />
-                  <span className="flex-1 min-w-0 text-sm truncate">{row.categoryName}</span>
+                  <CategoryIcon icon={row.icon} color={row.color} size="sm" />
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{row.categoryName}</span>
                   {total != null && total > 0 && (
-                    <span className="text-xs tabular-nums text-foreground/40 shrink-0 w-10 text-right">{((row.spent / total) * 100).toFixed(1)}%</span>
+                    <span className="w-12 shrink-0 text-right text-xs tabular-nums text-ink-3">{((row.spent / total) * 100).toFixed(1)}%</span>
                   )}
-                  <span className="text-sm tabular-nums shrink-0" style={{ color: "var(--color-income)" }}>+{formatEur(row.spent)}</span>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-positive">+{formatEur(row.spent)}</span>
                 </button>
-                {/* Inset divider — stops short of the card edges instead of spanning full width. */}
-                {i < top.length - 1 && <div className="mx-5 border-t border-border/40" />}
+                {i < top.length - 1 && <div className="border-t border-line" />}
               </div>
             ))}
           </div>
-          {hasMore && (
-            <div className="mx-5 border-t border-border/40">
-              <button
-                type="button"
-                onClick={() => setShowAll(true)}
-                className="w-full text-center text-sm text-foreground/60 py-3 active:bg-foreground/5 transition-colors"
-              >
-                View all
-              </button>
-            </div>
-          )}
         </>
       )}
 
-      <CategorySpendingListPortal open={showAll} rows={rows} onClose={() => setShowAll(false)} onSelect={(id) => setSelectedId(id)} title="Income by category" />
+      <CategorySpendingListPortal open={showAll} rows={rows} onClose={() => setShowAll(false)} onSelect={(id) => setSelectedId(id)} title={t("incomeByCategory")} />
       <CategoryDetailPortal
         category={selected ? { categoryId: selected.categoryId, categoryName: selected.categoryName, color: selected.color, icon: selected.icon } : null}
         financialMonth={financialMonth}
@@ -83,6 +72,6 @@ export function IncomeCategoryPreview({
         onClose={() => setSelectedId(null)}
         direction="income"
       />
-    </div>
+    </section>
   );
 }

@@ -1,10 +1,9 @@
+import { useLocale } from "next-intl";
 import { formatEur } from "@/lib/format";
 import type { ForecastPoint } from "@/lib/cash-flow-forecast-shared";
 
-const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
-
-function monthLabel(year: number, month: number) {
-  return new Date(year, month - 1, 1).toLocaleDateString("en-GB", {
+function monthLabel(year: number, month: number, locale: string) {
+  return new Date(year, month - 1, 1).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", {
     month: "long",
     year: "numeric",
   });
@@ -17,6 +16,8 @@ export function CashFlowCalendar({
   points: ForecastPoint[];
   month: string;
 }) {
+  const locale = useLocale();
+  const weekdays = [1, 2, 3, 4, 5, 6, 7].map((d) => new Intl.DateTimeFormat(locale, { weekday: "narrow" }).format(new Date(2024, 0, d)));
   const moving = points.filter((p) => p.change !== 0);
   if (moving.length === 0) return null;
 
@@ -29,13 +30,13 @@ export function CashFlowCalendar({
 
   return (
     <div>
-      <p className="text-xs font-medium text-foreground/60 mb-2">
-        {monthLabel(year, monthNumber)}
+      <p className="mono-label mb-2 text-[10px]">
+        {monthLabel(year, monthNumber, locale)}
       </p>
 
       <div className="grid grid-cols-7 gap-1 w-full">
-      {WEEKDAYS.map((day, index) => (
-        <span key={index} className="text-[10px] text-foreground/30 text-center">
+      {weekdays.map((day, index) => (
+        <span key={index} className="text-center font-mono text-[10px] uppercase text-ink-3">
           {day}
         </span>
       ))}
@@ -49,18 +50,18 @@ export function CashFlowCalendar({
           const date = `${year}-${String(monthNumber).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const change = changeByDate.get(date) ?? 0;
           const intensity = change === 0 ? 0 : 0.2 + 0.8 * (Math.abs(change) / peak);
-          const color = change >= 0 ? "var(--color-income)" : "var(--color-expense)";
+          const color = change >= 0 ? "var(--arca-positive)" : "var(--arca-negative)";
 
           return (
             <span
               key={date}
               title={change !== 0 ? `${change >= 0 ? "+" : "−"}${formatEur(Math.abs(change))}` : undefined}
-              className="aspect-square min-w-0 rounded-md flex items-center justify-center text-xs tabular-nums"
+              className="flex aspect-square min-w-0 items-center justify-center rounded-tile font-mono text-[11px] tabular-nums text-ink"
               style={
                 change === 0
                   ? {
-                      backgroundColor: "color-mix(in srgb, currentColor 6%, transparent)",
-                      opacity: 0.4,
+                      backgroundColor: "var(--arca-surface-2)",
+                      color: "var(--arca-ink-3)",
                     }
                   : {
                       backgroundColor: `color-mix(in srgb, ${color} ${Math.round(intensity * 100)}%, transparent)`,

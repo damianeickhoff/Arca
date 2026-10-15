@@ -17,6 +17,7 @@ import {
   Cell,
   LabelList,
 } from "recharts";
+import { useLocale } from "next-intl";
 import { formatEur, MONTH_NAMES, currencySymbol } from "@/lib/format";
 import { useDashboardShouldAnimate } from "@/lib/dashboard-animation";
 import { SegmentedControl } from "@/components/segmented-control";
@@ -91,12 +92,12 @@ export function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl bg-card-glass px-3.5 py-2.5 text-xs">
-      <p className="text-foreground/60 font-semibold mb-2 uppercase tracking-wider text-[10px]">{label}</p>
+    <div className="rounded-tile border border-line bg-surface px-3.5 py-2.5 text-xs shadow-float">
+      <p className="mono-label mb-2 text-[10px]">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 py-0.5">
           <span className="size-2 rounded-full shrink-0" style={{ background: p.color }} />
-          <span className="text-foreground">{p.name}</span>
+          <span className="text-ink-2">{p.name}</span>
           <span className="font-bold tabular-nums ml-auto pl-4">{formatEur(p.value)}</span>
         </div>
       ))}
@@ -104,15 +105,19 @@ export function ChartTooltip({
   );
 }
 
-export function MonthlyLineChart({ data }: { data: MonthlyData[] }) {
+export function MonthlyLineChart({ data, labels }: { data: MonthlyData[]; labels?: { income: string; expenses: string } }) {
+  const locale = useLocale();
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
+  const incomeKey = labels?.income ?? "Income";
+  const expensesKey = labels?.expenses ?? "Expenses";
   const display = data.map((d) => {
-    if (d.label) return { name: d.label, Income: d.income, Expenses: d.expense };
+    if (d.label) return { name: d.label, [incomeKey]: d.income, [expensesKey]: d.expense };
     // `month` holds either "YYYY-MM" (monthly buckets) or "YYYY-MM-DD" (daily buckets, for short ranges)
     const isDaily = d.month.length === 10;
     const name = isDaily
-      ? new Date(d.month + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-      : MONTH_NAMES[(parseInt(d.month.slice(5)) - 1)]?.slice(0, 3) ?? d.month;
-    return { name, Income: d.income, Expenses: d.expense };
+      ? new Date(d.month + "T00:00:00").toLocaleDateString(dateLocale, { day: "numeric", month: "short" })
+      : new Date(`${d.month}-15T12:00:00`).toLocaleDateString(dateLocale, { month: "short" });
+    return { name, [incomeKey]: d.income, [expensesKey]: d.expense };
   });
 
   return (
@@ -126,33 +131,34 @@ export function MonthlyLineChart({ data }: { data: MonthlyData[] }) {
         />
         <XAxis
           dataKey="name"
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+          tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           tickFormatter={(v) => `${currencySymbol()}${(v / 1000).toFixed(0)}k`}
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+          tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
           width={36}
           axisLine={false}
           tickLine={false}
         />
         <Tooltip content={<ChartTooltip />} cursor={{ stroke: "currentColor", strokeOpacity: 0.1, strokeWidth: 1 }} />
+        {/* V5: income in positive green, expenses as the ink line. */}
         <Line
           type="monotone"
-          dataKey="Income"
-          stroke="var(--color-income)"
-          strokeWidth={2}
+          dataKey={incomeKey}
+          stroke="var(--arca-positive)"
+          strokeWidth={2.5}
           dot={false}
-          activeDot={{ r: 3, strokeWidth: 0, fill: "#c8cbd0" }}
+          activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--arca-surface)", fill: "var(--arca-positive)" }}
         />
         <Line
           type="monotone"
-          dataKey="Expenses"
-          stroke="#c8cbd0"
-          strokeWidth={2}
+          dataKey={expensesKey}
+          stroke="var(--arca-ink)"
+          strokeWidth={2.5}
           dot={false}
-          activeDot={{ r: 3, strokeWidth: 0, fill: "#c8cbd0" }}
+          activeDot={{ r: 4, strokeWidth: 2, stroke: "var(--arca-surface)", fill: "var(--arca-ink)" }}
         />
       </LineChart>
     </ResponsiveContainer>
@@ -248,7 +254,7 @@ export function WeeklyExpenseBarChart({ data }: { data: { date: string; amount: 
         />
         <YAxis
           tickFormatter={(v) => `${currencySymbol()}${v}`}
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+          tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
           width={40}
           axisLine={false}
           tickLine={false}
@@ -443,13 +449,13 @@ export function NeedsWantsBarChart({
           />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+            tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             tickFormatter={(v) => `${currencySymbol()}${(v / 1000).toFixed(0)}k`}
-            tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+            tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
             width={36}
             axisLine={false}
             tickLine={false}
@@ -542,14 +548,14 @@ export function DebtPayoffChart({
         <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="currentColor" strokeOpacity={0} />
         <XAxis
           dataKey="name"
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+          tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
           axisLine={false}
           tickLine={false}
           interval={tickInterval}
         />
         <YAxis
           tickFormatter={(v) => `${currencySymbol()}${(v / 1000).toFixed(0)}k`}
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+          tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
           width={36}
           axisLine={false}
           tickLine={false}

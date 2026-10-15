@@ -35,6 +35,11 @@ export type TipAnchor =
   | "activitySearchBar"
   | "activityContext"
   | "activityKeys"
+  // Redesigned Insights
+  | "insightsMerchants"
+  | "insightsNeedsWants"
+  | "insightsHealthCompare"
+  | "insightsComingUp"
   // Redesigned Goals
   | "goalsContributions"
   | "goalsDetail"

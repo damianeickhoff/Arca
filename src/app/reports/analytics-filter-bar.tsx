@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IconCategory, IconWallet, IconX } from "@tabler/icons-react";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
@@ -46,7 +47,7 @@ export function AnalyticsFilterBar({
 
   return (
     <div
-      className="sticky z-30 flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 mb-2 sm:mx-0 sm:px-0 py-1 -my-1"
+      className="sticky z-20 -mx-5 -my-1 flex items-center gap-2 overflow-x-auto bg-bg px-5 py-1 scrollbar-hide lg:mx-0 lg:px-0"
       style={{ top: stickyTop }}
     >
       <CategoriesPill categories={categories} selected={selectedCategoryIds} onChange={(v) => update("cat", v)} />
@@ -64,6 +65,7 @@ function CategoriesPill({
   selected: string[];
   onChange: (v: string[]) => void;
 }) {
+  const t = useTranslations("insights.filters");
   const [open, setOpen] = useState(false);
   const selectedCats = selected
     .map((id) => categories.find((c) => String(c.id) === id))
@@ -72,16 +74,16 @@ function CategoriesPill({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0 bg-black/7 dark:bg-white/7")}>
+      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
         {active ? (
           <span className="flex items-center -space-x-1.5 shrink-0">
             {selectedCats.slice(0, 2).map((c) => (
-              <span key={c.id} className="rounded-full ring-2 ring-background">
+              <span key={c.id} className="rounded-full ring-2 ring-ink">
                 <Icon iconKey={c.icon} color={c.color} round size="xs" />
               </span>
             ))}
             {selectedCats.length > 2 && (
-              <span className="size-6 rounded-full bg-foreground/20 text-[10px] font-bold flex items-center justify-center ring-2 ring-background">
+              <span className="size-6 rounded-full bg-foreground/20 text-[10px] font-bold flex items-center justify-center ring-2 ring-ink">
                 +{selectedCats.length - 2}
               </span>
             )}
@@ -89,18 +91,18 @@ function CategoriesPill({
         ) : (
           <IconCategory className="size-4 shrink-0" />
         )}
-        <span>Categories</span>
+        <span>{t("categories")}</span>
         {active && (
           <span
             role="button"
             tabIndex={0}
-            aria-label="Reset categories"
+            aria-label={t("resetCategories")}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onChange([]); }}
             className="shrink-0"
           >
-            <IconX className="size-5 bg-white rounded-full text-background p-1" />
+            <IconX className="size-5 rounded-full bg-bg p-1 text-ink" />
           </span>
         )}
       </button>
@@ -131,6 +133,7 @@ function AccountsPill({
   selected: string[];
   onChange: (v: string[]) => void;
 }) {
+  const t = useTranslations("insights.filters");
   const [open, setOpen] = useState(false);
   const selectedBanks = selected
     .map((id) => banks.find((b) => b.accountNumber === id))
@@ -139,14 +142,14 @@ function AccountsPill({
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0 bg-black/7 dark:bg-white/7")}>
+      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
         {active ? (
           <span className="flex items-center -space-x-1.5 shrink-0">
             {selectedBanks.slice(0, 2).map((b) => (
               <span
                 key={b.id}
                 className={cn(
-                  "size-6 rounded-full ring-2 ring-background text-white text-[10px] font-semibold flex items-center justify-center",
+                  "size-6 rounded-full ring-2 ring-ink text-white text-[10px] font-semibold flex items-center justify-center",
                   avatarColor(b.accountNumber ?? String(b.id)),
                 )}
               >
@@ -154,7 +157,7 @@ function AccountsPill({
               </span>
             ))}
             {selectedBanks.length > 2 && (
-              <span className="size-6 rounded-full bg-foreground/20 text-[10px] font-bold flex items-center justify-center ring-2 ring-background">
+              <span className="size-6 rounded-full bg-foreground/20 text-[10px] font-bold flex items-center justify-center ring-2 ring-ink">
                 +{selectedBanks.length - 2}
               </span>
             )}
@@ -162,18 +165,18 @@ function AccountsPill({
         ) : (
           <IconWallet className="size-4 shrink-0" />
         )}
-        <span>Accounts</span>
+        <span>{t("accounts")}</span>
         {active && (
           <span
             role="button"
             tabIndex={0}
-            aria-label="Reset accounts"
+            aria-label={t("resetAccounts")}
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); onChange([]); }}
             className="shrink-0"
           >
-            <IconX className="size-5 bg-white/40 rounded-full text-background p-1" />
+            <IconX className="size-5 rounded-full bg-bg p-1 text-ink" />
           </span>
         )}
       </button>

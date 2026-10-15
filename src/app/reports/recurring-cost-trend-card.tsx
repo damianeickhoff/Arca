@@ -52,13 +52,13 @@ export function RecurringCostTrendCard({ data }: { data: Point[] }) {
           <CartesianGrid vertical={false} strokeDasharray="4 4" stroke="currentColor" strokeOpacity={0} />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+            tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
             tickFormatter={(v) => `${currencySymbol()}${(v / 1000).toFixed(0)}k`}
-            tick={{ fontSize: 11, fill: "currentColor", opacity: 0.5 }}
+            tick={{ fontSize: 10, fill: "var(--arca-ink-3)" }}
             width={36}
             axisLine={false}
             tickLine={false}

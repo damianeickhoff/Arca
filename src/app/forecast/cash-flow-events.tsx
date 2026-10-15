@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { IconChevronRight } from "@tabler/icons-react";
-import { Icon } from "@/components/icon";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { formatEur } from "@/lib/format";
-import { formatForecastDate, type ForecastEvent } from "@/lib/cash-flow-forecast-shared";
+import { type ForecastEvent } from "@/lib/cash-flow-forecast-shared";
 import { TransactionDetailDialog } from "@/app/transactions/transaction-detail-dialog";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
 import type { Category, Goal } from "@/db/schema";
@@ -29,6 +30,9 @@ export function CashFlowEvents({
   categories: Category[];
   savingsGoals: Goal[];
 }) {
+  const t = useTranslations("insights.forecast");
+  const locale = useLocale();
+  const fmtDate = (date: string) => new Date(`${date}T00:00:00`).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "long" });
   const [openId, setOpenId] = useState<number | null>(null);
   const byId = new Map(transactions.map((t) => [t.id, t]));
   const open = openId != null ? byId.get(openId) ?? null : null;
@@ -42,8 +46,8 @@ export function CashFlowEvents({
 
   if (events.length === 0) {
     return (
-      <div className="rounded-2xl bg-[var(--dialog-background)] p-8 text-center text-sm text-muted-foreground">
-        Nothing scheduled in the forecast period.
+      <div className="rounded-row bg-surface-2 p-8 text-center text-[13px] text-ink-3">
+        {t("nothingScheduled")}
       </div>
     );
   }
@@ -54,11 +58,11 @@ export function CashFlowEvents({
         {[...byDate.entries()].map(([date, items]) => {
           const dayNet = items.reduce((sum, e) => sum + e.amount, 0);
           return (
-            <div key={date} className="rounded-2xl bg-[var(--dialog-background)] p-4">
+            <div key={date} className="rounded-row bg-surface-2 px-4 py-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-foreground/60">{formatForecastDate(date)}</span>
+                <span className="mono-label text-[10px]">{fmtDate(date)}</span>
                 {items.length > 1 && (
-                  <span className="text-xs text-foreground/40 tabular-nums">
+                  <span className="text-xs tabular-nums text-ink-3">
                     {dayNet >= 0 ? "+" : "−"}{formatEur(Math.abs(dayNet))}
                   </span>
                 )}
@@ -68,18 +72,15 @@ export function CashFlowEvents({
                 {items.map((event) => {
                   const body = (
                     <>
-                      <Icon iconKey={event.icon} color={event.iconColor} background={event.iconBackground} round size="sm" />
+                      <CategoryIcon icon={event.icon} color={event.iconColor} size="sm" />
                       <div className="flex-1 min-w-0 text-left">
-                        <p className="text-sm font-medium truncate">{event.name}</p>
-                        {event.kind === "recurring" && <p className="text-xs text-foreground/40">Projected</p>}
+                        <p className="truncate text-sm font-semibold text-ink">{event.name}</p>
+                        {event.kind === "recurring" && <p className="text-xs text-ink-3">{t("projected")}</p>}
                       </div>
-                      <span
-                        className="text-sm font-semibold tabular-nums shrink-0 ml-auto"
-                        style={{ color: event.amount >= 0 ? "var(--color-income)" : "var(--color-expense)" }}
-                      >
+                      <span className={event.amount >= 0 ? "ml-auto shrink-0 text-sm font-semibold tabular-nums text-positive" : "ml-auto shrink-0 text-sm font-semibold tabular-nums text-ink"}>
                         {event.amount >= 0 ? "+" : "−"}{formatEur(Math.abs(event.amount))}
                       </span>
-                      <IconChevronRight className="size-4 text-foreground/25 shrink-0" />
+                      <IconChevronRight className="size-4 shrink-0 text-ink-3" />
                     </>
                   );
                   const rowClass = "w-full flex items-center gap-2.5 min-w-0 py-2 active:opacity-70 transition-opacity";

@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/components/icon";
+import { useTranslations } from "next-intl";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { SectionHead } from "@/components/ui/page-heading";
+import { cn } from "@/lib/utils";
 import { formatEur } from "@/lib/format";
 import { CategoryDetailPortal } from "@/components/category-detail-portal";
 import type { FinancialMonthConfig } from "@/lib/date-range";
@@ -63,12 +66,13 @@ function FilterPill({
 }) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer ${
-        active
-          ? "bg-foreground/10 dark:bg-foreground/60 text-black font-bold"
-          : "bg-foreground/5 dark:bg-foreground/5 text-foreground/60"
-      }`}
+      aria-pressed={active}
+      className={cn(
+        "inline-flex h-7 shrink-0 items-center rounded-full border px-2.5 text-xs font-semibold transition-colors",
+        active ? "border-ink bg-ink text-bg" : "border-line bg-surface text-ink-2 hover:text-ink",
+      )}
     >
       {children}
     </button>
@@ -90,6 +94,7 @@ export function CategoryTrendList({
    * as the category detail portal's default period. */
   periodRange: { from: string; to: string };
 }) {
+  const t = useTranslations("insights.trends");
   const [sel, setSel] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -102,15 +107,13 @@ export function CategoryTrendList({
   const cats = expanded ? allCats : allCats.slice(0, VISIBLE_COUNT);
 
   return (
-<div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 relative">
-  <div className="pr-32">
-    <h2 className="text-sm mb-1">Expenses per category</h2>
-    <p className="text-xs text-foreground/60 mb-4">Per month · last 12 months</p>
-  </div>
+    <section className="flex flex-col gap-2 rounded-card border border-line bg-surface px-[18px] py-4 shadow-card lg:px-5">
+      <SectionHead title={t("perCategory")} size="sm" />
+      <p className="-mt-1 text-xs text-ink-3">{t("perCategoryNote")}</p>
 
-<div className="absolute top-5 right-5 h-10 flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-1.5 py-1">
         <FilterPill active={sel === null} onClick={() => setSel(null)}>
-          All
+          {t("all")}
         </FilterPill>
         {groups.map((g) => (
           <FilterPill key={g.group} active={sel === g.group} onClick={() => setSel(sel === g.group ? null : g.group)}>
@@ -120,25 +123,23 @@ export function CategoryTrendList({
       </div>
 
       {cats.length === 0 ? (
-        <p className="text-sm text-foreground/50 py-4">No expenses in this period.</p>
+        <p className="py-4 text-[13px] text-ink-3">{t("noExpenses")}</p>
       ) : (
-        <div className="divide-y divide-foreground/5">
+        <div className="flex flex-col">
           {cats.map((c) => (
             <button
               key={c.id}
               type="button"
               onClick={() => setSelectedId(c.id)}
-              className="w-full flex items-center gap-3 py-2.5 text-left active:bg-foreground/5 transition-colors"
+              className="-mx-2 flex min-h-[54px] w-[calc(100%+1rem)] items-center gap-3 rounded-row px-2 text-left transition-colors hover:bg-surface-2"
             >
-              <Icon iconKey={c.icon} color={c.color} size="sm" />
+              <CategoryIcon icon={c.icon} color={c.color} size="sm" />
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{c.name}</p>
-                <p className="text-xs text-foreground/50 tabular-nums">
-                  gem. {formatEur(c.total / months.length)}/mnd
-                </p>
+                <p className="truncate text-sm font-semibold text-ink">{c.name}</p>
+                <p className="text-xs tabular-nums text-ink-3">{t("avgPerMonth", { amount: formatEur(c.total / months.length) })}</p>
               </div>
-              <Sparkline values={months.map((m) => c.monthly[m] ?? 0)} color="color-mix(in srgb, var(--foreground) 70%, transparent)" />
-              <p className="text-sm font-semibold tabular-nums w-16 text-right shrink-0">{formatEur(c.total)}</p>
+              <Sparkline values={months.map((m) => c.monthly[m] ?? 0)} color={c.color ?? "var(--arca-ink)"} />
+              <p className="w-20 shrink-0 text-right text-sm font-semibold tabular-nums text-ink">{formatEur(c.total)}</p>
             </button>
           ))}
         </div>
@@ -148,9 +149,9 @@ export function CategoryTrendList({
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="w-full text-center text-xs font-semibold text-foreground/60 hover:text-foreground/80 transition-colors pt-3 mt-1 border-t border-foreground/5"
+          className="mt-1 w-full border-t border-line pt-3 text-center text-[13px] font-semibold text-mustard-strong hover:underline underline-offset-4"
         >
-          {expanded ? "Show less" : `Show more (${allCats.length - VISIBLE_COUNT})`}
+          {expanded ? t("showLess") : t("showMore", { count: allCats.length - VISIBLE_COUNT })}
         </button>
       )}
 
@@ -163,6 +164,6 @@ export function CategoryTrendList({
         budgetPeriod={periodRange}
         onClose={() => setSelectedId(null)}
       />
-    </div>
+    </section>
   );
 }

@@ -1,21 +1,26 @@
 import { db } from "@/db";
-import { transactions, categories, banks } from "@/db/schema";
+import { transactions, categories, banks, merchants } from "@/db/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
-import { formatEur, formatCompactEur, pctChangeLabel } from "@/lib/format";
+import { getLocale, getTranslations } from "next-intl/server";
+import { formatEur, formatEurWhole, formatCompactEur, pctChangeLabel } from "@/lib/format";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import type { FinancialMonthConfig } from "@/lib/date-range";
-import {
-  IconSparkles as Sparkles,
-  IconPercentage as Percentage,
-} from "@tabler/icons-react";
-import { Icon } from "@/components/icon";
-import { ChangeRow } from "@/components/change-pill";
-import { MiniBarChart, PairedBarChart, type Bucket } from "@/components/mini-bar-chart";
-import { StatTile, TileBadge } from "@/components/stat-tile";
-import { SpendingCategoryPreview } from "./spending-category-preview";
+import { IconSparkles as Sparkles } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
+import { SPLIT_GRID } from "@/components/page-container";
+import { SectionHead } from "@/components/ui/page-heading";
+import { Stat } from "@/components/ui/stat";
+import { Bar, Ring } from "@/components/ui/ring";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { PairedBars } from "@/components/ui/charts";
+import { ChangePill } from "@/components/change-pill";
+import { CARD, FactTile, Kpi } from "./insights-ui";
+import type { Bucket } from "@/components/mini-bar-chart";
+import { AnchoredTip } from "@/components/anchored-tip";
+import { SpendingDonutCard } from "./spending-donut-card";
 import { IncomeCategoryPreview } from "./income-category-preview";
 import { PeriodSelector } from "./period-selector";
 import { AnalyticsFilterBar } from "./analytics-filter-bar";
@@ -99,11 +104,15 @@ async function loadAllocations(from: string, to: string, categoryIds?: number[],
       categoryIcon: categories.icon,
       categoryGroup: categories.group,
       account: transactions.account,
+      description: transactions.description,
+      customName: transactions.customName,
+      merchantName: merchants.name,
       isReimbursement: transactions.isReimbursement,
       isInternalTransfer: isInternalTransferExpr,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
+    .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
     .where(and(gte(transactions.date, from), lte(transactions.date, to)))
     .orderBy(desc(transactions.date));
 
@@ -173,7 +182,7 @@ async function getAnalyticsData(
       const key = row.categoryId != null ? `id:${row.categoryId}` : "uncategorized";
       const current = map.get(key) ?? {
         categoryId: row.categoryId,
-        name: row.categoryName ?? "Uncategorized",
+        name: row.categoryName ?? "",
         color: row.categoryColor,
         icon: row.categoryIcon,
         total: 0,
@@ -188,12 +197,12 @@ async function getAnalyticsData(
   // Account grouping works off the raw rows (not the split allocations) since a
   // transaction's account isn't split-aware — the whole transaction belongs to one account.
   function topByAccount(direction: "income" | "expense") {
-    const map = new Map<string, { name: string; color: string | null; total: number }>();
+    const map = new Map<string, { name: string | null; color: string | null; total: number }>();
     for (const row of current.rows) {
       if (row.direction !== direction || row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
       const key = row.account ?? "unknown";
       const bank = row.account ? bankByAccount.get(row.account) : undefined;
-      const entry = map.get(key) ?? { name: bank?.displayName ?? row.account ?? "Unknown account", color: bank?.color ?? null, total: 0 };
+      const entry = map.get(key) ?? { name: bank?.displayName ?? row.account ?? null, color: bank?.color ?? null, total: 0 };
       entry.total += row.correctedAmount ?? row.amount;
       map.set(key, entry);
     }
@@ -203,6 +212,29 @@ async function getAnalyticsData(
   // Largest single expense this period vs. the previous period's, for the stat tile.
   const expenseRows = relevant.filter((r) => r.direction === "expense");
   const largestExpense = expenseRows.reduce((max, r) => (r.amount > max ? r.amount : max), 0);
+  const rowById = new Map(current.rows.map((r) => [r.id, r]));
+  const nameOf = (id: number) => {
+    const r = rowById.get(id);
+    return r ? r.merchantName ?? r.customName ?? r.description : null;
+  };
+  const largestRow = expenseRows.find((r) => r.amount === largestExpense) ?? null;
+  const largestExpenseName = largestRow ? nameOf(largestRow.transactionId) : null;
+
+  // Top merchants this period: expense allocations grouped by the transaction's
+  // merchant (transactions without one are left out), with how many visits made it up.
+  const merchantMap = new Map<string, { name: string; total: number; visits: Set<number>; icon: string | null; color: string | null }>();
+  for (const r of expenseRows) {
+    const m = rowById.get(r.transactionId)?.merchantName;
+    if (!m) continue;
+    const entry = merchantMap.get(m) ?? { name: m, total: 0, visits: new Set<number>(), icon: r.categoryIcon, color: r.categoryColor };
+    entry.total += r.amount;
+    entry.visits.add(r.transactionId);
+    merchantMap.set(m, entry);
+  }
+  const topMerchants = [...merchantMap.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 4)
+    .map((m) => ({ name: m.name, total: m.total, visits: m.visits.size, icon: m.icon, color: m.color }));
   const prevLargestExpense = prevRelevant.filter((r) => r.direction === "expense").reduce((max, r) => (r.amount > max ? r.amount : max), 0);
 
   const expenseByCategory = topByCategory("expense");
@@ -255,7 +287,6 @@ async function getAnalyticsData(
     weekdayCounts[idx]++;
   }
   const popularDayIdx = weekdayCounts.reduce((best, v, i) => (v > weekdayCounts[best] ? i : best), 0);
-  const WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
   const transactionCount = relevant.length;
   const prevTransactionCount = prevRelevant.length;
@@ -267,10 +298,10 @@ async function getAnalyticsData(
 
   // Budget-derived "left per day" hint for the Cashflow card — only shown when a
   // budget is actually configured.
-  let leftPerDayHint: string | null = null;
+  let leftPerDayHint: { perDay: number; days: number } | null = null;
   if (budgetOverview?.budget && budgetOverview.daysLeft > 0) {
     const left = budgetOverview.budget.amount - budgetOverview.totalSpent;
-    leftPerDayHint = `About ${formatEur(Math.max(0, left) / budgetOverview.daysLeft)}/day left for the remaining ${budgetOverview.daysLeft} day${budgetOverview.daysLeft === 1 ? "" : "s"}`;
+    leftPerDayHint = { perDay: Math.max(0, left) / budgetOverview.daysLeft, days: budgetOverview.daysLeft };
   }
 
   // Calendar — one entry per day in the period, net total (income green, spend
@@ -295,10 +326,12 @@ async function getAnalyticsData(
     spendingCategoryVisible, spendingCategoryAll, incomeCategoryAll, budgetPeriod,
     favoriteCategory,
     largestExpense,
+    largestExpenseName,
     largestExpenseChange: pctChangeLabel(largestExpense, prevLargestExpense),
+    topMerchants,
     transactionCount,
     transactionCountChange: transactionCount - prevTransactionCount,
-    popularDayName: WEEKDAY_NAMES[popularDayIdx],
+    popularDayIdx,
     weekdayCounts,
     avgExpensePerDay, avgIncomePerDay,
     leftPerDayHint,
@@ -326,206 +359,252 @@ export async function AnalyticsTab({
   periodLabel: string;
   categoryIds?: number[];
   accounts?: string[];
-  /** True when rendered inside the dashboard's Reports portal instead of the
-   * standalone /reports page — that portal gives each tab its own independently
-   * scrolling pane, so the filter bar only needs `top: 0` there instead of an
-   * offset clearing the page's own sticky header (see AnalyticsFilterBar). */
+  /** True inside the old dashboard Reports portal, where the filter bar sticks at 0. */
   embedded?: boolean;
 }) {
   const data = await getAnalyticsData(from, to, financialMonth, categoryIds, accounts);
+  const t = await getTranslations("insights.overview");
+  const locale = await getLocale();
   const maxWeekdayCount = Math.max(...data.weekdayCounts, 1);
+  const weekdayName = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(new Date(2024, 0, 1 + data.popularDayIdx));
+  const weekdayLetters = [1, 2, 3, 4, 5, 6, 7].map((d) => new Intl.DateTimeFormat(locale, { weekday: "narrow" }).format(new Date(2024, 0, d)));
+  const periodShort = new Date(`${to}T00:00:00`).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { month: "short" });
+  const savedPct = data.income > 0 ? Math.round((data.cashflow / data.income) * 100) : null;
+  const expenseByAccountTotal = data.expenseByAccount.reduce((s, a) => s + a.total, 0);
 
-  // pb was previously reduced on desktop (lg:pb-4) back when desktop had a sidebar
-  // instead of a floating bottom nav — the nav is never hidden on the standalone
-  // /reports route, so it needs the same clearance at every width now. Harmless
-  // extra whitespace when embedded (the dashboard portal hides the nav there).
   return (
-    <div className="px-4 pt-1 pb-[calc(6rem+var(--sab))] space-y-4">
+    <div className="flex flex-col gap-5">
       <AnalyticsFilterBar
         categories={data.allCategories}
         banks={data.allBanks}
-        stickyTop={embedded ? "0px" : "calc(var(--sat) + 9rem)"}
+        stickyTop={embedded ? "0px" : "calc(var(--sat) + 50px)"}
       />
 
-      {/* Cashflow */}
-      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
-          <p className="text-md text-foreground/60 mb-1">Cashflow</p>
-          <p className={`text-2xl font-semibold tabular-nums tracking-tight ${data.cashflow < 0 ? "text-foreground" : "text-foreground"}`}>
-            {data.cashflow < 0 ? "" : ""}{formatEur(Math.abs(data.cashflow))}
-          </p>
-          <ChangeRow change={data.cashflowChange} className="mt-1 mb-5" />
-          <PairedBarChart a={data.spendingBuckets} b={data.incomeBuckets} />
-          {data.leftPerDayHint && (
-            <p className="flex items-center gap-1.5 text-sm text-foreground/50 mt-3">
-              <Sparkles className="size-4 shrink-0" />
-              {data.leftPerDayHint}
-            </p>
-          )}
-        </div>
-
-        {/* Spending / Income mini-summary rows */}
-        <div className="rounded-2xl px-4 mt-3 flex items-center justify-between">
-          <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full bg-foreground/30" /> Spending
-          </span>
-          <span className="text-md tabular-nums">{formatEur(data.expense)}</span>
-        </div>
-        <div className="rounded-2xl px-4 py-1 mb-2 flex items-center justify-between">
-          <span className="flex items-center gap-2 text-md">
-            <span className="size-2 rounded-full" style={{ backgroundColor: "var(--color-income)" }} /> Income
-          </span>
-          <span className="text-md abular-nums" style={{ color: "var(--color-income)" }}>+{formatEur(data.income)}</span>
-        </div>
-      </div>
-
-      {/* Spending */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
-          <p className="text-md text-foreground/60 mb-1">Spending</p>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight">{formatEur(data.expense)}</p>
-          <ChangeRow change={data.expenseChange ? { ...data.expenseChange, up: !data.expenseChange.up } : null} className="mt-1 mb-5" />
-          <MiniBarChart buckets={data.spendingBuckets} color={() => "color-mix(in srgb, var(--foreground) 30%, transparent)"} />
-        </div>
-
-        <SpendingCategoryPreview
-          visibleRows={data.spendingCategoryVisible}
-          allRows={data.spendingCategoryAll}
-          financialMonth={financialMonth}
-          budgetPeriod={data.budgetPeriod}
-          emptyLabel="No spending yet this period."
-          total={data.expense}
+      {/* KPIs — income, expenses, what was saved, the largest single expense. */}
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-3.5">
+        <Kpi label={t("income")} value={formatEur(data.income)} tone="positive" change={data.incomeChange} />
+        <Kpi
+          label={t("expenses")}
+          value={formatEur(data.expense)}
+          change={data.expenseChange ? { ...data.expenseChange, up: !data.expenseChange.up } : null}
+        />
+        <Kpi
+          label={t("saved")}
+          value={savedPct != null ? t("savedValue", { amount: formatEurWhole(data.cashflow), pct: savedPct }) : formatEur(data.cashflow)}
+          tone="accent"
+          change={data.cashflowChange}
+        />
+        <Kpi
+          label={t("largest")}
+          value={data.largestExpenseName ? `${data.largestExpenseName} · ${formatEurWhole(data.largestExpense)}` : formatEur(data.largestExpense)}
+          change={data.largestExpenseChange ? { ...data.largestExpenseChange, up: !data.largestExpenseChange.up } : null}
         />
       </div>
 
-      {/* Income — same grouped bg-white/5 + bg-white/2 shell as Spending */}
-      <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
-        <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
-          <p className="text-md text-foreground/60 mb-1">Income</p>
-          <p className="text-2xl font-semibold tabular-nums tracking-tight" style={{ color: "var(--color-income)" }}>+{formatEur(data.income)}</p>
-          <ChangeRow change={data.incomeChange} className="mt-1 mb-5" />
-          <MiniBarChart buckets={data.incomeBuckets} color={() => "color-mix(in srgb, var(--foreground) 30%, transparent)"} />
-        </div>
-
-        <IncomeCategoryPreview
-          rows={data.incomeCategoryAll}
-          financialMonth={financialMonth}
-          budgetPeriod={data.budgetPeriod}
-          emptyLabel="No income yet this period."
-          total={data.income}
-        />
-      </div>
-      </div>
-      {/* Budget ring */}
-      {data.budgetOverview?.budget && (
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
-          <p className="font-semibold text-sm mb-4">Budget</p>
-          <div className="flex items-center gap-5">
-            <BudgetRing pct={data.budgetOverview.budget.amount > 0 ? (data.budgetOverview.totalSpent / data.budgetOverview.budget.amount) * 100 : 0} />
-            <div>
-              <p className="text-sm text-foreground/60">Left</p>
-              <p className="text-2xl font-semibold tabular-nums">{formatEur(Math.max(0, data.budgetOverview.budget.amount - data.budgetOverview.totalSpent))}</p>
+      <div className={SPLIT_GRID}>
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* Week by week — spending and income per stretch of the period (the old
+              Cashflow card's paired bars), with the budget's per-day hint. */}
+          <section className={cn(CARD, "flex flex-col gap-3.5 p-[18px] lg:px-5")}>
+            <SectionHead
+              title={t("weekByWeek")}
+              size="sm"
+              link={
+                <span className="inline-flex items-center gap-3 text-ink-2">
+                  <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-ink" />{t("spending")}</span>
+                  <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-positive" />{t("incomeShort")}</span>
+                </span>
+              }
+            />
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-[13px] text-ink-2">{t("cashflow")}</span>
+              <span className="flex items-center gap-2">
+                <span className={cn("amount text-[22px] tabular-nums", data.cashflow < 0 ? "text-negative" : "text-ink")}>{formatEur(data.cashflow)}</span>
+                <ChangePill change={data.cashflowChange} />
+              </span>
             </div>
+            <PairedBars
+              pairs={data.spendingBuckets.map((b, i) => ({
+                label: b.label,
+                a: b.value,
+                b: data.incomeBuckets[i]?.value ?? 0,
+                title: `${b.label} · ${t("spending")} ${formatEur(b.value)} · ${t("incomeShort")} ${formatEur(data.incomeBuckets[i]?.value ?? 0)}`,
+              }))}
+              colors={["var(--arca-ink)", "var(--arca-positive)"]}
+              height={150}
+            />
+            {data.leftPerDayHint && (
+              <p className="flex items-center gap-1.5 text-xs text-ink-3">
+                <Sparkles className="size-4 shrink-0" />
+                {t("leftPerDay", { amount: formatEur(data.leftPerDayHint.perDay), days: data.leftPerDayHint.days })}
+              </p>
+            )}
+          </section>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            {/* Top merchants */}
+            <section data-tip-anchor="insightsMerchants" className={cn(CARD, "flex flex-col gap-2 px-[18px] py-4 lg:px-5")}>
+              <SectionHead title={t("topMerchants")} size="sm" link={t("all")} href="/transactions" />
+              {data.topMerchants.length === 0 ? (
+                <p className="text-[13px] text-ink-3">{t("noMerchants")}</p>
+              ) : (
+                data.topMerchants.map((m) => (
+                  <div key={m.name} className="flex min-h-[52px] items-center gap-3">
+                    <CategoryIcon icon={m.icon} color={m.color} size="sm" />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-sm font-semibold text-ink">{m.name}</span>
+                      <span className="text-xs text-ink-3">{t("visits", { count: m.visits })}</span>
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-ink">{formatEur(m.total)}</span>
+                  </div>
+                ))
+              )}
+            </section>
+
+            {/* By account */}
+            <section className={cn(CARD, "flex flex-col gap-2 px-[18px] py-4 lg:px-5")}>
+              <SectionHead title={t("byAccount")} size="sm" />
+              {data.expenseByAccount.length === 0 ? (
+                <p className="text-[13px] text-ink-3">{t("noSpending")}</p>
+              ) : (
+                data.expenseByAccount.slice(0, 5).map((a, i) => (
+                  <div key={`${a.name}-${i}`} className="flex min-h-12 flex-col justify-center gap-1.5">
+                    <div className="flex justify-between gap-2">
+                      <span className="truncate text-[13px] font-semibold text-ink">{a.name ?? t("unknownAccount")}</span>
+                      <span className="shrink-0 text-[13px] font-semibold tabular-nums text-ink">{formatEur(a.total)}</span>
+                    </div>
+                    <Bar pct={expenseByAccountTotal > 0 ? (a.total / expenseByAccountTotal) * 100 : 0} color={a.color ?? "var(--arca-ink)"} height={6} />
+                  </div>
+                ))
+              )}
+              <p className="text-xs leading-[1.5] text-ink-3">{t("accountsNote")}</p>
+            </section>
           </div>
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border/40">
-            <div>
-              <p className="text-xs text-foreground/50">{data.budgetOverview.budget.period === "weekly" ? "Weekly" : "Monthly"}</p>
-              <p className="text-sm font-medium">{periodLabel}</p>
-            </div>
-            <div>
-              <p className="text-xs text-foreground/50">Days left</p>
-              <p className="text-sm font-medium">{data.budgetOverview.daysLeft} days left</p>
-            </div>
-          </div>
         </div>
-      )}
 
-      {/* Largest expense / Favorite category — square tiles, same shape as the
-          category detail page's stat cards (src/components/category-insight-cards.tsx) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatTile
-          label="Largest expense"
-          value={formatCompactEur(data.largestExpense)}
-          badge={<TileBadge icon={Percentage} color="var(--color-danger)" />}
-        />
-        <StatTile
-          label="Favorite category"
-          valueClassName="text-base font-bold truncate"
-          value={data.favoriteCategory ? data.favoriteCategory.name : <span className="text-white/40 font-normal">—</span>}
-          badge={data.favoriteCategory && (
-            <div className="absolute bottom-3 left-3">
-              <Icon iconKey={data.favoriteCategory.icon} color={data.favoriteCategory.color ?? undefined} size="xl" round />
+        <div className="flex min-w-0 flex-col gap-5">
+          <SpendingDonutCard
+            visibleRows={data.spendingCategoryVisible}
+            allRows={data.spendingCategoryAll}
+            total={data.expense}
+            periodShort={periodShort}
+            financialMonth={financialMonth}
+            budgetPeriod={data.budgetPeriod}
+          />
+          <IncomeCategoryPreview
+            rows={data.incomeCategoryAll}
+            financialMonth={financialMonth}
+            budgetPeriod={data.budgetPeriod}
+            emptyLabel={t("noIncome")}
+            total={data.income}
+          />
+        </div>
+      </div>
+
+      {/* Kept from the old Overview: the budget, the period's facts and its calendar. */}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        {data.budgetOverview?.budget && (
+          <section className={cn(CARD, "flex flex-col gap-4 p-[18px] lg:px-5")}>
+            <SectionHead title={t("budget")} size="sm" link={t("open")} href="/budget" />
+            <div className="flex items-center gap-5">
+              <Ring
+                pct={data.budgetOverview.budget.amount > 0 ? (data.budgetOverview.totalSpent / data.budgetOverview.budget.amount) * 100 : 0}
+                color={data.budgetOverview.totalSpent > data.budgetOverview.budget.amount ? "var(--arca-negative)" : "var(--arca-accent)"}
+                size={88}
+                stroke={9}
+              >
+                <span className="amount text-lg text-ink">
+                  {Math.round(data.budgetOverview.budget.amount > 0 ? (data.budgetOverview.totalSpent / data.budgetOverview.budget.amount) * 100 : 0)}%
+                </span>
+              </Ring>
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] text-ink-2">{t("left")}</span>
+                <span className="amount text-2xl tabular-nums text-ink">
+                  {formatEur(Math.max(0, data.budgetOverview.budget.amount - data.budgetOverview.totalSpent))}
+                </span>
+              </div>
             </div>
-          )}
-        />
+            <div className="grid grid-cols-2 gap-2">
+              <Stat label={data.budgetOverview.budget.period === "weekly" ? t("weekly") : t("monthly")} value={<span className="text-sm">{periodLabel}</span>} />
+              <Stat label={t("daysLeft")} value={t("days", { count: data.budgetOverview.daysLeft })} />
+            </div>
+          </section>
+        )}
 
-      {/* Transactions / Popular day — square tiles, same treatment as above */}
-        <StatTile
-          label="Transactions"
-          value={data.transactionCount}
-          footerAtBottom
-          footer={`${data.transactionCountChange >= 0 ? "+" : ""}${data.transactionCountChange} vs last period`}
-        />
-        <div className="rounded-2xl bg-[var(--dialog-content-background)] p-4 flex flex-col aspect-square">
-          <p className="text-xs text-foreground/50 mb-1">Popular day</p>
-          <p className="text-base font-bold text-foreground mb-2">{data.popularDayName}</p>
-          <div className="mt-auto">
-            <div className="flex items-end gap-1 h-8">
+        <div className={cn("grid grid-cols-2 gap-2 sm:grid-cols-3 lg:gap-3.5", !data.budgetOverview?.budget && "lg:col-span-2")}>
+          <FactTile label={t("favoriteCategory")}>
+            {data.favoriteCategory ? (
+              <span className="flex min-w-0 items-center gap-2">
+                <CategoryIcon icon={data.favoriteCategory.icon} color={data.favoriteCategory.color} size="sm" />
+                <span className="truncate text-[15px] font-bold text-ink">{data.favoriteCategory.name}</span>
+              </span>
+            ) : (
+              <span className="text-ink-3">—</span>
+            )}
+          </FactTile>
+          <FactTile label={t("transactions")}>
+            <span className="amount text-[22px] text-ink">{data.transactionCount}</span>
+            <span className="text-xs text-ink-3">
+              {t("vsLastPeriod", { change: `${data.transactionCountChange >= 0 ? "+" : ""}${data.transactionCountChange}` })}
+            </span>
+          </FactTile>
+          <FactTile label={t("popularDay")} className="col-span-2 sm:col-span-1">
+            <span className="text-[15px] font-bold capitalize text-ink">{weekdayName}</span>
+            <span className="flex h-8 items-end gap-1" aria-hidden>
               {data.weekdayCounts.map((c, i) => (
-                <div key={i} className="flex-1 rounded-sm" style={{ height: `${Math.max(10, (c / maxWeekdayCount) * 100)}%`, background: c === maxWeekdayCount && c > 0 ? "color-mix(in srgb, var(--foreground) 80%, transparent)" : "color-mix(in srgb, var(--foreground) 30%, transparent)" }} />
+                <span
+                  key={i}
+                  className={cn("flex-1 rounded-[3px]", c === maxWeekdayCount && c > 0 ? "bg-mustard" : "bg-surface-2")}
+                  style={{ height: `${Math.max(10, (c / maxWeekdayCount) * 100)}%` }}
+                />
               ))}
-            </div>
-            <div className="flex justify-between mt-1">
-              {WEEKDAY_LABELS.map((l, i) => <span key={i} className="text-[9px] text-muted-foreground flex-1 text-center">{l}</span>)}
-            </div>
-          </div>
+            </span>
+            <span className="flex">
+              {weekdayLetters.map((l, i) => (
+                <span key={i} className="flex-1 text-center font-mono text-[9px] uppercase text-ink-3">{l}</span>
+              ))}
+            </span>
+          </FactTile>
         </div>
       </div>
 
-      {/* Calendar */}
-      <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
-        <p className="font-semibold text-sm mb-3">Calendar</p>
-        <div className="grid grid-cols-7 gap-1.5 text-center mb-4">
-          {WEEKDAY_LABELS.map((l, i) => <span key={i} className="text-[11px] text-foreground/40">{l}</span>)}
-          {/* Leading blanks so the 1st lands under its real weekday column */}
+      {/* Calendar — net per day, with the period's daily averages. */}
+      <section className={cn(CARD, "flex flex-col gap-3.5 p-[18px] lg:px-5")}>
+        <SectionHead title={t("calendar")} size="sm" />
+        <div className="grid grid-cols-7 gap-1.5 text-center">
+          {weekdayLetters.map((l, i) => (
+            <span key={i} className="font-mono text-[10px] uppercase text-ink-3">{l}</span>
+          ))}
           {Array.from({ length: mondayIndex(new Date(`${data.calendarDays[0]?.date ?? data.from}T00:00:00`).getDay()) }).map((_, i) => (
             <div key={`blank-${i}`} />
           ))}
           {data.calendarDays.map((d) => (
             <div
               key={d.date}
-              className={`aspect-square rounded-lg flex flex-col items-center justify-center ${d.isToday ? "ring-1 ring-foreground/50" : ""}`}
-              style={{ background: d.hasActivity ? "color-mix(in srgb, var(--foreground) 6%, transparent)" : "color-mix(in srgb, var(--foreground) 2%, transparent)" }}
+              className={cn(
+                "flex aspect-square flex-col items-center justify-center gap-0.5 rounded-tile lg:aspect-auto lg:h-14",
+                d.hasActivity ? "bg-surface-2" : "",
+                d.isToday && "ring-2 ring-mustard",
+              )}
             >
-              <p className="text-xs font-light mb-1">{d.day}</p>
+              <span className="font-mono text-[11px] text-ink-2">{d.day}</span>
               {d.hasActivity ? (
-                <p className={`text-[11px] font-semibold tabular-nums ${d.net >= 0 ? "" : "text-foreground/40"}`} style={d.net >= 0 ? { color: "var(--color-income)" } : undefined}>
-                  {d.net >= 0 ? "" : ""}{formatCompactEur(d.net)}
-                </p>
+                <span className={cn("text-[10px] font-semibold tabular-nums sm:text-[11px]", d.net >= 0 ? "text-positive" : "text-ink-3")}>
+                  {formatCompactEur(d.net)}
+                </span>
               ) : (
-                <p className="text-[9px] text-foreground/25">-</p>
+                <span className="text-[9px] text-ink-3">–</span>
               )}
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border/40">
-          <div>
-            <p className="text-md text-foreground/50">Avg expense / day</p>
-              <p className="flex items-center gap-2 text-lg font-semibold">
-                <span className="h-2 w-2 rounded-full bg-foreground/50" />
-              {formatEur(data.avgExpensePerDay)}
-            </p>  
-          </div>
-          <div>
-            <p className="text-md text-foreground/50">Avg income / day</p>
-            <p className="flex items-center gap-2 text-lg font-semibold">
-              <span className="h-2 w-2 rounded-full bg-[var(--color-income)]" />
-              {formatEur(data.avgIncomePerDay)}
-            </p>            
-          </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Stat label={t("avgExpense")} value={formatEur(data.avgExpensePerDay)} />
+          <Stat label={t("avgIncome")} value={formatEur(data.avgIncomePerDay)} tone="positive" />
         </div>
-      </div>
+      </section>
+
+      <AnchoredTip id="insightsMerchants" anchor="insightsMerchants" active={data.topMerchants.length > 0} />
 
       <PeriodSelector
         from={from}
@@ -535,29 +614,6 @@ export async function AnalyticsTab({
         tab="rapporten"
         embedded={embedded}
       />
-    </div>
-  );
-}
-
-function BudgetRing({ pct }: { pct: number }) {
-  const clamped = Math.max(0, Math.min(100, pct));
-  const circumference = 2 * Math.PI * 40;
-  return (
-    <div className="relative size-24 shrink-0">
-      <svg viewBox="0 0 100 100" className="size-24 -rotate-90">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--foreground)" strokeOpacity="0.1" strokeWidth="9" />
-        <circle
-          cx="50" cy="50" r="40" fill="none"
-          stroke={clamped >= 100 ? "var(--danger)" : "var(--color-income)"}
-          strokeWidth="9" strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - clamped / 100)}
-          style={{ transition: "stroke-dashoffset 500ms ease" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-lg font-bold tabular-nums">{Math.round(clamped)}%</span>
-      </div>
     </div>
   );
 }

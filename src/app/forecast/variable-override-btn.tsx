@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconXFilled as X,
   IconCheckFilled as Check,
@@ -30,6 +31,7 @@ interface Props {
 // Tapping the row opens the override popover — no separate dots trigger.
 export function VariablePrognoseOverrideBtn({ categoryId, categoryName, month, defaultAmount, overrideAmount, icon, subtitle, nested = false, collapseToggle }: Props) {
   const router = useRouter();
+  const t = useTranslations("insights.forecast.override");
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(String(overrideAmount ?? defaultAmount));
   const [saving, setSaving] = useState(false);
@@ -107,25 +109,25 @@ export function VariablePrognoseOverrideBtn({ categoryId, categoryName, month, d
         tabIndex={0}
         onClick={openPopover}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPopover(); } }}
-        title={`Override budget voor ${categoryName} deze maand`}
+        title={t("cardTitle", { name: categoryName })}
         className={cn(
-          "w-full flex items-center gap-3 px-4 py-3 text-left active:bg-foreground/[0.03] transition-colors cursor-pointer",
-          nested ? "rounded-xl" : "rounded-2xl bg-card",
+          "w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-2 transition-colors cursor-pointer",
+          nested ? "rounded-row" : "rounded-row bg-surface",
         )}
       >
         {icon}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{categoryName}</p>
-          <div className="text-xs text-foreground/60 mt-0.5 truncate">{subtitle}</div>
+          <p className="truncate text-sm font-semibold text-ink">{categoryName}</p>
+          <div className="mt-0.5 truncate text-xs text-ink-3">{subtitle}</div>
         </div>
         {hasOverride && (
-          <div className="flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs px-2 py-0.5 font-medium shrink-0">
+          <div className="flex shrink-0 items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-xs font-bold text-warning">
             <span className="tabular-nums">{formatEur(overrideAmount!)}</span>
             <button
               onClick={(e) => { e.stopPropagation(); clearOverride(); }}
               disabled={saving}
-              className="hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
-              title="Delete override"
+              className="transition-opacity hover:opacity-70"
+              title={t("clear")}
             >
               <X className="size-3" />
             </button>
@@ -135,10 +137,10 @@ export function VariablePrognoseOverrideBtn({ categoryId, categoryName, month, d
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); collapseToggle.onToggle(); }}
-            aria-label={collapseToggle.open ? "Collapse subcategories" : "Expand subcategories"}
-            className="shrink-0 p-1 -mr-1 rounded-full hover:bg-foreground/10 transition-colors"
+            aria-label={collapseToggle.open ? t("collapse") : t("expand")}
+            className="-mr-1 shrink-0 rounded-full p-1 transition-colors hover:bg-surface-2"
           >
-            <ChevronDown className={cn("size-4 text-foreground/50 transition-transform", collapseToggle.open && "rotate-180")} />
+            <ChevronDown className={cn("size-4 text-ink-3 transition-transform", collapseToggle.open && "rotate-180")} />
           </button>
         )}
       </div>
@@ -147,26 +149,22 @@ export function VariablePrognoseOverrideBtn({ categoryId, categoryName, month, d
         <div
           ref={popoverRef}
           style={popoverStyle}
-          className="relative bg-black/7 dark:bg-white/7 rounded-xl backdrop-blur-xl p-3 w-52"
+          className="relative w-52 rounded-tile border border-line bg-surface p-3 shadow-float"
         >
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="absolute top-2 right-2 size-6 rounded-full flex items-center justify-center text-foreground/50 hover:bg-foreground/10 hover:text-foreground transition-colors"
-            aria-label="Close"
+            className="absolute right-2 top-2 flex size-6 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+            aria-label={t("close")}
           >
             <X className="size-3.5" />
           </button>
-          <p className="text-xs font-medium text-foreground truncate">{categoryName}</p>
-          <p className="text-[10px] text-muted-foreground mt-1">
-            Override amount for {month}
-          </p>
-          <p className="text-[10px] text-muted-foreground mb-3">
-            (budget: <span className="tabular-nums">{formatEur(defaultAmount)}</span>/mnd)
-          </p>
+          <p className="truncate text-xs font-semibold text-ink">{categoryName}</p>
+          <p className="mt-1 text-[10px] text-ink-3">{t("forMonth", { month })}</p>
+          <p className="mb-3 text-[10px] text-ink-3">{t("defaultAmount", { amount: formatEur(defaultAmount) })}</p>
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{currencySymbol()}</span>
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-ink-3">{currencySymbol()}</span>
               <input
                 ref={inputRef}
                 type="number"
@@ -176,13 +174,13 @@ export function VariablePrognoseOverrideBtn({ categoryId, categoryName, month, d
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full rounded-lg pl-5 py-1.5 text-sm bg-[var(--dialog-background)] outline-none focus:outline-none focus:ring-0 border border-transparent focus:border-white/20"
+                className="w-full rounded-tile border border-transparent bg-surface-2 py-1.5 pl-5 text-sm text-ink outline-none focus:border-line"
               />
             </div>
               <button
                 onClick={save}
                 disabled={saving}
-                className="size-9 shrink-0 rounded-full bg-background text-foreground flex items-center justify-center hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-ink text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 <Check className="size-4" />
               </button>

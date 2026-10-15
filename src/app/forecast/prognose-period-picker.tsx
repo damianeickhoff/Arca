@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { IconChevronLeft, IconChevronRight, IconCheck as Check } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { MONTH_NAMES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { aboveNavDockClass, bottomDockClass } from "@/components/bottom-nav";
 
@@ -31,6 +31,8 @@ export function PrognosePeriodPicker({
    *  it is embedded (cookie mode) yet still shows the tab bar. */
   aboveNav?: boolean;
 }) {
+  const t = useTranslations("insights.forecast");
+  const locale = useLocale();
   const stackAboveNav = aboveNav ?? !embedded;
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,7 +43,7 @@ export function PrognosePeriodPicker({
   for (let i = -1; i <= 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
     const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    months.push({ value, label: `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}` });
+    months.push({ value, label: d.toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { month: "long", year: "numeric" }) });
   }
 
   const index = months.findIndex((m) => m.value === current);
@@ -80,8 +82,8 @@ export function PrognosePeriodPicker({
           type="button"
           onClick={() => step(-1)}
           disabled={index <= 0}
-          aria-label="Previous month"
-          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
+          aria-label={t("previousMonth")}
+          className="flex aspect-square h-full shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-float transition-transform active:scale-95 disabled:cursor-not-allowed"
         >
           <IconChevronLeft className={cn("size-4", index <= 0 && "opacity-30")} />
         </button>
@@ -89,27 +91,27 @@ export function PrognosePeriodPicker({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex-1 min-w-0 h-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg px-4 flex flex-col items-center justify-center active:scale-[0.98] transition-transform"
+          className="flex h-full min-w-0 flex-1 flex-col items-center justify-center rounded-full border border-line bg-surface px-4 shadow-float transition-transform active:scale-[0.98]"
         >
-          <p className="text-[11px] leading-tight text-foreground/50">Month</p>
-          <p className="text-sm font-semibold leading-tight truncate">{currentLabel}</p>
+          <p className="mono-label text-[10px] leading-tight">{t("month")}</p>
+          <p className="truncate text-sm font-semibold capitalize leading-tight text-ink">{currentLabel}</p>
         </button>
 
         <button
           type="button"
           onClick={() => step(1)}
           disabled={index < 0 || index >= months.length - 1}
-          aria-label="Next month"
-          className="h-full aspect-square rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg flex items-center justify-center active:scale-95 transition-transform shrink-0 disabled:cursor-not-allowed"
+          aria-label={t("nextMonth")}
+          className="flex aspect-square h-full shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink shadow-float transition-transform active:scale-95 disabled:cursor-not-allowed"
         >
-          <IconChevronRight className={cn("size-4", index < 0 || index >= months.length - 1 && "opacity-30")} />
+          <IconChevronRight className={cn("size-4", (index < 0 || index >= months.length - 1) && "opacity-30")} />
         </button>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Choose month</DialogTitle>
+            <DialogTitle>{t("chooseMonth")}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-1 -mx-1">
             {months.map((m) => {
@@ -120,8 +122,8 @@ export function PrognosePeriodPicker({
                   type="button"
                   onClick={() => { navigate(m.value); setOpen(false); }}
                   className={cn(
-                    "flex items-center justify-between rounded-xl px-4 py-3.5 text-sm transition-colors",
-                    active ? "bg-foreground text-primary-foreground font-medium" : "hover:bg-foreground/5 text-foreground",
+                    "flex items-center justify-between rounded-row px-4 py-3.5 text-sm capitalize transition-colors",
+                    active ? "bg-ink font-semibold text-bg" : "text-ink hover:bg-surface-2",
                   )}
                 >
                   <span>{m.label}</span>

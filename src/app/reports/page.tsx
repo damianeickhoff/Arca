@@ -4,9 +4,9 @@ import { getBudgetOverview } from "@/lib/budget-overview";
 import { DateRangePicker } from "@/components/date-range-picker";
 import { SearchButton } from "@/components/shell/search-context";
 import { PageHeading } from "@/components/ui/page-heading";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import ForecastPage from "@/app/forecast/page";
-import { PageContainer } from "@/components/page-container";
+import { PageShell } from "@/components/page-container";
 import { cookies } from "next/headers";
 import { ReportsTabs } from "./reports-tabs";
 import { TrendsTab, VermogenTab } from "./report-tabs";
@@ -25,6 +25,7 @@ export default async function ReportsPage({
   const financialMonth = await getFinancialMonthConfig();
   const activeTab = sp.tab ?? "rapporten";
   const t = await getTranslations("insights");
+  const locale = await getLocale();
   const categoryIds = sp.cat ? sp.cat.split(",").map(Number).filter((n) => !Number.isNaN(n)) : undefined;
   const accounts = sp.acct ? sp.acct.split(",").filter(Boolean) : undefined;
 
@@ -51,33 +52,48 @@ export default async function ReportsPage({
       to = `${thisYear}-12-31`;
     }
   }
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
   const periodLabel = (() => {
-    const fmt = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    const fmt = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
     return from.slice(0, 7) === to.slice(0, 7)
-      ? new Date(`${from}T00:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
+      ? new Date(`${from}T00:00:00`).toLocaleDateString(dateLocale, { month: "long", year: "numeric" })
       : `${fmt(from)} – ${fmt(to)}`;
   })();
+  // The desktop subtitle names the tab and what it is built from, as in the V5 artboards.
+  const subtitle =
+    activeTab === "rapporten" ? t("subtitle.overview", { period: periodLabel })
+    : activeTab === "trends" ? t("subtitle.trends", { period: periodLabel })
+    : activeTab === "vermogen" ? t("subtitle.netWorth")
+    : activeTab === "prognose" ? t("subtitle.forecast")
+    : t("subtitle.health");
 
   return (
-    <PageContainer className="px-0 min-h-screen">
-
-      {/* Insights — the one destination for Overview · Trends · Net worth · Forecast ·
-          Health. Not sticky on Forecast, which pins its own month bar instead. */}
-      <div
-        className={activeTab === "prognose" ? "bg-background px-4 pt-[calc(var(--sat)+18px)] pb-3 space-y-3" : "sticky top-0 z-40 bg-background px-4 pt-[calc(var(--sat)+18px)] pb-3 space-y-3"}
-      >
+    <PageShell
+      header={
         <PageHeading
+          className="w-full"
           title={t("title")}
-          subtitle={activeTab === "prognose" || activeTab === "health" || activeTab === "vermogen" ? undefined : periodLabel}
+          subtitle={
+            <>
+              {/* Phones keep the period line under the title on Overview and Trends; desktop names the tab. */}
+              <span className="lg:hidden">{activeTab === "rapporten" || activeTab === "trends" ? periodLabel : null}</span>
+              <span className="hidden lg:inline">{subtitle}</span>
+            </>
+          }
           actions={
             <>
-              {activeTab === "rapporten" && (
-                <DateRangePicker from={from} to={to} financialMonth={financialMonth} iconOnly />
-              )}
+              {activeTab === "rapporten" && <DateRangePicker from={from} to={to} financialMonth={financialMonth} iconOnly />}
               <SearchButton />
             </>
           }
         />
+      }
+      bodyClassName="pb-[calc(6rem+var(--sab))] lg:pb-9"
+    >
+      {/* Insights — the one destination for Overview · Trends · Net worth · Forecast ·
+          Health. The tab row stays pinned while the page scrolls, except on Forecast,
+          which pins its own month bar instead. */}
+      <div className={activeTab === "prognose" ? "-mt-1" : "sticky top-[var(--sat)] z-30 -mx-5 -mt-1 bg-bg px-5 py-2 lg:-mx-9 lg:px-9"}>
         <ReportsTabs active={activeTab} />
       </div>
 
@@ -93,6 +109,6 @@ export default async function ReportsPage({
         />
       )}
       {activeTab === "health" && <HealthTab />}
-    </PageContainer>
+    </PageShell>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { VariablePrognoseOverrideBtn } from "./variable-override-btn";
 import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
@@ -21,11 +22,12 @@ export function CategoryCard({
   subcategories: VariableBudgetRowData[];
   month: string;
 }) {
+  const t = useTranslations("insights.forecast");
   const [open, setOpen] = useState(false);
   const hasChildren = subcategories.length > 0;
 
   return (
-    <div className="rounded-2xl bg-[var(--dialog-background)] overflow-hidden">
+    <div className="overflow-hidden rounded-row border border-line bg-surface">
       <VariablePrognoseOverrideBtn
         categoryId={category.id}
         categoryName={category.name}
@@ -33,7 +35,7 @@ export function CategoryCard({
         defaultAmount={category.budgetAmount}
         overrideAmount={category.overrideAmount}
         icon={<Icon iconKey={category.icon} color={category.color} round size="sm" />}
-        subtitle={`${formatEur(category.effectiveAmount)}/mnd`}
+        subtitle={t("perMonth", { amount: formatEur(category.effectiveAmount) })}
         nested
         collapseToggle={hasChildren ? { open, onToggle: () => setOpen((v) => !v) } : undefined}
       />
@@ -48,7 +50,7 @@ export function CategoryCard({
               defaultAmount={child.budgetAmount}
               overrideAmount={child.overrideAmount}
               icon={<Icon iconKey={child.icon} color={child.color} round size="xs" />}
-              subtitle={`${formatEur(child.effectiveAmount)}/mnd`}
+              subtitle={t("perMonth", { amount: formatEur(child.effectiveAmount) })}
               nested
             />
           ))}

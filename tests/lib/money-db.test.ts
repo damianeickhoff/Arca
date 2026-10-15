@@ -391,3 +391,16 @@ describe("open-advances: getOpenAdvances", () => {
     ]);
   });
 });
+
+describe("month-comparison: getCurrentVsPreviousMonth", () => {
+  it("compares the month in progress with the one before, and finds the biggest category move", async () => {
+    const { getCurrentVsPreviousMonth } = await import("@/lib/month-comparison");
+    const r = await getCurrentVsPreviousMonth(config);
+    // March: salary + Piet (the Tikkie is a reimbursement); spend leaves out the transfer and savings.
+    expect(r.current).toMatchObject({ month: "2026-03", income: 2550, expense: 120 + 30 + 103 + 60 + 150 + 50 + 45 });
+    expect(r.previous).toMatchObject({ month: "2026-02", income: 2500, expense: 300 });
+    expect(r.previous.savingsRate).toBeCloseTo(0.88, 5);
+    // Groceries: 300 in February against 120 + the 20 split share in March.
+    expect(r.biggest).toMatchObject({ name: "T Groceries", now: 140, prev: 300 });
+  });
+});

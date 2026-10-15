@@ -17,16 +17,16 @@ export function TypeSection({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-2xl bg-[var(--dialog-content-background)] overflow-hidden">
+    <div className="overflow-hidden rounded-row bg-surface-2">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center justify-between w-full px-5 py-4"
+        className="flex w-full items-center justify-between px-4 py-3.5"
       >
-        <h2 className="font-semibold text-sm">{title}</h2>
-        <ChevronDown className={cn("size-4 text-foreground/60 transition-transform", open && "rotate-180")} />
+        <h2 className="text-sm font-semibold text-ink">{title}</h2>
+        <ChevronDown className={cn("size-4 text-ink-3 transition-transform", open && "rotate-180")} />
       </button>
-      {open && <div className="px-5 pb-5 space-y-2 ">{children}</div>}
+      {open && <div className="space-y-2 px-3 pb-3">{children}</div>}
     </div>
   );
 }

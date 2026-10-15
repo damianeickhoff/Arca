@@ -25,9 +25,10 @@ export function ReportsTabs({ active }: { active: string }) {
 
   return (
     <>
-      {/* Scrolls sideways on the narrowest phones rather than squeezing five labels. */}
-      <div className="-mx-4 overflow-x-auto px-4 scrollbar-hide">
-        <div role="tablist" className="inline-flex gap-0.5 rounded-full bg-surface-2 p-[3px]">
+      {/* V5: a row of chips. Scrolls sideways on the narrowest phones rather than
+          squeezing five labels. */}
+      <div className="-mx-5 overflow-x-auto px-5 scrollbar-hide lg:mx-0 lg:px-0">
+        <div role="tablist" className="inline-flex gap-2">
           {INSIGHTS_TABS.map((id) => {
             const isActive = active === id;
             return (
@@ -38,8 +39,8 @@ export function ReportsTabs({ active }: { active: string }) {
                 href={`${pathname}?tab=${id}`}
                 scroll={false}
                 className={cn(
-                  "inline-flex h-8 items-center whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors",
-                  isActive ? "bg-ink text-bg" : "text-ink-2 hover:text-ink",
+                  "inline-flex h-[34px] shrink-0 items-center whitespace-nowrap rounded-full border px-[13px] text-[13px] font-semibold transition-colors",
+                  isActive ? "border-ink bg-ink text-bg" : "border-line bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink",
                 )}
               >
                 {t(LABEL_KEY[id])}

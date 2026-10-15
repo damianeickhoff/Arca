@@ -1,20 +1,24 @@
 import { db } from "@/db";
 import { recurringItems, prognoseOverrides, savingsGoals, savingsMonthOverrides, budgetTargets, categories, variablePrognoseOverrides, goals as goalsTable, transactions, banks } from "@/db/schema";
 import { eq, and, gte, lte, gt } from "drizzle-orm";
-import { formatEur, toMonthly, pctChangeLabel, MONTH_NAMES } from "@/lib/format";
+import { getLocale, getTranslations } from "next-intl/server";
+import { formatEur, formatEurWhole, toMonthly, pctChangeLabel } from "@/lib/format";
 import type { RecurringItem, PrognoseOverride, SavingsGoal, Category } from "@/db/schema";
 import { PrognoseOverrideBtn } from "./forecast-override-btn";
 import { SavingsPrognoseOverrideBtn } from "./savings-override-btn";
-import { Icon } from "@/components/icon";
 import {
   IconTrendingUp as TrendingUp,
   IconTrendingDown as TrendingDown,
-  IconWallet as Wallet,
-  IconScaleFilled as Scale,
   IconAlertTriangleFilled as AlertTriangle,
-  IconArrowDownRight,
-  IconArrowUpRight,
 } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
+import { SPLIT_GRID } from "@/components/page-container";
+import { SectionHead } from "@/components/ui/page-heading";
+import { Stat } from "@/components/ui/stat";
+import { Pill } from "@/components/ui/pill";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { CARD } from "@/app/reports/insights-ui";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { PrognosePeriodPicker } from "./prognose-period-picker";
 import { CollapsibleSection } from "./collapsible-section";
 import { CategoryCard } from "./category-card";
@@ -25,16 +29,14 @@ import { CashFlowChart } from "./cash-flow-chart";
 import { CashFlowCalendar } from "./cash-flow-calendar";
 import { CashFlowEvents } from "./cash-flow-events";
 import { NetWorthTrendChart } from "@/app/reports/net-worth-trend-chart";
-import { StatTile, TileBadge } from "@/components/stat-tile";
 import { ChangePill } from "@/components/change-pill";
 import { getFinancialMonthConfig, getBudgetStrategy } from "@/lib/app-settings";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
-import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
+import { currentFinancialMonth } from "@/lib/date-range";
 import { computeNetWorth } from "@/lib/net-worth-snapshots";
-import { getCashFlowForecast, formatForecastDate, signedForecastEur, FORECAST_HORIZON_DAYS } from "@/lib/cash-flow-forecast";
+import { getCashFlowForecast, signedForecastEur, FORECAST_HORIZON_DAYS } from "@/lib/cash-flow-forecast";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
-import { PageContainer } from "@/components/page-container";
 import Link from "next/link";
 import { BudgetTabs } from "@/app/budget/budget-tabs";
 
@@ -42,41 +44,28 @@ export const dynamic = "force-dynamic";
 
 const EXPENSE_TYPES = ["bill", "subscription", "debt"] as const;
 
-const TYPE_LABELS: Record<string, string> = {
-  income:       "Income",
-  bill:         "Recurring bills",
-  subscription: "Subscriptions",
-  debt:         "Debts",
-  savings:      "Savings",
-};
-
+// The V5 categorical colours for the distribution donut.
 const TYPE_COLORS: Record<string, string> = {
-  bill:         "#6366f1",
-  subscription: "#a855f7",
-  debt:         "#ef4444",
-  savings:      "#14b8a6",
-  income:       "#22c55e",
-  vrij:         "#94a3b8",
-  budget:       "#f97316",
+  bill:         "var(--arca-info)",
+  subscription: "#6B5BD2",
+  debt:         "var(--arca-negative)",
+  savings:      "#1F8F8A",
+  income:       "var(--arca-positive)",
+  vrij:         "#A9A294",
+  budget:       "var(--arca-accent)",
 };
 
 // Forecast health, in the priority the cash flow section surfaces it: negative first,
 // then the low-balance warning, then healthy. Colors reuse the app's semantic tokens
 // so this matches the Budget distribution bars further down the tab.
+// The verdict's icon; its label lives at insights.forecast.status.<status>.
 const CASH_FLOW_STATUS = {
-  healthy:  { label: "Healthy",  color: "var(--color-success)", icon: TrendingUp },
-  warning:  { label: "Warning",  color: "var(--color-warning)", icon: AlertTriangle },
-  critical: { label: "Critical", color: "var(--color-danger)",  icon: TrendingDown },
+  healthy:  { icon: TrendingUp },
+  warning:  { icon: AlertTriangle },
+  critical: { icon: TrendingDown },
   // Nothing to forecast from yet — neutral, so it doesn't read as a verdict.
-  empty:    { label: "No data",  color: "var(--color-muted-foreground)", icon: TrendingUp },
+  empty:    { icon: TrendingUp },
 } as const;
-
-const FREQ_LABELS: Record<string, string> = {
-  yearly:    "jaar",
-  quarterly: "kwartaal",
-  weekly:    "week",
-  once:      "eenmalig",
-};
 
 function offsetMonth(base: string, delta: number): string {
   const [y, m] = base.split("-").map(Number);
@@ -84,9 +73,9 @@ function offsetMonth(base: string, delta: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function monthLabel(ym: string): string {
+function monthLabel(ym: string, dateLocale: string): string {
   const [y, m] = ym.split("-").map(Number);
-  return `${MONTH_NAMES[m - 1]} ${y}`;
+  return new Date(y, m - 1, 1).toLocaleDateString(dateLocale, { month: "long", year: "numeric" });
 }
 
 function buildOverrideLookup(overrides: PrognoseOverride[]): Map<string, number> {
@@ -175,7 +164,10 @@ export default async function PrognPage({
   dockAboveNav?: boolean;
 }) {
   const sp = await searchParams;
-  const [financialMonth, strategy] = await Promise.all([getFinancialMonthConfig(), getBudgetStrategy()]);
+  const [financialMonth, strategy, t, locale] = await Promise.all([getFinancialMonthConfig(), getBudgetStrategy(), getTranslations("insights.forecast"), getLocale()]);
+  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
+  const perMonth = (amount: string) => t("perMonth", { amount });
+  const freqLabel = (frequency: string) => (["yearly", "quarterly", "weekly", "once"].includes(frequency) ? t(`freq.${frequency}`) : frequency);
 
   const baseMonth = sp.month ?? currentFinancialMonth(financialMonth);
 
@@ -254,9 +246,7 @@ export default async function PrognPage({
     db.select().from(goalsTable).where(and(eq(goalsTable.goalType, "savings"), eq(goalsTable.active, true))),
   ]);
 
-  const cashFlowStatus = CASH_FLOW_STATUS[cashFlow.status];
-  const CashFlowStatusIcon = cashFlowStatus.icon;
-  const cashFlowLabel = cashFlow.hasStartingBalance ? "Current cash flow" : "Projected cash flow";
+  const CashFlowStatusIcon = CASH_FLOW_STATUS[cashFlow.status].icon;
 
   const categoriesById = new Map(allCategories.map((c) => [c.id, c]));
   const variableCats = allCategories.filter((c) => c.budgetType === "nodig" || c.budgetType === "willen" || c.budgetType === "sparen");
@@ -343,11 +333,11 @@ export default async function PrognPage({
 
   const donutSegments = [
     ...EXPENSE_TYPES
-      .filter((t) => (typeTotals[t] ?? 0) > 0)
-      .map((t) => ({ name: TYPE_LABELS[t], value: typeTotals[t] ?? 0, color: TYPE_COLORS[t] })),
-    ...(savingsTotal > 0 ? [{ name: "Savings", value: savingsTotal, color: TYPE_COLORS.savings }] : []),
-    ...(totalVariableBudget > 0 ? [{ name: "Variable expenses", value: totalVariableBudget, color: TYPE_COLORS.budget }] : []),
-    ...(vrij > 0 ? [{ name: "Vrij besteedbaar", value: vrij, color: TYPE_COLORS.vrij }] : []),
+      .filter((type) => (typeTotals[type] ?? 0) > 0)
+      .map((type) => ({ name: t(`types.${type}`), value: typeTotals[type] ?? 0, color: TYPE_COLORS[type] })),
+    ...(savingsTotal > 0 ? [{ name: t("types.savings"), value: savingsTotal, color: TYPE_COLORS.savings }] : []),
+    ...(totalVariableBudget > 0 ? [{ name: t("variableExpenses"), value: totalVariableBudget, color: TYPE_COLORS.budget }] : []),
+    ...(vrij > 0 ? [{ name: t("freeToSpend"), value: vrij, color: TYPE_COLORS.vrij }] : []),
   ];
 
   const balanceData = buildProjection(items, baseMonth, overrideLookup, 12, (m) => goals.reduce((s, g) => s + getSavingsEffective(g, m), 0), totalVariableBudget);
@@ -374,380 +364,246 @@ export default async function PrognPage({
   const wantsPct   = totalIncome > 0 ? Math.min(100, (wantsTotal  / totalIncome) * 100) : 0;
   const savingsPct = totalIncome > 0 ? Math.min(100, (savingsTot  / totalIncome) * 100) : 0;
 
-  const label         = monthLabel(baseMonth);
-  const range = financialMonthRangeByMonth(baseMonth, financialMonth);
+  const label = monthLabel(baseMonth, dateLocale);
+  const statusTone = cashFlow.status === "healthy" ? "positive" : cashFlow.status === "warning" ? "warning" : cashFlow.status === "critical" ? "negative" : "neutral";
+  const nextEvents = cashFlow.events.slice(0, 6);
+  const shortDay = (date: string) => new Date(`${date}T12:00:00`).toLocaleDateString(dateLocale, { weekday: "short", day: "numeric", month: "short" });
 
   return (
-    <PageContainer className="px-0 min-h-screen">
-
-      <div className="sticky z-40 bg-background px-4 pt-2 pb-3 space-y-2" style={{ top: stickyTop }}>
-        {!embedded && <BudgetTabs />}
-      </div>
+    // Standalone (/forecast) this is the whole page, so it brings the page gutters;
+    // inside Insights the PageShell already has them.
+    <div className={cn("flex flex-col gap-5", !embedded && "px-5 pb-28 pt-[var(--sat)] lg:px-9 lg:pt-6")}>
+      {!embedded && (
+        <div className="sticky z-40 bg-bg py-2" style={{ top: stickyTop }}>
+          <BudgetTabs />
+        </div>
+      )}
       {/* Embedded, the picker keeps the month in a cookie instead of the URL — the
           portal shares the dashboard's "/" route, so a param there would show up in
           the address bar of the whole app. See the picker's own `embedded` docs. */}
       <PrognosePeriodPicker current={baseMonth} embedded={embedded} aboveNav={dockAboveNav} />
 
-      <div className="px-4 pb-28 pt-3 space-y-3">
-
-        {/* Summary — 4 stat tiles, same grid as the Trends page */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatTile
-            label="Income"
-            value={formatEur(totalIncome)}
-            valueClassName="text-xl font-bold tabular-nums"
-            badge={<TileBadge icon={TrendingUp} color="var(--dialog-background)" />}
-            footer={incomeChange ? <ChangePill change={incomeChange} /> : "vs previous month — no data"}
-          />
-          <StatTile
-            label="Recurring bills"
-            value={formatEur(totalExpenses)}
-            valueClassName="text-xl font-bold tabular-nums"
-            badge={<TileBadge icon={TrendingDown} color="var(--dialog-background)" />}
-            footer={expensesChange ? <ChangePill change={{ ...expensesChange, up: !expensesChange.up }} /> : "vs previous month — no data"}
-          />
-          <StatTile
-            label="Free to spend incl. saves"
-            value={formatEur(totalRecurringExpenses)}
-            valueClassName="text-xl font-bold tabular-nums text"
-            badge={<TileBadge icon={Wallet} color="var(--dialog-background)" />}
-            footer={recurringExpensesChange ? <ChangePill change={{ ...recurringExpensesChange, up: !recurringExpensesChange.up }} /> : "vs previous month — no data"}
-          />
-          <StatTile
-            label="Free to spend"
-            value={formatEur(vrij)}
-            valueClassName="text-xl font-bold tabular-nums"
-            badge={<TileBadge icon={Scale} color="var(--dialog-background)" />}
-            footer={vrijChange ? <ChangePill change={vrijChange} /> : "vs previous month — no data"}
-          />
-        </div>
-
-        {/* Verdeling inkomen — same plain-card style as "Expenses per category"
-            (src/app/reports/top-expense-categories-card.tsx). */}
-        {totalIncome > 0 && (
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5">
-            <h2 className="text-sm font-semibold pb-1">Distribution of income</h2>
-            <p className="text-xs text-foreground/60 mb-2">How your income is distributed over {label}</p>
-            <ExpenseDonutChart segments={donutSegments} />
-          </div>
-        )}
-
-        {/* Projected balance — same nested two-tone shell + line chart as the Net
-            worth tab's own chart. */}
-        {totalIncome > 0 && (
-          <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
-            <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
-              <p className="text-md mb-1">Projected balance — 12 months</p>
-              <p className="text-xs text-muted-foreground mb-2">Net worth + what&apos;s owed to you, projected forward</p>
-              <NetWorthTrendChart data={balanceHistory} forecast={balanceForecast} />
-            </div>
-          </div>
-        )}
-
-        {/* ── Cash flow forecast ────────────────────────────────────────────────
-            Day-level view: where the money actually lands over the next 90 days,
-            complementing the month-level projection above. Same nested two-tone
-            chart shell as "Projected balance". */}
-        <div className="bg-[var(--dialog-content-background)] p-1 rounded-2xl">
-          <div className="rounded-b-sm rounded-t-2xl bg-[var(--dialog-background)]/60 dark:bg-[var(--dialog-background)]/30 py-2 px-4 pb-3">
-            <p className="text-md mb-1">Cash flow forecast — {FORECAST_HORIZON_DAYS} days</p>
-            <p className="text-xs text-muted-foreground mb-2">
-              {cashFlow.hasStartingBalance
-                ? "Your balance, projected forward through upcoming income and bills"
-                : "Cumulative projected cash flow — no account balance is set, so this is not a balance"}
-            </p>
-
-            <div className="flex items-baseline gap-2 mb-1">
-              <p className="text-2xl font-bold tabular-nums tracking-tight">{signedForecastEur(cashFlow.current)}</p>
-              <span className="text-xs text-foreground/50">{cashFlowLabel}</span>
-            </div>
-            <div className="flex items-center gap-2 mb-2">
-              <CashFlowStatusIcon className="size-3.5 shrink-0" style={{ color: cashFlowStatus.color }} />
-              <p className="text-xs" style={{ color: cashFlowStatus.color }}>{cashFlow.message}</p>
-            </div>
-
-            <CashFlowChart points={cashFlow.points} events={cashFlow.events} lowest={cashFlow.lowest} />
-            </div>
-
-            <div className="flex flex-wrap gap-4 mt-2 p-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full inline-block" style={{ backgroundColor: "var(--color-income)" }} />
-                Money in
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full inline-block" style={{ backgroundColor: "var(--color-expense)" }} />
-                Money out
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full inline-block bg-current" />
-                Today
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="size-2 rounded-full inline-block" style={{ backgroundColor: "var(--color-warning)" }} />
-                Lowest point
-              </span>
-            </div>
-          </div>
-        
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-          {/* Cash flow summary — same row treatment as "Budget distribution" below. */}
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4 h-full flex flex-col">
-            <div>
-              <p className="text-md font-semibold">Cash flow summary</p>
-              <p className="text-xs text-muted-foreground">
-                Next {FORECAST_HORIZON_DAYS} days, from today
-              </p>
-            </div>
-
-            {/* Main forecast */}
-            <div className="rounded-xl bg-[var(--dialog-background)] p-4">
-              <p className="text-xs text-muted-foreground">
-                {cashFlowLabel}
-              </p>
-              <p className="text-2xl font-bold tabular-nums mt-1">
-                {signedForecastEur(cashFlow.current)}
-              </p>
-
-              <div
-                className="mt-2 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
-                style={{
-                  color: cashFlowStatus.color,
-                  backgroundColor: `color-mix(in srgb, ${cashFlowStatus.color} 15%, transparent)`,
-                }}
-              >
-                {cashFlowStatus.label}
-              </div>
-            </div>
-
-            {/* Key numbers */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Lowest point</p>
-                <p className="font-semibold tabular-nums">
-                  {cashFlow.lowest ? signedForecastEur(cashFlow.lowest.amount) : "—"}
-                </p>
-                {cashFlow.lowest && (
-                  <p className="text-xs text-muted-foreground">
-                    {formatForecastDate(cashFlow.lowest.date)}
-                  </p>
+      <div className={SPLIT_GRID}>
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* The cash flow forecast: where the balance goes over the next 90 days,
+              its lowest point, the safety line and the verdict. Day-level, always
+              from today — not driven by the month picker. */}
+          <section className={cn(CARD, "flex flex-col gap-4 p-[18px] lg:px-6 lg:py-[22px]")}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-col gap-2">
+                <span className="text-[13px] font-semibold text-ink-2">{t("projectedTitle", { days: FORECAST_HORIZON_DAYS })}</span>
+                {cashFlow.lowest ? (
+                  <span className="amount text-[34px] leading-none tracking-[-0.035em] text-ink lg:text-[44px]">
+                    {t("lowest", { amount: signedForecastEur(cashFlow.lowest.amount) })}{" "}
+                    <span className="text-base font-semibold text-ink-3 lg:text-lg">{t("onDate", { date: shortDay(cashFlow.lowest.date) })}</span>
+                  </span>
+                ) : (
+                  <span className="amount text-[34px] leading-none text-ink lg:text-[44px]">{signedForecastEur(cashFlow.current)}</span>
                 )}
+                <span className="text-xs text-ink-3">
+                  {cashFlow.hasStartingBalance ? t("currentLabel") : t("projectedLabel")}: <span className="font-semibold text-ink-2">{signedForecastEur(cashFlow.current)}</span>
+                </span>
               </div>
-
-              <div className="justify-self-end text-right">
-                <p className="text-xs text-muted-foreground">Next income</p>
-                <p className="font-semibold tabular-nums text-foreground">
-                  {cashFlow.nextIncome ? formatEur(cashFlow.nextIncome.amount) : "—"}
-                </p>
-                {cashFlow.nextIncome && (
-                  <p className="text-xs text-muted-foreground">
-                    {cashFlow.nextIncome.name}
-                  </p>
-                )}
-              </div>
+              <Pill tone={statusTone} icon={<CashFlowStatusIcon />}>
+                {t(`status.${cashFlow.status}`)}
+              </Pill>
             </div>
-
-            {/* Income / expenses */}
-            <div className="flex justify-between text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground">Expected income</p>
-                <p className="font-medium text-foreground">
-                  {formatEur(cashFlow.totalIncome)}
-                </p>
-              </div>
-
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Expected expenses</p>
-                <p className="font-medium text-foreground">
-                  {formatEur(cashFlow.totalExpenses)}
-                </p>
-              </div>
+            <p className="text-[13px] text-ink-2">{cashFlow.message}</p>
+            <p className="text-xs text-ink-3">{cashFlow.hasStartingBalance ? t("balanceNote") : t("cumulativeNote")}</p>
+            <CashFlowChart points={cashFlow.points} events={cashFlow.events} lowest={cashFlow.lowest} threshold={cashFlow.warningThreshold} />
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              <span className="mono-label inline-flex items-center gap-1.5 text-[10px] text-ink"><span className="h-0.5 w-3 rounded-full bg-ink" />{t("legend.expected")}</span>
+              <span className="mono-label inline-flex items-center gap-1.5 text-[10px] text-negative"><span className="w-3 border-t-2 border-dashed border-negative" />{t("legend.safety", { amount: formatEurWhole(cashFlow.warningThreshold) })}</span>
+              <span className="mono-label inline-flex items-center gap-1.5 text-[10px]"><span className="size-2 rounded-full bg-warning" />{t("legend.lowest")}</span>
+              <span className="mono-label inline-flex items-center gap-1.5 text-[10px]"><span className="size-2 rounded-full bg-positive" />{t("legend.in")}</span>
+              <span className="mono-label inline-flex items-center gap-1.5 text-[10px]"><span className="size-2 rounded-full bg-ink" />{t("legend.today")}</span>
             </div>
+          </section>
+
+          {/* The cash flow figures for the same 90 days. */}
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5 lg:gap-3">
+            <Stat
+              label={t("nextIncome")}
+              value={cashFlow.nextIncome ? `${formatEurWhole(cashFlow.nextIncome.amount)} · ${new Date(`${cashFlow.nextIncome.date}T12:00:00`).toLocaleDateString(dateLocale, { day: "numeric", month: "short" })}` : "—"}
+              tone="positive"
+            />
+            <Stat label={t("expectedIn")} value={formatEur(cashFlow.totalIncome)} />
+            <Stat label={t("expectedOut")} value={formatEur(cashFlow.totalExpenses)} />
+            <Stat label={t("netChange")} value={`${cashFlow.netChange >= 0 ? "+" : "-"}${formatEur(Math.abs(cashFlow.netChange))}`} tone={cashFlow.netChange >= 0 ? "positive" : "negative"} />
+            <Stat label={t("savingsPlanned")} value={formatEur(savingsTotal)} tone="accent" className="col-span-2 md:col-span-1" />
           </div>
 
-          {/* Income vs expenses over the horizon */}
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4 h-full flex flex-col">
-            <div>
-              <p className="text-md mb-1">Expected income vs expenses</p>
-              <p className="text-xs text-muted-foreground">
-                Everything scheduled in the forecast period
-              </p>
+          {/* The selected month's plan — the month picker drives everything from here down. */}
+          <section className={cn(CARD, "flex flex-col gap-3 p-[18px] lg:px-5")}>
+            <SectionHead title={t("monthPlan", { month: label })} size="sm" />
+            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+              <PlanTile label={t("plan.income")} value={formatEur(totalIncome)} change={incomeChange} noData={t("noPrevious")} />
+              <PlanTile label={t("plan.recurring")} value={formatEur(totalExpenses)} change={expensesChange ? { ...expensesChange, up: !expensesChange.up } : null} noData={t("noPrevious")} />
+              <PlanTile label={t("plan.freeInclSaves")} value={formatEur(totalRecurringExpenses)} change={recurringExpensesChange ? { ...recurringExpensesChange, up: !recurringExpensesChange.up } : null} noData={t("noPrevious")} />
+              <PlanTile label={t("plan.free")} value={formatEur(vrij)} change={vrijChange} noData={t("noPrevious")} />
             </div>
+          </section>
 
-            <div className="flex flex-col gap-3 flex-1 justify-center">
-              {[
-                { label: "Income", amount: cashFlow.totalIncome, color: "var(--color-income)", icon: IconArrowUpRight },
-                { label: "Expenses", amount: cashFlow.totalExpenses, color: "#c8cbd0", icon: IconArrowDownRight },
-              ].map((bar) => {
-                const peak = Math.max(cashFlow.totalIncome, cashFlow.totalExpenses, 1);
-                const BarIcon = bar.icon;
+          {totalIncome > 0 && (
+            <div className="grid gap-5 xl:grid-cols-2">
+              <section className={cn(CARD, "flex flex-col gap-3 p-[18px] lg:px-5")}>
+                <SectionHead title={t("distribution")} size="sm" />
+                <p className="-mt-1 text-xs text-ink-3">{t("distributionNote", { month: label })}</p>
+                <ExpenseDonutChart segments={donutSegments} />
+              </section>
 
-                return (
-                  <div key={bar.label}>
-                    <div className="flex items-center gap-2.5 min-w-0 mb-1.5">
-                      <BarIcon
-                        className="size-3.5 shrink-0"
-                        style={{ color: bar.color }}
-                      />
-                      <span className="text-sm font-medium truncate">
-                        {bar.label}
-                      </span>
-                      <span
-                        className="text-sm font-semibold tabular-nums shrink-0 ml-auto"
-                        style={{ color: bar.color }}
-                      >
-                        {formatEur(bar.amount)}
-                      </span>
-                    </div>
-
-                    <div className="h-2 rounded-full overflow-hidden bg-foreground/5">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${(bar.amount / peak) * 100}%`,
-                          backgroundColor: bar.color,
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-2.5 pt-4 mt-auto border-t border-border/40">
-              <span className="text-md font-medium">Net change</span>
-              <span
-                className="text-md font-semibold tabular-nums ml-auto text-foreground"
-              >
-                {cashFlow.netChange >= 0 ? "+" : "−"}
-                {formatEur(Math.abs(cashFlow.netChange))}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Cash flow calendar + upcoming events — collapsed by default, matching the
-            Categories / Recurring items sections at the bottom of this tab. */}
-        <CollapsibleSection title="Cash flow calendar">
-            <p className="text-xs text-muted-foreground mb-4">Days with money moving in or out</p>
-            <CashFlowCalendar points={cashFlow.points} month={baseMonth}/>
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Upcoming cash flow">
-          <CashFlowEvents
-            events={cashFlow.events}
-            transactions={cashFlowTxRows as TransactionDetail[]}
-            categories={allCategories}
-            savingsGoals={cashFlowSavingsGoals}
-          />
-        </CollapsibleSection>
-
-        {/* Budget health — verdeling style matching debt page */}
-        {totalIncome > 0 && (
-          <div className="rounded-2xl bg-[var(--dialog-content-background)] p-5 space-y-4">
-            <p className="text-md mb-1">Budget distribution</p>
-            <p className="text-xs text-muted-foreground mb-2">Your budget is currently set to ({strategy.nodig}/{strategy.willen}/{strategy.sparen})</p>
-            <div className="h-2 rounded-full overflow-hidden flex gap-0.5 bg-foreground/5 mt-3">
-              {needsTotal > 0 && <div className="rounded-full" style={{ width: `${needsPct}%`, backgroundColor: "var(--color-danger)" }} />}
-              {wantsTotal > 0 && <div className="rounded-full" style={{ width: `${wantsPct}%`, backgroundColor: "var(--color-warning)" }} />}
-              {savingsTot > 0 && <div className="rounded-full" style={{ width: `${savingsPct}%`, backgroundColor: "var(--color-success)" }} />}
-            </div>
-            <div className="flex flex-col gap-2.5">
-              {[
-                { label: "Needs", amount: needsTotal, pct: needsPct, target: strategy.nodig, color: "var(--color-danger)" },
-                { label: "Wants", amount: wantsTotal, pct: wantsPct, target: strategy.willen, color: "var(--color-warning)" },
-                { label: "Savings", amount: savingsTot, pct: savingsPct, target: strategy.sparen, color: "var(--color-success)" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center gap-2.5 min-w-0">
-                  <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                  <span className="text-sm font-medium truncate">{item.label}</span>
-                  <span className="text-sm font-semibold tabular-nums shrink-0 ml-auto">{formatEur(item.amount)}</span>
-                  <span className={`text-sm tabular-nums shrink-0 w-10 text-right font-medium ${item.pct > item.target ? "text-red-500" : "text-foreground/60"}`}>{item.pct.toFixed(0)}%</span>
-                  <span className="text-xs text-foreground/40 tabular-nums shrink-0">/{item.target}%</span>
+              {/* Needs / wants / savings against the budget strategy. */}
+              <section className={cn(CARD, "flex flex-col gap-3 p-[18px] lg:px-5")}>
+                <SectionHead title={t("budgetDistribution")} size="sm" />
+                <p className="-mt-1 text-xs text-ink-3">{t("strategyNote", { needs: strategy.nodig, wants: strategy.willen, savings: strategy.sparen })}</p>
+                <div className="flex h-2.5 gap-[3px] overflow-hidden rounded-full bg-surface-2">
+                  {needsTotal > 0 && <div className="rounded-full" style={{ width: `${needsPct}%`, backgroundColor: "var(--arca-info)" }} />}
+                  {wantsTotal > 0 && <div className="rounded-full" style={{ width: `${wantsPct}%`, backgroundColor: "var(--arca-accent)" }} />}
+                  {savingsTot > 0 && <div className="rounded-full" style={{ width: `${savingsPct}%`, backgroundColor: "var(--arca-positive)" }} />}
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Categories — the real budgeted-category tree (Settings → Categories), each
-            parent category its own card (same shape as the category selector) with a
-            chevron toggling its subcategories. */}
-        {variableBudgetRows.length > 0 && (
-          <CollapsibleSection title="Categories" total={totalVariableBudget}>
-            <div className="space-y-2">
-              {variableTopLevel.map((cat) => (
-                <CategoryCard key={cat.id} category={cat} subcategories={variableChildrenByParentId.get(cat.id) ?? []} month={baseMonth} />
-              ))}
-            </div>
-          </CollapsibleSection>
-        )}
-
-        {/* Recurring items — grouped by real category (not the old hardcoded type
-            labels), each item its own tappable card. Collapsible as a whole,
-            separately from the Categories tree above. */}
-        {(incomeItems.length > 0 || expenseItems.length > 0 || goals.length > 0) && (
-          <CollapsibleSection title="Recurring items">
-            <div className="space-y-2">
-              {incomeItems.length > 0 && (
-                <TypeSection title={TYPE_LABELS.income}>
-                  {groupByCategory(incomeItems, categoriesById, "Other income").map((group) => (
-                    <CategoryGroup key={group.key} name={group.name}>
-                      {group.items.map((item) => <ItemCard key={item.id} item={item} month={baseMonth} overrideLookup={overrideLookup} />)}
-                    </CategoryGroup>
+                <div className="flex flex-col gap-2.5">
+                  {[
+                    { key: "needs", amount: needsTotal, pct: needsPct, target: strategy.nodig, color: "var(--arca-info)" },
+                    { key: "wants", amount: wantsTotal, pct: wantsPct, target: strategy.willen, color: "var(--arca-accent)" },
+                    { key: "savings", amount: savingsTot, pct: savingsPct, target: strategy.sparen, color: "var(--arca-positive)" },
+                  ].map((item) => (
+                    <div key={item.key} className="flex min-w-0 items-center gap-2.5">
+                      <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="truncate text-sm font-semibold text-ink">{t(`strategy.${item.key}`)}</span>
+                      <span className="ml-auto shrink-0 text-sm font-semibold tabular-nums text-ink">{formatEur(item.amount)}</span>
+                      <span className={cn("w-10 shrink-0 text-right text-sm font-semibold tabular-nums", item.pct > item.target ? "text-negative" : "text-ink-2")}>{item.pct.toFixed(0)}%</span>
+                      <span className="shrink-0 text-xs tabular-nums text-ink-3">/{item.target}%</span>
+                    </div>
                   ))}
-                </TypeSection>
-              )}
-              {EXPENSE_TYPES.map((type) => {
-                const typeItems = expenseItems.filter((i) => i.type === type);
-                if (typeItems.length === 0) return null;
-                return (
-                  <TypeSection key={type} title={TYPE_LABELS[type]}>
-                    {groupByCategory(typeItems, categoriesById, `Other ${TYPE_LABELS[type].toLowerCase()}`).map((group) => (
+                </div>
+              </section>
+            </div>
+          )}
+
+          {/* Projected balance — net worth projected forward month by month. */}
+          {totalIncome > 0 && (
+            <section className={cn(CARD, "flex flex-col gap-2 p-[18px] lg:px-5")}>
+              <SectionHead title={t("projectedBalance")} size="sm" />
+              <p className="-mt-1 text-xs text-ink-3">{t("projectedBalanceNote")}</p>
+              <NetWorthTrendChart data={balanceHistory} forecast={balanceForecast} />
+            </section>
+          )}
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5">
+          {/* What is coming — the first events of the forecast. */}
+          <section data-tip-anchor="insightsComingUp" className={cn(CARD, "flex flex-col gap-1.5 px-[18px] py-4 lg:px-5")}>
+            <SectionHead title={t("comingUp")} size="sm" link={t("calendar")} href="#forecast-calendar" />
+            {nextEvents.length === 0 ? (
+              <p className="py-2 text-[13px] text-ink-3">{t("nothingScheduled")}</p>
+            ) : (
+              nextEvents.map((e) => (
+                <div key={e.key} className="flex min-h-[52px] items-center gap-3">
+                  <CategoryIcon icon={e.icon} color={e.iconColor} size="sm" />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-sm font-semibold text-ink">{e.name}</span>
+                    <span className="text-xs text-ink-3">{shortDay(e.date)}{e.kind === "recurring" ? ` · ${t("projected")}` : ""}</span>
+                  </span>
+                  <span className={cn("shrink-0 text-sm font-semibold tabular-nums", e.amount >= 0 ? "text-positive" : "text-ink")}>
+                    {e.amount >= 0 ? "+" : "-"}
+                    {formatEur(Math.abs(e.amount))}
+                  </span>
+                </div>
+              ))
+            )}
+            <p className="pt-1.5 text-xs leading-[1.5] text-ink-3">{t("comingUpNote")}</p>
+          </section>
+
+          <AnchoredTip id="insightsComingUp" anchor="insightsComingUp" active={nextEvents.length > 0} />
+
+          {/* Cash flow calendar + upcoming events — collapsed by default, matching the
+              Categories / Recurring items sections below. */}
+          <CollapsibleSection title={t("calendarTitle")} id="forecast-calendar">
+            <p className="mb-4 text-xs text-ink-3">{t("calendarNote")}</p>
+            <CashFlowCalendar points={cashFlow.points} month={baseMonth} />
+          </CollapsibleSection>
+
+          <CollapsibleSection title={t("upcomingTitle")}>
+            <CashFlowEvents
+              events={cashFlow.events}
+              transactions={cashFlowTxRows as TransactionDetail[]}
+              categories={allCategories}
+              savingsGoals={cashFlowSavingsGoals}
+            />
+          </CollapsibleSection>
+
+          {/* Categories — the budgeted-category tree, each parent its own card with a
+              chevron toggling its subcategories; tap one to override it for the month. */}
+          {variableBudgetRows.length > 0 && (
+            <CollapsibleSection title={t("categories")} total={totalVariableBudget}>
+              <div className="space-y-2">
+                {variableTopLevel.map((cat) => (
+                  <CategoryCard key={cat.id} category={cat} subcategories={variableChildrenByParentId.get(cat.id) ?? []} month={baseMonth} />
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* Recurring items — grouped by real category, each item its own tappable card
+              (tap to change the amount for this month only). */}
+          {(incomeItems.length > 0 || expenseItems.length > 0 || goals.length > 0) && (
+            <CollapsibleSection title={t("recurringItems")}>
+              <div className="space-y-2">
+                {incomeItems.length > 0 && (
+                  <TypeSection title={t("types.income")}>
+                    {groupByCategory(incomeItems, categoriesById, t("otherIncome")).map((group) => (
                       <CategoryGroup key={group.key} name={group.name}>
-                        {group.items.map((item) => <ItemCard key={item.id} item={item} month={baseMonth} overrideLookup={overrideLookup} />)}
+                        {group.items.map((item) => <ItemCard key={item.id} item={item} month={baseMonth} overrideLookup={overrideLookup} perMonth={perMonth} freqLabel={freqLabel} />)}
                       </CategoryGroup>
                     ))}
                   </TypeSection>
-                );
-              })}
-              {goals.length > 0 && (
-                <TypeSection title="Savings">
-                  {goals.map((goal) => (
-                    <SavingsGoalCard key={goal.id} goal={goal} month={baseMonth} savingsOverrideLookup={savingsOverrideLookup} />
-                  ))}
-                </TypeSection>
-              )}
+                )}
+                {EXPENSE_TYPES.map((type) => {
+                  const typeItems = expenseItems.filter((i) => i.type === type);
+                  if (typeItems.length === 0) return null;
+                  return (
+                    <TypeSection key={type} title={t(`types.${type}`)}>
+                      {groupByCategory(typeItems, categoriesById, t("otherOf", { type: t(`types.${type}`).toLowerCase() })).map((group) => (
+                        <CategoryGroup key={group.key} name={group.name}>
+                          {group.items.map((item) => <ItemCard key={item.id} item={item} month={baseMonth} overrideLookup={overrideLookup} perMonth={perMonth} freqLabel={freqLabel} />)}
+                        </CategoryGroup>
+                      ))}
+                    </TypeSection>
+                  );
+                })}
+                {goals.length > 0 && (
+                  <TypeSection title={t("types.savings")}>
+                    {goals.map((goal) => (
+                      <SavingsGoalCard key={goal.id} goal={goal} month={baseMonth} savingsOverrideLookup={savingsOverrideLookup} perMonth={perMonth} />
+                    ))}
+                  </TypeSection>
+                )}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {items.length === 0 && goals.length === 0 && (
+            <div className="rounded-card border border-dashed border-line p-8 text-center text-[13px] text-ink-3">
+              <p className="mb-1">{t("noItems")}</p>
+              <Link href="/settings?tab=recurring" className="font-semibold text-mustard-strong hover:underline">
+                {t("manageRecurring")}
+              </Link>
             </div>
-          </CollapsibleSection>
-        )}
-
-        {items.length === 0 && goals.length === 0 && (
-          <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
-            <p className="mb-1">No active fixed items found.</p>
-            <Link href="/settings?tab=recurring" className="text-primary hover:underline">
-              Admin vaste kosten →
-            </Link>
-          </div>
-        )}
-
+          )}
+        </div>
       </div>
-    </PageContainer>
+    </div>
   );
 }
 
-// ─── Cash flow summary row ──────────────────────────────────────────────────────
-// Same shape as the Budget distribution rows: label left, value pushed right with
-// ml-auto, optional muted hint under the value.
+// ─── Month plan tile ────────────────────────────────────────────────────────────
 
-function CashFlowRow({ label, value, hint, color }: { label: string; value: string; hint?: string; color?: string }) {
+function PlanTile({ label, value, change, noData }: { label: string; value: string; change: { label: string; up: boolean } | null; noData: string }) {
   return (
-    <div className="flex items-center gap-2.5 min-w-0">
-      <span className="text-sm font-medium truncate">{label}</span>
-      <span className="ml-auto shrink-0 text-right">
-        <span className="block text-sm font-semibold tabular-nums" style={color ? { color } : undefined}>{value}</span>
-        {hint && <span className="block text-xs text-foreground/40">{hint}</span>}
-      </span>
+    <div className="flex min-w-0 flex-col gap-1 rounded-tile bg-surface-2 px-3.5 py-3">
+      <span className="mono-label truncate text-[10px]">{label}</span>
+      <span className="amount truncate text-[17px] tabular-nums text-ink">{value}</span>
+      {change ? <ChangePill change={change} /> : <span className="truncate text-[11px] text-ink-3">{noData}</span>}
     </div>
   );
 }
@@ -755,11 +611,13 @@ function CashFlowRow({ label, value, hint, color }: { label: string; value: stri
 // ─── Item card ──────────────────────────────────────────────────────────────────
 
 function ItemCard({
-  item, month, overrideLookup,
+  item, month, overrideLookup, perMonth, freqLabel,
 }: {
   item: RecurringItem & { icon: string | null; iconColor: string | null; iconBackground?: string | null };
   month: string;
   overrideLookup: Map<string, number>;
+  perMonth: (amount: string) => string;
+  freqLabel: (frequency: string) => string;
 }) {
   const defaultMonthly = toMonthly(item.amount, item.frequency);
   const overrideKey    = `${item.id}:${month}`;
@@ -774,12 +632,12 @@ function ItemCard({
       month={month}
       defaultAmount={defaultMonthly}
       overrideAmount={overrideAmount}
-      icon={<Icon iconKey={item.icon} color={item.iconColor} background={item.iconBackground} round size="sm" />}
+      icon={<CategoryIcon icon={item.icon} color={item.iconColor} size="sm" />}
       subtitle={
         item.amount || overrideAmount !== null ? (
           <>
-            {formatEur(effectiveMonthly)}/mnd
-            {isNonMonthly && ` · ${formatEur(item.amount!)} /${FREQ_LABELS[item.frequency] ?? item.frequency}`}
+            {perMonth(formatEur(effectiveMonthly))}
+            {isNonMonthly && ` · ${formatEur(item.amount!)} /${freqLabel(item.frequency)}`}
           </>
         ) : "—"
       }
@@ -789,10 +647,11 @@ function ItemCard({
 
 // ─── Savings goal card ────────────────────────────────────────────────────────
 
-function SavingsGoalCard({ goal, month, savingsOverrideLookup }: {
+function SavingsGoalCard({ goal, month, savingsOverrideLookup, perMonth }: {
   goal: SavingsGoal;
   month: string;
   savingsOverrideLookup: Map<string, number>;
+  perMonth: (amount: string) => string;
 }) {
   const key = `${goal.id}:${month}`;
   const overrideAmount = savingsOverrideLookup.has(key) ? savingsOverrideLookup.get(key)! : null;
@@ -804,8 +663,8 @@ function SavingsGoalCard({ goal, month, savingsOverrideLookup }: {
       month={month}
       defaultAmount={goal.monthlyContribution ?? 0}
       overrideAmount={overrideAmount}
-      icon={<Icon iconKey={goal.icon ?? "IconPigFilled"} color={goal.color ?? TYPE_COLORS.savings} round size="sm" />}
-      subtitle={`${formatEur(effective)}/mnd`}
+      icon={<CategoryIcon icon={goal.icon ?? "IconPigFilled"} color={goal.color ?? TYPE_COLORS.savings} size="sm" />}
+      subtitle={perMonth(formatEur(effective))}
     />
   );
 }
