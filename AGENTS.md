@@ -13,6 +13,9 @@ primitives in `src/components/page-container.tsx`:
 
 - `<PageShell header={…}>` for every page (phone 20px gutters; desktop 84px header row,
   36px side padding, `4px 36px 36px` content padding, 20px between sections).
+- `SPLIT_GRID` (right column one third, min 380px) or `SPLIT_GRID_WIDE` (two fifths,
+  min 460px, for a detail panel beside a list) for two-column desktop pages. Never a
+  fixed-width right column: on 1920px screens it leaves the main column stretched.
 - `PAGE_COLUMN` for in-flow elements, `FULLSCREEN_OVERLAY` for `fixed inset-0`
   page-like overlays, `SHEET_COLUMN` / `SHEET_FIXED` for sheets, dialogs, tips and
   docked bars.

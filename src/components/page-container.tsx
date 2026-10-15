@@ -23,6 +23,19 @@ import { cn } from "@/lib/utils";
 /** In-flow page width: everything next to the sidebar, no cap. */
 export const PAGE_COLUMN = "w-full";
 
+/**
+ * The desktop two-column page layout: a main column plus a right column that grows with
+ * the screen instead of staying a fixed width, so wide screens (1920px and up) don't leave
+ * one stretched main column. Phones stack. Pick one; never hand-roll `grid-cols-[…_380px]`.
+ *   • SPLIT_GRID       — right column one third of the space, at least 380px (Home, Plan).
+ *   • SPLIT_GRID_WIDE  — right column two fifths, at least 460px, for a detail panel next
+ *                        to a list (Activity).
+ */
+export const SPLIT_GRID =
+  "flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(380px,1fr)] lg:items-start";
+export const SPLIT_GRID_WIDE =
+  "flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(460px,2fr)] lg:items-start";
+
 /** For `fixed inset-0` / `fixed inset-x-0` page-like overlays: start right of the sidebar. */
 export const FULLSCREEN_OVERLAY = "lg:left-60";
 

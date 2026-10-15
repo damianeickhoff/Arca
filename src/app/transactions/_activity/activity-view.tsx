@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { IconAdjustmentsHorizontal, IconCamera, IconFileUpload, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { SPLIT_GRID_WIDE } from "@/components/page-container";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { InkLineChart } from "@/components/ui/ink-line-chart";
 import { PageHeading } from "@/components/ui/page-heading";
@@ -318,7 +319,7 @@ export function ActivityView({
   };
 
   return (
-    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_460px] lg:items-start">
+    <div className={SPLIT_GRID_WIDE}>
       {/* Left: chips, count, entry tiles, search, list */}
       <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-3.5">
         <div className="order-1 flex items-center gap-3 lg:order-none">
