@@ -214,7 +214,7 @@ function SummaryCard({ income, expense, sparkline }: { income: number; expense: 
   const net = income - expense;
   const fig = "amount text-[22px] tabular-nums";
   return (
-    <div className={cn(CARD, "px-[18px] py-3.5 lg:flex lg:h-full lg:items-center lg:px-5 lg:py-0")}>
+    <div className={cn(CARD, "px-[18px] py-3.5 lg:flex lg:items-center lg:px-5")}>
       <div className="flex w-full items-center gap-3.5 lg:grid lg:grid-cols-3 lg:gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="mono-label">{t("in")}</span>
@@ -385,21 +385,29 @@ export function ActivityView({
   }, [selectedRowId]);
 
   return (
-    // Desktop: the page itself never scrolls. Chips on top, then a 2×2 grid on the wide
-    // split columns — link tiles | In/Out/Net (68px), list | transaction (the rest of the
-    // viewport, equal heights, each scrolling inside). Phones: one column, natural
+    // Desktop: the page itself never scrolls. One grid on the wide split columns, three rows:
+    //   chips             | In / Out / Net
+    //   link tiles (68px) | transaction ─┐ spans both rows, so it is exactly as tall
+    //   list              |              ┘ as the tiles and the list together
+    // The list and the transaction scroll inside their cards. Phones: one column, natural
     // height, with room at the bottom for the docked search bar.
-    <div className="flex flex-col gap-5 pb-[var(--bottom-bar-clearance)] lg:h-[calc(100dvh-124px-var(--nav-clearance))] lg:min-h-[560px] lg:gap-3.5 lg:pb-0">
-      <div className="order-1 flex items-center gap-3">
+    <div
+      className={cn(
+        "flex flex-col gap-5 pb-[var(--bottom-bar-clearance)] lg:grid lg:h-[calc(100dvh-124px-var(--nav-clearance))] lg:min-h-[560px] lg:grid-rows-[auto_68px_minmax(0,1fr)] lg:gap-x-5 lg:gap-y-3.5 lg:pb-0",
+        SPLIT_COLUMNS_WIDE,
+      )}
+    >
+      {/* Row 1, left: the filter chips and the result count */}
+      <div className="order-1 flex items-center gap-3 lg:col-start-1 lg:row-start-1 lg:self-center">
         <div className="min-w-0 flex-1">
           <TransactionFilterBar {...filters} />
         </div>
         <span className="hidden shrink-0 text-[13px] text-ink-3 lg:inline">{t("results", { count: filteredCount })}</span>
       </div>
 
-      <div className={cn("contents lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[68px_minmax(0,1fr)] lg:gap-x-5 lg:gap-y-3.5", SPLIT_COLUMNS_WIDE)}>
-        {/* Row 1, left: the link tiles */}
-        <div className="order-3 grid grid-cols-1 gap-2 empty:hidden lg:order-none lg:grid-cols-2 lg:gap-3">
+      <div className="contents">
+        {/* Row 2, left: the link tiles */}
+        <div className="order-3 grid grid-cols-1 gap-2 empty:hidden lg:order-none lg:col-start-1 lg:row-start-2 lg:grid-cols-2 lg:gap-3">
           {tiles.upcoming && (
             <LinkTile
               href="/transactions/upcoming"
@@ -419,13 +427,13 @@ export function ActivityView({
           )}
         </div>
 
-        {/* Row 1, right: In / Out / Net */}
-        <div className="order-2 lg:order-none">
+        {/* Row 1, right: In / Out / Net, level with the chips */}
+        <div className="order-2 lg:order-none lg:col-start-2 lg:row-start-1">
           <SummaryCard income={income} expense={expense} sparkline={sparkline} />
         </div>
 
-        {/* Row 2, left: the list, scrolling inside its card on desktop */}
-        <div className="relative order-4 lg:order-none lg:min-h-0 lg:overflow-hidden lg:rounded-card lg:border lg:border-line lg:bg-surface lg:shadow-card">
+        {/* Row 3, left: the list, scrolling inside its card on desktop */}
+        <div className="relative order-4 lg:order-none lg:col-start-1 lg:row-start-3 lg:min-h-0 lg:overflow-hidden lg:rounded-card lg:border lg:border-line lg:bg-surface lg:shadow-card">
           <div className="lg:h-full lg:overflow-y-auto lg:px-[22px] lg:pb-10 lg:pt-4 lg:[scrollbar-width:thin]">
             {filteredCount === 0 ? (
               <div className={cn(CARD, "flex flex-col items-center gap-4 px-6 py-14 text-center lg:border-0 lg:shadow-none")}>
@@ -456,9 +464,9 @@ export function ActivityView({
           <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-12 rounded-b-card bg-gradient-to-b from-transparent to-surface lg:block" />
         </div>
 
-        {/* Row 2, right: the transaction (desktop) */}
+        {/* Rows 2–3, right: the transaction (desktop), as tall as the tiles + the list */}
         {isDesktop && (
-          <div className={cn(CARD, "min-h-0 overflow-hidden")}>
+          <div className={cn(CARD, "min-h-0 overflow-hidden lg:col-start-2 lg:row-span-2 lg:row-start-2")}>
             {desktopRow ? (
               <TransactionDetailPanel
                 key={desktopRow.id}
