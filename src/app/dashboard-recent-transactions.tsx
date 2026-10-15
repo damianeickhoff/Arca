@@ -93,7 +93,7 @@ export function DashboardRecentTransactions({
                 type="button"
                 onClick={() => setDetailRow(t)}
                 data-tip-anchor={t.id === firstRowId ? "transactionRow" : undefined}
-                className="flex min-h-[58px] w-full items-center gap-3 rounded-xl text-left transition-colors active:bg-surface-2"
+                className="flex min-h-[58px] w-full items-center gap-3 rounded-row text-left transition-colors active:bg-surface-2"
               >
                 {(() => { const ic = resolveTransactionIcon(t); return (
                   <div className="relative shrink-0">

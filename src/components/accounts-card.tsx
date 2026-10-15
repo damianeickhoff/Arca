@@ -29,7 +29,7 @@ export function AccountsCard({
       <button
         type="button"
         onClick={() => requestPanel("accounts")}
-        className="mx-3 rounded-xl bg-card p-5 text-left active:scale-[0.99] transition-transform w-[calc(100%-1.5rem)]"
+        className="w-full rounded-card border border-line bg-surface p-5 text-left shadow-card active:scale-[0.99] transition-transform"
       >
         <div className="flex items-start justify-between gap-4">
           <div>

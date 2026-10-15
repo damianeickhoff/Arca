@@ -57,7 +57,7 @@ export function HeroCard({
     >
       <div className="flex items-center justify-between gap-3">
         <span className="text-[13px] font-semibold text-[rgba(30,26,20,0.7)]">{t("safeToSpend")}</span>
-        <div role="tablist" aria-label={t("modeLabel")} className="inline-flex gap-0.5 rounded-2xl bg-[rgba(30,26,20,0.10)] p-[3px]">
+        <div role="tablist" aria-label={t("modeLabel")} className="inline-flex gap-0.5 rounded-full bg-[rgba(30,26,20,0.10)] p-[3px]">
           {(["month", "balance"] as const).map((m) => (
             <button
               key={m}
@@ -66,7 +66,7 @@ export function HeroCard({
               aria-selected={mode === m}
               onClick={() => setMode(m)}
               className={cn(
-                "h-[26px] rounded-[13px] px-2.5 text-xs font-bold transition-colors",
+                "h-[26px] rounded-full px-2.5 text-xs font-bold transition-colors",
                 mode === m ? "bg-[#1E1A14] text-[#F6F3EC]" : "text-[#1E1A14]",
               )}
             >
@@ -88,7 +88,7 @@ export function HeroCard({
               : figures.perDay != null &&
                 t("perDay", { amount: formatEur(Math.round(figures.perDay)).replace(/,00$/, ""), date: figures.until })}
             {figures.pace && (
-              <span className="inline-flex h-[22px] items-center gap-1 rounded-[11px] bg-[#1E1A14] px-2 text-[11px] font-bold text-mustard">
+              <span className="inline-flex h-[22px] items-center gap-1 rounded-full bg-[#1E1A14] px-2 text-[11px] font-bold text-mustard">
                 {warn ? <IconAlertTriangle size={12} stroke={2} /> : <IconCheck size={12} stroke={2.4} />}
                 {t(`pace.${figures.pace}`)}
               </span>
@@ -124,7 +124,7 @@ export function HeroCard({
 
 function HeroStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-[3px] rounded-xl bg-white/35 px-3 py-2.5">
+    <div className="flex min-w-0 flex-col gap-[3px] rounded-tile bg-white/35 px-3 py-2.5">
       <span className="truncate font-mono text-[10px] uppercase tracking-[0.06em] text-[rgba(30,26,20,0.7)]">{label}</span>
       <span className="truncate text-[15px] font-bold tabular-nums">{value}</span>
     </div>

@@ -227,7 +227,7 @@ function DialogContent({
         onFocusOutside={keepOpenOnOutside}
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 flex flex-col outline-none overflow-hidden will-change-transform",
-          "rounded-t-4xl bg-[var(--dialog-background)]",
+          "rounded-t-card bg-[var(--dialog-background)]",
           SHEET_FIXED,
           // hideHeaderRow callers render their own header as the first child and own
           // its top spacing entirely — adding this on top just double-pads it.

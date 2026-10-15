@@ -26,7 +26,7 @@ export function Stat({
   className?: string;
 }) {
   return (
-    <div className={cn("flex min-w-0 flex-col gap-1 rounded-[14px] bg-surface-2 px-3.5 py-3", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-1 rounded-tile bg-surface-2 px-3.5 py-3", className)}>
       <span className="mono-label truncate text-[10px]">{label}</span>
       <span className={cn("amount truncate text-[17px] tabular-nums", TONE_CLASS[tone])}>{value}</span>
     </div>

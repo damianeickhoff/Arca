@@ -93,7 +93,7 @@ export async function NudgeCard({
   if (!sentence) return null;
 
   return (
-    <div data-tip-anchor="homeNudge" className="flex items-center gap-2.5 rounded-2xl bg-mustard-soft px-3.5 py-3">
+    <div data-tip-anchor="homeNudge" className="flex items-center gap-2.5 rounded-banner bg-mustard-soft px-3.5 py-3">
       <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-mustard text-mustard-ink">
         <IconSun size={15} stroke={1.8} />
       </span>
@@ -327,7 +327,7 @@ export async function NeedsReviewLink({ count }: { count: number }) {
   return (
     <Link
       href="/transactions/needs-review"
-      className="flex items-center gap-3 rounded-2xl bg-warning-soft px-4 py-3.5 text-[13px] font-bold text-warning"
+      className="flex items-center gap-3 rounded-banner bg-warning-soft px-4 py-3.5 text-[13px] font-bold text-warning"
     >
       <IconAlertTriangle size={18} stroke={1.8} />
       {t("needsReview", { count })}

@@ -112,7 +112,7 @@ export function TipCard({
   const Icon = TIP_ICONS[id];
 
   return (
-    <div className="pointer-events-auto rounded-card border border-line bg-surface shadow-float p-4">
+    <div className="pointer-events-auto rounded-banner border border-line bg-surface shadow-float p-4">
       <div className="flex gap-3">
         {!compact && (
           <div className="size-10 shrink-0 rounded-full bg-mustard flex items-center justify-center">

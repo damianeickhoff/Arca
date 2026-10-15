@@ -174,7 +174,7 @@ function DesktopSidebar({
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex h-[42px] items-center gap-3 rounded-full px-3 text-sm font-semibold transition-colors",
+                  "flex h-[42px] items-center gap-3 rounded-row px-3 text-sm font-semibold transition-colors",
                   isActive ? "bg-mustard-soft text-ink" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
                 )}
               >
@@ -193,7 +193,7 @@ function DesktopSidebar({
                         href={sub.href}
                         aria-current={subActive ? "page" : undefined}
                         className={cn(
-                          "flex h-9 items-center gap-2.5 rounded-full px-3 text-[13px] font-semibold transition-colors",
+                          "flex h-9 items-center gap-2.5 rounded-row px-3 text-[13px] font-semibold transition-colors",
                           subActive ? "bg-surface-2 text-ink" : "text-ink-3 hover:text-ink",
                         )}
                       >
@@ -217,7 +217,7 @@ function DesktopSidebar({
               <Link
                 key={a.key}
                 href="/settings?tab=banks"
-                className="flex h-7 items-center justify-between gap-2 rounded-full px-2 hover:bg-surface-2"
+                className="flex h-7 items-center justify-between gap-2 rounded-row px-2 hover:bg-surface-2"
               >
                 <span className="truncate text-[13px] text-ink-2">{a.name}</span>
                 <span className="shrink-0 text-xs font-medium tabular-nums text-ink-2">{formatEurSignFirst(a.balance)}</span>
@@ -230,14 +230,14 @@ function DesktopSidebar({
       <div className="mt-auto flex flex-col gap-0.5">
         <Link
           href="/import"
-          className="flex h-10 items-center gap-3 rounded-full px-3 text-sm font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
+          className="flex h-10 items-center gap-3 rounded-row px-3 text-sm font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
         >
           <IconFileUpload size={18} stroke={1.8} />
           {t("importCsv")}
         </Link>
         <Link
           href="/settings"
-          className="flex h-10 items-center gap-3 rounded-full px-3 text-sm font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
+          className="flex h-10 items-center gap-3 rounded-row px-3 text-sm font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink"
         >
           <IconSettings size={18} stroke={1.8} />
           {t("settings")}

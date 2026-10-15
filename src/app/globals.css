@@ -32,8 +32,14 @@
   --color-warning-soft: var(--arca-warning-soft);
   --color-info: var(--arca-info);
   --color-info-soft: var(--arca-info-soft);
-  --radius-card: 18px;
-  --radius-hero: 22px;
+  /* Corner radius roles — we don't use fully round corners on cards, banners, tips,
+     tiles or rows; rounded-full is for buttons, chips, pills, badges, avatars, round
+     icons, toggles, progress bars and the floating tab bar / add button only. */
+  --radius-card: 18px;   /* cards and panels */
+  --radius-hero: 22px;   /* the Home hero */
+  --radius-banner: 16px; /* banners, nudges, tips, inline notices, link tiles */
+  --radius-tile: 12px;   /* tiles inside a card (stat chips, summary boxes) */
+  --radius-row: 12px;    /* list-row hover/active/selected, menu items, sidebar items */
   --shadow-card: var(--arca-shadow-card);
   --shadow-float: var(--arca-shadow-float);
 
