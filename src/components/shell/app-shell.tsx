@@ -43,7 +43,7 @@ export interface ShellUser {
 // --nav-clearance bottom padding (tab bar), see globals.css.
 //
 // LAYOUT RULE: pages never set their own max width or centre themselves — they fill
-// everything right of the sidebar (capped at 1600px on 2xl, left-aligned). Use
+// everything right of the sidebar (no cap, at every width). Use
 // <PageShell> and the column constants in components/page-container.tsx; see AGENTS.md.
 export function AppShell({
   children,

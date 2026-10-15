@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 // Pages do NOT set their own max width or centre themselves. The app shell
 // (components/shell/app-shell.tsx + main-content.tsx) puts a 240px sidebar on the left
 // from lg up, and page content takes ALL of the remaining width, left-aligned against
-// the sidebar — only on very wide screens (2xl) is it capped, at 1600px, still
+// the sidebar, at every width. There is no cap; the page always fills the space,
 // left-aligned. Desktop layouts use multi-column grids (a main column plus a 380–460px
 // right column), never one stretched column.
 //
@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 //
 // AGENTS.md repeats this rule.
 
-/** In-flow page width: everything next to the sidebar, capped at 1600px on 2xl. */
-export const PAGE_COLUMN = "w-full 2xl:max-w-[1600px]";
+/** In-flow page width: everything next to the sidebar, no cap. */
+export const PAGE_COLUMN = "w-full";
 
 /** For `fixed inset-0` / `fixed inset-x-0` page-like overlays: start right of the sidebar. */
 export const FULLSCREEN_OVERLAY = "lg:left-60";

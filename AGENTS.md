@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Page content must never set its own max width or centre itself (`mx-auto max-w-*`).
 The app shell puts a 240px sidebar on the left from `lg` and pages fill all the
-remaining width, left-aligned (capped at 1600px only on `2xl`). Use the shared
+remaining width at every screen size, with no cap. Use the shared
 primitives in `src/components/page-container.tsx`:
 
 - `<PageShell header={…}>` for every page (phone 20px gutters; desktop 84px header row,
