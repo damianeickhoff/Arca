@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { IconChevronLeft, IconChevronRight, IconCheck as Check } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { aboveNavDockClass, bottomDockClass } from "@/components/bottom-nav";
+import { aboveNavDockClass, bottomDockClass } from "@/components/dock";
 
 // Same floating bottom-bar style as PeriodSelector (src/app/reports/period-selector.tsx)
 // — prev/next chevrons around a center pill that opens a dialog list — but behaves like

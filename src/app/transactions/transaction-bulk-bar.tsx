@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { useTranslations } from "next-intl";
 import { IconEyeOff, IconEye, IconTrash, IconX } from "@tabler/icons-react";
-import { bottomDockClass } from "@/components/bottom-nav";
+import { bottomDockClass } from "@/components/dock";
 import { CategoryPicker } from "@/components/category-picker";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { cn } from "@/lib/utils";

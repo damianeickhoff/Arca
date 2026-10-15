@@ -1207,6 +1207,14 @@
       "quarterly": "per kwartaal",
       "yearly": "jaarlijks",
       "once": "eenmalig"
+    },
+    "merchantPicker": {
+      "title": "Winkel",
+      "search": "Zoek of voeg een winkel toe",
+      "searchSuggestion": "Zoek of voeg toe — bijv. {suggestion}",
+      "add": "“{name}” toevoegen",
+      "loading": "Laden…",
+      "none": "Nog geen winkels."
     }
   },
   "plan": {

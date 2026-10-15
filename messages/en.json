@@ -1207,6 +1207,14 @@
       "quarterly": "quarterly",
       "yearly": "yearly",
       "once": "one-off"
+    },
+    "merchantPicker": {
+      "title": "Merchant",
+      "search": "Search or add a merchant",
+      "searchSuggestion": "Search or add — e.g. {suggestion}",
+      "add": "Add “{name}”",
+      "loading": "Loading…",
+      "none": "No merchants yet."
     }
   },
   "plan": {

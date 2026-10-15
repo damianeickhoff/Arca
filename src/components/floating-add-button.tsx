@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { bottomDockClass } from "@/components/bottom-nav";
+import { bottomDockClass } from "@/components/dock";
 import { cn } from "@/lib/utils";
 
 // Hovering "+ Add" pill floating just above the bottom navigation. Fixed-positioned,

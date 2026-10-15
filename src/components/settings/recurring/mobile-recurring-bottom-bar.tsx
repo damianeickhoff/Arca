@@ -4,7 +4,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { IconSearchFilled as Search, IconXFilled as X } from "@tabler/icons-react";
 import { RecurringClient } from "./recurring-client";
-import { bottomDockClass } from "@/components/bottom-nav";
+import { bottomDockClass } from "@/components/dock";
 import { cn } from "@/lib/utils";
 
 interface Props {

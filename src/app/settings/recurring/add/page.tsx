@@ -18,7 +18,7 @@ export default async function AddRecurringPage({
   ]);
 
   // "Make recurring" on a transaction links here with the fields it can derive (see
-  // buildRecurringPrefill in transaction-detail-dialog.tsx). Only known keys are read,
+  // buildRecurringPrefill in lib/recurring-prefill.ts). Only known keys are read,
   // and only as single strings — a repeated param would otherwise arrive as an array.
   const prefill: RecurringAddPrefill = {};
   for (const key of PREFILL_KEYS) {

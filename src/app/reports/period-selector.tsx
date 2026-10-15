@@ -7,7 +7,7 @@ import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/date-picker";
 import { cn } from "@/lib/utils";
-import { aboveNavDockClass, bottomDockClass } from "@/components/bottom-nav";
+import { aboveNavDockClass, bottomDockClass } from "@/components/dock";
 import {
   financialMonthRange,
   financialMonthRangeByMonth,

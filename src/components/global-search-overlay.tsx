@@ -18,7 +18,7 @@ import * as Tabler from "@tabler/icons-react";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { SHEET_COLUMN, SHEET_FIXED } from "@/components/page-container";
-import { pillContainerClass, SearchCloseIcon } from "@/components/bottom-nav";
+import { pillContainerClass, SearchCloseIcon } from "@/components/dock";
 import { BrandIcon } from "@/components/brand-icon";
 import { BRAND_MAP } from "@/lib/brand-map";
 import { resolveLegacyIconKey } from "@/lib/legacy-icon-map";

@@ -142,9 +142,6 @@
      (Named --easing-*, not --ease-*: the @theme inline mapping above would
      otherwise be self-referential and hang the CSS build.) */
   --easing-out-quart: cubic-bezier(0.16, 1, 0.3, 1);
-  --duration-fast: 150ms;
-  --duration-base: 250ms;
-  --duration-slow: 400ms;
 
   /* Elevation — the only three shadows the app uses (plus the dark icon-chip one).
      raised = cards/chips at rest, floating = glass/FAB/toasts, overlay = popovers/dialogs.
@@ -159,7 +156,6 @@
   --dialog-background: var(--arca-bg);
   --dialog-content-background: var(--arca-surface);
   --card: var(--arca-surface);
-  --card-muted: var(--arca-ink-2);
   --card-foreground: var(--arca-ink);
   --popover: var(--arca-surface);
   --popover-foreground: var(--arca-ink);
@@ -186,9 +182,6 @@
   --radius: 1.125rem;
   --sidebar: var(--arca-surface);
   --sidebar-primary-foreground: var(--arca-surface);
-  --color-nodig: var(--arca-info);
-  --color-willen: var(--arca-accent-strong);
-  --color-sparen: var(--arca-positive);
   --color-income: var(--arca-positive);
   --color-expense: var(--arca-negative);
   /* Kept for the (pre-redesign) screens that still read it. */
@@ -211,47 +204,12 @@
       #8067d8 100%
     );
   /* Savings-goal progress bars (dashboard + savings page) */
-  --gradient-goal-track: linear-gradient(to right, #d7f0ea, #e9f8f2);
-  --gradient-goal-fill: linear-gradient(to right, #0f766e, #14b8a6, #6ee7b7);
   /* Icon chips on goal/budget/debt rows (light values = the former hardcoded literals) */
-  --goal-icon-bg-from: #e6f2ef;
-  --goal-icon-bg-to: #eefaf5;
   /* Income-row arrow icon on the dashboard's white stat chip */
-  --stat-chip-icon: #252525;
   /* Savings-page total progress bar track */
-  --savings-bar-track: #f5f2f3;
   /* Debts-page navy accent (stat border, matches the debts progress gradient) */
-  --debt-accent: rgb(14, 52, 112);
   /* Savings/Debts page hero fades — same two-layer technique as --wallet-background
      (a fade-to-background wash over a diagonal color wash), tinted green/orange. */
-  --savings-background:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(240, 250, 246, 0.35) 10%,
-      rgba(216, 228, 224, 0.85) 35%,
-      #f4f6f6 55%
-    ),
-    linear-gradient(
-      122deg,
-      #0f766e 0%,
-      #14b8a6 45%,
-      #6ee7b7 100%
-    );
-  --debt-background:
-    linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 246, 237, 0.35) 10%,
-      rgba(230, 220, 213, 0.85) 35%,
-      #f4f6f6 55%
-    ),
-    linear-gradient(
-      122deg,
-      #c2410c 0%,
-      #f97316 45%,
-      #fdba74 100%
-    );
 }
 
 /* Bars docked above the tab bar step aside while any bottom sheet is open. */
@@ -322,13 +280,6 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   --dialog-background: var(--arca-surface);
   --dialog-content-background: var(--arca-surface-2);
   --icon-muted: var(--arca-surface-2);
-  --gradient-goal-track: linear-gradient(to right, rgba(45, 212, 191, 0.20), rgba(45, 212, 191, 0.10));
-  --gradient-goal-fill: linear-gradient(to right, #14b8a6, #2dd4bf, #6ee7b7);
-  --goal-icon-bg-from: rgba(45, 212, 191, 0.14);
-  --goal-icon-bg-to: rgba(45, 212, 191, 0.08);
-  --stat-chip-icon: rgba(255, 255, 255, 0.85);
-  --savings-bar-track: rgba(255, 255, 255, 0.10);
-  --debt-accent: rgb(126, 166, 240);
   /* Cards carry no shadow in dark mode (--arca-shadow-card is none); floating
      chrome and overlays still need one to separate from the page. */
   --elevation-raised: var(--arca-shadow-card);
@@ -348,36 +299,6 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
       rgb(3, 33, 157) 15%,
       rgb(3, 33, 157) 35%,
       rgb(3, 33, 157) 100%
-    );
-  --savings-background:
-    linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.35) 5%,
-      rgba(0, 0, 0, 0.658) 15%,
-      var(--background) 35%
-    ),
-    linear-gradient(
-      122deg,
-      rgb(6, 78, 59) 0%,
-      rgb(6, 78, 59) 15%,
-      rgb(5, 95, 70) 35%,
-      rgb(5, 95, 70) 100%
-    );
-  --debt-background:
-    linear-gradient(
-      to bottom,
-      rgba(0, 0, 0, 0) 0%,
-      rgba(0, 0, 0, 0.35) 5%,
-      rgba(0, 0, 0, 0.658) 15%,
-      var(--background) 35%
-    ),
-    linear-gradient(
-      122deg,
-      rgb(124, 45, 18) 0%,
-      rgb(124, 45, 18) 15%,
-      rgb(154, 52, 18) 35%,
-      rgb(154, 52, 18) 100%
     );
 }
 
@@ -522,72 +443,13 @@ button, a, [role="button"] {
 .dark .glass-search-bar::after {
   box-shadow: none;
 }
-/* Dim variant — used over gradients (same override pattern as .glass-icon-dim). */
-.glass-search-bar.glass-icon-dim {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: none;
-  box-shadow: none;
-}
-.glass-search-bar.glass-icon-dim::after {
-  box-shadow: none;
-}
 
 /* Glass surface — same tint, blur, border, shadow, and specular rim as .glass-icon-btn
    but without pill shape or button-specific layout, for use on wider card elements. */
-.glass-surface {
-  position: relative;
-  isolation: isolate;
-  background: rgba(255, 255, 255, 0.60);
-  -webkit-backdrop-filter: blur(3px) saturate(180%);
-  backdrop-filter: blur(3px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  box-shadow:
-    0 6px 18px rgba(109, 109, 109, 0.178),
-    inset 0 1px 1px rgba(255, 255, 255, 0.205);
-}
-.glass-surface::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: -1;
-  box-shadow:
-    inset -7px -5px 10px -8px rgba(224, 224, 224, 0.637),
-    inset 6px 5px 10px -8px rgba(255, 255, 255, 0.377);
-}
-.dark .glass-surface {
-  background: rgba(233, 233, 233, 0.14);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.35),
-    inset 0 1px 1px rgba(255, 255, 255, 0.22);
-}
-.dark .glass-surface::after {
-  box-shadow:
-    inset -7px -5px 10px -8px rgba(255, 255, 255, 0.212),
-    inset 6px 5px 10px -8px rgba(255, 255, 255, 0.233);
-}
 
 /* Dimmed variant for glass buttons sitting over the dark gradient hero (dashboard only).
    Overrides bg/border/shadow to match the stat card's transparent style; specular rim off. */
-.glass-icon-dim {
-  background: rgba(255, 255, 255, 0.151);
-  border: 1px solid rgba(255, 255, 255, 0.062);
-  backdrop-filter: blur(12px);
-  box-shadow: none;
-}
-.glass-icon-dim::after {
-  box-shadow: none;
-}
-.glass-icon-dim svg {
-  color: rgba(255, 255, 255, 0.753);
-  transition: color 0.25s ease;
-}
 @media (prefers-reduced-motion: reduce) {
-  .glass-icon-dim svg {
-    transition: none;
-  }
 }
 
 /* Sliding active indicator inside the mobile bottom nav. */
@@ -601,24 +463,6 @@ button, a, [role="button"] {
 }
 
 /* Same specular rim as .glass-icon-btn, adapted for the pill-shaped mobile bottom nav. */
-.glass-nav {
-  position: relative;
-  isolation: isolate;
-}
-.glass-nav::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: -1;
-  box-shadow:
-    inset -3px -5px 10px -8px rgb(255, 255, 255),
-    inset 5px 8px 10px -8px rgb(255, 255, 255);
-}
-.dark .glass-nav::after {
-  box-shadow: none;
-}
 
 /* App-wide page-enter fade (PageTransition, keyed on pathname). Kept UNLAYERED
    (outside @layer base) on purpose: the production CSS minifier (Lightning CSS)
