@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import {
   IconX,
   IconDots,
@@ -75,9 +76,9 @@ function todayISO() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-function formatDateLabel(dateStr: string): string {
+function formatDateLabel(dateStr: string, locale: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 // The debt add form (behind /debts/add) — full-screen calculator style, matching the
@@ -85,6 +86,8 @@ function formatDateLabel(dateStr: string): string {
 // debt-edit-dialog.tsx), which matches the recurring-item edit dialog's row-list style.
 export function DebtForm({ bills }: { bills: RecurringItem[] }) {
   const router = useRouter();
+  const t = useTranslations("debtForm");
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
 
   const [direction, setDirection] = useState<"owe" | "owed">("owe");
@@ -215,7 +218,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           type="button"
           onClick={() => router.back()}
           data-tip-anchor="debtClose"
-          aria-label="Close"
+          aria-label={t("close")}
           className="glass-icon-btn size-11"
         >
           <IconX className="size-5 text-foreground" />
@@ -227,8 +230,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         <div data-tip-anchor="debtDirection" className="inline-flex items-center gap-1 rounded-full bg-foreground/8 p-1">
           {(
             [
-              { key: "owe", label: "I owe", Icon: IconTrendingDown },
-              { key: "owed", label: "I am owed", Icon: IconTrendingUp },
+              { key: "owe", label: t("owe"), Icon: IconTrendingDown },
+              { key: "owed", label: t("owed"), Icon: IconTrendingUp },
             ] as const
           ).map((opt) => {
             const active = direction === opt.key;
@@ -260,7 +263,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
         <DropdownMenu>
           <DropdownMenuTrigger
             data-tip-anchor="debtMenu"
-            aria-label="More options"
+            aria-label={t("moreOptions")}
             className="glass-icon-btn size-11"
           >
             <IconDots className="size-5 text-foreground" />
@@ -268,14 +271,14 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
           <DropdownMenuContent align="end" sideOffset={8} className="min-w-56 w-auto p-1.5">
             <DropdownMenuItem closeOnClick={false} onClick={() => setCalcEnabled((c) => !c)} className="gap-2.5 py-2.5">
               <IconCalculator className="size-4.5" />
-              <span className="flex-1">Calculator</span>
+              <span className="flex-1">{t("calculator")}</span>
               {calcEnabled && <IconCheck className="size-4 text-foreground/60" />}
             </DropdownMenuItem>
             {/* Always available, so the walkthrough stays reachable after it has run
                 once (or been skipped) — the tip system's own storage never replays. */}
             <DropdownMenuItem onClick={() => setTourToken((n) => n + 1)} className="gap-2.5 py-2.5">
               <IconHelpCircle className="size-4.5" />
-              <span className="flex-1">What do these buttons do?</span>
+              <span className="flex-1">{t("whatDoButtonsDo")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -305,7 +308,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
               type="button"
               onClick={() => setIconColorOpen(true)}
               data-tip-anchor="debtIcon"
-              aria-label="Choose icon and color"
+              aria-label={t("chooseIconColor")}
               className="size-14 rounded-full flex items-center justify-center active:scale-[0.96] transition-transform"
               style={{ backgroundColor: icon ? undefined : "color-mix(in srgb, var(--foreground) 8%, transparent)" }}
             >
@@ -314,7 +317,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={direction === "owe" ? "e.g. Credit card" : "e.g. Loan to Alex"}
+              placeholder={direction === "owe" ? t("namePlaceholderOwe") : t("namePlaceholderOwed")}
               className="w-full max-w-xs mx-auto text-center text-base font-medium text-foreground placeholder:text-foreground/30 bg-transparent outline-none"
             />
           </div>
@@ -365,8 +368,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
               className="mt-3 text-sm text-foreground/45 underline underline-offset-4 decoration-foreground/20"
             >
               {balanceDate === todayISO()
-                ? "Balance as of today"
-                : `Balance as of ${formatDateLabel(balanceDate)}`}
+                ? t("balanceToday")
+                : t("balanceOn", { date: formatDateLabel(balanceDate, locale) })}
             </button>
           </div>
 
@@ -380,7 +383,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                   value={startDate}
                   onChange={setStartDate}
                   granularity="day"
-                  label={formatDateLabel(startDate)}
+                  label={formatDateLabel(startDate, locale)}
                   triggerClassName="mt-0 mb-0 h-11 w-auto rounded-full bg-foreground/8 px-4 gap-2"
                 />
               </span>
@@ -388,8 +391,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                 type="button"
                 onClick={() => setMinPaymentOpen(true)}
                 data-tip-anchor="debtMinPayment"
-                aria-label={paymentVal ? `Minimum payment ${formatEur(paymentVal)}` : "Set minimum monthly payment"}
-                title="Minimum monthly payment"
+                aria-label={paymentVal ? t("minPaymentAria", { amount: formatEur(paymentVal) }) : t("setMinPayment")}
+                title={t("minPayment")}
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                   paymentVal ? "bg-foreground text-background" : "glass-icon-btn text-foreground",
@@ -401,8 +404,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                 type="button"
                 data-tip-anchor="debtOriginalAmount"
                 onClick={() => setOriginalAmountOpen(true)}
-                aria-label={originalVal ? `Original amount ${formatEur(originalVal)}` : "Set original debt amount"}
-                title="Original debt amount"
+                aria-label={originalVal ? t("originalAria", { amount: formatEur(originalVal) }) : t("setOriginal")}
+                title={t("originalAmount")}
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                   originalVal ? "bg-foreground text-background" : "glass-icon-btn text-foreground",
@@ -414,8 +417,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                 type="button"
                 data-tip-anchor="debtInterest"
                 onClick={() => setInterestOpen(true)}
-                aria-label={interestVal ? `Interest ${interestVal}%` : "Set an interest rate"}
-                title="Annual interest rate"
+                aria-label={interestVal ? t("interestAria", { rate: interestVal }) : t("setInterest")}
+                title={t("interestRate")}
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                   interestVal ? "bg-foreground text-background" : "glass-icon-btn text-foreground",
@@ -439,8 +442,8 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                   }
                 }}
                 data-tip-anchor="debtAutoBill"
-                aria-label={autoCreateBill ? "Recurring bill will be created" : "Also create a recurring bill"}
-                title="Also create a recurring bill from this debt"
+                aria-label={autoCreateBill ? t("autoBillOn") : t("autoBillOff")}
+                title={t("autoBillTitle")}
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                   autoCreateBill ? "bg-foreground text-background" : "glass-icon-btn text-foreground",
@@ -452,7 +455,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
                 type="button"
                 onClick={() => setNoteOpen(true)}
                 data-tip-anchor="debtNote"
-                aria-label="Add note"
+                aria-label={t("addNote")}
                 className={cn(
                   "size-11 rounded-full flex items-center justify-center transition-colors shrink-0",
                   notes.trim() ? "bg-foreground text-background" : "glass-icon-btn text-foreground",
@@ -465,8 +468,18 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
 
           {autoCreateBill && (
             <p className="px-1 -mt-1 mb-2 text-xs text-foreground/50 shrink-0">
-              Will also create a monthly recurring bill named &quot;{name.trim() || "…"}&quot; for {paymentVal ? formatEur(paymentVal) : "the minimum payment"}
-              {recurringCategory ? <> in <button type="button" onClick={() => setRecurringCatOpen(true)} className="underline underline-offset-2">{recurringCategory.name}</button></> : null}.
+              {recurringCategory
+                ? t.rich("autoBillSummaryIn", {
+                    name: name.trim() || "…",
+                    amount: paymentVal ? formatEur(paymentVal) : t("minPaymentFallback"),
+                    category: recurringCategory.name,
+                    cat: (chunks) => (
+                      <button type="button" onClick={() => setRecurringCatOpen(true)} className="underline underline-offset-2">
+                        {chunks}
+                      </button>
+                    ),
+                  })
+                : t("autoBillSummary", { name: name.trim() || "…", amount: paymentVal ? formatEur(paymentVal) : t("minPaymentFallback") })}
             </p>
           )}
 
@@ -484,23 +497,23 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
               <button type="button" onClick={() => press("0")} className={digitKey}>
                 0
               </button>
-              <button type="button" onClick={() => press("back")} aria-label="Backspace" className={digitKey}>
+              <button type="button" onClick={() => press("back")} aria-label={t("backspace")} className={digitKey}>
                 <IconBackspace className="size-6" />
               </button>
             </div>
 
             {calcEnabled && (
               <div className="grid grid-cols-1 gap-2 w-16">
-                <button type="button" onClick={() => press("÷")} aria-label="Divide" className={opKey}>
+                <button type="button" onClick={() => press("÷")} aria-label={t("divide")} className={opKey}>
                   <IconDivide className="size-6" />
                 </button>
-                <button type="button" onClick={() => press("×")} aria-label="Multiply" className={opKey}>
+                <button type="button" onClick={() => press("×")} aria-label={t("multiply")} className={opKey}>
                   <IconMultiply className="size-6" />
                 </button>
-                <button type="button" onClick={() => press("−")} aria-label="Subtract" className={opKey}>
+                <button type="button" onClick={() => press("−")} aria-label={t("subtract")} className={opKey}>
                   <IconMinus className="size-6" />
                 </button>
-                <button type="button" onClick={() => press("+")} aria-label="Add" className={opKey}>
+                <button type="button" onClick={() => press("+")} aria-label={t("add")} className={opKey}>
                   <IconPlus className="size-6" />
                 </button>
               </div>
@@ -515,14 +528,14 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             onClick={() => setRecurringOpen(true)}
             data-tip-anchor="debtLinkedBills"
             disabled={autoCreateBill}
-            title={autoCreateBill ? "Turn off \"Also create a recurring bill\" to link an existing one instead" : undefined}
+            title={autoCreateBill ? t("linkedDisabled") : undefined}
             className="min-w-0 max-w-[60%] h-11 rounded-full bg-foreground/5 pl-3.5 pr-3 gap-2 text-sm font-medium flex items-center disabled:opacity-40 disabled:pointer-events-none"
           >
             {selectedBills.length === 0 ? (
-              <span className="text-foreground/50 truncate">Linked recurring bills</span>
+              <span className="text-foreground/50 truncate">{t("linkedBills")}</span>
             ) : (
               <span className="truncate">
-                {selectedBills.length === 1 ? selectedBills[0].name : `${selectedBills.length} recurring bills`}
+                {selectedBills.length === 1 ? selectedBills[0].name : t("recurringBillsCount", { count: selectedBills.length })}
               </span>
             )}
           </button>
@@ -533,7 +546,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             disabled={!canSave}
             className="h-11 px-7 rounded-full bg-foreground text-background text-sm font-semibold shadow-floating active:scale-[0.98] transition-transform disabled:opacity-40 disabled:pointer-events-none shrink-0"
           >
-            {loading ? "Saving…" : "Save"}
+            {loading ? t("saving") : t("save")}
           </button>
         </div>
       </m.div>
@@ -541,12 +554,12 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       <Dialog open={noteOpen} onOpenChange={setNoteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Note</DialogTitle>
+            <DialogTitle>{t("note")}</DialogTitle>
           </DialogHeader>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Add a note for this debt"
+            placeholder={t("notePlaceholderAdd")}
             rows={4}
             autoFocus
             className="w-full rounded-tile bg-surface-2 p-3.5 text-sm text-foreground placeholder:text-foreground/40 outline-none resize-none"
@@ -556,7 +569,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             onClick={() => setNoteOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
@@ -564,7 +577,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       <Dialog open={minPaymentOpen} onOpenChange={setMinPaymentOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Minimum monthly payment</DialogTitle>
+            <DialogTitle>{t("minPayment")}</DialogTitle>
           </DialogHeader>
           <LinkedPaymentHint
             linkedMonthly={linkedMonthly}
@@ -584,7 +597,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             onClick={() => setMinPaymentOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
@@ -592,10 +605,10 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       <Dialog open={originalAmountOpen} onOpenChange={setOriginalAmountOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Original debt amount</DialogTitle>
+            <DialogTitle>{t("originalAmount")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-foreground/50 -mt-2">
-            Optional — only needed if you started tracking this debt after already paying some of it off. Leave blank to use the balance above as the total.
+            {t("originalHelpAdd")}
           </p>
           <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} onEnter={() => setOriginalAmountOpen(false)} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
           <button
@@ -603,7 +616,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             onClick={() => setOriginalAmountOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
@@ -611,12 +624,10 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       <Dialog open={balanceDateOpen} onOpenChange={setBalanceDateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Balance as of</DialogTitle>
+            <DialogTitle>{t("balanceAsOf")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-foreground/50 -mt-2">
-            The date the amount above was true. Leave it on today to enter what you owe right now.
-            Set it back and the app will assume the monthly payment was made every month since,
-            unless a linked recurring bill says otherwise.
+            {t("balanceDateHelpAdd")}
           </p>
           <DatePicker
             granularity="day"
@@ -629,7 +640,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             onClick={() => setBalanceDateOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
@@ -637,7 +648,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       <Dialog open={interestOpen} onOpenChange={setInterestOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Annual interest rate</DialogTitle>
+            <DialogTitle>{t("interestRate")}</DialogTitle>
           </DialogHeader>
           <InterestRateField
             value={interestRate}
@@ -650,7 +661,7 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
             onClick={() => setInterestOpen(false)}
             className="h-12 rounded-full bg-foreground text-background text-base font-semibold"
           >
-            Done
+            {t("done")}
           </button>
         </DialogContent>
       </Dialog>
@@ -658,16 +669,16 @@ export function DebtForm({ bills }: { bills: RecurringItem[] }) {
       <Dialog open={iconColorOpen} onOpenChange={setIconColorOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Icon &amp; color</DialogTitle>
+            <DialogTitle>{t("iconColor")}</DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-6">
             <div className="flex-1">
-              <PickerField label="Icon">
+              <PickerField label={t("icon")}>
                 <IconPicker value={icon} onChange={setIcon} previewColor={color} />
               </PickerField>
             </div>
             <div className="flex-1">
-              <PickerField label="Color">
+              <PickerField label={t("color")}>
                 <ColorPicker value={color} onChange={setColor} previewIcon={icon} />
               </PickerField>
             </div>

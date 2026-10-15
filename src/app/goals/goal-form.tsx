@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { IconCoin, IconPigMoney, IconTrash } from "@tabler/icons-react";
 import type { Category, Goal } from "@/db/schema";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export function GoalForm({
   initialType?: GoalType;
 }) {
   const router = useRouter();
+  const t = useTranslations("goals");
   const isEdit = !!goal;
   // The chooser only exists when adding without a pre-selected type.
   const hasChooser = !isEdit && !initialType;
@@ -86,7 +88,7 @@ export function GoalForm({
     setLoading(true);
     const payload = {
       goalType,
-      name: form.name.trim() || "Untitled goal",
+      name: form.name.trim() || t("untitled"),
       targetAmount: parseFloat(form.amount) || 0,
       monthlyContribution: isSavings && form.monthly ? parseFloat(form.monthly) : null,
       ...(isSavings ? { currentAmount: parseFloat(form.startingBalance) || 0 } : {}),
@@ -110,7 +112,7 @@ export function GoalForm({
 
   async function remove() {
     if (!goal) return;
-    if (!confirm(`Delete "${goal.name}"?`)) return;
+    if (!confirm(t("confirmDelete", { name: goal.name }))) return;
     setLoading(true);
     await fetch("/api/goals", {
       method: "DELETE",
@@ -124,13 +126,13 @@ export function GoalForm({
 
   const title = isEdit
     ? goalType === "expense"
-      ? "Edit budget"
-      : "Edit saving"
+      ? t("editBudget")
+      : t("editSaving")
     : step === "type"
-      ? "Add new goal"
+      ? t("addNewGoal")
       : goalType === "expense"
-        ? "New budget"
-        : "New saving";
+        ? t("newBudget")
+        : t("newSaving");
 
   return (
     <FormSubpage title={title} onBack={back}>
@@ -138,14 +140,14 @@ export function GoalForm({
         <div className="px-5 pt-6 space-y-3 lg:max-w-xl lg:mx-auto">
           <TypeCard
             icon={<IconCoin className="size-6" />}
-            title="Budget"
-            subtitle="Set up a budget and manage your spending wisely"
+            title={t("typeBudget")}
+            subtitle={t("typeBudgetSubtitle")}
             onClick={() => chooseType("expense")}
           />
           <TypeCard
             icon={<IconPigMoney className="size-6" />}
-            title="Savings"
-            subtitle="Ready to start saving? Begin by setting your first goal here"
+            title={t("typeSavings")}
+            subtitle={t("typeSavingsSubtitle")}
             onClick={() => chooseType("savings")}
           />
         </div>
@@ -159,16 +161,16 @@ export function GoalForm({
           />
 
           <FormCard>
-            <FormField label="Name">
-              <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. New car" />
+            <FormField label={t("name")}>
+              <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={t("namePlaceholder")} />
             </FormField>
 
-            <FormField label={goalType === "expense" ? "Category" : "Category (optional)"}>
+            <FormField label={goalType === "expense" ? t("category") : t("categoryOptional")}>
               <CategoryPicker
                 categories={categories}
                 current={form.categoryId || undefined}
                 onChange={(v) => set("categoryId", v === "none" ? "" : v)}
-                placeholder={goalType === "expense" ? "Required" : "All"}
+                placeholder={goalType === "expense" ? t("required") : t("all")}
                 showSelectedIcon
                 triggerClassName="h-12 w-full rounded-lg bg-foreground/3 px-3.5 mt-1 text-sm font-normal"
               />
@@ -176,30 +178,30 @@ export function GoalForm({
 
             {isSavings && (
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Monthly contribution">
+                <FormField label={t("monthlyContribution")}>
                   <Input
                     inputMode="decimal"
                     value={form.monthly}
                     onChange={(e) => set("monthly", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))}
-                    placeholder="e.g. 100"
+                    placeholder={t("monthlyPlaceholder")}
                   />
                 </FormField>
-                <FormField label="Starting balance">
+                <FormField label={t("startingBalance")}>
                   <Input
                     inputMode="decimal"
                     value={form.startingBalance}
                     onChange={(e) => set("startingBalance", e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."))}
-                    placeholder="e.g. 0"
+                    placeholder={t("balancePlaceholder")}
                   />
                 </FormField>
               </div>
             )}
 
-            <FormField label="Recurrence">
+            <FormField label={t("recurrenceLabel")}>
               <OptionDropdown
                 value={form.recurrence}
                 onChange={(v) => set("recurrence", v)}
-                options={RECURRENCE_OPTIONS}
+                options={RECURRENCE_OPTIONS.map((o) => ({ value: o.value, label: t(`recurrence.${o.value}`) }))}
                 triggerClassName="bg-foreground/3 px-3.5"
               />
             </FormField>
@@ -207,23 +209,23 @@ export function GoalForm({
             {isSavings && (
               <>
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField label="Start date">
+                  <FormField label={t("startDate")}>
                     <DatePicker granularity="day" value={form.startDate} onChange={(v) => set("startDate", v)} />
                   </FormField>
-                  <FormField label="End date">
+                  <FormField label={t("endDate")}>
                     <DatePicker granularity="day" value={form.endDate} onChange={(v) => set("endDate", v)} />
                   </FormField>
                 </div>
 
                 <div className="flex items-center gap-6">
                   <div className="flex-1">
-                    <PickerField label="Icon">
+                    <PickerField label={t("icon")}>
                       <IconPicker value={form.icon} onChange={(v) => set("icon", v)} previewColor={form.color} />
                     </PickerField>
                   </div>
                   {!(form.icon && isBrandIcon(form.icon)) && (
                     <div className="flex-1">
-                      <PickerField label="Color">
+                      <PickerField label={t("color")}>
                         <ColorPicker value={form.color} onChange={(c) => set("color", c)} previewIcon={form.icon} />
                       </PickerField>
                     </div>
@@ -239,7 +241,7 @@ export function GoalForm({
             loading={loading}
             destructive={
               isEdit ? (
-                <Button variant="destructive" size="icon" className="size-13 rounded-full shrink-0" onClick={remove} disabled={loading}>
+                <Button variant="destructive" size="icon" aria-label={t("delete")} className="size-13 rounded-full shrink-0" onClick={remove} disabled={loading}>
                   <IconTrash className="size-5" />
                 </Button>
               ) : undefined

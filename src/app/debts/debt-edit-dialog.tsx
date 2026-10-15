@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -35,28 +36,24 @@ import { InterestRateField, parseRatePercent } from "./interest-rate-field";
 import { amountToExpr, linkedBillsMonthlyTotal } from "./debt-shared";
 import type { Debt, RecurringItem } from "@/db/schema";
 
+// Sub-page titles, by sub-page key — the copy lives at debtForm.<value>.
 const SUB_TITLES: Record<string, string> = {
-  amount: "Starting balance",
-  direction: "Type",
-  period: "Start date",
-  balanceDate: "Balance as of",
-  payment: "Minimum monthly payment",
-  originalAmount: "Original debt amount",
-  interest: "Annual interest rate",
-  recurring: "Linked recurring bills",
-  name: "Name",
-  notes: "Notes",
-  iconColor: "Icon & color",
+  amount: "startingBalance",
+  direction: "type",
+  period: "startDate",
+  balanceDate: "balanceAsOf",
+  payment: "minPayment",
+  originalAmount: "originalAmount",
+  interest: "interestRate",
+  recurring: "linkedBills",
+  name: "name",
+  notes: "notes",
+  iconColor: "iconColor",
 };
 
-const DIRECTION_OPTIONS = [
-  { value: "owe", label: "I owe" },
-  { value: "owed", label: "I am owed" },
-];
-
-function formatDateLabel(dateStr: string): string {
+function formatDateLabel(dateStr: string, locale: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  return new Date(y, (m || 1) - 1, d || 1).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "long", year: "numeric" });
 }
 
 // Edit dialog for an existing debt — same row-list + slide-in-subpage style as the
@@ -76,6 +73,12 @@ export function DebtEditDialog({
   onOpenChange: (v: boolean) => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("debtForm");
+  const locale = useLocale();
+  const DIRECTION_OPTIONS = [
+    { value: "owe", label: t("owe") },
+    { value: "owed", label: t("owed") },
+  ];
   const [loading, setLoading] = useState(false);
   const [subpage, setSubpage] = useState<string | null>(null);
   const [subVisible, setSubVisible] = useState(false);
@@ -161,7 +164,7 @@ export function DebtEditDialog({
   }
 
   async function remove() {
-    if (!confirm(`Delete debt "${debt.name}"?`)) return;
+    if (!confirm(t("confirmDelete", { name: debt.name }))) return;
     setLoading(true);
     await fetch("/api/debts", {
       method: "DELETE",
@@ -177,13 +180,13 @@ export function DebtEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="px-0"
-        title="Edit debt"
+        title={t("editDebt")}
         headerAction={
           <button
             type="button"
             onClick={remove}
             disabled={loading}
-            aria-label="Delete"
+            aria-label={t("delete")}
             className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
           >
             <Trash2 className="size-4.5" />
@@ -195,37 +198,37 @@ export function DebtEditDialog({
             disabled={loading || !name.trim() || amountVal == null}
             className="w-full h-13 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold"
           >
-            {loading ? "Saving..." : "Save"}
+            {loading ? t("saving") : t("save")}
           </Button>
         }
       >
         <div className="space-y-3 px-5 pb-2">
           <Row
             icon={<span className="flex items-center justify-center size-5"><Icon iconKey={icon} color={color} size="xs" round /></span>}
-            label="Icon & color"
+            label={t("iconColor")}
             value=""
             onClick={() => openSub("iconColor")}
           />
-          <Row icon={<Coin className="size-5" />} label="Starting balance" value={amountVal != null ? formatEur(amountVal) : "—"} onClick={() => openSub("amount")} />
-          <Row icon={<Adjust className="size-5" />} label="Type" value={direction === "owe" ? "I owe" : "I am owed"} onClick={() => openSub("direction")} />
-          <Row icon={<Calendar className="size-5" />} label="Start date" value={formatDateLabel(startDate)} onClick={() => openSub("period")} />
-          <Row icon={<Calendar className="size-5" />} label="Balance as of" value={formatDateLabel(balanceDate)} onClick={() => openSub("balanceDate")} />
-          <Row icon={<Coin className="size-5" />} label="Minimum monthly payment" value={paymentVal ? formatEur(paymentVal) : "—"} onClick={() => openSub("payment")} />
-          <Row icon={<Receipt className="size-5" />} label="Original debt amount" value={originalVal ? formatEur(originalVal) : "—"} onClick={() => openSub("originalAmount")} />
-          <Row icon={<Percentage className="size-5" />} label="Annual interest rate" value={parseRatePercent(interestRate) != null ? `${interestRate}%` : "—"} onClick={() => openSub("interest")} />
+          <Row icon={<Coin className="size-5" />} label={t("startingBalance")} value={amountVal != null ? formatEur(amountVal) : "—"} onClick={() => openSub("amount")} />
+          <Row icon={<Adjust className="size-5" />} label={t("type")} value={direction === "owe" ? t("owe") : t("owed")} onClick={() => openSub("direction")} />
+          <Row icon={<Calendar className="size-5" />} label={t("startDate")} value={formatDateLabel(startDate, locale)} onClick={() => openSub("period")} />
+          <Row icon={<Calendar className="size-5" />} label={t("balanceAsOf")} value={formatDateLabel(balanceDate, locale)} onClick={() => openSub("balanceDate")} />
+          <Row icon={<Coin className="size-5" />} label={t("minPayment")} value={paymentVal ? formatEur(paymentVal) : "—"} onClick={() => openSub("payment")} />
+          <Row icon={<Receipt className="size-5" />} label={t("originalAmount")} value={originalVal ? formatEur(originalVal) : "—"} onClick={() => openSub("originalAmount")} />
+          <Row icon={<Percentage className="size-5" />} label={t("interestRate")} value={parseRatePercent(interestRate) != null ? `${interestRate}%` : "—"} onClick={() => openSub("interest")} />
           <Row
             icon={<Repeat className="size-5" />}
-            label="Linked recurring bills"
-            value={selectedBills.length === 0 ? "—" : selectedBills.length === 1 ? selectedBills[0].name : `${selectedBills.length} bills`}
+            label={t("linkedBills")}
+            value={selectedBills.length === 0 ? "—" : selectedBills.length === 1 ? selectedBills[0].name : t("billsCount", { count: selectedBills.length })}
             onClick={() => setRecurringOpen(true)}
           />
-          <Row icon={<TagIcon className="size-5" />} label="Name" value={name || "—"} onClick={() => openSub("name")} />
-          <Row icon={<Note className="size-5" />} label="Notes" value={notes || "—"} onClick={() => openSub("notes")} />
+          <Row icon={<TagIcon className="size-5" />} label={t("name")} value={name || "—"} onClick={() => openSub("name")} />
+          <Row icon={<Note className="size-5" />} label={t("notes")} value={notes || "—"} onClick={() => openSub("notes")} />
         </div>
 
         {/* Slide-in subpage — fixed against the (transformed) dialog panel */}
         {subpage && (
-          <SubSheet title={SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
+          <SubSheet title={t(SUB_TITLES[subpage])} visible={subVisible} onClose={closeSub}>
               {subpage === "amount" && (
                 <AmountKeypad expr={amountExpr} onChange={setAmountExpr} onEnter={closeSub} positive={direction === "owed"} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
               )}
@@ -261,7 +264,7 @@ export function DebtEditDialog({
               {subpage === "originalAmount" && (
                 <div className="space-y-3">
                   <p className="text-sm text-foreground/50 -mb-2 text-center">
-                    Optional — only needed if tracking started after some of this debt was already paid off. Leave blank to use the starting balance as the total.
+                    {t("originalHelpEdit")}
                   </p>
                   <AmountKeypad expr={originalExpr} onChange={setOriginalExpr} onEnter={closeSub} calcEnabled={originalCalcEnabled} onToggleCalc={() => setOriginalCalcEnabled((c) => !c)} />
                 </div>
@@ -270,9 +273,7 @@ export function DebtEditDialog({
               {subpage === "balanceDate" && (
                 <div className="pt-2 space-y-3">
                   <p className="text-sm text-foreground/50">
-                    The date the starting balance was true. Set it to today and the balance above is
-                    taken as what you owe right now; set it back and the app assumes the monthly
-                    payment was made every month since, unless a linked bill says otherwise.
+                    {t("balanceDateHelpEdit")}
                   </p>
                   <DatePicker granularity="day" value={balanceDate} onChange={(v) => { setBalanceDate(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-xl px-4 h-12 bg-[var(--dialog-content-background)]" />
                 </div>
@@ -289,20 +290,20 @@ export function DebtEditDialog({
 
               {subpage === "name" && (
                 <div className="pt-2">
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={direction === "owe" ? "e.g. Credit card" : "e.g. Loan to Alex"} data-autofocus data-no-keyboard-scroll className="h-12" />
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={direction === "owe" ? t("namePlaceholderOwe") : t("namePlaceholderOwed")} data-autofocus data-no-keyboard-scroll className="h-12" />
                 </div>
               )}
 
               {subpage === "notes" && (
                 <div className="pt-2">
-                  <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional note" className="h-12" />
+                  <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("notePlaceholder")} className="h-12" />
                 </div>
               )}
 
               {subpage === "iconColor" && (
               <div className="space-y-3">
                 <div className="rounded-row border border-line bg-surface px-4 py-3">
-                  <PickerField label="Icon">
+                  <PickerField label={t("icon")}>
                     <IconPicker
                       value={icon}
                       onChange={setIcon}
@@ -312,7 +313,7 @@ export function DebtEditDialog({
                 </div>
 
                 <div className="rounded-row border border-line bg-surface px-4 py-3">
-                  <PickerField label="Color">
+                  <PickerField label={t("color")}>
                     <ColorPicker
                       value={color}
                       onChange={setColor}
