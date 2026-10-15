@@ -63,7 +63,11 @@ export type TipId =
   | "activityBulkSelect"
   | "activitySearchBar"
   | "activityContext"
-  | "activityKeys";
+  | "activityKeys"
+  // redesign (mustard): Budget
+  | "budgetStrategyCard"
+  | "budgetMove"
+  | "budgetBills";
 
 interface TipState {
   /** Tips already shown. A tip is recorded the moment it appears rather than when
@@ -79,7 +83,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "newNavigation", "planHub", "homeSafeToSpend", "homeQuickActions", "homeNudge", "homeComingUp", "homeSpending", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityContext", "activityKeys"];
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "newNavigation", "planHub", "homeSafeToSpend", "homeQuickActions", "homeNudge", "homeComingUp", "homeSpending", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityContext", "activityKeys", "budgetStrategyCard", "budgetMove", "budgetBills"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;

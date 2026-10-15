@@ -88,6 +88,7 @@ export interface BudgetCategoryRow {
   color: string | null;
   icon: string | null;
   parentCategoryId: number | null; // null for a top-level category
+  budgetType: string | null; // "nodig" | "willen" | "sparen" — Need / Want / Save
   budget: number | null; // category budget (default target), null if unset
   spent: number;         // spend this period — for a top-level category, includes any
                           // of its sub-categories that don't have their own budget set
@@ -211,6 +212,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
       color: cat.color ?? null,
       icon: cat.icon ?? null,
       parentCategoryId: null,
+      budgetType: cat.budgetType ?? null,
       budget: defaultMap.get(cat.id) ?? null,
       spent: topLevelSpend(periodSpend, cat.id),
       last30: topLevelSpend(last30Spend, cat.id),
@@ -221,6 +223,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
       color: cat.color ?? null,
       icon: cat.icon ?? null,
       parentCategoryId: cat.parentCategoryId,
+      budgetType: cat.budgetType ?? null,
       budget: defaultMap.get(cat.id) ?? null,
       spent: resolveSpend(periodSpend.byCategory.get(cat.id), cat.id),
       last30: resolveSpend(last30Spend.byCategory.get(cat.id), cat.id),

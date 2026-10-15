@@ -93,7 +93,13 @@
     "overallLimit": "Stel je totale budgetlimiet in voor deze periode",
     "skip": "Overslaan",
     "continue": "Doorgaan",
-    "skipHint": "Je kunt overslaan en categoriebudgetten hierna instellen"
+    "skipHint": "Je kunt overslaan en categoriebudgetten hierna instellen",
+    "strategyLabels": {
+      "nodig": "Nodig",
+      "willen": "Willen",
+      "sparen": "Sparen & schulden",
+      "mustTotal": "Samen moet het 100% zijn"
+    }
   },
   "cashFlow": {
     "title": "Cash Flow Vooruitzicht",
@@ -528,6 +534,18 @@
     "activityKeys": {
       "title": "Bladeren met de pijltjestoetsen",
       "body": "Druk op ↑ en ↓ om door de lijst te gaan; de transactie rechts volgt mee."
+    },
+    "budgetStrategyCard": {
+      "title": "Je verdeling in euro's",
+      "body": "Hoe je inkomen verdeeld wordt over nodig, willen en sparen, en wat je daar tot nu toe aan hebt uitgegeven. Tik op Aanpassen om de verdeling te wijzigen."
+    },
+    "budgetMove": {
+      "title": "Budget verplaatsen met één tik",
+      "body": "Loopt een categorie hard op, dan stelt Arca voor om budget te verplaatsen van een categorie met ruimte over. Je totale budget blijft gelijk."
+    },
+    "budgetBills": {
+      "title": "De rekeningen van deze maand",
+      "body": "Elke rekening op de dag dat hij betaald moet worden. Tik op een dag om alleen die rekeningen te zien, en vink een rekening af als hij betaald is."
     }
   },
   "importMapping": {
@@ -884,6 +902,75 @@
       "quarterly": "per kwartaal",
       "yearly": "jaarlijks",
       "once": "eenmalig"
+    }
+  },
+  "plan": {
+    "title": "Plan",
+    "budget": {
+      "title": "Budget",
+      "forecast": "Prognose",
+      "editBudget": "Budget bewerken",
+      "deleteBudget": "Budget verwijderen",
+      "resetsMonthly": "Begint opnieuw op de {day}e",
+      "resetsWeekly": "Begint elke maandag opnieuw",
+      "strategyShort": "{needs} / {wants} / {savings}-verdeling",
+      "spentOf": "Uitgegeven van {amount}",
+      "left": "{amount} over",
+      "over": "{amount} te veel",
+      "pace": {
+        "onPace": "op schema",
+        "fast": "gaat snel",
+        "over": "over budget"
+      },
+      "allocated": "Verdeeld",
+      "free": "Vrij",
+      "perDay": "Per dag",
+      "empty": {
+        "title": "Nog geen budget",
+        "body": "Stel een maand- of weeklimiet in en verdeel die over je categorieën. Arca houdt bij of je op schema ligt.",
+        "create": "Budget maken"
+      },
+      "strategy": {
+        "title": "Budgetverdeling",
+        "adjust": "Aanpassen",
+        "nodig": "Nodig",
+        "willen": "Willen",
+        "sparen": "Sparen",
+        "onIncome": "Bij {income} inkomen: nodig {needs}, willen {wants}, sparen {savings}.",
+        "soFar": "Tot nu toe deze maand: nodig {needs}, willen {wants}, sparen {savings}.",
+        "noIncome": "Nog geen inkomen deze maand, dus er valt nog niets te verdelen. De percentages gelden zodra er inkomen binnenkomt."
+      },
+      "categories": {
+        "title": "Budget per categorie",
+        "titleShort": "Categorieën",
+        "add": "Categoriebudget toevoegen",
+        "manage": "Beheren",
+        "empty": "Nog geen categoriebudgetten. Geef een categorie een eigen limiet en hij verschijnt hier.",
+        "of": "<b>{spent}</b> van {budget}",
+        "edit": "Budget voor {name} bewerken",
+        "kind": {
+          "nodig": "Nodig",
+          "willen": "Willen",
+          "sparen": "Sparen"
+        }
+      },
+      "suggestion": {
+        "near": "{name} zit op {pct}% en er {days, plural, one {is nog # dag} other {zijn nog # dagen}} te gaan.",
+        "over": "{name} zit {amount} over budget en er {days, plural, one {is nog # dag} other {zijn nog # dagen}} te gaan.",
+        "move": "Verplaats {amount} van {name}"
+      },
+      "bills": {
+        "title": "Rekeningen {month}",
+        "view": "Alle rekeningen",
+        "empty": "Geen rekeningen of abonnementen deze maand.",
+        "paid": "Betaald",
+        "paidOn": "Betaald · {date}",
+        "overdue": "Te laat · {date}",
+        "today": "Vandaag",
+        "noDate": "Geen vaste datum",
+        "paidAuto": "Betaald, gekoppeld aan een transactie",
+        "showAll": "Alles tonen"
+      }
     }
   }
 }

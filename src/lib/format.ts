@@ -53,6 +53,14 @@ export function formatEur(amount: number, showSign = false): string {
   return `${currencySymbol()}${sign}${numberPart}`;
 }
 
+/** Whole euros, no cents — "€1.115", "€-40". For budget and plan figures, where cents
+ *  are noise (the Plan pages, the budget gauge). */
+export function formatEurWhole(amount: number): string {
+  const rounded = Math.round(amount);
+  const numberPart = new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 0 }).format(Math.abs(rounded));
+  return `${currencySymbol()}${rounded < 0 ? "-" : ""}${numberPart}`;
+}
+
 // Same as formatEur, but with a negative sign placed before the currency symbol
 // instead of after it ("-€20,00", not "€-20,00") — used by the accounts
 // card/page, where balances read more naturally with the sign leading.

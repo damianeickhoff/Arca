@@ -1,221 +1,140 @@
-import { formatEur } from "@/lib/format";
-import { SplitEur } from "@/components/split-eur";
-import { MonthPicker } from "@/components/month-picker";
-import { BudgetCategoriesMobile } from "./target-client";
-import { PageContainer } from "@/components/page-container";
-import { SearchButton } from "@/components/shell/search-context";
-import { PlanSwitch } from "@/components/shell/plan-switch";
-import { Icon } from "@/components/icon";
-import { getFinancialMonthConfig, getBudgetStrategy, getBudgetRollover } from "@/lib/app-settings";
+import { getLocale } from "next-intl/server";
+import { PageShell } from "@/components/page-container";
+import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
+import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBudgetData } from "@/lib/budget-data";
-import { BudgetTabs } from "./budget-tabs";
 import { getBillStatuses } from "@/lib/bill-status";
-import { BillsCalendar, type CalendarBill } from "./bills-calendar";
-import { classifyBudgetRows } from "@/lib/budget-overspend";
-import { WarningBanner } from "@/components/warning-banner";
+import { daysInclusive, nextDay, todayStr } from "@/app/_home/home-data";
+import { BudgetEditorProvider } from "./budget-editor";
+import { BudgetHeader, BudgetView, type BudgetBill, type BudgetSuggestion, type BudgetViewData } from "./budget-view";
 
-export default async function BudgetPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string; nodig?: string; willen?: string; sparen?: string }>;
-}) {
-  const sp = await searchParams;
-  const [financialMonth, strategy, rolloverEnabled] = await Promise.all([getFinancialMonthConfig(), getBudgetStrategy(), getBudgetRollover()]);
-  const month = sp.month ?? currentFinancialMonth(financialMonth);
-  const { from: rangeStart, to: rangeEnd } = financialMonthRangeByMonth(month, financialMonth);
+/** Round up / down to a multiple of five euros — suggestions move tidy amounts. */
+const up5 = (n: number) => Math.ceil(n / 5) * 5;
+const down5 = (n: number) => Math.floor(n / 5) * 5;
 
-  const nodigPct = Math.max(0, Math.min(100, parseInt(sp.nodig ?? String(strategy.nodig))));
-  const willenPct = Math.max(0, Math.min(100, parseInt(sp.willen ?? String(strategy.willen))));
-  const sparenPct = Math.max(0, Math.min(100, parseInt(sp.sparen ?? String(strategy.sparen))));
+export default async function BudgetPage() {
+  const financialMonth = await getFinancialMonthConfig();
+  const month = currentFinancialMonth(financialMonth);
+  const range = financialMonthRangeByMonth(month, financialMonth);
 
-  const [data, billStatuses] = await Promise.all([
-    getBudgetData(month, financialMonth, rolloverEnabled),
+  const [overview, budgetData, billStatuses, locale] = await Promise.all([
+    getBudgetOverview(financialMonth),
+    getBudgetData(month, financialMonth),
     getBillStatuses(month, financialMonth),
+    getLocale(),
   ]);
-  const { overRows: overBudgetRows, nearRows: nearBudgetRows } = classifyBudgetRows(
-    data.targetRows.map((r) => ({ ...r, target: r.effectiveTarget })),
-  );
-  const calendarBills: CalendarBill[] = billStatuses.map(({ item, icon, iconColor, iconBackground, dueDate, paid, paidSource, overdue }) => ({
-    id: item.id,
-    name: item.name,
-    amount: item.amount,
-    icon,
-    iconColor,
-    iconBackground,
-    dueDate,
-    paid,
-    paidSource,
-    overdue,
-  }));
 
-  const buckets = [
-    {
-      key: "nodig" as const,
-      label: "Needs",
-      desc: "Necessities & essentials",
-      pct: nodigPct,
-      color: "var(--color-nodig)",
-    },
-    {
-      key: "willen" as const,
-      label: "Wants",
-      desc: "Fun spending & personal",
-      pct: willenPct,
-      color: "var(--color-willen)",
-    },
-    {
-      key: "sparen" as const,
-      label: "Savings & Debts",
-      desc: "Savings goals & debt payments",
-      pct: sparenPct,
-      color: "var(--color-sparen)",
-    },
+  const today = todayStr();
+
+  // ── The gauge: the overall budget when one is set, else the sum of the category
+  //    budgets — the same rule as Home's safe-to-spend card.
+  const hasOverall = (overview.budget?.amount ?? 0) > 0;
+  const limit = hasOverall ? overview.budget!.amount : overview.allocated;
+  const spent = hasOverall ? overview.totalSpent : overview.budgetedSpent;
+  const totalDays = Math.max(1, daysInclusive(overview.from, overview.to));
+  const daysLeft = Math.max(1, daysInclusive(today < overview.from ? overview.from : today, overview.to));
+  const elapsed = (totalDays - daysLeft + 1) / totalDays;
+  const used = limit > 0 ? spent / limit : 0;
+  const pace = limit > 0 ? (used > 1 ? "over" : used > elapsed + 0.05 ? "fast" : "onPace") : null;
+
+  // ── Category budgets: parents first, each followed by its own budgeted children.
+  const budgeted = overview.categories.filter((c) => c.budget != null && c.budget > 0);
+  const parents = budgeted.filter((c) => c.parentCategoryId == null);
+  const orphans = budgeted.filter((c) => c.parentCategoryId != null && !parents.some((p) => p.categoryId === c.parentCategoryId));
+  const rows = [
+    ...parents.flatMap((p) => [p, ...budgeted.filter((c) => c.parentCategoryId === p.categoryId)]),
+    ...orphans,
   ];
 
-  // Aggregate across categories that have a budget target set — used by the mobile "left to spend" card.
-  const targetedRows = data.targetRows.filter((r) => r.target != null && r.target > 0);
-  const totalTarget = targetedRows.reduce((s, r) => s + (r.effectiveTarget ?? r.target!), 0);
-  const totalSpentOnTargets = targetedRows.reduce((s, r) => s + r.actual, 0);
-  const totalLeft = totalTarget - totalSpentOnTargets;
-  const rawTotalPct = totalTarget > 0 ? (totalSpentOnTargets / totalTarget) * 100 : 0;
-  const totalPct = Math.min(100, rawTotalPct);
-  const totalOver = totalLeft < 0 && totalTarget > 0;
+  // ── The over-budget suggestion: the category furthest along (90% and up), and — when
+  //    another budgeted category still has room — an amount to move across that would
+  //    cover its projected overshoot at the current pace.
+  let suggestion: BudgetSuggestion | null = null;
+  const hot = rows
+    .map((c) => ({ c, pct: (c.spent / c.budget!) * 100 }))
+    .filter((x) => x.pct >= 90)
+    .sort((a, z) => z.pct - a.pct)[0];
+  if (hot) {
+    const projected = Math.max(hot.c.spent, hot.c.spent / Math.max(elapsed, 0.1));
+    const need = up5(Math.max(5, projected - hot.c.budget!));
+    const donor = rows
+      .filter((c) => c.categoryId !== hot.c.categoryId)
+      .map((c) => {
+        // What the donor would still have spare at the end of the period at its own pace.
+        const projectedDonor = Math.max(c.spent, c.spent / Math.max(elapsed, 0.1));
+        return { c, spare: down5(Math.min(c.budget! - c.spent, c.budget! - projectedDonor)) };
+      })
+      .filter((d) => d.spare >= 5)
+      .sort((a, z) => z.spare - a.spare)[0];
+    suggestion = {
+      categoryId: hot.c.categoryId,
+      name: hot.c.categoryName,
+      pct: Math.round(hot.pct),
+      over: Math.max(0, hot.c.spent - hot.c.budget!),
+      daysLeft,
+      move: donor ? { fromId: donor.c.categoryId, fromName: donor.c.categoryName, amount: Math.min(need, donor.spare) } : null,
+    };
+  }
+
+  // ── Bills this financial month, soonest first, date-less ones last.
+  const bills: BudgetBill[] = billStatuses
+    .map((s) => ({
+      id: s.item.id,
+      name: s.item.friendlyName ?? s.item.name,
+      amount: s.item.amount,
+      icon: s.icon,
+      iconColor: s.iconColor,
+      dueDate: s.dueDate,
+      paid: s.paid === true,
+      paidByMatch: s.paidSource === "match",
+      overdue: s.overdue,
+    }))
+    .sort((a, z) => (a.dueDate ?? "9999").localeCompare(z.dueDate ?? "9999") || a.name.localeCompare(z.name));
+
+  const resetDate = nextDay(overview.to);
+  const strategy = overview.strategy;
+  const data: BudgetViewData = {
+    hasBudget: overview.budget != null,
+    period: overview.budget?.period ?? "monthly",
+    hasOverall,
+    limit,
+    spent,
+    pace,
+    daysLeft,
+    allocated: overview.allocated,
+    resetDay: Number(resetDate.slice(8, 10)),
+    strategy,
+    income: overview.income,
+    actuals: {
+      nodig: budgetData.byBudgetType.nodig ?? 0,
+      willen: budgetData.byBudgetType.willen ?? 0,
+      sparen: budgetData.byBudgetType.sparen ?? 0,
+    },
+    rows: rows.map((c) => ({
+      categoryId: c.categoryId,
+      name: c.categoryName,
+      icon: c.icon,
+      color: c.color,
+      budgetType: c.budgetType,
+      budget: c.budget!,
+      spent: c.spent,
+      child: c.parentCategoryId != null,
+    })),
+    suggestion,
+    bills,
+    billsMonth: month,
+    billsRange: range,
+    monthName: new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(`${month}-15T12:00:00`)),
+    today,
+  };
 
   return (
-    <PageContainer className="px-0 min-h-screen">
-        {/* Top bar — matches dashboard/reports top bar */}
-        <div className="sticky top-[var(--sat)] z-40 px-4 pt-2 pb-3 space-y-2">
-          {/* Plan hub — Budget | Debts | Goals */}
-          <div className="flex items-center justify-between gap-3">
-            <PlanSwitch />
-            <SearchButton />
-          </div>
-          <BudgetTabs />
-        </div>
-
-        <div className="px-4 pb-4 space-y-4">
-          {/* Income card */}
-          <div className="rounded-2xl bg-card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-base">My income</h2>
-              <MonthPicker current={month} />
-            </div>
-
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-foreground/60 mb-1">Total Income</p>
-                <p className="text-4xl font-medium tabular-nums tracking-tight">
-                  <SplitEur formatted={formatEur(data.income)} />
-                </p>
-              </div>
-              {/* Blocky bar chart — one column per recent day, stacked unit squares bottom-to-top
-                  (nodig → willen → sparen), block opacity = spend that day in that bucket */}
-              <div className="flex items-end gap-1.5 shrink-0 mt-1">
-                {(() => {
-                  const rowMaxByBucket = new Map(
-                    buckets.map((b) => [b.key, Math.max(1, ...data.dailySplit.map((d) => d.byBucket[b.key] ?? 0))]),
-                  );
-                  return data.dailySplit.map((d) => (
-                    <div key={d.date} className="flex flex-col-reverse gap-1">
-                      {buckets.map((bucket) => {
-                        const amount = d.byBucket[bucket.key] ?? 0;
-                        const rowMax = rowMaxByBucket.get(bucket.key)!;
-                        const active = amount > 0;
-                        return (
-                          <div
-                            key={bucket.key}
-                            title={`${bucket.label} · ${d.date}: ${formatEur(amount)}`}
-                            className="size-3 rounded-[3px]"
-                            style={{
-                              backgroundColor: bucket.color,
-                              opacity: active ? Math.max(0.35, amount / rowMax) : 0.1,
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 pt-4 mt-3">
-              {buckets.map((bucket) => (
-                <div key={bucket.key} className="min-w-0 pl-2 border-l-2" style={{ borderColor: bucket.color }}>
-                  <p className="text-sm text-foreground/60 truncate">{bucket.label}</p>
-                  <p className="text-base font-semibold tabular-nums truncate"><SplitEur formatted={formatEur(data.income * (bucket.pct / 100))} /></p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Left-to-spend bar card — same visual language as the savings goal card on the dashboard */}
-          <div className="rounded-2xl bg-card p-4">
-            <div className="flex items-start justify-between mb-10">
-              <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                <div className="size-14 rounded-full shrink-0 flex items-center justify-center bg-foreground/3">
-                  <Icon iconKey="IconCoinEuroFilled" size="xxl" gradient={["#0f5e5a", "#2dd4bf"]} backgroundGradient={["var(--goal-icon-bg-from)", "var(--goal-icon-bg-to)"]} round />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold text-base leading-tight truncate">{totalOver ? "Total Budget" : formatEur(totalLeft)}</p>
-                  <p className="text-sm font-medium text-foreground/60 mt-0.5">Left this month</p>
-                </div>
-              </div>
-            </div>
-            {/* Progress bar with floating % badge */}
-            <div className="relative mb-2 mt-7">
-              <div
-                className="absolute -top-7.5"
-                style={{
-                  left: `${Math.max(0, Math.min(100, totalPct))}%`,
-                  transform: totalPct <= 12 ? "translateX(0)" : totalPct >= 88 ? "translateX(-100%)" : "translateX(-50%)",
-                }}
-              >
-                <span className="bg-foreground text-background text-[11px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap">
-                  {rawTotalPct.toFixed(0)}%
-                </span>
-              </div>
-              <div className="h-3.5 rounded-full overflow-hidden relative" style={{ background: "var(--gradient-goal-track)"  }}>
-                <div
-                  className="absolute top-0 left-0 bottom-0 rounded-full transition-all"
-                  style={{ width: `${totalPct}%`, background: totalOver ? "var(--danger)" : "var(--gradient-goal-fill)" }}
-                />
-              </div>
-            </div>
-            <div className="flex justify-between text-[14px] text-foreground/60 tabular-nums">
-              <span>{formatEur(totalSpentOnTargets)}</span>
-              <span>{formatEur(totalTarget)}</span>
-            </div>
-          </div>
-
-          {/* Budget alerts */}
-          {overBudgetRows.length > 0 && (
-            <WarningBanner severity="danger">
-              <span className="font-semibold">{overBudgetRows.length} {overBudgetRows.length === 1 ? "category" : "categories"} over budget:</span>
-              <span>{overBudgetRows.map((r) => r.categoryName).join(", ")}</span>
-            </WarningBanner>
-          )}
-          {overBudgetRows.length === 0 && nearBudgetRows.length > 0 && (
-            <WarningBanner severity="warning">
-              <span className="font-semibold">{nearBudgetRows.length} {nearBudgetRows.length === 1 ? "category" : "categories"} near budget:</span>
-              <span>{nearBudgetRows.map((r) => r.categoryName).join(", ")}</span>
-            </WarningBanner>
-          )}
-
-          <BillsCalendar from={rangeStart} to={rangeEnd} bills={calendarBills} month={month} />
-
-          {/* Per-category budgets */}
-          {data.targetRows.length > 0 ? (
-            <div id="per-category">
-              <BudgetCategoriesMobile rows={data.targetRows} month={data.month} />
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-card p-8 text-center text-foreground">
-              <p className="text-sm">No variable categories found.</p>
-            </div>
-          )}
-        </div>
-    </PageContainer>
+    // The provider wraps the header too: the phone header carries the Edit budget button.
+    <BudgetEditorProvider data={overview}>
+      <PageShell header={<BudgetHeader period={data.period} hasBudget={data.hasBudget} resetDay={data.resetDay} strategy={strategy} />}>
+        <BudgetView data={data} />
+      </PageShell>
+    </BudgetEditorProvider>
   );
 }

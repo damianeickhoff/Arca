@@ -93,7 +93,13 @@
     "overallLimit": "Set your overall budget limit for this period",
     "skip": "Skip",
     "continue": "Continue",
-    "skipHint": "You can skip and set category budgets next"
+    "skipHint": "You can skip and set category budgets next",
+    "strategyLabels": {
+      "nodig": "Needs",
+      "willen": "Wants",
+      "sparen": "Savings & debts",
+      "mustTotal": "Total must be 100%"
+    }
   },
   "cashFlow": {
     "title": "Cash Flow Forecast",
@@ -528,6 +534,18 @@
     "activityKeys": {
       "title": "Move with the arrow keys",
       "body": "Press ↑ and ↓ to step through the list; the transaction on the right follows."
+    },
+    "budgetStrategyCard": {
+      "title": "Your split, in euros",
+      "body": "How your income divides over needs, wants and savings, and what you have spent on each so far. Tap Adjust to change the split."
+    },
+    "budgetMove": {
+      "title": "Move budget in one tap",
+      "body": "When a category runs hot, Arca suggests moving budget from a category with room to spare. Your overall budget stays the same."
+    },
+    "budgetBills": {
+      "title": "This month's bills",
+      "body": "Every bill on its due day. Tap a day to see just its bills, and tick a bill off once it is paid."
     }
   },
   "importMapping": {
@@ -884,6 +902,75 @@
       "quarterly": "quarterly",
       "yearly": "yearly",
       "once": "one-off"
+    }
+  },
+  "plan": {
+    "title": "Plan",
+    "budget": {
+      "title": "Budget",
+      "forecast": "Forecast",
+      "editBudget": "Edit budget",
+      "deleteBudget": "Delete budget",
+      "resetsMonthly": "Resets on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+      "resetsWeekly": "Resets every Monday",
+      "strategyShort": "{needs} / {wants} / {savings} strategy",
+      "spentOf": "Spent of {amount}",
+      "left": "{amount} left",
+      "over": "{amount} over",
+      "pace": {
+        "onPace": "on pace",
+        "fast": "spending fast",
+        "over": "over budget"
+      },
+      "allocated": "Allocated",
+      "free": "Free",
+      "perDay": "Per day",
+      "empty": {
+        "title": "No budget yet",
+        "body": "Set a monthly or weekly limit, then split it over your categories. Arca keeps track of whether you are on pace.",
+        "create": "Create budget"
+      },
+      "strategy": {
+        "title": "Budget strategy",
+        "adjust": "Adjust",
+        "nodig": "Needs",
+        "willen": "Wants",
+        "sparen": "Savings",
+        "onIncome": "On {income} income: needs {needs}, wants {wants}, savings {savings}.",
+        "soFar": "So far this month: needs {needs}, wants {wants}, savings {savings}.",
+        "noIncome": "No income this month yet, so there is nothing to split. The percentages apply as soon as income comes in."
+      },
+      "categories": {
+        "title": "Category budgets",
+        "titleShort": "Categories",
+        "add": "Add a category budget",
+        "manage": "Manage",
+        "empty": "No category budgets yet. Give a category its own limit and it shows up here.",
+        "of": "<b>{spent}</b> of {budget}",
+        "edit": "Edit the budget for {name}",
+        "kind": {
+          "nodig": "Need",
+          "willen": "Want",
+          "sparen": "Save"
+        }
+      },
+      "suggestion": {
+        "near": "{name} is at {pct}% with {days, plural, one {# day} other {# days}} to go.",
+        "over": "{name} is {amount} over budget with {days, plural, one {# day} other {# days}} to go.",
+        "move": "Move {amount} from {name}"
+      },
+      "bills": {
+        "title": "{month} bills",
+        "view": "Bills view",
+        "empty": "No bills or subscriptions this month.",
+        "paid": "Paid",
+        "paidOn": "Paid · {date}",
+        "overdue": "Overdue · {date}",
+        "today": "Today",
+        "noDate": "No fixed date",
+        "paidAuto": "Paid, matched to a transaction",
+        "showAll": "Show all"
+      }
     }
   }
 }

@@ -1,16 +1,15 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 export type BudgetStrategy = { nodig: number; willen: number; sparen: number };
 
-const LABELS: Record<keyof BudgetStrategy, string> = {
-  nodig: "Needs",
-  willen: "Wants",
-  sparen: "Savings & Debts",
-};
+// The same three colours as the strategy bar on the Budget page: needs info-blue, wants
+// mustard, savings green. The onboarding wizard (dark) keeps plain white.
 const COLORS: Record<keyof BudgetStrategy, string> = {
-  nodig: "#ffffff",
-  willen: "#ffffff",
-  sparen: "#ffffff",
+  nodig: "var(--arca-info)",
+  willen: "var(--arca-accent)",
+  sparen: "var(--arca-positive)",
 };
 const KEYS = ["nodig", "willen", "sparen"] as const;
 
@@ -28,10 +27,11 @@ export function BudgetStrategySliders({
    *  auth-gradient background where theme tokens go invisible in light mode. */
   dark?: boolean;
 }) {
+  const t = useTranslations("budget.strategyLabels");
   const total = value.nodig + value.willen + value.sparen;
   const c = dark
     ? { label: "text-white/70", inputBg: "bg-white/10", inputText: "text-white", pct: "text-white/70", track: "bg-white/10" }
-    : { label: "text-foreground", inputBg: "bg-foreground/5", inputText: "text-foreground", pct: "text-foreground", track: "bg-foreground/10" };
+    : { label: "text-ink", inputBg: "bg-surface-2", inputText: "text-ink", pct: "text-ink-2", track: "bg-surface-2" };
 
   function set(key: keyof BudgetStrategy, next: number) {
     const max = 100 - (total - value[key]);
@@ -53,7 +53,7 @@ export function BudgetStrategySliders({
         return (
           <div key={key} className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className={`text-sm font-normal px-1 ${c.label}`}>{LABELS[key]}</label>
+              <label className={`text-sm font-normal px-1 ${c.label}`}>{t(key)}</label>
               <div className="flex items-center gap-1">
                 <input
                   type="number"
@@ -61,7 +61,7 @@ export function BudgetStrategySliders({
                   max={max}
                   value={value[key]}
                   onChange={(e) => set(key, parseInt(e.target.value) || 0)}
-                  className={`w-17 text-center rounded-xl py-1 pl-4 text-sm ${c.inputBg} ${c.inputText}`}
+                  className={`w-17 text-center rounded-tile py-1 pl-4 text-sm ${c.inputBg} ${c.inputText}`}
                 />
                 <span className={`text-sm ${c.pct}`}>%</span>
               </div>
@@ -70,11 +70,11 @@ export function BudgetStrategySliders({
               <div className={`absolute inset-x-2 h-1.5 rounded-full ${c.track}`} />
               <div
                 className="absolute h-1.5 rounded-full"
-                style={{ left: 3, width: `calc((100% - 16px) * ${pct / 100})`, backgroundColor: COLORS[key] }}
+                style={{ left: 3, width: `calc((100% - 16px) * ${pct / 100})`, backgroundColor: dark ? "#ffffff" : COLORS[key] }}
               />
               <div
                 className="absolute top-1/2 size-4 rounded-full -translate-y-1/2 -translate-x-1/2 shadow-sm"
-                style={{ left: thumbLeft, backgroundColor: COLORS[key] }}
+                style={{ left: thumbLeft, backgroundColor: dark ? "#ffffff" : COLORS[key] }}
               />
               <input
                 type="range"
@@ -88,8 +88,8 @@ export function BudgetStrategySliders({
           </div>
         );
       })}
-      <div className={`text-xs text-center font-medium ${total === 100 ? "text-success" : "text-danger"}`}>
-        {total !== 100 ? "Total must be 100%" : ""}
+      <div className={`text-xs text-center font-medium ${total === 100 ? "text-positive" : "text-negative"}`}>
+        {total !== 100 ? t("mustTotal") : ""}
       </div>
     </div>
   );

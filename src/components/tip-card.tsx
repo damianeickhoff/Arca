@@ -34,6 +34,7 @@ import {
   IconTrendingUp,
   IconUsers,
   IconWallet,
+  IconArrowsExchange,
 } from "@tabler/icons-react";
 
 import type { TipId } from "@/lib/tips";
@@ -78,6 +79,9 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   activitySearchBar: IconSearch,
   activityContext: IconChartBarPopular,
   activityKeys: IconArrowsVertical,
+  budgetStrategyCard: IconAdjustments,
+  budgetMove: IconArrowsExchange,
+  budgetBills: IconCalendarDue,
 };
 
 /**
