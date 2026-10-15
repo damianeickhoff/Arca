@@ -1,8 +1,10 @@
+import { getLocale, getTranslations } from "next-intl/server";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth } from "@/lib/date-range";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
-import { PageContainer } from "@/components/page-container";
-import { Icon } from "@/components/icon";
+import { PageShell } from "@/components/page-container";
+import { CategoryIcon } from "@/components/ui/category-icon";
+import { SectionHead } from "@/components/ui/page-heading";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
@@ -15,6 +17,7 @@ export default async function UpcomingTransactionsPage() {
   const financialMonth = await getFinancialMonthConfig();
   const month = currentFinancialMonth(financialMonth);
   const { from, to } = financialMonthRangeByMonth(month, financialMonth);
+  const [t, locale] = await Promise.all([getTranslations("upcoming"), getLocale()]);
 
   const statuses = await getBillStatuses(month, financialMonth, UPCOMING_TYPES);
   // Upcoming = has a due date this financial month AND not yet paid.
@@ -47,63 +50,58 @@ export default async function UpcomingTransactionsPage() {
   const total = billsDueTotal(bills);
 
   const fmtDay = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+    new Date(d + "T00:00:00").toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "long" });
 
-  const content = (
-    <div className="pb-24 pt-13 space-y-4">
-    <MobileSubpageHeader title="Upcoming" backHref="/transactions" useHistoryBack />
+  return (
+    <div className="pb-24">
+      <MobileSubpageHeader title={t("title")} backHref="/transactions" useHistoryBack />
+      <PageShell bodyClassName="lg:pt-4">
+        <BillsCalendar
+          from={from}
+          to={to}
+          bills={bills}
+          month={month}
+          title={t("calendarTitle")}
+          showPaidCount={false}
+          dayMode="icons"
+        />
 
-      <BillsCalendar
-        from={from}
-        to={to}
-        bills={bills}
-        month={month}
-        title="Upcoming this month"
-        showPaidCount={false}
-        dayMode="icons"
-      />
-
-      {bills.length === 0 ? (
-        <div className="rounded-2xl bg-card py-16 text-center text-muted-foreground text-sm">
-          No upcoming transactions this month
-        </div>
-      ) : (
-        <div className="space-y-4 px-4 ">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-foreground px-2">Upcoming transactions</h2>
-            <span className="text-sm text-muted-foreground tabular-nums px-2">{formatEur(total)}</span>
+        {bills.length === 0 ? (
+          <div className="rounded-card border border-line bg-surface py-16 text-center text-[13px] text-ink-3 shadow-card">
+            {t("empty")}
           </div>
-          <div className="space-y-4">
-            {[...byDate.entries()].map(([date, items]) => (
-              <div key={date} className="rounded-lg bg-card p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-muted-foreground">{fmtDay(date)}</span>
-                  {items.length > 1 && hasPayableBill(items) && (
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {formatEur(billsDueTotal(items))}
-                    </span>
-                  )}
+        ) : (
+          <section className="flex flex-col gap-3">
+            <SectionHead title={t("listTitle")} link={formatEur(total)} />
+            <div className="flex flex-col gap-3">
+              {[...byDate.entries()].map(([date, items]) => (
+                <div key={date} className="rounded-card border border-line bg-surface px-4 py-3 shadow-card lg:px-[18px]">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="mono-label text-[10px]">{fmtDay(date)}</span>
+                    {items.length > 1 && hasPayableBill(items) && (
+                      <span className="text-xs tabular-nums text-ink-3">{formatEur(billsDueTotal(items))}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    {items.map((b) => (
+                      <div key={b.id} className="flex min-h-[54px] items-center gap-3">
+                        <CategoryIcon icon={b.icon} color={b.iconColor} />
+                        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{b.name}</span>
+                        {b.amount != null && (
+                          <span className={cn("shrink-0 text-sm font-semibold tabular-nums", b.isIncome ? "text-positive" : "text-ink")}>
+                            {b.isIncome ? "+" : ""}
+                            {formatEur(b.amount)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-2.5">
-                  {items.map((b) => (
-                    <div key={b.id} className="flex items-center gap-3">
-                      <Icon iconKey={b.icon} size="md" color={b.iconColor} background={b.iconBackground} />
-                      <span className="flex-1 text-sm font-medium truncate">{b.name}</span>
-                      {b.amount != null && (
-                        <span className={cn("text-sm tabular-nums", b.isIncome ? "text-emerald-600 dark:text-emerald-400" : "text-foreground")}>
-                          {b.isIncome ? "+" : ""}{formatEur(b.amount)}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              ))}
+            </div>
+          </section>
+        )}
+      </PageShell>
     </div>
   );
-
-  return <PageContainer className="px-0">{content}</PageContainer>;
 }

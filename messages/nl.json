@@ -19,7 +19,8 @@
     "save": "Opslaan",
     "spendingByCategory": "Uitgaven per Categorie",
     "showAll": "Alles zien",
-    "recentTransactions": "Recente Transacties"
+    "recentTransactions": "Recente Transacties",
+    "back": "Terug"
   },
   "settingsMenu": {
     "title": "Instellingen",
@@ -1044,7 +1045,12 @@
   },
   "bills": {
     "markPaid": "Markeer als betaald",
-    "markUnpaid": "Markeer als onbetaald"
+    "markUnpaid": "Markeer als onbetaald",
+    "calendarTitle": "Rekeningen deze maand",
+    "paidCount": "{paid}/{total} betaald",
+    "noFixedCosts": "Geen vaste lasten ingesteld.",
+    "noFixedDate": "Geen vaste datum",
+    "paid": "Betaald"
   },
   "activity": {
     "title": "Activiteit",
@@ -1472,5 +1478,11 @@
     "editDebt": "Schuld bewerken",
     "delete": "Verwijderen",
     "confirmDelete": "Schuld “{name}” verwijderen?"
+  },
+  "upcoming": {
+    "title": "Binnenkort",
+    "calendarTitle": "Nog deze maand",
+    "empty": "Geen komende transacties deze maand",
+    "listTitle": "Komende transacties"
   }
 }

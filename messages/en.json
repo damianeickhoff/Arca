@@ -19,7 +19,8 @@
     "save": "Save",
     "spendingByCategory": "Spending by Category",
     "showAll": "Show all",
-    "recentTransactions": "Recent Transactions"
+    "recentTransactions": "Recent Transactions",
+    "back": "Back"
   },
   "settingsMenu": {
     "title": "Settings",
@@ -1044,7 +1045,12 @@
   },
   "bills": {
     "markPaid": "Mark as paid",
-    "markUnpaid": "Mark as unpaid"
+    "markUnpaid": "Mark as unpaid",
+    "calendarTitle": "Bills this month",
+    "paidCount": "{paid}/{total} paid",
+    "noFixedCosts": "No fixed costs configured.",
+    "noFixedDate": "No fixed date",
+    "paid": "Paid"
   },
   "activity": {
     "title": "Activity",
@@ -1472,5 +1478,11 @@
     "editDebt": "Edit debt",
     "delete": "Delete",
     "confirmDelete": "Delete debt “{name}”?"
+  },
+  "upcoming": {
+    "title": "Upcoming",
+    "calendarTitle": "Upcoming this month",
+    "empty": "No upcoming transactions this month",
+    "listTitle": "Upcoming transactions"
   }
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { IconShield, IconMoon } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { ToggleSwitch } from "@/components/toggle-switch";
 import { ThemeSegmented } from "@/components/theme-toggle";
@@ -135,27 +136,28 @@ export function MobileSubpageHeader({
   useHistoryBack?: boolean;
 }) {
   const router = useRouter();
-  const backButtonClassName = "size-11 rounded-full bg-white/70 dark:bg-white/10 backdrop-blur-sm flex items-center justify-center active:scale-[0.97] transition-transform shrink-0";
+  const t = useTranslations("common");
+  const backButtonClassName = "flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:bg-surface-2 active:scale-[0.97]";
 
   return (
-    <div className="px-4 pb-3 pt-4" style={{ paddingTop: `calc(1rem + var(--sat))` }}>
+    <div className="px-5 pb-3 pt-4 lg:px-9" style={{ paddingTop: `calc(1rem + var(--sat))` }}>
       <div className="relative flex items-center justify-between">
         {useHistoryBack ? (
           <button
             type="button"
             onClick={() => router.back()}
-            aria-label="Back"
+            aria-label={t("back")}
             className={backButtonClassName}
           >
-            <ChevronLeft className="size-5 text-foreground" />
+            <ChevronLeft className="size-5" />
           </button>
         ) : (
-          <Link href={backHref} aria-label="Back" className={backButtonClassName}>
-            <ChevronLeft className="size-5 text-foreground" />
+          <Link href={backHref} aria-label={t("back")} className={backButtonClassName}>
+            <ChevronLeft className="size-5" />
           </Link>
         )}
 
-        <h2 className="absolute left-1/2 -translate-x-1/2 text-2xl text-foreground">
+        <h2 className="heading absolute left-1/2 -translate-x-1/2 text-xl text-ink">
           {title}
         </h2>
 
