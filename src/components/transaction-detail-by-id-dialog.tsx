@@ -11,13 +11,13 @@ import type { TransactionDetail } from "@/app/transactions/transaction-types";
 // A static import would leave one of the two undefined at render time depending on
 // which module initialised first — the same reason the sheet loads the recurring
 // detail dialog this way.
-const TransactionDetailDialog = dynamic(
-  () => import("@/app/transactions/transaction-detail-dialog").then((m) => m.TransactionDetailDialog),
+const TransactionPanelSheet = dynamic(
+  () => import("@/app/transactions/_activity/transaction-panel-sheet").then((m) => m.TransactionPanelSheet),
   { ssr: false },
 );
 
 /**
- * Opens the app's transaction detail sheet for a transaction the caller only knows the
+ * Opens the transaction detail panel, in a sheet, for a transaction the caller only knows the
  * id of. The merchant and category profiles list transactions from their own trimmed
  * payloads (id, date, amount, name), so the full row — and the category list the sheet
  * needs — is fetched here on demand.
@@ -84,7 +84,7 @@ export function TransactionDetailByIdDialog({
   if (transactionId == null && row == null) return null;
 
   return (
-    <TransactionDetailDialog
+    <TransactionPanelSheet
       // Cleared the moment the caller closes, so the sheet starts its exit animation
       // immediately even though `row` lingers for the unmount delay above.
       row={transactionId != null ? row : null}

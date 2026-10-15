@@ -9,7 +9,7 @@ import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/interna
 // by src/lib/recurring-match.ts when a transaction matches the item's pattern). Powers
 // the "linked transactions" list in the recurrence detail dialog. Selects the full set
 // of fields TransactionDetail expects so a row can be tapped to open the same
-// TransactionDetailDialog used elsewhere in the app, directly from that list.
+// transaction detail panel used elsewhere in the app, directly from that list.
 export async function GET(req: NextRequest) {
   const denied = await requireAuth();
   if (denied) return denied;

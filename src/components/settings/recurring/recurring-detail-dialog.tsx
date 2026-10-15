@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Icon } from "@/components/icon";
 import { RecurringClient } from "./recurring-client";
-import { TransactionDetailDialog } from "@/app/transactions/transaction-detail-dialog";
+import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
 import { formatEur } from "@/lib/format";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,7 @@ const BUDGET_TYPE_LABELS: Record<string, string> = { nodig: "Needs", willen: "Wa
 
 // Linked-transaction row: the full TransactionDetail shape plus the couple of fields
 // only this list needs (bankName, account) — so a row can be tapped to open the same
-// TransactionDetailDialog used everywhere else in the app.
+// transaction detail panel (in a sheet) used everywhere else in the app.
 type LinkedTx = TransactionDetail & {
   account: string | null;
   bankName: string | null;
@@ -66,7 +66,7 @@ export function RecurringDetailDialog({
   // Keeps the body rendered through the close animation. Without it the caller clears
   // `item` the instant the sheet starts closing, so the content vanishes a frame later
   // and the sheet slides away empty — which reads as an abrupt cut rather than a
-  // dismissal. Synced during render (same pattern as TransactionDetailDialog) and
+  // dismissal. Synced during render (same pattern as the transaction panel sheet) and
   // compared by id, since `item` is used directly while open.
   const [lastItem, setLastItem] = useState<RecurringItem | null>(null);
   if (item && item.id !== lastItem?.id) setLastItem(item);
@@ -324,7 +324,7 @@ function DetailBody({
           {active ? "Pause the recurrence" : "Resume the recurrence"}
         </button>
 
-      <TransactionDetailDialog
+      <TransactionPanelSheet
         row={selectedTx}
         categories={categories}
         onClose={() => setSelectedTx(null)}

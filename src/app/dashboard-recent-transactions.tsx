@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { resolveTransactionIcon } from "@/lib/auto-brand";
 import { resolveDisplayName } from "@/lib/friendly-names";
 import { TRANSFER_TYPE_LABELS } from "@/lib/transfer-types";
-import { TransactionDetailDialog } from "@/app/transactions/transaction-detail-dialog";
+import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
 import type { Category, Goal } from "@/db/schema";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
 
@@ -131,7 +131,7 @@ export function DashboardRecentTransactions({
         </div>
       ))}
 
-      <TransactionDetailDialog
+      <TransactionPanelSheet
         row={detailRow}
         categories={categories}
         savingsGoals={savingsGoals}

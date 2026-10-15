@@ -3,7 +3,7 @@ import { transactions, categories, banks, goals, merchants, recurringItems } fro
 import { eq, and, gte, lte, desc, like, or, sql, asc, isNotNull, inArray } from "drizzle-orm";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { currentFinancialMonth, financialMonthRange, shiftDate } from "@/lib/date-range";
-import { getBudgetOverview } from "@/lib/budget-overview";
+import { getActivityContext } from "@/lib/activity-context";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { billsDueTotal } from "@/lib/bill-amounts";
@@ -12,7 +12,6 @@ import { PageShell } from "@/components/page-container";
 import { getLocale } from "next-intl/server";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
 import { ActivityHeader, ActivityView, type ActivityFilters } from "./_activity/activity-view";
-import type { ActivityContext } from "./_activity/context";
 import { ALL_FROM, todayStr } from "./periods";
 import {
   buildSplitAllocations,
@@ -277,51 +276,10 @@ export default async function TransactionsPage({
     max: sp.max,
   };
 
-  // ── Context for the detail panel (see _activity/context.ts) ──────────────────
+  // ── Context for the detail panel (see _activity/context.ts and lib/activity-context.ts)
   const monthRange = financialMonthRange(financialMonth, 0);
-  const linkedRecurringIds = [...new Set(visibleRows.map((r) => r.recurringItemId).filter((id): id is number => id != null))];
-  const [budgetOverview, monthRows, recurringRows, locale] = await Promise.all([
-    getBudgetOverview(financialMonth),
-    db
-      .select({
-        id: transactions.id,
-        date: transactions.date,
-        direction: transactions.direction,
-        amount: transactions.amount,
-        correctedAmount: transactions.correctedAmount,
-        categoryId: transactions.categoryId,
-        description: transactions.description,
-        merchantName: merchants.name,
-        isReimbursement: transactions.isReimbursement,
-        isInternalTransfer: isInternalTransferExpr,
-      })
-      .from(transactions)
-      .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
-      .where(and(gte(transactions.date, monthRange.from), lte(transactions.date, monthRange.to), eq(transactions.direction, "expense"))),
-    linkedRecurringIds.length > 0
-      ? db.select().from(recurringItems).where(inArray(recurringItems.id, linkedRecurringIds))
-      : Promise.resolve([]),
-    getLocale(),
-  ]);
-
-  // This financial month's expense per category, split by merchant (split-aware).
-  const monthSplits = groupTransactionSplits(await getTransactionSplitRows(monthRows.map((r) => r.id)));
-  const merchantOf = new Map(monthRows.map((r) => [r.id, r.merchantName ?? r.description]));
-  const byCategory = new Map<number, Map<string, number>>();
-  for (const a of buildSplitAllocations(monthRows, monthSplits)) {
-    if (a.direction !== "expense" || a.isInternalTransfer || a.isReimbursement || a.categoryId == null) continue;
-    const name = merchantOf.get(a.transactionId) ?? "";
-    const cat = byCategory.get(a.categoryId) ?? new Map<string, number>();
-    cat.set(name, (cat.get(name) ?? 0) + a.amount);
-    byCategory.set(a.categoryId, cat);
-  }
-  const context: ActivityContext = {
-    budgets: Object.fromEntries(budgetOverview.categories.map((c) => [c.categoryId, { budget: c.budget, spent: c.spent }])),
-    merchantSpend: Object.fromEntries(
-      [...byCategory].map(([id, m]) => [id, [...m].map(([name, amount]) => ({ name, amount })).sort((a, z) => z.amount - a.amount)]),
-    ),
-    recurring: Object.fromEntries(recurringRows.map((r) => [r.id, r])),
-  };
+  const linkedRecurringIds = visibleRows.map((r) => r.recurringItemId).filter((id): id is number => id != null);
+  const [context, locale] = await Promise.all([getActivityContext(financialMonth, linkedRecurringIds), getLocale()]);
 
   // ── The two link tiles ─────────────────────────────────────────────────────
   const resetDate = shiftDate(monthRange.to, 1);

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Pressable } from "@/components/ui/pressable";
 import { StaggerItem } from "@/components/ui/stagger";
 import type { Category, Goal } from "@/db/schema";
-import { TransactionDetailDialog } from "@/app/transactions/transaction-detail-dialog";
+import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
 
 // Rendering every row as a full DOM node + entrance animation is what actually gets
@@ -122,7 +122,7 @@ export function NeedsReviewList({
         </button>
       )}
 
-      <TransactionDetailDialog
+      <TransactionPanelSheet
         row={detailRow}
         categories={categories}
         savingsGoals={savingsGoals}

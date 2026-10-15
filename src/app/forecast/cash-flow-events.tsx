@@ -7,7 +7,7 @@ import { IconChevronRight } from "@tabler/icons-react";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { formatEur } from "@/lib/format";
 import { type ForecastEvent } from "@/lib/cash-flow-forecast-shared";
-import { TransactionDetailDialog } from "@/app/transactions/transaction-detail-dialog";
+import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
 import type { Category, Goal } from "@/db/schema";
 
@@ -101,7 +101,7 @@ export function CashFlowEvents({
         })}
       </div>
 
-      <TransactionDetailDialog
+      <TransactionPanelSheet
         row={open}
         categories={categories}
         savingsGoals={savingsGoals}
