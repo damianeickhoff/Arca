@@ -66,6 +66,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   importBalance: IconScale,
   dataHealth: IconStethoscope,
   importDatePreview: IconCalendarCheck,
+  importCheck: IconChecklist,
+  importMapColumns: IconAdjustments,
   bulkSelect: IconChecklist,
   budgetLocation: IconWallet,
   reportsLocation: IconChartBar,
@@ -126,6 +128,11 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   rulePreview: IconFilter,
   splitSharedCost: IconUsers,
   linkSearchOlder: IconSearch,
+  upcomingMonthNav: IconCalendarDue,
+  needsReviewTriage: IconTag,
+  needsReviewBulk: IconChecklist,
+  financialMonthDays: IconCalendarStats,
+  merchantsWithoutIcon: IconBuildingStore,
 };
 
 /**

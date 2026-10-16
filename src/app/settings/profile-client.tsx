@@ -1,23 +1,15 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  IconUpload as Upload,
-  IconCrop as Crop,
-  IconCamera as Camera,
-} from "@tabler/icons-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import {
-  setAppLockEnabledAction,
-  setPinAction,
-  getAppLockStatus,
-  getWebAuthnChallengeAction,
-  registerWebAuthnCredentialAction,
-  removeWebAuthnCredentialAction,
-} from "@/app/actions/app-lock";
+import { useTranslations } from "next-intl";
+import { IconCrop, IconKey, IconLock, IconShieldCheck, IconShieldLock, IconUpload } from "@tabler/icons-react";
+import { ClearButton } from "@/components/clear/button";
+import { ClearChip } from "@/components/clear/chip";
+import { ClearField, ClearInput } from "@/components/clear/field";
+import { IconTile } from "@/components/clear/icon-tile";
+import { SettingsNotice, SettingsSwitchRow } from "@/components/settings/settings-ui";
+import { setAppLockEnabledAction, setPinAction, getAppLockStatus } from "@/app/actions/app-lock";
 import {
   getMfaStatusAction,
   startTotpEnrollmentAction,
@@ -28,28 +20,27 @@ import {
 import { AvatarCropDialog } from "./avatar-crop-dialog";
 import type { User } from "@/db/schema";
 
-function b64urlToBuffer(b64url: string): ArrayBuffer {
-  const b64 = b64url.replace(/-/g, "+").replace(/_/g, "/");
-  const str = atob(b64);
-  const buf = new Uint8Array(str.length);
-  for (let i = 0; i < str.length; i++) buf[i] = str.charCodeAt(i);
-  return buf.buffer;
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase() || "?";
 }
 
-function bufToB64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let str = "";
-  for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
-  return btoa(str);
+function Loading() {
+  const t = useTranslations("settings.security");
+  return <p role="status" className="m-0 py-4 font-clear text-sm text-clear-muted">{t("loading")}</p>;
 }
 
+// ── Profile photo ────────────────────────────────────────────────────────────
+
+/** The profile photo: the current one (or initials), a button to choose a new one and
+ *  one to re-crop the current one. A chosen file is cropped before it is uploaded. */
 export function AvatarFormContent({ user }: { user: User }) {
+  const t = useTranslations("settings.avatar");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   // The image being cropped — either a fresh local file (blob: URL, revoked after use)
   // or the already-uploaded avatar (re-cropping an existing photo, no re-upload needed).
@@ -57,14 +48,13 @@ export function AvatarFormContent({ user }: { user: User }) {
 
   async function upload(blob: Blob) {
     setUploading(true);
-    setError(null);
+    setFailed(false);
     const formData = new FormData();
     formData.append("file", blob, "avatar.png");
-    const res = await fetch("/api/profile/avatar", { method: "POST", body: formData });
+    const res = await fetch("/api/profile/avatar", { method: "POST", body: formData }).catch(() => null);
     setUploading(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Upload failed.");
+    if (!res?.ok) {
+      setFailed(true);
       return;
     }
     const body = await res.json();
@@ -78,39 +68,47 @@ export function AvatarFormContent({ user }: { user: User }) {
   }
 
   return (
-    <>
-      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-
-      <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={() => setActionsOpen(true)}
-          disabled={uploading}
-          aria-label="Change profile photo"
-          className="relative shrink-0 rounded-full active:scale-[0.97] transition-transform disabled:pointer-events-none"
-        >
+    <div className="flex flex-col gap-3 font-clear text-clear-ink">
+      <div className="flex flex-wrap items-center gap-4 rounded-clear-tile bg-clear-tile p-4">
+        <span className="relative shrink-0">
           {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt={user.name} className="size-[140px] rounded-full object-cover" />
+            <img src={avatarUrl} alt="" className="size-20 rounded-full object-cover" />
           ) : (
-            <div className="size-[140px] rounded-full bg-foreground/10 text-ink flex items-center justify-center text-3xl font-semibold">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <span className="absolute bottom-1 right-1 flex items-center justify-center size-9 rounded-full bg-foreground text-background border-2 border-background">
-            <Camera className="size-4" />
-          </span>
-          {uploading && (
-            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 text-white text-xs font-medium">
-              Uploading…
+            <span aria-hidden className="inline-flex size-20 items-center justify-center rounded-full bg-clear-peach text-2xl font-extrabold text-clear-peach-ink">
+              {initials(user.name)}
             </span>
           )}
-        </button>
+          {uploading && (
+            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-clear-hero/60 text-xs font-bold text-clear-hero-ink">
+              {t("uploading")}
+            </span>
+          )}
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="truncate text-[15px] font-bold">{user.name}</span>
+            <span className="text-[13px] text-clear-muted">{t("hint")}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <ClearButton size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+              <IconUpload aria-hidden stroke={2} />
+              {avatarUrl ? t("change") : t("choose")}
+            </ClearButton>
+            {avatarUrl && (
+              <ClearButton size="sm" variant="surface" disabled={uploading} onClick={() => setCropSource({ url: avatarUrl, isBlob: false })}>
+                <IconCrop aria-hidden stroke={2} />
+                {t("crop")}
+              </ClearButton>
+            )}
+          </div>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
           accept="image/png,image/jpeg,image/webp"
           className="hidden"
+          aria-label={t("choose")}
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) setCropSource({ url: URL.createObjectURL(file), isBlob: true });
@@ -119,40 +117,7 @@ export function AvatarFormContent({ user }: { user: User }) {
         />
       </div>
 
-      <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
-        <DialogContent title="Profile photo">
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="w-full justify-start"
-              onClick={() => {
-                setActionsOpen(false);
-                fileInputRef.current?.click();
-              }}
-            >
-              <Upload className="size-4" />
-              Choose new photo
-            </Button>
-            {avatarUrl && (
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="w-full justify-start"
-                onClick={() => {
-                  setActionsOpen(false);
-                  setCropSource({ url: avatarUrl, isBlob: false });
-                }}
-              >
-                <Crop className="size-4" />
-                Crop current photo
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {failed && <SettingsNotice>{t("uploadError")}</SettingsNotice>}
 
       <AvatarCropDialog
         imageUrl={cropSource?.url ?? null}
@@ -163,238 +128,172 @@ export function AvatarFormContent({ user }: { user: User }) {
           upload(blob);
         }}
       />
-    </>
+    </div>
   );
 }
 
+// ── App lock ─────────────────────────────────────────────────────────────────
+
+/** App lock: the switch that asks for a PIN when the app opens, and setting or
+ *  changing that PIN (typed twice). The switch stays off until a PIN exists. */
 export function AppLockSectionContent() {
+  const t = useTranslations("settings.appLock");
   const router = useRouter();
+  const ids = useId();
   const [enabled, setEnabled] = useState(false);
   const [hasPinHash, setHasPinHash] = useState(false);
-  const [hasWebAuthn, setHasWebAuthn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(false);
+  const [toggleFailed, setToggleFailed] = useState(false);
 
-  // PIN setup state
   const [pinStep, setPinStep] = useState<"idle" | "enter" | "confirm">("idle");
   const [pin, setPin] = useState("");
   const [pinConfirm, setPinConfirm] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinSaving, setPinSaving] = useState(false);
-
-  // WebAuthn state
-  const [biometricLoading, setBiometricLoading] = useState(false);
-  const [biometricError, setBiometricError] = useState<string | null>(null);
-  const [biometricSupported, setBiometricSupported] = useState(false);
-  // Why biometrics can't be offered, so we can explain instead of silently hiding the option.
-  // "secure" = not an HTTPS/secure context (e.g. reached over http://<lan-ip> on the phone);
-  // "device" = secure but no platform authenticator (Face ID / fingerprint) available.
-  const [biometricReason, setBiometricReason] = useState<"secure" | "device" | null>(null);
+  const [pinSaved, setPinSaved] = useState(false);
 
   useEffect(() => {
     getAppLockStatus().then((s) => {
       setEnabled(s.enabled);
       setHasPinHash(s.hasPinHash);
-      setHasWebAuthn(s.hasWebAuthn);
       setLoading(false);
     });
-    // Check platform authenticator availability. WebAuthn only exists in a secure
-    // context (HTTPS or localhost) — over http://<lan-ip> on a phone the whole API is
-    // absent, which is the usual reason "Face ID" seems missing on mobile.
-    if (!window.isSecureContext) {
-      setBiometricReason("secure");
-    } else if (window.PublicKeyCredential) {
-      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-        .then((ok) => { setBiometricSupported(ok); if (!ok) setBiometricReason("device"); })
-        .catch(() => setBiometricReason("device"));
-    } else {
-      setBiometricReason("device");
-    }
   }, []);
 
-  async function toggleEnabled() {
+  async function toggleEnabled(next: boolean) {
     setToggling(true);
-    const next = !enabled;
-    await setAppLockEnabledAction(next);
-    setEnabled(next);
+    setToggleFailed(false);
+    const result = await setAppLockEnabledAction(next).catch(() => ({ error: "failed" }));
     setToggling(false);
+    if (result && "error" in result && result.error) {
+      setToggleFailed(true);
+      return;
+    }
+    setEnabled(next);
     // AppLockGate reads `enabled` from the root layout's server render, which Next only
     // re-fetches on a hard navigation — without this, flipping the toggle looks like it
     // worked (the switch flips) but the lock never actually engages until the next reload.
     router.refresh();
   }
 
+  function resetPin(step: "idle" | "enter") {
+    setPinStep(step);
+    setPinError(null);
+    setPin("");
+    setPinConfirm("");
+  }
+
   async function savePin(finalPin: string) {
     setPinSaving(true);
     setPinError(null);
-    const result = await setPinAction(finalPin);
+    const result = await setPinAction(finalPin).catch(() => ({ error: "failed" }));
     setPinSaving(false);
-    if (result.error) {
-      setPinError(result.error);
-    } else {
-      setHasPinHash(true);
-      setPinStep("idle");
-      setPin("");
-      setPinConfirm("");
+    if (result?.error) {
+      setPinError(t("pinSaveError"));
+      return;
     }
+    setHasPinHash(true);
+    setPinSaved(true);
+    resetPin("idle");
   }
 
   function handlePinSubmit() {
     if (pinStep === "enter") {
-      if (!/^\d{4,6}$/.test(pin)) { setPinError("Passcode must be 4–6 digits."); return; }
+      if (!/^\d{4,6}$/.test(pin)) { setPinError(t("pinInvalid")); return; }
       setPinError(null);
       setPinStep("confirm");
     } else if (pinStep === "confirm") {
-      if (pin !== pinConfirm) { setPinError("Passcodes do not match."); setPinConfirm(""); return; }
+      if (pin !== pinConfirm) { setPinError(t("pinMismatch")); setPinConfirm(""); return; }
       savePin(pin);
     }
   }
 
-  async function registerBiometric() {
-    setBiometricLoading(true);
-    setBiometricError(null);
-    try {
-      const { challenge } = await getWebAuthnChallengeAction();
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge: b64urlToBuffer(challenge),
-          rp: { name: "Arca", id: window.location.hostname },
-          user: {
-            id: new Uint8Array(16).fill(1),
-            name: "arca-user",
-            displayName: "Arca user",
-          },
-          pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-          authenticatorSelection: {
-            authenticatorAttachment: "platform",
-            userVerification: "required",
-            residentKey: "preferred",
-          },
-          timeout: 60000,
-          attestation: "none",
-        },
-      }) as PublicKeyCredential | null;
+  if (loading) return <Loading />;
 
-      if (!credential) throw new Error("Registration cancelled.");
-      const response = credential.response as AuthenticatorAttestationResponse;
-
-      const publicKeyBuffer = response.getPublicKey();
-      if (!publicKeyBuffer) throw new Error("No public key received.");
-
-      const result = await registerWebAuthnCredentialAction(
-        credential.id,
-        bufToB64(publicKeyBuffer),
-      );
-
-      if (result.error) throw new Error(result.error);
-      setHasWebAuthn(true);
-      router.refresh();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Registration failed.";
-      if (!msg.toLowerCase().includes("cancel") && !msg.includes("NotAllowed")) {
-        setBiometricError(msg);
-      }
-    } finally {
-      setBiometricLoading(false);
-    }
-  }
-
-  async function removeBiometric() {
-    setBiometricLoading(true);
-    await removeWebAuthnCredentialAction();
-    setHasWebAuthn(false);
-    setBiometricLoading(false);
-    router.refresh();
-  }
-
-  if (loading) {
-    return <p className="text-xs text-ink-3 mt-1">Loading...</p>;
-  }
+  const value = pinStep === "enter" ? pin : pinConfirm;
 
   return (
-    <div className="space-y-4">
-      {/* Enable toggle */}
-      <div className="h-16 rounded-row px-4 flex items-center bg-[var(--dialog-content-background)] justify-between gap-4 py-1">
-        <div className="flex items-center gap-2">
-          <span className="text-md font-medium">App lock</span>
+    <div className="flex flex-col gap-3 font-clear text-clear-ink">
+      <SettingsSwitchRow
+        icon={<IconLock stroke={1.9} />}
+        label={t("toggleLabel")}
+        hint={hasPinHash || enabled ? t("toggleHint") : t("needsPin")}
+        checked={enabled}
+        onCheckedChange={toggleEnabled}
+        disabled={toggling || (!hasPinHash && !enabled)}
+      />
+      {toggleFailed && <SettingsNotice>{t("toggleError")}</SettingsNotice>}
+
+      <div className="flex flex-col gap-4 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+        <div className="flex flex-wrap items-center gap-3.5">
+          <span aria-hidden className="inline-flex size-10 shrink-0 items-center justify-center rounded-clear-icon bg-clear-card [&_svg]:size-5">
+            <IconKey stroke={1.9} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-bold">{t("pinTitle")}</span>
+            <span className="text-[13px] text-clear-muted">{hasPinHash ? t("pinSet") : t("pinHint")}</span>
+          </span>
+          {pinStep === "idle" && (
+            <ClearButton size="sm" variant={hasPinHash ? "surface" : "primary"} onClick={() => { setPinSaved(false); resetPin("enter"); }}>
+              {hasPinHash ? t("changePin") : t("setUpPin")}
+            </ClearButton>
+          )}
         </div>
-        <button
-          onClick={toggleEnabled}
-          disabled={toggling || (!hasPinHash && !enabled)}
-          title={!hasPinHash && !enabled ? "Set up a passcode first" : undefined}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-            enabled ? "bg-black" : "bg-foreground/20"
-          }`}
-        >
-          <span className={`inline-block size-4 transform rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-6" : "translate-x-1"}`} />
-        </button>
-      </div>
-      {!hasPinHash && !enabled && (
-        <p className="text-xs text-ink-3 -mt-3">Set up a passcode below before enabling app lock.</p>
-      )}
 
-      {/* PIN setup */}
-      <div className="space-y-2">
-
-        {pinStep === "idle" ? (
-          <Button
-            type="button"
-            variant="default"
-            size="lg"
-            className="w-full"
-            onClick={() => { setPinStep("enter"); setPinError(null); setPin(""); setPinConfirm(""); }}
-          >
-            {hasPinHash ? "Change passcode" : "Set up passcode"}
-          </Button>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-xs text-ink-3">
-              {pinStep === "enter" ? "Choose a passcode (4–6 digits):" : "Confirm your passcode:"}
-            </p>
-            <Input
-              backgroundClassName="bg-[var(--dialog-content-background)]"
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={6}
-              placeholder="••••"
-              autoFocus
-              value={pinStep === "enter" ? pin : pinConfirm}
-              onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, "");
-                if (pinStep === "enter") setPin(v);
-                else setPinConfirm(v);
-                setPinError(null);
-              }}
-              onKeyDown={(e) => { if (e.key === "Enter") handlePinSubmit(); }}
-            />
-            {pinError && <p className="text-xs text-destructive">{pinError}</p>}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="destructive"
-                className="flex-1"
-                onClick={() => { setPinStep("idle"); setPinError(null); setPin(""); setPinConfirm(""); }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="flex-1"
-                disabled={pinSaving || (pinStep === "enter" ? pin.length < 4 : pinConfirm.length < 4)}
-                onClick={handlePinSubmit}
-              >
-                {pinSaving ? "Saving..." : pinStep === "enter" ? "Volgende" : "Save"}
-              </Button>
+        {pinStep !== "idle" && (
+          <div className="flex flex-col gap-3">
+            <ClearField
+              label={pinStep === "enter" ? t("choosePin") : t("confirmPin")}
+              htmlFor={`${ids}-pin`}
+              error={pinError ?? undefined}
+            >
+              <ClearInput
+                // A fresh field for the second entry, so the browser doesn't keep the first.
+                key={pinStep}
+                id={`${ids}-pin`}
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                autoComplete="off"
+                placeholder="••••"
+                autoFocus
+                className="bg-clear-card"
+                value={value}
+                aria-invalid={pinError ? true : undefined}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, "");
+                  if (pinStep === "enter") setPin(v);
+                  else setPinConfirm(v);
+                  setPinError(null);
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter") handlePinSubmit(); }}
+              />
+            </ClearField>
+            <div className="flex flex-wrap justify-end gap-2.5">
+              <ClearButton variant="surface" onClick={() => resetPin("idle")}>{t("cancel")}</ClearButton>
+              <ClearButton disabled={pinSaving || value.length < 4} onClick={handlePinSubmit}>
+                {pinSaving ? t("saving") : pinStep === "enter" ? t("next") : t("savePin")}
+              </ClearButton>
             </div>
           </div>
         )}
       </div>
+
+      {pinSaved && <SettingsNotice tone="success">{t("pinSaved")}</SettingsNotice>}
     </div>
   );
 }
 
+// ── Two-factor sign-in ───────────────────────────────────────────────────────
+
+/** Two-factor sign-in with an authenticator app: set up (scan, confirm a code, save
+ *  the backup codes), make new backup codes, or turn it off — the last two ask for the
+ *  current password. */
 export function TwoFactorSectionContent() {
+  const t = useTranslations("settings.twoFactor");
+  const ids = useId();
   const [loading, setLoading] = useState(true);
   const [enabled, setEnabled] = useState(false);
   const [pending, setPending] = useState(false);
@@ -416,20 +315,21 @@ export function TwoFactorSectionContent() {
   async function startSetup() {
     setPending(true);
     setError(null);
-    const result = await startTotpEnrollmentAction();
+    const result = await startTotpEnrollmentAction().catch(() => ({ error: "failed" }));
     setPending(false);
-    if ("error" in result) { setError(result.error); return; }
+    if ("error" in result) { setError(t("setupError")); return; }
     setEnrollment(result);
     setCode("");
     setStep("qr");
   }
 
   async function confirmSetup() {
+    if (code.length !== 6) return;
     setPending(true);
     setError(null);
-    const result = await confirmTotpEnrollmentAction(code);
+    const result = await confirmTotpEnrollmentAction(code).catch(() => ({ error: "failed", backupCodes: undefined }));
     setPending(false);
-    if (result.error) { setError(result.error); return; }
+    if (result.error) { setError(t("codeInvalid")); return; }
     setEnabled(true);
     setBackupCodes(result.backupCodes ?? []);
     setStep("backupCodes");
@@ -442,68 +342,71 @@ export function TwoFactorSectionContent() {
     setCode("");
   }
 
-  async function submitDisable() {
+  async function submitPassword() {
+    if (!password) return;
     setPending(true);
     setError(null);
-    const result = await disableTotpAction(password);
-    setPending(false);
-    if (result.error) { setError(result.error); return; }
-    setEnabled(false);
-    setPassword("");
+    if (step === "disable") {
+      const result = await disableTotpAction(password).catch(() => ({ error: "failed" }));
+      setPending(false);
+      if (result.error) { setError(t("passwordInvalid")); return; }
+      setEnabled(false);
+      setPassword("");
+      setStep("idle");
+    } else {
+      const result = await regenerateBackupCodesAction(password).catch(() => ({ error: "failed", backupCodes: undefined }));
+      setPending(false);
+      if (result.error) { setError(t("passwordInvalid")); return; }
+      setPassword("");
+      setBackupCodes(result.backupCodes ?? []);
+      setStep("backupCodes");
+    }
+  }
+
+  function cancel() {
     setStep("idle");
-  }
-
-  async function submitRegenerate() {
-    setPending(true);
-    setError(null);
-    const result = await regenerateBackupCodesAction(password);
-    setPending(false);
-    if (result.error) { setError(result.error); return; }
+    setEnrollment(null);
     setPassword("");
-    setBackupCodes(result.backupCodes ?? []);
-    setStep("backupCodes");
+    setCode("");
+    setError(null);
   }
 
-  if (loading) {
-    return <p className="text-xs text-ink-3 mt-1">Loading...</p>;
-  }
+  if (loading) return <Loading />;
 
   if (step === "qr") {
     return (
-      <div className="space-y-3">
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        <p className="text-xs text-ink-3">Scan deze QR-code met Google Authenticator (of een andere TOTP-app):</p>
+      <div className="flex flex-col gap-4 font-clear text-clear-ink">
+        <p className="m-0 text-sm text-clear-ink-2">{t("scan")}</p>
         {enrollment && (
+          // QR codes need a white quiet zone to scan, in either theme.
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={enrollment.qrDataUrl} alt="QR code" className="mx-auto size-40 rounded-tile bg-white p-2" />
+          <img src={enrollment.qrDataUrl} alt={t("qrAlt")} className="size-44 self-center rounded-clear-tile bg-white p-2.5" />
         )}
-        <p className="text-xs text-ink-3 break-all">
-          Of voer handmatig in: <span className="font-mono">{enrollment?.secret}</span>
-        </p>
-        <label className="text-sm font-medium text-ink-2">Bevestig met een 6-cijferige code</label>
-        <Input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={6}
-          placeholder="123456"
-          autoFocus
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          onKeyDown={(e) => { if (e.key === "Enter") confirmSetup(); }}
-        />
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={() => { setStep("idle"); setEnrollment(null); setError(null); }}
-          >
-            Cancel
-          </Button>
-          <Button type="button" className="flex-1" disabled={pending || code.length !== 6} onClick={confirmSetup}>
-            {pending ? "Bevestigen..." : "Bevestigen"}
-          </Button>
+        <div className="flex flex-col gap-1 rounded-clear-tile bg-clear-tile px-4 py-3">
+          <span className="text-[13px] font-bold text-clear-ink-2">{t("manualEntry")}</span>
+          <span className="font-mono text-sm break-all">{enrollment?.secret}</span>
+        </div>
+        <ClearField label={t("codeLabel")} htmlFor={`${ids}-code`} error={error ?? undefined}>
+          <ClearInput
+            id={`${ids}-code`}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={6}
+            autoComplete="one-time-code"
+            placeholder="123456"
+            autoFocus
+            value={code}
+            aria-invalid={error ? true : undefined}
+            onChange={(e) => { setCode(e.target.value.replace(/\D/g, "")); setError(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter") confirmSetup(); }}
+          />
+        </ClearField>
+        <div className="flex flex-wrap justify-end gap-2.5">
+          <ClearButton variant="secondary" onClick={cancel}>{t("cancel")}</ClearButton>
+          <ClearButton disabled={pending || code.length !== 6} onClick={confirmSetup}>
+            {pending ? t("confirming") : t("confirm")}
+          </ClearButton>
         </div>
       </div>
     );
@@ -511,77 +414,70 @@ export function TwoFactorSectionContent() {
 
   if (step === "backupCodes") {
     return (
-      <div className="space-y-3">
-        <p className="text-xs text-ink-3">
-          Bewaar deze back-upcodes op een veilige plek. Elke code werkt één keer als je geen toegang hebt tot je authenticator-app.
-        </p>
-        <div className="grid grid-cols-2 gap-1.5 rounded-tile bg-surface-2 p-3 font-mono text-sm">
-          {backupCodes?.map((c) => <span key={c}>{c}</span>)}
-        </div>
-        <Button type="button" className="w-full" onClick={finishBackupCodes}>
-          Ik heb deze opgeslagen
-        </Button>
+      <div className="flex flex-col gap-4 font-clear text-clear-ink">
+        <SettingsNotice tone="warning">{t("backupIntro")}</SettingsNotice>
+        <ul aria-label={t("backupLabel")} className="m-0 grid list-none grid-cols-2 gap-2 rounded-clear-tile bg-clear-tile p-4 font-mono text-sm">
+          {backupCodes?.map((c) => <li key={c}>{c}</li>)}
+        </ul>
+        <ClearButton className="self-start" onClick={finishBackupCodes}>{t("backupDone")}</ClearButton>
       </div>
     );
   }
 
   if (step === "disable" || step === "regenerate") {
-    const submit = step === "disable" ? submitDisable : submitRegenerate;
     return (
-      <div className="space-y-2">
-        <p className="text-xs text-ink-3">Bevestig met je huidige wachtwoord.</p>
-        <Input
-          type="password"
-          autoFocus
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => { setPassword(e.target.value); setError(null); }}
-          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
-        />
-        {error && <p className="text-xs text-destructive">{error}</p>}
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={() => { setStep("idle"); setPassword(""); setError(null); }}
+      <div className="flex flex-col gap-4 font-clear text-clear-ink">
+        <p className="m-0 text-sm text-clear-ink-2">{step === "disable" ? t("disableIntro") : t("regenerateIntro")}</p>
+        <ClearField label={t("passwordLabel")} htmlFor={`${ids}-password`} error={error ?? undefined}>
+          <ClearInput
+            id={`${ids}-password`}
+            type="password"
+            autoFocus
+            autoComplete="current-password"
+            value={password}
+            aria-invalid={error ? true : undefined}
+            onChange={(e) => { setPassword(e.target.value); setError(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter") submitPassword(); }}
+          />
+        </ClearField>
+        <div className="flex flex-wrap justify-end gap-2.5">
+          <ClearButton variant="secondary" onClick={cancel}>{t("cancel")}</ClearButton>
+          <ClearButton
+            disabled={pending || !password}
+            onClick={submitPassword}
+            className={step === "disable" ? "bg-clear-negative text-clear-card" : undefined}
           >
-            Cancel
-          </Button>
-          <Button type="button" className="flex-1" disabled={pending || !password} onClick={submit}>
-            {pending ? "Bezig..." : "Bevestigen"}
-          </Button>
+            {pending ? t("working") : step === "disable" ? t("turnOff") : t("makeNewCodes")}
+          </ClearButton>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {error && <p className="text-xs text-destructive">{error}</p>}
+    <div className="flex flex-col gap-3 font-clear text-clear-ink">
+      <div className="flex flex-wrap items-center gap-3.5 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+        <IconTile tone={enabled ? "mint" : "neutral"} size="md" className={enabled ? undefined : "bg-clear-card"}>
+          {enabled ? <IconShieldCheck stroke={1.9} /> : <IconShieldLock stroke={1.9} />}
+        </IconTile>
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-[15px] font-bold">{t("title")}</span>
+            <ClearChip tone={enabled ? "mint" : "stone"}>{enabled ? t("on") : t("off")}</ClearChip>
+          </span>
+          <span className="text-[13px] text-clear-muted">{enabled ? t("onHint") : t("offHint")}</span>
+        </span>
+      </div>
+      {error && <SettingsNotice>{error}</SettingsNotice>}
       {enabled ? (
-        <div className="flex gap-2 ">
-          <Button
-            type="button"
-            variant="default"
-            className="flex-1"
-            onClick={() => { setStep("regenerate"); setError(null); }}
-          >
-            <p className="text-background">Nieuwe back-upcodes</p>
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            className="flex-1"
-            onClick={() => { setStep("disable"); setError(null); }}
-          >
-            <p className="tracking-wide">Uitschakelen</p>
-          </Button>
+        <div className="flex flex-wrap gap-2.5">
+          <ClearButton variant="secondary" onClick={() => { setStep("regenerate"); setError(null); }}>{t("newBackupCodes")}</ClearButton>
+          <ClearButton variant="danger" onClick={() => { setStep("disable"); setError(null); }}>{t("turnOff")}</ClearButton>
         </div>
       ) : (
-        <Button type="button" variant="outline" size="lg" className="w-full" disabled={pending} onClick={startSetup}>
-          Setup
-        </Button>
+        <ClearButton className="self-start" disabled={pending} onClick={startSetup}>
+          {pending ? t("working") : t("setUp")}
+        </ClearButton>
       )}
     </div>
   );

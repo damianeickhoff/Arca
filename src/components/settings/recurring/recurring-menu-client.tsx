@@ -1,18 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { IconAdjustmentsHorizontal as Filter, IconCheck as Check, IconSearch as Search } from "@tabler/icons-react";
+import { useLocale, useTranslations } from "next-intl";
+import { IconRepeat } from "@tabler/icons-react";
 import { RecurringClient, RecurringRestoreButton } from "@/components/settings/recurring/recurring-client";
 import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
 import { ContextualTip } from "@/components/contextual-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { SettingsEmpty, SettingsSearch } from "@/components/settings/settings-ui";
 import { Icon } from "@/components/icon";
+import { ListRow } from "@/components/clear/list-row";
+import { ClearChip } from "@/components/clear/chip";
+import { Amount } from "@/components/clear/amount";
+import { MoneyText } from "@/components/clear/money";
 import { formatEur, toMonthly } from "@/lib/format";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import { recurringPeriodStatus } from "@/lib/recurring-status";
@@ -20,41 +20,26 @@ import { nextOccurrence } from "@/lib/recurring-occurrence";
 import { shiftDate } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 import type { RecurringItem, Category } from "@/db/schema";
-import { MoneyText } from "@/components/clear/money";
 
-const FILTERS = [
-  { value: "all",          label: "All" },
-  { value: "income",       label: "Income" },
-  { value: "bill",         label: "Bills" },
-  { value: "subscription", label: "Subscriptions" },
-  { value: "debt",         label: "Debts" },
-  { value: "savings",      label: "Savings" },
-] as const;
+const FILTERS = ["all", "income", "bill", "subscription", "debt", "savings"] as const;
+type Filter = (typeof FILTERS)[number];
 
-const ITEM_LABELS: Record<string, string> = {
-  income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt", savings: "Savings",
-};
-
-const BUDGET_LABELS: Record<string, string> = {
-  nodig: "Needs", willen: "Wants", sparen: "Savings",
-};
-
-// Single-letter frequency indicator shown as a pill next to the title.
-const FREQ_LETTER: Record<string, string> = {
-  daily: "D", weekly: "W", monthly: "M", quarterly: "Q", yearly: "Y", once: "1×",
-};
+// Stored budget types are Dutch; the labels live under recurringForm.budgetTypes.
+const BUDGET_KEY: Record<string, "needs" | "wants" | "savings"> = { nodig: "needs", willen: "wants", sparen: "savings" };
 
 interface Props {
   items: RecurringItem[];
   categories: Category[];
 }
 
-function fmtDue(iso: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
-
+/** The Recurring settings panel: the monthly total, type filters and a search, then
+ *  every recurring item (a row opens its detail) and the dismissed ones to restore. */
 export function RecurringMenuClient({ items, categories }: Props) {
-  const [filter, setFilter] = useState<string>("all");
+  const t = useTranslations("settings.recurringList");
+  const tPanels = useTranslations("settings.panels");
+  const tForm = useTranslations("recurringForm");
+  const locale = useLocale();
+  const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   // Track just the id, not the item object — otherwise router.refresh() (e.g. after
   // saving an edit) produces new item objects in `items` while this state keeps
@@ -80,177 +65,153 @@ export function RecurringMenuClient({ items, categories }: Props) {
     return map;
   }, [items]);
 
+  const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
   const activeItems = items.filter((i) => !i.dismissed);
   const query = search.trim().toLowerCase();
+  const countFor = (f: Filter) => (f === "all" ? activeItems.length : activeItems.filter((i) => i.type === f).length);
 
-  // Items shown for the current filter + search query.
+  // Items shown for the current filter + search query — alphabetical, so the list is a
+  // stable index you can scan for a specific bill. `base` sensitivity so casing and
+  // accents don't split otherwise-adjacent names.
   const visible = activeItems
     .filter((i) => (filter === "all" ? true : i.type === filter))
     .filter((i) => !query || i.name.toLowerCase().includes(query))
-    // Alphabetical, so the list is a stable index you can scan for a specific bill.
-    // (It used to lead with whatever was due soonest, which reshuffled as dates passed.)
-    // `base` sensitivity so casing and accents don't split otherwise-adjacent names.
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
 
-  // Monthly total for the header line. For income the total is income items; for any
-  // expense-oriented filter (all/bill/subscription/debt) it's the non-income items.
+  // Monthly total for the summary line: income items in the income view, otherwise the
+  // non-income items (all) or the chosen type.
   const isIncomeView = filter === "income";
   const totalPool = activeItems.filter((i) =>
-    isIncomeView ? i.type === "income" : (filter === "all" ? i.type !== "income" : i.type === filter),
+    isIncomeView ? i.type === "income" : filter === "all" ? i.type !== "income" : i.type === filter,
   );
   const monthlyTotal = totalPool.reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
-  const perMonthLabel = isIncomeView ? "in income per month" : "in expenses per month";
 
   const dismissedItems = filter === "all" ? items.filter((i) => i.dismissed) : [];
-
-  const activeFilterLabel = FILTERS.find((f) => f.value === filter)!.label;
-
-  const filterMenu = (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label="Filter"
-        className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
-      >
-        <Filter className="size-5 text-ink" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {FILTERS.map((f) => (
-          <DropdownMenuItem key={f.value} onClick={() => setFilter(f.value)}>
-            <span className="flex-1">{f.label}</span>
-            {filter === f.value && <Check className="size-4 text-ink-2" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 
   return (
     <>
       <ContextualTip id="recurring" />
-      <PanelHeader
-        title="Recurring"
-        action={<>{filterMenu}<RecurringClient action="add" variant="default" /></>}
-      />
+      <PanelHeader title={tPanels("recurring.title")} action={<RecurringClient action="add" variant="default" />} />
 
-      <div className="px-4 pt-3 pb-28 var(--dialog-background)">
-        {/* Total line */}
-        <div className="mb-6">
-          <p className="text-md text-ink-3">
-            {filter === "all" ? "Total" : activeFilterLabel} <span className="font-black px-1">·</span> <span className="text-ink-3"><span className="bg-[var(--dialog-content-background)] px-2 py-0.5 rounded-full">{visible.length}/{activeItems.length}</span> transaction{activeItems.length === 1 ? "" : "s"} active</span>
-          </p>
-          <p className="text-4xl font-medium tabular-nums tracking-tight py-3"><MoneyText>{formatEur(monthlyTotal)}</MoneyText></p>
-          <p className="text-md text-ink-3 -mt-1">{perMonthLabel}</p>
+      <div className="flex flex-col gap-4 px-4 pt-1 pb-8 font-clear text-clear-ink">
+        {/* Summary */}
+        <div className="flex flex-col gap-1">
+          <span className="text-[13px] font-bold text-clear-ink-2">
+            {t("summaryLabel", { shown: visible.length, count: activeItems.length })}
+          </span>
+          <span className="flex flex-wrap items-baseline gap-x-2">
+            <Amount value={monthlyTotal} className="text-[34px] leading-none tracking-[-0.03em]" />
+            <span className="text-sm text-clear-muted">{isIncomeView ? t("perMonthIncome") : t("perMonthExpenses")}</span>
+          </span>
         </div>
+
+        {/* Filters */}
+        <div role="group" aria-label={t("filterLabel")} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+          {FILTERS.map((f) => {
+            const on = f === filter;
+            return (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setFilter(f)}
+                className={cn(
+                  "inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3.5 text-[13px] font-bold transition-colors outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+                  on ? "bg-clear-primary text-clear-primary-ink" : "bg-clear-tile text-clear-ink hover:bg-clear-line",
+                )}
+              >
+                {t(`filters.${f}`)}
+                <span className={cn("tabular-nums", on ? "opacity-70" : "text-clear-muted")}>{countFor(f)}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <SettingsSearch value={search} onChange={setSearch} placeholder={t("search")} label={t("search")} />
 
         {/* List */}
         {visible.length === 0 && dismissedItems.length === 0 ? (
-          <div className="rounded-card bg-[var(--dialog-content-background)] py-16 text-center text-ink-3">
-            <p className="text-sm">No recurring items found</p>
-          </div>
+          <SettingsEmpty icon={<IconRepeat stroke={1.9} />} action={<RecurringClient action="add" variant="default" />}>
+            {query ? t("noMatch") : t("empty")}
+          </SettingsEmpty>
         ) : (
-          <div className="space-y-3">
+          <div className="flex flex-col">
             {visible.map((item) => {
               const cat = item.categoryId != null ? catById.get(item.categoryId) : undefined;
               const due = dueDateByItemId[item.id];
-              // Shown under the amount: transaction type + budget type, e.g. "Subscription • Needs".
-              const typeBudget =
-                (ITEM_LABELS[item.type] ?? item.type) +
-                (item.budgetType && BUDGET_LABELS[item.budgetType] ? ` • ${BUDGET_LABELS[item.budgetType]}` : "");
               const status = recurringPeriodStatus(item);
+              const budgetKey = item.budgetType ? BUDGET_KEY[item.budgetType] : undefined;
+              const meta = [
+                cat?.name ?? t("noCategory"),
+                tForm(`frequencies.${item.frequency}` as "frequencies.monthly"),
+                due ? t("next", { date: dateFmt.format(new Date(`${due}T12:00:00`)) }) : null,
+                !item.active && status === "active" ? t("inactive") : null,
+              ]
+                .filter(Boolean)
+                .join(" · ");
               return (
-                <button
+                <ListRow
                   key={item.id}
-                  type="button"
                   onClick={() => setDetailItemId(item.id)}
-                  className="block w-full text-left"
-                >
-                    <div className={cn("flex items-top gap-4 rounded-card bg-[var(--dialog-content-background)] px-4 py-3.5", !item.active && "opacity-50")}>
-                      <Icon
-                        iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
-                        color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
-                        size="md"
-                        round
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
-                          {/* Single-letter frequency indicator next to the title. */}
-                          <span className="shrink-0 rounded-full bg-foreground/8 text-ink-2 text-[10px] font-medium px-1.5 py-0.5 leading-none">
-                            {FREQ_LETTER[item.frequency] ?? item.frequency}
-                          </span>
-                          {status === "future" && (
-                            <span className="shrink-0 rounded-full bg-info-soft text-info text-[10px] font-medium px-1.5 py-0.5 leading-none">
-                              Upcoming
-                            </span>
-                          )}
-                          {status === "expired" && (
-                            <span className="shrink-0 rounded-full bg-warning-soft text-warning text-[10px] font-medium px-1.5 py-0.5 leading-none">
-                              Expired
-                            </span>
-                          )}
-                          {item.source === "auto" && (
-                            <span className="shrink-0 rounded-full bg-primary/10 text-primary text-[10px] font-medium px-1.5 py-0.5 leading-none">
-                              Auto
-                            </span>
-                          )}
-                        </div>
-                        {/* Under the title: the linked category name. */}
-                        <p className="text-sm text-ink-3 truncate">
-                          {cat?.name ?? "No category"}
-                          {!item.active && status === "active" && " · Inactive"}
-                        </p>
-                        <p className="text-sm text-ink-3 truncate">
-                          {due && <> Next {fmtDue(due)}</>}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-lg font-semibold tabular-nums leading-tight">
-                          <MoneyText>{item.amount ? formatEur(item.amount) : "—"}</MoneyText>
-                        </p>
-                        {/* Under the amount: transaction type + budget type. */}
-                        <p className="text-xs text-ink-3 mt-0.5 truncate">{typeBudget}</p>
-                      </div>
-                    </div>
-                </button>
+                  className={cn(!item.active && "opacity-60")}
+                  icon={
+                    <Icon
+                      iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
+                      color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
+                      soft
+                      size="md"
+                    />
+                  }
+                  title={
+                    <span className="inline-flex min-w-0 max-w-full items-center gap-2">
+                      <span className="truncate">{item.name}</span>
+                      {status === "future" && <ClearChip tone="sky" className="h-6 px-2.5 text-xs">{t("upcoming")}</ClearChip>}
+                      {status === "expired" && <ClearChip tone="butter" className="h-6 px-2.5 text-xs">{t("expired")}</ClearChip>}
+                      {item.source === "auto" && <ClearChip tone="lilac" className="h-6 px-2.5 text-xs">{t("auto")}</ClearChip>}
+                    </span>
+                  }
+                  meta={meta}
+                  trailing={
+                    <span className="flex shrink-0 flex-col items-end gap-0.5">
+                      {item.amount ? (
+                        <Amount value={item.type === "income" ? item.amount : -item.amount} sign={item.type === "income" ? "always" : "auto"} className="text-[17px]" />
+                      ) : (
+                        <span className="text-[17px] font-bold text-clear-muted">—</span>
+                      )}
+                      <span className="text-xs text-clear-muted">
+                        {tForm(`types.${item.type}` as "types.bill")}
+                        {budgetKey ? ` · ${tForm(`budgetTypes.${budgetKey}`)}` : ""}
+                      </span>
+                    </span>
+                  }
+                />
               );
             })}
 
             {/* Dismissed auto-detected items — kept so detection never recreates them, restorable. */}
             {dismissedItems.length > 0 && (
-              <section className="pt-4">
-                <h2 className="text-sm font-medium text-ink-3 px-1 mb-2">Dismissed</h2>
-                <div className="space-y-3">
-                  {dismissedItems.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 rounded-card bg-[var(--dialog-content-background)] px-5 py-4 opacity-70">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-lg font-semibold truncate leading-tight">{item.name}</p>
-                        <p className="text-sm text-ink-3 mt-0.5 truncate">
-                          {item.matchPattern ? `Pattern: ${item.matchPattern}` : "Won't be auto-detected again"}
-                        </p>
-                      </div>
-                      <RecurringRestoreButton item={item} />
+              <section aria-labelledby="recurring-dismissed" className="mt-5 flex flex-col gap-1.5">
+                <h3 id="recurring-dismissed" className="m-0 flex h-10 items-center rounded-clear-icon bg-clear-tile px-3 text-[15px] font-bold">
+                  {t("dismissed")} <span className="ml-1 font-semibold text-clear-muted">· {dismissedItems.length}</span>
+                </h3>
+                {dismissedItems.map((item) => (
+                  <div key={item.id} className="flex min-h-16 items-center gap-3 border-b border-clear-ground px-2 last:border-b-0">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="truncate text-[15px] font-bold text-clear-ink-2">{item.name}</span>
+                      <span className="truncate text-[13px] text-clear-muted">
+                        <MoneyText>
+                          {item.matchPattern ? t("pattern", { pattern: item.matchPattern }) : t("notDetectedAgain")}
+                          {item.amount ? ` · ${formatEur(item.amount)}` : ""}
+                        </MoneyText>
+                      </span>
                     </div>
-                  ))}
-                </div>
+                    <RecurringRestoreButton item={item} />
+                  </div>
+                ))}
               </section>
             )}
           </div>
         )}
-      </div>
-
-      {/* Hovering search bar — absolute against the (positioned) dialog panel so it
-          floats at the panel's bottom over the scrolling list, same convention as the
-          Categories panel's search + add bar. */}
-      <div className="absolute inset-x-0 bottom-[calc(1.5rem+var(--sab))] px-4 z-30">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-ink-3 pointer-events-none" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search recurring"
-            className="h-14 w-full rounded-full bg-black/7 dark:bg-white/7 backdrop-blur-lg pl-12 pr-4 text-base outline-none placeholder:text-ink-3"
-          />
-        </div>
       </div>
 
       <RecurringDetailDialog

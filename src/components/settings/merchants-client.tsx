@@ -1,25 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { IconSearch as Search, IconChevronRight as ChevronRight } from "@tabler/icons-react";
-import { Input } from "@/components/ui/input";
+import { useTranslations } from "next-intl";
+import { IconBuildingStore, IconChevronRight } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
+import { ListRow } from "@/components/clear/list-row";
+import { Segmented } from "@/components/clear/segmented";
+import { ClearProgress } from "@/components/clear/progress";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
+import { SettingsEmpty, SettingsSearch } from "@/components/settings/settings-ui";
 import { MerchantDetailPortal, merchantIcon, type MerchantRef } from "@/components/merchant-detail-portal";
 import { MerchantSettingsClient, MerchantSettingsOverlay } from "@/components/settings/merchant-settings-client";
 import { formatEur } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import type { MerchantListItem } from "@/lib/merchants";
-import { MoneyText } from "@/components/clear/money";
 
-interface Props {
-  initialMerchants: MerchantListItem[];
-  /** Renders the shared sticky PanelHeader — on for the settings-dialog panel, which
-   *  supplies no chrome of its own. Mirrors BrandIconsClient's prop of the same name. */
-  panelHeader?: boolean;
-}
+type Filter = "all" | "noIcon";
 
-export function MerchantsClient({ initialMerchants, panelHeader = true }: Props) {
+/** The Merchants settings panel: how many merchants have a logo, a search and an
+ *  All / Without icon switch, and the list. A row opens the merchant editor. */
+export function MerchantsClient({ initialMerchants }: { initialMerchants: MerchantListItem[] }) {
+  const t = useTranslations("settings.merchants");
+  const tPanels = useTranslations("settings.panels");
   const [merchants, setMerchants] = useState<MerchantListItem[]>(initialMerchants);
 
   // Same render-time sync as BrandIconsClient: router.refresh() hands down a fresh
@@ -31,6 +33,7 @@ export function MerchantsClient({ initialMerchants, panelHeader = true }: Props)
   }
 
   const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
   const [openProfile, setOpenProfile] = useState<MerchantRef | null>(null);
 
   // `editingId` keeps the editor mounted; `editVisible` drives its slide animation, so
@@ -43,69 +46,73 @@ export function MerchantsClient({ initialMerchants, panelHeader = true }: Props)
     setTimeout(() => setEditingId(null), 320);
   }
 
+  const withIcon = merchants.filter((m) => merchantIcon(m).iconKey != null).length;
+  const withoutIcon = merchants.length - withIcon;
   const term = query.trim().toLowerCase();
-  const visible = term ? merchants.filter((m) => m.name.toLowerCase().includes(term)) : merchants;
+  const visible = merchants
+    .filter((m) => filter === "all" || merchantIcon(m).iconKey == null)
+    .filter((m) => !term || m.name.toLowerCase().includes(term));
   const editing = merchants.find((m) => m.id === editingId) ?? null;
 
   return (
     <>
-      {panelHeader && <PanelHeader title="Merchants" />}
-      <div className="px-4 pt-1 pb-8 space-y-4">
+      <PanelHeader title={tPanels("merchants.title")} />
+      <div className="flex flex-col gap-4 px-4 pt-1 font-clear text-clear-ink">
         {merchants.length > 0 && (
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-ink-3" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search merchants"
-              className="pl-10 text-sm"
-            />
-          </div>
+          <>
+            <div className="flex flex-col gap-2 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-[15px] font-bold">{t("count", { count: merchants.length })}</span>
+                <span className="text-[13px] text-clear-ink-2">{t("withIcon", { count: withIcon, total: merchants.length })}</span>
+              </div>
+              <ClearProgress value={withIcon / merchants.length} size="sm" fillClassName="bg-clear-positive-fill" />
+            </div>
+
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <SettingsSearch value={query} onChange={setQuery} placeholder={t("search")} label={t("search")} className="min-w-0 flex-1" />
+              <span data-tip-anchor="merchantsWithoutIcon" className="inline-flex shrink-0">
+                <Segmented
+                  label={t("filterLabel")}
+                  surface="tile"
+                  value={filter}
+                  onChange={setFilter}
+                  items={[
+                    { value: "all", label: t("filterAll", { count: merchants.length }) },
+                    { value: "noIcon", label: t("filterNoIcon", { count: withoutIcon }) },
+                  ]}
+                />
+              </span>
+            </div>
+          </>
         )}
 
         {visible.length > 0 ? (
-          <section>
-            <div className="flex items-baseline justify-between px-1 mb-2.5">
-              <h2 className="text-sm font-medium text-ink-3">Merchants</h2>
-              <span className="text-sm font-medium text-ink-3 tabular-nums">{visible.length}</span>
-            </div>
-            <div className="space-y-3">
-              {visible.map((m) => {
-                const icon = merchantIcon(m);
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => { setEditingId(m.id); setEditVisible(true); }}
-                    className={cn(
-                      "w-full flex items-center gap-4 rounded-row px-4 py-3.5 text-left active:scale-[0.99] transition-transform",
-                      panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface",
-                    )}
-                  >
-                    <span className="size-12 shrink-0">
-                      <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} round size="xl" />
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-lg truncate leading-tight">{m.name}</p>
-                      <p className="text-sm text-ink-3 truncate mt-0.5 tabular-nums">
-                        {m.transactionCount} {m.transactionCount === 1 ? "transaction" : "transactions"} · <MoneyText>{formatEur(m.totalSpent)}</MoneyText>
-                      </p>
-                    </div>
-                    <ChevronRight className="size-4 text-ink-3 shrink-0" />
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ) : (
-          <div className={cn("rounded-card py-16 text-center text-ink-3", panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface")}>
-            <p className="text-sm">{term ? "No merchants match that search" : "No merchants yet"}</p>
+          <div className="flex flex-col">
+            {visible.map((m) => {
+              const icon = merchantIcon(m);
+              return (
+                <ListRow
+                  key={m.id}
+                  onClick={() => { setEditingId(m.id); setEditVisible(true); }}
+                  icon={<Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} soft size="md" />}
+                  title={m.name}
+                  meta={`${t("transactionCount", { count: m.transactionCount })} · ${formatEur(m.totalSpent)}`}
+                  trailing={<IconChevronRight aria-hidden size={18} stroke={2} className="shrink-0 text-clear-placeholder" />}
+                />
+              );
+            })}
           </div>
+        ) : (
+          <SettingsEmpty icon={<IconBuildingStore stroke={1.9} />}>
+            {term ? t("noMatch") : filter === "noIcon" ? t("allHaveIcons") : t("empty")}
+          </SettingsEmpty>
         )}
       </div>
 
-      {/* Edit merchant — a full-screen slide-over above the settings panel, the same
-          drill-down shape CategoryDetailPortal uses for its embedded category editor.
+      {/* The Without icon switch is new — point it out once. */}
+      {merchants.length > 0 && <AnchoredTip id="merchantsWithoutIcon" anchor="merchantsWithoutIcon" />}
+
+      {/* Edit merchant — a full-screen slide-over above the settings panel.
           z-[52] sits above the settings dialog (z-50) and below BrandIconPicker's own
           dialog (overlay z-85 / content z-90), so the icon picker still opens on top. */}
       {editing && (

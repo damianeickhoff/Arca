@@ -1,4 +1,93 @@
 {
+  "auth": {
+    "copyright": "© {year} Arca",
+    "brand": {
+      "label": "About Arca",
+      "title": "Know what you can spend. Every day.",
+      "body": "Arca turns your bank exports into one calm number: what is safe to spend today, after bills and savings. Built for households who share the costs.",
+      "previewSafeToSpend": "Safe to spend",
+      "previewOnPace": "On pace",
+      "previewPerDay": "About <b>{amount} a day</b> until payday",
+      "previewSaved": "Saved {amount} · {percent}% of income",
+      "previewBill": "Energy Co {amount}",
+      "previewBillDue": "Due in 3 days",
+      "privacy": "Your data stays in your household. No bank login needed, just import a CSV."
+    },
+    "signIn": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your household",
+      "email": "Email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "remember": "Keep me signed in",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "or": "or",
+      "newHere": "New here?",
+      "createAccount": "Create an account",
+      "registered": "Account created. You can now sign in.",
+      "language": "Language"
+    },
+    "mfa": {
+      "back": "Back to sign in",
+      "backFor": "Back to sign in for {email}",
+      "title": "Enter your code",
+      "body": "Open your authenticator app and enter the 6-digit code for Arca.",
+      "backupTitle": "Enter a backup code",
+      "backupBody": "Use one of the backup codes you saved when you turned on two-step sign-in. Each code works once.",
+      "codeLabel": "6-digit code",
+      "backupLabel": "Backup code",
+      "backupPlaceholder": "XXXX-XXXX",
+      "verify": "Verify",
+      "verifying": "Verifying…",
+      "useBackup": "Use a backup code instead",
+      "useApp": "Use your authenticator app instead",
+      "refresh": "Codes refresh every 30 seconds.",
+      "keypad": "Keypad",
+      "backspace": "Delete last digit"
+    },
+    "errors": {
+      "invalidCredentials": "That email and password don't match.",
+      "sessionExpired": "Your sign-in timed out. Please sign in again.",
+      "tooManyAttempts": "Too many wrong codes. Please sign in again.",
+      "wrongCode": "That code isn't right. Try again."
+    }
+  },
+  "appLock": {
+    "title": "Welcome back, {name}",
+    "titleNoName": "Welcome back",
+    "body": "Enter your PIN to open Arca",
+    "dots": "{filled} of {total} digits entered",
+    "keypad": "PIN keypad",
+    "delete": "Delete last digit",
+    "biometric": "Unlock with biometrics",
+    "unlock": "Unlock",
+    "wrongPin": "That PIN isn't right. Try again.",
+    "unlockFailed": "Arca couldn't unlock. Try again.",
+    "biometricFailed": "Biometric unlock didn't work. Enter your PIN."
+  },
+  "statusPages": {
+    "error": {
+      "title": "Something went wrong on our side",
+      "body": "Your data is safe. Try again, or go back to Home. If it keeps happening, the reference helps find the cause.",
+      "reference": "Reference {digest}",
+      "tryAgain": "Try again",
+      "backHome": "Back to Home",
+      "help": "Still stuck? <link>Visit Help & tips</link>"
+    },
+    "notFound": {
+      "title": "This page doesn't exist",
+      "body": "The link may be old or the page has moved. Your data is untouched.",
+      "backHome": "Back to Home"
+    },
+    "offline": {
+      "title": "You're offline",
+      "body": "Arca needs a connection to load your data. Check your network and try again.",
+      "tryAgain": "Try again"
+    }
+  },
   "common": {
     "fields": {
       "description": "Description",
@@ -99,7 +188,7 @@
       },
       "appLock": {
         "title": "App lock",
-        "subtitle": "Ask for a PIN or your fingerprint when the app opens."
+        "subtitle": "Ask for a PIN when the app opens."
       },
       "language": {
         "title": "Language",
@@ -119,14 +208,13 @@
       }
     },
     "inline": {
-      "appearanceHint": "Controls how the app looks. \"System default\" follows your device settings.",
+      "appearanceHint": "Controls how the app looks on this device. \"Same as your device\" follows its light or dark mode.",
       "privacyHint": "Hides every amount in the app behind dots, so you can use it in public without revealing balances.",
       "privacyMode": "Privacy mode",
       "showAmounts": "Show amounts",
       "hideAmounts": "Hide amounts",
       "languageHint": "Choose the language for the interface.",
       "currencyHint": "Currency symbol shown on amounts.",
-      "addOverride": "Add override",
       "helpTitle": "Questions or problems?",
       "helpBody": "Email support and we'll get back to you as soon as possible.",
       "contactSupport": "Contact support"
@@ -151,10 +239,29 @@
     "brandIcons": {
       "title": "Brand icons",
       "subtitle": "Transactions whose name matches a rule get that logo.",
-      "rules": "Rules",
-      "empty": "No rules yet",
+      "empty": "No rules yet. Add one to give matching transactions a logo.",
       "addRule": "Add rule",
+      "editRule": "Edit the rule for {name}",
+      "newTitle": "New brand icon rule",
+      "editTitle": "Edit brand icon rule",
+      "dialogSubtitle": "Transactions whose name matches get this logo.",
+      "close": "Close",
+      "pattern": "Name",
+      "patternPlaceholder": "e.g. KFC",
+      "matchLabel": "Match",
+      "matchHint": {
+        "contains": "The name contains the text, also inside a word.",
+        "word": "The name contains it as a whole word, so MCD doesn't match McDonalds.",
+        "exact": "The name is exactly this text."
+      },
+      "icon": "Icon",
+      "background": "Background",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save",
       "saving": "Saving…",
+      "saveError": "The rule could not be saved. Try again.",
+      "deleteError": "The rule could not be deleted. Try again.",
       "matchWord": "Whole word",
       "matchContains": "Contains",
       "matchExact": "Exact",
@@ -163,6 +270,69 @@
       "deleteRuleConfirm": "Delete rule"
     },
     "categories": {
+      "listTitle": "Categories",
+      "breadcrumb": "Where you are",
+      "back": "Back to categories",
+      "new": "New category",
+      "newTitle": "New category",
+      "newSubtitle": "Its icon, colour and budget type decide where it shows up.",
+      "edit": "Edit",
+      "done": "Done",
+      "reset": "Reset to defaults",
+      "resetting": "Resetting…",
+      "resetError": "The categories could not be reset. Try again.",
+      "search": "Search categories",
+      "noMatch": "No categories match that search.",
+      "empty": "No categories yet. Add one to start sorting your spending.",
+      "subcategoryCount": "{count, plural, one {# subcategory} other {# subcategories}}",
+      "addSubcategory": "Add a subcategory to {parent}",
+      "rulesSummary": "{count, plural, =0 {No rules sort new imports yet} one {# rule sorts new imports into these categories} other {# rules sort new imports into these categories}}",
+      "rulesSummaryHint": "Anything a rule doesn't catch lands in Needs review. Open a category to manage its rules.",
+      "budgetType": "Budget type",
+      "budgetTypes": {
+        "nodig": "Needs",
+        "willen": "Wants",
+        "sparen": "Savings"
+      },
+      "budgetTypeHints": {
+        "nodig": "Needs count towards the needs part of your budget plan.",
+        "willen": "Wants count towards the wants part of your budget plan.",
+        "sparen": "Savings count towards what you put aside each month."
+      },
+      "appearance": "Appearance",
+      "appearanceHint": "Shown on every transaction, budget and report in this category.",
+      "budget": "Budget",
+      "budgetHint": "Decides which part of your plan this category counts towards.",
+      "name": "Name",
+      "namePlaceholder": "e.g. Groceries",
+      "parent": "Parent category",
+      "noParent": "None (top level)",
+      "icon": "Icon",
+      "color": "Colour",
+      "changeIcon": "Change icon",
+      "colorFromParent": "A subcategory uses its parent's colour.",
+      "ruleCount": "{count, plural, =0 {No rules} one {# rule} other {# rules}}",
+      "rulesTitle": "Rules",
+      "rulesHint": "New imports that match one of these go straight to {name}.",
+      "rulesStaged": "Rules are created when you save the category.",
+      "noRules": "No rules yet.",
+      "addRule": "Add a rule",
+      "editRule": "Edit rule",
+      "deleteRule": "Delete rule",
+      "ruleMatch": "{match} “{pattern}”",
+      "ruleAnyName": "Any description",
+      "ruleAnyAmount": "Any amount",
+      "cancel": "Cancel",
+      "close": "Close",
+      "create": "Create category",
+      "save": "Save",
+      "saving": "Saving…",
+      "delete": "Delete category",
+      "createError": "The category could not be created. Try again.",
+      "saveError": "The category could not be saved. Try again.",
+      "deleteError": "The category could not be deleted. Try again.",
+      "ruleSaveError": "The rule could not be saved. Try again.",
+      "ruleDeleteError": "The rule could not be deleted. Try again.",
       "resetTitle": "Reset categories to the defaults?",
       "resetBody": "All custom categories and rules are deleted and the default set is restored. Your transactions are kept, but lose their category until the default rules re-assign them.",
       "resetConfirm": "Reset categories",
@@ -171,19 +341,233 @@
       "deleteConfirm": "Delete category"
     },
     "merchants": {
+      "count": "{count, plural, one {# merchant} other {# merchants}}",
+      "withIcon": "{count} of {total} with a brand icon",
+      "search": "Search merchants",
+      "filterLabel": "Show merchants",
+      "filterAll": "All {count}",
+      "filterNoIcon": "Without icon {count}",
+      "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
+      "noMatch": "No merchants match that search.",
+      "allHaveIcons": "Every merchant has an icon.",
+      "empty": "No merchants yet. They appear as you import transactions.",
+      "back": "Back",
+      "editTitle": "Edit merchant",
+      "deleteLabel": "Delete merchant",
+      "name": "Name",
+      "nameHint": "Renaming updates every transaction linked to this merchant.",
+      "namePlaceholder": "Merchant name",
+      "icon": "Icon",
+      "activity": "Activity",
+      "transactions": "Transactions",
+      "totalSpent": "Total spent",
+      "lastVisit": "Last visit",
+      "viewProfile": "View spending profile",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "saveError": "This merchant could not be saved. Try again.",
+      "deleteError": "This merchant could not be deleted. Try again.",
       "deleteTitle": "Delete the merchant “{name}”?",
       "deleteBody": "{count, plural, =0 {No transactions use it.} one {Its # transaction stays, but loses its merchant.} other {Its # transactions stay, but lose their merchant.}}",
       "deleteConfirm": "Delete merchant"
     },
     "users": {
+      "intro": "{count, plural, one {# person signs in} other {# people sign in}} to this household and share its accounts, budgets and goals.",
+      "empty": "No users yet.",
+      "you": "You",
+      "roleAdmin": "Admin",
+      "roleMember": "Member",
+      "roleFor": "Role for {name}",
+      "deleteLabel": "Delete {name}",
+      "roleError": "The role could not be changed. Try again.",
+      "deleteError": "This user could not be deleted. Try again.",
+      "rolesTitle": "Roles",
+      "peopleCount": "{count, plural, one {# person} other {# people}}",
+      "roleAdminBody": "Manages who can sign in and their roles, and can do everything a member can.",
+      "roleMemberBody": "Uses the household day to day: transactions, budgets, goals and settings. Can't manage users.",
       "deleteTitle": "Delete {name}?",
       "deleteBody": "They're signed out and can't sign in any more. This can't be undone.",
       "deleteConfirm": "Delete user"
     },
+    "financialMonth": {
+      "title": "Your month starts on",
+      "subtitle": "Budgets, insights and safe to spend all follow this period.",
+      "startDay": "Start day",
+      "startDayValue": "The {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+      "dayLabel": "Day {day}",
+      "periodHint": "Usually your payday. This period runs {range}.",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "startDayError": "The start day could not be saved. Try again.",
+      "weekendError": "The weekend setting could not be saved. Try again.",
+      "currentPeriod": "Current period",
+      "dayOf": "Day {day} of {total} · {left, plural, one {# day} other {# days}} left including today",
+      "timelineAria": "The period runs from {from} to {to}. Today, {today}, is day {day} of {total}.",
+      "today": "Today · {date}",
+      "periodStarts": "Period starts",
+      "nextStarts": "Next period starts {date}",
+      "weekendLabel": "Move the start to Friday when it falls on a weekend",
+      "weekendHint": "For a salary that arrives before the weekend."
+    },
     "monthOverrides": {
+      "intro": "When a payday moves (holidays, weekends), shift just that month.",
+      "add": "Add an override",
+      "empty": "No overrides yet. Add one when a payday moves for a single month.",
+      "row": "Starts {start} instead of {usual} · runs {range}",
+      "rowSame": "Your usual start day · runs {range}",
+      "editLabel": "Edit the override for {month}",
+      "deleteLabel": "Delete the override for {month}",
+      "saveError": "The override for {month} could not be saved. Try again.",
+      "deleteError": "The override for {month} could not be deleted. Try again.",
+      "addTitle": "New override",
+      "editTitle": "Edit override",
+      "dialogSubtitle": "A different start day for one month only.",
+      "close": "Close",
+      "month": "Month",
+      "startDay": "Start day",
+      "startDayHint": "1 to 28. Your usual start day is the {usual, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}.",
+      "startDayInvalid": "Pick a day from 1 to 28.",
+      "preview": "That period runs {range}.",
+      "replaces": "{month} already has an override. Saving replaces it.",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "addConfirm": "Add override",
       "deleteTitle": "Delete the override for {month}?",
       "deleteBody": "That month starts on your usual start day again.",
       "deleteConfirm": "Delete override"
+    },
+    "budgetModes": {
+      "billsTitle": "Count recurring bills in category budgets",
+      "billsSubtitle": "Choose how fixed bills like rent and energy affect your category budgets.",
+      "savesStraightAway": "Saves straight away",
+      "bills": {
+        "always": "Always",
+        "alwaysHint": "Every bill counts toward its category's budget.",
+        "budgeted": "Only budgeted categories",
+        "budgetedHint": "Bills count only where you've set a budget for that category.",
+        "exclude": "Never",
+        "excludeHint": "Budgets only track day-to-day spending; recurring bills are ignored."
+      },
+      "billsFooter": "Recurring bills (rent, insurance, subscriptions) are already tracked separately. This decides whether their spending also counts against your category budgets.",
+      "sharedSubtitle": "How split bills and money paid back show up in your reports.",
+      "saveError": "This setting could not be saved. Try again."
+    },
+    "options": {
+      "themeLabel": "Theme",
+      "theme": {
+        "light": "Light",
+        "lightHint": "Bright grey and white",
+        "dark": "Dark",
+        "darkHint": "Easy on the eyes at night",
+        "system": "Same as your device",
+        "systemHint": "Switches with your device's light or dark mode"
+      },
+      "languageLabel": "Language",
+      "currentLanguage": "Current language",
+      "languages": {
+        "en": "English",
+        "nl": "Dutch"
+      },
+      "currencyLabel": "Currency",
+      "currencies": {
+        "EUR": "Euro",
+        "USD": "US dollar",
+        "GBP": "British pound"
+      },
+      "currencyError": "The currency could not be saved. Try again."
+    },
+    "recurringList": {
+      "summaryLabel": "Showing {shown} of {count} active items",
+      "perMonthExpenses": "in expenses per month",
+      "perMonthIncome": "in income per month",
+      "filterLabel": "Filter by type",
+      "filters": {
+        "all": "All",
+        "income": "Income",
+        "bill": "Bills",
+        "subscription": "Subscriptions",
+        "debt": "Debts",
+        "savings": "Savings"
+      },
+      "search": "Search recurring items",
+      "noMatch": "No recurring items match that search.",
+      "empty": "No recurring items yet. Add your rent, salary or subscriptions.",
+      "noCategory": "No category",
+      "next": "Next {date}",
+      "inactive": "Inactive",
+      "upcoming": "Upcoming",
+      "expired": "Ended",
+      "auto": "Auto",
+      "dismissed": "Dismissed",
+      "pattern": "Pattern: {pattern}",
+      "notDetectedAgain": "Won't be detected again"
+    },
+    "security": {
+      "loading": "Loading…"
+    },
+    "avatar": {
+      "uploading": "Uploading…",
+      "hint": "PNG, JPG or WEBP. You can crop it after choosing.",
+      "change": "Change photo",
+      "choose": "Choose a photo",
+      "crop": "Crop",
+      "uploadError": "The photo could not be uploaded. Use a PNG, JPG or WEBP image."
+    },
+    "appLock": {
+      "toggleLabel": "Ask for a PIN when opening the app",
+      "toggleHint": "Also asked when the app comes back from the background.",
+      "needsPin": "Set up a PIN below first.",
+      "toggleError": "App lock could not be changed. Try again.",
+      "pinTitle": "PIN",
+      "pinHint": "Pick a 4 to 6 digit code only you know.",
+      "pinSet": "A PIN is set. Change it whenever you like.",
+      "setUpPin": "Set up PIN",
+      "changePin": "Change PIN",
+      "choosePin": "Choose a PIN (4 to 6 digits)",
+      "confirmPin": "Enter the same PIN again",
+      "pinInvalid": "The PIN must be 4 to 6 digits.",
+      "pinMismatch": "The PINs don't match. Enter it again.",
+      "pinSaveError": "The PIN could not be saved. Try again.",
+      "pinSaved": "Your PIN is saved.",
+      "cancel": "Cancel",
+      "next": "Next",
+      "savePin": "Save PIN",
+      "saving": "Saving…"
+    },
+    "twoFactor": {
+      "title": "Two-factor sign-in",
+      "on": "On",
+      "off": "Off",
+      "onHint": "After your password, a 6-digit code from your authenticator app is asked.",
+      "offHint": "Add a second step: a 6-digit code from an authenticator app after your password.",
+      "setUp": "Set up",
+      "working": "One moment…",
+      "setupError": "Setup could not be started. Try again.",
+      "scan": "Scan this QR code with Google Authenticator or another authenticator app.",
+      "qrAlt": "QR code for your authenticator app",
+      "manualEntry": "Or enter this key by hand",
+      "codeLabel": "The 6-digit code from the app",
+      "codeInvalid": "That code isn't right. Try the current code from the app.",
+      "confirm": "Turn on",
+      "confirming": "Checking…",
+      "cancel": "Cancel",
+      "backupIntro": "Keep these backup codes somewhere safe. Each code works once, if you can't use your authenticator app.",
+      "backupLabel": "Backup codes",
+      "backupDone": "I've saved these",
+      "newBackupCodes": "New backup codes",
+      "turnOff": "Turn off",
+      "disableIntro": "Confirm with your current password to turn two-factor sign-in off.",
+      "regenerateIntro": "Confirm with your current password. Your old backup codes stop working.",
+      "passwordLabel": "Current password",
+      "passwordInvalid": "That password isn't right.",
+      "makeNewCodes": "Make new codes"
+    },
+    "dialog": {
+      "profile": "Your profile",
+      "version": "Arca {version}"
     }
   },
   "budget": {
@@ -814,6 +1198,14 @@
       "title": "Check the dates first",
       "body": "This shows exactly what your date column turns into. If it says \"not a date\", you've picked the wrong column or format — fix it here and nothing broken gets imported."
     },
+    "importCheck": {
+      "title": "Nothing is imported yet",
+      "body": "Check the preview first: you see which rows are new and which duplicates are skipped. Only Import adds them."
+    },
+    "importMapColumns": {
+      "title": "Bank read wrong, or not at all?",
+      "body": "Map columns lets you pick the date, description and amount columns yourself. Centje saves it as a profile for next time."
+    },
     "dataHealth": {
       "title": "Something imported wrong?",
       "body": "Data Health finds transactions with an unreadable date — the kind an import with the wrong column mapping leaves behind — and lets you correct or delete them."
@@ -965,6 +1357,26 @@
     "linkSearchOlder": {
       "title": "Not in the list?",
       "body": "The list shows recent expenses. Search to find an older one by name."
+    },
+    "upcomingMonthNav": {
+      "title": "Look back or ahead",
+      "body": "Use the arrows to see which bills were paid in an earlier month, or what is coming up next month."
+    },
+    "needsReviewTriage": {
+      "title": "One at a time",
+      "body": "Pick a category and press Save and next (or Enter). Switch on the rule and similar transactions get that category from now on."
+    },
+    "needsReviewBulk": {
+      "title": "Sort several at once",
+      "body": "Tap Select to pick several transactions from the queue and give them a category in one go."
+    },
+    "financialMonthDays": {
+      "title": "Tap a day to set your start",
+      "body": "Your month now starts on the day you tap, and it saves straight away. The bar below shows where today sits in the period."
+    },
+    "merchantsWithoutIcon": {
+      "title": "Find merchants without a logo",
+      "body": "Switch to Without icon to see only the merchants that still have no logo, then open one to give it one."
     },
     "privacyEye": {
       "title": "Hide your amounts",
@@ -1139,6 +1551,99 @@
     "confirm": "Confirm",
     "delete": "Delete"
   },
+  "importPage": {
+    "title": "Import a bank export",
+    "subtitle": "CSV from your bank · duplicates are skipped automatically",
+    "steps": {
+      "label": "Import steps",
+      "upload": "Upload",
+      "check": "Check",
+      "done": "Done",
+      "completed": "(done)"
+    },
+    "drop": {
+      "title": "Drop a CSV here or choose a file",
+      "titleAnother": "Drop another CSV here or choose a file",
+      "hint": "The CSV or TXT export from your bank's website or app · nothing is imported until you check it",
+      "choose": "Choose file",
+      "reading": "Reading your file…",
+      "release": "Let go to check this file"
+    },
+    "check": {
+      "label": "Check your import",
+      "recognised": "Recognised",
+      "bankSource": "{rows, plural, one {# row} other {# rows}} · recognised as an export from {bank}",
+      "profileSource": "{rows, plural, one {# row} other {# rows}} · recognised by your import profile “{profile}”",
+      "chooseAnother": "Choose another file",
+      "preview": "Preview",
+      "previewMeta": "First {shown} of {total, plural, one {# row} other {# rows}}",
+      "previewTable": "Preview of the first {count, plural, one {row} other {# rows}}",
+      "columns": {
+        "date": "Date",
+        "description": "Description",
+        "amount": "Amount",
+        "balance": "Balance",
+        "result": "Result"
+      },
+      "status": {
+        "new": "New",
+        "duplicate": "Duplicate · skipped",
+        "invalidDate": "Unreadable date · skipped"
+      },
+      "newTitle": "{count, plural, =0 {Nothing new in this file} one {# new transaction} other {# new transactions}}",
+      "newBody": "Your rules will set categories as they come in",
+      "newBodyNone": "Everything in this file is already in Centje",
+      "duplicatesTitle": "{count, plural, one {# duplicate} other {# duplicates}} will be skipped",
+      "duplicatesBody": "Already in Centje — matched on date, amount and description",
+      "invalidTitle": "{count, plural, one {# row has} other {# rows have}} an unreadable date",
+      "invalidBody": "These rows are skipped. If that is most of the file, use Map columns instead.",
+      "cancel": "Cancel",
+      "confirm": "Import {count, plural, one {# transaction} other {# transactions}}",
+      "confirmNone": "Import anyway",
+      "importing": "Importing…"
+    },
+    "done": {
+      "title": "{count, plural, =0 {Nothing new imported} one {# transaction imported} other {# transactions imported}}",
+      "body": "{total, plural, one {# row} other {# rows}} in the file",
+      "imported": "Imported",
+      "categorised": "Categorised",
+      "skipped": "Duplicates skipped",
+      "importAnother": "Import another file",
+      "openActivity": "Open Activity",
+      "review": "Categorise {count, plural, one {# transaction} other {# transactions}}"
+    },
+    "errors": {
+      "title": "Import failed",
+      "tryAgain": "Try again",
+      "noFile": "No file was uploaded.",
+      "emptyFile": "This file is empty.",
+      "noRows": "No transactions were found in this file.",
+      "parseFailed": "This file couldn't be read as a bank export.",
+      "expired": "The upload expired. Choose the file again.",
+      "generic": "Something went wrong. Try again."
+    },
+    "profiles": {
+      "title": "Import profiles",
+      "subtitle": "Saved column mappings, picked automatically when a file matches",
+      "manage": "Manage",
+      "meta": "{columns, plural, one {# column} other {# columns}} · saved {date}",
+      "metaNoDate": "{columns, plural, one {# column} other {# columns}}",
+      "inUse": "In use",
+      "empty": "No saved profiles yet. Map a file's columns once and it is saved here.",
+      "builtIn": "Recognised automatically"
+    },
+    "unrecognised": {
+      "title": "Bank not recognised?",
+      "body": "Tell Centje which column holds the date, description and amount. We save it as a profile, so next time the file is recognised straight away.",
+      "action": "Map columns"
+    },
+    "recent": {
+      "title": "Recent imports",
+      "rows": "{count, plural, one {# row} other {# rows}}",
+      "unknownAccount": "No account number",
+      "empty": "Nothing imported yet. Your imports show up here."
+    }
+  },
   "importMapping": {
     "title": "Unrecognized bank format",
     "description": "We couldn't automatically detect this bank. Tell us which column is which — we'll remember it for next time.",
@@ -1198,12 +1703,17 @@
     "rowsSkippedBadDate": "{count, plural, one {# row was} other {# rows were}} skipped because their date could not be read."
   },
   "dataHealth": {
-    "title": "Data Health",
-    "allClear": "Everything looks fine — no broken transactions.",
+    "allClearTitle": "Everything looks fine",
+    "allClear": "No transactions with a broken date.",
     "brokenDatesTitle": "{count, plural, one {# transaction has} other {# transactions have}} an unreadable date",
     "brokenDatesBody": "These came from an import where the date column was mapped to the wrong field. They don't show up in your transaction list, because it filters by date. Give them a real date or delete them.",
     "storedAs": "Stored as",
-    "selectRow": "Select this transaction",
+    "selectAll": "Select all",
+    "selectedCount": "{count} selected",
+    "selectRowNamed": "Select {name}",
+    "deleteNote": "Deleting removes the rows from the app only, not from your bank. You'll be asked to confirm, and deleted rows can't be restored.",
+    "deleteError": "The transactions could not be deleted. Try again.",
+    "fixError": "The date could not be saved. Try again.",
     "correctDate": "Correct date",
     "fix": "Fix",
     "deleteSelected": "Delete selected ({count})",
@@ -1213,10 +1723,24 @@
     "confirmDeleteLabel": "Delete {count, plural, one {transaction} other {# transactions}}"
   },
   "importProfiles": {
-    "title": "Import Profiles",
     "description": "A saved profile remembers which column is which for a bank export, and is reapplied automatically to every file with the same columns. Delete one to be asked again next time.",
-    "empty": "No saved import profiles yet.",
-    "dateColumn": "Date column",
+    "empty": "No saved import profiles yet. One is saved when you map the columns of a file the app doesn't recognise.",
+    "saved": "Saved profiles",
+    "columns": "{count, plural, one {# column} other {# columns}}",
+    "columnNumber": "Column {index}",
+    "customFormat": "Custom",
+    "columnMap": "Column map",
+    "columnMapLabel": "Columns of {label}",
+    "dateFormat": "Date format",
+    "decimalSeparator": "Decimal separator",
+    "decimalComma": "Comma (1.234,56)",
+    "decimalDot": "Dot (1,234.56)",
+    "deleteShort": "Delete",
+    "deleteNamed": "Delete {label}",
+    "deleteError": "The profile could not be deleted. Try again.",
+    "importFile": "Import a file",
+    "importNew": "Import a new file",
+    "importNewHint": "If the app doesn't recognise your bank's file, you map the columns once and it's saved here.",
     "delete": "Delete profile",
     "confirmDelete": "Delete the saved mapping \"{label}\"?",
     "confirmDeleteBody": "The next import of that file will ask you to map its columns again."
@@ -1325,6 +1849,281 @@
       "edit": "Edit {name}",
       "bankFallback": "Bank {id}",
       "updated": "Updated {date}"
+    }
+  },
+  "onboarding": {
+    "appName": "Arca",
+    "stepsLabel": "Setup steps",
+    "stepDone": "done",
+    "progress": "Step {current} of {total} · {group}",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "back": "Back",
+    "continue": "Continue",
+    "skip": "Skip for now",
+    "saving": "Saving…",
+    "genericError": "Something went wrong. Please try again.",
+    "groups": {
+      "account": "Account",
+      "security": "Security",
+      "you": "You",
+      "money": "Money",
+      "lock": "Lock"
+    },
+    "steps": {
+      "welcome": "Welcome",
+      "about": "About you",
+      "password": "Password",
+      "mfa": "Two-factor sign-in",
+      "backupCodes": "Backup codes",
+      "profile": "Photo and language",
+      "makeItYours": "Make it yours",
+      "strategy": "Budget strategy",
+      "bill": "Your first bill",
+      "import": "Import transactions",
+      "appLock": "App lock",
+      "finish": "All set"
+    },
+    "welcome": {
+      "title": "Welcome to {app}",
+      "subtitle": "Set up your household in about five minutes. You can skip anything and come back to it later.",
+      "featuresLabel": "What {app} does",
+      "safeToSpend": "Safe to spend",
+      "example": "Example",
+      "exampleBar": "Example: 58% of the monthly budget used",
+      "safeToSpendBody": "One calm number: what's left after bills and savings.",
+      "importTitle": "Import your bank's CSV",
+      "importBody": "We recognise your bank and map the columns for you. No bank login needed.",
+      "planTitle": "Budgets, bills and goals in one place",
+      "planBody": "See what's due, what's left and what you're saving for.",
+      "start": "Get started",
+      "haveAccount": "I already have an account",
+      "privacy": "Your data stays in your household."
+    },
+    "about": {
+      "title": "Let's start with your name.",
+      "subtitle": "We use it to greet you and to show who added what in a shared household.",
+      "firstName": "First name",
+      "firstNamePlaceholder": "Sanne",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "de Vries",
+      "email": "Email address",
+      "emailPlaceholder": "you@example.com",
+      "emailHint": "Used to sign in to your account.",
+      "emailInvalid": "Enter a valid email address.",
+      "emailTaken": "This email address is already registered.",
+      "birthday": "Birthday",
+      "birthdayPlaceholder": "Pick your birthday",
+      "checking": "Checking…"
+    },
+    "password": {
+      "title": "Choose a password",
+      "subtitle": "At least 8 characters.",
+      "label": "Password",
+      "show": "Show password",
+      "hide": "Hide password",
+      "strength": "Password strength",
+      "levels": {
+        "tooShort": "Too short",
+        "weak": "Weak",
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong"
+      },
+      "rulesLabel": "Password requirements",
+      "ruleLength": "8 or more characters",
+      "ruleNumber": "Contains a number",
+      "ruleNotEmail": "Not your email address",
+      "met": "met",
+      "notMet": "not met",
+      "confirm": "Confirm password",
+      "noMatch": "The passwords don't match.",
+      "match": "Passwords match",
+      "creating": "Creating your account…"
+    },
+    "mfa": {
+      "title": "Add extra security",
+      "subtitle": "Use Google Authenticator or any TOTP app. You'll enter a 6-digit code when you sign in on a new device.",
+      "startFailed": "We couldn't start the setup. Try again, or skip and turn it on later in Settings.",
+      "retry": "Try again",
+      "qrAlt": "QR code to scan with your authenticator app",
+      "loading": "Preparing your QR code",
+      "scanTitle": "Scan the QR code",
+      "step1": "Open your authenticator app",
+      "step2": "Add an account and scan the code",
+      "step3": "Type the 6-digit code below",
+      "keyLabel": "Can't scan? Enter this key",
+      "copyKey": "Copy key",
+      "copy": "Copy",
+      "copied": "Copied",
+      "codeLabel": "Enter the 6-digit code from your app",
+      "wrongCode": "That code didn't work. Check your app and try again.",
+      "verify": "Verify and continue",
+      "verifying": "Checking…",
+      "enabledTitle": "Two-factor sign-in is on",
+      "enabledBody": "You'll be asked for a code from your authenticator app when you sign in on a new device. You can manage it in Settings.",
+      "enabledChip": "Your account is protected"
+    },
+    "backupCodes": {
+      "title": "Save your backup codes",
+      "subtitle": "If you lose your phone, each code signs you in once. Store them somewhere safe.",
+      "count": "{count, plural, one {# backup code} other {# backup codes}}",
+      "meta": "{email} · {date}",
+      "download": "Download",
+      "copyAll": "Copy all",
+      "copied": "Copied",
+      "confirm": "I've saved these codes",
+      "fileName": "backup-codes.txt",
+      "fileHeading": "{app} backup codes for {email}",
+      "fileNote": "Each code signs you in once."
+    },
+    "profile": {
+      "title": "Add a profile photo",
+      "subtitle": "Shown in the menu and next to what you add — you can skip this.",
+      "avatarLabel": "Profile picture: initials {initials}. Drop a photo here to replace them.",
+      "avatarPhotoLabel": "Your profile photo. Drop a photo here to replace it.",
+      "upload": "Upload a photo",
+      "dropTitle": "Drop a photo on the circle",
+      "dropHint": "JPG, PNG or WebP. You can crop it after uploading.",
+      "uploadButton": "Upload photo",
+      "changeButton": "Change photo",
+      "uploading": "Uploading…",
+      "uploadFailed": "The photo couldn't be uploaded. Try another one.",
+      "languageTitle": "Preferred language",
+      "languageNative": {
+        "en": "Interface in English",
+        "nl": "Interface in het Nederlands"
+      },
+      "languageHint": "You can change this anytime in settings."
+    },
+    "makeItYours": {
+      "title": "Make it yours",
+      "subtitle": "Pick a background for your sign-in screen and a look for the app.",
+      "background": "Background",
+      "default": "Default",
+      "backgrounds": {
+        "midnight": "Midnight",
+        "sunset": "Sunset",
+        "violet": "Violet dusk",
+        "emerald": "Emerald night",
+        "rose": "Rose quartz"
+      },
+      "appearance": "Appearance",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "themeHints": {
+        "light": "Always light, whatever your device is set to.",
+        "dark": "Always dark, easy on the eyes in the evening.",
+        "system": "Follows your device: light by day, dark when your device switches."
+      }
+    },
+    "strategy": {
+      "title": "Your budget strategy",
+      "subtitle": "How should your income be split? 50 / 30 / 20 works for most households.",
+      "presets": "Preset",
+      "custom": "Custom",
+      "later": "You can fine-tune this anytime in Plan, under Budget.",
+      "mustTotal": "The three shares need to add up to 100% before you can continue."
+    },
+    "bill": {
+      "title": "Add a recurring bill",
+      "subtitle": "Rent, a subscription, insurance… {app} will expect it every month. You can skip this.",
+      "quickPick": "Quick pick",
+      "picks": {
+        "rent": "Rent",
+        "energy": "Energy",
+        "internet": "Internet",
+        "phone": "Phone",
+        "insurance": "Insurance",
+        "streaming": "Streaming",
+        "gym": "Gym"
+      },
+      "name": "Name",
+      "namePlaceholder": "Netflix",
+      "amount": "Amount",
+      "dueDay": "Due day",
+      "dueDayPlaceholder": "1–31",
+      "dueDayInvalid": "Pick a day from 1 to 31.",
+      "type": "Type",
+      "types": {
+        "bill": "Bill",
+        "subscription": "Subscription",
+        "debt": "Debt"
+      },
+      "preview": "How it will look in Upcoming",
+      "previewEmpty": "Fill in a name and an amount to see it here.",
+      "everyMonth": "Every month",
+      "addAnother": "Add another",
+      "saved": "{count, plural, one {# bill saved} other {# bills saved}}",
+      "saveFailed": "The bill couldn't be saved. Please try again."
+    },
+    "import": {
+      "title": "Import your transactions",
+      "subtitle": "Upload the CSV export from your bank — or skip and do it later.",
+      "choose": "Choose a CSV file",
+      "chooseHint": "Drop it here or click to browse. ING, Rabobank, ABN AMRO, bunq, Revolut and KNAB are recognised automatically; for any other bank you point out the columns once.",
+      "importing": "Importing {file}…",
+      "resultLine": "{imported, plural, one {# transaction imported} other {# transactions imported}}{auto, plural, =0 {} other { · # categorised automatically}}",
+      "skipped": "{count} skipped (already there)",
+      "failed": "Import failed",
+      "failedBody": "We couldn't read {file}. Check that it is the CSV export from your bank.",
+      "another": "Import another file",
+      "anotherHint": "CSV from any bank"
+    },
+    "appLock": {
+      "title": "Lock the app",
+      "subtitle": "Choose a PIN so only you can open {app}. You'll be asked for it when you open the app.",
+      "choose": "Choose your PIN",
+      "confirm": "Confirm your PIN",
+      "chosen": "PIN chosen",
+      "entered": "PIN, {count} of {total} digits entered",
+      "lengthHint": "4 to 6 digits",
+      "tooShort": "Use 4 to 6 digits.",
+      "mismatch": "The PINs don't match. Type it again, or start over.",
+      "keypad": "PIN keypad",
+      "startOver": "Start over",
+      "delete": "Delete last digit",
+      "set": "Set PIN",
+      "laterHint": "You can add Face ID or a fingerprint later in Settings, under App lock."
+    },
+    "finish": {
+      "title": "You're all set, {name}",
+      "titleNoName": "You're all set",
+      "subtitle": "Here's what we set up. Open {app} to see your household.",
+      "summaryLabel": "What we set up",
+      "transactions": "{count, plural, one {# transaction} other {# transactions}}",
+      "imported": "Imported",
+      "noImport": "No transactions yet",
+      "noImportHint": "Import a CSV whenever you like",
+      "bills": "{count, plural, =0 {No recurring bills} one {# recurring bill} other {# recurring bills}}",
+      "billsHint": "Added to Upcoming",
+      "billsNone": "Add them later in Upcoming",
+      "strategy": "{needs} / {wants} / {savings} strategy",
+      "strategyHint": "Needs, wants, savings",
+      "lockOn": "App lock on",
+      "lockOnHint": "PIN when you open the app",
+      "lockOff": "No app lock",
+      "lockOffHint": "Turn it on in Settings",
+      "open": "Open {app}",
+      "opening": "Opening…"
+    },
+    "finishing": {
+      "phrases": {
+        "calculator": "Warming up the calculator…",
+        "coins": "Counting your coins…",
+        "piggyBank": "Fetching the piggy bank…",
+        "untangle": "Untangling your transactions…",
+        "behave": "Teaching the numbers to behave…",
+        "polish": "Polishing your dashboard…"
+      },
+      "ready": "Everything is ready, {name}!",
+      "readyNoName": "Everything is ready!",
+      "withImport": "Setting up your household… adding your {count, plural, one {# transaction} other {# transactions}} to Insights",
+      "withoutImport": "Setting up your household…",
+      "progressLabel": "Setting up your household"
     }
   },
   "newAccounts": {
@@ -2382,12 +3181,7 @@
   },
   "bills": {
     "markPaid": "Mark as paid",
-    "markUnpaid": "Mark as unpaid",
-    "calendarTitle": "Bills this month",
-    "paidCount": "{paid}/{total} paid",
-    "noFixedCosts": "No fixed costs configured.",
-    "noFixedDate": "No fixed date",
-    "paid": "Paid"
+    "markUnpaid": "Mark as unpaid"
   },
   "activity": {
     "title": "Activity",
@@ -3128,9 +3922,112 @@
   },
   "upcoming": {
     "title": "Upcoming",
-    "calendarTitle": "Upcoming this month",
-    "empty": "No upcoming transactions this month",
-    "listTitle": "Upcoming transactions"
+    "parent": "Activity",
+    "breadcrumb": "Breadcrumb",
+    "subtitle": "{month} bills · {amount} still to pay",
+    "subtitleAllPaid": "{month} bills · everything is paid",
+    "subtitleNone": "The bills and income you expect each month",
+    "recurringItems": "Recurring items",
+    "addBill": "Add a bill",
+    "close": "Close",
+    "tiles": {
+      "due": "Still due",
+      "dueNone": "Nothing left to pay",
+      "dueNext": "{count, plural, one {# bill} other {# bills}} · next {name} on {date}",
+      "dueCount": "{count, plural, one {# bill} other {# bills}}",
+      "paid": "Paid",
+      "paidNone": "Nothing paid yet",
+      "paidCount": "{count, plural, one {# bill} other {# bills}} · {pct}% of this month's fixed costs",
+      "income": "Expected in",
+      "incomeNext": "{name} · {date}",
+      "incomeReceived": "All income is in",
+      "incomeNone": "No income expected"
+    },
+    "calendar": {
+      "previous": "Previous month",
+      "next": "Next month",
+      "today": "Today",
+      "payday": "Payday",
+      "legend": {
+        "paid": "Paid",
+        "due": "To pay",
+        "income": "Income",
+        "today": "Today"
+      },
+      "more": "+{count}",
+      "dayTitle": "Bills on this day",
+      "dayTotal": "{amount} to pay"
+    },
+    "row": {
+      "received": "Received",
+      "matched": "Matched to a transaction",
+      "marked": "Marked by you",
+      "noDate": "No fixed date",
+      "overdue": "{date} · overdue",
+      "paidAuto": "Paid — matched to a transaction"
+    },
+    "due": {
+      "title": "Still due",
+      "empty": "Everything for {month} is paid."
+    },
+    "paid": {
+      "title": "Paid",
+      "empty": "Nothing paid yet this month."
+    },
+    "income": {
+      "title": "Income expected"
+    },
+    "info": {
+      "title": "Bills tick themselves off",
+      "body": "When a payment matching a bill arrives, Centje marks it paid for you. Paid it another way? Tick it off here and it is set aside from Safe to spend."
+    },
+    "empty": {
+      "title": "No bills yet",
+      "body": "Add your rent, subscriptions and other fixed costs to see what is still to pay this month.",
+      "add": "Add a bill"
+    }
+  },
+  "needsReview": {
+    "title": "Needs a category",
+    "parent": "Activity",
+    "breadcrumb": "Breadcrumb",
+    "subtitle": "{count} left · each answer can become a rule, so this list stays short",
+    "subtitleDone": "Every transaction has a category",
+    "progress": "{index} of {total}",
+    "progressLabel": "Review progress: {index} of {total}",
+    "statement": "As it appears on your bank statement",
+    "chip": "Needs a category",
+    "suggested": "Suggested",
+    "suggestedHelp": "From your rules and earlier choices for similar descriptions",
+    "noSuggestions": "Nothing to suggest yet — pick from all categories",
+    "allCategories": "All categories",
+    "details": "Details",
+    "markTransfer": "Mark as internal transfer",
+    "skip": "Skip",
+    "save": "Save and next",
+    "saving": "Saving…",
+    "failed": "Couldn't save. Try again.",
+    "keys": "Tip: press Enter to save, S to skip",
+    "queue": {
+      "title": "Queue",
+      "count": "{count, plural, one {# transaction} other {# transactions}}",
+      "select": "Select",
+      "done": "Done",
+      "selectRow": "Select {name}",
+      "now": "Now",
+      "showMore": "Show {count} more",
+      "waiting": "Waiting to be sorted",
+      "totals": "{out} out · {in} in"
+    },
+    "why": {
+      "title": "Why this matters",
+      "body": "Uncategorised spending is left out of your budgets and insights until it has a category."
+    },
+    "empty": {
+      "title": "Nothing to sort",
+      "body": "Every transaction has a category. New imports that need one show up here.",
+      "back": "Back to Activity"
+    }
   },
   "categoryList": {
     "title": "Spending by category",

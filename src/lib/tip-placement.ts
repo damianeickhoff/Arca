@@ -17,6 +17,9 @@ export type TipAnchor =
   | "transactionRow"
   | "healthCard"
   | "importDatePreview"
+  // Redesigned Import CSV: the Check step's summary and "Map columns"
+  | "importCheck"
+  | "importMapColumns"
   | "dataHealthMenu"
   | "transactionListRow"
   // App shell: the phone tab bar / desktop sidebar nav, and the Plan switch
@@ -100,6 +103,10 @@ export type TipAnchor =
   | "budgetCategoryRow"
   // Settings › Accounts: the "Add bank account" button
   | "accountsAdd"
+  // Settings › Financial month: the start-day grid; Settings › Merchants: the
+  // All / Without icon switch
+  | "financialMonthDays"
+  | "merchantsWithoutIcon"
   // Transaction popups: Add transaction's "Save and add another", the Correct amount
   // budget preview and the receipt viewer's zoom bar
   | "addTransactionAnother"
@@ -109,7 +116,10 @@ export type TipAnchor =
   // shared-cost section and the link dialog's search over older expenses
   | "rulePreview"
   | "splitSharedCost"
-  | "linkSearch";
+  | "linkSearch"
+  // Upcoming's month arrows and the Needs a category queue's Select button
+  | "upcomingMonthNav"
+  | "needsReviewSelect";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

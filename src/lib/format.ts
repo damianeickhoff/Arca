@@ -7,10 +7,11 @@ import { isValidISODate } from "@/lib/date-valid";
 
 export type SupportedCurrencyCode = "EUR" | "USD" | "GBP";
 
-export const SUPPORTED_CURRENCIES: { code: SupportedCurrencyCode; label: string; symbol: string }[] = [
-  { code: "EUR", label: "Euro", symbol: "€" },
-  { code: "USD", label: "US Dollar", symbol: "$" },
-  { code: "GBP", label: "British Pound", symbol: "£" },
+// The names are translated where they are shown (settings.options.currencies).
+export const SUPPORTED_CURRENCIES: { code: SupportedCurrencyCode; symbol: string }[] = [
+  { code: "EUR", symbol: "€" },
+  { code: "USD", symbol: "$" },
+  { code: "GBP", symbol: "£" },
 ];
 
 const CURRENCY_SYMBOLS: Record<SupportedCurrencyCode, string> = {
@@ -133,16 +134,6 @@ export const GROUP_LABELS: Record<string, string> = {
   subscription: "Subscriptions",
   variable: "Variable expenses",
   savings: "Savings",
-};
-
-// "Income" is deliberately not a budget type here — a category's `group` already
-// marks it as income; budgetType only classifies expense-side spending (needs/wants/
-// savings). Any pre-existing "inkomen"/"Income" budgetType value is backfilled to
-// null on boot (see src/db/index.ts).
-export const BUDGET_TYPE_LABELS: Record<string, string> = {
-  nodig: "Needs",
-  willen: "Wants",
-  sparen: "Savings",
 };
 
 // Budget types are stored inconsistently across the app: the edit form and the

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { IconChevronRight, IconHelpCircle } from "@tabler/icons-react";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
-import { FinancieleMaandForm, MaandUitzonderingenSubPage } from "@/app/settings/general-client";
+import { FinancialMonthForm, MonthOverridesPanel } from "@/app/settings/general-client";
 import { AppLockSectionContent } from "@/app/settings/profile-client";
 import { BudgetRecurringCard } from "@/components/settings/budget-recurring-card";
 import { SharedCostCard } from "@/components/settings/shared-cost-card";
@@ -55,7 +54,6 @@ export function SettingsPanelBody({
 
 function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey; user: User; settings: SettingsPanelSettings }) {
   const t = useTranslations("settings.inline");
-  const [addOverrideOpen, setAddOverrideOpen] = useState(false);
   const { financialMonth } = settings;
 
   switch (panelKey) {
@@ -108,14 +106,11 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
 
     case "financialMonth":
       return (
-        <div className="px-4 pt-4">
-          <div className="rounded-clear-tile bg-clear-tile p-5">
-            <FinancieleMaandForm
-              currentStartDay={financialMonth.defaultStartDay}
-              currentWeekendRollback={financialMonth.weekendRollback ?? false}
-            />
-          </div>
-        </div>
+        <FinancialMonthForm
+          currentStartDay={financialMonth.defaultStartDay}
+          currentWeekendRollback={financialMonth.weekendRollback ?? false}
+          overrides={financialMonth.overrides}
+        />
       );
 
     case "budgetRecurring":
@@ -131,25 +126,7 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
       const initialOverrides = Object.entries(financialMonth.overrides ?? {}).map(
         ([month, startDay]) => ({ month, startDay: startDay as number }),
       );
-      return (
-        <div className="pt-2">
-          <div className="flex justify-end px-4">
-            <button
-              type="button"
-              onClick={() => setAddOverrideOpen(true)}
-              className="px-2 py-1 text-sm font-bold text-clear-ink"
-            >
-              {t("addOverride")}
-            </button>
-          </div>
-          <MaandUitzonderingenSubPage
-            currentStartDay={financialMonth.defaultStartDay}
-            initialOverrides={initialOverrides}
-            addOpen={addOverrideOpen}
-            onAddOpenChange={setAddOverrideOpen}
-          />
-        </div>
-      );
+      return <MonthOverridesPanel currentStartDay={financialMonth.defaultStartDay} initialOverrides={initialOverrides} />;
     }
 
     case "help":

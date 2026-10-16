@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type RefObject } from "react";
 import { useTranslations } from "next-intl";
-import { IconChevronLeft, IconXFilled } from "@tabler/icons-react";
+import { IconChevronLeft } from "@tabler/icons-react";
 import { useScrollElevation } from "@/lib/use-scroll-elevation";
 import { ScrollHeaderBackdrop } from "@/components/scroll-header-backdrop";
 import { cn } from "@/lib/utils";
@@ -33,23 +33,16 @@ export function usePanelChrome() {
   return useContext(PanelChromeContext);
 }
 
-/** The open panel's header. In the dialog: circular back button, centred title,
- * right-aligned action slot, sticky to the top of the scrolling panel. `transparent`
- * keeps it permanently see-through (the Settings home hero, which floats over
- * Sparkles); otherwise it picks up the blur + bottom border once the panel has been
- * scrolled. `closeIcon` swaps the back chevron for an X — used only by the root menu,
- * whose button closes the whole dialog rather than popping back to a previous panel.
+/** The open panel's header. In the dialog: round back button, title, the panel's
+ * actions on the right and the subtitle under it, sticky to the top of the scrolling
+ * panel; it picks up the blur + bottom border once the panel has been scrolled.
  * On the /settings page it renders as the panel card's title row instead. */
 export function PanelHeader({
   title,
   action,
-  transparent = false,
-  closeIcon = false,
 }: {
   title: string;
   action?: React.ReactNode;
-  transparent?: boolean;
-  closeIcon?: boolean;
 }) {
   const t = useTranslations("settings");
   const chrome = usePanelChrome();
@@ -78,33 +71,24 @@ export function PanelHeader({
   }
 
   return (
-    <div ref={ref as RefObject<HTMLDivElement>} className="sticky top-0 z-20 flex items-center gap-2 px-5 pt-5 pb-3">
-      {transparent ? (
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-0 border-b border-transparent" />
-      ) : (
-        <ScrollHeaderBackdrop scrolled={scrolled} />
-      )}
+    <div ref={ref as RefObject<HTMLDivElement>} className="sticky top-0 z-20 flex flex-col gap-1 px-4 pt-5 pb-3 font-clear text-clear-ink">
+      <ScrollHeaderBackdrop scrolled={scrolled} />
 
-      <button
-        type="button"
-        onClick={chrome.closePanel}
-        aria-label={closeIcon ? t("close") : t("back")}
-        className="relative flex items-center justify-center size-11 rounded-full border border-line bg-surface hover:bg-surface-2 active:scale-[0.97] transition-transform shrink-0"
-      >
-        {closeIcon ? (
-          <IconXFilled className="size-5 text-ink" />
-        ) : (
-          <IconChevronLeft className="size-5 text-ink" />
-        )}
-      </button>
+      <div className="relative flex items-center gap-3">
+        <button
+          type="button"
+          onClick={chrome.closePanel}
+          aria-label={t("back")}
+          className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-tile text-clear-ink transition-colors hover:bg-clear-line active:scale-[0.97]"
+        >
+          <IconChevronLeft size={20} stroke={2.2} aria-hidden />
+        </button>
 
-      <h2 className="heading relative min-w-0 flex-1 truncate px-2 text-center text-lg text-ink">
-        {heading}
-      </h2>
+        <h2 className="m-0 min-w-0 flex-1 truncate text-[22px] font-extrabold tracking-[-0.02em]">{heading}</h2>
 
-      <div className="relative flex items-center justify-end gap-2 shrink-0 min-w-11">
-        {action}
+        {action && <div className="flex shrink-0 items-center justify-end gap-2">{action}</div>}
       </div>
+      {chrome.subtitle && <span className="relative text-sm text-clear-muted">{chrome.subtitle}</span>}
     </div>
   );
 }

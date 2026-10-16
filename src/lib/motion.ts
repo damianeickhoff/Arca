@@ -32,20 +32,3 @@ export const spring = {
 // The app's house curve — same as .nav-pill-indicator / search-content-in
 // in globals.css (--ease-out-quart).
 export const easeOutQuart = [0.16, 1, 0.3, 1] as const;
-
-// Stagger presets — pair StaggerContainer/StaggerItem (ui/stagger.tsx) or use raw.
-export const listContainer = {
-  animate: { transition: { staggerChildren: 0.035, delayChildren: 0.05 } },
-} as const;
-
-export const listItem = {
-  initial: { opacity: 0, y: 14 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.34, ease: easeOutQuart },
-  },
-} as const;
-
-// Cap the entrance waterfall on long lists — items past this index appear together.
-export const STAGGER_CAP = 12;

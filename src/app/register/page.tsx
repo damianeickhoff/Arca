@@ -1,10 +1,8 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { AuthShell } from "@/components/auth-shell";
-import { OnboardingWizard } from "./onboarding-wizard";
+import { OnboardingWizard, type ResumeUser } from "./onboarding-wizard";
 
-// Background preset is user-configurable (Settings → Appearance) and must always
-// reflect the latest saved value.
+// Reads the session on every request: a refresh mid-wizard must resume, not start over.
 export const dynamic = "force-dynamic";
 
 export default async function RegisterPage() {
@@ -19,15 +17,17 @@ export default async function RegisterPage() {
 
   // A refresh after the account-creation step lands here with a valid session but an
   // unfinished wizard — the account/profile fields already exist, so resume past the
-  // name/email/birthday/password steps instead of re-running them (re-submitting the
-  // same email at the password step would 409 as "already registered").
-  const resumeUser = user
-    ? { firstName: user.firstName ?? "", lastName: user.lastName ?? "", email: user.email }
+  // welcome/about/password steps instead of re-running them. Only the fields the wizard
+  // shows go to the client, never the user row itself.
+  const resumeUser: ResumeUser | null = user
+    ? {
+        firstName: user.firstName ?? "",
+        lastName: user.lastName ?? "",
+        email: user.email,
+        avatarUrl: user.avatarUrl ?? null,
+        mfaEnabled: user.totpEnabled,
+      }
     : null;
 
-  return (
-    <AuthShell fullBleedBackground>
-      <OnboardingWizard resumeUser={resumeUser} />
-    </AuthShell>
-  );
+  return <OnboardingWizard resumeUser={resumeUser} />;
 }

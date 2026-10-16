@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
+import { IconReceipt, IconUsers } from "@tabler/icons-react";
 import { OptionList } from "@/components/option-list";
+import { SettingsNotice } from "@/components/settings/settings-ui";
 import { setSharedCostModeAction } from "@/app/actions/budget-settings";
 import type { SharedCostMode } from "@/lib/app-settings";
 
@@ -14,31 +16,45 @@ import type { SharedCostMode } from "@/lib/app-settings";
 // really does leave the account on the due date, and those screens exist to say so.
 export function SharedCostCard({ initialMode }: { initialMode: SharedCostMode }) {
   const t = useTranslations("sharedCost");
+  const tModes = useTranslations("settings.budgetModes");
+  const id = useId();
   const [mode, setMode] = useState<SharedCostMode>(initialMode);
   const [pending, setPending] = useState(false);
-
-  const options: { value: SharedCostMode; label: string; description: string }[] = [
-    { value: "gross", label: t("settingGross"), description: t("settingGrossHint") },
-    { value: "net", label: t("settingNet"), description: t("settingNetHint") },
-  ];
+  const [failed, setFailed] = useState(false);
 
   async function change(next: SharedCostMode) {
     if (next === mode || pending) return;
     const previous = mode;
     setPending(true);
+    setFailed(false);
     setMode(next); // optimistic — the action's revalidatePath refreshes the pages behind the dialog
-    const result = await setSharedCostModeAction(next);
+    const result = await setSharedCostModeAction(next).catch(() => ({ error: "failed" }));
     setPending(false);
     if (result?.error) {
       setMode(previous);
+      setFailed(true);
     }
   }
 
   return (
-    <div className="px-4 pt-4 space-y-3">
-      <p className="px-2 text-sm font-medium">{t("settingTitle")}</p>
-      <OptionList options={options} value={mode} onSelect={change} disabled={pending} />
-      <p className="px-2 text-sm text-ink-3">{t("settingFooter")}</p>
-    </div>
+    <section aria-labelledby={id} className="flex flex-col gap-4 px-4 pt-2 font-clear text-clear-ink">
+      <div className="flex min-w-0 flex-col gap-1">
+        <h3 id={id} className="m-0 text-lg font-bold">{t("settingTitle")}</h3>
+        <span className="text-sm text-clear-muted">{tModes("sharedSubtitle")}</span>
+      </div>
+      <OptionList
+        layout="cards"
+        labelledBy={id}
+        options={[
+          { value: "gross", label: t("settingGross"), description: t("settingGrossHint"), icon: <IconReceipt stroke={1.9} /> },
+          { value: "net", label: t("settingNet"), description: t("settingNetHint"), icon: <IconUsers stroke={1.9} /> },
+        ]}
+        value={mode}
+        onSelect={change}
+        disabled={pending}
+      />
+      {failed && <SettingsNotice>{tModes("saveError")}</SettingsNotice>}
+      <SettingsNotice tone="info">{t("settingFooter")}</SettingsNotice>
+    </section>
   );
 }

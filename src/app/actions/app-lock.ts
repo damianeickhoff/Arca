@@ -95,24 +95,6 @@ export async function getWebAuthnChallengeAction(): Promise<{ challenge: string 
   return { challenge };
 }
 
-export async function registerWebAuthnCredentialAction(
-  credentialId: string,
-  publicKeySpkiB64: string,
-): Promise<{ error?: string }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not logged in." };
-
-  await setSetting(KEY_WEBAUTHN_CREDENTIAL, JSON.stringify({ credentialId, publicKeySpkiB64 }));
-  return {};
-}
-
-export async function removeWebAuthnCredentialAction(): Promise<{ error?: string }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not logged in." };
-  await setSetting(KEY_WEBAUTHN_CREDENTIAL, "");
-  return {};
-}
-
 export async function verifyWebAuthnAssertionAction(
   credentialId: string,
   clientDataJSONB64: string,

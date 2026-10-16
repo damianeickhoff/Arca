@@ -135,6 +135,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 hasWebAuthn={appLock.hasWebAuthn}
                 webAuthnCredentialId={appLock.webAuthnCredentialId}
                 pinLength={appLock.pinLength}
+                userName={user?.name ?? null}
               >
                 <AppShell
                   needsReviewCount={needsReviewCount}

@@ -8,6 +8,7 @@ import { db } from "@/db";
 import { users, sessions, mfaChallenges } from "@/db/schema";
 import { createSession, destroySession, getCurrentUser, generateSessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { verifyTotpCode, verifyBackupCode } from "@/lib/totp";
+import { getTranslations } from "next-intl/server";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MFA_COOKIE = "mfa_pending";
@@ -46,13 +47,14 @@ export async function loginAction(formData: FormData): Promise<{ error?: string;
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "") || "/";
   const remember = formData.get("remember") === "on";
+  const t = await getTranslations("auth.errors");
 
   const rows = await db.select().from(users).where(eq(users.email, email)).limit(1);
   const user = rows[0];
-  if (!user) return { error: "Onjuist e-mailadres of wachtwoord." };
+  if (!user) return { error: t("invalidCredentials") };
 
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) return { error: "Onjuist e-mailadres of wachtwoord." };
+  if (!valid) return { error: t("invalidCredentials") };
 
   if (!user.totpEnabled) {
     await createSession(user.id, { remember });
@@ -88,14 +90,15 @@ export async function verifyMfaAction(formData: FormData): Promise<{ error?: str
   const code = String(formData.get("code") ?? "").trim();
   const store = await cookies();
   const token = store.get(MFA_COOKIE)?.value;
-  if (!token) return { error: "Sessie verlopen. Log opnieuw in." };
+  const t = await getTranslations("auth.errors");
+  if (!token) return { error: t("sessionExpired") };
 
   const challengeRows = await db.select().from(mfaChallenges).where(eq(mfaChallenges.id, token)).limit(1);
   const challenge = challengeRows[0];
   if (!challenge || new Date(challenge.expiresAt).getTime() < Date.now()) {
     await db.delete(mfaChallenges).where(eq(mfaChallenges.id, token));
     store.delete(MFA_COOKIE);
-    return { error: "Sessie verlopen. Log opnieuw in." };
+    return { error: t("sessionExpired") };
   }
 
   const userRows = await db.select().from(users).where(eq(users.id, challenge.userId)).limit(1);
@@ -103,7 +106,7 @@ export async function verifyMfaAction(formData: FormData): Promise<{ error?: str
   if (!user || !user.totpEnabled || !user.totpSecret) {
     await db.delete(mfaChallenges).where(eq(mfaChallenges.id, token));
     store.delete(MFA_COOKIE);
-    return { error: "Sessie verlopen. Log opnieuw in." };
+    return { error: t("sessionExpired") };
   }
 
   let ok = verifyTotpCode(user.totpSecret, code);
@@ -120,10 +123,10 @@ export async function verifyMfaAction(formData: FormData): Promise<{ error?: str
     if (attempts >= MFA_MAX_ATTEMPTS) {
       await db.delete(mfaChallenges).where(eq(mfaChallenges.id, token));
       store.delete(MFA_COOKIE);
-      return { error: "Te veel mislukte pogingen. Log opnieuw in." };
+      return { error: t("tooManyAttempts") };
     }
     await db.update(mfaChallenges).set({ attempts }).where(eq(mfaChallenges.id, token));
-    return { error: "Onjuiste code." };
+    return { error: t("wrongCode") };
   }
 
   await db.delete(mfaChallenges).where(eq(mfaChallenges.id, token));

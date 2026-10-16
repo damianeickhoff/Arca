@@ -550,47 +550,6 @@ html.privacy svg .money {
   border-radius: 999px;
 }
 
-/* Revolut-style "liquid glass" circular icon buttons (mobile header). Pure-CSS
-   approximation: frosted blur + saturate, a luminous rim, and a directional specular
-   highlight via ::after. True edge refraction needs SVG displacement maps, which WebKit
-   (the engine behind the iPhone PWA) doesn't support in backdrop-filter — so it's omitted
-   and the specular rim carries the "liquid" read. Unlayered so it wins over Tailwind
-   utilities of equal specificity. Tunable: blur radius, tint alpha, ::after highlight alphas. */
-.glass-icon-btn {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease, transform 0.15s var(--easing-out-quart);
-  /* Mustard: the house round icon button — surface fill, 1px line, ink glyph. */
-  background: var(--arca-surface);
-  border: 1px solid var(--arca-line);
-  color: var(--arca-ink);
-}
-.glass-icon-btn:hover {
-  background: var(--arca-surface-2);
-}
-
-/* "Liquid" press response — the specular highlight brightens and the whole button
-   compresses slightly, like glass being pressed rather than a flat button darkening. */
-
-/* Dark theme — dimmer tint + softer specular. */
-.dark .glass-icon-btn {
-  background: var(--arca-surface);
-  border: 1px solid var(--arca-line);
-  box-shadow: none;
-}
-.dark .glass-icon-btn:hover {
-  background: var(--arca-surface-2);
-}
-
-.dark .glass-icon-btn::after {
-  box-shadow: none;
-}
-
 /* Eliminate 300ms tap delay on all interactive elements. */
 button, a, [role="button"] {
   touch-action: manipulation;
@@ -603,8 +562,8 @@ button, a, [role="button"] {
   }
 }
 
-/* Glass search bar — pill-shaped input container with the same frosted glass treatment
-   as .glass-icon-btn. Apply to the wrapper div, use bg-transparent on the input inside. */
+/* Glass search bar — pill-shaped input container with a frosted glass treatment.
+   Apply to the wrapper div, use bg-transparent on the input inside. */
 .glass-search-bar {
   position: relative;
   isolation: isolate;
@@ -620,9 +579,6 @@ button, a, [role="button"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .glass-search-bar {
-    transition: none;
-  }
-  .glass-icon-btn {
     transition: none;
   }
 }
@@ -647,9 +603,6 @@ button, a, [role="button"] {
   box-shadow: none;
 }
 
-/* Glass surface — same tint, blur, border, shadow, and specular rim as .glass-icon-btn
-   but without pill shape or button-specific layout, for use on wider card elements. */
-
 /* Dimmed variant for glass buttons sitting over the dark gradient hero (dashboard only).
    Overrides bg/border/shadow to match the stat card's transparent style; specular rim off. */
 @media (prefers-reduced-motion: reduce) {
@@ -664,8 +617,6 @@ button, a, [role="button"] {
     transition: none;
   }
 }
-
-/* Same specular rim as .glass-icon-btn, adapted for the pill-shaped mobile bottom nav. */
 
 /* App-wide page-enter fade (PageTransition, keyed on pathname). Kept UNLAYERED
    (outside @layer base) on purpose: the production CSS minifier (Lightning CSS)
@@ -686,28 +637,6 @@ button, a, [role="button"] {
 }
 @media (prefers-reduced-motion: reduce) {
   .page-fade-in { animation: none; }
-}
-
-/* "Underwater light" hero decoration for the settings dialog's first page (see
-   Sparkles component) — kept unlayered for the same Lightning CSS
-   @keyframes-in-layer reason as page-fade-in above. Beams sway gently around their
-   own base rotation (--beam-rot, set per element); particles rise by their own
-   distance (--rise, set per element) from their own scattered start position, so
-   they don't all pop in along one shared line. Both hold a non-zero opacity floor
-   at rest so reduced-motion still shows something rather than nothing. */
-@keyframes sparkle-beam-sway {
-  0%, 100% { opacity: 0.55; transform: rotate(var(--beam-rot)) scaleY(1); }
-  50%      { opacity: 0.9;  transform: rotate(calc(var(--beam-rot) + 3deg)) scaleY(1.06); }
-}
-@keyframes sparkle-rise {
-  0%   { opacity: 0;   transform: translateY(0); }
-  15%  { opacity: 0.9; }
-  80%  { opacity: 0.3; }
-  100% { opacity: 0;   transform: translateY(calc(var(--rise) * -1)); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sparkle-beam { animation: none; opacity: 0.5; }
-  .sparkle-rise { animation: none; opacity: 0.5; transform: none; }
 }
 
 @layer base {

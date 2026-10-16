@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import {
-  IconLock as Lock,
-  IconFingerprint as Fingerprint,
-  IconBackspace as Delete,
-  IconArrowRight as ArrowRight,
-} from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
+import { IconFingerprint, IconBackspace } from "@tabler/icons-react";
 import { verifyPinAction, getWebAuthnChallengeAction, verifyWebAuthnAssertionAction } from "@/app/actions/app-lock";
+import { BrandCoin } from "@/components/clear/brand-coin";
 import { cn } from "@/lib/utils";
 
 const UNLOCK_KEY = "app_lock_unlocked_v1";
@@ -18,13 +15,6 @@ function b64urlToBuffer(b64url: string): ArrayBuffer {
   const buf = new Uint8Array(str.length);
   for (let i = 0; i < str.length; i++) buf[i] = str.charCodeAt(i);
   return buf.buffer;
-}
-
-function bufToB64url(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let str = "";
-  for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
-  return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
 function bufToB64(buf: ArrayBuffer): string {
@@ -39,10 +29,12 @@ interface AppLockGateProps {
   hasWebAuthn: boolean;
   webAuthnCredentialId: string | null;
   pinLength: number | null;
+  /** First name for the greeting; null shows a plain "Welcome back". */
+  userName: string | null;
   children: React.ReactNode;
 }
 
-export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, pinLength, children }: AppLockGateProps) {
+export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, pinLength, userName, children }: AppLockGateProps) {
   const [locked, setLocked] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -74,6 +66,7 @@ export function AppLockGate({ enabled, hasWebAuthn, webAuthnCredentialId, pinLen
       hasWebAuthn={hasWebAuthn}
       webAuthnCredentialId={webAuthnCredentialId}
       pinLength={pinLength}
+      userName={userName}
       onUnlock={handleUnlock}
     />
   );
@@ -83,13 +76,16 @@ function LockScreen({
   hasWebAuthn,
   webAuthnCredentialId,
   pinLength,
+  userName,
   onUnlock,
 }: {
   hasWebAuthn: boolean;
   webAuthnCredentialId: string | null;
   pinLength: number | null;
+  userName: string | null;
   onUnlock: () => void;
 }) {
+  const t = useTranslations("appLock");
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -113,7 +109,8 @@ function LockScreen({
     if (result.valid) {
       onUnlock();
     } else {
-      setError(result.error ?? "Onjuiste pincode.");
+      // The action only returns an error text when no passcode is stored at all.
+      setError(result.error ? t("unlockFailed") : t("wrongPin"));
       setPin("");
     }
   }
@@ -165,12 +162,12 @@ function LockScreen({
       if (result.valid) {
         onUnlock();
       } else {
-        setError(result.error ?? "Biometric verification failed.");
+        setError(t("biometricFailed"));
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error.";
+      const msg = e instanceof Error ? e.message : "";
       if (!msg.includes("cancel") && !msg.includes("NotAllowed")) {
-        setError("Biometric verification failed.");
+        setError(t("biometricFailed"));
       }
     } finally {
       setBiometricLoading(false);
@@ -185,73 +182,77 @@ function LockScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const firstName = userName?.trim().split(/\s+/)[0] ?? "";
+  // Keys: a faint wash of the screen's own text colour, so they work on both themes.
+  const key =
+    "inline-flex size-[76px] cursor-pointer items-center justify-center rounded-full text-[28px] font-bold tabular-nums transition-transform active:scale-95 disabled:opacity-40 outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/60";
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-8 px-6 w-full max-w-xs">
-        {/* Icon */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="size-14 rounded-2xl bg-foreground/8 flex items-center justify-center">
-            <Lock className="size-7 text-foreground/60" />
-          </div>
-          <div className="text-center">
-            <h1 className="font-semibold text-lg">App Locked</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Enter your PIN</p>
-          </div>
+    // Dark in both themes (Phone-AppLock mockup): the hero black in light mode, the
+    // page ground in dark mode, where an inverted near-white screen would glare.
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-clear-hero font-clear text-clear-hero-ink dark:bg-clear-ground dark:text-clear-ink">
+      <div className="flex min-h-full flex-col items-center justify-center gap-3.5 px-4 pt-[calc(var(--sat)+48px)] pb-[calc(var(--sab)+32px)]">
+        <BrandCoin size="xl" />
+
+        <div className="mt-1.5 flex flex-col items-center gap-1.5 text-center">
+          <h1 className="m-0 text-2xl font-extrabold tracking-[-0.02em]">
+            {firstName ? t("title", { name: firstName }) : t("titleNoName")}
+          </h1>
+          <p className="m-0 text-[15px] font-medium text-clear-hero-ink-2 dark:text-clear-ink-2">{t("body")}</p>
         </div>
 
         {/* PIN dots — sized to the passcode length (4–6). When the length is
             known, auto-submit fires once every dot is filled. */}
-        <div className="flex items-center gap-3">
+        <div role="img" aria-label={t("dots", { filled: pin.length, total: dotCount })} className="mt-[18px] flex gap-[18px]">
           {Array.from({ length: dotCount }).map((_, i) => (
-            <div
+            <span
               key={i}
               className={cn(
                 "size-3.5 rounded-full transition-all duration-150",
-                i < pin.length
-                  ? "bg-foreground scale-110"
-                  : "bg-foreground/20",
+                i < pin.length ? "scale-110 bg-current" : "border-2 border-current/55",
               )}
             />
           ))}
         </div>
 
-        {/* Error */}
-        <div className="h-5 flex items-center justify-center">
-          {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
-          )}
+        <div aria-live="polite" className="flex min-h-[30px] items-center justify-center text-center">
+          {error && <p className="m-0 rounded-full bg-clear-ember px-3.5 py-1.5 text-sm font-bold text-clear-ember-ink">{error}</p>}
         </div>
 
-        {/* Numpad */}
-        <div className="grid grid-cols-3 gap-3 w-full">
+        <div role="group" aria-label={t("keypad")} className="grid grid-cols-[repeat(3,76px)] gap-x-7 gap-y-4">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-            <NumKey key={d} label={d} onPress={() => pressDigit(d)} disabled={verifying} />
+            <button key={d} type="button" onClick={() => pressDigit(d)} disabled={verifying} className={cn(key, "bg-current/8")}>
+              {d}
+            </button>
           ))}
 
           {/* Biometric or empty */}
           {hasWebAuthn ? (
             <button
+              type="button"
               onClick={tryBiometric}
               disabled={biometricLoading || verifying}
-              className="h-14 rounded-2xl bg-card flex items-center justify-center text-foreground/50 hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
-              aria-label="Biometric verification"
+              aria-label={t("biometric")}
+              className={key}
             >
-              <Fingerprint className={cn("size-6", biometricLoading && "animate-pulse")} />
+              <IconFingerprint size={28} stroke={1.9} className={cn(biometricLoading && "animate-pulse")} />
             </button>
           ) : (
-            <div />
+            <span aria-hidden />
           )}
 
-          <NumKey label="0" onPress={() => pressDigit("0")} disabled={verifying} />
+          <button type="button" onClick={() => pressDigit("0")} disabled={verifying} className={cn(key, "bg-current/8")}>
+            0
+          </button>
 
-          {/* Delete */}
           <button
+            type="button"
             onClick={pressDelete}
             disabled={pin.length === 0 || verifying}
-            className="h-14 rounded-2xl bg-card flex items-center justify-center text-foreground/50 hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
-            aria-label="Delete"
+            aria-label={t("delete")}
+            className={key}
           >
-            <Delete className="size-5" />
+            <IconBackspace size={28} stroke={1.9} />
           </button>
         </div>
 
@@ -259,12 +260,12 @@ function LockScreen({
             codes don't auto-submit. Lets 5- and 6-digit codes be entered fully. */}
         {knownLength === null && (
           <button
+            type="button"
             onClick={() => submitPin(pin)}
             disabled={!canConfirm || verifying}
-            className="h-14 w-full rounded-2xl bg-foreground text-background text-base font-medium flex items-center justify-center gap-2 active:scale-[0.99] transition-all disabled:opacity-40"
+            className="mt-6 inline-flex h-12 w-full max-w-[284px] cursor-pointer items-center justify-center rounded-full bg-clear-hero-ink text-[15px] font-bold text-clear-hero transition-[opacity,transform] active:scale-[0.97] disabled:opacity-40 dark:bg-clear-ink dark:text-clear-ground"
           >
-            <span>Ontgrendelen</span>
-            <ArrowRight className="size-5" />
+            {t("unlock")}
           </button>
         )}
       </div>
@@ -272,14 +273,3 @@ function LockScreen({
   );
 }
 
-function NumKey({ label, onPress, disabled }: { label: string; onPress: () => void; disabled: boolean }) {
-  return (
-    <button
-      onClick={onPress}
-      disabled={disabled}
-      className="h-14 rounded-2xl bg-card text-xl font-medium hover:bg-foreground/10 active:scale-[0.97] transition-all disabled:opacity-40"
-    >
-      {label}
-    </button>
-  );
-}

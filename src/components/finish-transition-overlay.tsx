@@ -1,21 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { IconCheck } from "@tabler/icons-react";
 import { m, AnimatePresence, spring } from "@/lib/motion";
-import { IconCircleCheckFilled as CheckCircle2 } from "@tabler/icons-react";
 import { useFinishTransition } from "@/lib/finish-transition-state";
+import { cn } from "@/lib/utils";
 
 // A handful of phrases, shown slower than a typical loading spinner — this is meant to
 // be read, not just glanced at.
-const LOADING_PHRASES = [
-  "Warming up the calculator…",
-  "Counting your coins…",
-  "Fetching the piggy bank from the mud…",
-  "Untangling your transactions…",
-  "Teaching the numbers to behave…",
-  "Polishing your dashboard…",
-];
+const PHRASES = ["calculator", "coins", "piggyBank", "untangle", "behave", "polish"] as const;
 
 const PHRASE_MS = 1800;
 const HOLD_MS = 7000; // how long the loading phrases run before "ready"
@@ -24,33 +19,34 @@ const REVEAL_BUFFER_MS = 120; // tiny buffer after the dashboard signals ready, 
 const REVEAL_FALLBACK_MS = 4000; // reveal anyway if the dashboard never signals (defensive)
 const FADE_MS = 500;
 
-function ConfettiBurst() {
-  const colors = ["#f97316", "#3b82f6", "#22c55e", "#eab308", "#ec4899", "#8b5cf6"];
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 32 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        color: colors[i % colors.length],
-        delay: Math.random() * 0.3,
-        duration: 1.6 + Math.random() * 0.9,
-        rotate: Math.random() * 360,
-        drift: (Math.random() - 0.5) * 180,
-      })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+const CONFETTI = ["bg-clear-ember", "bg-clear-info-fill", "bg-clear-positive-fill", "bg-clear-warning-fill", "bg-clear-rose-ink", "bg-clear-lilac-ink"];
 
+/** A fixed scatter (0–1) per piece and property — the same burst every time, no Math.random in render. */
+function scatter(i: number, k: number) {
+  const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+const PIECES = Array.from({ length: 32 }, (_, i) => ({
+  id: i,
+  left: scatter(i, 1) * 100,
+  color: CONFETTI[i % CONFETTI.length],
+  delay: scatter(i, 2) * 0.3,
+  duration: 1.6 + scatter(i, 3) * 0.9,
+  rotate: scatter(i, 4) * 360,
+  drift: (scatter(i, 5) - 0.5) * 180,
+}));
+
+function ConfettiBurst() {
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {pieces.map((p) => (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {PIECES.map((p) => (
         <m.span
           key={p.id}
           initial={{ top: "-5%", left: `${p.left}%`, opacity: 1, rotate: 0 }}
           animate={{ top: "105%", opacity: [1, 1, 0], rotate: p.rotate, x: p.drift }}
           transition={{ duration: p.duration, delay: p.delay, ease: "easeIn" }}
-          className="absolute size-2.5 rounded-[2px]"
-          style={{ backgroundColor: p.color }}
+          className={cn("absolute size-2.5 rounded-[2px]", p.color)}
         />
       ))}
     </div>
@@ -58,13 +54,13 @@ function ConfettiBurst() {
 }
 
 // Mounted once in the root layout (see FinishTransitionProvider for why). Runs the whole
-// "getting things ready" sequence itself — cycling phrases, showing "ready", navigating,
-// and only *then* fading out. The fade is triggered by the dashboard page itself reporting
-// that it actually mounted (via routeReadyTick, see DashboardReadySignal) rather than a
-// fixed delay — a guessed timeout was firing before the dashboard's own (DB-backed) render
-// had finished, so the fade revealed Next's in-between blank state instead of real content,
-// which is what looked like an extra "loading…" flash before the dashboard popped in.
+// "setting up your household" sequence itself — cycling phrases with a progress bar,
+// showing "ready", navigating, and only *then* fading out. The fade is triggered by the
+// dashboard page itself reporting that it actually mounted (via routeReadyTick, see
+// DashboardReadySignal) rather than a fixed delay, so it never reveals Next's in-between
+// blank state instead of real content.
 export function FinishTransitionOverlay() {
+  const t = useTranslations("onboarding.finishing");
   const router = useRouter();
   const { active, options, routeReadyTick, stop } = useFinishTransition();
   const [phraseIndex, setPhraseIndex] = useState(0);
@@ -85,7 +81,7 @@ export function FinishTransitionOverlay() {
     setWaitingForRoute(false);
     setPhraseIndex(0);
 
-    const cycle = setInterval(() => setPhraseIndex((i) => (i + 1) % LOADING_PHRASES.length), PHRASE_MS);
+    const cycle = setInterval(() => setPhraseIndex((i) => (i + 1) % PHRASES.length), PHRASE_MS);
     const readyTimer = setTimeout(() => setReady(true), HOLD_MS);
     const navigateTimer = setTimeout(() => {
       baselineTickRef.current = routeReadyTick;
@@ -117,88 +113,68 @@ export function FinishTransitionOverlay() {
   // Once the fade starts, fully unmount after it completes.
   useEffect(() => {
     if (!revealing) return;
-    const t = setTimeout(stop, FADE_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(stop, FADE_MS);
+    return () => clearTimeout(timer);
   }, [revealing, stop]);
 
   if (!active) return null;
 
+  const name = options?.name;
+  const imported = options?.importResult?.imported ?? 0;
+
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-[#050e2e] transition-opacity"
+      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-clear-ground px-6 font-clear text-clear-ink transition-opacity"
       style={{ opacity: revealing ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
     >
-      {!revealing && <ConfettiBurst />}
+      {ready && !revealing && <ConfettiBurst />}
 
-      {/* Aurora blobs */}
-      <m.div
-        className="absolute -top-1/4 -left-1/4 size-[70vmax] rounded-full bg-blue-600/30 blur-[120px]"
-        animate={{ x: [0, 80, 0], y: [0, 60, 0], scale: [1, 1.15, 1] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <m.div
-        className="absolute -bottom-1/4 -right-1/4 size-[70vmax] rounded-full bg-indigo-400/25 blur-[120px]"
-        animate={{ x: [0, -70, 0], y: [0, -50, 0], scale: [1.1, 1, 1.1] }}
-        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <div className="relative z-10 text-center px-6">
-        {!ready ? (
-          <div className="mx-auto mb-8 size-14 animate-spin rounded-full border-[3px] border-white/20 border-t-white" />
-        ) : (
-          <m.div
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={spring.gentle}
-            className="mx-auto mb-8 flex size-14 items-center justify-center rounded-full bg-emerald-400/20 text-emerald-300"
-          >
-            <CheckCircle2 className="size-8" />
-          </m.div>
-        )}
-
-        <AnimatePresence mode="wait">
-          {ready ? (
-            <m.h2
-              key="ready"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
+      <div className="relative z-10 flex w-full max-w-[420px] flex-col items-center gap-7 text-center">
+        <div aria-hidden className="flex size-[180px] items-center justify-center rounded-full bg-clear-card/55">
+          <div className="flex size-[146px] items-center justify-center rounded-full bg-clear-card">
+            <m.span
+              animate={ready ? { scale: [1, 1.08, 1] } : { scale: 1 }}
               transition={spring.gentle}
-              className="text-3xl font-black tracking-tight text-white mb-2"
+              className="inline-flex size-[110px] items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink"
             >
-              Everything is ready{options?.name ? `, ${options.name}` : ""}!
-            </m.h2>
-          ) : (
-            <m.h2
-              key={phraseIndex}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={spring.gentle}
-              className="text-3xl font-black tracking-tight text-white mb-2"
-            >
-              {LOADING_PHRASES[phraseIndex]}
-            </m.h2>
-          )}
-        </AnimatePresence>
-
-        <m.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, ...spring.gentle }}
-          className="text-white/70"
-        >
-          {options?.importResult ? (
-            <>
-              Processing <span className="font-bold text-white">{options.importResult.imported}</span> transactions
-              {options.importResult.autoCategorised > 0 && (
-                <> · <span className="font-bold text-white">{options.importResult.autoCategorised}</span> auto-categorised</>
+              {ready ? (
+                <IconCheck size={52} stroke={2.6} />
+              ) : (
+                <span className="size-12 animate-spin rounded-full border-[3px] border-clear-ember-ink/25 border-t-clear-ember-ink" />
               )}
-            </>
-          ) : (
-            "Preparing your dashboard"
-          )}
-        </m.p>
+            </m.span>
+          </div>
+        </div>
+
+        <div className="flex min-h-[96px] flex-col items-center gap-3">
+          <AnimatePresence mode="wait">
+            <m.h2
+              key={ready ? "ready" : phraseIndex}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={spring.gentle}
+              className="m-0 text-[28px] leading-[1.1] font-extrabold tracking-[-0.03em] sm:text-[34px]"
+            >
+              {ready ? (name ? t("ready", { name }) : t("readyNoName")) : t(`phrases.${PHRASES[phraseIndex]}`)}
+            </m.h2>
+          </AnimatePresence>
+          <p role="status" className="m-0 text-base leading-normal text-clear-ink-2">
+            {imported > 0 ? t("withImport", { count: imported }) : t("withoutImport")}
+          </p>
+        </div>
+
+        <div className="flex w-full items-center gap-3">
+          <div aria-hidden className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-clear-line">
+            <m.span
+              className="absolute inset-y-0 left-0 rounded-full bg-clear-ember"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: HOLD_MS / 1000, ease: "easeInOut" }}
+            />
+          </div>
+          <span className="sr-only">{t("progressLabel")}</span>
+        </div>
       </div>
     </div>
   );

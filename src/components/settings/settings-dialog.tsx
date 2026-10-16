@@ -2,12 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-  IconUser,
-  IconChevronRight,
-  IconLogout,
-  IconPencil,
-} from "@tabler/icons-react";
+import { IconChevronRight, IconLogout, IconPencil, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { SHEET_COLUMN } from "@/components/page-container";
 import packageJson from "../../../package.json";
@@ -18,34 +13,58 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import { logoutAction } from "@/app/actions/auth";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
-import { PanelChromeContext, PanelHeader } from "@/components/settings/settings-panel-chrome";
+import { PanelChromeContext } from "@/components/settings/settings-panel-chrome";
 import { SettingsPanelBody } from "@/components/settings/settings-panel-body";
 import { settingsSections, isHeavyPanel, type SettingsPanelKey } from "@/components/settings/settings-sections";
 import { ProfileForms, SecurityForms } from "@/components/settings/account-forms";
 import { AnchoredTip } from "@/components/anchored-tip";
-import { Sparkles } from "@/components/sparkles";
 import { LogoMark } from "@/components/brand-mark";
+import { TONE_FILL, type ClearTone } from "@/components/clear/tones";
 import { useSettingsPortal } from "@/lib/settings-portal-state";
+
+// The pastel each row's icon sits on, as drawn in the phone Settings concept.
+const ROW_TONES: Record<SettingsPanelKey, ClearTone> = {
+  profile: "peach",
+  security: "stone",
+  accounts: "sky",
+  categories: "mint",
+  recurring: "butter",
+  merchants: "lilac",
+  financialMonth: "peach",
+  monthOverrides: "peach",
+  budgetRecurring: "peach",
+  import: "sky",
+  importProfiles: "sky",
+  dataHealth: "rose",
+  appearance: "butter",
+  privacy: "stone",
+  appLock: "stone",
+  language: "sky",
+  currency: "mint",
+  help: "mint",
+  users: "lilac",
+};
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase() || "?";
+}
 
 function Avatar({ user, size }: { user: User; size: number }) {
   if (user.avatarUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={user.avatarUrl}
-        alt={user.name}
-        className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size }}
-      />
+      <img src={user.avatarUrl} alt="" className="shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />
     );
   }
   return (
-    <div
-      className="rounded-full bg-mustard text-mustard-ink flex items-center justify-center shrink-0"
-      style={{ width: size, height: size }}
+    <span
+      aria-hidden
+      className="inline-flex shrink-0 items-center justify-center rounded-full bg-clear-peach font-clear font-extrabold text-clear-peach-ink"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.34) }}
     >
-      <IconUser className="size-1/2" />
-    </div>
+      {initials(user.name)}
+    </span>
   );
 }
 
@@ -57,7 +76,6 @@ export function SettingsDialog({
   financialMonth,
   budgetRecurringMode = "budgeted",
   sharedCostMode = "gross",
-  triggerClassName,
   iconOnly,
 }: {
   user: User;
@@ -65,7 +83,7 @@ export function SettingsDialog({
   financialMonth: FinancialMonthConfig;
   budgetRecurringMode?: BudgetRecurringMode;
   sharedCostMode?: SharedCostMode;
-  triggerClassName?: string;
+  /** Just the avatar; otherwise the avatar and the first name in a pill. */
   iconOnly?: boolean;
 }) {
   const t = useTranslations("settings");
@@ -150,7 +168,7 @@ export function SettingsDialog({
 
   const firstName = user.name.split(" ")[0] || user.name;
 
-  // The profile is edited from the header here, so no Account group; admins get
+  // The profile is edited from the profile card here, so no Account group; admins get
   // Users at the bottom of the App group.
   const sections = settingsSections({ isAdmin: user.isAdmin, withAccount: false });
 
@@ -164,84 +182,93 @@ export function SettingsDialog({
         // SettingsDialog is ever rendered per route, so the selector stays unambiguous.
         data-tip-anchor="settingsTrigger"
         className={cn(
-          iconOnly ? "glass-icon-btn size-11 p-0" : "glass-icon-btn h-11 gap-2 p-1 pr-5 max-w-[60vw] ",
-          triggerClassName,
+          "inline-flex shrink-0 cursor-pointer items-center rounded-full bg-clear-card font-clear text-clear-ink outline-none transition-transform focus-visible:ring-3 focus-visible:ring-clear-ember/50 active:scale-[0.97]",
+          iconOnly ? "size-11 justify-center" : "h-11 max-w-[60vw] gap-2 p-1 pr-4",
         )}
       >
-        <Avatar user={user} size={38} />
-        {!iconOnly && (
-          <span className="pl-1 text-sm text-white truncate">{firstName}</span>
-        )}
+        <Avatar user={user} size={iconOnly ? 44 : 36} />
+        {!iconOnly && <span className="truncate text-sm font-bold">{firstName}</span>}
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="px-0" sheetClassName="bg-bg" hideHandle hideHeaderRow title={t("title")}>
-          {/* ── Root menu ── shares the same sticky header chrome as every sub-panel
-              (PanelHeader from settings-panel-chrome.tsx), with the X acting as a
-              close button for the whole dialog. Rendered as a sibling of the hero
-              content (not nested inside it) so its containing block is the full
-              scrollable sheet body — nesting it inside a hero wrapper div would
-              only let it stay `sticky` for as long as that div is on-screen.
-              Sparkles is a sibling too: it's self-contained (absolute, sizes itself
-              to a fixed hero height off its own `top-0`) and anchors against
-              DialogContent's own `relative` scroll container. */}
-          <PanelChromeContext.Provider value={{ closePanel: () => setOpen(false) }}>
-            <PanelHeader title="" transparent closeIcon />
-          </PanelChromeContext.Provider>
-          <Sparkles />
-          <div className="flex flex-col items-center gap-3 pt-2 pb-6 px-5">
-            <Avatar user={user} size={88} />
-            <div className="text-center">
-              <p className="heading text-2xl leading-tight text-ink">{user.name}</p>
-              <p className="text-sm text-ink-3">{user.email}</p>
-            </div>
-            <div className="flex items-center gap-2">
+        <DialogContent className="px-0" sheetClassName="bg-clear-ground" hideHeaderRow title={t("title")}>
+          <div className="flex flex-col gap-3.5 px-4 pt-4 pb-2 font-clear text-clear-ink">
+            {/* Header */}
+            <div className="flex h-12 items-center gap-3">
               <button
                 type="button"
-                onClick={() => logoutAction()}
-                className="flex items-center gap-2 rounded-full bg-destructive/10 text-destructive px-4 h-10 text-sm font-medium active:scale-[0.97] transition-transform"
+                onClick={() => setOpen(false)}
+                aria-label={t("close")}
+                className="inline-flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-card text-clear-ink transition-colors hover:bg-clear-tile"
               >
-                <IconLogout className="size-4.5" />
-                {t("signOut")}
+                <IconX size={22} stroke={2.2} aria-hidden />
               </button>
+              <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em]">{t("title")}</h1>
+            </div>
+
+            {/* Profile */}
+            <section aria-label={t("dialog.profile")} className="flex items-center gap-3.5 rounded-clear-card bg-clear-card p-4">
+              <Avatar user={user} size={56} />
+              <span className="flex min-w-0 flex-1 flex-col gap-px">
+                <span className="truncate text-[17px] font-extrabold tracking-[-0.01em]">{user.name}</span>
+                <span className="truncate text-[13px] text-clear-muted">{user.email}</span>
+              </span>
               <button
                 type="button"
                 onClick={() => setEditOpen(true)}
                 aria-label={t("editProfile")}
-                className="flex items-center justify-center size-10 rounded-full bg-foreground/8 text-ink active:scale-[0.97] transition-transform"
+                className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-ground text-clear-ink transition-colors hover:bg-clear-line"
               >
-                <IconPencil className="size-4.5" />
+                <IconPencil size={18} stroke={1.9} aria-hidden />
               </button>
-            </div>
-          </div>
+            </section>
 
-          <div className="px-5 pb-[calc(1.5rem+var(--sab))]">
-            {/* Section cards */}
-            <div className="space-y-6">
-              {sections.map((section) => (
-                <div key={section.key}>
-                  <p className="px-1 ml-5 mb-2 text-[13px] font-bold text-clear-muted">
-                    {t(`sections.${section.key}`)}
-                  </p>
-                  <div className="rounded-card border border-line bg-surface overflow-hidden">
-                    {section.rows.map(({ key, icon: Icon }) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => openPanel(key)}
-                        className="relative w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-foreground/5 transition-colors"
-                        // Only the Data Health row is a tip target today; the attribute
-                        // is undefined on every other row so the selector stays unique.
-                        data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : undefined}
-                      >
-                        <Icon className="size-6 shrink-0 text-ink" />
-                        <span className="flex-1 text-base font-normal text-ink">{t(`panels.${key}.title`)}</span>
-                        <IconChevronRight className="size-5 text-ink-3 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
+            {/* Sections */}
+            {sections.map((section) => (
+              <section key={section.key} aria-labelledby={`settings-dialog-${section.key}`} className="flex flex-col gap-2">
+                <h2 id={`settings-dialog-${section.key}`} className="m-0 ml-1.5 text-[13px] font-bold text-clear-muted">
+                  {t(`sections.${section.key}`)}
+                </h2>
+                <div className="flex flex-col rounded-clear-card bg-clear-card py-1">
+                  {section.rows.map(({ key, icon: Icon }, i) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => openPanel(key)}
+                      // Only the Data Health row is a tip target today; the attribute
+                      // is undefined on every other row so the selector stays unique.
+                      data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : undefined}
+                      className={cn(
+                        "flex h-[52px] w-full cursor-pointer items-center gap-3 border-t pr-3.5 pl-3 text-left text-clear-ink transition-colors active:bg-clear-tile",
+                        i === 0 ? "border-transparent" : "border-clear-ground",
+                      )}
+                    >
+                      <span aria-hidden className={cn("inline-flex size-9 shrink-0 items-center justify-center rounded-clear-icon", TONE_FILL[ROW_TONES[key]])}>
+                        <Icon size={18} stroke={1.9} />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-[15px] font-semibold">{t(`panels.${key}.title`)}</span>
+                      <IconChevronRight aria-hidden size={18} stroke={2} className="shrink-0 text-clear-placeholder" />
+                    </button>
+                  ))}
                 </div>
-              ))}
+              </section>
+            ))}
+
+            {/* Sign out */}
+            <button
+              type="button"
+              onClick={() => logoutAction()}
+              className="flex h-[52px] cursor-pointer items-center gap-3 rounded-clear-card bg-clear-card pr-3.5 pl-3 text-left text-clear-negative transition-colors active:bg-clear-tile"
+            >
+              <span aria-hidden className={cn("inline-flex size-9 shrink-0 items-center justify-center rounded-clear-icon", TONE_FILL.rose)}>
+                <IconLogout size={18} stroke={1.9} />
+              </span>
+              <span className="text-[15px] font-bold">{t("signOut")}</span>
+            </button>
+
+            <div className="flex flex-col items-center gap-1.5 pt-4 pb-2 text-center text-clear-muted">
+              <LogoMark className="size-7 opacity-60" />
+              <p className="m-0 text-xs">{t("dialog.version", { version: packageJson.version })}</p>
             </div>
           </div>
 
@@ -258,7 +285,7 @@ export function SettingsDialog({
                 // `fixed inset-0` escapes the sheet it slides over, so it needs the
                 // column cap itself to stay aligned with that sheet on desktop.
                 SHEET_COLUMN,
-                "fixed inset-0 z-[60] flex flex-col rounded-t-4xl overflow-hidden bg-sidebar",
+                "fixed inset-0 z-[60] flex flex-col overflow-hidden rounded-t-clear-card bg-clear-card lg:rounded-clear-dialog",
                 !dragging && "transition-transform duration-300 ease-out",
               )}
               style={{ transform: visible ? `translateX(${dragX}px)` : "translateX(100%)" }}
@@ -267,10 +294,12 @@ export function SettingsDialog({
               onTouchEnd={onPanelTouchEnd}
               onTouchCancel={onPanelTouchEnd}
             >
-              <PanelChromeContext.Provider value={{ closePanel, variant: "sheet", title: t(`panels.${active}.title`) }}>
+              <PanelChromeContext.Provider
+                value={{ closePanel, variant: "sheet", title: t(`panels.${active}.title`), subtitle: t(`panels.${active}.subtitle`) }}
+              >
                 {/* Panel body — the header sits inside the scroll container as a sticky
                     row so content blurs and fades under it as it scrolls. */}
-                <div className="flex-1 overflow-y-auto pb-[calc(1.5rem+var(--sab))]">
+                <div className="flex-1 overflow-y-auto pb-[calc(1.5rem+var(--sab,0px))]">
                   <SettingsPanelBody
                     panelKey={active}
                     heavy={isHeavyPanel(active) ? panels[active] : undefined}
@@ -293,14 +322,6 @@ export function SettingsDialog({
               </div>
             </DialogContent>
           </Dialog>
-
-          <div className="pt-6 pb-8 flex flex-col items-center gap-2 text-center opacity-40">
-            <LogoMark className="size-8" />
-            <p className="text-lg font-medium text-ink">
-              Arca
-            </p>
-            <p className="text-xs text-ink-3">v{packageJson.version}</p>
-          </div>
         </DialogContent>
       </Dialog>
     </>

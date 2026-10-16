@@ -1,4 +1,93 @@
 {
+  "auth": {
+    "copyright": "© {year} Arca",
+    "brand": {
+      "label": "Over Arca",
+      "title": "Weet wat je kunt uitgeven. Elke dag.",
+      "body": "Arca maakt van je bankexports één rustig getal: wat je vandaag veilig kunt uitgeven, na vaste lasten en sparen. Gemaakt voor huishoudens die de kosten delen.",
+      "previewSafeToSpend": "Veilig te besteden",
+      "previewOnPace": "Op koers",
+      "previewPerDay": "Ongeveer <b>{amount} per dag</b> tot de volgende salarisdag",
+      "previewSaved": "{amount} gespaard · {percent}% van je inkomen",
+      "previewBill": "Energiebedrijf {amount}",
+      "previewBillDue": "Over 3 dagen",
+      "privacy": "Je gegevens blijven in je huishouden. Geen bank-login nodig, importeer gewoon een CSV."
+    },
+    "signIn": {
+      "title": "Welkom terug",
+      "subtitle": "Log in bij je huishouden",
+      "email": "E-mailadres",
+      "password": "Wachtwoord",
+      "passwordPlaceholder": "Vul je wachtwoord in",
+      "showPassword": "Wachtwoord tonen",
+      "hidePassword": "Wachtwoord verbergen",
+      "remember": "Ingelogd blijven",
+      "submit": "Inloggen",
+      "submitting": "Bezig met inloggen…",
+      "or": "of",
+      "newHere": "Nieuw hier?",
+      "createAccount": "Maak een account",
+      "registered": "Account aangemaakt. Je kunt nu inloggen.",
+      "language": "Taal"
+    },
+    "mfa": {
+      "back": "Terug naar inloggen",
+      "backFor": "Terug naar inloggen voor {email}",
+      "title": "Vul je code in",
+      "body": "Open je authenticator-app en vul de 6-cijferige code voor Arca in.",
+      "backupTitle": "Vul een back-upcode in",
+      "backupBody": "Gebruik een van de back-upcodes die je bewaarde toen je inloggen in twee stappen aanzette. Elke code werkt één keer.",
+      "codeLabel": "6-cijferige code",
+      "backupLabel": "Back-upcode",
+      "backupPlaceholder": "XXXX-XXXX",
+      "verify": "Bevestigen",
+      "verifying": "Bezig met controleren…",
+      "useBackup": "Gebruik liever een back-upcode",
+      "useApp": "Gebruik liever je authenticator-app",
+      "refresh": "Codes vernieuwen elke 30 seconden.",
+      "keypad": "Toetsenblok",
+      "backspace": "Laatste cijfer wissen"
+    },
+    "errors": {
+      "invalidCredentials": "Dit e-mailadres en wachtwoord horen niet bij elkaar.",
+      "sessionExpired": "Je inlogpoging is verlopen. Log opnieuw in.",
+      "tooManyAttempts": "Te veel verkeerde codes. Log opnieuw in.",
+      "wrongCode": "Die code klopt niet. Probeer het opnieuw."
+    }
+  },
+  "appLock": {
+    "title": "Welkom terug, {name}",
+    "titleNoName": "Welkom terug",
+    "body": "Vul je pincode in om Arca te openen",
+    "dots": "{filled} van {total} cijfers ingevuld",
+    "keypad": "Pincode-toetsenblok",
+    "delete": "Laatste cijfer wissen",
+    "biometric": "Ontgrendelen met biometrie",
+    "unlock": "Ontgrendelen",
+    "wrongPin": "Die pincode klopt niet. Probeer het opnieuw.",
+    "unlockFailed": "Arca kon niet ontgrendelen. Probeer het opnieuw.",
+    "biometricFailed": "Ontgrendelen met biometrie lukte niet. Vul je pincode in."
+  },
+  "statusPages": {
+    "error": {
+      "title": "Er ging iets mis aan onze kant",
+      "body": "Je gegevens zijn veilig. Probeer het opnieuw of ga terug naar Home. Blijft het gebeuren, dan helpt de referentie de oorzaak te vinden.",
+      "reference": "Referentie {digest}",
+      "tryAgain": "Opnieuw proberen",
+      "backHome": "Terug naar Home",
+      "help": "Kom je er niet uit? <link>Bekijk Hulp & tips</link>"
+    },
+    "notFound": {
+      "title": "Deze pagina bestaat niet",
+      "body": "De link is misschien oud of de pagina is verplaatst. Je gegevens zijn niet aangeraakt.",
+      "backHome": "Terug naar Home"
+    },
+    "offline": {
+      "title": "Je bent offline",
+      "body": "Arca heeft een verbinding nodig om je gegevens te laden. Controleer je netwerk en probeer het opnieuw.",
+      "tryAgain": "Opnieuw proberen"
+    }
+  },
   "common": {
     "fields": {
       "description": "Omschrijving",
@@ -99,7 +188,7 @@
       },
       "appLock": {
         "title": "App-vergrendeling",
-        "subtitle": "Vraag om een pincode of je vingerafdruk als de app opent."
+        "subtitle": "Vraag om een pincode als de app opent."
       },
       "language": {
         "title": "Taal",
@@ -119,14 +208,13 @@
       }
     },
     "inline": {
-      "appearanceHint": "Bepaalt hoe de app eruitziet. \"Systeemstandaard\" volgt de instellingen van je apparaat.",
+      "appearanceHint": "Bepaalt hoe de app er op dit apparaat uitziet. \"Zoals je apparaat\" volgt de lichte of donkere modus ervan.",
       "privacyHint": "Verbergt elk bedrag in de app achter puntjes, zodat je hem in het openbaar kunt gebruiken zonder je saldi te laten zien.",
       "privacyMode": "Privacymodus",
       "showAmounts": "Bedragen tonen",
       "hideAmounts": "Bedragen verbergen",
       "languageHint": "Kies de taal van de app.",
       "currencyHint": "Valutasymbool dat bij bedragen staat.",
-      "addOverride": "Uitzondering toevoegen",
       "helpTitle": "Vragen of problemen?",
       "helpBody": "Mail de support en we reageren zo snel mogelijk.",
       "contactSupport": "Contact opnemen"
@@ -151,10 +239,29 @@
     "brandIcons": {
       "title": "Merk-iconen",
       "subtitle": "Transacties waarvan de naam bij een regel past, krijgen dat logo.",
-      "rules": "Regels",
-      "empty": "Nog geen regels",
+      "empty": "Nog geen regels. Voeg er een toe om passende transacties een logo te geven.",
       "addRule": "Regel toevoegen",
+      "editRule": "De regel voor {name} bewerken",
+      "newTitle": "Nieuwe regel voor een merk-icoon",
+      "editTitle": "Regel voor merk-icoon bewerken",
+      "dialogSubtitle": "Transacties waarvan de naam past, krijgen dit logo.",
+      "close": "Sluiten",
+      "pattern": "Naam",
+      "patternPlaceholder": "bijv. KFC",
+      "matchLabel": "Vergelijken",
+      "matchHint": {
+        "contains": "De naam bevat de tekst, ook midden in een woord.",
+        "word": "De naam bevat het als heel woord, dus MCD past niet bij McDonalds.",
+        "exact": "De naam is precies deze tekst."
+      },
+      "icon": "Icoon",
+      "background": "Achtergrond",
+      "delete": "Verwijderen",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
       "saving": "Opslaan…",
+      "saveError": "De regel kon niet worden opgeslagen. Probeer het opnieuw.",
+      "deleteError": "De regel kon niet worden verwijderd. Probeer het opnieuw.",
       "matchWord": "Heel woord",
       "matchContains": "Bevat",
       "matchExact": "Exact",
@@ -163,6 +270,69 @@
       "deleteRuleConfirm": "Regel verwijderen"
     },
     "categories": {
+      "listTitle": "Categorieën",
+      "breadcrumb": "Waar je bent",
+      "back": "Terug naar categorieën",
+      "new": "Nieuwe categorie",
+      "newTitle": "Nieuwe categorie",
+      "newSubtitle": "Het icoon, de kleur en het budgettype bepalen waar hij verschijnt.",
+      "edit": "Bewerken",
+      "done": "Klaar",
+      "reset": "Standaard terugzetten",
+      "resetting": "Terugzetten…",
+      "resetError": "De categorieën konden niet worden teruggezet. Probeer het opnieuw.",
+      "search": "Categorieën zoeken",
+      "noMatch": "Geen categorieën gevonden voor deze zoekopdracht.",
+      "empty": "Nog geen categorieën. Voeg er een toe om je uitgaven te sorteren.",
+      "subcategoryCount": "{count, plural, one {# subcategorie} other {# subcategorieën}}",
+      "addSubcategory": "Subcategorie toevoegen aan {parent}",
+      "rulesSummary": "{count, plural, =0 {Nog geen regels die nieuwe imports sorteren} one {# regel sorteert nieuwe imports in deze categorieën} other {# regels sorteren nieuwe imports in deze categorieën}}",
+      "rulesSummaryHint": "Wat een regel niet vangt, komt bij Te beoordelen. Open een categorie om de regels ervan te beheren.",
+      "budgetType": "Budgettype",
+      "budgetTypes": {
+        "nodig": "Nodig",
+        "willen": "Willen",
+        "sparen": "Sparen"
+      },
+      "budgetTypeHints": {
+        "nodig": "Telt mee voor het deel 'nodig' van je budgetplan.",
+        "willen": "Telt mee voor het deel 'willen' van je budgetplan.",
+        "sparen": "Telt mee voor wat je elke maand opzijzet."
+      },
+      "appearance": "Uiterlijk",
+      "appearanceHint": "Te zien bij elke transactie, elk budget en elk rapport in deze categorie.",
+      "budget": "Budget",
+      "budgetHint": "Bepaalt voor welk deel van je plan deze categorie meetelt.",
+      "name": "Naam",
+      "namePlaceholder": "bijv. Boodschappen",
+      "parent": "Hoofdcategorie",
+      "noParent": "Geen (bovenste niveau)",
+      "icon": "Icoon",
+      "color": "Kleur",
+      "changeIcon": "Icoon wijzigen",
+      "colorFromParent": "Een subcategorie gebruikt de kleur van de hoofdcategorie.",
+      "ruleCount": "{count, plural, =0 {Geen regels} one {# regel} other {# regels}}",
+      "rulesTitle": "Regels",
+      "rulesHint": "Nieuwe imports die bij een van deze regels passen, gaan direct naar {name}.",
+      "rulesStaged": "Regels worden aangemaakt als je de categorie opslaat.",
+      "noRules": "Nog geen regels.",
+      "addRule": "Regel toevoegen",
+      "editRule": "Regel bewerken",
+      "deleteRule": "Regel verwijderen",
+      "ruleMatch": "{match} “{pattern}”",
+      "ruleAnyName": "Elke omschrijving",
+      "ruleAnyAmount": "Elk bedrag",
+      "cancel": "Annuleren",
+      "close": "Sluiten",
+      "create": "Categorie aanmaken",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "delete": "Categorie verwijderen",
+      "createError": "De categorie kon niet worden aangemaakt. Probeer het opnieuw.",
+      "saveError": "De categorie kon niet worden opgeslagen. Probeer het opnieuw.",
+      "deleteError": "De categorie kon niet worden verwijderd. Probeer het opnieuw.",
+      "ruleSaveError": "De regel kon niet worden opgeslagen. Probeer het opnieuw.",
+      "ruleDeleteError": "De regel kon niet worden verwijderd. Probeer het opnieuw.",
       "resetTitle": "Categorieën terugzetten naar de standaard?",
       "resetBody": "Alle eigen categorieën en regels worden verwijderd en de standaardset wordt teruggezet. Je transacties blijven bewaard, maar verliezen hun categorie tot de standaardregels ze opnieuw toewijzen.",
       "resetConfirm": "Categorieën terugzetten",
@@ -171,19 +341,233 @@
       "deleteConfirm": "Categorie verwijderen"
     },
     "merchants": {
+      "count": "{count, plural, one {# winkel} other {# winkels}}",
+      "withIcon": "{count} van {total} met een merk-icoon",
+      "search": "Winkels zoeken",
+      "filterLabel": "Winkels tonen",
+      "filterAll": "Alle {count}",
+      "filterNoIcon": "Zonder icoon {count}",
+      "transactionCount": "{count, plural, one {# transactie} other {# transacties}}",
+      "noMatch": "Geen winkels gevonden voor deze zoekopdracht.",
+      "allHaveIcons": "Elke winkel heeft een icoon.",
+      "empty": "Nog geen winkels. Ze verschijnen zodra je transacties importeert.",
+      "back": "Terug",
+      "editTitle": "Winkel bewerken",
+      "deleteLabel": "Winkel verwijderen",
+      "name": "Naam",
+      "nameHint": "Een nieuwe naam geldt voor elke transactie van deze winkel.",
+      "namePlaceholder": "Naam van de winkel",
+      "icon": "Icoon",
+      "activity": "Activiteit",
+      "transactions": "Transacties",
+      "totalSpent": "Totaal uitgegeven",
+      "lastVisit": "Laatste bezoek",
+      "viewProfile": "Uitgavenprofiel bekijken",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "saveError": "Deze winkel kon niet worden opgeslagen. Probeer het opnieuw.",
+      "deleteError": "Deze winkel kon niet worden verwijderd. Probeer het opnieuw.",
       "deleteTitle": "De winkel “{name}” verwijderen?",
       "deleteBody": "{count, plural, =0 {Geen enkele transactie gebruikt deze winkel.} one {De # transactie blijft bestaan, maar verliest haar winkel.} other {De # transacties blijven bestaan, maar verliezen hun winkel.}}",
       "deleteConfirm": "Winkel verwijderen"
     },
     "users": {
+      "intro": "{count, plural, one {# persoon logt in} other {# personen loggen in}} bij dit huishouden en deelt de rekeningen, budgetten en doelen.",
+      "empty": "Nog geen gebruikers.",
+      "you": "Jij",
+      "roleAdmin": "Beheerder",
+      "roleMember": "Lid",
+      "roleFor": "Rol van {name}",
+      "deleteLabel": "{name} verwijderen",
+      "roleError": "De rol kon niet worden gewijzigd. Probeer het opnieuw.",
+      "deleteError": "Deze gebruiker kon niet worden verwijderd. Probeer het opnieuw.",
+      "rolesTitle": "Rollen",
+      "peopleCount": "{count, plural, one {# persoon} other {# personen}}",
+      "roleAdminBody": "Beheert wie kan inloggen en welke rol iemand heeft, en kan alles wat een lid kan.",
+      "roleMemberBody": "Gebruikt het huishouden dagelijks: transacties, budgetten, doelen en instellingen. Kan geen gebruikers beheren.",
       "deleteTitle": "{name} verwijderen?",
       "deleteBody": "Deze gebruiker wordt uitgelogd en kan niet meer inloggen. Dit kan niet ongedaan worden gemaakt.",
       "deleteConfirm": "Gebruiker verwijderen"
     },
+    "financialMonth": {
+      "title": "Je maand begint op",
+      "subtitle": "Budgetten, inzichten en vrij te besteden volgen allemaal deze periode.",
+      "startDay": "Startdag",
+      "startDayValue": "De {day}e",
+      "dayLabel": "Dag {day}",
+      "periodHint": "Meestal je betaaldag. Deze periode loopt van {range}.",
+      "saving": "Opslaan…",
+      "saved": "Opgeslagen",
+      "startDayError": "De startdag kon niet worden opgeslagen. Probeer het opnieuw.",
+      "weekendError": "De weekendinstelling kon niet worden opgeslagen. Probeer het opnieuw.",
+      "currentPeriod": "Huidige periode",
+      "dayOf": "Dag {day} van {total} · nog {left, plural, one {# dag} other {# dagen}}, vandaag meegerekend",
+      "timelineAria": "De periode loopt van {from} tot {to}. Vandaag, {today}, is dag {day} van {total}.",
+      "today": "Vandaag · {date}",
+      "periodStarts": "Periode begint",
+      "nextStarts": "Volgende periode begint {date}",
+      "weekendLabel": "Verschuif de start naar vrijdag als die in het weekend valt",
+      "weekendHint": "Voor een salaris dat vóór het weekend binnenkomt."
+    },
     "monthOverrides": {
+      "intro": "Verschuift je betaaldag (feestdagen, weekenden)? Pas dan alleen die maand aan.",
+      "add": "Uitzondering toevoegen",
+      "empty": "Nog geen uitzonderingen. Voeg er een toe als je betaaldag één maand verschuift.",
+      "row": "Begint {start} in plaats van {usual} · loopt van {range}",
+      "rowSame": "Je gewone startdag · loopt van {range}",
+      "editLabel": "De uitzondering voor {month} bewerken",
+      "deleteLabel": "De uitzondering voor {month} verwijderen",
+      "saveError": "De uitzondering voor {month} kon niet worden opgeslagen. Probeer het opnieuw.",
+      "deleteError": "De uitzondering voor {month} kon niet worden verwijderd. Probeer het opnieuw.",
+      "addTitle": "Nieuwe uitzondering",
+      "editTitle": "Uitzondering bewerken",
+      "dialogSubtitle": "Een andere startdag voor één maand.",
+      "close": "Sluiten",
+      "month": "Maand",
+      "startDay": "Startdag",
+      "startDayHint": "1 tot en met 28. Je gewone startdag is de {usual}e.",
+      "startDayInvalid": "Kies een dag van 1 tot en met 28.",
+      "preview": "Die periode loopt van {range}.",
+      "replaces": "{month} heeft al een uitzondering. Opslaan vervangt die.",
+      "delete": "Verwijderen",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "addConfirm": "Uitzondering toevoegen",
       "deleteTitle": "De uitzondering voor {month} verwijderen?",
       "deleteBody": "Die maand begint dan weer op je gewone startdag.",
       "deleteConfirm": "Uitzondering verwijderen"
+    },
+    "budgetModes": {
+      "billsTitle": "Vaste lasten meetellen in categoriebudgetten",
+      "billsSubtitle": "Kies hoe vaste lasten zoals huur en energie je categoriebudgetten raken.",
+      "savesStraightAway": "Wordt direct opgeslagen",
+      "bills": {
+        "always": "Altijd",
+        "alwaysHint": "Elke vaste last telt mee voor het budget van zijn categorie.",
+        "budgeted": "Alleen categorieën met budget",
+        "budgetedHint": "Vaste lasten tellen alleen mee waar je een budget voor die categorie hebt ingesteld.",
+        "exclude": "Nooit",
+        "excludeHint": "Budgetten volgen alleen de dagelijkse uitgaven; vaste lasten tellen niet mee."
+      },
+      "billsFooter": "Vaste lasten (huur, verzekeringen, abonnementen) worden al apart bijgehouden. Dit bepaalt of hun uitgaven ook meetellen voor je categoriebudgetten.",
+      "sharedSubtitle": "Hoe gedeelde rekeningen en terugbetaald geld in je rapporten verschijnen.",
+      "saveError": "Deze instelling kon niet worden opgeslagen. Probeer het opnieuw."
+    },
+    "options": {
+      "themeLabel": "Thema",
+      "theme": {
+        "light": "Licht",
+        "lightHint": "Helder grijs en wit",
+        "dark": "Donker",
+        "darkHint": "Rustig voor de ogen in de avond",
+        "system": "Zoals je apparaat",
+        "systemHint": "Wisselt mee met de lichte of donkere modus van je apparaat"
+      },
+      "languageLabel": "Taal",
+      "currentLanguage": "Huidige taal",
+      "languages": {
+        "en": "Engels",
+        "nl": "Nederlands"
+      },
+      "currencyLabel": "Valuta",
+      "currencies": {
+        "EUR": "Euro",
+        "USD": "Amerikaanse dollar",
+        "GBP": "Brits pond"
+      },
+      "currencyError": "De valuta kon niet worden opgeslagen. Probeer het opnieuw."
+    },
+    "recurringList": {
+      "summaryLabel": "{shown} van {count} actieve posten",
+      "perMonthExpenses": "aan uitgaven per maand",
+      "perMonthIncome": "aan inkomsten per maand",
+      "filterLabel": "Filteren op soort",
+      "filters": {
+        "all": "Alles",
+        "income": "Inkomsten",
+        "bill": "Rekeningen",
+        "subscription": "Abonnementen",
+        "debt": "Schulden",
+        "savings": "Sparen"
+      },
+      "search": "Vaste posten zoeken",
+      "noMatch": "Geen vaste posten gevonden voor deze zoekopdracht.",
+      "empty": "Nog geen vaste posten. Voeg je huur, salaris of abonnementen toe.",
+      "noCategory": "Geen categorie",
+      "next": "Volgende {date}",
+      "inactive": "Inactief",
+      "upcoming": "Binnenkort",
+      "expired": "Afgelopen",
+      "auto": "Auto",
+      "dismissed": "Genegeerd",
+      "pattern": "Patroon: {pattern}",
+      "notDetectedAgain": "Wordt niet opnieuw herkend"
+    },
+    "security": {
+      "loading": "Laden…"
+    },
+    "avatar": {
+      "uploading": "Uploaden…",
+      "hint": "PNG, JPG of WEBP. Je kunt hem na het kiezen bijsnijden.",
+      "change": "Foto wijzigen",
+      "choose": "Foto kiezen",
+      "crop": "Bijsnijden",
+      "uploadError": "De foto kon niet worden geüpload. Gebruik een PNG-, JPG- of WEBP-afbeelding."
+    },
+    "appLock": {
+      "toggleLabel": "Vraag om een pincode bij het openen van de app",
+      "toggleHint": "Ook als de app terugkomt uit de achtergrond.",
+      "needsPin": "Stel hieronder eerst een pincode in.",
+      "toggleError": "De app-vergrendeling kon niet worden gewijzigd. Probeer het opnieuw.",
+      "pinTitle": "Pincode",
+      "pinHint": "Kies een code van 4 tot 6 cijfers die alleen jij kent.",
+      "pinSet": "Er is een pincode ingesteld. Wijzig hem wanneer je wilt.",
+      "setUpPin": "Pincode instellen",
+      "changePin": "Pincode wijzigen",
+      "choosePin": "Kies een pincode (4 tot 6 cijfers)",
+      "confirmPin": "Voer dezelfde pincode nog eens in",
+      "pinInvalid": "De pincode moet 4 tot 6 cijfers hebben.",
+      "pinMismatch": "De pincodes zijn niet gelijk. Voer hem opnieuw in.",
+      "pinSaveError": "De pincode kon niet worden opgeslagen. Probeer het opnieuw.",
+      "pinSaved": "Je pincode is opgeslagen.",
+      "cancel": "Annuleren",
+      "next": "Volgende",
+      "savePin": "Pincode opslaan",
+      "saving": "Opslaan…"
+    },
+    "twoFactor": {
+      "title": "Tweestapsverificatie",
+      "on": "Aan",
+      "off": "Uit",
+      "onHint": "Na je wachtwoord wordt om een code van 6 cijfers uit je authenticator-app gevraagd.",
+      "offHint": "Voeg een tweede stap toe: een code van 6 cijfers uit een authenticator-app na je wachtwoord.",
+      "setUp": "Instellen",
+      "working": "Even geduld…",
+      "setupError": "Instellen kon niet worden gestart. Probeer het opnieuw.",
+      "scan": "Scan deze QR-code met Google Authenticator of een andere authenticator-app.",
+      "qrAlt": "QR-code voor je authenticator-app",
+      "manualEntry": "Of voer deze sleutel handmatig in",
+      "codeLabel": "De code van 6 cijfers uit de app",
+      "codeInvalid": "Die code klopt niet. Probeer de huidige code uit de app.",
+      "confirm": "Inschakelen",
+      "confirming": "Controleren…",
+      "cancel": "Annuleren",
+      "backupIntro": "Bewaar deze back-upcodes op een veilige plek. Elke code werkt één keer, als je je authenticator-app niet kunt gebruiken.",
+      "backupLabel": "Back-upcodes",
+      "backupDone": "Ik heb ze bewaard",
+      "newBackupCodes": "Nieuwe back-upcodes",
+      "turnOff": "Uitschakelen",
+      "disableIntro": "Bevestig met je huidige wachtwoord om tweestapsverificatie uit te schakelen.",
+      "regenerateIntro": "Bevestig met je huidige wachtwoord. Je oude back-upcodes werken daarna niet meer.",
+      "passwordLabel": "Huidig wachtwoord",
+      "passwordInvalid": "Dat wachtwoord klopt niet.",
+      "makeNewCodes": "Nieuwe codes maken"
+    },
+    "dialog": {
+      "profile": "Je profiel",
+      "version": "Arca {version}"
     }
   },
   "budget": {
@@ -814,6 +1198,14 @@
       "title": "Check eerst de datums",
       "body": "Hier zie je precies wat er van je datumkolom wordt gemaakt. Staat er \"geen datum\", dan heb je de verkeerde kolom of het verkeerde formaat gekozen — pas het hier aan, dan komt er niets kapots binnen."
     },
+    "importCheck": {
+      "title": "Er is nog niets geïmporteerd",
+      "body": "Bekijk eerst de voorvertoning: je ziet welke rijen nieuw zijn en welke dubbele worden overgeslagen. Pas Importeren voegt ze toe."
+    },
+    "importMapColumns": {
+      "title": "Bank verkeerd of niet herkend?",
+      "body": "Met Kolommen koppelen kies je zelf de kolommen voor datum, omschrijving en bedrag. Centje bewaart het als profiel voor de volgende keer."
+    },
     "dataHealth": {
       "title": "Import misgegaan?",
       "body": "Data Health vindt transacties met een onleesbare datum — precies wat een import met de verkeerde kolomkoppeling achterlaat — en laat je ze corrigeren of verwijderen."
@@ -965,6 +1357,26 @@
     "linkSearchOlder": {
       "title": "Staat hij er niet tussen?",
       "body": "De lijst toont recente uitgaven. Zoek om een oudere op naam te vinden."
+    },
+    "upcomingMonthNav": {
+      "title": "Kijk terug of vooruit",
+      "body": "Gebruik de pijlen om te zien welke rekeningen in een eerdere maand betaald zijn, of wat er volgende maand aankomt."
+    },
+    "needsReviewTriage": {
+      "title": "Eén voor één",
+      "body": "Kies een categorie en druk op Opslaan en volgende (of Enter). Zet de regel aan en vergelijkbare transacties krijgen die categorie voortaan vanzelf."
+    },
+    "needsReviewBulk": {
+      "title": "Meerdere tegelijk",
+      "body": "Tik op Selecteren om meerdere transacties uit de wachtrij te kiezen en ze in één keer een categorie te geven."
+    },
+    "financialMonthDays": {
+      "title": "Tik op een dag om je start te kiezen",
+      "body": "Je maand begint nu op de dag waarop je tikt, en dat wordt direct opgeslagen. De balk eronder laat zien waar vandaag in de periode valt."
+    },
+    "merchantsWithoutIcon": {
+      "title": "Winkels zonder logo vinden",
+      "body": "Kies Zonder icoon om alleen de winkels te zien die nog geen logo hebben, en open er een om het een logo te geven."
     },
     "privacyEye": {
       "title": "Verberg je bedragen",
@@ -1139,6 +1551,99 @@
     "confirm": "Bevestigen",
     "delete": "Verwijderen"
   },
+  "importPage": {
+    "title": "Bankexport importeren",
+    "subtitle": "CSV van je bank · dubbele transacties worden automatisch overgeslagen",
+    "steps": {
+      "label": "Importstappen",
+      "upload": "Uploaden",
+      "check": "Controleren",
+      "done": "Klaar",
+      "completed": "(klaar)"
+    },
+    "drop": {
+      "title": "Sleep een CSV hierheen of kies een bestand",
+      "titleAnother": "Sleep nog een CSV hierheen of kies een bestand",
+      "hint": "De CSV- of TXT-export van de website of app van je bank · er wordt niets geïmporteerd voordat je het controleert",
+      "choose": "Bestand kiezen",
+      "reading": "Je bestand wordt gelezen…",
+      "release": "Laat los om dit bestand te controleren"
+    },
+    "check": {
+      "label": "Controleer je import",
+      "recognised": "Herkend",
+      "bankSource": "{rows, plural, one {# rij} other {# rijen}} · herkend als export van {bank}",
+      "profileSource": "{rows, plural, one {# rij} other {# rijen}} · herkend door je importprofiel “{profile}”",
+      "chooseAnother": "Ander bestand kiezen",
+      "preview": "Voorvertoning",
+      "previewMeta": "Eerste {shown} van {total, plural, one {# rij} other {# rijen}}",
+      "previewTable": "Voorvertoning van de eerste {count, plural, one {rij} other {# rijen}}",
+      "columns": {
+        "date": "Datum",
+        "description": "Omschrijving",
+        "amount": "Bedrag",
+        "balance": "Saldo",
+        "result": "Resultaat"
+      },
+      "status": {
+        "new": "Nieuw",
+        "duplicate": "Dubbel · overgeslagen",
+        "invalidDate": "Onleesbare datum · overgeslagen"
+      },
+      "newTitle": "{count, plural, =0 {Niets nieuws in dit bestand} one {# nieuwe transactie} other {# nieuwe transacties}}",
+      "newBody": "Je regels zetten de categorieën zodra ze binnenkomen",
+      "newBodyNone": "Alles in dit bestand staat al in Centje",
+      "duplicatesTitle": "{count, plural, one {# dubbele wordt} other {# dubbele worden}} overgeslagen",
+      "duplicatesBody": "Staan al in Centje — herkend op datum, bedrag en omschrijving",
+      "invalidTitle": "{count, plural, one {# rij heeft} other {# rijen hebben}} een onleesbare datum",
+      "invalidBody": "Deze rijen worden overgeslagen. Is dat het grootste deel van het bestand, gebruik dan Kolommen koppelen.",
+      "cancel": "Annuleren",
+      "confirm": "{count, plural, one {# transactie} other {# transacties}} importeren",
+      "confirmNone": "Toch importeren",
+      "importing": "Bezig met importeren…"
+    },
+    "done": {
+      "title": "{count, plural, =0 {Niets nieuws geïmporteerd} one {# transactie geïmporteerd} other {# transacties geïmporteerd}}",
+      "body": "{total, plural, one {# rij} other {# rijen}} in het bestand",
+      "imported": "Geïmporteerd",
+      "categorised": "Gecategoriseerd",
+      "skipped": "Dubbele overgeslagen",
+      "importAnother": "Nog een bestand importeren",
+      "openActivity": "Naar Activiteit",
+      "review": "{count, plural, one {# transactie} other {# transacties}} categoriseren"
+    },
+    "errors": {
+      "title": "Importeren mislukt",
+      "tryAgain": "Opnieuw proberen",
+      "noFile": "Er is geen bestand geüpload.",
+      "emptyFile": "Dit bestand is leeg.",
+      "noRows": "Er zijn geen transacties in dit bestand gevonden.",
+      "parseFailed": "Dit bestand kon niet worden gelezen als bankexport.",
+      "expired": "De upload is verlopen. Kies het bestand opnieuw.",
+      "generic": "Er ging iets mis. Probeer het opnieuw."
+    },
+    "profiles": {
+      "title": "Importprofielen",
+      "subtitle": "Opgeslagen kolomkoppelingen, automatisch gekozen als een bestand overeenkomt",
+      "manage": "Beheren",
+      "meta": "{columns, plural, one {# kolom} other {# kolommen}} · opgeslagen {date}",
+      "metaNoDate": "{columns, plural, one {# kolom} other {# kolommen}}",
+      "inUse": "In gebruik",
+      "empty": "Nog geen opgeslagen profielen. Koppel één keer de kolommen van een bestand en het wordt hier bewaard.",
+      "builtIn": "Automatisch herkend"
+    },
+    "unrecognised": {
+      "title": "Bank niet herkend?",
+      "body": "Vertel Centje welke kolom de datum, omschrijving en het bedrag bevat. We bewaren het als profiel, zodat het bestand de volgende keer meteen wordt herkend.",
+      "action": "Kolommen koppelen"
+    },
+    "recent": {
+      "title": "Recente imports",
+      "rows": "{count, plural, one {# rij} other {# rijen}}",
+      "unknownAccount": "Geen rekeningnummer",
+      "empty": "Nog niets geïmporteerd. Je imports verschijnen hier."
+    }
+  },
   "importMapping": {
     "title": "Onherkend bankformaat",
     "description": "We konden deze bank niet automatisch herkennen. Geef aan welke kolom wat is — we onthouden het voor de volgende keer.",
@@ -1198,12 +1703,17 @@
     "rowsSkippedBadDate": "{count, plural, one {# regel is} other {# regels zijn}} overgeslagen omdat de datum niet gelezen kon worden."
   },
   "dataHealth": {
-    "title": "Data Health",
-    "allClear": "Alles ziet er goed uit — geen kapotte transacties.",
+    "allClearTitle": "Alles ziet er goed uit",
+    "allClear": "Geen transacties met een kapotte datum.",
     "brokenDatesTitle": "{count, plural, one {# transactie heeft} other {# transacties hebben}} een onleesbare datum",
     "brokenDatesBody": "Deze komen uit een import waarbij de datumkolom aan het verkeerde veld is gekoppeld. Ze staan niet in je transactielijst, want die filtert op datum. Geef ze een echte datum of verwijder ze.",
     "storedAs": "Opgeslagen als",
-    "selectRow": "Selecteer deze transactie",
+    "selectAll": "Alles selecteren",
+    "selectedCount": "{count} geselecteerd",
+    "selectRowNamed": "{name} selecteren",
+    "deleteNote": "Verwijderen haalt de regels alleen uit de app, niet bij je bank. Je wordt eerst om bevestiging gevraagd, en verwijderde regels kun je niet terughalen.",
+    "deleteError": "De transacties konden niet worden verwijderd. Probeer het opnieuw.",
+    "fixError": "De datum kon niet worden opgeslagen. Probeer het opnieuw.",
     "correctDate": "Juiste datum",
     "fix": "Herstel",
     "deleteSelected": "Verwijder selectie ({count})",
@@ -1213,10 +1723,24 @@
     "confirmDeleteLabel": "{count, plural, one {Transactie} other {# transacties}} verwijderen"
   },
   "importProfiles": {
-    "title": "Importprofielen",
     "description": "Een opgeslagen profiel onthoudt welke kolom wat is voor een bankexport, en wordt automatisch toegepast op elk bestand met dezelfde kolommen. Verwijder er een om het opnieuw gevraagd te krijgen.",
-    "empty": "Nog geen opgeslagen importprofielen.",
-    "dateColumn": "Datumkolom",
+    "empty": "Nog geen opgeslagen importprofielen. Er wordt er een bewaard als je de kolommen koppelt van een bestand dat de app niet herkent.",
+    "saved": "Opgeslagen profielen",
+    "columns": "{count, plural, one {# kolom} other {# kolommen}}",
+    "columnNumber": "Kolom {index}",
+    "customFormat": "Eigen formaat",
+    "columnMap": "Kolomkoppeling",
+    "columnMapLabel": "Kolommen van {label}",
+    "dateFormat": "Datumformaat",
+    "decimalSeparator": "Decimaalteken",
+    "decimalComma": "Komma (1.234,56)",
+    "decimalDot": "Punt (1,234.56)",
+    "deleteShort": "Verwijderen",
+    "deleteNamed": "{label} verwijderen",
+    "deleteError": "Het profiel kon niet worden verwijderd. Probeer het opnieuw.",
+    "importFile": "Bestand importeren",
+    "importNew": "Nieuw bestand importeren",
+    "importNewHint": "Herkent de app het bestand van je bank niet, dan koppel je de kolommen één keer en wordt dat hier bewaard.",
     "delete": "Profiel verwijderen",
     "confirmDelete": "Opgeslagen koppeling \"{label}\" verwijderen?",
     "confirmDeleteBody": "Bij de volgende import van dat bestand word je opnieuw om de kolommen gevraagd."
@@ -1325,6 +1849,281 @@
       "edit": "{name} bewerken",
       "bankFallback": "Bank {id}",
       "updated": "Bijgewerkt {date}"
+    }
+  },
+  "onboarding": {
+    "appName": "Arca",
+    "stepsLabel": "Stappen van de installatie",
+    "stepDone": "klaar",
+    "progress": "Stap {current} van {total} · {group}",
+    "haveAccount": "Heb je al een account?",
+    "signIn": "Inloggen",
+    "back": "Terug",
+    "continue": "Doorgaan",
+    "skip": "Nu overslaan",
+    "saving": "Opslaan…",
+    "genericError": "Er ging iets mis. Probeer het opnieuw.",
+    "groups": {
+      "account": "Account",
+      "security": "Beveiliging",
+      "you": "Jij",
+      "money": "Geld",
+      "lock": "Vergrendeling"
+    },
+    "steps": {
+      "welcome": "Welkom",
+      "about": "Over jou",
+      "password": "Wachtwoord",
+      "mfa": "Inloggen in twee stappen",
+      "backupCodes": "Back-upcodes",
+      "profile": "Foto en taal",
+      "makeItYours": "Maak het eigen",
+      "strategy": "Budgetverdeling",
+      "bill": "Je eerste vaste last",
+      "import": "Transacties importeren",
+      "appLock": "App-vergrendeling",
+      "finish": "Klaar"
+    },
+    "welcome": {
+      "title": "Welkom bij {app}",
+      "subtitle": "Richt je huishouden in zo'n vijf minuten in. Je kunt alles overslaan en er later op terugkomen.",
+      "featuresLabel": "Wat {app} doet",
+      "safeToSpend": "Vrij te besteden",
+      "example": "Voorbeeld",
+      "exampleBar": "Voorbeeld: 58% van het maandbudget gebruikt",
+      "safeToSpendBody": "Eén rustig getal: wat er over is na vaste lasten en sparen.",
+      "importTitle": "Importeer de CSV van je bank",
+      "importBody": "We herkennen je bank en koppelen de kolommen voor je. Inloggen bij je bank is niet nodig.",
+      "planTitle": "Budgetten, vaste lasten en doelen op één plek",
+      "planBody": "Zie wat er moet worden betaald, wat er over is en waarvoor je spaart.",
+      "start": "Aan de slag",
+      "haveAccount": "Ik heb al een account",
+      "privacy": "Je gegevens blijven binnen je huishouden."
+    },
+    "about": {
+      "title": "Laten we beginnen met je naam.",
+      "subtitle": "We gebruiken hem om je te begroeten en om in een gedeeld huishouden te laten zien wie wat heeft toegevoegd.",
+      "firstName": "Voornaam",
+      "firstNamePlaceholder": "Sanne",
+      "lastName": "Achternaam",
+      "lastNamePlaceholder": "de Vries",
+      "email": "E-mailadres",
+      "emailPlaceholder": "jij@voorbeeld.nl",
+      "emailHint": "Hiermee log je in op je account.",
+      "emailInvalid": "Vul een geldig e-mailadres in.",
+      "emailTaken": "Dit e-mailadres is al geregistreerd.",
+      "birthday": "Geboortedatum",
+      "birthdayPlaceholder": "Kies je geboortedatum",
+      "checking": "Controleren…"
+    },
+    "password": {
+      "title": "Kies een wachtwoord",
+      "subtitle": "Minstens 8 tekens.",
+      "label": "Wachtwoord",
+      "show": "Wachtwoord tonen",
+      "hide": "Wachtwoord verbergen",
+      "strength": "Sterkte van het wachtwoord",
+      "levels": {
+        "tooShort": "Te kort",
+        "weak": "Zwak",
+        "fair": "Redelijk",
+        "good": "Goed",
+        "strong": "Sterk"
+      },
+      "rulesLabel": "Eisen aan het wachtwoord",
+      "ruleLength": "8 of meer tekens",
+      "ruleNumber": "Bevat een cijfer",
+      "ruleNotEmail": "Niet je e-mailadres",
+      "met": "voldaan",
+      "notMet": "niet voldaan",
+      "confirm": "Herhaal wachtwoord",
+      "noMatch": "De wachtwoorden komen niet overeen.",
+      "match": "De wachtwoorden komen overeen",
+      "creating": "Je account wordt aangemaakt…"
+    },
+    "mfa": {
+      "title": "Extra beveiliging toevoegen",
+      "subtitle": "Gebruik Google Authenticator of een andere TOTP-app. Je vult een code van 6 cijfers in als je op een nieuw apparaat inlogt.",
+      "startFailed": "We konden het instellen niet starten. Probeer het opnieuw, of sla het over en zet het later aan bij Instellingen.",
+      "retry": "Opnieuw proberen",
+      "qrAlt": "QR-code om te scannen met je authenticator-app",
+      "loading": "Je QR-code wordt klaargezet",
+      "scanTitle": "Scan de QR-code",
+      "step1": "Open je authenticator-app",
+      "step2": "Voeg een account toe en scan de code",
+      "step3": "Typ hieronder de code van 6 cijfers",
+      "keyLabel": "Lukt scannen niet? Vul deze sleutel in",
+      "copyKey": "Sleutel kopiëren",
+      "copy": "Kopiëren",
+      "copied": "Gekopieerd",
+      "codeLabel": "Vul de code van 6 cijfers uit je app in",
+      "wrongCode": "Die code werkt niet. Kijk in je app en probeer het opnieuw.",
+      "verify": "Controleren en doorgaan",
+      "verifying": "Controleren…",
+      "enabledTitle": "Inloggen in twee stappen staat aan",
+      "enabledBody": "Als je op een nieuw apparaat inlogt, vragen we een code uit je authenticator-app. Je beheert het bij Instellingen.",
+      "enabledChip": "Je account is beveiligd"
+    },
+    "backupCodes": {
+      "title": "Bewaar je back-upcodes",
+      "subtitle": "Raak je je telefoon kwijt, dan log je met elke code één keer in. Bewaar ze op een veilige plek.",
+      "count": "{count, plural, one {# back-upcode} other {# back-upcodes}}",
+      "meta": "{email} · {date}",
+      "download": "Downloaden",
+      "copyAll": "Alles kopiëren",
+      "copied": "Gekopieerd",
+      "confirm": "Ik heb deze codes bewaard",
+      "fileName": "back-upcodes.txt",
+      "fileHeading": "Back-upcodes van {app} voor {email}",
+      "fileNote": "Met elke code log je één keer in."
+    },
+    "profile": {
+      "title": "Voeg een profielfoto toe",
+      "subtitle": "Te zien in het menu en naast wat je toevoegt — je kunt dit overslaan.",
+      "avatarLabel": "Profielfoto: initialen {initials}. Sleep hier een foto naartoe om ze te vervangen.",
+      "avatarPhotoLabel": "Je profielfoto. Sleep hier een foto naartoe om hem te vervangen.",
+      "upload": "Een foto uploaden",
+      "dropTitle": "Sleep een foto naar de cirkel",
+      "dropHint": "JPG, PNG of WebP. Je kunt hem na het uploaden bijsnijden.",
+      "uploadButton": "Foto uploaden",
+      "changeButton": "Foto wijzigen",
+      "uploading": "Uploaden…",
+      "uploadFailed": "De foto kon niet worden geüpload. Probeer een andere.",
+      "languageTitle": "Voorkeurstaal",
+      "languageNative": {
+        "en": "Interface in English",
+        "nl": "Interface in het Nederlands"
+      },
+      "languageHint": "Je kunt dit altijd wijzigen bij Instellingen."
+    },
+    "makeItYours": {
+      "title": "Maak het eigen",
+      "subtitle": "Kies een achtergrond voor je inlogscherm en een uiterlijk voor de app.",
+      "background": "Achtergrond",
+      "default": "Standaard",
+      "backgrounds": {
+        "midnight": "Middernacht",
+        "sunset": "Zonsondergang",
+        "violet": "Paarse schemer",
+        "emerald": "Smaragdnacht",
+        "rose": "Rozenkwarts"
+      },
+      "appearance": "Uiterlijk",
+      "themes": {
+        "light": "Licht",
+        "dark": "Donker",
+        "system": "Systeem"
+      },
+      "themeHints": {
+        "light": "Altijd licht, hoe je apparaat ook is ingesteld.",
+        "dark": "Altijd donker, rustig voor je ogen in de avond.",
+        "system": "Volgt je apparaat: overdag licht, donker zodra je apparaat omschakelt."
+      }
+    },
+    "strategy": {
+      "title": "Je budgetverdeling",
+      "subtitle": "Hoe wil je je inkomen verdelen? 50 / 30 / 20 werkt voor de meeste huishoudens.",
+      "presets": "Verdeling",
+      "custom": "Eigen",
+      "later": "Je kunt dit altijd bijstellen bij Plan, onder Budget.",
+      "mustTotal": "De drie delen moeten samen 100% zijn voordat je verder kunt."
+    },
+    "bill": {
+      "title": "Voeg een vaste last toe",
+      "subtitle": "Huur, een abonnement, een verzekering… {app} verwacht hem elke maand. Je kunt dit overslaan.",
+      "quickPick": "Snel kiezen",
+      "picks": {
+        "rent": "Huur",
+        "energy": "Energie",
+        "internet": "Internet",
+        "phone": "Telefoon",
+        "insurance": "Verzekering",
+        "streaming": "Streaming",
+        "gym": "Sportschool"
+      },
+      "name": "Naam",
+      "namePlaceholder": "Netflix",
+      "amount": "Bedrag",
+      "dueDay": "Vervaldag",
+      "dueDayPlaceholder": "1–31",
+      "dueDayInvalid": "Kies een dag van 1 tot en met 31.",
+      "type": "Soort",
+      "types": {
+        "bill": "Rekening",
+        "subscription": "Abonnement",
+        "debt": "Schuld"
+      },
+      "preview": "Zo ziet het eruit bij Binnenkort",
+      "previewEmpty": "Vul een naam en een bedrag in om het hier te zien.",
+      "everyMonth": "Elke maand",
+      "addAnother": "Nog een toevoegen",
+      "saved": "{count, plural, one {# vaste last opgeslagen} other {# vaste lasten opgeslagen}}",
+      "saveFailed": "De vaste last kon niet worden opgeslagen. Probeer het opnieuw."
+    },
+    "import": {
+      "title": "Importeer je transacties",
+      "subtitle": "Upload de CSV-export van je bank — of sla het over en doe het later.",
+      "choose": "Kies een CSV-bestand",
+      "chooseHint": "Sleep het hierheen of klik om te bladeren. ING, Rabobank, ABN AMRO, bunq, Revolut en KNAB worden automatisch herkend; bij andere banken wijs je één keer de kolommen aan.",
+      "importing": "{file} wordt geïmporteerd…",
+      "resultLine": "{imported, plural, one {# transactie geïmporteerd} other {# transacties geïmporteerd}}{auto, plural, =0 {} other { · # automatisch gecategoriseerd}}",
+      "skipped": "{count} overgeslagen (al aanwezig)",
+      "failed": "Importeren mislukt",
+      "failedBody": "We konden {file} niet lezen. Controleer of het de CSV-export van je bank is.",
+      "another": "Nog een bestand importeren",
+      "anotherHint": "CSV van elke bank"
+    },
+    "appLock": {
+      "title": "Vergrendel de app",
+      "subtitle": "Kies een pincode zodat alleen jij {app} kunt openen. We vragen erom als je de app opent.",
+      "choose": "Kies je pincode",
+      "confirm": "Bevestig je pincode",
+      "chosen": "Pincode gekozen",
+      "entered": "Pincode, {count} van {total} cijfers ingevuld",
+      "lengthHint": "4 tot 6 cijfers",
+      "tooShort": "Gebruik 4 tot 6 cijfers.",
+      "mismatch": "De pincodes komen niet overeen. Typ hem opnieuw, of begin opnieuw.",
+      "keypad": "Toetsenblok voor de pincode",
+      "startOver": "Opnieuw",
+      "delete": "Laatste cijfer wissen",
+      "set": "Pincode instellen",
+      "laterHint": "Face ID of je vingerafdruk voeg je later toe bij Instellingen, onder App-vergrendeling."
+    },
+    "finish": {
+      "title": "Je bent klaar, {name}",
+      "titleNoName": "Je bent klaar",
+      "subtitle": "Dit hebben we ingesteld. Open {app} om je huishouden te zien.",
+      "summaryLabel": "Wat we hebben ingesteld",
+      "transactions": "{count, plural, one {# transactie} other {# transacties}}",
+      "imported": "Geïmporteerd",
+      "noImport": "Nog geen transacties",
+      "noImportHint": "Importeer een CSV wanneer je wilt",
+      "bills": "{count, plural, =0 {Geen vaste lasten} one {# vaste last} other {# vaste lasten}}",
+      "billsHint": "Toegevoegd aan Binnenkort",
+      "billsNone": "Voeg ze later toe bij Binnenkort",
+      "strategy": "Verdeling {needs} / {wants} / {savings}",
+      "strategyHint": "Nodig, willen, sparen",
+      "lockOn": "App-vergrendeling aan",
+      "lockOnHint": "Pincode bij het openen van de app",
+      "lockOff": "Geen app-vergrendeling",
+      "lockOffHint": "Zet het aan bij Instellingen",
+      "open": "{app} openen",
+      "opening": "Openen…"
+    },
+    "finishing": {
+      "phrases": {
+        "calculator": "De rekenmachine warmt op…",
+        "coins": "Je muntjes worden geteld…",
+        "piggyBank": "Het spaarvarken wordt opgehaald…",
+        "untangle": "Je transacties worden ontward…",
+        "behave": "De cijfers leren zich te gedragen…",
+        "polish": "Je dashboard wordt opgepoetst…"
+      },
+      "ready": "Alles staat klaar, {name}!",
+      "readyNoName": "Alles staat klaar!",
+      "withImport": "Je huishouden wordt ingericht… je {count, plural, one {# transactie wordt} other {# transacties worden}} toegevoegd aan Inzichten",
+      "withoutImport": "Je huishouden wordt ingericht…",
+      "progressLabel": "Je huishouden wordt ingericht"
     }
   },
   "newAccounts": {
@@ -2382,12 +3181,7 @@
   },
   "bills": {
     "markPaid": "Markeer als betaald",
-    "markUnpaid": "Markeer als onbetaald",
-    "calendarTitle": "Rekeningen deze maand",
-    "paidCount": "{paid}/{total} betaald",
-    "noFixedCosts": "Geen vaste lasten ingesteld.",
-    "noFixedDate": "Geen vaste datum",
-    "paid": "Betaald"
+    "markUnpaid": "Markeer als onbetaald"
   },
   "activity": {
     "title": "Activiteit",
@@ -3128,9 +3922,112 @@
   },
   "upcoming": {
     "title": "Binnenkort",
-    "calendarTitle": "Nog deze maand",
-    "empty": "Geen komende transacties deze maand",
-    "listTitle": "Komende transacties"
+    "parent": "Activiteit",
+    "breadcrumb": "Kruimelpad",
+    "subtitle": "Rekeningen {month} · nog {amount} te betalen",
+    "subtitleAllPaid": "Rekeningen {month} · alles is betaald",
+    "subtitleNone": "De rekeningen en inkomsten die je elke maand verwacht",
+    "recurringItems": "Terugkerende posten",
+    "addBill": "Rekening toevoegen",
+    "close": "Sluiten",
+    "tiles": {
+      "due": "Nog te betalen",
+      "dueNone": "Niets meer te betalen",
+      "dueNext": "{count, plural, one {# rekening} other {# rekeningen}} · volgende: {name} op {date}",
+      "dueCount": "{count, plural, one {# rekening} other {# rekeningen}}",
+      "paid": "Betaald",
+      "paidNone": "Nog niets betaald",
+      "paidCount": "{count, plural, one {# rekening} other {# rekeningen}} · {pct}% van de vaste lasten deze maand",
+      "income": "Verwacht binnen",
+      "incomeNext": "{name} · {date}",
+      "incomeReceived": "Alle inkomsten zijn binnen",
+      "incomeNone": "Geen inkomsten verwacht"
+    },
+    "calendar": {
+      "previous": "Vorige maand",
+      "next": "Volgende maand",
+      "today": "Vandaag",
+      "payday": "Betaaldag",
+      "legend": {
+        "paid": "Betaald",
+        "due": "Te betalen",
+        "income": "Inkomsten",
+        "today": "Vandaag"
+      },
+      "more": "+{count}",
+      "dayTitle": "Rekeningen op deze dag",
+      "dayTotal": "{amount} te betalen"
+    },
+    "row": {
+      "received": "Ontvangen",
+      "matched": "Gekoppeld aan een transactie",
+      "marked": "Door jou afgevinkt",
+      "noDate": "Geen vaste datum",
+      "overdue": "{date} · te laat",
+      "paidAuto": "Betaald — gekoppeld aan een transactie"
+    },
+    "due": {
+      "title": "Nog te betalen",
+      "empty": "Alles voor {month} is betaald."
+    },
+    "paid": {
+      "title": "Betaald",
+      "empty": "Deze maand is nog niets betaald."
+    },
+    "income": {
+      "title": "Verwachte inkomsten"
+    },
+    "info": {
+      "title": "Rekeningen vinken zichzelf af",
+      "body": "Komt er een betaling binnen die bij een rekening past, dan zet Centje hem voor je op betaald. Op een andere manier betaald? Vink hem hier af en hij wordt apart gezet van Veilig te besteden."
+    },
+    "empty": {
+      "title": "Nog geen rekeningen",
+      "body": "Voeg je huur, abonnementen en andere vaste lasten toe om te zien wat er deze maand nog betaald moet worden.",
+      "add": "Rekening toevoegen"
+    }
+  },
+  "needsReview": {
+    "title": "Heeft een categorie nodig",
+    "parent": "Activiteit",
+    "breadcrumb": "Kruimelpad",
+    "subtitle": "Nog {count} · elk antwoord kan een regel worden, zo blijft deze lijst kort",
+    "subtitleDone": "Elke transactie heeft een categorie",
+    "progress": "{index} van {total}",
+    "progressLabel": "Voortgang: {index} van {total}",
+    "statement": "Zoals het op je bankafschrift staat",
+    "chip": "Heeft een categorie nodig",
+    "suggested": "Voorgesteld",
+    "suggestedHelp": "Op basis van je regels en eerdere keuzes voor vergelijkbare omschrijvingen",
+    "noSuggestions": "Nog niets voor te stellen — kies uit alle categorieën",
+    "allCategories": "Alle categorieën",
+    "details": "Details",
+    "markTransfer": "Markeer als eigen overboeking",
+    "skip": "Overslaan",
+    "save": "Opslaan en volgende",
+    "saving": "Opslaan…",
+    "failed": "Opslaan is niet gelukt. Probeer het opnieuw.",
+    "keys": "Tip: druk op Enter om op te slaan, S om over te slaan",
+    "queue": {
+      "title": "Wachtrij",
+      "count": "{count, plural, one {# transactie} other {# transacties}}",
+      "select": "Selecteren",
+      "done": "Klaar",
+      "selectRow": "{name} selecteren",
+      "now": "Nu",
+      "showMore": "Toon {count} meer",
+      "waiting": "Wacht op een categorie",
+      "totals": "{out} uit · {in} in"
+    },
+    "why": {
+      "title": "Waarom dit ertoe doet",
+      "body": "Uitgaven zonder categorie tellen niet mee in je budgetten en inzichten tot ze een categorie hebben."
+    },
+    "empty": {
+      "title": "Niets te sorteren",
+      "body": "Elke transactie heeft een categorie. Nieuwe imports die er een nodig hebben komen hier te staan.",
+      "back": "Terug naar Activiteit"
+    }
   },
   "categoryList": {
     "title": "Uitgaven per categorie",
