@@ -60,3 +60,5 @@ dev*.log
 CLAUDE.md
 .env*.local
 *.tar
+# Uploaded profile photos (user data, lives next to finance.db)
+/avatars/

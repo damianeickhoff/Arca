@@ -19,13 +19,7 @@
 
 ## 📸 Screenshots
 
-| Home | Activity |
-| --- | --- |
-| ![Home: safe to spend, coming up and accounts](docs/screenshots/home.png) | ![Activity: every transaction, searchable](docs/screenshots/activity.png) |
-| **Plan** | **Insights** |
-| ![Plan: budget, debts and goals](docs/screenshots/plan.png) | ![Insights: overview, trends, net worth, forecast and health](docs/screenshots/insights.png) |
-| **Forecast** | **Phone** |
-| ![Forecast: the projected balance with the overdraft limit](docs/screenshots/forecast.png) | ![Arca on a phone, light and dark](docs/screenshots/mobile.png) |
+Screenshots are on their way. See [docs/screenshots](docs/screenshots/README.md) for the list.
 
 ## ✨ Features
 
