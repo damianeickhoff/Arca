@@ -19,7 +19,33 @@
 
 ## 📸 Screenshots
 
-Screenshots are on their way. See [docs/screenshots](docs/screenshots/README.md) for the list.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/home-dark.png">
+    <img src="docs/screenshots/home.png" alt="Arca Home: safe to spend, income and spending, the budget and money flow" width="100%">
+  </picture>
+  <br><sub><b>Home</b>: what's safe to spend, this month's money in and out, and the budget at a glance</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/activity.png" alt="Activity"><br><sub><b>Activity</b>: every transaction, searchable and grouped by day</sub></td>
+    <td width="50%"><img src="docs/screenshots/plan.png" alt="Budget"><br><sub><b>Plan</b>: the budget per category, with needs, wants and savings</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/insights.png" alt="Insights overview"><br><sub><b>Insights</b>: any period in numbers, categories and merchants</sub></td>
+    <td width="50%"><img src="docs/screenshots/forecast.png" alt="Cash-flow forecast"><br><sub><b>Forecast</b>: where your balance goes over the next 30 days</sub></td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/mobile.png" alt="Arca on a phone, light theme" width="260">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-dark.png" alt="Arca on a phone, dark theme" width="260">
+  <br><sub>On your phone, in light and dark</sub>
+</p>
+
+<sub>Screenshots use the built-in demo data.</sub>
 
 ## ✨ Features
 
