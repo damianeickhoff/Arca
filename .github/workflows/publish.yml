@@ -1,9 +1,12 @@
-# Builds the Docker image and publishes it to GitHub Container Registry:
-#   ghcr.io/damianeickhoff/arca:latest      — the default branch (what Unraid pulls)
-#   ghcr.io/damianeickhoff/arca:<branch>    — any other branch, to try it before merging
-#   ghcr.io/damianeickhoff/arca:v1.3.0      — a version tag
-#   ghcr.io/damianeickhoff/arca:sha-abc1234 — every build
-# No secrets needed: GITHUB_TOKEN may write this repository's packages.
+# Builds the Docker image and publishes it to Docker Hub (damianeickhoff/arca, what Unraid
+# pulls) and the GitHub Container Registry, with the same tags on both:
+#   damianeickhoff/arca:latest      — the default branch
+#   damianeickhoff/arca:<branch>    — any other branch, to try it before merging
+#   damianeickhoff/arca:v1.3.0      — a version tag
+#   damianeickhoff/arca:sha-abc1234 — every build
+# GHCR needs no secrets (GITHUB_TOKEN). Docker Hub needs the repository secrets
+# DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (an access token with Read & Write); without
+# them the build still runs and publishes to GHCR only.
 name: Publish image
 
 on:
@@ -23,6 +26,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -31,10 +36,17 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v3
+        if: env.DOCKERHUB_USERNAME != ''
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: |
+            ghcr.io/${{ github.repository }}
+            name=docker.io/damianeickhoff/arca,enable=${{ env.DOCKERHUB_USERNAME != '' }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch

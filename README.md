@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="src/app/logo_dark.svg">
-    <img src="src/app/logo_light.svg" alt="Arca" height="72">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <img src="docs/logo-light.svg" alt="Arca" height="64">
   </picture>
 </p>
 
@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://github.com/damianeickhoff/Arca/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/damianeickhoff/Arca"></a>
-  <a href="https://github.com/damianeickhoff/Arca/pkgs/container/arca"><img alt="Docker image" src="https://img.shields.io/badge/ghcr.io-damianeickhoff%2Farca-blue"></a>
+  <a href="https://hub.docker.com/r/damianeickhoff/arca"><img alt="Docker pulls" src="https://img.shields.io/docker/pulls/damianeickhoff/arca"></a>
 </p>
 
 > **Work in progress.** Arca is actively developed and may get frequent updates and the occasional breaking change. Back up your `/data` folder before updating.
@@ -86,7 +86,7 @@ docker run -d \
   -p 3000:3000 \
   -v /path/to/arca-data:/data \
   --restart unless-stopped \
-  ghcr.io/damianeickhoff/arca:latest
+  damianeickhoff/arca:latest
 ```
 
 Open `http://localhost:3000`. The first start creates the database and opens the onboarding.
@@ -96,7 +96,7 @@ Open `http://localhost:3000`. The first start creates the database and opens the
 ```yaml
 services:
   arca:
-    image: ghcr.io/damianeickhoff/arca:latest
+    image: damianeickhoff/arca:latest
     container_name: arca
     ports:
       - "3000:3000"
@@ -120,7 +120,7 @@ Everything lives in `/data`: the SQLite database (`finance.db`) and uploaded log
 
 ## 🔄 Updating
 
-Images are published to the GitHub Container Registry:
+Images are published to [Docker Hub](https://hub.docker.com/r/damianeickhoff/arca) (and mirrored to `ghcr.io/damianeickhoff/arca`):
 
 | Tag | What it is |
 | --- | --- |
@@ -129,7 +129,7 @@ Images are published to the GitHub Container Registry:
 | `<branch>` | A test build of a branch, never `latest` |
 
 ```bash
-docker pull ghcr.io/damianeickhoff/arca:latest
+docker pull damianeickhoff/arca:latest
 ```
 
 Then recreate the container, keeping `/data`. New database columns are added automatically on start. On Unraid, **Check for updates** in the Docker tab picks up a new `latest`.
