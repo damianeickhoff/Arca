@@ -18,7 +18,7 @@ import { SettingsPanelBody } from "@/components/settings/settings-panel-body";
 import { settingsSections, isHeavyPanel, type SettingsPanelKey } from "@/components/settings/settings-sections";
 import { ProfileForms, SecurityForms } from "@/components/settings/account-forms";
 import { AnchoredTip } from "@/components/anchored-tip";
-import { LogoMark } from "@/components/brand-mark";
+import { BrandMark } from "@/components/clear/brand-mark";
 import { TONE_FILL, type ClearTone } from "@/components/clear/tones";
 import { useSettingsPortal } from "@/lib/settings-portal-state";
 
@@ -268,7 +268,7 @@ export function SettingsDialog({
             </button>
 
             <div className="flex flex-col items-center gap-1.5 pt-4 pb-2 text-center text-clear-muted">
-              <LogoMark className="size-7 opacity-60" />
+              <BrandMark className="size-7 opacity-60" />
               <p className="m-0 text-xs">{t("dialog.version", { version: packageJson.version })}</p>
             </div>
           </div>

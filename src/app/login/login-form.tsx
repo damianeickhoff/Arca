@@ -8,7 +8,7 @@ import { IconBackspace, IconChevronLeft, IconEye, IconEyeOff, IconLock } from "@
 import { ClearButton } from "@/components/clear/button";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { IconTile } from "@/components/clear/icon-tile";
-import { BrandCoin } from "@/components/clear/brand-coin";
+import { BrandMark } from "@/components/clear/brand-mark";
 import { LanguageSwitch } from "./language-switch";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 import { cn } from "@/lib/utils";
@@ -87,7 +87,7 @@ export function LoginForm() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <BrandCoin size="lg" className="lg:hidden" />
+        <BrandMark size="lg" className="lg:hidden" />
         <div className="flex flex-col gap-1.5">
           <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[28px] lg:tracking-[-0.02em]">{t("signIn.title")}</h1>
           <p className="m-0 text-[15px] text-clear-ink-2">{t("signIn.subtitle")}</p>
@@ -220,7 +220,7 @@ function MfaStep({
       </button>
 
       <div className="flex flex-col gap-3.5">
-        <BrandCoin size="lg" className="lg:hidden" />
+        <BrandMark size="lg" className="lg:hidden" />
         <IconTile tone="peach" size="lg" className="hidden text-clear-ember-text lg:inline-flex">
           <IconLock stroke={1.9} />
         </IconTile>

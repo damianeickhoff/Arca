@@ -5,7 +5,7 @@ import { IconBolt, IconCheck, IconLock, IconTarget } from "@tabler/icons-react";
 import { getCurrentUser } from "@/lib/auth";
 import { isFirstUser } from "@/app/actions/auth";
 import { Amount } from "@/components/clear/amount";
-import { BrandCoin } from "@/components/clear/brand-coin";
+import { BrandMark } from "@/components/clear/brand-mark";
 import { ClearChip } from "@/components/clear/chip";
 import { IconTile } from "@/components/clear/icon-tile";
 import { formatEurWhole } from "@/lib/format";
@@ -57,7 +57,7 @@ async function BrandPanel() {
       className="relative hidden min-w-0 flex-1 flex-col overflow-hidden bg-clear-hero px-16 py-12 text-clear-hero-ink lg:flex dark:bg-clear-card dark:text-clear-ink"
     >
       <span className="inline-flex items-center gap-2.5 text-[19px] font-extrabold tracking-[-0.02em]">
-        <BrandCoin />
+        <BrandMark />
         Arca
       </span>
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { IconCurrencyEuro, IconDeviceDesktop, IconFileUpload, IconLogout, IconMoon, IconPlus, IconSearch, IconSettings, IconSun } from "@tabler/icons-react";
+import { IconDeviceDesktop, IconFileUpload, IconLogout, IconMoon, IconPlus, IconSearch, IconSettings, IconSun } from "@tabler/icons-react";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { logoutAction } from "@/app/actions/auth";
 import { useNavHidden } from "@/lib/nav-visibility";
@@ -12,6 +12,7 @@ import { useTheme, type ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, PLAN_ITEMS, activeNavKey, activePlanKey, isChromeless, type NavItem } from "@/components/shell/nav-config";
 import { SearchProvider, useGlobalSearch } from "@/components/shell/search-context";
+import { BrandMark } from "@/components/clear/brand-mark";
 import { ConfirmProvider } from "@/components/clear/confirm-dialog";
 import { INSIGHTS_TABS, INSIGHTS_TAB_LABEL_KEY } from "@/app/reports/reports-tabs";
 import { useIsDesktop } from "@/lib/use-is-desktop";
@@ -73,13 +74,11 @@ export function AppShell({
   );
 }
 
-/** The Arca logo: an ember coin with the euro sign, then the name. */
+/** The Arca logo mark, then the name. */
 export function Wordmark({ className }: { className?: string }) {
   return (
     <Link href="/" className={cn("inline-flex items-center gap-2.5 font-clear text-[19px] font-extrabold tracking-[-0.02em] text-clear-ink no-underline", className)}>
-      <span aria-hidden className="inline-flex size-10 items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink">
-        <IconCurrencyEuro size={22} stroke={2.4} />
-      </span>
+      <BrandMark />
       Arca
     </Link>
   );

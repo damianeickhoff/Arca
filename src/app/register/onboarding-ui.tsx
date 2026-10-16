@@ -2,7 +2,8 @@
 
 import { useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { IconCheck, IconChevronRight, IconCurrencyEuro } from "@tabler/icons-react";
+import { IconCheck, IconChevronRight } from "@tabler/icons-react";
+import { BrandMark } from "@/components/clear/brand-mark";
 import { ClearButton } from "@/components/clear/button";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +16,7 @@ export function OnboardingBrand({ className }: { className?: string }) {
   const t = useTranslations("onboarding");
   return (
     <span className={cn("inline-flex items-center gap-2.5 text-[19px] font-extrabold tracking-[-0.02em]", className)}>
-      <span aria-hidden className="inline-flex size-10 items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink">
-        <IconCurrencyEuro size={22} stroke={2.4} />
-      </span>
+      <BrandMark />
       {t("appName")}
     </span>
   );

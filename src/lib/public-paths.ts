@@ -5,8 +5,9 @@
 // /uploads is public static asset storage (e.g. the admin-configurable auth background
 // image). /offline is the service worker's cached fallback page. /sw.js and the manifest
 // are fetched by the browser/OS itself (SW registration, "Add to Home Screen") without a
-// session cookie. /api/onboarding is the first-run account-creation endpoint, called from
-// the public /register page before any session exists.
+// session cookie, and so are /icon and /apple-icon (the manifest's icons, and the tab icon
+// on the sign-in page). /api/onboarding is the first-run account-creation endpoint, called
+// from the public /register page before any session exists.
 export const PUBLIC_PATHS = [
   "/login",
   "/register",
@@ -15,6 +16,8 @@ export const PUBLIC_PATHS = [
   "/offline",
   "/sw.js",
   "/manifest.webmanifest",
+  "/icon",
+  "/apple-icon",
 ];
 
 export function isPublicPath(pathname: string): boolean {

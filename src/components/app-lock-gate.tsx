@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { IconFingerprint, IconBackspace } from "@tabler/icons-react";
 import { verifyPinAction, getWebAuthnChallengeAction, verifyWebAuthnAssertionAction } from "@/app/actions/app-lock";
-import { BrandCoin } from "@/components/clear/brand-coin";
+import { BrandMark } from "@/components/clear/brand-mark";
 import { cn } from "@/lib/utils";
 
 const UNLOCK_KEY = "app_lock_unlocked_v1";
@@ -192,7 +192,7 @@ function LockScreen({
     // page ground in dark mode, where an inverted near-white screen would glare.
     <div className="fixed inset-0 z-[9999] overflow-y-auto bg-clear-hero font-clear text-clear-hero-ink dark:bg-clear-ground dark:text-clear-ink">
       <div className="flex min-h-full flex-col items-center justify-center gap-3.5 px-4 pt-[calc(var(--sat)+48px)] pb-[calc(var(--sab)+32px)]">
-        <BrandCoin size="xl" />
+        <BrandMark size="xl" />
 
         <div className="mt-1.5 flex flex-col items-center gap-1.5 text-center">
           <h1 className="m-0 text-2xl font-extrabold tracking-[-0.02em]">
