@@ -566,7 +566,9 @@
         "toGo": "{count, plural, one {# month} other {# months}} to go",
         "target": "Target {amount}",
         "today": "Today",
-        "chartLabel": "Projection: from {balance} today, at {amount} {period, select, weekly {a week} yearly {a year} other {a month}} you reach the {target} target in {date}."
+        "chartLabel": "Projection: from {balance} today, at {amount} {period, select, weekly {a week} yearly {a year} other {a month}} you reach the {target} target in {date}.",
+        "alreadySaved": "<b>{amount}</b> of {target} already saved · {pct}%",
+        "savedBand": "Already saved"
       }
     },
     "detail": {

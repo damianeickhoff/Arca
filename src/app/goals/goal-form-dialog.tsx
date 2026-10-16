@@ -296,6 +296,7 @@ export function GoalFormDialog({
         hideHeaderRow
         title={title}
         className="gap-5 pt-7"
+        sheetClassName="lg:w-[min(92vw,680px)]"
         footer={
           <ClearDialogFooter
             destructive={
@@ -585,6 +586,16 @@ function Projection({
           </ClearChip>
         )}
       </div>
+      {balance > 0 && target > 0 && !reached && (
+        <div className="flex flex-col gap-1.5">
+          <span aria-hidden className="block h-2 overflow-hidden rounded-full bg-clear-card">
+            <span className="block h-full rounded-full" style={{ width: `${Math.min(100, (balance / target) * 100)}%`, background: color }} />
+          </span>
+          <span className="text-[13px] text-clear-ink-2">
+            <MoneyText>{t.rich("alreadySaved", { amount: formatEurWhole(balance), target: formatEurWhole(target), pct: Math.round((balance / target) * 100), b })}</MoneyText>
+          </span>
+        </div>
+      )}
       {end && (
         <ProjectionChart
           past={past}
@@ -595,6 +606,7 @@ function Projection({
           targetLabel={t("target", { amount: formatEurWhole(target) })}
           todayLabel={t("today")}
           todayValueLabel={formatEurWhole(balance)}
+          savedLabel={balance > 0 ? t("savedBand") : undefined}
           startLabel={start}
           endLabel={fmtMonth(end)}
           ariaLabel={t("chartLabel", {

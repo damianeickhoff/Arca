@@ -74,6 +74,7 @@ export function ProjectionChart({
   endLabel,
   ariaLabel,
   height,
+  savedLabel,
   className,
 }: {
   /** Balances up to and including today. */
@@ -91,6 +92,9 @@ export function ProjectionChart({
   ariaLabel: string;
   /** A fixed plot height in px; without it the plot fills its parent (at least 150px). */
   height?: number;
+  /** When set, today's balance is drawn as a band across the chart ("already saved"),
+   *  so a goal that starts with money in it reads as partly done. */
+  savedLabel?: string;
   className?: string;
 }) {
   const series = [...past, ...future];
@@ -112,12 +116,20 @@ export function ProjectionChart({
   const strong = `color-mix(in srgb, ${color} 62%, var(--clr-ink))`;
   // Today's balance sits above its dot, or below it when the dot is near the top.
   const valueBelow = today[1] < 40;
+  const savedNow = past[past.length - 1] ?? 0;
+  const savedY = savedLabel && savedNow > 0 ? y(savedNow) : null;
 
   return (
     <div role="img" aria-label={ariaLabel} className={cn("flex flex-col gap-2", className)}>
       <div className={cn("relative", height == null && "min-h-[150px] flex-1")} style={height != null ? { height } : undefined}>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden className="absolute inset-0 size-full overflow-visible">
           <line x1="0" x2="100" y1="100" y2="100" stroke={color} strokeOpacity={0.3} vectorEffect="non-scaling-stroke" />
+          {savedY != null && (
+            <>
+              <rect x="0" y={savedY} width="100" height={100 - savedY} fill={color} fillOpacity={0.16} />
+              <line x1="0" x2="100" y1={savedY} y2={savedY} stroke={color} strokeOpacity={0.5} vectorEffect="non-scaling-stroke" />
+            </>
+          )}
           {targetY != null && (
             <line x1="0" x2="100" y1={targetY} y2={targetY} stroke={strong} strokeOpacity={0.45} strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
           )}
@@ -138,6 +150,11 @@ export function ProjectionChart({
             />
           )}
         </svg>
+        {savedY != null && 100 - savedY > 14 && (
+          <span className="absolute right-0 bottom-1 text-xs font-bold whitespace-nowrap" style={{ color: strong }}>
+            <MoneyText>{savedLabel!}</MoneyText>
+          </span>
+        )}
         {targetY != null && (
           <span className="absolute left-0 -translate-y-full pb-1 text-xs font-bold whitespace-nowrap" style={{ top: `${targetY}%`, color: strong }}>
             <MoneyText>{targetLabel}</MoneyText>

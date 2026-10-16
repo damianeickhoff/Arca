@@ -566,7 +566,9 @@
         "toGo": "Nog {count, plural, one {# maand} other {# maanden}}",
         "target": "Doel {amount}",
         "today": "Vandaag",
-        "chartLabel": "Verwachting: vanaf {balance} vandaag bereik je met {amount} {period, select, weekly {per week} yearly {per jaar} other {per maand}} het doel van {target} in {date}."
+        "chartLabel": "Verwachting: vanaf {balance} vandaag bereik je met {amount} {period, select, weekly {per week} yearly {per jaar} other {per maand}} het doel van {target} in {date}.",
+        "alreadySaved": "<b>{amount}</b> van {target} al gespaard · {pct}%",
+        "savedBand": "Al gespaard"
       }
     },
     "detail": {
