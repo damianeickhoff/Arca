@@ -13,6 +13,7 @@ import {
   IconMoon,
   IconReload,
   IconShield,
+  IconSparkles,
   IconStethoscope,
   IconTableOptions,
   IconTag,
@@ -30,7 +31,7 @@ export type SettingsPanelKey =
   | "accounts" | "categories" | "recurring" | "merchants"
   | "financialMonth" | "monthOverrides" | "budgetRecurring"
   | "import" | "importProfiles" | "dataHealth"
-  | "appearance" | "privacy" | "appLock" | "language" | "currency"
+  | "appearance" | "privacy" | "appLock" | "language" | "currency" | "ai"
   | "help" | "users";
 
 export type SettingsSectionKey = "account" | "manage" | "data" | "app" | "about";
@@ -74,6 +75,7 @@ const SECTIONS: SettingsSection[] = [
       { key: "appLock", icon: IconLock },
       { key: "language", icon: IconLanguage },
       { key: "currency", icon: IconCoin },
+      { key: "ai", icon: IconSparkles },
     ],
   },
   {

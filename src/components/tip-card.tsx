@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
+  IconSparkles,
   IconFolders,
   IconAdjustments,
   IconBrandGoogle,
@@ -138,6 +139,9 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   insightsGroupSwitch: IconFolders,
   accountsOverdraft: IconBuildingBank,
   paymentPlan: IconCalendarDue,
+  aiSettings: IconSparkles,
+  aiCategories: IconSparkles,
+  aiSummary: IconSparkles,
 };
 
 /**

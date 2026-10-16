@@ -205,6 +205,10 @@
       "users": {
         "title": "Users",
         "subtitle": "Who can sign in to this household."
+      },
+      "ai": {
+        "title": "AI",
+        "subtitle": "Gemini suggestions and summaries."
       }
     },
     "inline": {
@@ -1444,6 +1448,18 @@
     "paymentPlan": {
       "title": "Pay a cost in parts",
       "body": "Choose Payment plan for a bill you pay off in parts, like the dentist. Enter the total and the number of parts, and each part shows up in the month it's due."
+    },
+    "aiSettings": {
+      "title": "AI with Gemini",
+      "body": "Add a free Gemini API key here to get category suggestions and a summary of your spending. It's off until you switch it on."
+    },
+    "aiCategories": {
+      "title": "Let AI suggest a category",
+      "body": "Ask AI suggests categories for this transaction and the next ones in the queue. Its pick is marked with a sparkle; you still choose."
+    },
+    "aiSummary": {
+      "title": "Your period in a few sentences",
+      "body": "Write summary asks Gemini what stands out in the figures on this page. It's kept until you rewrite it."
     }
   },
   "categoryPicker": {
@@ -3105,6 +3121,23 @@
         "save": "Save",
         "close": "Close"
       }
+    },
+    "aiSummary": {
+      "title": "Summary",
+      "subtitle": "A few sentences about this period, written by Gemini",
+      "written": "Written by Gemini · {date}",
+      "write": "Write summary",
+      "rewrite": "Rewrite",
+      "writing": "Writing…",
+      "empty": "Let Gemini sum up this period: what stands out and one thing to try. It only sees the figures on this page.",
+      "errors": {
+        "signedOut": "You're signed out. Sign in and try again.",
+        "notConfigured": "AI is off. Switch it on in Settings › AI.",
+        "invalidKey": "Google didn't accept the API key. Check it in Settings › AI.",
+        "rateLimited": "The free-tier limit is reached for now. Try again in a minute.",
+        "unavailable": "Couldn't reach Gemini. Try again later.",
+        "badResponse": "Gemini answered in a way Centje couldn't read. Try again."
+      }
     }
   },
   "home": {
@@ -4090,6 +4123,20 @@
       "title": "Nothing to sort",
       "body": "Every transaction has a category. New imports that need one show up here.",
       "back": "Back to Activity"
+    },
+    "ai": {
+      "ask": "Ask AI",
+      "asking": "Asking…",
+      "noPick": "No AI suggestion",
+      "picked": "Suggested by AI",
+      "errors": {
+        "signedOut": "You're signed out. Sign in and try again.",
+        "notConfigured": "AI is off. Switch it on in Settings › AI.",
+        "invalidKey": "Google didn't accept the API key. Check it in Settings › AI.",
+        "rateLimited": "The free-tier limit is reached for now. Try again in a minute.",
+        "unavailable": "Couldn't reach Gemini. Try again later.",
+        "badResponse": "Gemini answered in a way Centje couldn't read. Try again."
+      }
     }
   },
   "categoryList": {
@@ -4101,5 +4148,36 @@
     "ofBudget": "of {amount}",
     "noLimit": "No budget",
     "close": "Close"
+  },
+  "aiSettings": {
+    "loading": "Loading…",
+    "enable": "Use AI features",
+    "enableHint": "Category suggestions in Needs a category and a summary on Insights.",
+    "enableNeedsKey": "Add a Gemini API key first.",
+    "key": "Gemini API key",
+    "keyHelp": "Get a free key in Google AI Studio",
+    "keyPlaceholder": "Paste your API key",
+    "keySaved": "Saved key ending in {last}",
+    "removeKey": "Remove key",
+    "model": "Model",
+    "modelAuto": "Automatic (a Flash model)",
+    "modelHint": "Flash models have the most generous free tier.",
+    "modelsLoading": "Loading the models your key can use…",
+    "privacy": "On the free tier Google may use what's sent to improve its products. Centje only sends what a feature needs: merchant names, amounts, dates and your category names. Account numbers never leave the app.",
+    "test": "Test connection",
+    "testing": "Testing…",
+    "testOk": "Connected. Gemini answered.",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "AI settings saved.",
+    "keyRemoved": "Key removed and AI switched off.",
+    "errors": {
+      "signedOut": "You're signed out. Sign in and try again.",
+      "notConfigured": "Add an API key first.",
+      "invalidKey": "Google didn't accept this key or model. Check the key in Google AI Studio.",
+      "rateLimited": "The free-tier limit is reached for now. Try again in a minute.",
+      "unavailable": "Couldn't reach Gemini. Check your connection and try again.",
+      "badResponse": "Gemini answered in a way Centje couldn't read. Try again."
+    }
   }
 }

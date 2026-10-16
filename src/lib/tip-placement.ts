@@ -126,7 +126,11 @@ export type TipAnchor =
   // Settings › Accounts: the Bank accounts heading (overdraft limits)
   | "accountsBanks"
   // The recurring editor's type switch (Payment plan)
-  | "recurringType";
+  | "recurringType"
+  // Settings: the AI row; Needs review's Ask AI button; the Insights summary card
+  | "settingsAi"
+  | "aiCategories"
+  | "aiSummary";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

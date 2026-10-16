@@ -6,7 +6,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { IconBuildingStore, IconCoins, IconShoppingBag, IconTarget } from "@tabler/icons-react";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
-import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
+import { buildSplitAllocations, groupTransactionSplits, roundToCents } from "@/lib/transaction-splits";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBudgetRecurringMode } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
@@ -16,6 +16,9 @@ import { Amount } from "@/components/clear/amount";
 import { ClearChip } from "@/components/clear/chip";
 import { Icon } from "@/components/icon";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { isAiReady } from "@/lib/gemini";
+import { getCachedSummary, type SummaryFacts } from "@/lib/ai-features";
+import { AiSummaryCard } from "./ai-summary-card";
 import type { CategorySpendCard } from "@/components/category-spending-row";
 import { CategoryBreakdownCard } from "./spending-donut-card";
 import { PeriodSelector } from "./period-selector";
@@ -453,6 +456,26 @@ export async function AnalyticsTab({
 
   const vsLast = <span>{tInsights("vsLastPeriod")}</span>;
 
+  // Gemini's summary of this period (Settings › AI), fed only the figures on this page.
+  const aiReady = await isAiReady();
+  const signedPct = (c: { pct: number; up: boolean } | null) => (c ? (c.up ? c.pct : -c.pct) : null);
+  const summaryKey = [locale, from, to, (categoryIds ?? []).join(","), (accounts ?? []).join(",")].join("|");
+  const summaryFacts: SummaryFacts = {
+    from,
+    to,
+    ongoing: data.ongoing,
+    income: roundToCents(data.income),
+    expense: roundToCents(data.expense),
+    saved: roundToCents(data.saved),
+    incomeChangePct: signedPct(data.incomeChange),
+    expenseChangePct: signedPct(data.expenseChange),
+    avgPerDay: roundToCents(data.avgExpensePerDay),
+    categories: data.spendingAll.slice(0, 8).map((c) => ({ name: c.categoryName, spent: roundToCents(c.spent), budget: c.budget })),
+    merchants: data.topMerchants.slice(0, 6).map((m) => ({ name: m.name, total: roundToCents(m.total), visits: m.visits })),
+    largest: data.largest ? { name: data.largest.name, amount: roundToCents(data.largest.amount), category: data.largest.categoryName } : null,
+  };
+  const cachedSummary = aiReady ? await getCachedSummary(summaryKey) : null;
+
   return (
     <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
       {/* Key figures — a row of four from xl, two by two below. */}
@@ -507,6 +530,8 @@ export async function AnalyticsTab({
         />
       </div>
 
+      {aiReady && <AiSummaryCard facts={summaryFacts} cacheKey={summaryKey} initial={cachedSummary} className="lg:col-span-2 xl:col-span-3" />}
+
       <FlowCard buckets={buckets} grain={data.grain} hint={data.hint} className="lg:col-span-2" />
 
       <CategoryBreakdownCard
@@ -528,6 +553,7 @@ export async function AnalyticsTab({
       <AnchoredTip id="insightsMerchants" anchor="insightsMerchants" active={data.topMerchants.length > 0} />
       <AnchoredTip id="insightsCategorySwitch" anchor="insightsCategorySwitch" active={data.incomeAll.length > 0} />
       <AnchoredTip id="insightsGroupSwitch" anchor="insightsGroupSwitch" active={data.groupSpendingAll.length > 0} />
+      <AnchoredTip id="aiSummary" anchor="aiSummary" active={aiReady} />
     </div>
   );
 }

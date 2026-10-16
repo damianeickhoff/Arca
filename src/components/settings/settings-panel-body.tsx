@@ -17,6 +17,7 @@ import { ThemeList } from "@/components/theme-toggle";
 import { LanguageList } from "@/components/language-switcher";
 import { CurrencyList } from "@/components/currency-switcher";
 import { PrivacyToggle } from "@/components/privacy-toggle";
+import { AiSettingsPanel } from "@/components/settings/ai-settings-panel";
 
 export interface SettingsPanelSettings {
   financialMonth: FinancialMonthConfig;
@@ -101,6 +102,9 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
           <p className="px-2 text-sm text-clear-muted">{t("currencyHint")}</p>
         </div>
       );
+
+    case "ai":
+      return <AiSettingsPanel />;
 
     case "financialMonth":
       return (

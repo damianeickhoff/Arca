@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconArrowRight, IconCalendar, IconCategory, IconCheck, IconFilter2, IconInfoCircle, IconListDetails, IconTransfer } from "@tabler/icons-react";
+import { IconArrowRight, IconCalendar, IconCategory, IconCheck, IconFilter2, IconInfoCircle, IconListDetails, IconSparkles, IconTransfer } from "@tabler/icons-react";
 import type { Category, Goal } from "@/db/schema";
 import { Icon } from "@/components/icon";
 import { Amount } from "@/components/clear/amount";
@@ -19,6 +19,8 @@ import { CategoryPickerSheet } from "@/components/category-picker";
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
+import { suggestCategoriesAction } from "@/app/actions/ai";
+import { AI_CATEGORY_BATCH } from "@/lib/ai-shared";
 import type { CategorySuggestions } from "@/lib/category-suggestions";
 import { resolveDisplayName } from "@/lib/friendly-names";
 import { formatEur } from "@/lib/format";
@@ -64,10 +66,13 @@ export function NeedsReviewView({
   rows,
   categories,
   savingsGoals,
+  aiReady,
 }: {
   rows: TransactionDetail[];
   categories: Category[];
   savingsGoals: Goal[];
+  /** Gemini is switched on with a key (Settings › AI): show "Ask AI". */
+  aiReady: boolean;
 }) {
   const t = useTranslations("needsReview");
   const tPicker = useTranslations("categoryPicker");
@@ -92,6 +97,12 @@ export function NeedsReviewView({
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selected, setSelected] = useState<Set<number> | null>(null);
   const selectMode = selected !== null;
+  // Gemini's picks, by transaction id. One "Ask AI" covers the current row and the next
+  // ones in the queue, so moving on shows their picks without another request.
+  const [aiPicks, setAiPicks] = useState<Record<number, number>>({});
+  const [aiAsked, setAiAsked] = useState<Set<number>>(new Set());
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const currentKey = current?.id ?? null;
   useEffect(() => {
@@ -111,9 +122,31 @@ export function NeedsReviewView({
   }, [currentKey]);
 
   const data = current && info?.id === current.id ? info.data : null;
-  const suggested = (data?.suggested ?? []).map((id) => categories.find((c) => c.id === id)).filter((c): c is Category => !!c);
+  const aiPick = current ? categories.find((c) => c.id === aiPicks[current.id]) ?? null : null;
+  const localSuggested = (data?.suggested ?? []).map((id) => categories.find((c) => c.id === id)).filter((c): c is Category => !!c);
+  // Gemini's pick joins the suggestions (marked) unless your rules and history already offer it.
+  const suggested = aiPick && !localSuggested.some((c) => c.id === aiPick.id) ? [...localSuggested, aiPick] : localSuggested;
   // The top suggestion is staged until another one is picked.
   const stagedId = current ? (picked?.id === current.id ? picked.categoryId : suggested[0]?.id ?? null) : null;
+
+  async function askAi() {
+    if (!current || aiBusy) return;
+    const ids = [current, ...queue.slice(index + 1), ...queue.slice(0, Math.max(0, index))]
+      .map((r) => r.id)
+      .filter((id) => !aiAsked.has(id))
+      .slice(0, AI_CATEGORY_BATCH);
+    if (ids.length === 0) return;
+    setAiBusy(true);
+    setAiError(null);
+    const result = await suggestCategoriesAction(ids).catch(() => ({ error: "unavailable" as const }));
+    setAiBusy(false);
+    if ("error" in result) {
+      setAiError(t.has(`ai.errors.${result.error}`) ? t(`ai.errors.${result.error}`) : t("ai.errors.unavailable"));
+      return;
+    }
+    setAiAsked((prev) => new Set([...prev, ...ids]));
+    setAiPicks((prev) => ({ ...prev, ...result.suggestions }));
+  }
   const ruleAvailable = (data?.patterns.length ?? 0) > 0;
   const withRule = ruleAvailable && ruleOn && stagedId != null;
   const similarCount = data?.similarIds.length ?? 0;
@@ -308,6 +341,12 @@ export function NeedsReviewView({
                         <Icon iconKey={c.icon} color={c.color} soft round size="sm" glyphSize={16} />
                       </span>
                       {c.name}
+                      {aiPick?.id === c.id && (
+                        <span title={t("ai.picked")} className="inline-flex text-clear-ember-text">
+                          <IconSparkles size={16} stroke={2.2} aria-hidden />
+                          <span className="sr-only">{t("ai.picked")}</span>
+                        </span>
+                      )}
                       {on && <IconCheck size={16} stroke={3} aria-hidden />}
                     </button>
                   );
@@ -321,7 +360,22 @@ export function NeedsReviewView({
                   <IconCategory aria-hidden />
                   {t("allCategories")}
                 </button>
+                {aiReady && (
+                  <button
+                    type="button"
+                    data-tip-anchor="aiCategories"
+                    onClick={askAi}
+                    disabled={aiBusy || aiAsked.has(current.id)}
+                    className={cn(clearButtonVariants({ variant: "secondary" }), "h-12 px-[18px]")}
+                  >
+                    <IconSparkles aria-hidden />
+                    {aiBusy ? t("ai.asking") : aiAsked.has(current.id) && !aiPick ? t("ai.noPick") : t("ai.ask")}
+                  </button>
+                )}
               </div>
+              {aiError && (
+                <p role="alert" className="m-0 text-[13px] font-semibold text-clear-negative">{aiError}</p>
+              )}
             </div>
 
             {/* The rule */}
@@ -520,6 +574,7 @@ export function NeedsReviewView({
       {/* The one-at-a-time flow is new; so is selecting several from the queue. */}
       <ContextualTip id="needsReviewTriage" active={current != null} />
       <AnchoredTip id="needsReviewBulk" anchor="needsReviewSelect" active={!selectMode && queue.length > 1} />
+      <AnchoredTip id="aiCategories" anchor="aiCategories" active={aiReady && current != null} />
     </div>
   );
 }

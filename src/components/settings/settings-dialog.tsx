@@ -41,6 +41,7 @@ const ROW_TONES: Record<SettingsPanelKey, ClearTone> = {
   appLock: "stone",
   language: "sky",
   currency: "mint",
+  ai: "lilac",
   help: "mint",
   users: "lilac",
 };
@@ -235,9 +236,9 @@ export function SettingsDialog({
                       key={key}
                       type="button"
                       onClick={() => openPanel(key)}
-                      // Only the Data Health row is a tip target today; the attribute
-                      // is undefined on every other row so the selector stays unique.
-                      data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : undefined}
+                      // Data Health and AI rows are tip targets; the attribute is
+                      // undefined on every other row so the selector stays unique.
+                      data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : key === "ai" ? "settingsAi" : undefined}
                       className={cn(
                         "flex h-[52px] w-full cursor-pointer items-center gap-3 border-t pr-3.5 pl-3 text-left text-clear-ink transition-colors active:bg-clear-tile",
                         i === 0 ? "border-transparent" : "border-clear-ground",
@@ -275,6 +276,7 @@ export function SettingsDialog({
           {/* Points out where a broken import can be cleaned up. Only while the menu
               itself is on screen — an open sub-panel covers the row it points at. */}
           <AnchoredTip id="dataHealth" anchor="dataHealthMenu" active={open && !active} />
+          <AnchoredTip id="aiSettings" anchor="settingsAi" active={open && !active} />
 
           {/* ── Slide-over sub-panel ── fixed so it's positioned against the
               full-height drawer (its transformed containing block), not the
