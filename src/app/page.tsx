@@ -7,7 +7,7 @@ import { banks, categories, goals, merchants, recurringItems, transactions } fro
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, daysInclusive, shiftDate, todayStr } from "@/lib/date-range";
-import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode, getHomeGetStartedDismissed } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode, getHomeGetStartedDismissed, getOverdraftMode } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { budgetSpendByDay, safeToSpend, type SpendEntry } from "@/lib/safe-to-spend";
@@ -221,7 +221,7 @@ export default async function HomePage({
   const billMonth = currentFinancialMonth(financialMonth);
   const currentMonth = financialMonthRange(financialMonth, 0);
 
-  const [sharedCostMode, budgetRecurringMode, getStartedDismissed] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed()]);
+  const [sharedCostMode, budgetRecurringMode, getStartedDismissed, overdraftMode] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed(), getOverdraftMode()]);
   const [data, billStatuses, needsReview, budgetOverview, bankBalances] = await Promise.all([
     getHomeData(from, to, financialMonth, sharedCostMode === "net"),
     getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
@@ -275,6 +275,7 @@ export default async function HomePage({
     name: b.displayName ?? b.accountNumber ?? "—",
     suffix: b.accountNumber ? b.accountNumber.slice(-4) : null,
     balance: Number(b.balance) || 0,
+    overdraftLimit: b.overdraftLimit ?? 0,
   }));
   const accountsTotal = accounts.reduce((s, a) => s + a.balance, 0);
 
@@ -372,7 +373,7 @@ export default async function HomePage({
                 <ComingUpCard bills={comingUp.slice(0, 4)} totalDue={billsDue} today={today} />
               </div>
               <div className="flex flex-1 flex-col empty:hidden [&>*]:flex-1">
-                <AccountsCard accounts={accounts} total={accountsTotal} />
+                <AccountsCard accounts={accounts} total={accountsTotal} overdraftMode={overdraftMode} />
               </div>
             </div>
             <div className="min-w-0 xl:col-span-2">

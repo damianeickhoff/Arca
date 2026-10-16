@@ -9,6 +9,7 @@ import { Icon } from "@/components/icon";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MoneyText } from "@/components/clear/money";
+import type { OverdraftMode } from "@/lib/app-settings";
 
 /* ── Needs a category ─────────────────────────────────────────────────────────── */
 
@@ -328,13 +329,24 @@ export interface AccountTile {
   /** The last digits of the account number, when known. */
   suffix: string | null;
   balance: number;
+  /** How far below zero the account may go, as a positive amount; 0 = no overdraft. */
+  overdraftLimit: number;
 }
 
 
 /** The bank accounts as small tiles, in the same style as Coming up, under it. */
-export async function AccountsCard({ accounts, total }: { accounts: AccountTile[]; total: number }) {
+export async function AccountsCard({ accounts, total, overdraftMode }: { accounts: AccountTile[]; total: number; overdraftMode: OverdraftMode }) {
   const t = await getTranslations("home.accounts");
   if (accounts.length === 0) return null;
+
+  // With an overdraft: what's available including it when it counts as spendable, else
+  // how much of it is in use once the account is below zero.
+  const overdraftLine = (a: AccountTile) => {
+    if (a.overdraftLimit <= 0) return null;
+    if (overdraftMode === "spendable") return t("available", { amount: formatEur(Math.max(0, a.balance + a.overdraftLimit)) });
+    if (a.balance < 0) return t("overdraftUsed", { used: formatEur(-a.balance), limit: formatEur(a.overdraftLimit) });
+    return null;
+  };
 
   return (
     <ClearCard aria-labelledby="home-accounts-title">
@@ -350,7 +362,8 @@ export async function AccountsCard({ accounts, total }: { accounts: AccountTile[
               className="flex h-full min-w-0 flex-col justify-center gap-1 rounded-clear-tile bg-clear-tile p-3.5 text-clear-ink no-underline transition-colors hover:bg-clear-line"
             >
               <span className="truncate text-[13px] text-clear-ink-2">{a.name}</span>
-              <Amount value={a.balance} splitCents={false} className={cn("text-[17px]", a.balance < 0 && "text-clear-negative")} />
+              <Amount value={a.balance} splitCents={false} className={cn("text-[17px]", a.balance < -a.overdraftLimit && "text-clear-negative")} />
+              {overdraftLine(a) && <span className="truncate text-xs font-bold text-clear-ink-2"><MoneyText>{overdraftLine(a)}</MoneyText></span>}
               {a.suffix && <span className="text-xs font-bold text-clear-ink-2">••{a.suffix}</span>}
             </Link>
           </li>

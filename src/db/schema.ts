@@ -403,6 +403,11 @@ export const banks = sqliteTable("banks", {
   // savings | investments | credit_card_payment | cash_withdrawal | shared_account | other
   transferKind: text("transfer_kind"),
   includeInNetWorth: integer("include_in_net_worth", { mode: "boolean" }).notNull().default(false),
+  // How far below zero the bank lets this account go, as a positive amount (500 = the
+  // account may reach −500). Null = no overdraft. The forecast only calls a dip a
+  // shortfall once it passes the combined limit; whether the unused room also counts as
+  // money you can spend is the overdraft_mode setting (see getOverdraftMode).
+  overdraftLimit: real("overdraft_limit"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 

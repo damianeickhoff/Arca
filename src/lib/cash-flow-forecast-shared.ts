@@ -1,9 +1,8 @@
-import { formatEur } from "@/lib/format";
-import { getTranslations } from "next-intl/server";
+import type { OverdraftMode } from "@/lib/app-settings";
 
-// Types and pure presentation helpers for the cash flow forecast, split out from
-// cash-flow-forecast.ts so client components (the chart, the events list) can import
-// them without dragging better-sqlite3 into the browser bundle.
+// Types and pure helpers for the cash flow forecast, split out from cash-flow-forecast.ts
+// so client components (the chart, the status card) can import them without dragging
+// better-sqlite3 into the browser bundle.
 
 export const FORECAST_HORIZON_DAYS = 90;
 
@@ -14,6 +13,17 @@ export const FORECAST_HORIZON_DAYS = 90;
  * low-balance threshold.
  */
 export type ForecastStatus = "healthy" | "warning" | "critical" | "empty";
+
+/**
+ * Why the forecast got its status, so the copy can say what actually happens:
+ *   "short"       — below zero, no overdraft to fall back on
+ *   "pastLimit"   — past the overdraft limit
+ *   "inOverdraft" — below zero but inside the overdraft (buffer mode only)
+ *   "nearLimit"   — inside the overdraft and within the safety margin of its limit (spendable mode)
+ *   "low"         — under the safety line, still above zero
+ *   "fine"        — above the safety line
+ */
+export type ForecastReason = "short" | "pastLimit" | "inOverdraft" | "nearLimit" | "low" | "fine";
 
 export interface ForecastEvent {
   /** Stable React key — projections have no row id of their own. */
@@ -29,7 +39,6 @@ export interface ForecastEvent {
   icon: string | null;
   iconColor: string | null;
   iconBackground: string | null;
-  
 }
 
 export interface ForecastPoint {
@@ -40,7 +49,13 @@ export interface ForecastPoint {
   change: number;
 }
 
-export interface CashFlowForecast {
+export interface ForecastFloor {
+  /** Combined overdraft limit of every bank account, as a positive amount (0 = none). */
+  overdraftLimit: number;
+  overdraftMode: OverdraftMode;
+}
+
+export interface CashFlowForecast extends ForecastFloor {
   from: string;
   to: string;
   /** false = no account has a starting balance, so amounts are cumulative cash flow. */
@@ -50,62 +65,48 @@ export interface CashFlowForecast {
   points: ForecastPoint[];
   events: ForecastEvent[];
   lowest: { amount: number; date: string } | null;
-  firstNegativeDate: string | null;
+  /** The first day the projection drops past what the accounts allow (zero, or the overdraft limit). */
+  firstShortDate: string | null;
   nextIncome: ForecastEvent | null;
   totalIncome: number;
   totalExpenses: number;
   netChange: number;
   warningThreshold: number;
   status: ForecastStatus;
-  /** One-line insight for the dashboard card, already prioritised. */
-  message: string;
 }
 
-export function formatForecastDate(date: string): string {
-  return new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+/**
+ * Where the dashed safety line sits. Normally the warning threshold above zero; when the
+ * overdraft counts as spendable it sits the same distance above the overdraft limit, since
+ * that limit is then where the money really runs out.
+ */
+export function safetyLine(threshold: number, floor: ForecastFloor): number {
+  return floor.overdraftMode === "spendable" ? threshold - floor.overdraftLimit : threshold;
 }
 
-/** Signed euro label — formatEur() is unsigned, and a forecast dip needs its minus. */
-export function signedForecastEur(amount: number): string {
-  return `${amount < 0 ? "-" : ""}${formatEur(Math.abs(amount))}`;
-}
-
-// Priority is fixed by the feature spec: negative first, then the low-balance
-// warning, then the healthy case.
-export async function forecastMessage({
-  status,
-  lowest,
-  firstNegativeDate,
-  threshold,
-  points,
-}: {
-  status: ForecastStatus;
-  lowest: { amount: number; date: string };
-  firstNegativeDate: string | null;
-  threshold: number;
-  points: ForecastPoint[];
-}): Promise<string> {
-
-  const t = await getTranslations("cashFlow");
-
-  if (status === "empty") return t("alert.empty");
-
-  if (status === "critical") {
-    const date = firstNegativeDate ?? lowest.date;
-    const atDate = points.find((p) => p.date === date)?.amount ?? lowest.amount;
-
-    return t("alert.critical", {
-      amount: signedForecastEur(atDate),
-      date: formatForecastDate(date),
-    });
+/**
+ * The one verdict for a projected low point, shared by the server (the full horizon) and
+ * the Forecast page's 30 days · 3 months switch. Past the overdraft limit (or below zero
+ * without one) is always critical. Inside the overdraft is a warning when the overdraft
+ * is a safety net, and ordinary money when it counts as spendable — then only coming
+ * within the threshold of the limit warns.
+ */
+export function judgeForecast(
+  lowest: number,
+  threshold: number,
+  floor: ForecastFloor,
+): { status: Exclude<ForecastStatus, "empty">; reason: ForecastReason } {
+  const limit = Math.max(0, floor.overdraftLimit);
+  if (lowest < -limit) return { status: "critical", reason: limit > 0 ? "pastLimit" : "short" };
+  if (floor.overdraftMode === "buffer" && lowest < 0) return { status: "warning", reason: "inOverdraft" };
+  if (lowest < safetyLine(threshold, floor)) {
+    return { status: "warning", reason: lowest < 0 ? "nearLimit" : "low" };
   }
+  return { status: "healthy", reason: "fine" };
+}
 
-  if (status === "warning") {
-    return t("alert.warning", {
-      amount: formatEur(threshold),
-      date: formatForecastDate(lowest.date),
-    });
-  }
-
-  return t("alert.healthy");
+/** The first point that drops past what the accounts allow, or null. */
+export function firstShortPoint<T extends { amount: number }>(points: readonly T[], overdraftLimit: number): T | null {
+  const floor = -Math.max(0, overdraftLimit);
+  return points.find((p) => p.amount < floor) ?? null;
 }

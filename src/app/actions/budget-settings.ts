@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { appSettings } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
-import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
+import type { BudgetRecurringMode, OverdraftMode, SharedCostMode } from "@/lib/app-settings";
 
 // Saves the "how recurring bills count toward budgets" setting. Uses a server action
 // (not the generic /api/settings + router.refresh path) so it can revalidatePath the
@@ -36,6 +36,23 @@ export async function setSharedCostModeAction(
   await db
     .insert(appSettings)
     .values({ key: "shared_cost_mode", value: mode })
+    .onConflictDoUpdate({ target: appSettings.key, set: { value: mode } });
+
+  revalidatePath("/", "layout");
+  return {};
+}
+
+// Saves whether unused overdraft room counts as spendable money (see getOverdraftMode).
+// The forecast and Home's accounts card read it server-side, hence revalidatePath.
+export async function setOverdraftModeAction(
+  mode: OverdraftMode,
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not signed in." };
+
+  await db
+    .insert(appSettings)
+    .values({ key: "overdraft_mode", value: mode })
     .onConflictDoUpdate({ target: appSettings.key, set: { value: mode } });
 
   revalidatePath("/", "layout");

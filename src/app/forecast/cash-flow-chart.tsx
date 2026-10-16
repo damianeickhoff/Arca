@@ -8,8 +8,8 @@ import { SvgMoneyText, MoneyText } from "@/components/clear/money";
 
 // The projected balance, day by day from today: the ink line over a faint fill, a dot
 // on every day money moves (green in, ringed out), the lowest point pinned with an
-// ember dot and a black pill, the biggest payday labelled in mint, and the safety line
-// dashed in red. Drawn in real pixels (measured with a ResizeObserver) rather than a
+// ember dot and a black pill, the biggest payday labelled in mint, the safety line
+// dashed in red and, once the line heads below it, the overdraft limit in solid red. Drawn in real pixels (measured with a ResizeObserver) rather than a
 // scaled viewBox, so the 12px labels stay 12px on a phone. Colours are theme tokens.
 
 const PAD = { left: 52, right: 12, top: 16, bottom: 30 };
@@ -44,12 +44,16 @@ function overlaps(a: Box, b: Box) {
 export function CashFlowChart({
   points,
   events,
-  threshold,
+  safety,
+  overdraftLimit,
   label,
 }: {
   points: ForecastPoint[];
   events: ForecastEvent[];
-  threshold: number;
+  /** Where the dashed safety line sits (see safetyLine), or null for none. */
+  safety: number | null;
+  /** Combined overdraft limit as a positive amount; 0 = none. */
+  overdraftLimit: number;
   /** Already translated description of the chart for screen readers. */
   label: string;
 }) {
@@ -88,8 +92,11 @@ export function CashFlowChart({
     const n = points.length;
     const values = points.map((p) => p.amount);
 
-    let lo = Math.min(0, ...values);
-    let hi = Math.max(...values, threshold > 0 ? threshold : 0);
+    // The overdraft limit only earns room on the axis once the line comes under the
+    // safety line (or zero); above that it would just squash the chart.
+    const showLimit = overdraftLimit > 0 && Math.min(...values) < Math.max(0, safety ?? 0);
+    let lo = Math.min(0, ...values, showLimit ? -overdraftLimit : 0, safety ?? 0);
+    let hi = Math.max(...values, safety != null && safety > 0 ? safety : 0);
     if (hi - lo < 1) hi = lo + 100;
     const step = niceStep((hi - lo) / 4);
     lo = Math.floor(lo / step) * step;
@@ -191,11 +198,20 @@ export function CashFlowChart({
         {/* Below zero: the line where the money runs out. */}
         {lo < 0 && <line x1={PAD.left} x2={W - PAD.right} y1={y(0)} y2={y(0)} stroke="var(--clr-negative-fill)" strokeOpacity={0.5} />}
 
-        {threshold > 0 && (
+        {safety != null && (
           <g>
-            <line x1={PAD.left} x2={W - PAD.right} y1={y(threshold)} y2={y(threshold)} stroke="var(--clr-negative-fill)" strokeWidth={1.5} strokeDasharray="6 5" />
-            <text x={W - PAD.right} y={y(threshold) - 7} textAnchor="end" fontSize="12" fontWeight={700} fill="var(--clr-negative)">
-              <SvgMoneyText>{t("safety", { amount: formatEurWhole(threshold) })}</SvgMoneyText>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(safety)} y2={y(safety)} stroke="var(--clr-negative-fill)" strokeWidth={1.5} strokeDasharray="6 5" />
+            <text x={W - PAD.right} y={y(safety) - 7} textAnchor="end" fontSize="12" fontWeight={700} fill="var(--clr-negative)">
+              <SvgMoneyText>{t("safety", { amount: signed(safety, true) })}</SvgMoneyText>
+            </text>
+          </g>
+        )}
+
+        {showLimit && (
+          <g>
+            <line x1={PAD.left} x2={W - PAD.right} y1={y(-overdraftLimit)} y2={y(-overdraftLimit)} stroke="var(--clr-negative-fill)" strokeWidth={2} />
+            <text x={W - PAD.right} y={y(-overdraftLimit) + 16 > PAD.top + plotH ? y(-overdraftLimit) - 7 : y(-overdraftLimit) + 16} textAnchor="end" fontSize="12" fontWeight={700} fill="var(--clr-negative)">
+              <SvgMoneyText>{t("overdraftLimit", { amount: signed(-overdraftLimit, true) })}</SvgMoneyText>
             </text>
           </g>
         )}

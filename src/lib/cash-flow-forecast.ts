@@ -6,11 +6,12 @@ import { resolveRecurringIcon, resolveTransactionIcon } from "@/lib/auto-brand";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getBankBalances } from "@/lib/account-balances";
 import { getBillStatuses } from "@/lib/bill-status";
-import { getCashFlowWarningThreshold, getFinancialMonthConfig } from "@/lib/app-settings";
+import { getCashFlowWarningThreshold, getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
 import { currentFinancialMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
 import {
   FORECAST_HORIZON_DAYS,
-  forecastMessage,
+  firstShortPoint,
+  judgeForecast,
   type CashFlowForecast,
   type ForecastEvent,
   type ForecastPoint,
@@ -129,9 +130,10 @@ export async function getCashFlowForecast(
   const from = shiftDate(today, 1);
   const to = shiftDate(today, horizonDays);
 
-  const [bankBalances, threshold, items, cats, futureTx, billStatuses] = await Promise.all([
+  const [bankBalances, threshold, overdraftMode, items, cats, futureTx, billStatuses] = await Promise.all([
     getBankBalances(),
     getCashFlowWarningThreshold(),
+    getOverdraftMode(),
     db.select().from(recurringItems).where(and(eq(recurringItems.active, true), eq(recurringItems.dismissed, false))),
     db.select({ id: categories.id, icon: categories.icon, color: categories.color, group: categories.group }).from(categories),
     db
@@ -162,6 +164,10 @@ export async function getCashFlowForecast(
   // actually held at some point — otherwise the "balance" is just summed history.
   const hasStartingBalance = bankBalances.some((b) => b.startingBalance != null);
   const current = hasStartingBalance ? bankBalances.reduce((sum, b) => sum + b.balance, 0) : 0;
+  // The projection is one combined line, so the room below zero is every account's
+  // overdraft together. Without a real balance there is nothing for a limit to apply to.
+  const overdraftLimit = hasStartingBalance ? bankBalances.reduce((sum, b) => sum + (b.overdraftLimit ?? 0), 0) : 0;
+  const floor = { overdraftLimit, overdraftMode };
 
   const categoriesById = new Map(cats.map((c) => [c.id, { icon: c.icon, color: c.color }]));
   const groupById = new Map(cats.map((c) => [c.id, c.group]));
@@ -236,14 +242,12 @@ export async function getCashFlowForecast(
   const points: ForecastPoint[] = [{ date: today, amount: current, change: 0 }];
   let running = current;
   let lowest: { amount: number; date: string } = { amount: current, date: today };
-  let firstNegativeDate: string | null = current < 0 ? today : null;
 
   for (let cursor = from; cursor <= to; cursor = shiftDate(cursor, 1)) {
     const change = changeByDate.get(cursor) ?? 0;
     running += change;
     points.push({ date: cursor, amount: running, change });
     if (running < lowest.amount) lowest = { amount: running, date: cursor };
-    if (firstNegativeDate == null && running < 0) firstNegativeDate = cursor;
   }
 
   const nextIncome = events.find((e) => e.amount > 0) ?? null;
@@ -253,13 +257,7 @@ export async function getCashFlowForecast(
   // every fresh install that it drops below the threshold "today".
   const hasAnything = hasStartingBalance || events.length > 0;
 
-  const status: ForecastStatus = !hasAnything
-    ? "empty"
-    : lowest.amount < 0
-      ? "critical"
-      : lowest.amount < threshold
-        ? "warning"
-        : "healthy";
+  const status: ForecastStatus = hasAnything ? judgeForecast(lowest.amount, threshold, floor).status : "empty";
 
   return {
     from: today,
@@ -271,13 +269,13 @@ export async function getCashFlowForecast(
     // A "lowest point" on a flat line nobody has data for is noise — the detail page
     // renders an em dash for it instead.
     lowest: hasAnything ? lowest : null,
-    firstNegativeDate,
+    firstShortDate: firstShortPoint(points, overdraftLimit)?.date ?? null,
     nextIncome,
     totalIncome,
     totalExpenses,
     netChange: totalIncome - totalExpenses,
     warningThreshold: threshold,
     status,
-    message: await forecastMessage({ status, lowest, firstNegativeDate, threshold, points }),
+    ...floor,
   };
 }

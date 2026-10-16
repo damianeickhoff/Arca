@@ -21,7 +21,7 @@ import { clearButtonVariants } from "@/components/clear/button-variants";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import { shiftDate, daysInclusive } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
-import type { CashFlowForecast, ForecastStatus } from "@/lib/cash-flow-forecast-shared";
+import { firstShortPoint, judgeForecast, safetyLine, type CashFlowForecast, type ForecastStatus } from "@/lib/cash-flow-forecast-shared";
 import { CashFlowChart } from "./cash-flow-chart";
 import { MoneyText } from "@/components/clear/money";
 import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
@@ -60,10 +60,15 @@ export function CashFlowSection({ cashFlow, today }: { cashFlow: CashFlowForecas
 
   let lowest = points[0] ?? { date: today, amount: cashFlow.current, change: 0 };
   for (const p of points) if (p.amount < lowest.amount) lowest = p;
-  const firstNegative = points.find((p) => p.amount < 0) ?? null;
+  const firstShort = firstShortPoint(points, cashFlow.overdraftLimit);
   const threshold = cashFlow.warningThreshold;
-  const status: ForecastStatus =
-    cashFlow.status === "empty" ? "empty" : lowest.amount < 0 ? "critical" : lowest.amount < threshold ? "warning" : "healthy";
+  const limit = cashFlow.overdraftLimit;
+  const safety = safetyLine(threshold, cashFlow);
+  const verdict = judgeForecast(lowest.amount, threshold, cashFlow);
+  const status: ForecastStatus = cashFlow.status === "empty" ? "empty" : verdict.status;
+  // In spendable mode the overdraft is part of the money, so a healthy line is described
+  // by how far it stays above the limit rather than above a safety line near zero.
+  const healthyKey = limit > 0 && cashFlow.overdraftMode === "spendable" ? "status.healthyOverdraftBody" : "status.healthyBody";
 
   const whole = (v: number) => `${v < 0 ? "−" : ""}${formatEurWhole(Math.abs(v))}`;
   const bold = (c: React.ReactNode) => <b className="text-clear-hero-ink">{c}</b>;
@@ -126,9 +131,15 @@ export function CashFlowSection({ cashFlow, today }: { cashFlow: CashFlowForecas
                 {t("legend.safety")}
               </span>
             )}
+            {limit > 0 && (
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-4 border-t-2 border-clear-negative-fill" />
+                {t("legend.overdraft")}
+              </span>
+            )}
           </span>
         </ClearTile>
-        <CashFlowChart points={points} events={events} threshold={threshold} label={chartLabel} />
+        <CashFlowChart points={points} events={events} safety={threshold > 0 ? safety : null} overdraftLimit={limit} label={chartLabel} />
       </ClearCard>
 
       <div className="flex flex-col gap-5 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-1 xl:flex">
@@ -189,28 +200,53 @@ export function CashFlowSection({ cashFlow, today }: { cashFlow: CashFlowForecas
           ) : (
             <>
               <span className="text-[22px] leading-tight font-extrabold tracking-[-0.02em]">
-                {status === "critical"
-                  ? t("status.criticalTitle", { date: longDate(firstNegative?.date ?? lowest.date) })
-                  : status === "warning"
-                    ? t("status.warningTitle")
-                    : t("status.healthyTitle", { range })}
+                {verdict.reason === "pastLimit"
+                  ? t("status.pastLimitTitle", { date: longDate(firstShort?.date ?? lowest.date) })
+                  : verdict.reason === "short"
+                    ? t("status.criticalTitle", { date: longDate(firstShort?.date ?? lowest.date) })
+                    : verdict.reason === "inOverdraft"
+                      ? t("status.inOverdraftTitle")
+                      : verdict.reason === "nearLimit"
+                        ? t("status.nearLimitTitle")
+                        : status === "warning"
+                          ? t("status.warningTitle")
+                          : t("status.healthyTitle", { range })}
               </span>
               <span className="text-[15px] leading-normal text-clear-hero-ink-2">
-                <MoneyText>{status === "critical"
+                <MoneyText>{verdict.reason === "pastLimit"
+                  ? t.rich("status.pastLimitBody", {
+                      amount: whole(lowest.amount),
+                      date: longDate(lowest.date),
+                      diff: formatEurWhole(-limit - lowest.amount),
+                      limit: formatEurWhole(limit),
+                      b: bold,
+                    })
+                  : verdict.reason === "short"
                   ? t.rich("status.criticalBody", { amount: whole(lowest.amount), date: longDate(lowest.date), b: bold })
+                  : verdict.reason === "inOverdraft" || verdict.reason === "nearLimit"
+                    ? t.rich(verdict.reason === "inOverdraft" ? "status.inOverdraftBody" : "status.nearLimitBody", {
+                        amount: whole(lowest.amount),
+                        date: longDate(lowest.date),
+                        used: formatEurWhole(-lowest.amount),
+                        left: formatEurWhole(limit + lowest.amount),
+                        limit: formatEurWhole(limit),
+                        b: bold,
+                      })
                   : status === "warning"
                     ? t.rich("status.warningBody", {
                         amount: whole(lowest.amount),
                         date: longDate(lowest.date),
-                        diff: formatEurWhole(threshold - lowest.amount),
-                        threshold: formatEurWhole(threshold),
+                        diff: formatEurWhole(safety - lowest.amount),
+                        threshold: whole(safety),
                         b: bold,
                       })
-                    : t.rich("status.healthyBody", {
+                    : t.rich(healthyKey, {
                         amount: whole(lowest.amount),
                         date: longDate(lowest.date),
-                        diff: formatEurWhole(lowest.amount - threshold),
-                        threshold: formatEurWhole(threshold),
+                        diff: formatEurWhole(lowest.amount - safety),
+                        left: formatEurWhole(limit + lowest.amount),
+                        limit: formatEurWhole(limit),
+                        threshold: whole(safety),
                         b: bold,
                       })}</MoneyText>
               </span>

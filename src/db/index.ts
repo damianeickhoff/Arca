@@ -396,6 +396,9 @@ addColumnIfMissing("transactions", "shared_with_count", "INTEGER");
 
   // Auto-migrate: per-account "count towards net worth" toggle
   addColumnIfMissing("banks", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 0");
+
+  // Auto-migrate: per-account overdraft limit (positive amount the account may go below zero)
+  addColumnIfMissing("banks", "overdraft_limit", "REAL");
   addColumnIfMissing("vermogen_accounts", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 1");
 
   // Auto-migrate: per-asset-account glyph (editable in the account edit sheet)

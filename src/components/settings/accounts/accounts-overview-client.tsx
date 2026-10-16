@@ -25,7 +25,9 @@ import {
 } from "@/app/settings/account-edit-dialogs";
 import type { Bank, VermogenAccount } from "@/db/schema";
 import type { BankBalance, BalancePoint } from "@/lib/account-balances";
+import type { OverdraftMode } from "@/lib/app-settings";
 import { MoneyText } from "@/components/clear/money";
+import { OverdraftModeSwitch } from "@/components/settings/accounts/overdraft-mode-switch";
 
 const RANGES = [
   { key: "1w", days: 7 },
@@ -41,6 +43,7 @@ interface Props {
   banks: BankBalance[];
   assets: VermogenAccount[];
   history: BalancePoint[];
+  overdraftMode: OverdraftMode;
 }
 
 /**
@@ -49,7 +52,7 @@ interface Props {
  * /settings/accounts/{banks,vermogen}/add routes redirect here with ?add=bank|asset,
  * which opens the matching add dialog.
  */
-export function AccountsOverviewClient({ banks: initialBanks, assets: initialAssets, history }: Props) {
+export function AccountsOverviewClient({ banks: initialBanks, assets: initialAssets, history, overdraftMode }: Props) {
   const t = useTranslations("accountForms");
   const tSettings = useTranslations("settings");
   const locale = useLocale();
@@ -100,6 +103,17 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
   const delta = total - monthAgo;
 
   const updatedFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const hasOverdraft = banks.some((b) => (b.overdraftLimit ?? 0) > 0);
+
+  // How much of its overdraft an account uses, for its row: past the limit, the part
+  // used, or just the limit while it's above zero.
+  function overdraftMeta(b: BankBalance): string | null {
+    const limit = b.overdraftLimit ?? 0;
+    if (limit <= 0) return null;
+    if (b.balance < -limit) return t("panel.overdraftPast", { amount: formatEur(-limit - b.balance) });
+    if (b.balance < 0) return t("panel.overdraftUsed", { used: formatEur(-b.balance), limit: formatEur(limit) });
+    return t("panel.overdraftMeta", { amount: formatEur(limit) });
+  }
 
   return (
     <>
@@ -144,6 +158,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
           addLabel={t("panel.addBank")}
           onAdd={() => setAdding("bank")}
           addAnchor="accountsAdd"
+          headerAnchor="accountsBanks"
         >
           {banks.map((b) => {
             const iban = b.accountNumber && !b.accountNumber.startsWith("CUSTOM-") ? `••${b.accountNumber.replace(/\s/g, "").slice(-4)}` : null;
@@ -154,12 +169,15 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
                 onClick={() => setEditingBank(b)}
                 icon={<AccountGlyph icon={b.icon} color={b.color ?? DEFAULT_BANK_COLOR} fallback={IconBuildingBank} />}
                 title={name}
-                meta={[b.cardType ? labels.bankType(b.cardType) : null, iban].filter(Boolean).join(" · ") || undefined}
+                meta={[b.cardType ? labels.bankType(b.cardType) : null, iban, overdraftMeta(b)].filter(Boolean).join(" · ") || undefined}
                 trailing={<RowTrailing value={b.balance} editLabel={t("panel.edit", { name })} />}
               />
             );
           })}
         </AccountSection>
+
+        {/* Only once an account can go into the red is there anything to decide. */}
+        {hasOverdraft && <OverdraftModeSwitch initialMode={overdraftMode} />}
 
         {/* ── Other assets ── */}
         <AccountSection
@@ -190,6 +208,8 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
         {/* The add buttons now open real dialogs with every field (IBAN, starting
             balance and date, transfer type; the asset kinds) — point them out once. */}
         <AnchoredTip id="accountsAdd" anchor="accountsAdd" />
+        {/* Overdraft limits are set inside a bank account's dialog — point at the list. */}
+        <AnchoredTip id="accountsOverdraft" anchor="accountsBanks" active={banks.length > 0} />
 
         <BankFormDialog
           bank={editingBank}
@@ -230,6 +250,7 @@ function AccountSection({
   addLabel,
   onAdd,
   addAnchor,
+  headerAnchor,
   children,
 }: {
   title: string;
@@ -239,11 +260,12 @@ function AccountSection({
   addLabel: string;
   onAdd: () => void;
   addAnchor?: string;
+  headerAnchor?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex flex-col gap-1.5">
-      <div className="flex h-10 items-center justify-between gap-2 rounded-clear-icon bg-clear-tile px-3">
+      <div data-tip-anchor={headerAnchor} className="flex h-10 items-center justify-between gap-2 rounded-clear-icon bg-clear-tile px-3">
         <h3 className="m-0 text-[15px] font-bold">
           {title} <span className="font-semibold text-clear-muted">· {count}</span>
         </h3>

@@ -136,6 +136,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   merchantsWithoutIcon: IconBuildingStore,
   categoryGroups: IconFolders,
   insightsGroupSwitch: IconFolders,
+  accountsOverdraft: IconBuildingBank,
 };
 
 /**

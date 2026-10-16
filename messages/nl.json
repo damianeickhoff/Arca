@@ -655,22 +655,6 @@
       "mustTotal": "Samen moet het 100% zijn"
     }
   },
-  "cashFlow": {
-    "title": "Cash Flow Vooruitzicht",
-    "emptySub": "Geen account balans ingesteld",
-    "status": {
-      "healthy": "Gezond",
-      "warning": "Let op",
-      "critical": "Kritiek",
-      "empty": "Geen data"
-    },
-    "alert": {
-      "critical": "Je verwachte cashflow bereikt {amount} op {date}",
-      "warning": "Je verwachte cashflow daalt onder {amount} op {date}",
-      "healthy": "Je verwachte cashflow blijft positief",
-      "empty": "Voeg vaste lasten, inkomsten of transacties toe voor een prognose"
-    }
-  },
   "financialHealth": {
     "title": "Financiële Gezondheid",
     "opportunity": "{area} biedt de grootste verbeterkans",
@@ -1450,6 +1434,10 @@
     "insightsGroupSwitch": {
       "title": "Uitgaven per groep",
       "body": "Zie wat een hele groep kostte, zoals alles voor het huis, of schakel naar Categorieën voor de details."
+    },
+    "accountsOverdraft": {
+      "title": "Rekeningen die rood mogen staan",
+      "body": "Open een bankrekening om in te stellen hoe ver die onder nul mag. De prognose spreekt dan pas van een tekort voorbij die grens, en jij kiest of rood staan meetelt als geld om uit te geven."
     }
   },
   "categoryPicker": {
@@ -1838,7 +1826,9 @@
       "add": "Rekening toevoegen",
       "confirmDelete": "Deze bankrekening verwijderen?",
       "confirmDeleteBody": "De transacties blijven in Activiteit staan, maar het saldo telt niet meer mee in je vermogen, de prognose en wat je vrij kunt besteden.",
-      "confirmDeleteLabel": "Rekening verwijderen"
+      "confirmDeleteLabel": "Rekening verwijderen",
+      "overdraft": "Rood staan tot",
+      "overdraftHint": "Hoe ver je bank deze rekening onder nul laat gaan. Laat leeg als dat niet kan."
     },
     "asset": {
       "addTitle": "Bezitting toevoegen",
@@ -1880,7 +1870,15 @@
       "addAsset": "Bezitting toevoegen",
       "edit": "{name} bewerken",
       "bankFallback": "Bank {id}",
-      "updated": "Bijgewerkt {date}"
+      "updated": "Bijgewerkt {date}",
+      "overdraftMeta": "Rood tot {amount}",
+      "overdraftUsed": "{used} van {limit} rood gebruikt",
+      "overdraftPast": "{amount} over de roodlimiet"
+    },
+    "overdraftMode": {
+      "title": "Rood staan meetellen als besteedbaar",
+      "hint": "Aan: de prognose ziet je roodlimiet als geld dat je kunt gebruiken en waarschuwt pas vlak bij de grens. Uit: het is een vangnet, en de prognose waarschuwt zodra je onder nul komt.",
+      "saveError": "Deze instelling kon niet worden opgeslagen. Probeer het opnieuw."
     }
   },
   "onboarding": {
@@ -2911,13 +2909,15 @@
         "today": "Vandaag",
         "safety": "Veiligheidsgrens {amount}",
         "lowestPill": "Laagste {amount} · {date}",
-        "more": "nog {count}"
+        "more": "nog {count}",
+        "overdraftLimit": "Roodlimiet {amount}"
       },
       "legend": {
         "expected": "Verwacht",
         "lowest": "Laagste punt",
         "in": "Geld erin",
-        "safety": "Veiligheidsgrens"
+        "safety": "Veiligheidsgrens",
+        "overdraft": "Roodlimiet"
       },
       "numbers": {
         "label": "{range, select, d30 {Komende 30 dagen} other {Komende 3 maanden}} in cijfers",
@@ -2946,7 +2946,14 @@
         "emptyTitle": "Nog niets om te voorspellen",
         "emptyBody": "Stel een beginsaldo in voor een rekening of voeg je rekeningen en inkomen toe, dan laat Centje zien waar je geld naartoe gaat.",
         "emptyAction": "Vaste post toevoegen",
-        "cumulative": "Er is geen rekeningsaldo ingesteld, dus deze cijfers tellen de kasstroom vanaf vandaag op."
+        "cumulative": "Er is geen rekeningsaldo ingesteld, dus deze cijfers tellen de kasstroom vanaf vandaag op.",
+        "pastLimitTitle": "Je gaat over je roodlimiet op {date}",
+        "pastLimitBody": "De prognose zakt tot <b>{amount}</b> op {date}, {diff} over je roodlimiet van {limit}. Verschuif een betaling of plan extra inkomen voor die tijd.",
+        "inOverdraftTitle": "Je komt rood te staan",
+        "inOverdraftBody": "Op {date} sta je op <b>{amount}</b>. Dat is {used} van je {limit} rood staan, er blijft {left} over.",
+        "nearLimitTitle": "Je komt dicht bij je roodlimiet",
+        "nearLimitBody": "Op {date} sta je op <b>{amount}</b>, nog maar {left} boven je roodlimiet van {limit}.",
+        "healthyOverdraftBody": "Op het laagste punt, op {date}, sta je op <b>{amount}</b>, nog {left} boven je roodlimiet van {limit}."
       },
       "plan": {
         "title": "Plan voor {month}",
@@ -3172,7 +3179,9 @@
     },
     "accounts": {
       "title": "Rekeningen",
-      "total": "{amount} totaal"
+      "total": "{amount} totaal",
+      "overdraftUsed": "{used} van {limit} rood",
+      "available": "{amount} incl. rood"
     },
     "getStarted": {
       "title": "Aan de slag",

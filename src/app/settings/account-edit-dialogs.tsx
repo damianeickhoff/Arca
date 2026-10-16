@@ -422,6 +422,7 @@ function BankFormBody({
   const [cardType, setCardType] = useState<BankType>(isBankType(savedType) ? savedType : "debitcard");
   const [expiration, setExpiration] = useState(bank?.expirationDate ?? "");
   const [includeInNetWorth, setIncludeInNetWorth] = useState(bank?.includeInNetWorth ?? false);
+  const [overdraftExpr, setOverdraftExpr] = useState(bank?.overdraftLimit ? moneyToExpr(bank.overdraftLimit) : "");
   // Adding only.
   const [accountNumber, setAccountNumber] = useState("");
   const [startingExpr, setStartingExpr] = useState("");
@@ -486,6 +487,7 @@ function BankFormBody({
           expirationDate: expiration || null,
           startingBalance: nextStartingBalance,
           includeInNetWorth,
+          overdraftLimit: parseMoney(overdraftExpr),
         }),
       });
       onSaved(await res.json());
@@ -505,6 +507,7 @@ function BankFormBody({
           startingDate: startingDate || null,
           transferKind: transferKind || null,
           includeInNetWorth,
+          overdraftLimit: parseMoney(overdraftExpr),
         }),
       });
       onSaved(await res.json());
@@ -636,6 +639,11 @@ function BankFormBody({
           <span className="text-[13px] leading-[1.5] font-semibold">{t("bank.balanceWarning")}</span>
         </div>
       )}
+
+      {/* Stored positive whatever sign is typed: 500 means the account may reach −500. */}
+      <ClearField label={t("bank.overdraft")} htmlFor={`${ids}-overdraft`} hint={t("bank.overdraftHint")}>
+        <MoneyInput id={`${ids}-overdraft`} value={overdraftExpr} onChange={setOverdraftExpr} />
+      </ClearField>
 
       <NetWorthSwitch checked={includeInNetWorth} onChange={setIncludeInNetWorth} hint={t("bank.netWorthHint")} />
 

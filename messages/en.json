@@ -655,22 +655,6 @@
       "mustTotal": "Total must be 100%"
     }
   },
-  "cashFlow": {
-    "title": "Cash Flow Forecast",
-    "emptySub": "No account balance set",
-    "status": {
-      "healthy": "Healthy",
-      "warning": "Caution",
-      "critical": "Critical",
-      "empty": "No data"
-    },
-    "alert": {
-      "critical": "Your expected cash flow reaches {amount} on {date}",
-      "warning": "Your expected cash flow drops below {amount} on {date}",
-      "healthy": "Your expected cash flow remains positive",
-      "empty": "Add recurring bills, income or transactions to see a forecast"
-    }
-  },
   "financialHealth": {
     "title": "Financial Health",
     "opportunity": "{area} is the biggest improvement opportunity",
@@ -1450,6 +1434,10 @@
     "insightsGroupSwitch": {
       "title": "Spending by group",
       "body": "See what a whole group cost, like everything for the house, or switch to Categories for the details."
+    },
+    "accountsOverdraft": {
+      "title": "Accounts that may go into the red",
+      "body": "Open a bank account to set how far below zero it may go. The forecast then only calls it a shortfall past that limit, and you choose whether the overdraft counts as money to spend."
     }
   },
   "categoryPicker": {
@@ -1838,7 +1826,9 @@
       "add": "Add account",
       "confirmDelete": "Delete this bank account?",
       "confirmDeleteBody": "Its transactions stay in Activity, but its balance no longer counts toward your net worth, the forecast or safe to spend.",
-      "confirmDeleteLabel": "Delete account"
+      "confirmDeleteLabel": "Delete account",
+      "overdraft": "Overdraft limit",
+      "overdraftHint": "How far below zero your bank lets this account go. Leave it empty if it can't."
     },
     "asset": {
       "addTitle": "Add an asset",
@@ -1880,7 +1870,15 @@
       "addAsset": "Add asset",
       "edit": "Edit {name}",
       "bankFallback": "Bank {id}",
-      "updated": "Updated {date}"
+      "updated": "Updated {date}",
+      "overdraftMeta": "Overdraft {amount}",
+      "overdraftUsed": "{used} of {limit} overdraft used",
+      "overdraftPast": "{amount} past the overdraft limit"
+    },
+    "overdraftMode": {
+      "title": "Count overdraft as spendable",
+      "hint": "On: the forecast treats your overdraft as money you can use and only warns near the limit. Off: it's a safety net, and the forecast warns as soon as you dip below zero.",
+      "saveError": "Couldn't save this setting. Try again."
     }
   },
   "onboarding": {
@@ -2911,13 +2909,15 @@
         "today": "Today",
         "safety": "{amount} safety line",
         "lowestPill": "Lowest {amount} · {date}",
-        "more": "{count} more"
+        "more": "{count} more",
+        "overdraftLimit": "{amount} overdraft limit"
       },
       "legend": {
         "expected": "Expected",
         "lowest": "Lowest point",
         "in": "Money in",
-        "safety": "Safety line"
+        "safety": "Safety line",
+        "overdraft": "Overdraft limit"
       },
       "numbers": {
         "label": "{range, select, d30 {Next 30 days} other {Next 3 months}} in numbers",
@@ -2946,7 +2946,14 @@
         "emptyTitle": "Nothing to forecast yet",
         "emptyBody": "Set a starting balance on an account or add your bills and income, and Centje projects where your money goes.",
         "emptyAction": "Add recurring item",
-        "cumulative": "No account balance is set, so these figures add up cash flow from today."
+        "cumulative": "No account balance is set, so these figures add up cash flow from today.",
+        "pastLimitTitle": "You go past your overdraft on {date}",
+        "pastLimitBody": "The forecast drops to <b>{amount}</b> on {date}, {diff} past your {limit} overdraft limit. Move a payment or plan extra income before then.",
+        "inOverdraftTitle": "You dip into your overdraft",
+        "inOverdraftBody": "On {date} you're down to <b>{amount}</b>. That's {used} of your {limit} overdraft, with {left} still to spare.",
+        "nearLimitTitle": "You get close to your overdraft limit",
+        "nearLimitBody": "On {date} you're down to <b>{amount}</b>, only {left} above your {limit} overdraft limit.",
+        "healthyOverdraftBody": "At the lowest point, on {date}, you're at <b>{amount}</b>, still {left} above your {limit} overdraft limit."
       },
       "plan": {
         "title": "{month} plan",
@@ -3172,7 +3179,9 @@
     },
     "accounts": {
       "title": "Accounts",
-      "total": "{amount} total"
+      "total": "{amount} total",
+      "overdraftUsed": "{used} of {limit} overdraft",
+      "available": "{amount} incl. overdraft"
     },
     "getStarted": {
       "title": "Get started",

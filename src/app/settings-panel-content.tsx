@@ -17,6 +17,7 @@ import { listImportProfiles } from "@/lib/import-profiles";
 import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
+import { getOverdraftMode } from "@/lib/app-settings";
 import { syncRecurringLifecycle } from "@/lib/recurring-period";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
@@ -68,7 +69,7 @@ async function RecurringPanel() {
 }
 
 async function AccountsPanel() {
-  const [bankBalances, assets, history] = await Promise.all([
+  const [bankBalances, assets, history, overdraftMode] = await Promise.all([
     getBankBalances(),
     db
       .select()
@@ -76,9 +77,10 @@ async function AccountsPanel() {
       .where(eq(vermogenAccounts.active, true))
       .orderBy(asc(vermogenAccounts.type), asc(vermogenAccounts.name)),
     getAccountBalanceHistory(),
+    getOverdraftMode(),
   ]);
 
-  return <AccountsOverviewClient banks={bankBalances} assets={assets} history={history} />;
+  return <AccountsOverviewClient banks={bankBalances} assets={assets} history={history} overdraftMode={overdraftMode} />;
 }
 
 /** Merchants, then the brand-icon rules that give them their logos. */

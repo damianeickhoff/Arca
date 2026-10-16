@@ -122,7 +122,9 @@ export type TipAnchor =
   | "linkSearch"
   // Upcoming's month arrows and the Needs a category queue's Select button
   | "upcomingMonthNav"
-  | "needsReviewSelect";
+  | "needsReviewSelect"
+  // Settings › Accounts: the Bank accounts heading (overdraft limits)
+  | "accountsBanks";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

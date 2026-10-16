@@ -520,6 +520,9 @@ export function createSchema(sqlite: Database.Database): void {
     sqlite.exec(`ALTER TABLE banks ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 0`);
   } catch { /* column already exists */ }
   try {
+    sqlite.exec(`ALTER TABLE banks ADD COLUMN overdraft_limit REAL`);
+  } catch { /* column already exists */ }
+  try {
     sqlite.exec(`ALTER TABLE vermogen_accounts ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 1`);
   } catch { /* column already exists */ }
   try {

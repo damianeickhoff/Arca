@@ -6,6 +6,14 @@ import { normalizeAccountNumber } from "@/lib/internal-transfers";
 import { eq, asc } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 
+// Stored as a positive amount however it was typed ("-500" and "500" both mean the account
+// may reach −500); nothing, zero or junk means no overdraft.
+function parseOverdraftLimit(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const n = Math.abs(Number(value));
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+}
+
 export async function GET() {
   const denied = await requireAuth();
   if (denied) return denied;
@@ -36,6 +44,7 @@ export async function POST(req: NextRequest) {
       startingDate: body.startingDate || null,
       transferKind: body.transferKind || null,
       includeInNetWorth: body.includeInNetWorth ?? false,
+      overdraftLimit: parseOverdraftLimit(body.overdraftLimit),
     })
     .returning();
 
@@ -79,6 +88,7 @@ export async function PATCH(req: NextRequest) {
       startingDate: data.startingDate !== undefined ? data.startingDate : undefined,
       transferKind: data.transferKind !== undefined ? (data.transferKind || null) : undefined,
       includeInNetWorth: data.includeInNetWorth !== undefined ? !!data.includeInNetWorth : undefined,
+      overdraftLimit: data.overdraftLimit !== undefined ? parseOverdraftLimit(data.overdraftLimit) : undefined,
     })
     .where(eq(banks.id, id))
     .returning();

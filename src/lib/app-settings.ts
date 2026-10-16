@@ -86,6 +86,19 @@ export async function getCashFlowWarningThreshold(): Promise<number> {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_CASH_FLOW_WARNING_THRESHOLD;
 }
 
+// What an account's overdraft (banks.overdraftLimit) means for the money you have:
+//   "buffer"    — a safety net only: the forecast warns once you dip into it and calls a
+//                 shortfall once you pass it, but the room never counts as yours (default)
+//   "spendable" — the unused room counts as available money: dipping into it is normal,
+//                 and the low-balance warning is measured from the limit instead of zero
+// Either way a balance past the limit is a shortfall. See judgeForecast.
+export type OverdraftMode = "buffer" | "spendable";
+
+export async function getOverdraftMode(): Promise<OverdraftMode> {
+  const row = await db.select().from(appSettings).where(eq(appSettings.key, "overdraft_mode")).limit(1);
+  return row[0]?.value === "spendable" ? "spendable" : "buffer";
+}
+
 export interface AppLockConfig {
   enabled: boolean;
   hasWebAuthn: boolean;
