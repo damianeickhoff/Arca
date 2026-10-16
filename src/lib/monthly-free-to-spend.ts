@@ -14,7 +14,7 @@ import { currentFinancialMonth, type FinancialMonthConfig } from "@/lib/date-ran
 import { toMonthly } from "@/lib/format";
 
 /** The recurring item types that count as fixed costs in a month's plan. */
-export const PLAN_EXPENSE_TYPES = ["bill", "subscription", "debt"] as const;
+export const PLAN_EXPENSE_TYPES = ["bill", "subscription", "debt", "plan"] as const;
 
 /** The variable (budgetable) category types. */
 const BUDGET_TYPES = ["nodig", "willen", "sparen"] as const;

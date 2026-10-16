@@ -16,6 +16,7 @@ import {
   IconInfoCircle,
   IconPencil,
   IconPlus,
+  IconCalendarDue,
   IconSchool,
   IconUsers,
 } from "@tabler/icons-react";
@@ -33,6 +34,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Icon } from "@/components/icon";
 import { PlanSwitch } from "@/components/shell/plan-switch";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 import type { RecurringItem } from "@/db/schema";
 import {
   DEBT_SORTS,
@@ -259,6 +261,14 @@ function DebtsHeader({
           <span className="hidden text-base text-clear-ink-2 lg:inline"><MoneyText>{empty ? t("subtitleNone") : parts.join(" · ")}</MoneyText></span>
         </div>
         <div className="flex items-center gap-2.5">
+          {/* A cost paid in parts isn't a debt, but this is where people look for one. */}
+          <AddRecurringButton type="plan" ariaLabel={t("addPlan")} className={cn(clearButtonVariants({ variant: "secondary", size: "icon" }), "size-12 lg:hidden")}>
+            <IconCalendarDue aria-hidden />
+          </AddRecurringButton>
+          <AddRecurringButton type="plan" className={cn(clearButtonVariants({ variant: "secondary" }), "hidden lg:inline-flex")}>
+            <IconCalendarDue aria-hidden />
+            {t("addPlan")}
+          </AddRecurringButton>
           <button type="button" onClick={onAdd} aria-label={t("add")} className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}>
             <IconPlus aria-hidden />
           </button>

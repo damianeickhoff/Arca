@@ -519,7 +519,8 @@
         "bill": "Rekeningen",
         "subscription": "Abonnementen",
         "debt": "Schulden",
-        "savings": "Sparen"
+        "savings": "Sparen",
+        "plan": "Betalingsregelingen"
       },
       "search": "Vaste posten zoeken",
       "noMatch": "Geen vaste posten gevonden voor deze zoekopdracht.",
@@ -532,7 +533,8 @@
       "auto": "Auto",
       "dismissed": "Genegeerd",
       "pattern": "Patroon: {pattern}",
-      "notDetectedAgain": "Wordt niet opnieuw herkend"
+      "notDetectedAgain": "Wordt niet opnieuw herkend",
+      "planProgress": "{paid} van {parts} betaald · nog {left}"
     },
     "security": {
       "loading": "Laden…"
@@ -1438,6 +1440,10 @@
     "accountsOverdraft": {
       "title": "Rekeningen die rood mogen staan",
       "body": "Open een bankrekening om in te stellen hoe ver die onder nul mag. De prognose spreekt dan pas van een tekort voorbij die grens, en jij kiest of rood staan meetelt als geld om uit te geven."
+    },
+    "paymentPlan": {
+      "title": "Betaal een kostenpost in delen",
+      "body": "Kies Betalingsregeling voor een rekening die je in delen afbetaalt, zoals de tandarts. Vul het totaal en het aantal termijnen in, dan verschijnt elke termijn in de maand waarin hij valt."
     }
   },
   "categoryPicker": {
@@ -2359,7 +2365,12 @@
       "aria": "Afschrijvingen, oudste eerst: {list}.",
       "priceUp": "Prijs ging {amount} omhoog in {month}",
       "priceDown": "Prijs ging {amount} omlaag in {month}"
-    }
+    },
+    "planTotal": "Betalingsregeling",
+    "planTotalValue": "{total} in {parts} termijnen",
+    "planPaid": "{paid} van {parts} termijnen betaald",
+    "planLeft": "Nog {left} van {total}",
+    "planNextPart": "Termijn {part} van {parts} op {date}"
   },
   "recurringForm": {
     "editTitle": "Vaste last bewerken",
@@ -2390,7 +2401,8 @@
       "subscription": "Abonnement",
       "income": "Inkomen",
       "debt": "Schuld",
-      "savings": "Sparen"
+      "savings": "Sparen",
+      "plan": "Betalingsregeling"
     },
     "budgetType": "Budgettype",
     "budgetTypes": {
@@ -2437,7 +2449,12 @@
     "save": "Opslaan",
     "saving": "Opslaan…",
     "restore": "Terugzetten",
-    "restoring": "Terugzetten…"
+    "restoring": "Terugzetten…",
+    "planTotal": "Totaalbedrag",
+    "planParts": "Aantal termijnen",
+    "planPartsHint": "Tussen {min} en {max} termijnen, één per periode vanaf de startdatum.",
+    "planSummary": "{count} termijnen van {amount} · de laatste op {date}",
+    "planHint": "Betaal één kostenpost in delen, zoals de tandarts. Elke termijn telt mee in de maand waarin hij valt."
   },
   "sharedCost": {
     "row": "Gedeelde kosten",
@@ -3027,7 +3044,8 @@
           "subscription": "Abonnementen",
           "debt": "Schulden",
           "savings": "Sparen",
-          "budget": "Categoriebudgetten"
+          "budget": "Categoriebudgetten",
+          "plan": "Betalingsregelingen"
         },
         "count": "· {count}",
         "goals": "· {count, plural, one {# doel} other {# doelen}}",
@@ -3058,7 +3076,8 @@
           "subscription": "Abonnement",
           "debt": "Schuld",
           "savings": "Spaardoel",
-          "budget": "Categoriebudget"
+          "budget": "Categoriebudget",
+          "plan": "Betalingsregeling"
         },
         "subtitle": "{kind} · normaal {amount} per maand",
         "question": "Bedrag voor {month} aanpassen",
@@ -3833,7 +3852,8 @@
         "final": "Laatste betaling",
         "split": "{principal} aflossing · {interest} rente",
         "allPrincipal": "Alles van de schuld af"
-      }
+      },
+      "addPlan": "Betalingsregeling toevoegen"
     },
     "goals": {
       "add": "Nieuw doel",
@@ -4027,7 +4047,8 @@
       "title": "Nog geen rekeningen",
       "body": "Voeg je huur, abonnementen en andere vaste lasten toe om te zien wat er deze maand nog betaald moet worden.",
       "add": "Rekening toevoegen"
-    }
+    },
+    "planPart": "{name} · termijn {part} van {parts}"
   },
   "needsReview": {
     "title": "Heeft een categorie nodig",

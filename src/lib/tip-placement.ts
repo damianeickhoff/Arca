@@ -124,7 +124,9 @@ export type TipAnchor =
   | "upcomingMonthNav"
   | "needsReviewSelect"
   // Settings › Accounts: the Bank accounts heading (overdraft limits)
-  | "accountsBanks";
+  | "accountsBanks"
+  // The recurring editor's type switch (Payment plan)
+  | "recurringType";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

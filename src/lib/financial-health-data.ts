@@ -43,7 +43,7 @@ const LIQUID_VERMOGEN_TYPES = ["spaarrekening", "betaalrekening"];
 
 /** Recurring item types that are commitments going out. Mirrors the Forecast page's
  * EXPENSE_TYPES; "income" recurring items are the counterpart and never counted here. */
-const RECURRING_EXPENSE_TYPES = ["bill", "subscription", "debt"];
+const RECURRING_EXPENSE_TYPES = ["bill", "subscription", "debt", "plan"];
 
 /** Category budget types that make up "variable spending" — the spend an overall
  * budget is measured against (same set as budget-overview.ts). */

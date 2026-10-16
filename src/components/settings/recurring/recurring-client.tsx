@@ -22,6 +22,7 @@ import { RecurringCharges, useLinkedTransactions, useMatchPreview, type MatchCri
 import { currencySymbol, formatEur } from "@/lib/format";
 import { evaluateExpression } from "@/lib/amount-expression";
 import { isValidISODate } from "@/lib/date-valid";
+import { PLAN_MAX_PARTS, PLAN_MIN_PARTS, planPartAmount, planSchedule } from "@/lib/payment-plan";
 import { cn } from "@/lib/utils";
 import { MoneyText } from "@/components/clear/money";
 
@@ -69,7 +70,7 @@ interface EditProps {
 }
 type Props = AddProps | EditProps;
 
-const TYPES = ["bill", "subscription", "income", "debt", "savings"] as const;
+const TYPES = ["bill", "subscription", "income", "debt", "plan", "savings"] as const;
 const FREQUENCIES = ["daily", "weekly", "monthly", "quarterly", "yearly"] as const;
 const BUDGET_TYPES = [
   { value: "nodig", key: "needs" },
@@ -236,8 +237,10 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
     return () => { cancelled = true; };
   }, []);
 
+  // A payment plan is edited by its total; every other type by the amount per charge.
+  const initialAmount = item?.type === "plan" && item.planTotal != null ? item.planTotal : item?.amount;
   const [amountExpr, setAmountExpr] = useState(
-    item?.amount != null ? String(item.amount).replace(".", ",") : (prefill?.amount ?? "").replace(".", ","),
+    initialAmount != null ? String(initialAmount).replace(".", ",") : (prefill?.amount ?? "").replace(".", ","),
   );
 
   const [form, setForm] = useState({
@@ -262,6 +265,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
     sharedReimbursedAmount: item?.sharedReimbursedAmount?.toString() ?? "",
     sharedWithCount: item?.sharedWithCount?.toString() ?? "",
     isReimbursement: item?.isReimbursement ?? false,
+    planParts: item?.planParts?.toString() ?? "3",
   });
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -269,11 +273,20 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
 
   const amountVal = parseAmount(amountExpr);
   const isIncome = form.type === "income";
+  // Payment plan: the amount typed is the total, split over the parts; the end date is
+  // the last part's date. Stored as one part per occurrence (see recurringItems.planTotal).
+  const isPlan = form.type === "plan";
+  const planParts = parseInt(form.planParts, 10);
+  const validParts = Number.isInteger(planParts) && planParts >= PLAN_MIN_PARTS && planParts <= PLAN_MAX_PARTS;
+  const partAmount = isPlan && validParts && amountVal != null ? planPartAmount(amountVal, planParts) : null;
+  const schedule = isPlan && validParts ? planSchedule(form.startDate || todayISO(), form.frequency, planParts) : null;
+  /** What one charge costs: a plan's part, else the amount itself. */
+  const chargeAmount = isPlan ? partAmount : amountVal;
   // Sharing a cost is about money leaving your account; an income recurrence gets the
   // mirror-image option ("this is the payback") instead.
   const isSharedCost = !isIncome && form.shared;
-  const myShare = ownShare(amountVal, form.sharedReimbursedAmount);
-  const canSave = !loading && !!form.name.trim() && amountVal != null;
+  const myShare = ownShare(chargeAmount, form.sharedReimbursedAmount);
+  const canSave = !loading && !!form.name.trim() && amountVal != null && (!isPlan || validParts);
 
   // The rule as typed. A new item (or an edited one whose rule changed) previews what it
   // would match; an untouched saved item shows the transactions actually linked to it.
@@ -308,10 +321,12 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
       budgetType: isIncome ? null : form.budgetType,
       active: form.active,
       notes: form.notes || null,
-      amount: amountVal,
+      amount: chargeAmount,
       dueDay,
-      startDate: form.startDate || null,
-      endDate: form.endDate || null,
+      startDate: form.startDate || (isPlan ? todayISO() : null),
+      endDate: isPlan ? schedule?.at(-1) ?? null : form.endDate || null,
+      planTotal: isPlan ? amountVal : null,
+      planParts: isPlan ? planParts : null,
       matchPattern: form.matchPattern || null,
       matchWholeWord: form.matchWholeWord,
       matchAmount: form.matchMode === "exact" && form.matchAmount ? parseFloat(form.matchAmount.replace(",", ".")) : null,
@@ -387,6 +402,8 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
       <ContextualTip id="recurringWholeWord" active={open} />
       <ContextualTip id="sharedCost" active={open} />
       <AnchoredTip id="recurringMatchPreview" anchor="recurringMatchPreview" active={open && ruleChanged && (charges?.length ?? 0) >= 2} />
+      {/* Payment plans are a type here, next to bills and debts: point at the switch once. */}
+      <AnchoredTip id="paymentPlan" anchor="recurringType" active={open && !isPlan} />
 
       <ClearDialogHeader
         title={title}
@@ -416,7 +433,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
-        <ClearField label={t("amount")} htmlFor="rec-amount">
+        <ClearField label={isPlan ? t("planTotal") : t("amount")} htmlFor="rec-amount">
           <div className={FIELD_BOX}>
             <span aria-hidden className="text-[15px] font-bold text-clear-muted">{currencySymbol()}</span>
             <input
@@ -464,7 +481,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
 
       <div className="flex flex-col gap-2">
         <span id="rec-type-label" className={LABEL}>{t("type")}</span>
-        <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none]">
+        <div data-tip-anchor="recurringType" className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none]">
           <Segmented
             label={t("type")}
             surface="tile"
@@ -508,6 +525,30 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
         </div>
       </div>
 
+      {isPlan ? (
+        <div className="flex flex-col gap-3 rounded-clear-tile border border-clear-line px-4 py-3">
+          <ClearField label={t("planParts")} htmlFor="rec-parts" hint={t("planPartsHint", { min: PLAN_MIN_PARTS, max: PLAN_MAX_PARTS })}>
+            <ClearInput
+              id="rec-parts"
+              type="number"
+              min={PLAN_MIN_PARTS}
+              max={PLAN_MAX_PARTS}
+              step="1"
+              inputMode="numeric"
+              value={form.planParts}
+              onChange={(e) => set("planParts", e.target.value)}
+              className="font-bold tabular-nums sm:max-w-40"
+            />
+          </ClearField>
+          <span className="text-sm font-semibold text-clear-ink-2">
+            {partAmount != null && schedule ? (
+              <MoneyText>{t("planSummary", { count: schedule.length, amount: formatEur(partAmount), date: dateLabel(schedule[schedule.length - 1]) })}</MoneyText>
+            ) : (
+              t("planHint")
+            )}
+          </span>
+        </div>
+      ) : (
       <div className="flex flex-col gap-2 rounded-clear-tile border border-clear-line px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <span className="flex min-w-0 flex-col gap-0.5">
@@ -526,6 +567,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
           <DatePicker value={form.endDate} label={dateLabel(form.endDate)} onChange={(v) => set("endDate", v)} triggerClassName={DATE_TRIGGER} />
         )}
       </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -588,11 +630,11 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
         )}
         {/* The recurrence's own amount, for reference: the match amount is a separate
             filter, and without this you'd have to scroll up to check the bill's amount. */}
-        {amountVal != null && (
+        {chargeAmount != null && (
           <span className="text-xs font-semibold text-clear-muted">
-            <MoneyText>{t("setTo", { amount: formatEur(amountVal) })}</MoneyText>
+            <MoneyText>{t("setTo", { amount: formatEur(chargeAmount) })}</MoneyText>
             {form.matchMode === "exact" && (
-              <button type="button" onClick={() => set("matchAmount", String(amountVal))} className="ml-1.5 cursor-pointer font-bold text-clear-ember-text hover:underline">
+              <button type="button" onClick={() => set("matchAmount", String(chargeAmount))} className="ml-1.5 cursor-pointer font-bold text-clear-ember-text hover:underline">
                 {t("useIt")}
               </button>
             )}
@@ -626,11 +668,11 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
                   <ClearInput id="rec-people" type="number" min="2" step="1" inputMode="numeric" value={form.sharedWithCount} onChange={(e) => set("sharedWithCount", e.target.value)} placeholder="4" className="font-bold tabular-nums" />
                   <button
                     type="button"
-                    disabled={amountVal == null || !(parseInt(form.sharedWithCount) >= 2)}
+                    disabled={chargeAmount == null || !(parseInt(form.sharedWithCount) >= 2)}
                     onClick={() => {
                       const people = parseInt(form.sharedWithCount);
-                      if (amountVal == null || !(people >= 2)) return;
-                      set("sharedReimbursedAmount", String(evenShareBack(amountVal, people)));
+                      if (chargeAmount == null || !(people >= 2)) return;
+                      set("sharedReimbursedAmount", String(evenShareBack(chargeAmount, people)));
                     }}
                     className={cn(clearButtonVariants({ variant: "secondary", size: "lg" }), "px-4")}
                   >
@@ -639,8 +681,8 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
                 </div>
               </ClearField>
             </div>
-            {amountVal != null && myShare != null && (
-              <span className="text-sm font-semibold text-clear-ink-2"><MoneyText>{tShared("preview", { share: formatEur(myShare), total: formatEur(amountVal) })}</MoneyText></span>
+            {chargeAmount != null && myShare != null && (
+              <span className="text-sm font-semibold text-clear-ink-2"><MoneyText>{tShared("preview", { share: formatEur(myShare), total: formatEur(chargeAmount) })}</MoneyText></span>
             )}
           </>
         )}

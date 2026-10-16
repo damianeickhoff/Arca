@@ -465,6 +465,12 @@ export function createSchema(sqlite: Database.Database): void {
     sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN is_reimbursement INTEGER NOT NULL DEFAULT 0`);
   } catch { /* column already exists */ }
   try {
+    sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN plan_total REAL`);
+  } catch { /* column already exists */ }
+  try {
+    sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN plan_parts INTEGER`);
+  } catch { /* column already exists */ }
+  try {
     sqlite.exec(`ALTER TABLE users ADD COLUMN first_name TEXT`);
   } catch { /* column already exists */ }
   try {

@@ -60,6 +60,8 @@ export async function GET() {
       sharedReimbursedAmount: recurringItems.sharedReimbursedAmount,
       sharedWithCount: recurringItems.sharedWithCount,
       isReimbursement: recurringItems.isReimbursement,
+      planTotal: recurringItems.planTotal,
+      planParts: recurringItems.planParts,
     })
     .from(recurringItems)
     .orderBy(asc(recurringItems.type), asc(recurringItems.name));

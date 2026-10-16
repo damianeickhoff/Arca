@@ -1,4 +1,4 @@
-import { and, eq, gt, lte } from "drizzle-orm";
+import { and, eq, gt, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
@@ -134,7 +134,12 @@ export async function getCashFlowForecast(
     getBankBalances(),
     getCashFlowWarningThreshold(),
     getOverdraftMode(),
-    db.select().from(recurringItems).where(and(eq(recurringItems.active, true), eq(recurringItems.dismissed, false))),
+    // Items starting later are switched off until then (syncRecurringLifecycle), but their
+    // occurrences inside the horizon are real — a payment plan whose first part is next month.
+    db
+      .select()
+      .from(recurringItems)
+      .where(and(eq(recurringItems.dismissed, false), or(eq(recurringItems.active, true), gt(recurringItems.startDate, today)))),
     db.select({ id: categories.id, icon: categories.icon, color: categories.color, group: categories.group }).from(categories),
     db
       .select({

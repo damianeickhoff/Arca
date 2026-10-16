@@ -20,8 +20,9 @@ import { nextOccurrence } from "@/lib/recurring-occurrence";
 import { shiftDate } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 import type { RecurringItem, Category } from "@/db/schema";
+import type { PlanProgress } from "@/lib/payment-plan";
 
-const FILTERS = ["all", "income", "bill", "subscription", "debt", "savings"] as const;
+const FILTERS = ["all", "income", "bill", "subscription", "debt", "plan", "savings"] as const;
 type Filter = (typeof FILTERS)[number];
 
 // Stored budget types are Dutch; the labels live under recurringForm.budgetTypes.
@@ -30,11 +31,13 @@ const BUDGET_KEY: Record<string, "needs" | "wants" | "savings"> = { nodig: "need
 interface Props {
   items: RecurringItem[];
   categories: Category[];
+  /** Payment plans only: how far each is paid off, by item id. */
+  planProgress: Record<number, PlanProgress>;
 }
 
 /** The Recurring settings panel: the monthly total, type filters and a search, then
  *  every recurring item (a row opens its detail) and the dismissed ones to restore. */
-export function RecurringMenuClient({ items, categories }: Props) {
+export function RecurringMenuClient({ items, categories, planProgress }: Props) {
   const t = useTranslations("settings.recurringList");
   const tPanels = useTranslations("settings.panels");
   const tForm = useTranslations("recurringForm");
@@ -141,9 +144,12 @@ export function RecurringMenuClient({ items, categories }: Props) {
               const due = dueDateByItemId[item.id];
               const status = recurringPeriodStatus(item);
               const budgetKey = item.budgetType ? BUDGET_KEY[item.budgetType] : undefined;
+              const progress = item.type === "plan" ? planProgress[item.id] : undefined;
               const meta = [
                 cat?.name ?? t("noCategory"),
-                tForm(`frequencies.${item.frequency}` as "frequencies.monthly"),
+                progress && item.planParts
+                  ? t("planProgress", { paid: progress.paidParts, parts: item.planParts, left: formatEur(progress.remaining) })
+                  : tForm(`frequencies.${item.frequency}` as "frequencies.monthly"),
                 due ? t("next", { date: dateFmt.format(new Date(`${due}T12:00:00`)) }) : null,
                 !item.active && status === "active" ? t("inactive") : null,
               ]

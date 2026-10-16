@@ -17,7 +17,8 @@ import { listImportProfiles } from "@/lib/import-profiles";
 import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
-import { getOverdraftMode } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
+import { getPlanProgress } from "@/lib/payment-plan-progress";
 import { syncRecurringLifecycle } from "@/lib/recurring-period";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
@@ -65,7 +66,8 @@ async function RecurringPanel() {
   // schedule (see RecurringMenuClient) — the bill-status due date this used to pass
   // is the occurrence within the *current* financial month, i.e. already in the past
   // for anything due earlier this month.
-  return <RecurringMenuClient items={recurringAll} categories={cats} />;
+  const planProgress = Object.fromEntries(await getPlanProgress(recurringAll, await getFinancialMonthConfig()));
+  return <RecurringMenuClient items={recurringAll} categories={cats} planProgress={planProgress} />;
 }
 
 async function AccountsPanel() {

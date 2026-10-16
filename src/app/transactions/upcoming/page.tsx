@@ -1,7 +1,8 @@
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, offsetFinancialMonth, todayStr } from "@/lib/date-range";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
+import { planPartNumber } from "@/lib/payment-plan";
 import { UpcomingView, type UpcomingBill } from "./upcoming-view";
 
 export const dynamic = "force-dynamic";
@@ -24,12 +25,18 @@ export default async function UpcomingTransactionsPage({ searchParams }: { searc
   const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month) && sp.month >= oldest && sp.month <= newest ? sp.month : current;
   const { from, to } = financialMonthRangeByMonth(month, financialMonth);
 
-  const [statuses, locale] = await Promise.all([getBillStatuses(month, financialMonth, UPCOMING_TYPES), getLocale()]);
+  const [statuses, locale, t] = await Promise.all([getBillStatuses(month, financialMonth, UPCOMING_TYPES), getLocale(), getTranslations("upcoming")]);
+  // A payment plan's row says which part is due: "Dentist · part 2 of 3".
+  const billName = (item: (typeof statuses)[number]["item"], dueDate: string | null) => {
+    const name = item.friendlyName ?? item.name;
+    const part = dueDate ? planPartNumber(item, dueDate) : null;
+    return part && item.planParts ? t("planPart", { name, part, parts: item.planParts }) : name;
+  };
 
   const bills: UpcomingBill[] = statuses
     .map(({ item, icon, iconColor, iconBackground, dueDate, paid, paidSource, overdue }) => ({
       id: item.id,
-      name: item.friendlyName ?? item.name,
+      name: billName(item, dueDate),
       amount: item.amount,
       icon,
       iconColor,

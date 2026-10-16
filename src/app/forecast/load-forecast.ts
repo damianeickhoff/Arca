@@ -1,4 +1,4 @@
-import { and, eq, gt, gte, isNotNull, lte } from "drizzle-orm";
+import { and, eq, gt, gte, isNotNull, lte, or } from "drizzle-orm";
 import { getLocale, getTranslations } from "next-intl/server";
 import { db } from "@/db";
 import {
@@ -17,7 +17,7 @@ import type { Category, Goal, RecurringItem, SavingsGoal } from "@/db/schema";
 import { getBudgetStrategy, getFinancialMonthConfig } from "@/lib/app-settings";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { getCashFlowForecast, type CashFlowForecast } from "@/lib/cash-flow-forecast";
-import { currentFinancialMonth, financialMonthRangeByMonth, offsetFinancialMonth } from "@/lib/date-range";
+import { currentFinancialMonth, financialMonthRangeByMonth, offsetFinancialMonth, todayStr } from "@/lib/date-range";
 import { formatEur, formatEurWhole, toMonthly } from "@/lib/format";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { computeNetWorth } from "@/lib/net-worth-snapshots";
@@ -62,7 +62,8 @@ export interface PlanItem {
   background: string | null;
   /** The usual monthly amount (non-monthly items averaged per month). */
   defaultAmount: number;
-  /** Category budgets: the usual amount differs per month (month-specific targets). */
+  /** The usual amount differs per month: category budgets (month-specific targets), and
+   *  recurrences with a start or end date (0 outside their period). */
   defaults?: Record<string, number>;
   /** Month key → the amount set for that month only. */
   overrides: Record<string, number>;
@@ -141,7 +142,13 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
   const windowKeys = monthKeysBetween(windowStart, windowEnd);
 
   const [itemsRaw, overridesRaw, savings, savingsOverridesRaw, allCategories, targets, variableOverridesRaw, netWorthData, cashFlow] = await Promise.all([
-    db.select().from(recurringItems).where(eq(recurringItems.active, true)).orderBy(recurringItems.type, recurringItems.name),
+    // Not-yet-started items too (switched off until their start date): their months
+    // ahead belong in the plan, and the ones before the start read 0 (see defaults below).
+    db
+      .select()
+      .from(recurringItems)
+      .where(or(eq(recurringItems.active, true), and(eq(recurringItems.dismissed, false), gt(recurringItems.startDate, todayStr()))))
+      .orderBy(recurringItems.type, recurringItems.name),
     db.select().from(prognoseOverrides).where(and(gte(prognoseOverrides.month, windowStart), lte(prognoseOverrides.month, windowEnd))),
     db.select().from(savingsGoals).where(eq(savingsGoals.active, true)).orderBy(savingsGoals.name),
     db.select().from(savingsMonthOverrides).where(and(gte(savingsMonthOverrides.month, windowStart), lte(savingsMonthOverrides.month, windowEnd))),
@@ -249,6 +256,18 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
   for (const item of itemsRaw) {
     if (item.type !== "income" && !(EXPENSE_TYPES as readonly string[]).includes(item.type)) continue;
     const icon = resolveRecurringIcon(item, categoriesById);
+    const defaultAmount = toMonthly(item.amount, item.frequency);
+    // A recurrence with a start or end date (a payment plan, a debt's bill) costs nothing
+    // in the months outside that period, so those months read 0 instead of the usual amount.
+    let defaults: Record<string, number> | undefined;
+    if (item.startDate || item.endDate) {
+      defaults = {};
+      for (const key of windowKeys) {
+        const range = financialMonthRangeByMonth(key, financialMonth);
+        const inPeriod = (!item.startDate || range.to >= item.startDate) && (!item.endDate || range.from <= item.endDate);
+        defaults[key] = inPeriod ? defaultAmount : 0;
+      }
+    }
     planItems.push({
       key: `rec-${item.id}`,
       kind: "recurring",
@@ -259,7 +278,8 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
       icon: icon.iconKey ?? null,
       color: icon.color,
       background: icon.background,
-      defaultAmount: toMonthly(item.amount, item.frequency),
+      defaultAmount,
+      defaults,
       overrides: recurringOverrides.get(item.id) ?? {},
     });
   }

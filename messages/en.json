@@ -519,7 +519,8 @@
         "bill": "Bills",
         "subscription": "Subscriptions",
         "debt": "Debts",
-        "savings": "Savings"
+        "savings": "Savings",
+        "plan": "Payment plans"
       },
       "search": "Search recurring items",
       "noMatch": "No recurring items match that search.",
@@ -532,7 +533,8 @@
       "auto": "Auto",
       "dismissed": "Dismissed",
       "pattern": "Pattern: {pattern}",
-      "notDetectedAgain": "Won't be detected again"
+      "notDetectedAgain": "Won't be detected again",
+      "planProgress": "{paid} of {parts} paid · {left} left"
     },
     "security": {
       "loading": "Loading…"
@@ -1438,6 +1440,10 @@
     "accountsOverdraft": {
       "title": "Accounts that may go into the red",
       "body": "Open a bank account to set how far below zero it may go. The forecast then only calls it a shortfall past that limit, and you choose whether the overdraft counts as money to spend."
+    },
+    "paymentPlan": {
+      "title": "Pay a cost in parts",
+      "body": "Choose Payment plan for a bill you pay off in parts, like the dentist. Enter the total and the number of parts, and each part shows up in the month it's due."
     }
   },
   "categoryPicker": {
@@ -2359,7 +2365,12 @@
       "aria": "Charges, oldest first: {list}.",
       "priceUp": "Price went up {amount} in {month}",
       "priceDown": "Price went down {amount} in {month}"
-    }
+    },
+    "planTotal": "Payment plan",
+    "planTotalValue": "{total} in {parts} parts",
+    "planPaid": "{paid} of {parts} parts paid",
+    "planLeft": "{left} left of {total}",
+    "planNextPart": "Part {part} of {parts} on {date}"
   },
   "recurringForm": {
     "editTitle": "Edit recurring item",
@@ -2390,7 +2401,8 @@
       "subscription": "Subscription",
       "income": "Income",
       "debt": "Debt",
-      "savings": "Savings"
+      "savings": "Savings",
+      "plan": "Payment plan"
     },
     "budgetType": "Budget type",
     "budgetTypes": {
@@ -2437,7 +2449,12 @@
     "save": "Save",
     "saving": "Saving…",
     "restore": "Restore",
-    "restoring": "Restoring…"
+    "restoring": "Restoring…",
+    "planTotal": "Total amount",
+    "planParts": "Number of parts",
+    "planPartsHint": "Between {min} and {max} parts, one per period from the start date.",
+    "planSummary": "{count} parts of {amount} · the last on {date}",
+    "planHint": "Pay one cost in parts, like the dentist. Each part counts in the month it's due."
   },
   "sharedCost": {
     "row": "Shared cost",
@@ -3027,7 +3044,8 @@
           "subscription": "Subscriptions",
           "debt": "Debts",
           "savings": "Savings",
-          "budget": "Category budgets"
+          "budget": "Category budgets",
+          "plan": "Payment plans"
         },
         "count": "· {count}",
         "goals": "· {count, plural, one {# goal} other {# goals}}",
@@ -3058,7 +3076,8 @@
           "subscription": "Subscription",
           "debt": "Debt",
           "savings": "Savings goal",
-          "budget": "Category budget"
+          "budget": "Category budget",
+          "plan": "Payment plan"
         },
         "subtitle": "{kind} · usually {amount} a month",
         "question": "Change the amount for {month}",
@@ -3833,7 +3852,8 @@
         "final": "Final payment",
         "split": "{principal} off · {interest} interest",
         "allPrincipal": "All off the balance"
-      }
+      },
+      "addPlan": "Add payment plan"
     },
     "goals": {
       "add": "New goal",
@@ -4027,7 +4047,8 @@
       "title": "No bills yet",
       "body": "Add your rent, subscriptions and other fixed costs to see what is still to pay this month.",
       "add": "Add a bill"
-    }
+    },
+    "planPart": "{name} · part {part} of {parts}"
   },
   "needsReview": {
     "title": "Needs a category",

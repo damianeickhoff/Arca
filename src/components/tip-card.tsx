@@ -137,6 +137,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   categoryGroups: IconFolders,
   insightsGroupSwitch: IconFolders,
   accountsOverdraft: IconBuildingBank,
+  paymentPlan: IconCalendarDue,
 };
 
 /**

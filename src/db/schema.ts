@@ -161,7 +161,7 @@ export const reimbursements = sqliteTable("reimbursements", {
 export const recurringItems = sqliteTable("recurring_items", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  // bill | debt | subscription
+  // bill | debt | subscription | income | savings | plan
   type: text("type").notNull(),
   amount: real("amount"),
   // daily | weekly | monthly | quarterly | yearly | once
@@ -210,6 +210,14 @@ export const recurringItems = sqliteTable("recurring_items", {
   // matches are stamped transactions.isReimbursement, which every income total excludes.
   // The item stays type "income" so the forecast still projects the money arriving.
   isReimbursement: integer("is_reimbursement", { mode: "boolean" }).notNull().default(false),
+  // ── Payment plans (type "plan") ───────────────────────────────────────────
+  // A one-off cost paid off in parts (the dentist in three instalments). The editor
+  // asks for the total and the number of parts; `amount` stores one part and `endDate`
+  // the last part's date, so every surface that knows a recurring bill (forecast,
+  // upcoming, budget, matching, paid marks) handles a plan without special cases.
+  // Progress is derived from the parts paid (see lib/payment-plan-progress.ts).
+  planTotal: real("plan_total"),
+  planParts: integer("plan_parts"),
 });
 
 // ─── Savings goals ─────────────────────────────────────────────────────────

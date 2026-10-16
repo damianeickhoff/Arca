@@ -394,6 +394,10 @@ addColumnIfMissing("recurring_items", "is_reimbursement", "INTEGER NOT NULL DEFA
 // …and on one expense (the split dialog's shared-cost section): people sharing it.
 addColumnIfMissing("transactions", "shared_with_count", "INTEGER");
 
+// Auto-migrate: payment plans (a cost paid in parts; see recurringItems.planTotal)
+addColumnIfMissing("recurring_items", "plan_total", "REAL");
+addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
+
   // Auto-migrate: per-account "count towards net worth" toggle
   addColumnIfMissing("banks", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 0");
 

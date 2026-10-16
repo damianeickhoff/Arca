@@ -16,7 +16,7 @@ import { amountFor, usualFor } from "./plan-amounts";
 import { MoneyText } from "@/components/clear/money";
 import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 
-const GROUPS: ItemType[] = ["income", "bill", "subscription", "debt", "savings", "budget"];
+const GROUPS: ItemType[] = ["income", "bill", "subscription", "debt", "plan", "savings", "budget"];
 
 /**
  * Everything the plan is built from — recurring items by type, savings goals and

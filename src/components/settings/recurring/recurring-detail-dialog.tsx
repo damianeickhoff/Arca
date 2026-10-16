@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { IconPencil, IconPlayerPause, IconPlayerPlay, IconTrash } from "@tabler/icons-react";
@@ -9,6 +9,7 @@ import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-
 import { ClearChip } from "@/components/clear/chip";
 import { Amount } from "@/components/clear/amount";
 import { ListRow } from "@/components/clear/list-row";
+import { ClearProgress } from "@/components/clear/progress";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
@@ -18,11 +19,28 @@ import { RecurringCharges, useLinkedTransactions, type LinkedTx } from "./recurr
 import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
 import { formatEur, normalizeBudgetType } from "@/lib/format";
 import { isValidISODate } from "@/lib/date-valid";
+import { planPartNumber, type PlanProgress } from "@/lib/payment-plan";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import type { RecurringItem, Category } from "@/db/schema";
 import { MoneyText } from "@/components/clear/money";
 
 const BUDGET_TYPE_KEY: Record<string, "needs" | "wants" | "savings"> = { nodig: "needs", willen: "wants", sparen: "savings" };
+
+/** A payment plan's progress (see getPlanProgress); null while loading or for any other type. */
+function usePlanProgress(item: RecurringItem): PlanProgress | null {
+  const planId = item.type === "plan" ? item.id : null;
+  const [loaded, setLoaded] = useState<{ id: number; progress: PlanProgress | null } | null>(null);
+  useEffect(() => {
+    if (planId == null) return;
+    let cancelled = false;
+    fetch(`/api/recurring/plan-progress?itemId=${planId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((progress: PlanProgress | null) => { if (!cancelled) setLoaded({ id: planId, progress }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [planId]);
+  return loaded && loaded.id === planId ? loaded.progress : null;
+}
 
 /**
  * One recurring item in full, in the Popup-Recurring look: what it costs and whether
@@ -98,6 +116,7 @@ function DetailBody({
   const [editOpen, setEditOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<LinkedTx | null>(null);
   const txs = useLinkedTransactions(item.id);
+  const planProgress = usePlanProgress(item);
 
   // Saving "active" from the edit form (rather than the pause button, which sets local
   // state itself) changes item.active without remounting this body.
@@ -153,6 +172,8 @@ function DetailBody({
   const budgetKey = item.budgetType ? BUDGET_TYPE_KEY[normalizeBudgetType(item.budgetType)] : undefined;
   const isIncome = item.type === "income";
   const signed = (v: number) => (isIncome ? Math.abs(v) : -Math.abs(v));
+  const isPlan = item.type === "plan" && item.planTotal != null && item.planParts != null;
+  const nextPart = dueDate ? planPartNumber(item, dueDate) : null;
 
   const details: { label: string; value: React.ReactNode }[] = [
     {
@@ -181,6 +202,7 @@ function DetailBody({
         ]
       : []),
     ...(item.isReimbursement ? [{ label: tShared("row"), value: tShared("rowPayback") }] : []),
+    ...(isPlan ? [{ label: t("planTotal"), value: t("planTotalValue", { total: formatEur(item.planTotal!), parts: item.planParts! }) }] : []),
     // Always shown when set — it's the recurrence's anchor. Flagged when it hasn't
     // arrived yet, since nothing is due before then.
     ...(item.startDate ? [{ label: t("startDate"), value: isFutureStart ? t("startsLater", { date: fmt(item.startDate) }) : fmt(item.startDate) }] : []),
@@ -210,7 +232,11 @@ function DetailBody({
             <span className="clear-amount text-[36px]">—</span>
           )}
           <span className="text-[15px] text-clear-ink-2">
-            {active && dueDate ? t("nextOn", { date: fmt(dueDate) }) : freqLabel}
+            {active && dueDate
+              ? nextPart && item.planParts
+                ? t("planNextPart", { part: nextPart, parts: item.planParts, date: fmt(dueDate) })
+                : t("nextOn", { date: fmt(dueDate) })
+              : freqLabel}
           </span>
         </div>
         <ClearChip tone={active ? "mint" : "stone"}>
@@ -218,6 +244,20 @@ function DetailBody({
           {active ? t("active") : t("paused")}
         </ClearChip>
       </div>
+
+      {isPlan && (
+        <div className="flex flex-col gap-2.5 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <span className="text-[15px] font-bold">
+              {t("planPaid", { paid: planProgress?.paidParts ?? 0, parts: item.planParts! })}
+            </span>
+            <span className="text-[13px] text-clear-muted">
+              <MoneyText>{t("planLeft", { left: formatEur(planProgress?.remaining ?? item.planTotal!), total: formatEur(item.planTotal!) })}</MoneyText>
+            </span>
+          </div>
+          <ClearProgress value={item.planTotal! > 0 ? (planProgress?.paidAmount ?? 0) / item.planTotal! : 0} />
+        </div>
+      )}
 
       {txs && <RecurringCharges txs={txs} />}
 

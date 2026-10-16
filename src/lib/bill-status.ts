@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gt, gte, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { billPayments, categories, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
@@ -28,7 +28,7 @@ export type BillStatus = {
  * not persisted; only the manual override needs a row.
  */
 /** Recurrence types the "upcoming" surfaces treat as money leaving the account. */
-const EXPENSE_TYPES = ["bill", "subscription", "debt", "savings"];
+const EXPENSE_TYPES = ["bill", "subscription", "debt", "plan", "savings"];
 
 /** Everything with a schedule worth showing on an upcoming list — expenses plus the
  *  income you're still waiting on. Income deliberately stays out of the budget's bills
@@ -48,7 +48,13 @@ export async function getBillStatuses(
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
   const [items, periodTx, payments, cats] = await Promise.all([
-    db.select().from(recurringItems).where(eq(recurringItems.active, true)),
+    // Items that start later are switched off until then (syncRecurringLifecycle), but a
+    // later month must still list them — a payment plan whose first part is next month.
+    // They only stay in when they're actually due in this month (filtered below).
+    db
+      .select()
+      .from(recurringItems)
+      .where(or(eq(recurringItems.active, true), and(eq(recurringItems.dismissed, false), gt(recurringItems.startDate, todayStr)))),
     // Both directions: an income recurrence is "paid" (received) by an *income*
     // transaction, so restricting this to expenses would leave every salary showing as
     // still outstanding. The direction is carried through and checked per item below.
@@ -73,7 +79,7 @@ export async function getBillStatuses(
 
   return items
     .filter((r) => types.includes(r.type))
-    .map((item) => {
+    .flatMap((item) => {
       const manual = paymentByItem.get(item.id);
       const autoMatch = item.matchPattern ? findMatch(item) : null;
 
@@ -113,11 +119,14 @@ export async function getBillStatuses(
         if (dueDate && item.endDate && dueDate > item.endDate) dueDate = null;
       }
 
+      // A not-yet-started item belongs only to the months it's due in.
+      if (!item.active && dueDate == null) return [];
+
       const overdue = paid === false && dueDate != null && dueDate <= todayStr && todayStr >= from && todayStr <= to;
 
       const resolved = resolveRecurringIcon(item, categoriesById);
 
-      return {
+      return [{
         item,
         icon: resolved.iconKey ?? null,
         iconColor: resolved.color,
@@ -126,6 +135,6 @@ export async function getBillStatuses(
         paid,
         paidSource,
         overdue,
-      };
+      }];
     });
 }
