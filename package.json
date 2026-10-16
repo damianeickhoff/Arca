@@ -10,6 +10,7 @@
     "db:init": "node --experimental-strip-types src/db/migrate.ts",
     "db:seed-demo": "node --experimental-strip-types scripts/seed-demo-data.ts",
     "db:seed-demo:reset": "node --experimental-strip-types scripts/seed-demo-data.ts --reset",
+    "ai:check": "node --experimental-strip-types --no-warnings scripts/ai-check.ts",
     "test": "vitest run"
   },
   "dependencies": {
