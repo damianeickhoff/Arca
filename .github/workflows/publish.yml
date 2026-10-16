@@ -1,0 +1,55 @@
+# Builds the Docker image and publishes it to GitHub Container Registry:
+#   ghcr.io/damianeickhoff/arca:latest      — the default branch (what Unraid pulls)
+#   ghcr.io/damianeickhoff/arca:<branch>    — any other branch, to try it before merging
+#   ghcr.io/damianeickhoff/arca:v1.3.0      — a version tag
+#   ghcr.io/damianeickhoff/arca:sha-abc1234 — every build
+# No secrets needed: GITHUB_TOKEN may write this repository's packages.
+name: Publish image
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+    paths-ignore: ["**.md", "unraid/**", "docs/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=short
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Docker media types and no provenance index: GHCR won't serve an OCI manifest
+          # to Unraid's update check, which then shows the version as "not available".
+          outputs: type=registry,oci-mediatypes=false
+          provenance: false
+          sbom: false
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

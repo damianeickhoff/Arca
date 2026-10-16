@@ -6,4 +6,12 @@ node_modules
 *.db-shm
 *.db-wal
 *.log
-unraid/
+unraid/.env
+.env*
+.claude
+.github
+avatars
+docs
+tests
+scripts
+*.md

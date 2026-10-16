@@ -3,9 +3,9 @@
 
     <Name>Arca</Name>
     <Icon>https://raw.githubusercontent.com/damianeickhoff/arca/master/public/icon.png</Icon>
-    <Repository>yourusername/arca:latest</Repository>
+    <Repository>ghcr.io/damianeickhoff/arca:latest</Repository>
 
-    <Registry>https://hub.docker.com/r/yourusername/arca</Registry>
+    <Registry>https://github.com/damianeickhoff/Arca/pkgs/container/arca</Registry>
 
     <Network>bridge</Network>
 
