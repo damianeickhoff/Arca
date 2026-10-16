@@ -86,6 +86,12 @@ export function NeedsReviewView({
   const [currentId, setCurrentId] = useState<number | null>(null);
   const current = queue.find((r) => r.id === currentId) ?? queue[0] ?? null;
   const index = current ? queue.indexOf(current) : -1;
+  // Progress counts what was sorted on this visit: a sorted row leaves the queue and the
+  // next one moves to the front, so its place in the queue alone would read "1 of …"
+  // forever while the total shrank. Done + place in the queue = how far along you are.
+  const [done, setDone] = useState(0);
+  const position = done + index + 1;
+  const total = done + queue.length;
 
   const [info, setInfo] = useState<{ id: number; data: CategorySuggestions } | null>(null);
   const [picked, setPicked] = useState<{ id: number; categoryId: number } | null>(null);
@@ -156,6 +162,8 @@ export function NeedsReviewView({
   function markSorted(ids: number[]) {
     const gone = new Set(ids);
     const after = queue.slice(index + 1).find((r) => !gone.has(r.id)) ?? queue.find((r) => !gone.has(r.id));
+    // Only rows that were waiting count: a rule can also re-categorise ones already sorted.
+    setDone((d) => d + queue.filter((r) => gone.has(r.id)).length);
     setSorted((prev) => new Set([...prev, ...ids]));
     setCurrentId(after?.id ?? null);
     setFailed(false);
@@ -272,13 +280,13 @@ export function NeedsReviewView({
           current && (
             <div
               role="group"
-              aria-label={t("progressLabel", { index: index + 1, total: queue.length })}
+              aria-label={t("progressLabel", { index: position, total })}
               className="inline-flex h-[52px] items-center gap-3.5 rounded-full bg-clear-card pr-5 pl-2"
             >
               <span className="inline-flex h-9 items-center rounded-full bg-clear-primary px-3.5 text-sm font-extrabold tabular-nums text-clear-primary-ink">
-                {t("progress", { index: index + 1, total: queue.length })}
+                {t("progress", { index: position, total })}
               </span>
-              <ClearProgress value={(index + 1) / queue.length} size="sm" className="w-24 sm:w-40" />
+              <ClearProgress value={position / total} size="sm" className="w-24 sm:w-40" />
             </div>
           )
         }
