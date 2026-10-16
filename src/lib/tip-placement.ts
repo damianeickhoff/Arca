@@ -22,38 +22,52 @@ export type TipAnchor =
   // App shell: the phone tab bar / desktop sidebar nav, and the Plan switch
   | "mainNav"
   | "planSwitch"
+  // The Settings page's section list
+  | "settingsNav"
   // Home sections (Clear)
   | "homeHero"
   | "homeComingUp"
   | "homeIncomeVsSpending"
   | "homeMoneyFlow"
+  // Privacy mode: the eye button on Home's hero
+  | "privacyEye"
   // Redesigned Activity
   | "activityRow"
   | "activityFilters"
   | "activityDetail"
   | "activitySearchBar"
-  | "activityContext"
+  | "activityHistory"
+  | "globalSearch"
+  | "globalSearchPhone"
   | "activityKeys"
+  | "activityDetailTabs"
   // Redesigned Insights
   | "insightsMerchants"
+  | "insightsCategorySwitch"
   | "insightsNeedsWants"
-  | "insightsHealthCompare"
+  | "insightsHealthNextStep"
+  | "insightsHealthHistory"
   | "insightsComingUp"
+  | "insightsForecastRange"
+  | "insightsNetWorthRange"
   // Redesigned Goals
   | "goalsContributions"
   | "goalsDetail"
+  | "goalsSuggestions"
   // Redesigned Debts
   | "debtsDetail"
   | "debtsSimulator"
+  | "debtsSortAndImpact"
   | "debtsOwed"
   // Redesigned Budget
   | "budgetStrategy"
   | "budgetMove"
   | "budgetBills"
-  // New-debt form controls (walkthrough)
-  | "debtClose"
+  | "budgetUnbudgeted"
+  | "budgetAddCategory"
+  | "budgetPeriodNav"
+  // Debt form fields (walkthrough)
   | "debtDirection"
-  | "debtMenu"
   | "debtIcon"
   | "debtStartDate"
   | "debtBalanceDate"
@@ -65,16 +79,37 @@ export type TipAnchor =
   | "debtLinkedBills"
   | "debtSave"
   | "debtHelp"
-  // New-saving form controls (walkthrough)
+  // Goal form controls (the new-saving walkthrough)
   | "savingClose"
-  | "savingMenu"
   | "savingIcon"
+  | "savingTarget"
   | "savingDates"
   | "savingMonthly"
   | "savingBalance"
   | "savingCategory"
   | "savingSave"
-  | "savingHelp";
+  | "savingHelp"
+  // Detail popups: the merchant profile's visit strip, the category detail's merchant
+  // breakdown and a recurring item's last 12 charges
+  | "merchantVisits"
+  | "categoryMerchants"
+  | "recurringCharges"
+  // The recurring editor's live "what would this rule match" chart, and a Budget
+  // category row (opens the category detail)
+  | "recurringMatchPreview"
+  | "budgetCategoryRow"
+  // Settings › Accounts: the "Add bank account" button
+  | "accountsAdd"
+  // Transaction popups: Add transaction's "Save and add another", the Correct amount
+  // budget preview and the receipt viewer's zoom bar
+  | "addTransactionAnother"
+  | "correctAmountPreview"
+  | "receiptZoom"
+  // Transaction popups: the rule dialog's live match preview, the split dialog's
+  // shared-cost section and the link dialog's search over older expenses
+  | "rulePreview"
+  | "splitSharedCost"
+  | "linkSearch";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

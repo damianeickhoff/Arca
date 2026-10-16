@@ -1,11 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { IconCamera, IconAlertCircleFilled, IconCheck } from "@tabler/icons-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { IconAlertTriangle, IconCamera, IconCheck } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearField, ClearInput } from "@/components/clear/field";
+import { clearButtonVariants } from "@/components/clear/button-variants";
 import { ContextualTip } from "@/components/contextual-tip";
 import { formatEur } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 export interface ScannedReceipt {
   name: string | null;
@@ -28,9 +33,13 @@ export function ReceiptScanDialog({
   onOpenChange: (v: boolean) => void;
   onApply: (fields: ScannedReceipt) => void;
 }) {
+  const t = useTranslations("transactions.scan");
+  const ids = useId();
   const [status, setStatus] = useState<"idle" | "scanning" | "result" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScannedReceipt | null>(null);
+  // Typed as text so a half-typed "12," survives; parsed when applied.
+  const [amountText, setAmountText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   function reset() {
@@ -53,21 +62,23 @@ export function ReceiptScanDialog({
       const res = await fetch("/api/receipts/scan", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong reading that receipt.");
+        setError(data.error ?? t("error"));
         setStatus("error");
         return;
       }
       setResult(data as ScannedReceipt);
+      setAmountText(data.amount != null ? String(data.amount).replace(".", ",") : "");
       setStatus("result");
     } catch {
-      setError("Something went wrong reading that receipt.");
+      setError(t("error"));
       setStatus("error");
     }
   }
 
   function apply() {
     if (!result) return;
-    onApply(result);
+    const amount = parseFloat(amountText.replace(",", "."));
+    onApply({ ...result, amount: Number.isFinite(amount) && amount > 0 ? amount : null });
     handleOpenChange(false);
   }
 
@@ -75,10 +86,24 @@ export function ReceiptScanDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {/* Portals to <body> itself, so it isn't clipped by the sheet it explains. */}
       <ContextualTip id="receiptScan" active={open} />
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Scan receipt</DialogTitle>
-        </DialogHeader>
+      <DialogContent
+        hideHeaderRow
+        title={t("title")}
+        className="gap-5 pt-7 font-clear text-clear-ink"
+        footer={
+          status === "result" ? (
+            <ClearDialogFooter>
+              <button type="button" onClick={() => inputRef.current?.click()} className={clearButtonVariants({ variant: "secondary" })}>
+                {t("another")}
+              </button>
+              <button type="submit" form={`${ids}-form`} className={clearButtonVariants()}>
+                {t("apply")}
+              </button>
+            </ClearDialogFooter>
+          ) : undefined
+        }
+      >
+        <ClearDialogHeader title={t("title")} subtitle={t("subtitle")} onClose={() => handleOpenChange(false)} closeLabel={t("close")} />
 
         <input
           ref={inputRef}
@@ -97,91 +122,85 @@ export function ReceiptScanDialog({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="rounded-2xl border-2 border-dashed border-foreground/15 hover:border-foreground/30 hover:bg-foreground/3 transition-colors p-8 flex flex-col items-center justify-center gap-3 text-center"
+            className="flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-clear-tile border-2 border-dashed border-clear-line p-8 text-center transition-colors hover:bg-clear-tile"
           >
-            <IconCamera className="size-9 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Take or choose a photo</p>
-              <p className="text-sm text-muted-foreground">Read locally by Ollama — nothing leaves this device</p>
-            </div>
+            <span aria-hidden className="inline-flex size-14 items-center justify-center rounded-full bg-clear-tile text-clear-ink">
+              <IconCamera className="size-6" stroke={1.9} />
+            </span>
+            <span className="flex flex-col gap-1">
+              <span className="text-[15px] font-bold">{t("pick")}</span>
+              <span className="text-[13px] text-clear-muted">{t("local")}</span>
+            </span>
           </button>
         )}
 
         {status === "scanning" && (
-          <div className="rounded-2xl bg-foreground/3 p-8 flex flex-col items-center justify-center gap-3 text-center">
-            <IconCamera className="size-9 text-foreground animate-pulse" />
-            <p className="font-medium">Reading receipt…</p>
-            <p className="text-xs text-muted-foreground">This can take a moment on a local model.</p>
+          <div role="status" className="flex flex-col items-center justify-center gap-3 rounded-clear-tile bg-clear-tile p-8 text-center">
+            <IconCamera className="size-8 animate-pulse text-clear-ink" stroke={1.9} aria-hidden />
+            <span className="text-[15px] font-bold">{t("reading")}</span>
+            <span className="text-[13px] text-clear-muted">{t("slow")}</span>
           </div>
         )}
 
         {status === "error" && (
-          <div className="space-y-3">
-            <div className="rounded-2xl bg-destructive/10 p-6 flex flex-col items-center justify-center gap-2 text-center">
-              <IconAlertCircleFilled className="size-8 text-destructive" />
-              <p className="text-sm text-destructive">{error}</p>
+          <div className="flex flex-col gap-3">
+            <div role="alert" className="flex items-start gap-2.5 rounded-clear-tile bg-clear-negative-fill/15 p-4 text-sm font-semibold text-clear-negative">
+              <IconAlertTriangle className="mt-0.5 size-[18px] shrink-0" stroke={2} aria-hidden />
+              <span>{error}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="w-full h-11 rounded-full bg-foreground/8 text-sm font-medium active:scale-[0.98] transition-transform"
-            >
-              Try again
+            <button type="button" onClick={() => inputRef.current?.click()} className={cn(clearButtonVariants({ variant: "secondary" }), "w-full")}>
+              {t("retry")}
             </button>
           </div>
         )}
 
         {status === "result" && result && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 mb-1">
-              <IconCheck className="size-4" />
-              Review before applying — nothing&apos;s saved yet.
-            </div>
-            <div>
-              <label className="text-xs font-medium text-foreground/60">Name</label>
-              <Input
+          <form
+            id={`${ids}-form`}
+            onSubmit={(e) => {
+              e.preventDefault();
+              apply();
+            }}
+            className="flex flex-col gap-4"
+          >
+            <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-clear-positive-fill/15 px-3 py-1 text-[13px] font-bold text-clear-positive">
+              <IconCheck className="size-4" stroke={2.4} aria-hidden />
+              {t("review")}
+            </span>
+            <ClearField label={t("name")} htmlFor={`${ids}-name`}>
+              <ClearInput
+                id={`${ids}-name`}
                 value={result.name ?? ""}
                 onChange={(e) => setResult({ ...result, name: e.target.value })}
-                placeholder="Merchant name"
+                placeholder={t("namePlaceholder")}
               />
-            </div>
+            </ClearField>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-foreground/60">Amount</label>
-                <Input
-                  type="text"
+              <ClearField label={t("amount")} htmlFor={`${ids}-amount`}>
+                <ClearInput
+                  id={`${ids}-amount`}
                   inputMode="decimal"
-                  value={result.amount != null ? String(result.amount) : ""}
-                  onChange={(e) => setResult({ ...result, amount: parseFloat(e.target.value.replace(",", ".")) || null })}
-                  placeholder="0.00"
+                  value={amountText}
+                  onChange={(e) => setAmountText(e.target.value.replace(/[^0-9.,]/g, ""))}
+                  placeholder="0,00"
+                  className="font-extrabold tabular-nums"
                 />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-foreground/60">Date</label>
-                <Input
-                  type="date"
-                  value={result.date ?? ""}
-                  onChange={(e) => setResult({ ...result, date: e.target.value || null })}
-                />
-              </div>
+              </ClearField>
+              <ClearField label={t("date")} htmlFor={`${ids}-date`}>
+                <ClearInput id={`${ids}-date`} type="date" value={result.date ?? ""} onChange={(e) => setResult({ ...result, date: e.target.value || null })} />
+              </ClearField>
             </div>
-            {result.categoryName && (
-              <p className="text-xs text-muted-foreground">
-                {result.categoryId ? "Matched category: " : "Suggested category (no match found): "}
-                <span className="font-medium text-foreground">{result.categoryName}</span>
-              </p>
+            {(result.categoryName || result.amount != null) && (
+              <div className="flex flex-col gap-1 text-[13px] text-clear-muted">
+                {result.categoryName && (
+                  <span>
+                    {result.categoryId ? t("matched") : t("suggested")} <b className="font-bold text-clear-ink">{result.categoryName}</b>
+                  </span>
+                )}
+                {result.amount != null && <span><MoneyText>{t("detected", { amount: formatEur(result.amount) })}</MoneyText></span>}
+              </div>
             )}
-            {result.amount != null && (
-              <p className="text-xs text-muted-foreground">Detected total: {formatEur(result.amount)}</p>
-            )}
-            <button
-              type="button"
-              onClick={apply}
-              className="w-full h-12 rounded-full bg-foreground text-background text-base font-semibold active:scale-[0.98] transition-transform"
-            >
-              Use these details
-            </button>
-          </div>
+          </form>
         )}
       </DialogContent>
     </Dialog>

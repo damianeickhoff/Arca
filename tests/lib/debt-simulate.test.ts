@@ -32,6 +32,22 @@ describe("debt-simulate: simulatePayoff", () => {
     expect(extra.totals.at(-1)).toBe(0);
   });
 
+  it("follows a preferred order for the extra and tracks each debt's own balance", () => {
+    const avalanche = simulatePayoff([duo, car], 100);
+    const duoFirst = simulatePayoff([duo, car], 100, 600, [1]);
+    expect(duoFirst.order).toEqual([1, 2]);
+    // Duo gets the extra, so it clears sooner than when Car got it first.
+    const duoMonths = (s: typeof avalanche) => s.byDebt.find((d) => d.id === 1)!.months!;
+    expect(duoMonths(duoFirst)).toBeLessThan(duoMonths(avalanche));
+    // The per-debt series add up to the totals, month by month, and end at zero.
+    for (let i = 0; i < duoFirst.totals.length; i++) {
+      expect(duoFirst.byDebt.reduce((s, d) => s + d.balances[i], 0)).toBeCloseTo(duoFirst.totals[i], 2);
+    }
+    expect(Math.max(...duoFirst.byDebt.map((d) => d.months!))).toBe(duoFirst.months);
+    // Unknown ids are ignored; missing open debts follow in the avalanche order.
+    expect(simulatePayoff([duo, car], 0, 600, [99]).order).toEqual([2, 1]);
+  });
+
   it("interest-free debts reduce to balance ÷ payment", () => {
     const sim = simulatePayoff([{ id: 1, balance: 1100, payment: 300, annualRate: null }]);
     expect(sim.months).toBe(4);

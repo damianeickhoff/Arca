@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 
 // lg and up (Tailwind's 1024px): where list pages show a selected item's detail inline
-// instead of opening it as a bottom sheet (Activity, Debts, Goals).
+// instead of opening it as a bottom sheet (Activity, Debts).
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
 function subscribe(cb: () => void) {

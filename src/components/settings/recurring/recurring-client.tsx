@@ -2,39 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  IconPlusFilled as Plus,
-  IconDotsVerticalFilled as EllipsisVertical,
-  IconTrashFilled as Trash2,
-  IconChevronRight as ChevronRight,
-  IconCircleCheckFilled as CheckCircle,
-  IconCheck as Check,
-  IconCoinEuro as Coin,
-  IconReload as Repeat,
-  IconCalendarEvent as Calendar,
-  IconTag as TagIcon,
-  IconCategory2 as CategoryIcon,
-  IconNote as Note,
-  IconAdjustments as Adjust,
-  IconUsers as Users,
-} from "@tabler/icons-react";
+import { useLocale, useTranslations } from "next-intl";
+import { IconChevronDown, IconDotsVertical, IconPlus, IconRepeat, IconSearch, IconTrash } from "@tabler/icons-react";
 import type { RecurringItem, Category } from "@/db/schema";
-import { FloatingAddButton } from "@/components/floating-add-button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearField, ClearInput } from "@/components/clear/field";
+import { ClearSwitch } from "@/components/clear/switch";
+import { Segmented } from "@/components/clear/segmented";
+import { IconTile } from "@/components/clear/icon-tile";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
 import { DatePicker } from "@/components/date-picker";
-import { AmountKeypad } from "@/components/amount-keypad";
-import { WarningBanner } from "@/components/warning-banner";
-import { SubSheet } from "@/components/sub-sheet";
-import { OptionList } from "@/components/option-list";
 import { ContextualTip } from "@/components/contextual-tip";
-import { useTranslations } from "next-intl";
-import { CategoryGrid, useCategoryFilter } from "@/components/category-picker";
-import { formatEur } from "@/lib/format";
+import { CategoryPickerSheet } from "@/components/category-picker";
+import { AnchoredTip } from "@/components/anchored-tip";
+import { RecurringCharges, useLinkedTransactions, useMatchPreview, type MatchCriteria } from "./recurring-charges";
+import { currencySymbol, formatEur } from "@/lib/format";
 import { evaluateExpression } from "@/lib/amount-expression";
+import { isValidISODate } from "@/lib/date-valid";
 import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 /** Starting values for a new recurrence, for callers that already know some of them —
  *  "make this transaction recurring" fills in the name, amount, category and so on.
@@ -47,7 +36,7 @@ export interface RecurringPrefill {
   budgetType?: string;
   /** ISO date the recurrence starts on. The editor derives dueDay from it on save, so
    *  passing the source transaction's own date is both the honest value and the one that
-   *  makes the Period row read correctly. Defaults to today. */
+   *  makes the due day read correctly. Defaults to today. */
   startDate?: string;
   matchPattern?: string;
   matchAmount?: string;
@@ -59,7 +48,7 @@ interface AddProps {
   variant?: "default" | "icon" | "fab";
   prefill?: RecurringPrefill;
   /** Controlled open, for callers with their own trigger (the transaction detail
-   *  dialog's "Make recurring"). When set, no built-in trigger button is rendered. */
+   *  panel's "Make recurring"). When set, no built-in trigger button is rendered. */
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   /** The row as saved, for callers that need to reflect it in their own state. */
@@ -78,32 +67,33 @@ interface EditProps {
 }
 type Props = AddProps | EditProps;
 
-const TYPE_OPTIONS = [
-  { value: "income",       label: "Income" },
-  { value: "bill",         label: "Bill" },
-  { value: "subscription", label: "Subscription" },
-  { value: "debt",         label: "Debt" },
-  { value: "savings",      label: "Savings" },
-];
+const TYPES = ["bill", "subscription", "income", "debt", "savings"] as const;
+const FREQUENCIES = ["daily", "weekly", "monthly", "quarterly", "yearly"] as const;
+const BUDGET_TYPES = [
+  { value: "nodig", key: "needs" },
+  { value: "willen", key: "wants" },
+  { value: "sparen", key: "savings" },
+] as const;
 
-const BUDGET_TYPE_OPTIONS = [
-  { value: "nodig",  label: "Needs" },
-  { value: "willen", label: "Wants" },
-  { value: "sparen", label: "Savings" },
-];
+const FIELD_BOX =
+  "flex h-12 items-center gap-1.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 transition-colors focus-within:border-clear-ink";
+const FIELD_INPUT =
+  "min-w-0 w-full flex-1 border-none bg-transparent p-0 font-clear text-[15px] font-extrabold tabular-nums text-clear-ink outline-none placeholder:font-semibold placeholder:text-clear-placeholder";
+const LABEL = "text-[13px] font-bold text-clear-ink-2";
+const DATE_TRIGGER =
+  "mt-0 mb-0 h-12 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 font-clear text-[15px] font-bold text-clear-ink focus-visible:border-clear-ink focus-visible:ring-0";
+const OPERATOR = /\d\s*[+\-*/×÷−]\s*\d/;
 
-const FREQUENCY_OPTIONS = [
-  { value: "daily",     label: "Daily" },
-  { value: "weekly",    label: "Weekly" },
-  { value: "monthly",   label: "Monthly" },
-  { value: "quarterly", label: "Per quarter" },
-  { value: "yearly",    label: "Yearly" },
-];
-
-const SUB_TITLES: Record<string, string> = {
-  amount: "Amount", period: "Period", frequency: "Frequency", category: "Category",
-  name: "Name", type: "Type", notes: "Notes & Friendly Name", match: "Auto-match",
-};
+/** Typed amounts: whichever of "," and "." comes last is the decimal separator, the
+ *  other a thousands separator; sums ("12+3") still work like the old keypad. */
+function parseAmount(raw: string): number | null {
+  const s = raw.replace(/[\s€$£]/g, "");
+  if (!s) return null;
+  const comma = s.lastIndexOf(",");
+  const dot = s.lastIndexOf(".");
+  const cleaned = comma > dot ? s.replace(/\./g, "") : comma !== -1 ? s.replace(/,/g, "") : s;
+  return evaluateExpression(cleaned);
+}
 
 /** Your own share of a shared bill: the gross charge minus what everyone else pays back. */
 function ownShare(amount: number | null, reimbursed: string): number | null {
@@ -113,22 +103,18 @@ function ownShare(amount: number | null, reimbursed: string): number | null {
   return Math.max(0, Math.round((amount - back) * 100) / 100);
 }
 
-/** An even split of `amount` across `people` (you included) — your one share of it. */
+/** An even split of `amount` across `people` (you included) — what the others pay back. */
 function evenShareBack(amount: number, people: number): number {
   return Math.round((amount * (people - 1)) / people * 100) / 100;
 }
 
-/** "Bill • Needs" — the row summaries show every value the subpage behind them edits,
- *  so nothing has to be opened just to find out what it's set to. Parts that are empty
- *  drop out; an entirely empty summary reads as "—". */
-function summarise(...parts: (string | null | undefined | false)[]): string {
-  const kept = parts.filter((p): p is string => !!p && p.trim() !== "");
-  return kept.length ? kept.join(" • ") : "—";
-}
-
 const todayISO = () => new Date().toISOString().slice(0, 10);
-function fmtShort(iso: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+/** A typed match amount as a number, the way save() sends it; null when empty. */
+function matchNumber(raw: string): number | null {
+  if (!raw.trim()) return null;
+  const n = parseFloat(raw.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
 }
 
 // For a debt-linked bill whose end date is fixed-duration (end = start + N months), keep
@@ -147,9 +133,15 @@ function shiftEndDate(origStart: string, origEnd: string, newStart: string): str
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/**
+ * Add or edit a recurring item (Popup-Recurring) — one Clear form, every field on the
+ * page: name and friendly name; amount, start date (the due day) and category; type,
+ * budget type and frequency; end date; auto-match with the last 12 charges it matches
+ * (live while you type the rule, linked ones for a saved item); shared cost; notes;
+ * active. "Make recurring" on a transaction opens it with a prefill.
+ */
 export function RecurringClient(props: Props) {
-  const router = useRouter();
-  const tShared = useTranslations("sharedCost");
+  const t = useTranslations("recurringForm");
   const controlled = props.open !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlled ? props.open! : internalOpen;
@@ -157,37 +149,94 @@ export function RecurringClient(props: Props) {
     if (controlled) props.onOpenChange?.(v);
     else setInternalOpen(v);
   };
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
+  // A fresh form for every opening, seeded from the item as saved (or the prefill).
+  const [session, setSession] = useState(0);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setSession((s) => s + 1);
+  }
+
+  const isEdit = props.action === "edit";
+  const editTrigger = props.action === "edit" ? props.trigger : undefined;
+  const title = isEdit ? t("editTitle") : props.prefill ? t("makeRecurring") : t("newTitle");
+
+  return (
+    <>
+      {!controlled && (isEdit ? (
+        editTrigger ? (
+          <button type="button" onClick={() => setOpen(true)} className="block w-full cursor-pointer text-left">
+            {editTrigger}
+          </button>
+        ) : (
+          <button type="button" onClick={() => setOpen(true)} aria-label={t("editTitle")} className={clearButtonVariants({ variant: "secondary", size: "icon" })}>
+            <IconDotsVertical aria-hidden />
+          </button>
+        )
+      ) : props.variant === "fab" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={t("add")}
+          className={cn(clearButtonVariants({ variant: "ember", size: "lg" }), "fixed right-4 bottom-[calc(var(--nav-clearance,0px)+16px)] z-40 shadow-clear-float")}
+        >
+          <IconPlus aria-hidden />
+          {t("add")}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={t("add")}
+          className={clearButtonVariants({ variant: props.variant === "icon" ? "surface" : "secondary", size: props.variant === "icon" ? "icon-lg" : "icon" })}
+        >
+          <IconPlus aria-hidden />
+        </button>
+      ))}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent hideHeaderRow title={title} className="gap-4 pt-6">
+          <RecurringForm key={session} {...props} title={title} open={open} onClose={() => setOpen(false)} />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function RecurringForm(props: Props & { title: string; open: boolean; onClose: () => void }) {
+  const t = useTranslations("recurringForm");
+  const tShared = useTranslations("sharedCost");
+  const locale = useLocale();
+  const router = useRouter();
+  const confirm = useConfirm();
+  const { title, open, onClose } = props;
   const isEdit = props.action === "edit";
   const item = isEdit ? props.item : null;
   const prefill = props.action === "add" ? props.prefill : undefined;
   // End date is owned by a linked debt when explicitly told (opened from the debt detail)
   // or for any debt-type bill (auto-created from a debt) — its end mirrors the debt's
   // computed last-payment date and must not be edited here.
-  const endDateLocked = isEdit && (((props as EditProps).lockEndDate ?? false) || item?.type === "debt");
+  const endDateLocked = isEdit && ((props.lockEndDate ?? false) || item?.type === "debt");
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [cats, setCats] = useState<Category[]>([]);
-  useEffect(() => {
-    if (!open || cats.length) return;
-    fetch("/api/categories").then((r) => r.json()).then(setCats).catch(() => {});
-  }, [open, cats.length]);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const txs = useLinkedTransactions(item?.id ?? null);
 
-  // Filter state for the shared category grid rendered in the "category" subpage —
-  // the menu itself is pinned in that subpage's header (see SubSheet's `action`).
-  const {
-    budgetType: categoryBudgetFilter,
-    showSubcategories,
-    filterMenu: categoryFilterMenu,
-  } = useCategoryFilter({ triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-foreground" });
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((c) => { if (!cancelled) setCats(Array.isArray(c) ? c : []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const [amountExpr, setAmountExpr] = useState(
     item?.amount != null ? String(item.amount).replace(".", ",") : (prefill?.amount ?? "").replace(".", ","),
   );
-  const [calcEnabled, setCalcEnabled] = useState(true);
-  const [subpage, setSubpage] = useState<string | null>(null);
-  const [subVisible, setSubVisible] = useState(false);
 
   const [form, setForm] = useState({
     name: item?.name ?? prefill?.name ?? "",
@@ -202,7 +251,7 @@ export function RecurringClient(props: Props) {
     matchPattern: item?.matchPattern ?? prefill?.matchPattern ?? "",
     matchWholeWord: item?.matchWholeWord ?? false,
     matchAmount: item?.matchAmount?.toString() ?? prefill?.matchAmount ?? "",
-    matchMode: (item?.matchAmountMin != null || item?.matchAmountMax != null) ? "range" : "exact",
+    matchMode: (item?.matchAmountMin != null || item?.matchAmountMax != null ? "range" : "exact") as "exact" | "range",
     matchAmountMin: item?.matchAmountMin?.toString() ?? "",
     matchAmountMax: item?.matchAmountMax?.toString() ?? "",
     categoryId: item?.categoryId != null ? String(item.categoryId) : (prefill?.categoryId ?? ""),
@@ -212,31 +261,39 @@ export function RecurringClient(props: Props) {
     sharedWithCount: item?.sharedWithCount?.toString() ?? "",
     isReimbursement: item?.isReimbursement ?? false,
   });
-  function set(key: string, value: string | boolean) {
+  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  // Reset the subpage stack whenever the dialog closes.
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (open !== prevOpen) {
-    setPrevOpen(open);
-    if (!open) { setSubVisible(false); setSubpage(null); }
-    setError(null);
-  }
+  const amountVal = parseAmount(amountExpr);
+  const isIncome = form.type === "income";
+  // Sharing a cost is about money leaving your account; an income recurrence gets the
+  // mirror-image option ("this is the payback") instead.
+  const isSharedCost = !isIncome && form.shared;
+  const myShare = ownShare(amountVal, form.sharedReimbursedAmount);
+  const canSave = !loading && !!form.name.trim() && amountVal != null;
 
-  function openSub(k: string) {
-    setSubpage(k);
-    requestAnimationFrame(() => setSubVisible(true));
-  }
-  function closeSub() {
-    setSubVisible(false);
-    setTimeout(() => setSubpage(null), 300);
-  }
-
-  const amountVal = evaluateExpression(amountExpr);
+  // The rule as typed. A new item (or an edited one whose rule changed) previews what it
+  // would match; an untouched saved item shows the transactions actually linked to it.
+  const criteria: MatchCriteria = {
+    pattern: form.matchPattern.trim(),
+    wholeWord: form.matchWholeWord,
+    amount: form.matchMode === "exact" ? matchNumber(form.matchAmount) : null,
+    min: form.matchMode === "range" ? matchNumber(form.matchAmountMin) : null,
+    max: form.matchMode === "range" ? matchNumber(form.matchAmountMax) : null,
+  };
+  const ruleChanged =
+    !item ||
+    criteria.pattern !== (item.matchPattern ?? "").trim() ||
+    criteria.wholeWord !== (item.matchWholeWord ?? false) ||
+    criteria.amount !== (item.matchAmountMin == null && item.matchAmountMax == null ? item.matchAmount ?? null : null) ||
+    criteria.min !== (item.matchAmountMin ?? null) ||
+    criteria.max !== (item.matchAmountMax ?? null);
+  const preview = useMatchPreview(ruleChanged ? criteria : null);
+  const charges = ruleChanged ? (criteria.pattern ? preview?.rows ?? null : null) : txs;
 
   async function save() {
-    if (!form.name.trim() || amountVal == null) return;
+    if (!canSave) return;
     setLoading(true);
     setError(null);
     // Start date is the recurrence's due date — derive dueDay from it (fall back to a
@@ -246,7 +303,7 @@ export function RecurringClient(props: Props) {
       name: form.name,
       type: form.type,
       frequency: form.frequency,
-      budgetType: form.type === "income" ? null : form.budgetType,
+      budgetType: isIncome ? null : form.budgetType,
       active: form.active,
       notes: form.notes || null,
       amount: amountVal,
@@ -255,15 +312,15 @@ export function RecurringClient(props: Props) {
       endDate: form.endDate || null,
       matchPattern: form.matchPattern || null,
       matchWholeWord: form.matchWholeWord,
-      matchAmount: form.matchMode === "exact" && form.matchAmount ? parseFloat(form.matchAmount) : null,
-      matchAmountMin: form.matchMode === "range" && form.matchAmountMin ? parseFloat(form.matchAmountMin) : null,
-      matchAmountMax: form.matchMode === "range" && form.matchAmountMax ? parseFloat(form.matchAmountMax) : null,
+      matchAmount: form.matchMode === "exact" && form.matchAmount ? parseFloat(form.matchAmount.replace(",", ".")) : null,
+      matchAmountMin: form.matchMode === "range" && form.matchAmountMin ? parseFloat(form.matchAmountMin.replace(",", ".")) : null,
+      matchAmountMax: form.matchMode === "range" && form.matchAmountMax ? parseFloat(form.matchAmountMax.replace(",", ".")) : null,
       categoryId: form.categoryId ? parseInt(form.categoryId) : null,
       friendlyName: form.friendlyName.trim() || null,
       // Shared costs only apply to money going out; the payback flag only to money coming in.
       sharedReimbursedAmount: isSharedCost && form.sharedReimbursedAmount ? parseFloat(form.sharedReimbursedAmount.replace(",", ".")) : null,
       sharedWithCount: isSharedCost && form.sharedWithCount ? parseInt(form.sharedWithCount) : null,
-      isReimbursement: form.type === "income" && form.isReimbursement,
+      isReimbursement: isIncome && form.isReimbursement,
       ...(isEdit ? { id: item!.id } : {}),
     };
     const res = await fetch("/api/recurring", {
@@ -274,474 +331,368 @@ export function RecurringClient(props: Props) {
     setLoading(false);
     if (res.status === 409) {
       const data = await res.json().catch(() => null);
-      setError(data?.message ?? "A recurring item with this name already exists.");
+      setError(data?.message ?? t("duplicate"));
       return;
     }
     // Hand the saved row back before closing, so a caller that opened this editor from
-    // somewhere else (the transaction sheet's "Make recurring") can update itself —
-    // the server has already re-run the rules, but that caller's own copy of the
-    // transaction is a snapshot taken before this existed.
+    // somewhere else (the transaction panel's "Make recurring") can update itself.
     const saved = res.ok ? await res.json().catch(() => null) : null;
     if (saved) props.onSaved?.(saved as RecurringItem);
-    setOpen(false);
+    onClose();
     router.refresh();
   }
 
   async function remove() {
-    if (!confirm(`Delete "${item?.name}"?`)) return;
+    if (!item) return;
+    const ok = await confirm({
+      title: t("confirmDelete", { name: item.name }),
+      body: t("confirmDeleteBody"),
+      confirmLabel: t("confirmDeleteLabel"),
+      destructive: true,
+    });
+    if (!ok) return;
     setLoading(true);
     await fetch("/api/recurring", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: item!.id }),
+      body: JSON.stringify({ id: item.id }),
     });
     setLoading(false);
-    setOpen(false);
+    onClose();
     router.refresh();
   }
 
-  const editTrigger = props.action === "edit" ? props.trigger : undefined;
   const catObj = cats.find((c) => String(c.id) === form.categoryId);
-  const typeLabel = TYPE_OPTIONS.find((t) => t.value === form.type)?.label ?? form.type;
-  const budgetTypeLabel = BUDGET_TYPE_OPTIONS.find((b) => b.value === form.budgetType)?.label;
-  const freqLabel = FREQUENCY_OPTIONS.find((f) => f.value === form.frequency)?.label ?? form.frequency;
-  // Income has no budget type (it's nulled on save), so only expense-ish types show one.
-  const typeRowValue = summarise(typeLabel, form.type !== "income" && budgetTypeLabel);
-  const notesRowValue = summarise(form.notes, form.friendlyName);
-  const matchAmountLabel =
-    form.matchMode === "range"
-      ? (form.matchAmountMin || form.matchAmountMax
-          ? `${form.matchAmountMin || "…"}–${form.matchAmountMax || "…"}`
-          : "")
-      : form.matchAmount;
-  const matchRowValue = summarise(
-    form.matchPattern,
-    form.matchPattern && form.matchWholeWord && "whole word",
-    matchAmountLabel,
-  );
-  const periodLabel = form.startDate
-    ? (form.endDate ? `${fmtShort(form.startDate)} – ${fmtShort(form.endDate)}` : `From ${fmtShort(form.startDate)}`)
-    : "—";
+  const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
+  const dateLabel = (iso: string) => (isValidISODate(iso) ? dateFmt.format(new Date(`${iso}T12:00:00`)) : iso);
+  const sumResult = OPERATOR.test(amountExpr) ? amountVal : null;
 
-  // Sharing a cost is about money leaving your account; an income recurrence gets the
-  // mirror-image option ("this is the payback") in the same row instead.
-  const isSharedCost = form.type !== "income" && form.shared;
-  const myShare = ownShare(amountVal, form.sharedReimbursedAmount);
-  const sharedRowValue = form.type === "income"
-    ? (form.isReimbursement ? tShared("rowPayback") : tShared("rowNotShared"))
-    : isSharedCost && myShare != null
-      ? tShared("rowYourShare", { amount: formatEur(myShare) })
-      : tShared("rowNotShared");
+  const subtitle = prefill
+    ? [
+        prefill.name ? t("fromName", { name: prefill.name }) : null,
+        prefill.amount
+          ? prefill.startDate && isValidISODate(prefill.startDate)
+            ? t("amountOn", { amount: `${isIncome ? "+" : "−"}${formatEur(Math.abs(parseFloat(prefill.amount)))}`, date: new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${prefill.startDate}T12:00:00`)) })
+            : `${isIncome ? "+" : "−"}${formatEur(Math.abs(parseFloat(prefill.amount)))}`
+          : null,
+      ].filter(Boolean).join(" · ")
+    : isEdit
+      ? item!.friendlyName || item!.name
+      : t("newSubtitle");
 
   return (
     <>
-      {!controlled && (isEdit ? (
-        editTrigger ? (
-          <button type="button" onClick={() => setOpen(true)} className="block w-full text-left">
-            {editTrigger}
-          </button>
-        ) : (
-          <button className="flex items-center justify-center p-1.5 hover:bg-foreground/10 text-ink rounded-sm bg-surface-2 hover:text-ink shrink-0 size-9" onClick={() => setOpen(true)}>
-            <EllipsisVertical className="size-4" />
-          </button>
-        )
-      ) : props.variant === "fab" ? (
-        <FloatingAddButton onClick={() => setOpen(true)} ariaLabel="Add fixed cost" />
-      ) : props.variant === "icon" ? (
-        <button onClick={() => setOpen(true)} className="glass-icon-btn size-12" aria-label="Add fixed cost">
-          <Plus className="size-5 text-ink dark:text-gray-300" />
-        </button>
-      ) : (
-        <button
-          onClick={() => setOpen(true)}
-          className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center text-ink active:scale-[0.97] transition-transform shrink-0"
-          aria-label="Add recurrence"
-        >
-          <Plus className="size-5" />
-        </button>
-      ))}
+      <ContextualTip id="recurringWholeWord" active={open} />
+      <ContextualTip id="sharedCost" active={open} />
+      <AnchoredTip id="recurringMatchPreview" anchor="recurringMatchPreview" active={open && ruleChanged && (charges?.length ?? 0) >= 2} />
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent
-          className="px-0"
-          title={isEdit ? "Edit Recurrence" : "New recurrence"}
-          headerAction={
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => set("active", !form.active)}
-                aria-label={form.active ? "Enabled" : "Disabled"}
-                className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center active:scale-[0.95] transition-transform"
-              >
-                <Check className={cn("size-5", form.active ? "text-[#1fb651]" : "text-foreground/30")} /> 
-              </button>
-              {isEdit && (
-                <button
-                  type="button"
-                  onClick={remove}
-                  disabled={loading}
-                  aria-label="Delete"
-                  className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
-                >
-                  <Trash2 className="size-4.5" />
-                </button>
-              )}
-            </div>
-          }
-          footer={
-            <Button
-              onClick={save}
-              disabled={loading || !form.name.trim() || amountVal == null}
-              className="w-full h-13 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold"
-            >
-              {loading ? "Saving..." : "Save"}
-            </Button>
-          }
-        >
-          <div className="space-y-3 px-5 pb-2">
-            {error && (
-              <WarningBanner severity="danger">
-                <span>{error}</span>
-              </WarningBanner>
-            )}
-            <Row icon={<Coin className="size-5" />} label="Amount" value={amountVal != null ? formatEur(amountVal) : "—"} onClick={() => openSub("amount")} />
-            <Row icon={<Calendar className="size-5" />} label="Period" value={periodLabel} onClick={() => openSub("period")} />
-            <Row icon={<Repeat className="size-5" />} label="Frequency" value={freqLabel} onClick={() => openSub("frequency")} />
-            <Row
-              icon={<CategoryIcon className="size-5" />}
-              label="Category"
-              value={catObj?.name ?? "—"}
-              valueIcon={catObj ? <Icon iconKey={catObj.icon} color={catObj.color} size="xs" round /> : null}
-              onClick={() => openSub("category")}
-            />
-            <Row icon={<TagIcon className="size-5" />} label="Name" value={form.name || "—"} onClick={() => openSub("name")} />
-            <Row icon={<Adjust className="size-5" />} label="Type" value={typeRowValue} onClick={() => openSub("type")} />
-            <Row icon={<Note className="size-5" />} label="Notes & Friendly Name" value={notesRowValue} onClick={() => openSub("notes")} />
-            <Row icon={<Adjust className="size-5" />} label="Auto-match" value={matchRowValue} onClick={() => openSub("match")} />
-            <Row icon={<Users className="size-5" />} label={tShared("row")} value={sharedRowValue} onClick={() => openSub("shared")} />
-          </div>
+      <ClearDialogHeader
+        title={title}
+        subtitle={<MoneyText>{subtitle}</MoneyText>}
+        icon={
+          catObj ? (
+            <Icon iconKey={catObj.icon} color={catObj.color} size="xl" soft />
+          ) : (
+            <IconTile tone="butter" className="size-12"><IconRepeat aria-hidden /></IconTile>
+          )
+        }
+        onClose={onClose}
+        closeLabel={t("close")}
+      />
 
-          {/* Slide-in subpage — fixed against the (transformed) dialog panel */}
-          {subpage && (
-            <SubSheet
-              title={subpage === "shared" ? tShared("row") : SUB_TITLES[subpage]}
-              visible={subVisible}
-              onClose={closeSub}
-              // The category subpage is the shared picker grid: it brings the same
-              // filter menu the transaction sheet puts in its header, and manages its
-              // own scrolling, so it gets the full remaining height instead of the
-              // default scrolling body.
-              action={subpage === "category" ? categoryFilterMenu : undefined}
-              contentClassName={
-                subpage === "category"
-                  ? "flex-1 min-h-0 flex flex-col px-6 pb-[calc(1.5rem+var(--sab))]"
-                  : undefined
-              }
-            >
-                {subpage === "amount" && (
-                  <AmountKeypad expr={amountExpr} onChange={setAmountExpr} onEnter={closeSub} sign={form.type === "income" ? "+" : "−"} calcEnabled={calcEnabled} onToggleCalc={() => setCalcEnabled((c) => !c)} />
-                )}
+      {error && (
+        <p role="alert" className="m-0 rounded-clear-tile bg-clear-rose px-4 py-3 text-sm font-semibold text-clear-rose-ink">{error}</p>
+      )}
 
-                {subpage === "period" && (
-                  <div className="space-y-5 pt-2">
-                    <div>
-                      <p className="text-sm font-medium mb-1.5">Start date</p>
-                      <DatePicker
-                        value={form.startDate || todayISO()}
-                        onChange={(v) => {
-                          set("startDate", v);
-                          // Locked (debt-linked) end date follows the start date immediately.
-                          if (endDateLocked && item?.startDate && item?.endDate) set("endDate", shiftEndDate(item.startDate, item.endDate, v));
-                        }}
-                        triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]"
-                      />
-                      <p className="text-xs text-ink-3 mt-1.5">This becomes the due date of the recurrence.</p>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-sm font-medium">End date</p>
-                        {!endDateLocked && (
-                          <button type="button" onClick={() => set("endDate", form.endDate ? "" : todayISO())} className="text-sm font-medium">
-                            {form.endDate ? "Remove" : "Add"}
-                          </button>
-                        )}
-                      </div>
-                      {endDateLocked ? (
-                        <p className="text-sm text-ink-3">
-                          {form.endDate ? `Ends ${fmtShort(form.endDate)} — ` : ""}managed by the linked debt&apos;s last-payment date.
-                        </p>
-                      ) : form.endDate ? (
-                        <>
-                          <DatePicker value={form.endDate} onChange={(v) => set("endDate", v)} triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]" />
-                          <p className="text-xs text-ink-3 mt-1.5">After this date the recurrence is automatically disabled.</p>
-                        </>
-                      ) : (
-                        <p className="text-sm text-ink-3">No end date — runs indefinitely.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {subpage === "frequency" && (
-                  <OptionList options={FREQUENCY_OPTIONS} value={form.frequency} onSelect={(v) => { set("frequency", v); closeSub(); }} />
-                )}
-
-                {subpage === "type" && (
-                  <div className="space-y-5 pt-1">
-                    <OptionList options={TYPE_OPTIONS} value={form.type} onSelect={(v) => set("type", v)} />
-                    {form.type !== "income" && (
-                      <div>
-                        <p className="text-sm font-medium mb-2 px-1">Budget type</p>
-                        <OptionList options={BUDGET_TYPE_OPTIONS} value={form.budgetType} onSelect={(v) => set("budgetType", v)} />
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {subpage === "category" && (
-                  <CategoryGrid
-                    categories={cats}
-                    current={form.categoryId || undefined}
-                    isFormMode
-                    fill
-                    budgetType={categoryBudgetFilter}
-                    showSubcategories={showSubcategories}
-                    // "none" is the grid's Uncategorized row — this form stores "no
-                    // category" as an empty string, which is what the API turns into null.
-                    onChange={(v) => set("categoryId", v === "none" ? "" : v)}
-                    onClose={closeSub}
-                  />
-                )}
-
-                {subpage === "name" && (
-                  <div className="pt-2">
-                    <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Rent" data-autofocus data-no-keyboard-scroll className="h-12" />
-                  </div>
-                )}
-
-                {subpage === "shared" && (
-                  <div className="space-y-4 pt-2">
-                    {/* First look at shared costs — anchored here so it lands the moment
-                        the option is actually on screen, dismissed-all or not. */}
-                    <ContextualTip id="sharedCost" active={subVisible} />
-                    {form.type === "income" ? (
-                      <div>
-                        <ToggleRow
-                          label={tShared("paybackToggle")}
-                          checked={form.isReimbursement}
-                          onChange={(v) => set("isReimbursement", v)}
-                        />
-                        <p className="text-xs text-ink-3 mt-2 px-1">{tShared("paybackHint")}</p>
-                      </div>
-                    ) : (
-                      <>
-                        <ToggleRow
-                          label={tShared("sharedToggle")}
-                          checked={form.shared}
-                          onChange={(v) => set("shared", v)}
-                        />
-                        {form.shared && (
-                          <>
-                            <div>
-                              <p className="text-sm font-medium mb-1.5">{tShared("paidBackLabel")}</p>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                inputMode="decimal"
-                                value={form.sharedReimbursedAmount}
-                                onChange={(e) => set("sharedReimbursedAmount", e.target.value)}
-                                placeholder="0.00"
-                                className="h-12"
-                              />
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium mb-1.5">{tShared("peopleLabel")}</p>
-                              <div className="flex gap-3">
-                                <Input
-                                  type="number"
-                                  min="2"
-                                  step="1"
-                                  inputMode="numeric"
-                                  value={form.sharedWithCount}
-                                  onChange={(e) => set("sharedWithCount", e.target.value)}
-                                  placeholder="4"
-                                  className="h-12"
-                                />
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  className="h-12 shrink-0 px-4"
-                                  disabled={amountVal == null || !(parseInt(form.sharedWithCount) >= 2)}
-                                  onClick={() => {
-                                    if (amountVal == null) return;
-                                    const people = parseInt(form.sharedWithCount);
-                                    if (!(people >= 2)) return;
-                                    set("sharedReimbursedAmount", String(evenShareBack(amountVal, people)));
-                                  }}
-                                >
-                                  {tShared("splitEvenly")}
-                                </Button>
-                              </div>
-                            </div>
-                            {amountVal != null && myShare != null && (
-                              <p className="text-sm text-ink-2 px-1">
-                                {tShared("preview", { share: formatEur(myShare), total: formatEur(amountVal) })}
-                              </p>
-                            )}
-                            <p className="text-xs text-ink-3 px-1">{tShared("sharedHint")}</p>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {subpage === "notes" && (
-                  <div className="space-y-4 pt-2">
-                    <div>
-                      <p className="text-sm font-medium mb-1.5">Notes</p>
-                      <Input value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Notes" className="h-12" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-1.5">Friendly name</p>
-                      <Input value={form.friendlyName} onChange={(e) => set("friendlyName", e.target.value)} placeholder="e.g. Amazon Prime" className="h-12" />
-                      <p className="text-xs text-ink-3 mt-1.5">Overrides name cleanup on matched transactions.</p>
-                    </div>
-                  </div>
-                )}
-
-                {subpage === "match" && (
-                  <div className="space-y-4 pt-2">
-                    {/* One-time explainer for whole-word matching. Anchored to this
-                        subpage so it appears the first time the option is actually seen. */}
-                    <ContextualTip id="recurringWholeWord" active={subVisible} />
-                    <div>
-                      <p className="text-sm font-medium mb-1.5">Match pattern</p>
-                      <Input value={form.matchPattern} onChange={(e) => set("matchPattern", e.target.value)} placeholder="Text in the description, e.g. Netflix" className="h-12" />
-                      <MatchModePicker value={form.matchWholeWord} onChange={(v) => set("matchWholeWord", v)} />
-                    </div>
-                    <div>
-                      <div className="grid grid-cols-2 gap-1 rounded-tile bg-surface-2 p-1 mb-2">
-                        {(["exact", "range"] as const).map((m) => (
-                          <button key={m} type="button" onClick={() => set("matchMode", m)} className={cn("rounded-md py-2 text-sm transition-colors", form.matchMode === m ? "bg-background shadow-sm font-medium" : "text-foreground/60")}>
-                            {m === "exact" ? "Exact amount" : "Between"}
-                          </button>
-                        ))}
-                      </div>
-                      {form.matchMode === "exact" ? (
-                        <Input type="number" step="0.01" value={form.matchAmount} onChange={(e) => set("matchAmount", e.target.value)} placeholder="e.g. 12.99" className="h-12" />
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                          <Input type="number" step="0.01" value={form.matchAmountMin} onChange={(e) => set("matchAmountMin", e.target.value)} placeholder="Min" className="h-12" />
-                          <Input type="number" step="0.01" value={form.matchAmountMax} onChange={(e) => set("matchAmountMax", e.target.value)} placeholder="Max" className="h-12" />
-                        </div>
-                      )}
-                      {/* The recurrence's own amount, for reference: the match amount is a
-                          separate filter, and without this you'd have to leave the subpage
-                          to check what the bill is actually set to. */}
-                      {amountVal != null && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (form.matchMode === "exact") set("matchAmount", String(amountVal));
-                          }}
-                          className="mt-2 text-xs text-ink-3 text-left"
-                        >
-                          This recurrence is set to {formatEur(amountVal)}
-                          {form.matchMode === "exact" && <span className="underline underline-offset-2 ml-1">use it</span>}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-            </SubSheet>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-/** Contains vs whole word for the auto-match pattern — the same choice the category
- *  rules offer (MatchTypePicker in settings/categories/category-client.tsx). There's no
- *  "exact" here: a recurring pattern is matched against a bank description that always
- *  carries extra noise around it, so an exact-equals mode would never fire. */
-/** Plain on/off row — the app has no shared Switch primitive, and the two-button picker
- *  used for match modes reads oddly for a yes/no question. */
-function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="flex w-full items-center justify-between gap-4 rounded-row bg-surface-2 px-4 py-3 text-left"
-    >
-      <span className="text-sm font-medium">{label}</span>
-      <span className={cn("relative h-6 w-10 shrink-0 rounded-full transition-colors", checked ? "bg-foreground" : "bg-foreground/20")}>
-        <span className={cn("absolute top-0.5 size-5 rounded-full bg-background transition-all", checked ? "left-[1.125rem]" : "left-0.5")} />
-      </span>
-    </button>
-  );
-}
-
-function MatchModePicker({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
-  const options = [
-    { wholeWord: false, label: "Contains", hint: "Matches anywhere in the description, even inside a word." },
-    { wholeWord: true, label: "Whole word", hint: "Only as a separate word — “NS” won't match “NSPCC”." },
-  ];
-  return (
-    <>
-      <div className="grid grid-cols-2 gap-1 rounded-tile bg-surface-2 p-1 mt-2">
-        {options.map((opt) => (
-          <button
-            key={opt.label}
-            type="button"
-            onClick={() => onChange(opt.wholeWord)}
-            className={cn(
-              "rounded-md py-2 text-sm transition-colors",
-              value === opt.wholeWord ? "bg-background shadow-sm font-medium" : "text-foreground/60",
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <ClearField label={t("name")} htmlFor="rec-name">
+          <ClearInput id="rec-name" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={t("namePlaceholder")} className="font-semibold" />
+        </ClearField>
+        <ClearField label={t("friendlyName")} htmlFor="rec-friendly" hint={t("friendlyHint")}>
+          <ClearInput id="rec-friendly" value={form.friendlyName} onChange={(e) => set("friendlyName", e.target.value)} placeholder={t("friendlyPlaceholder")} className="font-semibold" />
+        </ClearField>
       </div>
-      <p className="text-xs text-ink-3 mt-1.5">
-        {options.find((o) => o.wholeWord === value)!.hint}
-      </p>
-    </>
-  );
-}
 
-function Row({
-  icon,
-  label,
-  value,
-  valueIcon,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  valueIcon?: React.ReactNode;
-  onClick: () => void;
-}) {
-  return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-surface-2 transition-colors">
-      <span className="text-ink-3 shrink-0">{icon}</span>
-      <span className="flex-1 font-medium text-ink">{label}</span>
-      <span className="flex items-center gap-1.5 text-ink-2 min-w-0">
-        {valueIcon}
-        <span className="truncate max-w-[45vw]">{value}</span>
-      </span>
-      <ChevronRight className="size-5 text-ink-3 shrink-0" />
-    </button>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.15fr)]">
+        <ClearField label={t("amount")} htmlFor="rec-amount">
+          <div className={FIELD_BOX}>
+            <span aria-hidden className="text-[15px] font-bold text-clear-muted">{currencySymbol()}</span>
+            <input
+              id="rec-amount"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              value={amountExpr}
+              onChange={(e) => setAmountExpr(e.target.value)}
+              placeholder="0,00"
+              className={FIELD_INPUT}
+            />
+            {sumResult != null && <span className="shrink-0 text-[13px] font-semibold whitespace-nowrap text-clear-muted">= <MoneyText>{formatEur(sumResult)}</MoneyText></span>}
+          </div>
+        </ClearField>
+
+        <div role="group" aria-labelledby="rec-start-label" className="flex min-w-0 flex-col gap-1.5">
+          <span id="rec-start-label" className={LABEL}>{t("startDate")}</span>
+          <DatePicker
+            value={form.startDate || todayISO()}
+            label={dateLabel(form.startDate || todayISO())}
+            onChange={(v) => {
+              set("startDate", v);
+              // A locked (debt-linked) end date follows the start date immediately.
+              if (endDateLocked && item?.startDate && item?.endDate) set("endDate", shiftEndDate(item.startDate, item.endDate, v));
+            }}
+            triggerClassName={DATE_TRIGGER}
+          />
+          <span className="text-[13px] text-clear-muted">{t("startHint", { day: Number((form.startDate || todayISO()).slice(8, 10)) })}</span>
+        </div>
+
+        <div role="group" aria-labelledby="rec-category-label" className="flex min-w-0 flex-col gap-1.5">
+          <span id="rec-category-label" className={LABEL}>{t("category")}</span>
+          <button
+            type="button"
+            onClick={() => setCategoryOpen(true)}
+            className="flex h-12 w-full cursor-pointer items-center gap-2.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile pr-3 pl-2 text-left font-clear text-[15px] font-bold text-clear-ink outline-none transition-colors focus-visible:border-clear-ink"
+          >
+            {catObj ? <Icon iconKey={catObj.icon} color={catObj.color} size="sm" soft /> : <span aria-hidden className="size-8 shrink-0 rounded-clear-icon bg-clear-line" />}
+            <span className={cn("min-w-0 flex-1 truncate", !catObj && "font-semibold text-clear-placeholder")}>{catObj?.name ?? t("noCategory")}</span>
+            <IconChevronDown size={16} stroke={2.2} aria-hidden className="shrink-0 text-clear-muted" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <span id="rec-type-label" className={LABEL}>{t("type")}</span>
+        <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none]">
+          <Segmented
+            label={t("type")}
+            surface="tile"
+            value={form.type}
+            onChange={(v) => set("type", v)}
+            className="flex w-full min-w-max [&>button]:flex-1"
+            items={TYPES.map((v) => ({ value: v, label: t(`types.${v}`) }))}
+          />
+        </div>
+      </div>
+
+      {!isIncome && (
+        <div className="flex flex-col gap-2">
+          <span className={LABEL}>{t("budgetType")}</span>
+          <Segmented
+            label={t("budgetType")}
+            surface="tile"
+            value={form.budgetType}
+            onChange={(v) => set("budgetType", v)}
+            className="flex w-full [&>button]:flex-1"
+            items={BUDGET_TYPES.map((b) => ({ value: b.value, label: t(`budgetTypes.${b.key}`) }))}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2">
+        <span className={LABEL}>{t("frequency")}</span>
+        <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none]">
+          <Segmented
+            label={t("frequency")}
+            surface="tile"
+            value={form.frequency}
+            onChange={(v) => set("frequency", v)}
+            className="flex w-full min-w-max [&>button]:flex-1"
+            items={[
+              // A legacy one-time item keeps its value selectable.
+              ...(form.frequency === "once" ? [{ value: "once", label: t("frequencies.once") }] : []),
+              ...FREQUENCIES.map((v) => ({ value: v as string, label: t(`frequencies.${v}`) })),
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-clear-tile border border-clear-line px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span id="rec-end-label" className="text-[15px] font-bold">{t("endDate")}</span>
+            <span className="text-[13px] text-clear-muted">
+              {endDateLocked
+                ? form.endDate ? t("endLockedOn", { date: dateLabel(form.endDate) }) : t("endLocked")
+                : form.endDate ? t("endHint") : t("noEnd")}
+            </span>
+          </span>
+          {!endDateLocked && (
+            <ClearSwitch checked={!!form.endDate} onCheckedChange={(v) => set("endDate", v ? todayISO() : "")} labelledBy="rec-end-label" />
+          )}
+        </div>
+        {!endDateLocked && form.endDate && (
+          <DatePicker value={form.endDate} label={dateLabel(form.endDate)} onChange={(v) => set("endDate", v)} triggerClassName={DATE_TRIGGER} />
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <ClearField label={t("matchPattern")} htmlFor="rec-pattern">
+            <div className={cn(FIELD_BOX, "gap-2.5 text-clear-muted")}>
+              <IconSearch size={18} stroke={2} aria-hidden className="shrink-0" />
+              <input
+                id="rec-pattern"
+                type="text"
+                autoComplete="off"
+                value={form.matchPattern}
+                onChange={(e) => set("matchPattern", e.target.value)}
+                placeholder={t("matchPlaceholder")}
+                className={cn(FIELD_INPUT, "tracking-[0.04em]")}
+              />
+            </div>
+          </ClearField>
+          <div className="flex h-12 items-center justify-between gap-3.5 rounded-clear-row bg-clear-tile pr-3 pl-4">
+            <span id="rec-whole-label" className="text-sm font-bold">{t("wholeWord")}</span>
+            <ClearSwitch checked={form.matchWholeWord} onCheckedChange={(v) => set("matchWholeWord", v)} labelledBy="rec-whole-label" />
+          </div>
+        </div>
+        <span className="text-xs font-semibold text-clear-muted">
+          {form.matchWholeWord ? t("wholeWordHint") : t("containsHint")}{" "}
+          {ruleChanged
+            ? criteria.pattern && preview ? t("matchesHint", { count: preview.total }) : t("autoHint")
+            : txs && txs.length > 0 ? t("linkedHint", { count: txs.length }) : t("autoHint")}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className={LABEL}>{t("matchAmount")}</span>
+          <Segmented
+            label={t("matchAmount")}
+            surface="tile"
+            size="sm"
+            value={form.matchMode}
+            onChange={(v) => set("matchMode", v)}
+            items={[
+              { value: "exact", label: t("exact") },
+              { value: "range", label: t("between") },
+            ]}
+          />
+        </div>
+        {form.matchMode === "exact" ? (
+          <ClearInput
+            aria-label={t("exact")}
+            inputMode="decimal"
+            value={form.matchAmount}
+            onChange={(e) => set("matchAmount", e.target.value)}
+            placeholder={t("anyAmount")}
+            className="font-bold tabular-nums"
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <ClearInput aria-label={t("min")} inputMode="decimal" value={form.matchAmountMin} onChange={(e) => set("matchAmountMin", e.target.value)} placeholder={t("min")} className="font-bold tabular-nums" />
+            <ClearInput aria-label={t("max")} inputMode="decimal" value={form.matchAmountMax} onChange={(e) => set("matchAmountMax", e.target.value)} placeholder={t("max")} className="font-bold tabular-nums" />
+          </div>
+        )}
+        {/* The recurrence's own amount, for reference: the match amount is a separate
+            filter, and without this you'd have to scroll up to check the bill's amount. */}
+        {amountVal != null && (
+          <span className="text-xs font-semibold text-clear-muted">
+            <MoneyText>{t("setTo", { amount: formatEur(amountVal) })}</MoneyText>
+            {form.matchMode === "exact" && (
+              <button type="button" onClick={() => set("matchAmount", String(amountVal))} className="ml-1.5 cursor-pointer font-bold text-clear-ember-text hover:underline">
+                {t("useIt")}
+              </button>
+            )}
+          </span>
+        )}
+      </div>
+
+      {/* The last 12 charges — of what the rule as typed would match, live while you edit. */}
+      {charges && <RecurringCharges txs={charges} tipAnchor={ruleChanged ? "recurringMatchPreview" : "recurringCharges"} />}
+
+      <div className="flex flex-col gap-3 rounded-clear-tile border border-clear-line px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span id="rec-shared-label" className="text-[15px] font-bold">{isIncome ? tShared("paybackToggle") : tShared("sharedToggle")}</span>
+            <span className="text-[13px] text-clear-muted">{isIncome ? tShared("paybackHint") : tShared("sharedHint")}</span>
+          </span>
+          <ClearSwitch
+            checked={isIncome ? form.isReimbursement : form.shared}
+            onCheckedChange={(v) => (isIncome ? set("isReimbursement", v) : set("shared", v))}
+            labelledBy="rec-shared-label"
+          />
+        </div>
+        {isSharedCost && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ClearField label={tShared("paidBackLabel")} htmlFor="rec-paidback">
+                <ClearInput id="rec-paidback" inputMode="decimal" value={form.sharedReimbursedAmount} onChange={(e) => set("sharedReimbursedAmount", e.target.value)} placeholder="0,00" className="font-bold tabular-nums" />
+              </ClearField>
+              <ClearField label={tShared("peopleLabel")} htmlFor="rec-people">
+                <div className="flex gap-2">
+                  <ClearInput id="rec-people" type="number" min="2" step="1" inputMode="numeric" value={form.sharedWithCount} onChange={(e) => set("sharedWithCount", e.target.value)} placeholder="4" className="font-bold tabular-nums" />
+                  <button
+                    type="button"
+                    disabled={amountVal == null || !(parseInt(form.sharedWithCount) >= 2)}
+                    onClick={() => {
+                      const people = parseInt(form.sharedWithCount);
+                      if (amountVal == null || !(people >= 2)) return;
+                      set("sharedReimbursedAmount", String(evenShareBack(amountVal, people)));
+                    }}
+                    className={cn(clearButtonVariants({ variant: "secondary", size: "lg" }), "px-4")}
+                  >
+                    {tShared("splitEvenly")}
+                  </button>
+                </div>
+              </ClearField>
+            </div>
+            {amountVal != null && myShare != null && (
+              <span className="text-sm font-semibold text-clear-ink-2"><MoneyText>{tShared("preview", { share: formatEur(myShare), total: formatEur(amountVal) })}</MoneyText></span>
+            )}
+          </>
+        )}
+      </div>
+
+      <ClearField label={t("notes")} htmlFor="rec-notes">
+        <ClearInput id="rec-notes" value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder={t("notesPlaceholder")} />
+      </ClearField>
+
+      <div className="flex items-center justify-between gap-4 rounded-clear-tile border border-clear-line px-4 py-3">
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span id="rec-active-label" className="text-[15px] font-bold">{t("active")}</span>
+          <span className="text-[13px] text-clear-muted">{t("activeHint")}</span>
+        </span>
+        <ClearSwitch checked={form.active} onCheckedChange={(v) => set("active", v)} labelledBy="rec-active-label" />
+      </div>
+
+      <div className="border-t border-clear-ground pt-4 pb-1">
+        <ClearDialogFooter
+          destructive={
+            isEdit ? (
+              <button type="button" onClick={remove} disabled={loading} className={clearButtonVariants({ variant: "danger" })}>
+                <IconTrash aria-hidden />
+                {t("delete")}
+              </button>
+            ) : undefined
+          }
+        >
+          <button type="button" onClick={onClose} className={clearButtonVariants({ variant: "secondary" })}>
+            {t("cancel")}
+          </button>
+          <button type="button" onClick={save} disabled={!canSave} className={clearButtonVariants()}>
+            {loading ? t("saving") : t("save")}
+          </button>
+        </ClearDialogFooter>
+      </div>
+
+      {/* The app's one category picker, stacked on this sheet. */}
+      <CategoryPickerSheet
+        categories={cats}
+        current={form.categoryId || undefined}
+        open={categoryOpen}
+        onOpenChange={setCategoryOpen}
+        // "none" is the picker's Uncategorized row — this form stores "no category" as
+        // an empty string, which the API turns into null.
+        onChange={(v) => set("categoryId", v === "none" ? "" : v)}
+      />
+    </>
   );
 }
 
 /** Brings a dismissed auto-detected item back: clears the dismissed flag and reactivates it. */
 export function RecurringRestoreButton({ item }: { item: RecurringItem }) {
+  const t = useTranslations("recurringForm");
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -757,8 +708,8 @@ export function RecurringRestoreButton({ item }: { item: RecurringItem }) {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={restore} disabled={loading} className="shrink-0">
-      {loading ? "…" : "Restore"}
-    </Button>
+    <button type="button" onClick={restore} disabled={loading} className={clearButtonVariants({ variant: "outline", size: "sm" })}>
+      {loading ? t("restoring") : t("restore")}
+    </button>
   );
 }

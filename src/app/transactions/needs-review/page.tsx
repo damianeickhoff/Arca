@@ -7,6 +7,7 @@ import { MobileSubpageHeader } from "@/components/mobile-menu-ui";
 import { formatEur } from "@/lib/format";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
 import { NeedsReviewList } from "./needs-review-list";
+import { MoneyText } from "@/components/clear/money";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function NeedsReviewPage() {
           <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-background shrink-0">
             <IconArrowDownLeft className="size-4" />
           </span>
-          <span className="text-2xl font-semibold tabular-nums">{formatEur(total)}</span>
+          <span className="text-2xl font-semibold tabular-nums"><MoneyText>{formatEur(total)}</MoneyText></span>
         </div>
       </div>
 

@@ -7,9 +7,10 @@ import { monthlyRate } from "@/lib/debt-interest";
  * Every debt keeps paying its own minimum, exactly as computeDebt/payoffMonths model one
  * debt on its own (interest accrues first, the payment covers it, the last payment is
  * prorated, cents rounded every month) — so with no extra, each debt is paid off in the
- * same month its own row says. The extra goes on top, to one debt at a time: the highest
- * interest rate first (the "avalanche" order, which saves the most interest), ties to
- * the smallest balance. When that debt is cleared the extra moves on to the next.
+ * same month its own row says. The extra goes on top, to one debt at a time, in the
+ * order the caller passes (the Debts page's sort) — by default the highest interest rate
+ * first (the "avalanche" order, which saves the most interest), ties to the smallest
+ * balance. When that debt is cleared the extra moves on to the next.
  * Freed-up minimums are not rolled over, so extra = 0 is exactly the minimums timeline.
  */
 
@@ -31,6 +32,9 @@ export interface PayoffSimulation {
   interest: number;
   /** The order the extra is applied in (debt ids). */
   order: number[];
+  /** Each debt's own balance at month 0 and after each month (same length as `totals`),
+   *  and the month it reaches zero — null when it never does within the cap. */
+  byDebt: { id: number; balances: number[]; months: number | null }[];
 }
 
 /** Cents, like debt-interest.ts — a long schedule must not drift on floating-point dust. */
@@ -45,11 +49,24 @@ export function payoffOrder(debts: readonly SimDebt[]): number[] {
     .map((d) => d.id);
 }
 
-export function simulatePayoff(debts: readonly SimDebt[], extra = 0, maxMonths = 600): PayoffSimulation {
+/**
+ * @param preferred Debt ids in the order the extra goes to them. Unknown, repeated or
+ *   paid-off ids are skipped; open debts missing from it follow in the default avalanche
+ *   order. Omit for the avalanche order.
+ */
+export function simulatePayoff(
+  debts: readonly SimDebt[],
+  extra = 0,
+  maxMonths = 600,
+  preferred?: readonly number[],
+): PayoffSimulation {
   const state = debts.map((d) => ({ id: d.id, balance: Math.max(0, d.balance), payment: d.payment, rate: monthlyRate(d.annualRate) }));
-  const order = payoffOrder(debts);
+  const avalanche = payoffOrder(debts);
+  const given = (preferred ?? []).filter((id, i, all) => avalanche.includes(id) && all.indexOf(id) === i);
+  const order = [...given, ...avalanche.filter((id) => !given.includes(id))];
   const byId = new Map(state.map((s) => [s.id, s]));
   const totals = [round(state.reduce((s, d) => s + d.balance, 0))];
+  const balances = new Map(state.map((d) => [d.id, [d.balance]]));
   let interest = 0;
   let month = 0;
 
@@ -72,8 +89,14 @@ export function simulatePayoff(debts: readonly SimDebt[], extra = 0, maxMonths =
       pool = round(pool - x);
     }
     totals.push(round(state.reduce((s, d) => s + d.balance, 0)));
+    for (const d of state) balances.get(d.id)!.push(d.balance);
   }
 
   const done = totals[totals.length - 1] <= 0.005;
-  return { months: done ? month : null, totals, interest, order };
+  const byDebt = state.map((d) => {
+    const series = balances.get(d.id)!;
+    const zero = series.findIndex((b) => b <= 0.005);
+    return { id: d.id, balances: series, months: zero === -1 ? null : zero };
+  });
+  return { months: done ? month : null, totals, interest, order, byDebt };
 }

@@ -22,79 +22,219 @@
     "recentTransactions": "Recent Transactions",
     "back": "Back"
   },
-  "settingsMenu": {
+  "settings": {
     "title": "Settings",
-    "categories": "Categories",
-    "brandIcons": "Brand icons",
-    "accounts": "Accounts",
-    "general": "General",
-    "admin": "Admin"
+    "subtitle": "{name} · {email}",
+    "navLabel": "Settings sections",
+    "allSettings": "All settings",
+    "helpAndTips": "Help & tips",
+    "open": "Open settings",
+    "editProfile": "Edit profile",
+    "signOut": "Sign out",
+    "back": "Back",
+    "close": "Close",
+    "sections": {
+      "account": "Account",
+      "manage": "Manage",
+      "data": "Data",
+      "app": "App",
+      "about": "About"
+    },
+    "panels": {
+      "profile": {
+        "title": "Profile",
+        "subtitle": "Your photo, your name and the email you sign in with."
+      },
+      "security": {
+        "title": "Password & 2FA",
+        "subtitle": "How you sign in, and a second step to keep others out."
+      },
+      "accounts": {
+        "title": "Accounts",
+        "subtitle": "Balances here feed your net worth, the forecast and safe to spend."
+      },
+      "categories": {
+        "title": "Categories",
+        "subtitle": "How your transactions are grouped and matched automatically."
+      },
+      "recurring": {
+        "title": "Recurring",
+        "subtitle": "Income and bills that come back on a schedule."
+      },
+      "merchants": {
+        "title": "Merchants & brand icons",
+        "subtitle": "The places you pay, and the logos they show with."
+      },
+      "financialMonth": {
+        "title": "Financial month",
+        "subtitle": "The day your month starts, usually payday."
+      },
+      "monthOverrides": {
+        "title": "Month overrides",
+        "subtitle": "A different start day for a single month."
+      },
+      "budgetRecurring": {
+        "title": "Budget & bills",
+        "subtitle": "What counts as spending in your budget and reports."
+      },
+      "import": {
+        "title": "Import CSV",
+        "subtitle": "Add transactions from your bank's export."
+      },
+      "importProfiles": {
+        "title": "Import profiles",
+        "subtitle": "Saved column mappings for your bank exports."
+      },
+      "dataHealth": {
+        "title": "Data health",
+        "subtitle": "Find and fix transactions that came in broken."
+      },
+      "appearance": {
+        "title": "Appearance",
+        "subtitle": "Light, dark or the same as your device."
+      },
+      "privacy": {
+        "title": "Privacy",
+        "subtitle": "Hide amounts when others can see your screen."
+      },
+      "appLock": {
+        "title": "App lock",
+        "subtitle": "Ask for a PIN or your fingerprint when the app opens."
+      },
+      "language": {
+        "title": "Language",
+        "subtitle": "The language the app speaks."
+      },
+      "currency": {
+        "title": "Currency",
+        "subtitle": "The symbol shown next to amounts."
+      },
+      "help": {
+        "title": "Help",
+        "subtitle": "Questions, problems or ideas."
+      },
+      "users": {
+        "title": "Users",
+        "subtitle": "Who can sign in to this household."
+      }
+    },
+    "inline": {
+      "appearanceHint": "Controls how the app looks. \"System default\" follows your device settings.",
+      "privacyHint": "Hides every amount in the app behind dots, so you can use it in public without revealing balances.",
+      "privacyMode": "Privacy mode",
+      "showAmounts": "Show amounts",
+      "hideAmounts": "Hide amounts",
+      "languageHint": "Choose the language for the interface.",
+      "currencyHint": "Currency symbol shown on amounts.",
+      "addOverride": "Add override",
+      "helpTitle": "Questions or problems?",
+      "helpBody": "Email support and we'll get back to you as soon as possible.",
+      "contactSupport": "Contact support"
+    },
+    "account": {
+      "photo": "Profile photo",
+      "name": "Name",
+      "loginEmail": "Login email",
+      "email": "Email",
+      "emailHint": "You sign in with this address.",
+      "currentPassword": "Current password",
+      "password": "Password",
+      "newPassword": "New password",
+      "newPasswordHint": "At least 8 characters",
+      "twoFactor": "Two-factor authentication",
+      "save": "Save",
+      "saving": "Saving…",
+      "nameUpdated": "Name updated.",
+      "emailUpdated": "Email updated.",
+      "passwordUpdated": "Password updated."
+    },
+    "brandIcons": {
+      "title": "Brand icons",
+      "subtitle": "Transactions whose name matches a rule get that logo.",
+      "rules": "Rules",
+      "empty": "No rules yet",
+      "addRule": "Add rule",
+      "saving": "Saving…",
+      "matchWord": "Whole word",
+      "matchContains": "Contains",
+      "matchExact": "Exact",
+      "deleteRuleTitle": "Delete this rule?",
+      "deleteRuleBody": "Transactions that only matched this rule go back to their usual icon.",
+      "deleteRuleConfirm": "Delete rule"
+    },
+    "categories": {
+      "resetTitle": "Reset categories to the defaults?",
+      "resetBody": "All custom categories and rules are deleted and the default set is restored. Your transactions are kept, but lose their category until the default rules re-assign them.",
+      "resetConfirm": "Reset categories",
+      "deleteTitle": "Delete the category “{name}”?",
+      "deleteBody": "Its transactions, recurring items, budget and rules are deleted too. This can't be undone.",
+      "deleteConfirm": "Delete category"
+    },
+    "merchants": {
+      "deleteTitle": "Delete the merchant “{name}”?",
+      "deleteBody": "{count, plural, =0 {No transactions use it.} one {Its # transaction stays, but loses its merchant.} other {Its # transactions stay, but lose their merchant.}}",
+      "deleteConfirm": "Delete merchant"
+    },
+    "users": {
+      "deleteTitle": "Delete {name}?",
+      "deleteBody": "They're signed out and can't sign in any more. This can't be undone.",
+      "deleteConfirm": "Delete user"
+    },
+    "monthOverrides": {
+      "deleteTitle": "Delete the override for {month}?",
+      "deleteBody": "That month starts on your usual start day again.",
+      "deleteConfirm": "Delete override"
+    }
   },
   "budget": {
-    "alert": {
-      "over": "{amount} over budget",
-      "left": "{amount} left in budget",
-      "success1": "Well under pace. You've build a strong cushion.",
-      "success2": "Spending comfortably below pace. Looking good.",
-      "success3": "Right on track for this period.",
-      "warning1": "Spending a bit faster than planned. Keep an eye on it.",
-      "warning2": "Not a lot left. Slowing down now could help.",
-      "danger": "You're over the budget. Consider whether your limit needs adjusting for next month."
-    },
-    "emptyTitle": "No budget set",
-    "emptyDesc": "Create a budget to track your spending and stay on top of your finances.",
     "create": "Create budget",
+    "createSubtitle": "Set a limit, then split it over your categories.",
+    "editSubtitle": "Applies from this period · {from} – {to}",
     "period": {
       "weekly": "Weekly",
       "monthly": "Monthly"
     },
-    "over": "Over",
-    "left": "Left",
-    "used": "{pct}% used",
-    "daysLeft": "Days left",
-    "days": "{count, plural, one {# day} other {# days}}",
-    "amount": "Amount",
-    "allocated": "Allocated",
-    "leftToAllocate": "Left to allocate",
-    "budgetedCategories": "Budgeted categories",
+    "overallBudget": "Overall budget",
+    "periodLabel": "Period",
+    "resets": "{period, select, weekly {Resets every Monday} other {Resets on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}}}",
+    "noOverallHint": "With no overall budget, your category budgets together are the limit.",
     "categoryBudgets": "Category budgets",
-    "totalAllocated": "{amount} total",
-    "manage": "Manage",
-    "overLabel": "over",
-    "leftLabel": "left",
-    "ofAmount": "of {amount}",
-    "addCategory": "Add category budget",
+    "categoryBudgetsHint": "Spent so far this period shown under each name",
+    "addCategory": "Add a category budget",
+    "pickCategory": "Pick a category",
+    "allBudgeted": "Every category has a budget.",
+    "noCategoryBudgets": "No category budgets yet.",
+    "clearAll": "Clear all",
+    "spentHint": "{amount} spent",
+    "spentOver": "{spent} · {over} over",
+    "allocatedOf": "Allocated <b>{allocated}</b> of {overall}",
     "leftToAllocateAmount": "{amount} left to allocate",
+    "overAllocated": "{amount} over your overall budget",
+    "categoryTotal": "Category budgets add up to <b>{amount}</b>",
+    "categorySpent": "{amount} spent this period",
+    "budgetPer": "{period, select, weekly {Budget per week} other {Budget per month}}",
     "editBudget": "Edit budget",
     "deleteBudget": "Delete budget",
     "close": "Close",
-    "back": "Back",
-    "reset": "Reset",
     "save": "Save",
     "saving": "Saving…",
-    "allocatedPct": "{pct}% allocated",
-    "amountLeft": "{amount} left",
-    "totalCategoryBudgets": "Total category budgets",
-    "totalBecomesLimit": "This total will become your overall budget limit.",
     "last30": "Last 30 days: {amount}",
     "last7": "Last 7 days: {amount}",
-    "setCategoryBudget": "Set a budget for this category",
     "removeBudget": "Remove budget",
     "strategyTitle": "Budget strategy",
     "strategyDesc": "How your income splits across Needs, Wants, and Savings.",
-    "strategyCommon": "Commonly used is 50/25/25.",
+    "strategyBasedOn": "Based on <b>{income}</b> income this month",
+    "strategyNoIncome": "No income this month yet, so no amounts to show.",
     "advisedBudget": "Advised budget: <b>{amount}</b> ({pct}% of {income} income)",
     "advised": "Advised: {amount}",
     "exceedTitle": "Category budgets exceed your overall budget",
     "exceedDesc": "Your category budgets add up to {total}, more than your overall budget of {overall}. Increase the overall budget to {total}, or cancel and lower the category amount instead.",
     "increaseOverall": "Increase overall to {amount}",
     "cancel": "Cancel",
-    "confirmDelete": "Delete this budget? Category budgets will be cleared too.",
+    "confirmDelete": "Delete this budget?",
+    "confirmDeleteBody": "Your category budgets are cleared too. Your transactions stay in Activity.",
     "confirmRemoveCategory": "Remove the budget for {name}?",
-    "overallLimit": "Set your overall budget limit for this period",
-    "skip": "Skip",
-    "continue": "Continue",
-    "skipHint": "You can skip and set category budgets next",
+    "confirmRemoveCategoryBody": "The category itself stays, it just won't have a budget any more.",
     "strategyLabels": {
       "nodig": "Needs",
       "willen": "Wants",
@@ -178,7 +318,15 @@
       "save": "Save",
       "amount": "Amount",
       "min": "Min",
-      "max": "Max"
+      "max": "Max",
+      "selectCategories": "Select categories",
+      "selectAccounts": "Select accounts",
+      "confirm": "Confirm",
+      "searchCategory": "Search category",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "noCategories": "No categories found",
+      "noAccounts": "No accounts"
     },
     "bulkSelected": "{count, plural, =0 {Nothing selected} one {# selected} other {# selected}}",
     "bulkSelectAll": "Select all ({count})",
@@ -191,6 +339,156 @@
     "bulkDelete": "Delete",
     "bulkDone": "Leave selection mode",
     "bulkConfirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?",
+    "bulkConfirmDeleteBody": "This can't be undone. Anything {count, plural, one {it} other {they}} added to a savings goal comes off that goal again.",
+    "bulkConfirmDeleteLabel": "Delete {count, plural, one {transaction} other {# transactions}}",
+    "add": {
+      "title": "Add transaction",
+      "phoneTitle": "New transaction",
+      "countsTowards": "Counts towards {month} ({from} – {to})",
+      "type": "Transaction type",
+      "expense": "Expense",
+      "income": "Income",
+      "transfer": "Transfer",
+      "amount": "Amount",
+      "amountResult": "= {amount}",
+      "amountInvalid": "Finish the sum to see the amount",
+      "budget": {
+        "alreadyOver": "{category} is {over} over budget · this makes it {after} over",
+        "becomesOver": "This puts {category} {over} over budget",
+        "left": "{category}: {left} left after this"
+      },
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "tomorrow": "Tomorrow",
+      "category": "Category",
+      "chooseCategory": "Choose a category",
+      "categoryChip": "Category: {name}",
+      "merchant": "Merchant",
+      "merchantPlaceholder": "Where was it?",
+      "merchantChip": "Merchant: {name}",
+      "description": "Description",
+      "descriptionPlaceholder": "What was it for?",
+      "account": "Account",
+      "accountChip": "Account: {name}",
+      "chooseAccount": "Choose an account",
+      "from": "From",
+      "to": "To",
+      "fromAccount": "From account",
+      "toAccount": "To account",
+      "fromChip": "From {name}",
+      "toChip": "To {name}",
+      "swap": "Swap accounts",
+      "date": "Date",
+      "note": "Note",
+      "notePlaceholder": "Add a note…",
+      "addNote": "Add a note",
+      "editNote": "Edit the note",
+      "scanTitle": "Scan a receipt",
+      "scanBody": "Take or choose a photo and the merchant, amount and date are filled in",
+      "scanReceipt": "Scan receipt",
+      "calculator": "Calculator",
+      "keypad": "Keypad",
+      "backspace": "Backspace",
+      "divide": "Divide",
+      "multiply": "Multiply",
+      "subtract": "Subtract",
+      "add": "Add",
+      "save": "Save",
+      "saving": "Saving…",
+      "saveAnother": "Save and add another",
+      "savedAnother": "Saved. Ready for the next one.",
+      "saveFailed": "That didn't save. Try again.",
+      "done": "Done",
+      "close": "Close",
+      "fallbackDescription": "Transaction",
+      "fallbackAccount": "Account"
+    },
+    "scan": {
+      "title": "Scan a receipt",
+      "subtitle": "Read on this device — the photo never leaves it",
+      "pick": "Take or choose a photo",
+      "local": "Read locally by Ollama, nothing is uploaded",
+      "reading": "Reading the receipt…",
+      "slow": "This can take a moment on a local model.",
+      "error": "Something went wrong reading that receipt.",
+      "retry": "Try again",
+      "review": "Check the details — nothing is saved yet",
+      "name": "Merchant",
+      "namePlaceholder": "Merchant name",
+      "amount": "Amount",
+      "date": "Date",
+      "matched": "Matched category:",
+      "suggested": "Suggested category (no match found):",
+      "detected": "Total on the receipt: {amount}",
+      "another": "Another photo",
+      "apply": "Use these details",
+      "close": "Close"
+    },
+    "split": {
+      "title": "Split transaction",
+      "parts": "Parts",
+      "basis": "Split by",
+      "byAmount": "By amount",
+      "byCount": "By count",
+      "countHint": "Each part gets a share of the total by its count, rounded so it adds up exactly.",
+      "chooseCategory": "Choose a category",
+      "categoryFor": "Category for part {n}: {name}",
+      "amountFor": "Amount for part {n}",
+      "countFor": "Count for part {n}",
+      "remove": "Remove part {n} ({name})",
+      "minPartsHint": "A split has at least 2 parts",
+      "addPart": "Add a part",
+      "allocated": "Fully allocated",
+      "left": "{amount} left to allocate",
+      "tooMuch": "{amount} more than the total",
+      "removeAll": "Remove split",
+      "fewer": "One person fewer",
+      "more": "One person more",
+      "each": "{amount} each",
+      "yourShare": "Your share",
+      "ofTotal": "of {total}",
+      "cancel": "Cancel",
+      "save": "Save split",
+      "saving": "Saving…",
+      "close": "Close",
+      "errors": {
+        "minParts": "Add at least 2 parts for a split.",
+        "chooseEach": "Choose a category for each part.",
+        "positiveCount": "Every part needs a count above 0.",
+        "positiveAmount": "Every part needs an amount above 0.",
+        "sumMismatch": "The parts together must add up to the transaction total.",
+        "saveFailed": "The split couldn't be saved.",
+        "removeFailed": "The split couldn't be removed.",
+        "share": "Your share must be more than 0 and no more than the total."
+      }
+    },
+    "link": {
+      "title": "Link reimbursement",
+      "subtitle": "Pick the expense that {name} ({amount}) paid back",
+      "subtitleRemaining": "Pick the expense that {name} ({amount}) paid back · {left} still to link",
+      "search": "Search expenses",
+      "searchPlaceholder": "Search the expenses",
+      "candidates": "Money out around {date}",
+      "loading": "Looking for expenses…",
+      "none": "No open expenses in the month before this payment. Search to find an older one.",
+      "results": "Matching expenses",
+      "noMatches": "No open expenses match “{query}”.",
+      "sameAmount": "Same amount",
+      "exactlyHalf": "Exactly half",
+      "covered": "{pct}% paid back · {left} to go",
+      "portion": "From this payment",
+      "portionHint": "{amount} of it is still unlinked",
+      "expected": "Expected back in total",
+      "expectedHint": "Your share: {share} of {total}",
+      "previewLabel": "After linking",
+      "preview": "After linking, <b>{name}</b> costs you <b>{share}</b> · the {amount} won't count as income in reports",
+      "was": "Was",
+      "now": "Now",
+      "cancel": "Cancel",
+      "link": "Link",
+      "linking": "Linking…",
+      "close": "Close"
+    },
     "periods": {
       "all": "All time",
       "today": "Today",
@@ -201,99 +499,96 @@
       "year": "Year"
     }
   },
-  "debts": {
-    "paymentFromLinked": "Taken from the linked recurring {count, plural, one {bill} other {bills}}: {amount} per month.",
-    "paymentOverridden": "You set this amount yourself. The linked recurring {count, plural, one {bill comes} other {bills come}} to {amount} per month.",
-    "useLinkedAmount": "Use linked bill amount",
-    "interestHelp": "Optional. The yearly interest percentage on this debt. Each payment covers that month's interest first, and only what is left over reduces the balance. Leave blank if there is no interest.",
-    "interestPerMonth": "At the current balance that is about {amount} of interest in the first month.",
-    "interestTooLow": "The minimum monthly payment does not cover the interest, so this balance would never go down."
-  },
   "goals": {
-    "savings": "Savings",
-    "monthly": "Monthly",
-    "lastGoalReachedBy": "Last goal reached by",
-    "allocated": "Allocated",
-    "savingsGoals": "Savings goals",
-    "emptyTitle": "Start your first saving",
-    "emptyDesc": "Ready to start saving? Tap the button below to set up your first savings goal.",
-    "addSaving": "Add saving",
-    "addNewSaving": "Add new saving",
-    "filterAll": "All",
-    "filterBudget": "Budget",
-    "filterSavings": "Savings",
-    "typeBudget": "Budget",
-    "typeSavings": "Savings",
-    "spent": "spent",
-    "saved": "saved",
     "recurrence": {
       "none": "None",
       "weekly": "Weekly",
       "monthly": "Monthly",
       "yearly": "Yearly"
     },
-    "detailsTitle": "Savings goal details",
-    "edit": "Edit",
+    "colors": {
+      "blue": "Blue",
+      "orange": "Orange",
+      "purple": "Purple",
+      "pink": "Pink",
+      "teal": "Teal",
+      "indigo": "Indigo",
+      "amber": "Amber",
+      "green": "Green"
+    },
     "delete": "Delete",
+    "cancel": "Cancel",
     "close": "Close",
-    "ofAmount": "of {amount}",
     "reached": "Reached",
     "savedPct": "{pct}% saved",
     "targetAmount": "Target amount",
-    "monthlyContribution": "Monthly contribution",
     "startDate": "Start date",
     "endDate": "End date",
-    "endDateOptional": "End date (optional)",
-    "noEndDate": "No end date",
     "recurrenceLabel": "Recurrence",
-    "reachedBy": "Reached by",
     "category": "Category",
-    "currentBalance": "Current balance",
-    "name": "Name",
-    "confirmDelete": "Delete \"{name}\"?",
-    "chooseCategory": "Choose category",
-    "chooseACategory": "Choose a category",
     "categoryOptional": "Category (optional)",
-    "required": "Required",
-    "all": "All",
-    "done": "Done",
-    "recurrency": "Recurrency",
-    "clear": "Clear",
-    "savingsGoal": "Savings goal",
-    "moreOptions": "More options",
-    "calculator": "Calculator",
-    "whatDoButtonsDo": "What do these buttons do?",
-    "chooseIconColor": "Choose icon and color",
-    "namePlaceholder": "e.g. New car",
-    "setStartEndDate": "Set start and end date",
-    "startEndDate": "Start / end date",
-    "setMonthlyContribution": "Set monthly contribution",
-    "monthlyContributionAmount": "Monthly contribution {amount}",
+    "currentBalance": "Current balance",
     "startingBalance": "Starting balance",
-    "setStartingBalance": "Set starting balance",
-    "startingBalanceAmount": "Starting balance {amount}",
-    "backspace": "Backspace",
-    "divide": "Divide",
-    "multiply": "Multiply",
-    "subtract": "Subtract",
-    "add": "Add",
-    "dates": "Dates",
-    "autoCalc": "Auto-calculated from the end date ({amount}) — clear the end date to set this manually.",
-    "iconColor": "Icon & color",
-    "icon": "Icon",
-    "color": "Color",
-    "editSaving": "Edit saving",
+    "name": "Name",
+    "namePlaceholder": "e.g. New car",
+    "confirmDelete": "Delete \"{name}\"?",
+    "confirmDeleteBody": "Its transactions stay in Activity, they just no longer count toward this goal.",
+    "confirmDeleteLabel": "Delete goal",
+    "autoCalc": "Worked out from the end date. Clear the end date to set this yourself.",
     "saving": "Saving…",
-    "save": "Save",
-    "untitled": "Untitled goal",
-    "editBudget": "Edit budget",
-    "addNewGoal": "Add new goal",
-    "newBudget": "New budget",
-    "newSaving": "New saving",
-    "typeBudgetSubtitle": "Set up a budget and manage your spending wisely",
-    "typeSavingsSubtitle": "Ready to start saving? Begin by setting your first goal here",
-    "monthlyPlaceholder": "e.g. 100",
-    "balancePlaceholder": "e.g. 0"
+    "form": {
+      "newSavings": "New savings goal",
+      "newBudget": "New budget goal",
+      "editSavings": "Edit savings goal",
+      "editBudget": "Edit budget goal",
+      "subtitleSavings": "Set a target and see when you will get there",
+      "subtitleBudget": "Set a cap on what you spend in one category",
+      "type": "Kind of goal",
+      "typeSavings": "Savings goal",
+      "typeBudget": "Budget goal",
+      "iconColour": "Icon & colour",
+      "changeIcon": "Change icon",
+      "budgetAmount": "Budget amount",
+      "contribution": "{period, select, weekly {Weekly contribution} yearly {Yearly contribution} other {Monthly contribution}}",
+      "per": "{period, select, weekly {a week} yearly {a year} other {a month}}",
+      "frequency": "How often you save",
+      "noCategory": "None",
+      "chooseCategory": "Choose a category",
+      "optional": "Optional",
+      "sum": "= {amount}",
+      "help": "What do these fields do?",
+      "save": "Save goal",
+      "projection": {
+        "reach": "At <b>{amount} {period, select, weekly {a week} yearly {a year} other {a month}}</b> you reach <b>{target}</b> in <b>{date}</b>",
+        "reached": "You have already saved the full <b>{target}</b>.",
+        "none": "Add a contribution to see when you reach <b>{target}</b>.",
+        "hint": "Or set an end date: the contribution is worked out for you.",
+        "toGo": "{count, plural, one {# month} other {# months}} to go",
+        "target": "Target {amount}",
+        "today": "Today",
+        "chartLabel": "Projection: from {balance} today, at {amount} {period, select, weekly {a week} yearly {a year} other {a month}} you reach the {target} target in {date}."
+      }
+    },
+    "detail": {
+      "title": "Savings goal",
+      "edit": "Edit goal",
+      "savedOf": "{saved} of {target}",
+      "toGo": "{amount} to go",
+      "target": "Target",
+      "monthly": "Monthly",
+      "started": "Started",
+      "projected": "Projected",
+      "reachedOn": "Reached {date}",
+      "noProjection": "Set a monthly amount to see when you reach this goal.",
+      "targetLine": "Target {amount}",
+      "today": "Today",
+      "chartLabel": "Saved {saved} so far; at the planned monthly amount the {target} target is reached in {date}.",
+      "chartLabelNoEnd": "Saved {saved} so far towards a {target} target.",
+      "account": "Linked to {name}",
+      "category": "category “{name}”",
+      "noLinks": "No account or category linked",
+      "accountLabel": "Account"
+    }
   },
   "tips": {
     "gotIt": "Got it",
@@ -301,6 +596,22 @@
     "next": "Next",
     "back": "Back",
     "skipTour": "Skip",
+    "categoryPickerSuggestions": {
+      "title": "Suggested categories and rules",
+      "body": "The categories this transaction most likely belongs to are at the top. Pick one, then apply it — switch on the rule and similar transactions get it too, now and from now on."
+    },
+    "categoryPickerGroups": {
+      "title": "Categories, grouped",
+      "body": "Categories are now grouped into needs, wants and savings. Type to narrow the list, use the arrow keys to move and Enter to pick."
+    },
+    "dateQuickPicks": {
+      "title": "Quick dates",
+      "body": "Today, yesterday and two days ago are one tap away above the calendar. On a keyboard, the arrow keys move between days and Enter picks one."
+    },
+    "searchActions": {
+      "title": "Search can do things too",
+      "body": "Before you type, search shows quick actions like adding a transaction or importing a CSV. Use the arrow keys to move through the results and Enter to open one."
+    },
     "debtFormTour": {
       "title": "New debt",
       "body": "",
@@ -311,11 +622,11 @@
         },
         "debtIcon": {
           "title": "Icon and colour",
-          "body": "Tap to pick a symbol and colour. It's how you'll recognise this debt in lists and charts."
+          "body": "Pick a colour, or tap the icon to choose another symbol. It's how you'll recognise this debt in lists and charts."
         },
         "debtBalanceDate": {
           "title": "Balance as of",
-          "body": "Which date the amount above belongs to. Leave it on today and it's simply what you owe now. Move it back and the app assumes the monthly payment was made every month since."
+          "body": "Which date the balance belongs to. Leave it on today and it's simply what you owe now. Move it back and the app assumes the monthly payment was made every month since."
         },
         "debtStartDate": {
           "title": "Start date",
@@ -345,17 +656,13 @@
           "title": "Link an existing bill",
           "body": "Already have a recurring bill for this? Link it and your real payments will drive the progress instead of an assumed schedule."
         },
-        "debtMenu": {
-          "title": "More options",
-          "body": "Turn on the calculator to add or subtract while entering an amount, or replay this walkthrough."
+        "debtHelp": {
+          "title": "Sums and this tour",
+          "body": "Amount fields take sums too, like 120+35. Tap this button to replay this walkthrough."
         },
         "debtSave": {
           "title": "Save",
-          "body": "Available once the debt has a name and an amount above zero."
-        },
-        "debtClose": {
-          "title": "Close",
-          "body": "Leaves without saving. That's everything — you're set."
+          "body": "Available once the debt has a name and a balance above zero. That's everything — you're set."
         }
       }
     },
@@ -365,7 +672,11 @@
       "steps": {
         "savingIcon": {
           "title": "Icon and colour",
-          "body": "Tap to pick a symbol and colour for this goal. It's how you'll spot it in your list of savings."
+          "body": "Pick a colour, or tap the icon to choose a symbol. It's how you'll spot this goal in your list of savings."
+        },
+        "savingTarget": {
+          "title": "Target amount",
+          "body": "What you're saving towards. You can type a sum, like 250*12, and it's worked out for you."
         },
         "savingDates": {
           "title": "Start and end date",
@@ -373,7 +684,7 @@
         },
         "savingMonthly": {
           "title": "Monthly contribution",
-          "body": "What you plan to put aside each month. Setting an end date above calculates this instead, and takes priority."
+          "body": "What you plan to put aside each month. Setting an end date below calculates this instead, and takes priority."
         },
         "savingBalance": {
           "title": "Starting balance",
@@ -383,16 +694,16 @@
           "title": "Category",
           "body": "Optional. Link a category so transactions in it count towards this goal automatically."
         },
-        "savingMenu": {
-          "title": "More options",
-          "body": "Turn on the calculator to add or subtract while entering an amount, or replay this walkthrough."
+        "savingHelp": {
+          "title": "This walkthrough",
+          "body": "Replay it from here whenever you like."
         },
         "savingSave": {
           "title": "Save",
           "body": "Available once the goal has a name and a target above zero."
         },
         "savingClose": {
-          "title": "Close",
+          "title": "Cancel",
           "body": "Leaves without saving. That's everything — you're set."
         }
       }
@@ -411,7 +722,7 @@
     },
     "debtLinkedPayment": {
       "title": "Linked bill sets the payment",
-      "body": "Link a recurring bill to a debt and its monthly amount becomes the debt's minimum payment. Open Minimum monthly payment to enter a different figure."
+      "body": "Link a recurring bill to a debt and its monthly amount becomes the debt's minimum payment. Type a different figure in Minimum monthly payment to override it."
     },
     "recurringWholeWord": {
       "title": "Match a whole word",
@@ -420,6 +731,26 @@
     "merchant": {
       "title": "Merchant profile",
       "body": "Every shop you pay gets its own page: what you spend there, how often, and how that has changed over the years."
+    },
+    "merchantVisits": {
+      "title": "Month by month",
+      "body": "Each bar is what you spent here in that month; months still to come are striped. With more than a year of history, switch to one bar per year."
+    },
+    "categoryMerchants": {
+      "title": "Where it went",
+      "body": "The shops behind this category's total, biggest first, next to the latest transactions. Tap a transaction to open it."
+    },
+    "recurringCharges": {
+      "title": "Every charge at a glance",
+      "body": "The last 12 charges of this recurring item. When the price changes, the change is called out here."
+    },
+    "recurringMatchPreview": {
+      "title": "See what it will match",
+      "body": "As you type the match pattern or amount, this chart shows the past charges it picks up, so you can check the rule before you save."
+    },
+    "budgetCategoryDetail": {
+      "title": "Open a category",
+      "body": "Tap a category to see where the money went, its pace and the last months. The pencil edits its budget."
     },
     "budget": {
       "title": "Your budget",
@@ -517,17 +848,17 @@
       "title": "Search sits at the bottom",
       "body": "Search your transactions from the bar just above the tab bar, within thumb reach. It filters the list as you type."
     },
-    "activityContext": {
-      "title": "The category this month",
-      "body": "How this month's spend in the category is made up, merchant by merchant, against its budget. This transaction's merchant is outlined."
+    "activityHistory": {
+      "title": "History in one tap",
+      "body": "This row shows what you spent at this merchant this period, or when a recurring payment comes next. Tap it for the last 12 months or the last 12 payments."
     },
     "activityKeys": {
       "title": "Move with the arrow keys",
       "body": "Press ↑ and ↓ to step through the list; the transaction on the right follows."
     },
-    "budgetStrategyCard": {
-      "title": "Your split, in euros",
-      "body": "How your income divides over needs, wants and savings, and what you have spent on each so far. Tap Adjust to change the split."
+    "activityDetailTabs": {
+      "title": "Summary and bank details",
+      "body": "Summary shows what a payment is and what it did to your budget. Details shows everything the bank sent along, like the IBAN and reference, with copy buttons."
     },
     "budgetMove": {
       "title": "Move budget in one tap",
@@ -535,19 +866,31 @@
     },
     "budgetBills": {
       "title": "This month's bills",
-      "body": "Every bill on its due day. Tap a day to see just its bills, and tick a bill off once it is paid."
+      "body": "Paid bills sit above the Today line, the ones still to come below it. Tick a bill off once it is paid."
+    },
+    "budgetPeriodNav": {
+      "title": "Look back at earlier months",
+      "body": "Use the arrows next to the dates to see how an earlier budget month ended: what you spent, which categories went over, and which bills were paid."
+    },
+    "budgetAddCategory": {
+      "title": "Everything in one place",
+      "body": "Your overall budget, the strategy and every category budget now sit together. Add categories one at a time; what each spent this period shows under its name."
     },
     "debtsDetail": {
       "title": "Everything about one debt",
-      "body": "Pick a debt in the list to see its linked bill, how much of each payment is interest and when it is paid off."
+      "body": "Open a debt to see its linked bill, how much of each payment is interest and every payment still to come. The pencil edits it."
     },
     "debtsSimulator": {
       "title": "Try paying a bit extra",
-      "body": "Slide to see how much sooner you are debt-free and how much interest you save. The timeline above follows along."
+      "body": "Slide to see how much sooner you are debt-free and how much interest you save. The payoff timeline follows along."
+    },
+    "debtsSortAndImpact": {
+      "title": "Your order, your month",
+      "body": "Sort your debts to choose which one gets the extra first. Here you also see what the extra leaves you free to spend each month."
     },
     "debtsOwed": {
       "title": "Money coming back to you",
-      "body": "Debts others owe you and advances that are only partly paid back. Tick an advance off once it is settled."
+      "body": "Debts others owe you and advances that are only partly paid back. Mark one as settled once it is done."
     },
     "goalsContributions": {
       "title": "What you put aside",
@@ -555,7 +898,11 @@
     },
     "goalsDetail": {
       "title": "When you get there",
-      "body": "Pick a goal to see its history and, at your monthly amount, the month you reach it."
+      "body": "Open a goal to see its history and, at your monthly amount, the month you reach it. You can edit it from there too."
+    },
+    "goalsSuggestions": {
+      "title": "Start from a suggestion",
+      "body": "Use this fills in a name, icon and colour for a common first goal. Add your own amounts and change anything before you save."
     },
     "insightsMerchants": {
       "title": "Where the money went",
@@ -563,15 +910,63 @@
     },
     "insightsNeedsWants": {
       "title": "Needs and wants, month by month",
-      "body": "Each bar splits a month's spending into needs (ink) and wants (mustard), from your categories' budget types."
+      "body": "Each bar splits a month's spending into needs (black) and wants (orange), from your categories' budget types. The dashed line is your plan's needs share of income."
     },
-    "insightsHealthCompare": {
-      "title": "This month against last month",
-      "body": "Income, expenses and your savings rate next to last month, plus the category that moved the most."
+    "insightsHealthNextStep": {
+      "title": "What would lift your score",
+      "body": "The step worth the most points, where you stand against its target, and what it takes to get there."
+    },
+    "insightsHealthHistory": {
+      "title": "Your score, month by month",
+      "body": "Each budget month's score next to its income, expenses, savings rate and net worth. The month in progress is marked so far."
+    },
+    "insightsCategorySwitch": {
+      "title": "Spending or income",
+      "body": "Switch this card between spending and income by category. Income by category, once a card of its own, now lives here."
     },
     "insightsComingUp": {
       "title": "What's coming",
-      "body": "The next booked and expected payments in your forecast. Open the calendar below for every day with money moving."
+      "body": "The next booked and expected payments in your forecast. Switch to Calendar to see every day with money moving, and tap a payment for its details."
+    },
+    "insightsForecastRange": {
+      "title": "30 days or 3 months",
+      "body": "Switch the forecast between the next 30 days and the next 3 months. The numbers and the status next to it follow along."
+    },
+    "insightsNetWorthRange": {
+      "title": "Look further back",
+      "body": "Switch the chart between 30, 90 and 180 days to see how your net worth moved over a shorter or longer stretch."
+    },
+    "accountsAdd": {
+      "title": "Add accounts and assets",
+      "body": "Give a bank account its IBAN so imported rows land on it, and a starting balance so the total matches your bank. Savings, investments and things you own go under Add asset."
+    },
+    "addTransactionAnother": {
+      "title": "Add several in a row",
+      "body": "Save and add another keeps this open for the next one, with the same date and account. Pick a category to see what the amount does to its budget before you save."
+    },
+    "correctAmountPreview": {
+      "title": "See the budget change",
+      "body": "While you type the corrected amount, this shows what it does to the category's budget this period."
+    },
+    "receiptViewer": {
+      "title": "Read the small print",
+      "body": "Zoom in on the receipt, or download the photo to keep a copy somewhere else."
+    },
+    "rulePreview": {
+      "title": "Check the rule before you save",
+      "body": "While you edit the description, match or amount, this shows which earlier transactions the rule picks up."
+    },
+    "splitSharedCost": {
+      "title": "Paid for others too?",
+      "body": "Turn this on when others pay you back. Your cash flow keeps the full charge, while reports can show only your own share."
+    },
+    "linkSearchOlder": {
+      "title": "Not in the list?",
+      "body": "The list shows recent expenses. Search to find an older one by name."
+    },
+    "privacyEye": {
+      "title": "Hide your amounts",
+      "body": "Tap the eye to turn every amount into dots, on every screen, until you tap it again. Handy when someone is looking over your shoulder."
     },
     "homeSafeToSpendSum": {
       "title": "One number, with its sum",
@@ -585,15 +980,169 @@
       "title": "Everything is in the sidebar",
       "body": "Home, Activity, Plan and Insights sit on the left, with Import, Settings, the theme and Sign out underneath. On a phone they're in the bar at the bottom."
     },
+    "settingsNav": {
+      "title": "Every setting in one list",
+      "body": "Accounts, categories, recurring items, imports, appearance and your profile are all listed here. Pick one to open it."
+    },
     "homeMoneyFlow": {
       "title": "Money flow",
       "body": "Money in and money out this month, added up day by day. The gap between the two lines today is what you've kept so far."
+    },
+    "budgetStrategyTarget": {
+      "title": "Target against actual",
+      "body": "Each kind shows its target share of income (striped) above what you actually spent or saved so far. Tap Adjust to change the split."
+    },
+    "budgetUnbudgeted": {
+      "title": "Spending without a budget",
+      "body": "Spending in categories without their own budget now shows under the list, so you can see what eats into the free money."
+    },
+    "globalSearch": {
+      "title": "Search moved",
+      "body": "Search finds anything across the app — transactions, merchants, categories, settings. It now lives in the sidebar (and at the end of the bar on phones), so it is clear it searches everywhere, not just this page. Ctrl/Cmd+K still works."
     }
+  },
+  "categoryPicker": {
+    "title": "Category",
+    "close": "Close",
+    "placeholder": "Category",
+    "search": "Search categories",
+    "clearSearch": "Clear search",
+    "list": "Categories",
+    "uncategorized": "Uncategorized",
+    "empty": "No categories found",
+    "groups": {
+      "nodig": "Needs",
+      "willen": "Wants",
+      "sparen": "Savings",
+      "other": "Other"
+    },
+    "setTitle": "Set category",
+    "subtitleOne": "For {name}",
+    "subtitleMany": "For {count, plural, one {# selected transaction} other {# selected transactions}}",
+    "moreNames": "+{count} more",
+    "suggested": "Suggested",
+    "rule": {
+      "title": "Also create a rule for similar transactions",
+      "help": "Transactions matching {names} get this category from now on.",
+      "helpWithSimilar": "Transactions matching {names} get this category from now on, and {count, plural, one {# earlier transaction gets} other {# earlier transactions get}} it now."
+    },
+    "cancel": "Cancel",
+    "apply": "Apply to {count, plural, one {# transaction} other {# transactions}}",
+    "applying": "Applying…",
+    "applyFailed": "Couldn't set the category. Try again."
+  },
+  "datePicker": {
+    "chooseDate": "Choose a date",
+    "chooseMonth": "Choose a month",
+    "close": "Close",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "daysAgo": "{count, plural, one {# day ago} other {# days ago}}",
+    "thisMonth": "This month",
+    "lastMonth": "Last month",
+    "quickPicks": "Quick picks",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "previousYear": "Previous year",
+    "nextYear": "Next year",
+    "previousYears": "Previous 12 years",
+    "nextYears": "Next 12 years",
+    "chooseMonthOf": "{month}, choose another month",
+    "chooseYearOf": "{year}, choose another year",
+    "clear": "Clear",
+    "escToClose": "Esc to close"
+  },
+  "brandIconPicker": {
+    "title": "Brand icon",
+    "subtitle": "Pick a logo, upload your own or use an emoji.",
+    "selected": "Selected: {name}",
+    "choose": "Choose a brand icon",
+    "change": "Brand icon: {name}. Change it",
+    "close": "Close",
+    "search": "Search brands",
+    "clearSearch": "Clear search",
+    "matches": "{count, plural, one {# match} other {# matches}}",
+    "scope": "Which brands",
+    "popular": "Popular",
+    "all": "All",
+    "brands": "Brands",
+    "noMatches": "No brands match your search",
+    "uploads": "Your uploads",
+    "uploadedNamed": "Uploaded logo: {name}",
+    "uploadedImage": "Your own image",
+    "upload": "Upload a logo",
+    "uploading": "Uploading…",
+    "uploadHint": "PNG, JPG, SVG or WebP, square works best",
+    "custom": "Your own icon (emoji or text)",
+    "customPlaceholder": "🏠 or AB",
+    "clearCustom": "Remove",
+    "noIcon": "No icon",
+    "done": "Done",
+    "adjust": {
+      "title": "Size & position",
+      "reset": "Reset",
+      "size": "Size",
+      "horizontal": "Left/right",
+      "vertical": "Up/down"
+    }
+  },
+  "globalSearch": {
+    "title": "Search",
+    "openAnywhere": "Open it anywhere with",
+    "close": "Close",
+    "label": "Search transactions, categories, fixed costs, debts and actions",
+    "placeholder": "Search everything…",
+    "clear": "Clear search",
+    "results": "Search results",
+    "searching": "Searching…",
+    "noResults": "No results for “{query}”",
+    "matches": "{count, plural, one {# match} other {# matches}} for “{query}”",
+    "groups": {
+      "transactions": "Transactions",
+      "categories": "Categories",
+      "recurring": "Fixed costs",
+      "debts": "Debts",
+      "actions": "Actions",
+      "accounts": "Accounts",
+      "brands": "Brands"
+    },
+    "actions": {
+      "addTransaction": "Add transaction",
+      "importCsv": "Import CSV",
+      "budget": "Go to Budget",
+      "insights": "Go to Insights"
+    },
+    "actionHints": {
+      "budget": "Plan",
+      "insights": "Overview"
+    },
+    "openInSettings": "Open in Settings",
+    "allCategories": "All",
+    "allAccounts": "All",
+    "allActivity": "Activity",
+    "last30Days": "{count, plural, one {# transaction} other {# transactions}} in the last 30 days",
+    "lastTransaction": "Last transaction {ago}",
+    "brand": "Brand",
+    "keys": {
+      "up": "Up arrow",
+      "down": "Down arrow",
+      "move": "to move",
+      "open": "to open",
+      "close": "to close"
+    }
+  },
+  "confirmDialog": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete"
   },
   "importMapping": {
     "title": "Unrecognized bank format",
     "description": "We couldn't automatically detect this bank. Tell us which column is which — we'll remember it for next time.",
-    "bankName": "Bank name (optional)",
+    "close": "Close",
+    "optional": "(optional)",
+    "bankName": "Bank name",
     "bankNamePlaceholder": "e.g. My Bank",
     "column": "Column {index}",
     "none": "None",
@@ -611,19 +1160,35 @@
     "decimalSeparator": "Decimal separator",
     "decimalComma": "Comma (1.234,56)",
     "decimalDot": "Dot (1,234.56)",
-    "directionHint": "Direction (optional — leave as \"Use amount sign\" if negative amounts already mean money out)",
     "directionColumn": "Direction column",
+    "directionColumnHint": "Leave on \"Use amount sign\" if negative amounts already mean money out.",
     "useAmountSign": "Use amount sign",
     "directionExpenseValue": "Value in that column meaning \"money out\"",
     "directionExpenseValuePlaceholder": "e.g. Debit",
-    "accountColumn": "Account column (optional)",
-    "counterAccountColumn": "Counter-account (optional)",
-    "balanceColumn": "Resulting balance (optional)",
+    "accountColumn": "Account column",
+    "counterAccountColumn": "Counter-account",
+    "balanceColumn": "Resulting balance",
     "balanceColumnHint": "The balance your bank reports after each transaction — often called Balance, Running balance or Saldo. Stored exactly as it comes in, for future balance history and forecasts.",
     "cancel": "Cancel",
     "import": "Import",
     "importing": "Importing…",
     "previewLabel": "How your dates will be read",
+    "amountPreviewLabel": "How your amounts will be read",
+    "datesLookRight": "Looks right",
+    "datesUnreadable": "Can't read these",
+    "previewTable": "Preview of the first {count, plural, one {row} other {# rows}} of the file",
+    "roles": {
+      "date": "Date",
+      "description": "Description",
+      "amount": "Amount",
+      "direction": "Direction",
+      "account": "Account",
+      "counterAccount": "Counter-account",
+      "balance": "Balance"
+    },
+    "savedAsProfile": "Saved as import profile “{label}” on import",
+    "savedAsProfileUnnamed": "Saved as an import profile, so this bank is recognised next time",
+    "genericError": "Something went wrong",
     "notADate": "not a date",
     "notAnAmount": "not an amount",
     "datePreviewInvalid": "This column can't be read as a date. Pick a different column, or change the date format.",
@@ -641,7 +1206,9 @@
     "fix": "Fix",
     "deleteSelected": "Delete selected ({count})",
     "deleteAll": "Delete all ({count})",
-    "confirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?"
+    "confirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?",
+    "confirmDeleteBody": "This can't be undone. Anything {count, plural, one {it} other {they}} added to a savings goal comes off that goal again.",
+    "confirmDeleteLabel": "Delete {count, plural, one {transaction} other {# transactions}}"
   },
   "importProfiles": {
     "title": "Import Profiles",
@@ -649,13 +1216,409 @@
     "empty": "No saved import profiles yet.",
     "dateColumn": "Date column",
     "delete": "Delete profile",
-    "confirmDelete": "Delete the saved mapping \"{label}\"? The next import of that file will ask you to map its columns again."
+    "confirmDelete": "Delete the saved mapping \"{label}\"?",
+    "confirmDeleteBody": "The next import of that file will ask you to map its columns again."
+  },
+  "accountForms": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "done": "Done",
+    "today": "Today",
+    "notSet": "Not set",
+    "iconColor": "Icon & colour",
+    "icon": "Icon",
+    "color": "Colour",
+    "chooseIconColor": "Choose icon and colour",
+    "includeInNetWorth": "Include in net worth",
+    "bankTypes": {
+      "debitcard": "Checking",
+      "savings": "Savings",
+      "creditcard": "Credit card",
+      "cash": "Cash"
+    },
+    "assetTypes": {
+      "spaarrekening": "Savings account",
+      "beleggingen": "Investments",
+      "bezitting": "Possession",
+      "betaalrekening": "Checking account"
+    },
+    "transferKinds": {
+      "none": "None",
+      "savings": "Savings",
+      "investments": "Investments",
+      "credit_card_payment": "Credit card payment",
+      "cash_withdrawal": "Cash withdrawal",
+      "shared_account": "Shared account transfer"
+    },
+    "bank": {
+      "addTitle": "Add bank account",
+      "editTitle": "Edit bank account",
+      "addSubtitle": "Balances come from your imports; set a starting point so totals match your bank.",
+      "editSubtitle": "Its balance comes from your imports plus the starting balance.",
+      "name": "Account name",
+      "namePlaceholder": "e.g. ING Checking",
+      "iban": "IBAN",
+      "ibanHint": "Used to match imported rows to this account",
+      "ibanReadOnly": "{iban} · used to match imported rows",
+      "type": "Account type",
+      "startingBalance": "Starting balance",
+      "startingBalanceHint": "Added to this account's balance, but never to reports.",
+      "balanceAsOf": "Balance as of",
+      "balance": "Current balance",
+      "balanceHint": "Only change it to fix a real difference with your bank.",
+      "balanceWarning": "This corrects the balance directly — it doesn't add a transaction. Every balance shown for this account shifts with it.",
+      "balanceConfirm": "Correct this account's balance?",
+      "balanceConfirmBody": "You're correcting this account's balance directly, not logging a transaction. This shifts every past and future balance shown for this account, so make sure the new amount is right.",
+      "balanceConfirmLabel": "Correct balance",
+      "expiry": "Expiry date",
+      "transferKind": "Transfer type",
+      "transferKindHint": "Transfers to and from this account get this type in your transaction lists.",
+      "netWorthHint": "Adds this account's balance to your net worth",
+      "add": "Add account",
+      "confirmDelete": "Delete this bank account?",
+      "confirmDeleteBody": "Its transactions stay in Activity, but its balance no longer counts toward your net worth, the forecast or safe to spend.",
+      "confirmDeleteLabel": "Delete account"
+    },
+    "asset": {
+      "addTitle": "Add an asset",
+      "editTitle": "Edit asset",
+      "subtitle": "Things you own that count toward your net worth.",
+      "type": "What kind of asset?",
+      "name": "Name",
+      "namePlaceholder": "e.g. Index fund",
+      "value": "Current value",
+      "valueAsOf": "Value as of",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional note",
+      "netWorthHint": "Counts this asset towards your net worth",
+      "addsToNetWorth": "This adds <b>{amount}</b> to your assets in Net worth.",
+      "countsInNetWorth": "Net worth counts this asset at <b>{amount}</b>.",
+      "notInNetWorth": "This asset stays out of Net worth.",
+      "add": "Add asset",
+      "confirmDelete": "Delete this asset?",
+      "confirmDeleteBody": "Its value no longer counts toward your net worth.",
+      "confirmDeleteLabel": "Delete asset"
+    },
+    "panel": {
+      "total": "Total",
+      "accountCount": "{count, plural, one {# account} other {# accounts}}",
+      "vsLastMonth": "vs last month",
+      "range": "Chart range",
+      "ranges": {
+        "1w": "1W",
+        "1m": "1M",
+        "3m": "3M",
+        "6m": "6M",
+        "1y": "1Y"
+      },
+      "banks": "Bank accounts",
+      "assets": "Other assets",
+      "noBanks": "No bank accounts yet",
+      "noAssets": "No assets yet",
+      "addBank": "Add bank account",
+      "addAsset": "Add asset",
+      "edit": "Edit {name}",
+      "bankFallback": "Bank {id}",
+      "updated": "Updated {date}"
+    }
+  },
+  "newAccounts": {
+    "title": "{count, plural, one {New account found} other {New accounts found}}",
+    "subtitle": "{count, plural, one {This import introduced an account Centje hasn't seen before.} other {This import introduced # accounts Centje hasn't seen before.}}",
+    "close": "Close",
+    "foundHere": "Found in this import",
+    "new": "New",
+    "name": "Account name",
+    "startingBalance": "Starting balance",
+    "asOf": "As of",
+    "today": "Today",
+    "hint": "The starting balance is added to the account's displayed balance only — reports never change.",
+    "later": "Later",
+    "save": "{count, plural, one {Save balance} other {Save balances}}",
+    "saving": "Saving…"
+  },
+  "avatarCrop": {
+    "title": "Crop your photo",
+    "subtitle": "Drag to move, use the slider to zoom",
+    "close": "Close",
+    "cropArea": "Your photo with a round crop area in the centre",
+    "zoom": "Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomValue": "{percent} percent",
+    "preview": "Preview",
+    "previewHint": "How it shows around the app",
+    "places": {
+      "topBar": "Top bar",
+      "settings": "Settings",
+      "profile": "Profile"
+    },
+    "cancel": "Cancel",
+    "save": "Save photo"
+  },
+  "merchantProfile": {
+    "title": "Merchant profile",
+    "close": "Close",
+    "loading": "Loading…",
+    "subtitleMostly": "Mostly {category}",
+    "subtitleSince": "since {date}",
+    "uncategorized": "Uncategorized",
+    "rename": "Rename",
+    "changeMerchant": "Change merchant",
+    "empty": "No expenses recorded for this merchant yet.",
+    "totalSpent": "Total spent",
+    "visits": "Visits",
+    "average": "Average",
+    "largest": "Largest purchase",
+    "firstVisit": "First visit",
+    "lastVisitLabel": "Last visit",
+    "transactions": "Transactions",
+    "summary": "{count, plural, one {# visit} other {# visits}} · {amount}",
+    "done": "Done",
+    "byMonth": "Visits in {year}",
+    "byYear": "Visits per year",
+    "viewLabel": "Show visits by",
+    "months": "Months",
+    "years": "Years",
+    "lastVisit": "Last visit {date}",
+    "chartAria": "Spending at {name} per month in {year}: {list}.",
+    "chartAriaYears": "Spending at {name} per year: {list}.",
+    "noVisits": "no visits",
+    "categories": "Categories",
+    "categoryMeta": "{count, plural, one {# visit} other {# visits}} · {amount}",
+    "renameTitle": "Rename merchant",
+    "renameLabel": "Name",
+    "renameHint": "Renaming updates every transaction linked to this merchant.",
+    "renameError": "Could not rename this merchant.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…"
+  },
+  "categoryDetail": {
+    "title": "Category",
+    "close": "Close",
+    "loading": "Loading…",
+    "income": "Income",
+    "budgetTypes": {
+      "need": "Need",
+      "want": "Want",
+      "saving": "Saving"
+    },
+    "budgetMonth": "budget {amount} a month",
+    "budgetWeek": "budget {amount} a week",
+    "editCategory": "Edit category",
+    "editBudget": "Edit budget",
+    "viewAll": "View all transactions",
+    "empty": "No transactions in this period.",
+    "spendingRow": "Show in the spending overview",
+    "spendingRowHint": "Keeps {name} among the spending categories on Insights.",
+    "status": {
+      "over": "Over budget",
+      "close": "Getting close",
+      "onPace": "On pace"
+    },
+    "ofBudget": "of <b>{budget}</b> · <b>{left} left</b>",
+    "ofBudgetOver": "of <b>{budget}</b> · <b>{over} over</b>",
+    "spentIn": "spent {when}",
+    "receivedIn": "received {when}",
+    "pace": "Day {day} of {days} · an even pace would be {amount} by now",
+    "daysLeft": "{count, plural, one {# day left} other {# days left}}",
+    "saving": "Saving…",
+    "suggested": {
+      "title": "Suggested budget: {amount}",
+      "body": "Projected from your spending pace so far.",
+      "use": "Use it"
+    },
+    "stats": {
+      "forecast": "Forecast",
+      "forecastOver": "{amount} over budget",
+      "perDayLeft": "{amount} a day left",
+      "pace": "{amount} a day so far",
+      "perWeek": "Per week",
+      "biggest": "Biggest purchase",
+      "busiestDay": "Busiest day"
+    },
+    "chart": {
+      "viewLabel": "Chart",
+      "history": {
+        "day": "Last six days",
+        "week": "Last six weeks",
+        "month": "Last six months"
+      },
+      "thisPeriod": "This period",
+      "spent": "Spent",
+      "received": "Received",
+      "budget": "Budget",
+      "budgetLine": "Budget {amount}",
+      "historyAria": "{name}: {list}.{hasBudget, select, yes { Budget {budget} each.} other {}}",
+      "periodAria": "{name} this period: {spent} so far{hasProjection, select, yes {, heading for {projected}} other {}}."
+    },
+    "merchants": "Merchants",
+    "sources": "From",
+    "visits": "{count, plural, one {# visit} other {# visits}}",
+    "recent": "Recent",
+    "recentCount": "Last {count}",
+    "showAll": "Show all {count}",
+    "showLess": "Show less",
+    "allTitle": "All transactions",
+    "budgetDialog": {
+      "title": "Budget for {name}",
+      "perMonth": "For each month",
+      "perWeek": "For each week",
+      "amount": "Amount",
+      "hint": "Leave it empty or at 0 to have no budget.",
+      "close": "Close",
+      "remove": "Remove budget",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "period": {
+      "title": "Period",
+      "close": "Close",
+      "change": "Period: {period}. Change it",
+      "range": "{from} – {to}",
+      "presets": {
+        "budget": "Budget period",
+        "week": "This week",
+        "month": "This month",
+        "3m": "Last 3 months",
+        "6m": "Last 6 months",
+        "year": "This year",
+        "custom": "Custom period"
+      },
+      "when": {
+        "budget": "this period",
+        "week": "this week",
+        "month": "this month",
+        "3m": "in the last 3 months",
+        "6m": "in the last 6 months",
+        "year": "this year",
+        "custom": "from {from} to {to}"
+      },
+      "from": "From",
+      "to": "To",
+      "rangeInvalid": "The end date is before the start date.",
+      "apply": "Apply"
+    }
+  },
+  "recurringDetail": {
+    "title": "Recurring item",
+    "close": "Close",
+    "category": "Category",
+    "uncategorized": "Uncategorized",
+    "account": "Account",
+    "budgetType": "Budget type",
+    "startDate": "Start date",
+    "startsLater": "{date} (starts later)",
+    "dueDay": "Due day",
+    "dueDayValue": "Day {day}",
+    "next": "Next transaction",
+    "endDate": "End date",
+    "notes": "Notes",
+    "nextOn": "Next on {date}",
+    "active": "Active",
+    "paused": "Paused",
+    "linked": "Linked transactions",
+    "linkedCount": "{count, plural, one {# transaction} other {# transactions}}",
+    "loading": "Loading…",
+    "noLinked": "No linked transactions yet.",
+    "delete": "Delete",
+    "pause": "Pause",
+    "resume": "Resume",
+    "edit": "Edit",
+    "charges": {
+      "title": "Last {count} charges",
+      "summary": "<b>{total}</b> in total · avg {avg}",
+      "aria": "Charges, oldest first: {list}.",
+      "priceUp": "Price went up {amount} in {month}",
+      "priceDown": "Price went down {amount} in {month}"
+    }
+  },
+  "recurringForm": {
+    "editTitle": "Edit recurring item",
+    "makeRecurring": "Make recurring",
+    "newTitle": "New recurring item",
+    "newSubtitle": "A bill, subscription or income that comes back",
+    "add": "Add recurring item",
+    "close": "Close",
+    "confirmDelete": "Delete \"{name}\"?",
+    "confirmDeleteBody": "Its past transactions stay in Activity, they're just no longer linked to it.",
+    "confirmDeleteLabel": "Delete recurring item",
+    "duplicate": "A recurring item with this name already exists.",
+    "fromName": "From {name}",
+    "amountOn": "{amount} on {date}",
+    "name": "Name",
+    "namePlaceholder": "e.g. Rent",
+    "friendlyName": "Friendly name",
+    "friendlyHint": "Shown on matched transactions instead of the bank's name.",
+    "friendlyPlaceholder": "e.g. Gym membership",
+    "amount": "Amount",
+    "startDate": "Starts on",
+    "startHint": "Due on day {day}",
+    "category": "Category",
+    "noCategory": "Choose",
+    "type": "Type",
+    "types": {
+      "bill": "Bill",
+      "subscription": "Subscription",
+      "income": "Income",
+      "debt": "Debt",
+      "savings": "Savings"
+    },
+    "budgetType": "Budget type",
+    "budgetTypes": {
+      "needs": "Needs",
+      "wants": "Wants",
+      "savings": "Savings"
+    },
+    "frequency": "Frequency",
+    "frequencies": {
+      "once": "Once",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly"
+    },
+    "endDate": "Ends on a date",
+    "endHint": "After this date the recurring item switches off by itself.",
+    "noEnd": "No end date — it runs until you stop it.",
+    "endLocked": "The end date follows the linked debt's last payment.",
+    "endLockedOn": "Ends {date} — follows the linked debt's last payment.",
+    "matchPattern": "Match pattern",
+    "matchPlaceholder": "Text in the description, e.g. Netflix",
+    "wholeWord": "Whole word only",
+    "wholeWordHint": "Only as a separate word — “NS” won't match “NSPCC”.",
+    "containsHint": "Matches anywhere in the description, even inside a word.",
+    "linkedHint": "{count, plural, one {# transaction is linked} other {# transactions are linked}}; new ones are tagged automatically.",
+    "autoHint": "New transactions that match are tagged automatically.",
+    "matchesHint": "{count, plural, =0 {No past transactions match yet.} one {Matches # past transaction. New ones are tagged automatically.} other {Matches # past transactions. New ones are tagged automatically.}}",
+    "matchAmount": "Match amount",
+    "exact": "Exact amount",
+    "between": "Between",
+    "anyAmount": "Any amount",
+    "min": "Min",
+    "max": "Max",
+    "setTo": "This recurring item is set to {amount}.",
+    "useIt": "Use it",
+    "notes": "Notes",
+    "notesPlaceholder": "Anything worth remembering",
+    "active": "Active",
+    "activeHint": "Turn it off to pause the item without deleting it.",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "restore": "Restore",
+    "restoring": "Restoring…"
   },
   "sharedCost": {
     "row": "Shared cost",
-    "rowNotShared": "Not shared",
     "rowPayback": "Money paid back to me",
-    "rowYourShare": "Your share {amount}",
     "sharedToggle": "Others pay me back for this",
     "paidBackLabel": "Paid back to me each time",
     "peopleLabel": "People sharing it (including you)",
@@ -694,7 +1657,8 @@
       "light": "Light",
       "system": "Auto",
       "dark": "Dark"
-    }
+    },
+    "searchEverything": "Search everything"
   },
   "insights": {
     "title": "Insights",
@@ -714,23 +1678,30 @@
       "forecast": "Cash flow forecast · from your balance, bills and income",
       "health": "Financial health · scored monthly from your own data"
     },
-    "budgetTabs": {
-      "budget": "Budget",
-      "prognose": "Forecast"
-    },
     "filters": {
       "categories": "Categories",
       "accounts": "Accounts",
-      "resetCategories": "Reset categories",
-      "resetAccounts": "Reset accounts"
+      "categoriesCount": "Categories · {count}",
+      "accountsCount": "Accounts · {count}",
+      "clear": "Clear filters"
     },
     "period": {
       "title": "Period",
+      "subtitle": "Budget follows your budget period, from payday to payday",
+      "triggerLabel": "Period: {period}. Change period",
+      "presetsLabel": "Presets",
       "previous": "Previous period",
       "next": "Next period",
-      "budgetPeriod": "Budget period",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "budgetPeriods": "{count, plural, one {Budget period} other {Budget periods}}",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "dayToday": "day {day} today",
+      "today": "Today, {date}",
       "from": "From",
       "to": "To",
+      "close": "Close",
+      "cancel": "Cancel",
       "apply": "Apply",
       "presets": {
         "budget": "Budget",
@@ -746,218 +1717,523 @@
       "income": "Income",
       "expenses": "Expenses",
       "saved": "Saved",
-      "savedValue": "{amount} · {pct}%",
+      "ofIncome": "of income",
       "largest": "Largest expense",
-      "weekByWeek": "Week by week",
+      "largestWhere": "{name}, {date}",
+      "avgPerDay": "Average per day",
       "spending": "Spending",
       "incomeShort": "Income",
-      "cashflow": "Cash flow",
-      "leftPerDay": "About {amount} a day left for the remaining {days, plural, one {# day} other {# days}}",
+      "spent": "Spent",
+      "billsDue": "Bills still due",
+      "flow": {
+        "day": {
+          "title": "Day by day",
+          "subtitle": "Money in and spending for each day of this period"
+        },
+        "week": {
+          "title": "Week by week",
+          "subtitle": "Money in and spending for each week of this period"
+        },
+        "month": {
+          "title": "Month by month",
+          "subtitle": "Money in and spending for each month of this period"
+        },
+        "year": {
+          "title": "Year by year",
+          "subtitle": "Money in and spending for each year of this period"
+        },
+        "today": "Today",
+        "thisWeek": "This week",
+        "weekN": "Week {n}"
+      },
+      "flowLabel": "Bar chart of money in and spending. {list}",
+      "noActivity": "No money in or out this period.",
+      "leftPerDay": "About <b>{amount} a day</b> left for the remaining {days, plural, one {# day} other {# days}}",
+      "nothingLeft": "Nothing left to spend for the remaining {days, plural, one {# day} other {# days}}",
+      "safeToSpend": "{amount} safe to spend",
+      "overBudget": "{amount} over budget",
       "topMerchants": "Top merchants",
-      "all": "All",
       "noMerchants": "No spending at a known merchant this period.",
       "visits": "{count, plural, one {# visit} other {# visits}}",
       "byAccount": "By account",
+      "spentTotal": "{amount} spent",
+      "transactionCount": "{count, plural, one {# transaction} other {# transactions}}",
+      "otherAccounts": "Other accounts",
       "noSpending": "No spending yet this period.",
       "unknownAccount": "Unknown account",
       "accountsNote": "Savings and transfers between your own accounts are left out of spending.",
       "noIncome": "No income yet this period.",
-      "budget": "Budget",
-      "open": "Open",
-      "left": "Left",
-      "weekly": "Weekly",
-      "monthly": "Monthly",
-      "daysLeft": "Days left",
-      "days": "{count, plural, one {# day} other {# days}}",
-      "favoriteCategory": "Favourite category",
-      "transactions": "Transactions",
-      "vsLastPeriod": "{change} vs last period",
       "popularDay": "Popular day",
       "calendar": "Calendar",
+      "calendarLabel": "Spending per day in this period, darker on busier days",
+      "stillToCome": "Still to come",
+      "heatLess": "Less",
+      "heatMore": "More",
       "avgExpense": "Avg expense / day",
-      "avgIncome": "Avg income / day",
       "byCategory": "Spending by category",
-      "allCategories": "All categories",
-      "other": "Other",
       "incomeByCategory": "Income by category",
-      "viewAll": "View all"
+      "categorySwitch": "Show spending or income by category",
+      "details": "Details",
+      "spentSoFar": "spent so far",
+      "spentCaption": "spent",
+      "received": "received",
+      "donutLabel": "{title}, {total} in total: {parts}",
+      "other": "Other",
+      "moreCount": "{count} more",
+      "viewAll": "View all",
+      "empty": {
+        "title": "Insights need a little history",
+        "body": "Once a month of transactions is in, you'll see where your money goes, your trends and a forecast of the weeks ahead.",
+        "import": "Import CSV",
+        "add": "Add transaction",
+        "tip": "Tip: import the last three months to see trends straight away.",
+        "noTransactions": "No transactions yet",
+        "savedLater": "Savings rate shows after a month",
+        "avgLater": "Needs a few weeks of spending",
+        "categoriesTitle": "Spending by category appears here",
+        "categoriesBody": "Where your money goes, per category",
+        "merchantsTitle": "Top merchants appear here",
+        "merchantsBody": "The places you spend most, and how often"
+      }
     },
     "trends": {
-      "months": "{count, plural, one {# month} other {# months}}",
       "avgIncome": "Avg. income",
       "avgExpenses": "Avg. expenses",
       "avgBalance": "Avg. balance",
       "totalExpenses": "Total expenses",
-      "noPrevious": "vs last period: no data",
+      "perMonth": "/mo",
+      "highestIn": "Highest in {month} · {amount}",
+      "positiveCount": "{count} of {total}",
+      "positiveLabel": "{total, plural, one {month ended positive} other {months ended positive}}",
+      "topShare": "went to {category}",
+      "noTransactions": "No transactions yet",
       "needsWants": "Needs and wants per month",
+      "needsWantsSubtitle": "Your plan is {needs} / {wants} / {savings}",
+      "needsWantsDescription": "Needs and wants per month: {months}",
+      "needsTarget": "Needs target, {pct}% of income",
+      "needsIn": "Needs in {month}",
       "needs": "Needs",
       "wants": "Wants",
+      "savings": "Savings",
       "incomeVsExpenses": "Income vs expenses",
+      "incomeVsExpensesSubtitle": "Per budget month, with what was left over underneath",
+      "chartDescription": "Income and expenses per month: {months}",
+      "inProgress": "Month in progress",
+      "soFar": "so far",
       "income": "Income",
       "expenses": "Expenses",
       "balance": "Balance",
       "comparison": "Month comparison",
+      "comparisonSubtitle": "{b} vs {a}",
+      "comparisonSubtitleSoFar": "{b} vs {a} so far",
+      "comparisonRunsUntil": "{month} runs until {date}.",
+      "comparisonStillDue": "{month} runs until {date}. {list} · {amount} still due",
+      "billsMore": "{list} +{count} more",
+      "runsUntil": "Runs until {date}",
+      "vsMonth": "vs {month}",
+      "ofIncomeLeft": "of income left over",
+      "changeMonths": "Change months",
+      "category": "Category",
+      "change": "Change",
+      "moreCategories": "{count, plural, one {# more category} other {# more categories}}",
       "noData": "No data",
       "perCategory": "Expenses per category",
-      "perCategoryNote": "Per month · the charted period",
+      "perCategorySubtitle": "{count, plural, one {One budget month} other {# budget months}}, largest first",
+      "filterByType": "Filter by budget type",
+      "seeTransactions": "See transactions",
+      "trend": "{count, plural, one {This month} other {Last # months}}",
+      "monthSoFar": "{month} so far",
+      "avgMonthHeader": "Avg / month",
+      "total": "Total",
+      "shareOfExpenses": "{pct}% of all expenses",
+      "sparkLabel": "{name} per month, from {min} to {max}",
       "all": "All",
       "noExpenses": "No expenses in this period.",
       "avgPerMonth": "avg. {amount}/mo",
       "showLess": "Show less",
-      "showMore": "Show more ({count})",
-      "vs": "vs"
+      "showMore": "Show more ({count})"
     },
     "netWorth": {
-      "title": "Net worth · assets minus debts",
-      "vsDaysAgo": "vs {count, plural, one {# day} other {# days}} ago",
+      "title": "Net worth",
+      "rangeLabel": "Chart range",
+      "rangeDays": "{count}d",
+      "vsDaysAgo": "{amount} vs {count, plural, one {# day} other {# days}} ago",
+      "sinceUp": "Up {amount} since {date}.",
+      "sinceDown": "Down {amount} since {date}.",
+      "sinceSame": "Unchanged since {date}.",
+      "daysAgoAt": "{count, plural, one {# day} other {# days}} ago · {amount}",
+      "todayAt": "Today · {amount}",
+      "heroChartDescription": "Net worth over the last {count, plural, one {# day} other {# days}}, from {start} to {end} today.",
+      "chartDescription": "Balance going from {start} on {from} to {end} on {to}.",
+      "building": "The chart is being built: your net worth is recorded once a day, so come back tomorrow for the first comparison.",
+      "assetsVsDebts": "Assets vs debts",
       "assets": "Assets",
       "debts": "Debts",
-      "days": "{count, plural, one {# day} other {# days}}",
-      "building": "The trend chart is being built — come back tomorrow for your first comparison.",
+      "shareDescription": "Assets {assets}%, debts {debts}%",
+      "assetsShare": "{pct}% assets",
+      "debtsShare": "{pct}% debts",
       "projection": "{count, plural, one {One-month} other {#-month}} projection",
-      "projectedBy": "{amount} by {date}",
+      "byDate": "by {date}",
+      "now": "Now",
+      "projectionDescription": "Projected net worth going from {start} now to {end} in {date}.",
       "projectionNote": "From recurring income, savings contributions and repayments still due to you. Your own bills are not netted out, so this is where things are headed if that keeps flowing.",
-      "savingsGoals": "Savings goals",
+      "ownOwe": "What you own and owe",
+      "manage": "Manage",
+      "bankAccounts": "Bank accounts",
+      "bankAccount": "Bank account",
+      "bankMeta": "••{suffix}",
+      "assetsSplit": "How your assets are split",
+      "groupShare": "{pct}%",
       "types": {
         "spaarrekening": "Savings account",
         "beleggingen": "Investments",
         "betaalrekening": "Checking account",
         "bezitting": "Possessions"
       },
-      "bankAccounts": "Bank accounts",
-      "owedToYou": "Owed to you",
       "other": "Other",
-      "manage": "Manage",
-      "noGoals": "No savings goals.",
-      "ofGoal": "{pct}% of goal",
-      "paidPct": "{pct}% paid",
-      "total": "Total",
-      "noDebts": "No debts.",
-      "ownOwe": "What you own and owe",
-      "accounts": "Accounts",
-      "totalAssets": "total assets",
-      "noAssets": "No assets found."
+      "updated": "Updated {date}",
+      "goalsInAssets": "Saved in your goals",
+      "goalsInAssetsMeta": "{count, plural, =0 {No savings yet} one {# goal} other {# goals}} · details below",
+      "owedToYou": "Owed to you",
+      "owedMeta": "Open · counts towards net worth",
+      "noAssets": "No assets yet. Add your bank accounts, savings or investments to see them here.",
+      "addAccount": "Add an account",
+      "openDebts": "Open Debts",
+      "noDebts": "No debts, nothing to pay off.",
+      "addDebt": "Add a debt",
+      "debtMeta": "{amount}/mo",
+      "debtMetaRate": "{amount}/mo · {rate, number}% a year",
+      "leftOf": "left of {amount}",
+      "paidSoFar": "<b>{pct}% paid</b> · {amount} so far",
+      "debtFree": "Debt-free {date}",
+      "neverPaysOff": "Payment doesn't cover the interest",
+      "noPayment": "No monthly payment set",
+      "paidOff": "Paid off",
+      "minimumPayments": "Minimum payments",
+      "perMonth": "{amount}/mo",
+      "savingsGoals": "Savings goals",
+      "goalsSummary": "{saved} saved, {monthly}/mo",
+      "openGoals": "Open Goals",
+      "noGoals": "No savings goals yet.",
+      "addGoal": "Add a goal",
+      "goalMeta": "{monthly}/mo",
+      "goalMetaReady": "{monthly}/mo · ready {date}",
+      "goalMetaNone": "No monthly amount set",
+      "goalOf": "<b>{saved}</b> of {target}",
+      "toGo": "{amount} to go",
+      "reached": "Reached",
+      "empty": {
+        "title": "Track what you own and owe",
+        "body": "Add your accounts, savings and debts and you'll see your net worth, and how it changes from day to day.",
+        "addAccount": "Add an account",
+        "addDebt": "Add a debt",
+        "chart": "Your net worth over time appears here",
+        "chartBody": "One point a day, from the day you start",
+        "split": "Assets vs debts appear here",
+        "splitBody": "What you own against what you owe"
+      }
     },
     "health": {
       "title": "Financial health",
-      "up": "Up {count, plural, one {# point} other {# points}} since {month}",
-      "down": "Down {count, plural, one {# point} other {# points}} since {month}",
+      "outOf": "out of {max}",
+      "gaugeLabel": "Financial health score: {score} out of {max}.",
+      "gaugeLabelPrev": "Financial health score: {score} out of {max}. In {month} it was {prev}.",
+      "marker": "{month} {score}",
+      "states": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "fair": "Fair",
+        "attention": "Needs attention"
+      },
+      "band": "{from}–{to} {label}",
+      "bandTop": "{from}+ {label}",
+      "since": "{count, plural, one {# point} other {# points}} since {month}",
       "same": "The same score as in {month}",
-      "areas": "{count, plural, one {# area} other {# areas}}",
-      "na": "n/a",
-      "notEnough": "Not enough data yet.",
-      "vsMonth": "{now} vs {prev}",
-      "trends": "Trends",
+      "focus": "{area} is the biggest improvement opportunity.",
+      "allFull": "Every area earns its full points.",
+      "partial": "Scored on {count} of {total} areas; the others need more data.",
+      "trendLabel": "Score per month: {list}.",
+      "nextStep": "Next best step",
+      "gain": "+{count, plural, one {# point} other {# points}}",
+      "potential": "That could add {count, plural, one {# point} other {# points}} to your score.",
+      "now": "Now",
+      "target": "Target",
+      "perMonth": "{amount} a month",
+      "monthsCount": "{count, plural, one {# month} other {# months}}",
+      "action": {
+        "savingsRate": "Raise your savings rate to {target}",
+        "emergencyFund": "Grow your emergency fund to {count} months",
+        "budgetAdherence": "Stay within your budget",
+        "recurringExpenses": "Bring fixed costs down to {target} of income",
+        "debtRatio": "Pay down your debts",
+        "incomeStability": "Even out your monthly income"
+      },
+      "gap": {
+        "savingsRate": "Save {amount} more a month to get there",
+        "emergencyFund": "Put {amount} more aside to get there",
+        "budgetAdherence": "Keep spending within your overall budget each month",
+        "recurringExpenses": "Trim {amount} a month of fixed costs to get there",
+        "debtRatio": "Clearing your debts frees up {amount} a month",
+        "incomeStability": "A buffer for quieter months smooths this out"
+      },
+      "links": {
+        "budget": "Open budget",
+        "goals": "See goals",
+        "debts": "See debts",
+        "recurring": "See fixed costs",
+        "trends": "See trends"
+      },
+      "areasTitle": "What makes up your score",
+      "areasSubtitle": "{count, plural, one {# area} other {# areas}} · {points} points in total",
+      "upTo": "Up to {count, plural, one {# point} other {# points}}",
+      "status": {
+        "good": "Good",
+        "fair": "Fair",
+        "weak": "Needs work",
+        "none": "No data yet"
+      },
+      "pts": "{points} / {max} pts",
+      "area": {
+        "savingsRate": "Savings rate",
+        "emergencyFund": "Emergency fund",
+        "budgetAdherence": "Budget adherence",
+        "recurringExpenses": "Recurring expenses",
+        "debtRatio": "Debt ratio",
+        "incomeStability": "Income stability"
+      },
+      "unit": {
+        "ofIncome": "of income",
+        "months": "{count, plural, one {month} other {months}}",
+        "onBudget": "on budget",
+        "steady": "Steady",
+        "monthlyIncome": "monthly income",
+        "monthToMonth": "month to month"
+      },
+      "detail": {
+        "savingsRate": "You kept {amount} of {income} a month over the last {count, plural, one {month} other {# months}}. Reaching {target} earns the full {max} points.",
+        "savingsRateNegative": "You spent {amount} a month more than you earned over the last {count, plural, one {month} other {# months}}.",
+        "emergencyFund": "Your {amount} in savings covers {months, plural, one {# month} other {# months}} of spending. {target} months is the goal.",
+        "budgetAdherenceFull": "You stayed within your budget in every month measured.",
+        "budgetAdherenceOver": "Spending ran well over your budget in the months measured.",
+        "budgetAdherence": "On average, spending ran about {pct} over your budget.",
+        "recurringExpenses": "Fixed costs take {amount} a month. At or below {target} of income earns full points.",
+        "debtRatioNone": "You have no monthly debt payments, which earns full points.",
+        "debtRatio": "Debt payments take {amount} a month. Debt-free earns full points.",
+        "incomeStabilitySteady": "Your monthly income has been very consistent.",
+        "incomeStability": "Your monthly income moves about {pct} from month to month."
+      },
+      "missing": {
+        "savingsRate": "Needs at least one completed month with recorded income.",
+        "emergencyFund": "Needs a savings or current account and some recorded spending.",
+        "budgetAdherence": "Needs an overall budget and at least one completed month of spending.",
+        "recurringExpenses": "Needs recorded income and at least one active recurring item.",
+        "debtRatio": "Needs recorded income to compare debt payments against.",
+        "incomeStability": "Needs at least three completed months with recorded income."
+      },
+      "history": "Monthly history",
+      "historySubtitle": "Each budget month starts on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}} · the score is saved when the month closes",
+      "month": "Month",
+      "score": "Health",
       "income": "Income",
       "expenses": "Expenses",
       "savingsRate": "Savings rate",
-      "points": "{count, plural, one {# pt} other {# pts}}",
-      "biggestChange": "Biggest change: {name}, {direction, select, up {up} other {down}} {amount} on {month}.",
-      "history": "Monthly history",
-      "month": "Month",
-      "score": "Health",
       "netWorth": "Net worth",
+      "soFar": "so far",
+      "range": "{from} – {to}",
+      "closes": "{month} closes on {date}.",
+      "overspent": "Spending ran over income in {months}.",
       "trendLater": "Your score is recorded once a month. The trend appears from your second recorded month.",
-      "details": "Details",
-      "inDays": "{amount} in {count, plural, one {# day} other {# days}}",
-      "checking": "Checking",
-      "savings": "Savings",
-      "investments": "Investments",
-      "possessions": "Possessions",
-      "owed": "Owed to you",
-      "debts": "Debts",
-      "nextStep": "Next best step",
-      "potential": "{label} could add {count, plural, one {# point} other {# points}} to your score.",
-      "pts": "{count} pts"
+      "empty": {
+        "title": "Your health score needs a little history",
+        "body": "Once your accounts, a budget and a few weeks of transactions are in, you'll see your score and what would lift it most.",
+        "import": "Import CSV",
+        "accounts": "Add an account"
+      }
     },
     "forecast": {
-      "override": {
-        "clear": "Delete override",
-        "close": "Close",
-        "collapse": "Collapse subcategories",
-        "expand": "Expand subcategories",
-        "cardTitle": "Change the amount for {name} this month",
-        "forMonth": "Amount for {month}",
-        "defaultAmount": "(default: {amount}/mo)"
+      "range": {
+        "label": "Forecast range",
+        "d30": "30 days",
+        "d90": "3 months"
       },
-      "perMonth": "{amount}/mo",
-      "freq": {
-        "yearly": "year",
-        "quarterly": "quarter",
-        "weekly": "week",
-        "once": "once"
+      "chart": {
+        "title": "Projected balance · {range, select, d30 {next 30 days} other {next 3 months}}",
+        "subtitle": "Scheduled bills, expected income and payments you already booked",
+        "subtitleCumulative": "No account balance is set, so this adds up cash flow from today",
+        "balanceToday": "Balance today <b>{amount}</b>",
+        "cashFlowToday": "Cash flow from today",
+        "label": "Line chart of the projected balance from {from} to {to}. It starts at {start}, is lowest at {lowest} on {lowestDate} and ends at {end}.",
+        "today": "Today",
+        "safety": "{amount} safety line",
+        "lowestPill": "Lowest {amount} · {date}",
+        "more": "{count} more"
       },
-      "nothingScheduled": "Nothing scheduled in the forecast period.",
-      "projected": "Projected",
-      "previousMonth": "Previous month",
-      "nextMonth": "Next month",
-      "month": "Month",
-      "chooseMonth": "Choose month",
-      "projectedTitle": "Projected balance · next {days} days",
-      "lowest": "Lowest {amount}",
-      "onDate": "on {date}",
-      "currentLabel": "Current cash flow",
-      "projectedLabel": "Projected cash flow",
+      "legend": {
+        "expected": "Expected",
+        "lowest": "Lowest point",
+        "in": "Money in",
+        "safety": "Safety line"
+      },
+      "numbers": {
+        "label": "{range, select, d30 {Next 30 days} other {Next 3 months}} in numbers",
+        "nextIncome": "Next income",
+        "nextIncomeFoot": "{name} · {date} · {days, plural, =0 {today} =1 {tomorrow} other {in # days}}",
+        "noIncome": "None in this period",
+        "in": "Expected in",
+        "inFoot": "{count, plural, =0 {Nothing expected} one {# payment} other {# payments}}",
+        "out": "Expected out",
+        "outFoot": "{count, plural, =0 {Nothing scheduled} one {# bill or payment} other {# bills and payments}}",
+        "net": "Net change",
+        "netFoot": "By {date}"
+      },
       "status": {
+        "label": "Forecast status",
         "healthy": "Healthy",
         "warning": "Warning",
         "critical": "Critical",
-        "empty": "No data"
+        "empty": "No data",
+        "healthyTitle": "You stay above your safety line {range, select, d30 {all month} other {for three months}}",
+        "healthyBody": "At the lowest point, on {date}, you still have <b>{amount}</b>, {diff} more than your {threshold} safety line.",
+        "warningTitle": "You dip below your safety line",
+        "warningBody": "On {date} you're down to <b>{amount}</b>, {diff} under your {threshold} safety line.",
+        "criticalTitle": "You run short on {date}",
+        "criticalBody": "The forecast drops to <b>{amount}</b> on {date}. Move a payment or plan extra income before then.",
+        "emptyTitle": "Nothing to forecast yet",
+        "emptyBody": "Set a starting balance on an account or add your bills and income, and Centje projects where your money goes.",
+        "emptyAction": "Add recurring item",
+        "cumulative": "No account balance is set, so these figures add up cash flow from today."
       },
-      "balanceNote": "Your balance, projected forward through upcoming income and bills.",
-      "cumulativeNote": "Cumulative projected cash flow — no account balance is set, so this is not a balance.",
-      "legend": {
-        "expected": "Expected",
-        "safety": "{amount} safety line",
-        "lowest": "Lowest point",
-        "in": "Money in",
-        "today": "Today"
-      },
-      "nextIncome": "Next income",
-      "expectedIn": "Expected in",
-      "expectedOut": "Expected out",
-      "netChange": "Net change",
-      "savingsPlanned": "Savings planned",
-      "monthPlan": "{month} plan",
       "plan": {
-        "income": "Income",
+        "title": "{month} plan",
+        "subtitle": "{from} – {to} · built from your recurring items",
+        "monthGroup": "Plan month",
+        "previous": "Previous month, {month}",
+        "previousNone": "No earlier month",
+        "next": "Next month, {month}",
+        "nextNone": "No later month",
+        "income": "expected income",
+        "incomeFrom": "expected income · {names}",
+        "noIncome": "No income planned for this month",
+        "barLabel": "Income of {income} split into {parts}",
+        "part": "{name} {amount} ({pct})",
+        "andMore": "{names} and {count} more",
         "recurring": "Recurring bills",
-        "freeInclSaves": "Free to spend incl. saves",
-        "free": "Free to spend"
+        "savings": "Savings",
+        "savingsMeta": "{count, plural, one {# goal} other {# goals}} · {names}",
+        "budgets": "Category budgets",
+        "budgetsMeta": "{count, plural, one {# category} other {# categories}} · {names}",
+        "budgetOverall": "Budget",
+        "budgetOverallMeta": "Your overall budget for day-to-day spending",
+        "debts": "Debt payments",
+        "debtsMeta": "Minimum payments of debts without a recurring bill",
+        "free": "Free to spend",
+        "freeMeta": "About {amount} a day for everything else",
+        "short": "Short",
+        "shortMeta": "This plan spends {amount} more than comes in",
+        "emptyBody": "Add your income and bills to see how this month is split.",
+        "emptyAction": "Add recurring item"
       },
-      "noPrevious": "vs previous month: no data",
-      "distribution": "Distribution of income",
-      "distributionNote": "How your income is spread over {month}",
-      "budgetDistribution": "Budget distribution",
-      "strategyNote": "Your budget is set to {needs} / {wants} / {savings}",
       "strategy": {
+        "title": "Budget distribution",
+        "setTo": "Your budget is set to <b>{needs} / {wants} / {savings}</b>",
+        "change": "Change strategy",
         "needs": "Needs",
         "wants": "Wants",
-        "savings": "Savings"
+        "savings": "Savings",
+        "ofTarget": "Target {target}%",
+        "savingsOn": "Your savings plan of {amount} is right on the {target}% target.",
+        "savingsUnder": "Your savings plan of {amount} is {pct}% of income, {diff} under the {target}% target.",
+        "savingsOver": "Your savings plan of {amount} is {pct}% of income, {diff} above the {target}% target."
       },
-      "projectedBalance": "Projected balance · 12 months",
-      "projectedBalanceNote": "Net worth and what is owed to you, projected forward",
-      "comingUp": "Coming up",
-      "calendar": "Calendar",
-      "comingUpNote": "Booked transactions and projected recurring items, both included in the line on the left.",
-      "calendarTitle": "Cash flow calendar",
-      "calendarNote": "Days with money moving in or out",
-      "upcomingTitle": "Upcoming cash flow",
-      "categories": "Categories",
-      "recurringItems": "Recurring items",
-      "types": {
-        "income": "Income",
-        "bill": "Recurring bills",
-        "subscription": "Subscriptions",
-        "debt": "Debts",
-        "savings": "Savings"
+      "comingUp": {
+        "title": "Coming up",
+        "view": "View",
+        "list": "List",
+        "calendar": "Calendar",
+        "when": "{date} · {days, plural, =0 {today} =1 {tomorrow} other {in # days}}",
+        "whenExpected": "{date} · {days, plural, =0 {today} =1 {tomorrow} other {in # days}} · expected",
+        "dueBeforePayday": "<b>{amount}</b> due before payday",
+        "showAll": "Show all {count}",
+        "showLess": "Show fewer",
+        "nothing": "Nothing scheduled in the next 3 months.",
+        "calendarLabel": "Money moving in the next five weeks",
+        "dayLabel": "{date}: {amount}",
+        "dayEmpty": "Nothing moves on this day."
       },
-      "otherIncome": "Other income",
-      "otherOf": "Other {type}",
-      "noItems": "No active fixed items found.",
-      "manageRecurring": "Manage recurring items →",
-      "variableExpenses": "Variable expenses",
-      "freeToSpend": "Free to spend"
+      "projection": {
+        "title": "Projected net worth · 12 months",
+        "subtitle": "Net worth and what is owed to you, carried forward with each month's plan"
+      },
+      "items": {
+        "title": "Recurring items",
+        "subtitle": "What Centje expects each month · the forecast and your budget both use these",
+        "add": "Add recurring item",
+        "empty": "No recurring items yet. Add your income and bills, and the forecast and plan fill in.",
+        "types": {
+          "income": "Income",
+          "bill": "Recurring bills",
+          "subscription": "Subscriptions",
+          "debt": "Debts",
+          "savings": "Savings",
+          "budget": "Category budgets"
+        },
+        "count": "· {count}",
+        "goals": "· {count, plural, one {# goal} other {# goals}}",
+        "perMonth": "{amount} / mo",
+        "open": "Change {name} for {month}",
+        "override": "{month}: {amount} instead of {usual}",
+        "hint": "Change a single month without touching the rule, like a higher energy bill in winter.",
+        "manage": "Manage recurring items",
+        "meta": {
+          "monthly": "Monthly",
+          "monthlyOn": "Monthly on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+          "weekly": "{amount} a week",
+          "quarterly": "{amount} a quarter",
+          "yearly": "{amount} a year",
+          "daily": "{amount} a day",
+          "once": "Once · {date}",
+          "onceNoDate": "Once",
+          "goal": "{current} of {target}",
+          "goalBy": "{current} of {target} · {date}",
+          "budget": "Monthly budget",
+          "subOf": "Part of {parent}"
+        }
+      },
+      "override": {
+        "kind": {
+          "income": "Income",
+          "bill": "Recurring bill",
+          "subscription": "Subscription",
+          "debt": "Debt",
+          "savings": "Savings goal",
+          "budget": "Category budget"
+        },
+        "subtitle": "{kind} · usually {amount} a month",
+        "question": "Change the amount for {month}",
+        "monthGroup": "Month",
+        "previous": "Previous month, {month}",
+        "previousNone": "No earlier month",
+        "next": "Next month, {month}",
+        "nextNone": "No later month",
+        "changed": "Changed for this month",
+        "usual": "Usual amount",
+        "amountFor": "Amount for {month}",
+        "default": "(default: {amount}/mo)",
+        "invalid": "Enter an amount of 0 or more.",
+        "more": "<b>{amount} more</b> than usual",
+        "less": "<b>{amount} less</b> than usual",
+        "error": "That didn't save. Try again.",
+        "strip": "Month by month",
+        "legendUsual": "Usual",
+        "legendOverride": "Changed",
+        "stripLabel": "{name} per month: {months}",
+        "overrideTag": "changed",
+        "info": "Only {month} changes. The forecast and the {month} plan update right away.",
+        "delete": "Delete override",
+        "cancel": "Cancel",
+        "save": "Save",
+        "close": "Close"
+      }
     }
   },
   "home": {
@@ -1140,6 +2416,8 @@
       "title": "Transaction details",
       "more": "More actions",
       "confirmDelete": "Delete this transaction?",
+      "confirmDeleteBody": "This can't be undone. If it added to a savings goal, that amount comes off the goal again.",
+      "confirmDeleteLabel": "Delete transaction",
       "internalTransfer": "Internal transfer",
       "needsCategory": "Needs a category",
       "splitInto": "Split in {count}",
@@ -1162,7 +2440,36 @@
       "saving": "Saving…",
       "originalAmount": "Original amount",
       "correctedAmount": "Corrected amount",
-      "correctHint": "Leave empty to remove the correction.",
+      "cancel": "Cancel",
+      "merchantFor": "For {name} · {amount}",
+      "correct": {
+        "fromBank": "From your bank",
+        "same": "Same as the bank amount",
+        "less": "{amount} less than the bank amount",
+        "more": "{amount} more than the bank amount",
+        "help": "Leave empty to remove the correction. Reports and budgets use the corrected amount; your bank balance doesn't change.",
+        "previewTitle": "{category} this period",
+        "previewOver": "{over} over the {budget} budget",
+        "previewLeft": "{left} left of the {budget} budget",
+        "remove": "Remove correction"
+      },
+      "brand": {
+        "icon": "Icon",
+        "preview": "Preview",
+        "useDefault": "Use the default icon"
+      },
+      "receipt": {
+        "title": "Receipt",
+        "subtitle": "Attached to this transaction",
+        "alt": "Receipt for {name}",
+        "zoom": "Zoom",
+        "zoomIn": "Zoom in",
+        "zoomOut": "Zoom out",
+        "zoomLevel": "Zoom level",
+        "fit": "Fit to screen",
+        "linked": "Linked transaction",
+        "download": "Download"
+      },
       "budgetType": {
         "needs": "Need",
         "wants": "Want",
@@ -1188,7 +2495,12 @@
         "receipt": "Add receipt",
         "replaceReceipt": "Replace receipt",
         "exclude": "Exclude from reports",
-        "include": "Include in reports"
+        "include": "Include in reports",
+        "label": "Transaction actions",
+        "reimburse": "Reimburse",
+        "recurringShort": "Recurring",
+        "ruleShort": "Rule",
+        "adjustSplitShort": "Split"
       },
       "menu": {
         "correctAmount": "Correct amount",
@@ -1199,7 +2511,7 @@
         "unmarkReimbursement": "Remove reimbursement mark",
         "markTransfer": "Mark as internal transfer",
         "unmarkTransfer": "Remove internal transfer mark",
-        "delete": "Delete"
+        "delete": "Delete transaction"
       },
       "position": "Transaction · {index} of {total}",
       "keysHint": "↑ ↓ to move",
@@ -1207,8 +2519,31 @@
       "next": "Next transaction",
       "openMerchant": "Open the merchant profile",
       "setMerchant": "Set a merchant",
-      "budgetImpact": "Budget impact",
-      "budgetOf": "{spent} of {budget}",
+      "tabs": {
+        "label": "Transaction sections",
+        "summary": "Summary",
+        "details": "Details"
+      },
+      "noGoal": "No goal",
+      "categoryChange": "Category: {name}. Change",
+      "budgetTypeChange": "Budget type: {type}. Change",
+      "budgetThisPeriod": "Budget this period",
+      "budgetOfRich": "<b>{spent}</b> of {budget}",
+      "thisPayment": "This payment {amount}",
+      "leftDays": "{amount} left · {count, plural, =0 {last day} one {# day to go} other {# days to go}}",
+      "editDetails": "Edit details",
+      "bank": {
+        "fromBank": "From the bank",
+        "transaction": "Transaction",
+        "date": "Booking date",
+        "account": "Account",
+        "amount": "Amount",
+        "corrected": "Corrected amount",
+        "description": "Description",
+        "raw": "Bank line",
+        "copy": "Copy {label}",
+        "copied": "Copied"
+      },
       "left": "{amount} left",
       "nextCharge": "Next charge",
       "inDays": "{count, plural, =0 {today} one {in # day} other {in # days}}",
@@ -1218,14 +2553,35 @@
       "since": "{frequency} since {date}",
       "paidInYear": "{amount} paid in {year}",
       "editRecurring": "Edit recurring",
-      "details": "Details",
-      "thisMonth": "{category} this month",
-      "other": "Other",
-      "overBudget": "{amount} over"
+      "overBudget": "{amount} over",
+      "location": {
+        "label": "Location",
+        "open": "Open the map"
+      },
+      "history": {
+        "recurringTitle": "{frequency} · {amount}",
+        "nextPayment": "Next payment {date} · {when}",
+        "nextCharge": "Next charge {date} · {when}",
+        "noNext": "No next date planned",
+        "thisMonthAt": "This month at {name} · {amount}",
+        "visits": "{count} visits this month · about {weekly} a week",
+        "last12Months": "Last 12 months here",
+        "visitsLabel": "Visits",
+        "avgVisit": "Average visit",
+        "openProfile": "Open the merchant profile",
+        "thisMonth": "This month",
+        "thisMonthAtName": "This month at {name}",
+        "noVisits": "No visits this month yet",
+        "oneVisit": "1 visit this month"
+      },
+      "last12Income": "Last 12 payments",
+      "nextPayment": "Next payment",
+      "incomeUp": "Went up {amount} in {month}",
+      "incomeDown": "Went down {amount} in {month}",
+      "receivedInYear": "{amount} received in {year}"
     },
     "rule": {
       "titleCreate": "Create a rule",
-      "titleAfterChange": "Also apply to other transactions?",
       "intro": "Transactions whose description matches get this category, now and on every future import.",
       "pattern": "Description",
       "chooseCategory": "Choose a category",
@@ -1241,10 +2597,34 @@
       },
       "min": "Min",
       "max": "Max",
-      "onlyThis": "Only this one",
       "cancel": "Cancel",
       "apply": "Save and apply",
-      "saving": "Saving…"
+      "category": "Category",
+      "matchLabel": "Match",
+      "amountLabel": "Amount",
+      "close": "Close",
+      "saving": "Saving…",
+      "titleNew": "New rule",
+      "titleEdit": "Edit rule",
+      "save": "Save rule",
+      "directionLabel": "Direction",
+      "direction": {
+        "both": "Both",
+        "expense": "Money out",
+        "income": "Money in"
+      },
+      "accountLabel": "Account",
+      "allAccounts": "All accounts",
+      "preview": {
+        "empty": "Type a description to see what it matches",
+        "checking": "Checking earlier transactions…",
+        "count": "{count, plural, =0 {No earlier transactions match} one {Matches # earlier transaction} other {Matches # earlier transactions}}",
+        "noneHint": "It still applies to everything you import from now on.",
+        "moveAll": "{count, plural, one {It moves} other {All # move}} to {category}{review, plural, =0 {.} one {, including one waiting in Needs review.} other {, including # waiting in Needs review.}}",
+        "moveAuto": "Those you didn't categorise by hand move to {category}{review, plural, =0 {.} one {, including one waiting in Needs review.} other {, including # waiting in Needs review.}}",
+        "pickCategory": "Choose a category to move them to.",
+        "more": "and {count} more"
+      }
     },
     "searchPlaceholder": "Search transactions",
     "tiles": {
@@ -1265,9 +2645,20 @@
       "title": "Merchant",
       "search": "Search or add a merchant",
       "searchSuggestion": "Search or add — e.g. {suggestion}",
-      "add": "Add “{name}”",
+      "add": "Add “{name}” as a new merchant",
+      "addHint": "A new merchant profile is created for it",
       "loading": "Loading…",
-      "none": "No merchants yet."
+      "none": "No merchants yet.",
+      "find": "Find a merchant",
+      "clear": "Clear search",
+      "matches": "{count, plural, =0 {No merchants match} one {# merchant matches} other {# merchants match}}",
+      "all": "{count, plural, one {# merchant} other {# merchants}}",
+      "current": "Current",
+      "count": "{count, plural, one {# transaction} other {# transactions}}",
+      "footerHint": "Changing the merchant updates the icon and the profile this transaction belongs to.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "close": "Close"
     },
     "listTitle": "Transactions",
     "sort": {
@@ -1281,210 +2672,381 @@
   "plan": {
     "title": "Plan",
     "budget": {
-      "title": "Budget",
-      "forecast": "Forecast",
+      "subtitle": "{period, select, weekly {Weekly budget · resets every Monday} other {Monthly budget · resets on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}}}",
+      "subtitleNone": "No budget yet · set a limit and split it over your categories",
       "editBudget": "Edit budget",
+      "createBudget": "Create budget",
+      "more": "More budget actions",
+      "resetDay": "Change the reset day",
       "deleteBudget": "Delete budget",
-      "resetsMonthly": "Resets on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
-      "resetsWeekly": "Resets every Monday",
-      "strategyShort": "{needs} / {wants} / {savings} strategy",
-      "spentOf": "Spent of {amount}",
-      "left": "{amount} left",
-      "over": "{amount} over",
-      "pace": {
-        "onPace": "on pace",
-        "fast": "spending fast",
-        "over": "over budget"
+      "periodLabel": "{from} – {to} · day {day} of {total}",
+      "periodLabelEnded": "{from} – {to} · ended",
+      "previousPeriod": "Previous budget month",
+      "nextPeriod": "Next budget month",
+      "hero": {
+        "title": "{month} budget",
+        "titleWeekly": "This week's budget",
+        "pace": {
+          "onPace": "On pace",
+          "fast": "Spending fast",
+          "over": "Over budget"
+        },
+        "leftOf": "left of {amount}",
+        "overOf": "over a budget of {amount}",
+        "underPace": "{amount} under an even pace for day {day}",
+        "overPace": "{amount} over an even pace for day {day}",
+        "spent": "{amount} spent",
+        "bills": "{amount} bills",
+        "today": "Today",
+        "allocated": "Allocated",
+        "categories": "{count, plural, one {# category} other {# categories}}",
+        "free": "Free",
+        "freeSub": "Not in a category",
+        "billsLeft": "Bills to come",
+        "billsLeftSub": "{count, plural, one {# still to pay} other {# still to pay}}",
+        "perDay": "Safe per day",
+        "until": "Until {date}",
+        "endedUnder": "Under budget",
+        "endedOver": "Over budget",
+        "endedOn": "Ended on {date}",
+        "avgPerDay": "Average per day",
+        "overDays": "Over {count} days"
       },
-      "allocated": "Allocated",
-      "free": "Free",
-      "perDay": "Per day",
       "empty": {
         "title": "No budget yet",
-        "body": "Set a monthly or weekly limit, then split it over your categories. Arca keeps track of whether you are on pace.",
+        "body": "Set a monthly or weekly limit, then split it over your categories. You see at a glance whether you are on pace.",
         "create": "Create budget"
       },
       "strategy": {
         "title": "Budget strategy",
+        "subtitle": "Share of income so far, against the target",
         "adjust": "Adjust",
         "nodig": "Needs",
         "willen": "Wants",
         "sparen": "Savings",
+        "of": "<b>{actual}</b> of {target}",
+        "target": "Target",
+        "actual": "Actual",
         "onIncome": "On {income} income: needs {needs}, wants {wants}, savings {savings}.",
-        "soFar": "So far this month: needs {needs}, wants {wants}, savings {savings}.",
         "noIncome": "No income this month yet, so there is nothing to split. The percentages apply as soon as income comes in."
       },
       "categories": {
         "title": "Category budgets",
-        "titleShort": "Categories",
+        "subtitle": "{spent} spent of {allocated} allocated · the line marks an even pace for today",
         "add": "Add a category budget",
-        "manage": "Manage",
         "empty": "No category budgets yet. Give a category its own limit and it shows up here.",
         "of": "<b>{spent}</b> of {budget}",
         "edit": "Edit the budget for {name}",
-        "kind": {
-          "nodig": "Need",
-          "willen": "Want",
-          "sparen": "Save"
+        "open": "Open {name}",
+        "left": "{amount} left",
+        "over": "{amount} over",
+        "perDay": "{amount} a day",
+        "overBudget": "Over budget",
+        "unbudgeted": {
+          "title": "Unbudgeted spending",
+          "bodyFree": "Categories without a budget · comes out of the free {amount}",
+          "body": "Categories without a budget · outside this budget"
         }
       },
       "suggestion": {
+        "label": "Suggestion",
         "near": "{name} is at {pct}% with {days, plural, one {# day} other {# days}} to go.",
         "over": "{name} is {amount} over budget with {days, plural, one {# day} other {# days}} to go.",
-        "move": "Move {amount} from {name}"
+        "change": "{from} → {to}",
+        "backOnBudget": "Back on budget",
+        "stillOver": "Still {amount} over",
+        "stillLeft": "Still {amount} left",
+        "move": "Move {amount} from {name}",
+        "editCategory": "Edit the budget for {name}",
+        "notNow": "Not now",
+        "onTrack": {
+          "label": "On track",
+          "title": "Every category is within its budget.",
+          "closest": "Closest to its limit",
+          "used": "{pct}% used",
+          "room": "Most room left",
+          "left": "{amount} left"
+        },
+        "start": {
+          "label": "Suggestion",
+          "title": "Give your categories their own limits, and tips to stay on budget show up here.",
+          "add": "Add a category budget"
+        }
       },
       "bills": {
         "title": "{month} bills",
         "view": "Bills view",
         "empty": "No bills or subscriptions this month.",
+        "summary": "{paid} paid · {due} to come",
+        "next": "{name} {days, plural, =0 {today} one {tomorrow} other {in # days}}",
+        "allPaid": "all paid",
         "paid": "Paid",
         "paidOn": "Paid · {date}",
+        "due": "Due {date}",
+        "dueToday": "Due today",
         "overdue": "Overdue · {date}",
-        "today": "Today",
         "noDate": "No fixed date",
-        "paidAuto": "Paid, matched to a transaction",
-        "showAll": "Show all"
+        "today": "Today · {date}",
+        "paidAmount": "{amount} paid",
+        "total": "{amount} in total",
+        "nextIncome": "Next income · {name} on {date}",
+        "stillToPay": "still to pay",
+        "notPaid": "Not paid",
+        "paidAuto": "Paid, matched to a transaction"
       }
     },
     "debts": {
-      "title": "Debts",
       "add": "Add a debt",
       "yours": "Your debts",
+      "yoursOrder": "{count, plural, one {# debt} other {# debts}} · {order}",
+      "yoursCount": "{count, plural, one {# debt} other {# debts}}",
+      "sort": {
+        "label": "Sort debts: {order}",
+        "options": {
+          "interest": "Highest interest first",
+          "smallest": "Smallest balance first",
+          "soonest": "Paid off soonest",
+          "largest": "Largest balance first"
+        },
+        "inline": {
+          "interest": "highest interest first",
+          "smallest": "smallest balance first",
+          "soonest": "paid off soonest first",
+          "largest": "largest balance first"
+        }
+      },
+      "noneOfYourOwn": "No debts of your own. Add a loan or a credit card to see when it is paid off.",
       "count": "{count, plural, =0 {No open debts} one {# debt} other {# debts}}",
       "minimums": "minimum payments {amount} a month",
       "toReceive": "{count, plural, one {# still to receive} other {# still to receive}}",
+      "subtitleNone": "No debts — nice",
       "empty": {
         "title": "No debts yet",
-        "body": "Add a loan, a credit card or money you borrowed to see how fast it goes down and when you are debt-free."
+        "body": "Add a loan, a credit card or money you lent to someone to see how fast it goes down and when you are debt-free.",
+        "add": "Add a debt",
+        "owedToMe": "Someone owes me money",
+        "track": {
+          "title": "What you can track",
+          "subtitle": "Money you owe and money owed to you, side by side.",
+          "loan": {
+            "title": "A loan",
+            "body": "Student, car or personal loan. See the payoff date and try an extra payment."
+          },
+          "card": {
+            "title": "A credit card",
+            "body": "Keep an eye on the balance, the interest and your monthly minimum."
+          },
+          "lent": {
+            "title": "Money you lent",
+            "body": "A friend owes you? Track it until it is paid back, then settle it."
+          },
+          "total": "Total debt"
+        }
       },
-      "owe": {
-        "title": "You owe",
-        "paidOff": "{pct}% paid off",
-        "monthly": "{amount} a month across {count, plural, one {# debt} other {# debts}}"
+      "tiles": {
+        "owe": "You owe",
+        "oweNone": "Nothing of your own to pay off",
+        "paidOffFirst": "{name} is paid off first · {count, plural, =0 {this month} one {in # month} other {in # months}} ({date})",
+        "paidOffOnly": "{name} is paid off {count, plural, =0 {this month} one {in # month} other {in # months}} ({date})",
+        "oweNever": "{name}'s payment doesn't cover the interest, so it never gets paid off",
+        "more": "+{count} more",
+        "owed": "Owed to you",
+        "owedNone": "Nothing to receive",
+        "toReceive": "<n>{count}</n> still to receive",
+        "free": {
+          "title": "Debt-free",
+          "atMinimums": "At minimums · {amount} a month",
+          "never": "Minimums never clear it",
+          "now": "Now",
+          "allPaid": "Everything is paid off",
+          "none": "No debts of your own"
+        }
+      },
+      "tile": {
+        "paidBy": "Paid by “{name}”",
+        "paidByOn": "Paid by “{name}” on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+        "notLinked": "Not linked to a recurring bill",
+        "edit": "Edit {name}",
+        "leftOf": "left of {amount}",
+        "freeBy": "Free {date}",
+        "never": "Never at this rate",
+        "noDate": "No payoff date",
+        "done": "Paid off",
+        "paid": "<b>{pct}%</b> paid · {amount}",
+        "monthsLeft": "{count, plural, one {# month left} other {# months left}}",
+        "monthly": "Monthly",
+        "interest": "Interest",
+        "perYear": "{rate}% p.a.",
+        "noInterest": "None"
+      },
+      "notice": {
+        "covers": "{dir, select, owed {Their} other {Your}} <b>{payment}</b> covers <b>{interest}</b> interest. <b>{principal}</b> goes to the balance.",
+        "neverCovers": "{dir, select, owed {Their} other {Your}} <b>{payment}</b> does not cover the <b>{interest}</b> monthly interest, so this balance never goes down.",
+        "noInterest": "No interest: all of {dir, select, owed {their} other {your}} <b>{payment}</b> goes to the balance.",
+        "noPayment": "No monthly payment set, so there is no payoff date yet.",
+        "payoff": "{dir, select, owed {Paid back} other {Debt-free}} in <b>{count, plural, one {# month} other {# months}}</b> (<b>{date}</b>).",
+        "payoffPast": "At this payment it was {dir, select, owed {paid back} other {paid off}} in <b>{date}</b>."
       },
       "owed": {
         "title": "Owed to you",
-        "debtSub": "{pct}% received",
-        "advanceSub": "Advance · {date} · {received} of {expected} back",
+        "add": "Add",
+        "debtSub": "{amount} a month",
+        "advanceSub": "Advance · {date}",
+        "leftOf": "left of {amount}",
+        "received": "<b>{pct}%</b> received",
+        "backSoFar": "{amount} back so far",
         "settle": "Mark as settled",
-        "settleConfirm": "Mark the advance for {name} as settled? The {amount} still open will no longer be counted.",
-        "more": "+{count} more"
-      },
-      "row": {
-        "perMonth": "{amount}/mo",
-        "freeBy": "free {date}",
-        "never": "never paid off at this rate",
-        "paid": "{pct}% paid",
-        "done": "Paid off",
-        "paidOffSub": "Paid off · nothing left to pay"
-      },
-      "detail": {
-        "linked": "Linked to the recurring bill “{name}” · {amount}",
-        "linkedOn": "Linked to the recurring bill “{name}” · {amount} on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
-        "notLinked": "Not linked to a recurring bill · {amount} a month",
-        "started": "Started",
-        "original": "Original",
-        "interest": "Interest",
-        "perYear": "{rate}% p.a.",
-        "none": "None",
-        "debtFree": "Debt-free",
-        "done": "Done",
-        "covers": "Your {payment} covers {interest} interest. {principal} goes to the balance.",
-        "neverCovers": "Your {payment} does not cover the {interest} monthly interest, so this balance never goes down.",
-        "noInterest": "No interest: all of your {payment} goes to the balance.",
-        "noPayment": "No monthly payment set, so there is no payoff date yet.",
-        "edit": "Edit debt",
-        "schedule": "Payment schedule"
+        "settleConfirm": "Mark the advance for {name} as settled?",
+        "settleConfirmBody": "The {amount} still open will no longer be counted.",
+        "settleDebtConfirm": "Mark {name} as settled?",
+        "settleDebtConfirmBody": "The {amount} still open will no longer be expected, and its linked recurring payments end today.",
+        "settleNamed": "Mark {name} as settled"
       },
       "payoff": {
         "title": "Payoff timeline",
-        "withExtra": "+{amount}/mo · {date}",
-        "minimums": "Minimums · {date}",
-        "minimumsNever": "Minimums never clear it"
+        "subtitle": "{count, plural, one {Your debt's balance, month by month} other {All # debts stacked, month by month}}",
+        "debtFree": "Debt-free {date}",
+        "debtFreeNever": "Not debt-free at these payments",
+        "sooner": "{count, plural, one {# month} other {# months}} sooner with {amount} extra a month",
+        "today": "{amount} today",
+        "paidOff": "{name} · {date}",
+        "paidOffNever": "{name} · never",
+        "atMinimums": "At minimums · {date}",
+        "atMinimumsNever": "At minimums · never",
+        "summary": "{amount} owed today. {end}",
+        "summaryDebt": "{name} paid off {date}",
+        "summaryDebtNever": "{name} never paid off"
       },
       "simulator": {
         "title": "What if I pay extra?",
+        "subtitle": "On top of the {amount} minimums",
+        "valueText": "{amount} a month",
         "extra": "Extra each month",
         "debtFree": "Debt-free",
         "sooner": "Sooner by",
         "saved": "Interest saved",
         "months": "{count, plural, one {# month} other {# months}}",
         "orderOne": "The extra goes straight to {name}.",
-        "orderRate": "Extra goes to {first} first (highest interest), then {rest}.",
-        "orderBalance": "Extra goes to {first} first (smallest balance), then {rest}."
+        "orderSort": "Extra goes to {first} first, then {rest}: the order of your list ({order}).",
+        "free": {
+          "title": "Free to spend each month",
+          "change": "{from} now, {to} with the extra",
+          "short": "You'd be {amount} short each month",
+          "basis": "Recurring income minus bills, debt payments, savings and your budget",
+          "noIncome": "Add your recurring income to see what an extra payment leaves you to spend each month."
+        }
       },
       "sheet": {
         "title": "Debt details",
-        "edit": "Edit",
+        "edit": "Edit debt",
         "delete": "Delete",
         "confirmDelete": "Delete the debt “{name}”?",
+        "confirmDeleteBody": "Its linked recurring payments stay, they're just no longer tied to this debt.",
+        "confirmDeleteLabel": "Delete debt",
         "owe": "I owe",
         "owed": "I am owed",
         "settled": "Settled",
         "paidOff": "Paid off",
+        "never": "Never paid off at this rate",
+        "freeBy": "Debt-free {date}",
+        "backBy": "Paid back {date}",
+        "noDate": "No payoff date",
+        "remaining": "remaining",
         "pctPaid": "{pct}% paid",
         "pctReceived": "{pct}% received",
+        "ofTotal": "{paid} of {total}",
+        "paymentsLeft": "{count, plural, one {# payment left} other {# payments left}}",
         "original": "Original amount",
         "alreadyPaid": "Already paid",
         "alreadyReceived": "Already received",
-        "remaining": "Remaining",
-        "startingBalance": "Starting balance",
+        "monthly": "Monthly payment",
         "minimum": "Minimum monthly payment",
         "rate": "Interest rate",
         "perYear": "{rate}% per year",
+        "noInterest": "None",
         "interestToPay": "Interest still to pay",
         "interestToReceive": "Interest still to receive",
         "startDate": "Start date",
         "balanceAsOf": "Balance as of",
         "lastPayment": "Last payment on",
-        "neverPaysOff": "The monthly payment of {payment} does not cover the interest on {balance} at {rate}% per year, so this balance never goes down.",
+        "details": "Debt details",
         "notes": "Notes",
         "linkedBills": "Linked recurring bills",
+        "billOn": "{amount} on the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
         "upcoming": "Upcoming payments · {count}",
-        "split": "{principal} off · {interest} interest"
+        "inTotal": "{amount} in total",
+        "colDate": "Date",
+        "colPayment": "Payment",
+        "colSplit": "Split",
+        "final": "Final payment",
+        "split": "{principal} off · {interest} interest",
+        "allPrincipal": "All off the balance"
       }
     },
     "goals": {
-      "title": "Savings goals",
       "add": "New goal",
-      "yours": "Your goals",
       "count": "{count, plural, =0 {No goals} one {# goal} other {# goals}}",
       "next": "next one reached {date}",
+      "subtitleEmpty": "No savings goals yet",
       "empty": {
         "title": "No savings goals yet",
-        "body": "Save towards something — a buffer, a trip, a new laptop — and see when you get there at the pace you are saving."
+        "body": "Save towards something — a buffer, a trip, a new laptop — and see when you get there at the pace you are saving.",
+        "account": "Add a savings account"
       },
-      "saved": {
+      "suggestions": {
+        "title": "Popular first goals",
+        "subtitle": "Start from a suggestion and change anything you like.",
+        "use": "Use this",
+        "useLabel": "Use this: {name}",
+        "buffer": {
+          "name": "Emergency buffer",
+          "body": "Three months of expenses"
+        },
+        "holiday": {
+          "name": "Holiday",
+          "body": "Pick a date, see what to put aside"
+        },
+        "laptop": {
+          "name": "New laptop",
+          "body": "A fixed price, a clear finish line"
+        }
+      },
+      "hero": {
         "title": "Saved across {count, plural, one {# goal} other {# goals}}",
-        "thisMonth": "{amount} this month",
-        "plan": "{amount} a month",
-        "planShare": "{amount} a month · {pct}% of income",
-        "contributions": "Contributions · 12 months"
+        "ofTarget": "{pct}% of {amount}",
+        "plan": "<b>{amount} a month</b>",
+        "planShare": "<b>{amount} a month</b> · {pct}% of income",
+        "thisMonth": "This month {amount}",
+        "nextUp": "Next up: {name} in {date}",
+        "nextUpSub": "{amount} to go at {monthly} a month"
+      },
+      "contrib": {
+        "title": "Contributions",
+        "subtitle": "Put towards your goals per month, from the transactions linked to them",
+        "total": "12 months",
+        "thisMonth": "This month",
+        "chartLabel": "Bar chart of the money put towards goals per month from {from} to {to}: {total} in total, {last} this month."
       },
       "card": {
         "perMonth": "{amount} a month",
         "noMonthly": "No monthly amount",
         "by": "by {date}",
         "reached": "reached",
-        "of": "of {amount}"
+        "of": "of {amount}",
+        "toGo": "{amount} to go",
+        "done": "Reached",
+        "reachedOn": "Reached {date}",
+        "noProjection": "No date yet",
+        "projected": "Projected next 3 months",
+        "open": "Show {name}",
+        "edit": "Edit {name}",
+        "ring": "{name}: {pct}% saved"
       },
       "recent": {
         "title": "Recent contributions",
+        "subtitle": "The latest money moved into or out of a goal",
+        "view": "View in Activity",
         "empty": "Nothing linked to a goal in the last 12 months. Link a transaction to a goal from its details in Activity."
-      },
-      "detail": {
-        "account": "Linked to {name}",
-        "category": "category “{name}”",
-        "noLinks": "No account or category linked",
-        "target": "Target",
-        "monthly": "Monthly",
-        "started": "Started",
-        "reachedBy": "Reached by",
-        "reached": "Reached",
-        "projected": "Projected · reached {date}",
-        "noProjection": "Set a monthly amount to see a projection",
-        "edit": "Edit goal",
-        "details": "Details"
       }
     }
   },
@@ -1492,66 +3054,76 @@
     "close": "Close",
     "owe": "I owe",
     "owed": "I am owed",
-    "type": "Type",
-    "moreOptions": "More options",
-    "calculator": "Calculator",
-    "whatDoButtonsDo": "What do these buttons do?",
-    "chooseIconColor": "Choose icon and color",
+    "type": "Debt direction",
+    "addDebt": "Add a debt",
+    "editDebt": "Edit debt",
+    "subtitle": "Track what is left and when you are debt-free",
+    "name": "Name",
     "namePlaceholderOwe": "e.g. Credit card",
     "namePlaceholderOwed": "e.g. Loan to Alex",
-    "balanceToday": "Balance as of today",
-    "balanceOn": "Balance as of {date}",
+    "balance": "Balance",
     "balanceAsOf": "Balance as of",
-    "startingBalance": "Starting balance",
-    "startDate": "Start date",
+    "today": "Today",
+    "balanceDateHint": "The date the balance was true. Leave it on today to enter what is left now. Move it back and the monthly payment is assumed to have been made every month since.",
+    "balanceDateInfo": "About “Balance as of”",
     "minPayment": "Minimum monthly payment",
-    "minPaymentAria": "Minimum payment {amount}",
-    "setMinPayment": "Set minimum monthly payment",
-    "minPaymentFallback": "the minimum payment",
-    "originalAmount": "Original debt amount",
-    "originalAria": "Original amount {amount}",
-    "setOriginal": "Set original debt amount",
+    "perMonth": "a month",
+    "paymentFromLinked": "Taken from the linked recurring {count, plural, one {bill} other {bills}}: {amount} per month.",
+    "paymentOverridden": "You set this amount yourself. The linked recurring {count, plural, one {bill comes} other {bills come}} to {amount} per month.",
+    "useLinkedAmount": "Use linked bill amount",
     "interestRate": "Annual interest rate",
-    "interestAria": "Interest {rate}%",
-    "setInterest": "Set an interest rate",
-    "autoBillOn": "Recurring bill will be created",
-    "autoBillOff": "Also create a recurring bill",
-    "autoBillTitle": "Also create a recurring bill from this debt",
+    "startDate": "Start date",
+    "originalAmount": "Original debt amount",
+    "originalHint": "Optional — only needed if you started tracking after paying some of it off.",
+    "originalInfo": "About “Original debt amount”",
+    "paidSoFar": "{amount} paid off so far",
+    "receivedSoFar": "{amount} received so far",
+    "linkedBills": "Linked recurring bills",
+    "linkedNone": "None — progress follows the monthly payment",
+    "linkedDisabled": "Turn off “Also create a recurring bill” to link an existing one instead",
+    "billsCount": "{count} bills",
+    "autoBill": "Also create a recurring bill",
     "autoBillSummary": "Will also create a monthly recurring bill named “{name}” for {amount}.",
     "autoBillSummaryIn": "Will also create a monthly recurring bill named “{name}” for {amount} in <cat>{category}</cat>.",
-    "addNote": "Add note",
+    "minPaymentFallback": "the minimum payment",
     "note": "Note",
-    "notes": "Notes",
-    "notePlaceholderAdd": "Add a note for this debt",
-    "notePlaceholder": "Optional note",
-    "backspace": "Backspace",
-    "divide": "Divide",
-    "multiply": "Multiply",
-    "subtract": "Subtract",
-    "add": "Add",
-    "linkedBills": "Linked recurring bills",
-    "linkedDisabled": "Turn off “Also create a recurring bill” to link an existing one instead",
-    "recurringBillsCount": "{count} recurring bills",
-    "billsCount": "{count} bills",
+    "notePlaceholder": "Add a note for this debt",
+    "whatDoFieldsDo": "What do these fields do?",
+    "cancel": "Cancel",
     "saving": "Saving…",
-    "save": "Save",
-    "done": "Done",
-    "originalHelpAdd": "Optional — only needed if you started tracking this debt after already paying some of it off. Leave blank to use the balance above as the total.",
-    "originalHelpEdit": "Optional — only needed if tracking started after some of this debt was already paid off. Leave blank to use the starting balance as the total.",
-    "balanceDateHelpAdd": "The date the amount above was true. Leave it on today to enter what you owe right now. Set it back and the app will assume the monthly payment was made every month since, unless a linked recurring bill says otherwise.",
-    "balanceDateHelpEdit": "The date the starting balance was true. Set it to today and the balance above is taken as what you owe right now; set it back and the app assumes the monthly payment was made every month since, unless a linked bill says otherwise.",
+    "save": "Save debt",
     "iconColor": "Icon & color",
-    "icon": "Icon",
-    "color": "Color",
-    "name": "Name",
-    "editDebt": "Edit debt",
+    "changeIcon": "Change icon",
+    "colors": {
+      "red": "Red",
+      "orange": "Orange",
+      "amber": "Amber",
+      "green": "Green",
+      "teal": "Teal",
+      "blue": "Blue",
+      "indigo": "Indigo",
+      "purple": "Purple",
+      "pink": "Pink"
+    },
     "delete": "Delete",
-    "confirmDelete": "Delete debt “{name}”?"
+    "confirmDelete": "Delete debt “{name}”?",
+    "confirmDeleteBody": "Its linked recurring payments stay, they're just no longer tied to this debt.",
+    "confirmDeleteLabel": "Delete debt"
   },
   "upcoming": {
     "title": "Upcoming",
     "calendarTitle": "Upcoming this month",
     "empty": "No upcoming transactions this month",
     "listTitle": "Upcoming transactions"
+  },
+  "categoryList": {
+    "title": "Spending by category",
+    "incomeTitle": "Income by category",
+    "count": "{count, plural, one {# category} other {# categories}}",
+    "hidden": "Hidden from the spending overview",
+    "over": "{amount} over budget",
+    "ofBudget": "of {amount}",
+    "noLimit": "No budget",
+    "close": "Close"
   }
 }

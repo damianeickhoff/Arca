@@ -12,6 +12,7 @@ import { StaggerItem } from "@/components/ui/stagger";
 import type { Category, Goal } from "@/db/schema";
 import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
+import { MoneyText } from "@/components/clear/money";
 
 // Rendering every row as a full DOM node + entrance animation is what actually gets
 // slow with a big review queue, not the (single, indexed) query — so the queue is
@@ -45,7 +46,7 @@ const NeedsReviewRow = memo(function NeedsReviewRow({ t, onOpen }: { t: Transact
       onClick={() => onOpen(t)}
       className="w-full flex items-center gap-5 px-6 py-3 text-left active:bg-foreground/[0.04] transition-colors"
     >
-      <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size="md" />
+      <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round size="md" soft />
       <div className="flex-1 min-w-0">
         <p className="text-base font-medium truncate leading-tight">{resolveDisplayName(t)}</p>
         {t.bankName && (
@@ -54,13 +55,13 @@ const NeedsReviewRow = memo(function NeedsReviewRow({ t, onOpen }: { t: Transact
       </div>
       <div className="shrink-0 text-right">
         {t.isReimbursement ? (
-          <p className="text-base font-semibold tabular-nums text-amber-600">{formatEur(t.amount)}</p>
+          <p className="text-base font-semibold tabular-nums text-amber-600"><MoneyText>{formatEur(t.amount)}</MoneyText></p>
         ) : (
           <p className={cn(
             "text-base font-semibold tabular-nums",
             t.direction === "income" ? "text-green-500 dark:text-emerald-400" : "text-foreground",
           )}>
-            {formatEur(t.correctedAmount ?? t.amount)}
+            <MoneyText>{formatEur(t.correctedAmount ?? t.amount)}</MoneyText>
           </p>
         )}
       </div>

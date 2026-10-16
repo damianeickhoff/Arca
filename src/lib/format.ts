@@ -181,23 +181,9 @@ export function toMonthly(amount: number | null, frequency: string): number {
   }
 }
 
-export const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
 // Compact "€5K" style, used for tight spots (stat tiles, calendar cells) where the full
 // amount string would wrap or overflow.
 export function formatCompactEur(n: number): string {
   const formatted = new Intl.NumberFormat("en-GB", { notation: "compact", maximumFractionDigits: 1 }).format(Math.abs(n));
   return `${n < 0 ? "-" : ""}${currencySymbol()}${formatted}`;
-}
-
-// "+124%", "-38%", or "New" when the previous period had nothing to compare against.
-// Shared by every page that shows a period-over-period change pill (Analytics, Trends,
-// Net worth) so the "New"/null-when-nothing-to-compare rules stay consistent everywhere.
-export function pctChangeLabel(current: number, previous: number): { label: string; up: boolean } | null {
-  if (previous === 0) return current === 0 ? null : { label: "New", up: current > 0 };
-  const pct = ((current - previous) / Math.abs(previous)) * 100;
-  return { label: `${pct.toFixed(1)}%`, up: pct >= 0 };
 }

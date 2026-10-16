@@ -1,66 +1,126 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconAdjustmentsHorizontal, IconArrowDown, IconArrowUp, IconListDetails, IconPigMoney, IconPlus } from "@tabler/icons-react";
+import { IconCheck, IconLink, IconPencil, IconPlus, IconTarget } from "@tabler/icons-react";
+import type { Goal } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import { formatEur, formatEurWhole } from "@/lib/format";
-import { useIsDesktop } from "@/lib/use-is-desktop";
-import { SPLIT_GRID } from "@/components/page-container";
-import { PageHeading, SectionHead } from "@/components/ui/page-heading";
-import { Stat } from "@/components/ui/stat";
-import { Pill } from "@/components/ui/pill";
-import { Bar, Ring } from "@/components/ui/ring";
-import { CategoryIcon } from "@/components/ui/category-icon";
-import { buttonVariants } from "@/components/ui/button";
-import { SearchButton } from "@/components/shell/search-context";
+import { Amount } from "@/components/clear/amount";
+import { ClearCard, ClearCardHeader, ClearCardLink } from "@/components/clear/card";
+import { ClearChip } from "@/components/clear/chip";
+import { ClearProgress } from "@/components/clear/progress";
+import { clearButtonVariants } from "@/components/clear/button-variants";
 import { PlanSwitch } from "@/components/shell/plan-switch";
 import { AnchoredTip } from "@/components/anchored-tip";
-import type { Goal } from "@/db/schema";
-import { goalProgressPct } from "./goal-shared";
-import { SavingsGoalDetailDialog } from "./savings-goal-detail-dialog";
-import { SavingsGoalEditDialog } from "./savings-goal-edit-dialog";
 import type { GoalsPageData } from "./load-goals";
+import { GOAL_COLORS, addMonths, goalColor, goalProgressPct, linkedAccount, monthsLeft } from "./goal-shared";
+import { ContributionBars, GoalIcon, JarIllustration, MiniBars, ProgressRing } from "./goal-visuals";
+import { GoalFormDialog, type GoalFormTarget } from "./goal-form-dialog";
+import { SavingsGoalDetailDialog } from "./savings-goal-detail-dialog";
+import { MoneyText } from "@/components/clear/money";
 
-const CARD = "rounded-card border border-line bg-surface shadow-card";
-const GHOST = cn(buttonVariants({ variant: "outline", size: "lg" }), "h-10 px-3.5 text-[13px] font-semibold");
-
-function goalColor(g: Goal) {
-  return g.color ?? "var(--arca-accent)";
-}
-
-/** Payments still needed at the planned monthly amount: 0 when reached, null without a monthly amount. */
-function monthsLeft(g: Goal): number | null {
-  const remaining = g.targetAmount - g.currentAmount;
-  if (g.targetAmount > 0 && remaining <= 0) return 0;
-  const monthly = g.monthlyContribution ?? 0;
-  return monthly > 0 && remaining > 0 ? Math.ceil(remaining / monthly) : null;
-}
-
-function addMonths(n: number) {
-  const d = new Date();
-  d.setDate(1);
-  d.setMonth(d.getMonth() + n);
-  return d;
-}
+/** The empty state's starting points; names and descriptions live at plan.goals.suggestions.<key>. */
+const SUGGESTIONS = [
+  { key: "buffer", icon: "IconUmbrella", color: GOAL_COLORS[7].hex },
+  { key: "holiday", icon: "IconPlane", color: GOAL_COLORS[0].hex },
+  { key: "laptop", icon: "IconDeviceLaptop", color: GOAL_COLORS[2].hex },
+] as const;
 
 function useFormats() {
   const locale = useLocale();
   const monthYear = new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" });
-  const monthShort = new Intl.DateTimeFormat(locale, { month: "short", year: "2-digit" });
-  const day = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" });
+  const monthOnly = new Intl.DateTimeFormat(locale, { month: "short" });
+  const day = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   return {
     monthYear: (d: Date) => monthYear.format(d),
-    /** "Nov 25" from a YYYY-MM */
-    monthKey: (m: string) => monthShort.format(new Date(`${m}-15T12:00:00`)),
+    /** "Nov 2025" from a YYYY-MM */
+    monthKeyYear: (m: string) => monthYear.format(new Date(`${m}-15T12:00:00`)),
+    /** "Nov" from a YYYY-MM */
+    monthKey: (m: string) => monthOnly.format(new Date(`${m}-15T12:00:00`)),
     day: (date: string) => day.format(new Date(`${date}T12:00:00`)),
+    number: (n: number) => number.format(n),
   };
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Plan · Goals. One grid: what is saved across the goals (black hero) beside twelve
+ * months of contributions, a card per goal, then the latest contributions across the
+ * full width. Phones show the hero with a small bar chart, the goals as compact cards
+ * and the contributions list. A goal card opens the goal's detail dialog (a centred
+ * modal from lg, a bottom sheet on phones) with its projection.
+ */
+export function GoalsView({ data, initialForm }: { data: GoalsPageData; initialForm: GoalFormTarget | null }) {
+  const router = useRouter();
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [form, setForm] = useState<{ key: number; open: boolean; target: GoalFormTarget }>(() =>
+    initialForm ? { key: 1, open: true, target: initialForm } : { key: 0, open: false, target: { mode: "new", type: "savings" } },
+  );
+  // Opened from /goals?new=… or ?edit=… (the old add and edit routes): drop the
+  // parameter once the form closes, so a refresh doesn't open it again.
+  const fromUrl = useRef(initialForm != null);
+
+  const goals = data.goals;
+  const detail = detailId != null ? (goals.find((g) => g.id === detailId) ?? null) : null;
+
+  function openForm(target: GoalFormTarget) {
+    setForm((f) => ({ key: f.key + 1, open: true, target }));
+  }
+
+  function formOpenChange(open: boolean) {
+    setForm((f) => ({ ...f, open }));
+    if (!open && fromUrl.current) {
+      fromUrl.current = false;
+      router.replace("/goals", { scroll: false });
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
+      <GoalsHeader goals={goals} onAdd={() => openForm({ mode: "new", type: "savings" })} />
+
+      {goals.length === 0 ? (
+        <EmptyGoals onAdd={(preset) => openForm({ mode: "new", type: "savings", preset })} />
+      ) : (
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
+          <HeroCard data={data} />
+          <ContributionsCard data={data} />
+          {/* The goal cards share the page grid's columns (subgrid) and get rows of their
+              own that are all as tall as the tallest card, so every goal card matches. */}
+          <div className="col-span-full grid grid-cols-subgrid auto-rows-fr gap-5">
+            {goals.map((g, i) => (
+              <GoalCard
+                key={g.id}
+                goal={g}
+                data={data}
+                tipAnchor={i === 0}
+                onOpen={() => setDetailId(g.id)}
+                onEdit={() => openForm({ mode: "edit", goal: g })}
+              />
+            ))}
+          </div>
+          <RecentCard data={data} />
+        </div>
+      )}
+
+      <SavingsGoalDetailDialog goal={detail} data={data} onClose={() => setDetailId(null)} />
+      <GoalFormDialog key={form.key} target={form.target} open={form.open} onOpenChange={formOpenChange} categories={data.categories} />
+
+      <AnchoredTip id="goalsContributions" anchor="goalsContributions" active={goals.length > 0} />
+      <AnchoredTip id="goalsDetail" anchor="goalsDetail" active={goals.length > 0 && detail == null} />
+      <AnchoredTip id="goalsSuggestions" anchor="goalsSuggestions" active={goals.length === 0} />
+    </div>
+  );
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
-export function GoalsHeader({ goals }: { goals: Goal[] }) {
+function GoalsHeader({ goals, onAdd }: { goals: Goal[]; onAdd: () => void }) {
   const t = useTranslations("plan.goals");
   const tPlan = useTranslations("plan");
   const { monthYear } = useFormats();
@@ -70,199 +130,304 @@ export function GoalsHeader({ goals }: { goals: Goal[] }) {
     .sort((a, z) => a - z)[0];
   const parts = [t("count", { count: goals.length })];
   if (upcoming != null) parts.push(t("next", { date: monthYear(addMonths(upcoming)) }));
-  return (
-    <PageHeading
-      className="w-full"
-      title={
-        <>
-          <span className="lg:hidden">{tPlan("title")}</span>
-          <span className="hidden lg:inline">{t("title")}</span>
-        </>
-      }
-      subtitle={<span className="hidden lg:inline">{parts.join(" · ")}</span>}
-      actions={
-        <>
-          <Link
-            href="/goals/add?type=savings"
-            aria-label={t("add")}
-            className="inline-flex size-10 items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:bg-surface-2 lg:hidden"
-          >
-            <IconPlus size={18} stroke={1.8} />
-          </Link>
-          <Link href="/goals/add?type=savings" className={cn(GHOST, "hidden lg:inline-flex")}>
-            <IconPlus size={16} stroke={1.8} />
-            {t("add")}
-          </Link>
-          <SearchButton />
-        </>
-      }
-    />
-  );
-}
-
-// ── Page body ─────────────────────────────────────────────────────────────────
-
-export function GoalsView({ data }: { data: GoalsPageData }) {
-  const t = useTranslations("plan.goals");
-  const isDesktop = useIsDesktop();
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [sheetId, setSheetId] = useState<number | null>(null);
-  const [editId, setEditId] = useState<number | null>(null);
-
-  const goals = data.goals;
-  const selected = goals.find((g) => g.id === selectedId) ?? goals[0] ?? null;
-  const sheet = sheetId != null ? goals.find((g) => g.id === sheetId) ?? null : null;
-  const editing = editId != null ? goals.find((g) => g.id === editId) ?? null : null;
-
-  function open(id: number) {
-    if (isDesktop) setSelectedId(id);
-    else setSheetId(id);
-  }
 
   return (
-    <>
-      <PlanSwitch className="self-start" />
-
-      {goals.length === 0 ? (
-        <section className={cn(CARD, "flex flex-col items-center gap-4 px-6 py-12 text-center")}>
-          <span className="inline-flex size-14 items-center justify-center rounded-full bg-mustard-soft text-mustard-strong">
-            <IconPigMoney size={26} stroke={1.8} />
-          </span>
-          <div className="flex flex-col gap-1.5">
-            <h2 className="heading text-lg text-ink">{t("empty.title")}</h2>
-            <p className="max-w-xs text-[13px] leading-[1.45] text-ink-2">{t("empty.body")}</p>
-          </div>
-          <Link href="/goals/add?type=savings" className={buttonVariants({ variant: "default", size: "lg" })}>
-            <IconPlus size={16} stroke={2} />
-            {t("add")}
-          </Link>
-        </section>
-      ) : (
-        <div className={SPLIT_GRID}>
-          <div className="flex min-w-0 flex-col gap-5">
-            <SavedCard data={data} />
-            <section className="flex flex-col gap-3">
-              <SectionHead title={t("yours")} link={t("add")} href="/goals/add?type=savings" />
-              <div className="grid gap-3.5 sm:grid-cols-2 2xl:grid-cols-3">
-                {goals.map((g) => (
-                  <GoalCard key={g.id} goal={g} selected={isDesktop && selected?.id === g.id} onOpen={() => open(g.id)} />
-                ))}
-              </div>
-            </section>
-            <RecentCard data={data} />
-          </div>
-          {isDesktop && selected && (
-            <div className="flex min-w-0 flex-col gap-5">
-              <GoalDetailCard goal={selected} data={data} onEdit={() => setEditId(selected.id)} onDetails={() => setSheetId(selected.id)} />
-            </div>
-          )}
+    <div className="flex flex-col gap-4 lg:gap-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 lg:items-end lg:gap-4">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[40px]">{tPlan("title")}</h1>
+          <span className="hidden text-base text-clear-ink-2 lg:inline">{goals.length > 0 ? parts.join(" · ") : t("subtitleEmpty")}</span>
         </div>
-      )}
-
-      <SavingsGoalDetailDialog goal={sheet} categories={data.categories} onClose={() => setSheetId(null)} />
-      {editing && (
-        <SavingsGoalEditDialog goal={editing} categories={data.categories} open={editId != null} onOpenChange={(o) => { if (!o) setEditId(null); }} />
-      )}
-
-      <AnchoredTip id="goalsContributions" anchor="goalsContributions" active={goals.length > 0} />
-      <AnchoredTip id="goalsDetail" anchor="goalsDetail" active={isDesktop && selected != null} />
-    </>
+        <div className="flex items-center gap-2.5">
+          <button type="button" onClick={onAdd} aria-label={t("add")} className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}>
+            <IconPlus aria-hidden />
+          </button>
+          <button type="button" onClick={onAdd} className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
+            <IconPlus aria-hidden />
+            {t("add")}
+          </button>
+        </div>
+      </div>
+      <PlanSwitch />
+    </div>
   );
 }
 
-// ── Saved across goals ────────────────────────────────────────────────────────
+// ── Hero: saved across goals ──────────────────────────────────────────────────
 
-function SavedCard({ data }: { data: GoalsPageData }) {
-  const t = useTranslations("plan.goals.saved");
-  const { monthKey } = useFormats();
-  const total = data.goals.reduce((s, g) => s + g.currentAmount, 0);
-  const monthly = data.goals.reduce((s, g) => s + (g.monthlyContribution ?? 0), 0);
+function HeroCard({ data }: { data: GoalsPageData }) {
+  const t = useTranslations("plan.goals.hero");
+  const { monthYear, monthKeyYear } = useFormats();
+  const goals = data.goals;
+  const total = goals.reduce((s, g) => s + g.currentAmount, 0);
+  const target = goals.reduce((s, g) => s + Math.max(0, g.targetAmount), 0);
+  const monthly = goals.reduce((s, g) => s + (g.monthlyContribution ?? 0), 0);
   const thisMonth = data.months[data.months.length - 1]?.amount ?? 0;
   const share = data.income > 0 && monthly > 0 ? Math.round((monthly / data.income) * 100) : null;
-  const plan = share != null ? t("planShare", { amount: formatEurWhole(monthly), pct: share }) : monthly > 0 ? t("plan", { amount: formatEurWhole(monthly) }) : null;
-  const max = Math.max(1, ...data.months.map((m) => m.amount));
-  const pill =
-    thisMonth !== 0 ? (
-      <Pill tone={thisMonth > 0 ? "positive" : "negative"} icon={thisMonth > 0 ? <IconArrowUp /> : <IconArrowDown />}>
-        {t("thisMonth", { amount: `${thisMonth > 0 ? "+" : "-"}${formatEurWhole(Math.abs(thisMonth))}` })}
-      </Pill>
-    ) : null;
+  const b = (c: React.ReactNode) => <b className="font-bold text-clear-hero-ink">{c}</b>;
+
+  // The goal reached soonest at its planned pace.
+  const next = goals
+    .map((g) => ({ g, left: monthsLeft(g) }))
+    .filter((x): x is { g: Goal; left: number } => x.left != null && x.left > 0)
+    .sort((a, z) => a.left - z.left)[0];
 
   return (
-    <section data-tip-anchor="goalsContributions" className={cn(CARD, "flex flex-col gap-3.5 p-[18px] lg:flex-row lg:items-end lg:gap-8 lg:px-6 lg:py-[22px]")}>
-      <div className="flex items-end justify-between gap-3 lg:shrink-0 lg:flex-col lg:items-start lg:gap-2">
-        <div className="flex flex-col gap-2">
-          <span className="text-[13px] font-semibold text-ink-2">{t("title", { count: data.goals.length })}</span>
-          <span className="amount text-[44px] leading-none tracking-[-0.035em] text-ink lg:text-[54px]">{formatEurWhole(total)}</span>
-        </div>
-        <span className="lg:hidden">{pill}</span>
-        <span className="hidden items-center gap-2 text-[13px] text-ink-2 lg:flex">
-          {plan}
-          {pill}
-        </span>
+    <ClearCard hero aria-labelledby="goals-hero-title" className="gap-5 p-5 lg:p-[26px]">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="goals-hero-title" className="m-0 text-[15px] font-bold lg:text-[17px]">
+          {t("title", { count: goals.length })}
+        </h2>
+        {target > 0 && (
+          <ClearChip tone="mint"><MoneyText>{t("ofTarget", { pct: Math.round((total / target) * 100), amount: formatEurWhole(target) })}</MoneyText></ClearChip>
+        )}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex h-12 items-end gap-1.5 lg:h-[70px] lg:gap-2" aria-hidden>
-          {data.months.map((m, i) => (
-            <span
-              key={m.month}
-              className={cn("min-w-0 flex-1 rounded-[4px]", i === data.months.length - 1 ? "bg-mustard" : "bg-mustard/60")}
-              style={{ height: `${Math.max(m.amount > 0 ? 6 : 2, (Math.max(0, m.amount) / max) * 100)}%` }}
-              title={`${monthKey(m.month)} · ${formatEur(m.amount)}`}
-            />
+
+      <div className="flex flex-col gap-1.5">
+        <Amount value={total} whole splitCents={false} className="text-[46px] leading-none tracking-[-0.035em] lg:text-[56px]" />
+        {monthly > 0 && (
+          <span className="text-sm text-clear-hero-ink-2 lg:text-[15px]">
+            <MoneyText>{share != null ? t.rich("planShare", { amount: formatEurWhole(monthly), pct: share, b }) : t.rich("plan", { amount: formatEurWhole(monthly), b })}</MoneyText>
+          </span>
+        )}
+      </div>
+
+      {/* Phone: the twelve months of contributions live here instead of in their own card. */}
+      <div data-tip-anchor="goalsContributions" className="flex flex-col gap-1.5 lg:hidden">
+        <MiniBars months={data.months} />
+        <div className="flex justify-between gap-2 text-xs text-clear-hero-ink-2">
+          <span>{monthKeyYear(data.months[0].month)}</span>
+          <span><MoneyText>{t("thisMonth", { amount: `${thisMonth < 0 ? "−" : thisMonth > 0 ? "+" : ""}${formatEurWhole(Math.abs(thisMonth))}` })}</MoneyText></span>
+        </div>
+      </div>
+
+      {/* Desktop: how the total splits over the goals. */}
+      <div className="hidden flex-col gap-3 lg:flex">
+        <div aria-hidden className="flex h-3 gap-[3px] overflow-hidden rounded-full bg-clear-hero-ink/12">
+          {total > 0 &&
+            goals
+              .filter((g) => g.currentAmount > 0)
+              .map((g) => <span key={g.id} className="h-full rounded-full" style={{ width: `${(g.currentAmount / total) * 100}%`, background: goalColor(g) }} />)}
+        </div>
+        <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
+          {goals.map((g) => (
+            <li key={g.id} className="flex items-center justify-between gap-2">
+              <span className="inline-flex min-w-0 items-center gap-2 text-clear-hero-ink-2">
+                <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: goalColor(g) }} />
+                <span className="truncate">{g.name}</span>
+              </span>
+              <b className="tabular-nums"><MoneyText>{formatEurWhole(g.currentAmount)}</MoneyText></b>
+            </li>
           ))}
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="mono-label text-[10px]">{monthKey(data.months[0].month)}</span>
-          <span className="mono-label truncate text-[10px] lg:hidden">{plan ?? t("contributions")}</span>
-          <span className="mono-label hidden text-[10px] lg:inline">{t("contributions")}</span>
-          <span className="mono-label text-[10px]">{monthKey(data.months[data.months.length - 1].month)}</span>
-        </div>
+        </ul>
       </div>
-    </section>
+
+      {next && (
+        <div className="mt-auto flex items-center gap-3 rounded-clear-tile bg-clear-hero-ink/8 px-3.5 py-3">
+          <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-clear-hero-ink/12">
+            <IconTarget size={18} stroke={1.9} />
+          </span>
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-sm font-bold">{t("nextUp", { name: next.g.name, date: monthYear(addMonths(next.left)) })}</span>
+            <span className="text-[13px] text-clear-hero-ink-2">
+              <MoneyText>{t("nextUpSub", { amount: formatEurWhole(next.g.targetAmount - next.g.currentAmount), monthly: formatEurWhole(next.g.monthlyContribution ?? 0) })}</MoneyText>
+            </span>
+          </span>
+        </div>
+      )}
+    </ClearCard>
+  );
+}
+
+// ── Contributions (desktop) ───────────────────────────────────────────────────
+
+function ContributionsCard({ data }: { data: GoalsPageData }) {
+  const t = useTranslations("plan.goals.contrib");
+  const { monthKey, monthKeyYear, number } = useFormats();
+  const total = data.months.reduce((s, m) => s + m.amount, 0);
+  const thisMonth = data.months[data.months.length - 1]?.amount ?? 0;
+  const tile = "flex flex-col gap-0.5 rounded-clear-icon bg-clear-tile px-3 py-2";
+
+  return (
+    <ClearCard data-tip-anchor="goalsContributions" aria-labelledby="goals-contrib-title" className="hidden gap-3.5 lg:flex xl:col-span-2">
+      <ClearCardHeader
+        title={<span id="goals-contrib-title">{t("title")}</span>}
+        subtitle={t("subtitle")}
+        action={
+          <span className="inline-flex gap-2">
+            <span className={tile}>
+              <span className="text-xs text-clear-muted">{t("total")}</span>
+              <span className="text-[15px] font-extrabold tabular-nums"><MoneyText>{formatEurWhole(total)}</MoneyText></span>
+            </span>
+            <span className={tile}>
+              <span className="text-xs text-clear-muted">{t("thisMonth")}</span>
+              <span className="text-[15px] font-extrabold tabular-nums"><MoneyText>{formatEurWhole(thisMonth)}</MoneyText></span>
+            </span>
+          </span>
+        }
+      />
+      <p className="sr-only">
+        <MoneyText>{t("chartLabel", {
+          from: monthKeyYear(data.months[0].month),
+          to: monthKeyYear(data.months[data.months.length - 1].month),
+          total: formatEurWhole(total),
+          last: formatEurWhole(thisMonth),
+        })}</MoneyText>
+      </p>
+      <ContributionBars
+        months={data.months}
+        monthLabel={monthKey}
+        formatTick={(v) => (v === 0 ? formatEurWhole(0) : number(v))}
+        formatValue={formatEurWhole}
+        className="flex-1"
+      />
+    </ClearCard>
   );
 }
 
 // ── Goal cards ────────────────────────────────────────────────────────────────
 
-function GoalCard({ goal, selected, onOpen }: { goal: Goal; selected: boolean; onOpen: () => void }) {
+function GoalCard({
+  goal,
+  data,
+  tipAnchor,
+  onOpen,
+  onEdit,
+}: {
+  goal: Goal;
+  data: GoalsPageData;
+  /** The first card carries the "open a goal" tip. */
+  tipAnchor: boolean;
+  onOpen: () => void;
+  onEdit: () => void;
+}) {
   const t = useTranslations("plan.goals.card");
+  const tDetail = useTranslations("goals.detail");
   const { monthYear } = useFormats();
-  const pct = Math.round(goalProgressPct(goal));
+  const pct = goalProgressPct(goal);
   const left = monthsLeft(goal);
+  const done = left === 0;
   const color = goalColor(goal);
+  const monthly = goal.monthlyContribution ?? 0;
+  const projected = !done && monthly > 0 && goal.targetAmount > 0 ? Math.min(goal.targetAmount - goal.currentAmount, monthly * 3) : 0;
+  const nameId = `goal-${goal.id}-name`;
   const sub = [
-    goal.monthlyContribution ? t("perMonth", { amount: formatEurWhole(goal.monthlyContribution) }) : t("noMonthly"),
-    left === 0 ? t("reached") : left != null ? t("by", { date: monthYear(addMonths(left)) }) : null,
+    monthly > 0 ? t("perMonth", { amount: formatEurWhole(monthly) }) : t("noMonthly"),
+    done ? t("reached") : left != null ? t("by", { date: monthYear(addMonths(left)) }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
+  const links = goalLinks(goal, data, (key, values) => tDetail(key, values));
+
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-current={selected || undefined}
-      className={cn(CARD, "flex min-w-0 flex-col gap-3.5 p-[18px] text-left transition-colors hover:bg-surface-2/60", selected && "border-ink-3")}
+    <ClearCard
+      aria-labelledby={nameId}
+      data-tip-anchor={tipAnchor ? "goalsDetail" : undefined}
+      className="relative h-full gap-3 p-4 transition-shadow hover:ring-2 hover:ring-clear-ink/10 lg:gap-[18px] lg:p-6"
     >
-      <span className="flex items-center gap-3">
-        <CategoryIcon icon={goal.icon} color={goal.color} />
+      {/* The whole card opens the goal's detail dialog. Every line below has a fixed
+          height (truncated text, reserved rows) so all goal cards come out the same. */}
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label={t("open", { name: goal.name })}
+        className="absolute inset-0 z-[1] cursor-pointer rounded-clear-card outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50"
+      />
+
+      <div className="flex items-center gap-3">
+        <GoalIcon icon={goal.icon} color={goal.color} />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-bold text-ink">{goal.name}</span>
-          <span className="truncate text-xs text-ink-3">{sub}</span>
+          <h3 id={nameId} className="m-0 truncate text-[15px] font-bold lg:text-[17px]">
+            {goal.name}
+          </h3>
+          <span className="truncate text-[13px] text-clear-muted"><MoneyText>{sub}</MoneyText></span>
         </span>
-        <Ring pct={pct} color={left === 0 ? "var(--arca-positive)" : color} size={42}>
-          <span className="font-mono text-[10px] font-medium text-ink">{pct}%</span>
-        </Ring>
-      </span>
-      <span className="flex flex-col gap-2">
-        <span className="flex items-baseline justify-between gap-2">
-          <span className="amount text-[26px] leading-none tracking-[-0.03em] text-ink">{formatEurWhole(goal.currentAmount)}</span>
-          {goal.targetAmount > 0 && <span className="text-xs text-ink-3">{t("of", { amount: formatEurWhole(goal.targetAmount) })}</span>}
+        <span className="flex shrink-0 flex-col items-end gap-0.5 lg:hidden">
+          <span className="text-[17px] font-extrabold tracking-[-0.02em] tabular-nums"><MoneyText>{formatEurWhole(goal.currentAmount)}</MoneyText></span>
+          {goal.targetAmount > 0 && <span className="text-[13px] tabular-nums text-clear-muted"><MoneyText>{t("of", { amount: formatEurWhole(goal.targetAmount) })}</MoneyText></span>}
         </span>
-        <Bar pct={pct} color={left === 0 ? "var(--arca-positive)" : color} height={7} />
-      </span>
-    </button>
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={t("edit", { name: goal.name })}
+          className="relative z-10 hidden size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-ground text-clear-ink transition-colors hover:bg-clear-line lg:inline-flex"
+        >
+          <IconPencil size={17} stroke={2} aria-hidden />
+        </button>
+      </div>
+
+      {/* Phone: one bar, the rest of the way hatched. */}
+      <div className="mt-auto flex items-center gap-2.5 lg:hidden">
+        <ClearProgress
+          value={pct / 100}
+          hatchRemainder
+          size="md"
+          className="flex-1"
+          fillColor={done ? undefined : color}
+          fillClassName={done ? "bg-clear-positive-fill" : undefined}
+        />
+        <span className="min-w-[34px] text-right text-[13px] font-extrabold tabular-nums">{Math.round(pct)}%</span>
+      </div>
+
+      {/* Desktop: ring, figures, a bar with the next three months hatched, and the links. */}
+      <div className="hidden items-center gap-[18px] lg:flex">
+        <ProgressRing pct={pct} color={done ? "var(--clr-positive-fill)" : color} label={t("ring", { name: goal.name, pct: Math.round(pct) })} />
+        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <span className="flex min-w-0 items-baseline gap-x-1.5 whitespace-nowrap">
+            <span className="clear-amount shrink-0 text-[28px] leading-none tracking-[-0.03em]"><MoneyText>{formatEurWhole(goal.currentAmount)}</MoneyText></span>
+            {goal.targetAmount > 0 && <span className="truncate text-sm text-clear-ink-2"><MoneyText>{t("of", { amount: formatEurWhole(goal.targetAmount) })}</MoneyText></span>}
+          </span>
+          {/* Reserved: an empty line keeps reached goals and goals without a target as tall. */}
+          <span className="truncate text-[13px] text-clear-ink-2">
+            <MoneyText>{goal.targetAmount > goal.currentAmount ? t("toGo", { amount: formatEurWhole(goal.targetAmount - goal.currentAmount) }) : " "}</MoneyText>
+          </span>
+          {done ? (
+            <ClearChip tone="mint" icon={<IconCheck stroke={3} aria-hidden />} className="max-w-full self-start">
+              {t("done")}
+            </ClearChip>
+          ) : left != null ? (
+            <ClearChip tone="mint" className="max-w-full self-start">
+              <span className="truncate">{t("reachedOn", { date: monthYear(addMonths(left)) })}</span>
+            </ClearChip>
+          ) : (
+            <ClearChip className="max-w-full self-start">
+              <span className="truncate">{t("noProjection")}</span>
+            </ClearChip>
+          )}
+        </span>
+      </div>
+
+      <div className="hidden flex-col gap-1.5 lg:flex">
+        <ClearProgress
+          value={pct / 100}
+          reserved={goal.targetAmount > 0 ? projected / goal.targetAmount : 0}
+          fillColor={done ? undefined : color}
+          fillClassName={done ? "bg-clear-positive-fill" : undefined}
+          className="bg-clear-ground"
+        />
+        {/* The legend's line stays reserved (invisible) when nothing is projected. */}
+        <span aria-hidden={projected > 0 ? undefined : true} className={cn("flex justify-between gap-2 text-xs text-clear-muted", projected <= 0 && "invisible")}>
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span aria-hidden className="clear-hatch h-2 w-3.5 shrink-0 rounded-full" />
+            <span className="truncate">{t("projected")}</span>
+          </span>
+          <b className="shrink-0 tabular-nums text-clear-ink-2">+<MoneyText>{formatEurWhole(projected)}</MoneyText></b>
+        </span>
+      </div>
+
+      <div className="mt-auto hidden items-center gap-2 border-t border-clear-ground pt-3.5 text-[13px] font-semibold text-clear-ink-2 lg:flex">
+        <IconLink size={16} stroke={2} aria-hidden className="shrink-0" />
+        <span className="truncate">{links.length > 0 ? links.join(" · ") : tDetail("noLinks")}</span>
+      </div>
+    </ClearCard>
   );
+}
+
+/** "Linked to Savings ••3305 · category “Travel”": what feeds the goal. */
+function goalLinks(goal: Goal, data: GoalsPageData, t: (key: "account" | "category", values: { name: string }) => string) {
+  const category = goal.categoryId != null ? data.categories.find((c) => c.id === goal.categoryId) : undefined;
+  const account = linkedAccount(goal, data.recent);
+  return [account ? t("account", { name: account }) : null, category ? t("category", { name: category.name }) : null].filter((s): s is string => s != null);
 }
 
 // ── Recent contributions ──────────────────────────────────────────────────────
@@ -270,121 +435,115 @@ function GoalCard({ goal, selected, onOpen }: { goal: Goal; selected: boolean; o
 function RecentCard({ data }: { data: GoalsPageData }) {
   const t = useTranslations("plan.goals.recent");
   const { day } = useFormats();
-  const nameOf = new Map(data.goals.map((g) => [g.id, g.name]));
+  const byId = new Map(data.goals.map((g) => [g.id, g]));
+  // Grouped by day, newest first (the list already is), each with its total.
+  const groups: { date: string; total: number; items: GoalsPageData["recent"] }[] = [];
+  for (const c of data.recent) {
+    const last = groups[groups.length - 1];
+    if (last && last.date === c.date) {
+      last.items.push(c);
+      last.total += c.amount;
+    } else groups.push({ date: c.date, total: c.amount, items: [c] });
+  }
+  const signed = (n: number) => `${n >= 0 ? "+" : "−"}${formatEur(Math.abs(n))}`;
+
   return (
-    <section className={cn(CARD, "flex flex-col gap-2 px-5 py-3.5")}>
-      <SectionHead title={t("title")} size="sm" />
+    <ClearCard aria-labelledby="goals-recent-title" className="col-span-full gap-3.5">
+      <ClearCardHeader
+        title={<span id="goals-recent-title">{t("title")}</span>}
+        subtitle={data.recent.length > 0 ? t("subtitle") : undefined}
+        action={<ClearCardLink href="/transactions">{t("view")}</ClearCardLink>}
+      />
       {data.recent.length === 0 ? (
-        <p className="py-2 text-[13px] text-ink-3">{t("empty")}</p>
+        <p className="m-0 text-sm text-clear-muted">{t("empty")}</p>
       ) : (
-        data.recent.map((c) => (
-          <div key={c.transactionId} className="flex min-h-[42px] items-center justify-between gap-3 border-t border-line pt-2 first-of-type:border-t-0">
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate text-sm font-semibold text-ink">{nameOf.get(c.goalId) ?? c.name}</span>
-              <span className="truncate text-xs text-ink-3">{[day(c.date), c.account].filter(Boolean).join(" · ")}</span>
-            </span>
-            <span className={cn("shrink-0 text-[15px] font-semibold tabular-nums", c.amount >= 0 ? "text-positive" : "text-negative")}>
-              {c.amount >= 0 ? "+" : "-"}
-              {formatEur(Math.abs(c.amount))}
-            </span>
-          </div>
-        ))
+        <div className="flex flex-col gap-2.5">
+          {groups.map((group) => (
+            <section key={group.date} aria-label={day(group.date)} className="flex flex-col">
+              <div className="flex h-9 items-center justify-between rounded-clear-icon bg-clear-tile px-3.5 text-[13px] font-bold text-clear-ink-2">
+                <span>{day(group.date)}</span>
+                <span className="tabular-nums"><MoneyText>{signed(group.total)}</MoneyText></span>
+              </div>
+              <ul className="m-0 flex list-none flex-col p-0">
+                {group.items.map((c) => {
+                  const g = byId.get(c.goalId);
+                  return (
+                    <li key={c.transactionId} className="flex min-h-[58px] items-center gap-3 border-b border-clear-ground px-3.5 py-2 last:border-b-0">
+                      <GoalIcon icon={g?.icon ?? null} color={g?.color ?? null} />
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate text-[15px] font-bold">{g?.name ?? c.name}</span>
+                        <span className="truncate text-[13px] text-clear-muted">{[c.name, c.account].filter(Boolean).join(" · ")}</span>
+                      </span>
+                      <span className={cn("shrink-0 text-[15px] font-extrabold tabular-nums", c.amount >= 0 ? "text-clear-positive" : "text-clear-negative")}>
+                        <MoneyText>{signed(c.amount)}</MoneyText>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
-    </section>
+    </ClearCard>
   );
 }
 
-// ── Selected goal (desktop) ───────────────────────────────────────────────────
+// ── Empty state ───────────────────────────────────────────────────────────────
 
-function GoalDetailCard({ goal, data, onEdit, onDetails }: { goal: Goal; data: GoalsPageData; onEdit: () => void; onDetails: () => void }) {
-  const t = useTranslations("plan.goals.detail");
-  const { monthYear, monthKey } = useFormats();
-  const color = goalColor(goal);
-  const pct = goalProgressPct(goal);
-  const left = monthsLeft(goal);
-  const category = goal.categoryId != null ? data.categories.find((c) => c.id === goal.categoryId) : undefined;
-  const account = data.recent.find((c) => c.goalId === goal.id)?.account ?? null;
-  const started = goal.startDate ?? goal.createdAt?.slice(0, 10) ?? null;
-
-  const links = [account ? t("account", { name: account }) : null, category ? t("category", { name: category.name }) : null].filter(Boolean);
-
-  // The past 12 months from contributions (what the balance was at each month's end),
-  // then the projection at the planned monthly amount until the target.
-  const perMonth = data.byGoal[goal.id] ?? [];
-  const history = perMonth.map((_, i) => goal.currentAmount - perMonth.slice(i + 1).reduce((s, v) => s + v, 0));
-  const startIndex = started ? Math.max(0, data.months.findIndex((m) => m.month >= started.slice(0, 7))) : 0;
-  const past = history.slice(startIndex === -1 ? 0 : startIndex);
-  const future: number[] = [];
-  if (left != null && left > 0) {
-    for (let i = 1; i <= Math.min(left, 60); i++) future.push(Math.min(goal.targetAmount, goal.currentAmount + (goal.monthlyContribution ?? 0) * i));
-  }
-  const series = [...past, ...future];
-  const max = Math.max(goal.targetAmount, ...series, 1);
-  const w = 386;
-  const h = 90;
-  const pad = 4;
-  const n = Math.max(2, series.length);
-  const xy = series.map((v, i) => [pad + (i / (n - 1)) * (w - pad * 2), h - pad - (Math.max(0, v) / max) * (h - pad * 2)] as const);
-  const path = (pts: readonly (readonly [number, number])[]) => pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
-  const pastPts = xy.slice(0, past.length);
-  const futurePts = xy.slice(Math.max(0, past.length - 1));
-  const firstLabel = data.months[startIndex === -1 ? 0 : startIndex]?.month;
-
+function EmptyGoals({ onAdd }: { onAdd: (preset?: { name: string; icon: string; color: string }) => void }) {
+  const t = useTranslations("plan.goals");
   return (
-    <section data-tip-anchor="goalsDetail" className={cn(CARD, "flex flex-col gap-4 p-[22px]")}>
-      <div className="flex items-center gap-3.5">
-        <CategoryIcon icon={goal.icon} color={goal.color} size="lg" />
-        <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-          <h2 className="heading truncate text-xl text-ink">{goal.name}</h2>
-          <span className="line-clamp-2 text-[13px] text-ink-3">{links.length > 0 ? links.join(" · ") : t("noLinks")}</span>
+    <>
+      <ClearCard aria-labelledby="goals-empty-title" className="items-center gap-[22px] px-5 py-9 text-center lg:px-8 lg:py-11">
+        <JarIllustration />
+        <div className="flex flex-col items-center gap-2.5">
+          <h2 id="goals-empty-title" className="m-0 text-[22px] font-extrabold tracking-[-0.02em] lg:text-2xl">
+            {t("empty.title")}
+          </h2>
+          <p className="m-0 max-w-[500px] text-[15px] leading-normal text-clear-ink-2 lg:text-base">{t("empty.body")}</p>
         </div>
-        <span className="amount shrink-0 text-[26px] leading-none tracking-[-0.03em] text-ink">{formatEurWhole(goal.currentAmount)}</span>
-      </div>
-      <Bar pct={pct} color={left === 0 ? "var(--arca-positive)" : color} height={8} />
-      <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-        <Stat label={t("target")} value={goal.targetAmount > 0 ? formatEurWhole(goal.targetAmount) : "—"} />
-        <Stat label={t("monthly")} value={goal.monthlyContribution ? formatEurWhole(goal.monthlyContribution) : "—"} />
-        <Stat label={t("started")} value={started ? monthYear(new Date(`${started}T12:00:00`)) : "—"} />
-        <Stat label={t("reachedBy")} value={left === 0 ? t("reached") : left != null ? monthYear(addMonths(left)) : "—"} tone={left === 0 ? "positive" : "default"} />
-      </div>
-
-      {series.length > 1 && (
-        <div className="flex flex-col gap-1.5">
-          <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden className="block h-[90px] w-full">
-            <defs>
-              <linearGradient id={`goal-fill-${goal.id}`} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stopColor={color} stopOpacity="0.28" />
-                <stop offset="1" stopColor={color} stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            {[0.33, 0.66].map((g) => (
-              <line key={g} x1={0} x2={w} y1={h - pad - g * (h - pad * 2)} y2={h - pad - g * (h - pad * 2)} stroke="var(--arca-line)" strokeDasharray="2 4" vectorEffect="non-scaling-stroke" />
-            ))}
-            <path d={`${path(xy)} L${xy[xy.length - 1][0].toFixed(1)} ${h} L${xy[0][0].toFixed(1)} ${h} Z`} fill={`url(#goal-fill-${goal.id})`} />
-            {pastPts.length > 1 && <path d={path(pastPts)} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
-            {future.length > 0 && (
-              <path d={path(futurePts)} fill="none" stroke={color} strokeWidth={2} strokeDasharray="4 4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-            )}
-          </svg>
-          <div className="flex justify-between gap-2">
-            <span className="mono-label text-[10px]">{firstLabel ? monthKey(firstLabel) : ""}</span>
-            <span className="mono-label truncate text-[10px]" style={{ color }}>
-              {left === 0 ? t("reached") : left != null ? t("projected", { date: monthKey(`${addMonths(left).getFullYear()}-${String(addMonths(left).getMonth() + 1).padStart(2, "0")}`) }) : t("noProjection")}
-            </span>
-          </div>
+        <div className="flex flex-wrap justify-center gap-2.5">
+          <button type="button" onClick={() => onAdd()} className={clearButtonVariants({ size: "lg" })}>
+            <IconPlus aria-hidden />
+            {t("add")}
+          </button>
+          <Link href="/settings?panel=accounts" className={clearButtonVariants({ variant: "secondary", size: "lg" })}>
+            {t("empty.account")}
+          </Link>
         </div>
-      )}
+      </ClearCard>
 
-      <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={onEdit} className={GHOST}>
-          <IconAdjustmentsHorizontal size={16} stroke={1.8} />
-          {t("edit")}
-        </button>
-        <button type="button" onClick={onDetails} className={GHOST}>
-          <IconListDetails size={16} stroke={1.8} />
-          {t("details")}
-        </button>
-      </div>
-    </section>
+      <section data-tip-anchor="goalsSuggestions" aria-labelledby="goals-suggestions-title" className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-1">
+          <h2 id="goals-suggestions-title" className="m-0 text-lg font-bold">
+            {t("suggestions.title")}
+          </h2>
+          <span className="text-sm text-clear-muted">{t("suggestions.subtitle")}</span>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-2 lg:gap-5 xl:grid-cols-3">
+          {SUGGESTIONS.map((s) => {
+            const name = t(`suggestions.${s.key}.name`);
+            return (
+              <ClearCard key={s.key} className="flex-row items-center gap-3.5 p-4 lg:p-5">
+                <GoalIcon icon={s.icon} color={s.color} size="xl" />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="truncate text-base font-bold">{name}</span>
+                  <span className="text-[13px] text-clear-muted">{t(`suggestions.${s.key}.body`)}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onAdd({ name, icon: s.icon, color: s.color })}
+                  aria-label={t("suggestions.useLabel", { name })}
+                  className={clearButtonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  {t("suggestions.use")}
+                </button>
+              </ClearCard>
+            );
+          })}
+        </div>
+      </section>
+    </>
   );
 }

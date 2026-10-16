@@ -1,16 +1,13 @@
 import { getDateRange } from "@/lib/date-range";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { getBudgetOverview } from "@/lib/budget-overview";
-import { DateRangePicker } from "@/components/date-range-picker";
-import { SearchButton } from "@/components/shell/search-context";
-import { PageHeading } from "@/components/ui/page-heading";
 import { getLocale, getTranslations } from "next-intl/server";
 import ForecastPage from "@/app/forecast/page";
-import { PageShell } from "@/components/page-container";
 import { cookies } from "next/headers";
 import { ReportsTabs } from "./reports-tabs";
-import { TrendsTab, VermogenTab } from "./report-tabs";
-import { AnalyticsTab } from "./analytics-tab";
+import { TrendsTab } from "./trends-tab";
+import { VermogenTab } from "./net-worth-tab";
+import { AnalyticsTab, InsightsFilters } from "./analytics-tab";
 import { HealthTab } from "./health-tab";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -68,47 +65,39 @@ export default async function ReportsPage({
     : t("subtitle.health");
 
   return (
-    <PageShell
-      header={
-        <PageHeading
-          className="w-full"
-          title={t("title")}
-          subtitle={
-            <>
-              {/* Phones keep the period line under the title on Overview and Trends; desktop names the tab. */}
-              <span className="lg:hidden">{activeTab === "rapporten" || activeTab === "trends" ? periodLabel : null}</span>
-              <span className="hidden lg:inline">{subtitle}</span>
-            </>
-          }
-          actions={
-            <>
-              {activeTab === "rapporten" && <DateRangePicker from={from} to={to} financialMonth={financialMonth} iconOnly />}
-              <SearchButton />
-            </>
-          }
-        />
-      }
-      bodyClassName="pb-[calc(6rem+var(--sab))] lg:pb-9"
-    >
+    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] pb-[calc(6rem+var(--sab))] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
+      {/* Heading: title, the tab and period it shows, the period picker and search. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 lg:items-end lg:gap-4">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[40px]">{t("title")}</h1>
+          {/* Phones keep the period line under the title on Overview and Trends; desktop names the tab. */}
+          <span className="text-sm text-clear-ink-2 lg:hidden">{activeTab === "rapporten" || activeTab === "trends" ? periodLabel : null}</span>
+          <span className="hidden text-base text-clear-ink-2 lg:inline">{subtitle}</span>
+        </div>
+        <div className="flex items-center gap-2.5">
+          {(activeTab === "rapporten" || activeTab === "trends") && (
+            <InsightsFilters from={from} to={to} financialMonth={financialMonth} tab={activeTab} />
+          )}
+        </div>
+      </div>
+
       {/* Insights — the one destination for Overview · Trends · Net worth · Forecast ·
           Health. The tab row stays pinned while the page scrolls, except on Forecast,
           which pins its own month bar instead. */}
-      <div className={activeTab === "prognose" ? "-mt-1" : "sticky top-[var(--sat)] z-30 -mx-5 -mt-1 bg-bg px-5 py-2 lg:-mx-9 lg:px-9"}>
+      <div className={activeTab === "prognose" ? "" : "sticky top-[var(--sat)] z-30 -mx-4 bg-clear-ground px-4 py-2 lg:-mx-8 lg:px-8"}>
         <ReportsTabs active={activeTab} />
       </div>
 
-      {activeTab === "rapporten" && <AnalyticsTab from={from} to={to} financialMonth={financialMonth} periodLabel={periodLabel} categoryIds={categoryIds} accounts={accounts} />}
+      {activeTab === "rapporten" && <AnalyticsTab from={from} to={to} financialMonth={financialMonth} categoryIds={categoryIds} accounts={accounts} />}
       {activeTab === "trends" && <TrendsTab from={from} to={to} cmpA={sp.cmpA ?? ""} cmpB={sp.cmpB ?? ""} categoryIds={categoryIds} accounts={accounts} financialMonth={financialMonth} />}
       {activeTab === "vermogen" && <VermogenTab />}
       {activeTab === "prognose" && (
         <ForecastPage
           searchParams={Promise.resolve({ month: cookieStore.get("fc_month")?.value })}
           embedded
-          dockAboveNav
-          stickyTop="var(--sat)"
         />
       )}
       {activeTab === "health" && <HealthTab />}
-    </PageShell>
+    </div>
   );
 }

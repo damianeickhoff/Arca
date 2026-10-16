@@ -323,7 +323,7 @@ addColumnIfMissing("debts", "interest_rate", "REAL");
 
 // Auto-migrate: the date starting_balance was measured on. Backfilled to start_date so
 // every existing debt keeps the exact figures it had — the old behaviour was to measure
-// from the start date. New debts default to today instead (see app/debts/debt-form.tsx),
+// from the start date. New debts default to today instead (see app/debts/debt-form-dialog.tsx),
 // which is what stops the app assuming repayments nobody recorded.
 addColumnIfMissing("debts", "balance_date", "TEXT");
 sqlite.exec(`UPDATE debts SET balance_date = start_date WHERE balance_date IS NULL AND start_date IS NOT NULL`);
@@ -380,6 +380,8 @@ addColumnIfMissing("recurring_items", "match_whole_word", "INTEGER NOT NULL DEFA
 addColumnIfMissing("recurring_items", "shared_reimbursed_amount", "REAL");
 addColumnIfMissing("recurring_items", "shared_with_count", "INTEGER");
 addColumnIfMissing("recurring_items", "is_reimbursement", "INTEGER NOT NULL DEFAULT 0");
+// …and on one expense (the split dialog's shared-cost section): people sharing it.
+addColumnIfMissing("transactions", "shared_with_count", "INTEGER");
 
   // Auto-migrate: per-account "count towards net worth" toggle
   addColumnIfMissing("banks", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 0");

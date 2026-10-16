@@ -1,38 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { Category } from "@/db/schema";
-import {
-  IconChevronDownFilled as ChevronDown,
-  IconXFilled as X,
-  IconAdjustmentsHorizontal as Filter,
-  IconSearch as Search,
-  IconShoppingCartFilled as Cart,
-  IconSparklesFilled as Sparkles,
-  IconPigFilled as Pig,
-  IconFolderFilled as Folder,
-  IconCheck as Check,
-  IconLayoutList as LayoutList,
-  IconLayoutGrid as LayoutGrid,
-} from "@tabler/icons-react";
+import { IconCheck, IconChevronDown, IconFilter2, IconSearch, IconX } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { filterPillClass } from "@/components/filter-pill";
+import { ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { IconTile } from "@/components/clear/icon-tile";
+import { ClearSwitch } from "@/components/clear/switch";
+import { ContextualTip } from "@/components/contextual-tip";
 import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
+import type { CategorySuggestions } from "@/lib/category-suggestions";
 import { cn } from "@/lib/utils";
-import { SHEET_COLUMN } from "@/components/page-container";
-import { BUDGET_TYPE_LABELS, normalizeBudgetType } from "@/lib/format";
-import { CategoryClient } from "@/components/settings/categories/category-client";
+import { normalizeBudgetType } from "@/lib/format";
 import { acquireNavHidden } from "@/lib/nav-visibility";
+import { useIsDesktop } from "@/lib/use-is-desktop";
 
 // Force WebKit to recompute the layout/visual viewport by briefly re-writing the
 // viewport <meta>. On an iOS home-screen PWA the WKWebView is left ~62px short of the
@@ -48,18 +32,11 @@ function forceViewportRecompute() {
 }
 
 /**
- * Everything the picker sheet needs to survive an iOS home-screen PWA while it's open.
- *
- * Hides the mobile bottom nav, and handles the keyboard: focusing the (bottom) search
- * input makes iOS scroll the whole document up (~353px) to reveal it, dragging the list
- * + page behind it — but iOS has already resized the viewport to sit above the keyboard,
- * so that scroll is redundant. Pin scrollY back to 0 so the dialog stays put.
- *
- * Separately, after the keyboard closes iOS leaves the WKWebView ~62px short of the
- * screen (window.innerHeight stuck at 894 vs screen 956) — a strip of system background
- * at the bottom. Only a real gesture makes WebKit recompute its size. Toggling the
- * viewport <meta> forces that recompute without a scroll; we fire it when the keyboard
- * closes and again as the picker closes.
+ * Keeps the full-height picker sheet steady in an iOS home-screen PWA while it's open:
+ * hides the tab bar, pins the document scroll at 0 (iOS scrolls the whole page when
+ * the keyboard opens even though the viewport already shrank above it), and nudges
+ * WebKit to resize the web view once the keyboard closes and as the picker closes —
+ * otherwise a strip of system background stays at the bottom of the screen.
  */
 function useKeyboardSafePicker(open: boolean) {
   useEffect(() => {
@@ -95,728 +72,560 @@ function useKeyboardSafePicker(open: boolean) {
   }, [open]);
 }
 
-interface CategoryPickerProps {
-  categories: Category[];
-  current?: string;
-  flat?: boolean;
-  onChange?: (value: string) => void;
-  triggerClassName?: string;
-  /** Label shown on the trigger when nothing is selected. Defaults to "Category". */
-  placeholder?: string;
-  /** When set, the trigger shows the selected category's icon beside its name. */
-  showSelectedIcon?: boolean;
+/** Budget-type groups, in the order the list shows them. "" = no budget type. */
+const GROUPS = [
+  { key: "nodig", dot: "bg-clear-ink" },
+  { key: "willen", dot: "bg-clear-ember" },
+  { key: "sparen", dot: "bg-clear-info-fill" },
+  { key: "", dot: "bg-clear-placeholder" },
+] as const;
+
+type GroupKey = (typeof GROUPS)[number]["key"];
+
+function groupOf(cat: Category): GroupKey {
+  const type = normalizeBudgetType(cat.budgetType);
+  return type === "nodig" || type === "willen" || type === "sparen" ? type : "";
 }
 
-// A toggleable filter row inside the filter dropdown. Stays open on click (closeOnClick
-// false) so several filters can be flipped in one pass; active state shows a check.
-function FilterMenuItem({
-  icon,
-  label,
-  active,
-  onClick,
-}: {
-  icon: React.ReactNode;
+/** One selectable entry in visual order — what the arrow keys walk through. */
+interface PickOption {
+  value: string;
   label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <DropdownMenuItem
-      closeOnClick={false}
-      onClick={onClick}
-      className={cn("mt-0.5 gap-2.5 py-2.5", active && "bg-clear-card font-medium")}
-    >
-      {icon}
-      <span className="flex-1">{label}</span>
-      {active && <Check className="size-4 text-clear-ink/60" />}
-    </DropdownMenuItem>
-  );
+  iconKey?: string | null;
+  color?: string | null;
+  child?: boolean;
 }
 
-// The filter control, extracted so it can live in the dialog header next to the
-// close button. Fully controlled — filter state is owned by the picker so the
-// header trigger and the grid below stay in sync.
-export function CategoryFilterMenu({
-  budgetType,
-  onBudgetTypeChange,
-  showSubcategories,
-  onShowSubcategoriesChange,
-  triggerClassName,
-}: {
-  budgetType: string;
-  onBudgetTypeChange: (v: string) => void;
-  showSubcategories: boolean;
-  onShowSubcategoriesChange: (v: boolean) => void;
-  // When set, replaces the default trigger sizing/background (used to match the
-  // mobile dialog's close button, which lives in the same header row).
-  triggerClassName?: string;
-}) {
-  const isFiltered = budgetType !== "" || !showSubcategories;
-  return (
-    // modal={false}: nested inside the picker Dialog, a modal menu fights the dialog's
-    // focus trap / outside-press guard on first open — the trigger swallows the first
-    // click and only responds after the dialog is reopened. Non-modal avoids that.
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger
-        aria-label="Filter categories"
-        className={cn(
-          "flex items-center justify-center transition-colors cursor-pointer shrink-0",
-          triggerClassName ??
-            cn(
-              "size-9 rounded-full bg-white dark:bg-white/7",
-              isFiltered ? "bg-white dark:bg-white/7 text-clear-ember-ink" : "bg-white dark:bg-white/7 text-clear-ink",
-            ),
-        )}
-      >
-        <Filter className="size-4.5" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="min-w-60 w-auto p-1.5">
-        <div className="flex items-center gap-2.5 px-2 py-1.5 text-sm font-medium">
-          <Filter className="size-4.5" />
-          <span className="flex-1">Filter</span>
-        </div>
-        <DropdownMenuSeparator />
-        <FilterMenuItem icon={<Cart className="size-4.5" />} label="Only needs" active={budgetType === "nodig"} onClick={() => onBudgetTypeChange(budgetType === "nodig" ? "" : "nodig")} />
-        <FilterMenuItem icon={<Sparkles className="size-4.5" />} label="Only wants" active={budgetType === "willen"} onClick={() => onBudgetTypeChange(budgetType === "willen" ? "" : "willen")} />
-        <FilterMenuItem icon={<Pig className="size-4.5" />} label="Only savings" active={budgetType === "sparen"} onClick={() => onBudgetTypeChange(budgetType === "sparen" ? "" : "sparen")} />
-        <DropdownMenuSeparator />
-        <FilterMenuItem icon={<Folder className="size-4.5" />} label="Only parent" active={!showSubcategories} onClick={() => onShowSubcategoriesChange(!showSubcategories)} />
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-// Owns the picker's filter state and hands back the header control plus the
-// values to feed into <CategoryGrid>. Keeps the filter button (in the dialog
-// header) and the grid below in sync without duplicating state at each call site.
-export function useCategoryFilter(options?: { triggerClassName?: string }) {
-  const [budgetType, setBudgetType] = useState("");
-  const [showSubcategories, setShowSubcategories] = useState(true);
-  const filterMenu = (
-    <CategoryFilterMenu
-      budgetType={budgetType}
-      onBudgetTypeChange={setBudgetType}
-      showSubcategories={showSubcategories}
-      onShowSubcategoriesChange={setShowSubcategories}
-      triggerClassName={options?.triggerClassName}
-    />
-  );
-  return { budgetType, showSubcategories, filterMenu };
-}
-
-export type CategoryLayout = "rows" | "grid";
-
-const CATEGORY_LAYOUT_KEY = "category-picker-layout";
-
-/** Remembers whether the picker shows rows or a tile grid.
- *
- * The default is per-device rather than fixed: a tile grid uses the horizontal room a
- * desktop window has and a phone doesn't, so it defaults to `grid` at >=1024px and
- * `rows` below. That's a first-run default only — once the user picks a layout the
- * choice is stored and honoured at every width. Starts as `rows` so the server and the
- * first client render agree; the effect corrects it immediately after mount. */
-function useCategoryLayout(): [CategoryLayout, (next: CategoryLayout) => void] {
-  const [layout, setLayout] = useState<CategoryLayout>("rows");
-
-  useEffect(() => {
-    const stored = localStorage.getItem(CATEGORY_LAYOUT_KEY);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- neither localStorage nor matchMedia is knowable during SSR, so this can't be computed in render without a hydration mismatch
-    setLayout(
-      stored === "rows" || stored === "grid"
-        ? stored
-        : window.matchMedia("(min-width: 1024px)").matches
-          ? "grid"
-          : "rows",
-    );
-  }, []);
-
-  function choose(next: CategoryLayout) {
-    setLayout(next);
-    localStorage.setItem(CATEGORY_LAYOUT_KEY, next);
-  }
-
-  return [layout, choose];
-}
-
-/** Segmented rows/grid switch shown above the category list. */
-function CategoryLayoutToggle({
-  value,
-  onChange,
-}: {
-  value: CategoryLayout;
-  onChange: (next: CategoryLayout) => void;
-}) {
-  const options: { key: CategoryLayout; Icon: typeof LayoutList; label: string }[] = [
-    { key: "rows", Icon: LayoutList, label: "Show as rows" },
-    { key: "grid", Icon: LayoutGrid, label: "Show as grid" },
-  ];
-  return (
-    <div className="inline-flex items-center gap-0.5 rounded-full bg-clear-primary/5 p-0.5">
-      {options.map(({ key, Icon: OptIcon, label }) => (
-        <button
-          key={key}
-          type="button"
-          onClick={() => onChange(key)}
-          aria-label={label}
-          aria-pressed={value === key}
-          className={cn(
-            "flex items-center justify-center size-8 rounded-full transition-colors",
-            value === key ? "bg-clear-card text-clear-ink" : "text-clear-ink/40 hover:text-clear-ink/70",
-          )}
-        >
-          <OptIcon className="size-4.5" />
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// The search input + "add category" button. Extracted so it can live either at the
-// bottom of the grid (default) or — for the mobile picker sheet — in the Dialog's
-// pinned `footer` slot, where it floats above the keyboard without the list moving.
-export function CategorySearchBar({
-  search,
-  onSearchChange,
-  categories,
-  className,
-}: {
-  search: string;
-  onSearchChange: (v: string) => void;
-  categories: Category[];
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <div className="relative flex-1">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-clear-ink/40 pointer-events-none" />
-        <input
-          type="text"
-          placeholder="Search"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          data-no-keyboard-scroll
-          className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-white/7 border border-clear-ink/10 backdrop-blur-xl backdrop-saturate-150 focus:outline-none"
-        />
-      </div>
-      <CategoryClient action="add" variant="icon" categories={categories} />
-    </div>
-  );
-}
-
-// A search bar that floats above the on-screen keyboard on mobile. Rendered through
-// a portal onto <body> — NOT inside the vaul drawer — so it's a true viewport-fixed
-// element with no transformed ancestor. That matters: an input that sits inside the
-// drawer's transformed/flex layout is, at focus time, at the very bottom of the
-// screen where the keyboard will appear, so iOS pans the ENTIRE webview up to reveal
-// it (dragging the sheet and the page behind it). A position:fixed element that's
-// already above the keyboard is considered visible, so iOS never pans — nothing
-// behind it moves. The `bottom` is tracked live from the VisualViewport so the bar
-// stays glued just above the keyboard whether the platform resizes or overlays it.
-function FloatingSearchBar({
-  search,
-  onSearchChange,
-}: {
-  search: string;
-  onSearchChange: (v: string) => void;
-}) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    let raf = 0;
-    let barH = 0;
-    let restHeight = 0; // largest viewport height seen = keyboard-closed height
-    let lastY = NaN;
-
-    // A rAF loop positions the bar via `transform` every frame while the picker is
-    // open. Two reasons this beats `position: fixed; bottom`: iOS repaints a
-    // transform on a promoted layer eagerly (a `bottom` fixed element goes stale
-    // after the keyboard resize until you scroll — the "only shows when I scroll"
-    // bug), and the loop tracks the keyboard's slide-in animation smoothly instead
-    // of waiting for sparse resize events.
-    const tick = () => {
-      const wrap = wrapRef.current;
-      const bar = barRef.current;
-      if (wrap && bar) {
-        if (!barH) barH = bar.offsetHeight;
-        restHeight = Math.max(restHeight, vv.height);
-        const keyboardOpen = vv.height < restHeight - 80;
-        // Clear the home indicator when the keyboard's down; hug the keys when it's up.
-        const gapBottom = keyboardOpen ? 8 : 30;
-        const y = Math.round(vv.offsetTop + vv.height - barH - gapBottom);
-        if (y !== lastY) {
-          wrap.style.transform = `translate3d(0, ${y}px, 0)`;
-          lastY = y;
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  // Only renders client-side (the sheet opens on user interaction), so document exists.
-  if (typeof document === "undefined") return null;
-
-  return createPortal(
-    <div
-      ref={wrapRef}
-      data-dialog-keep-open
-      // inset-x-0 + the shared column cap rather than left-0/w-full: the bar is
-      // portalled to <body>, so it would otherwise span the whole monitor instead of
-      // lining up with the sheet it belongs to. Vertical position stays on `transform`
-      // (see the rAF loop above), which the horizontal centring doesn't disturb.
-      className={cn(SHEET_COLUMN, "fixed inset-x-0 top-0 px-4 z-[300] pointer-events-none")}
-      // Off-screen until the first rAF frame positions it; will-change/translate3d
-      // promote it to its own compositor layer so iOS repaints it on its own.
-      style={{ transform: "translate3d(0, -9999px, 0)", willChange: "transform" }}
-    >
-      <div
-        ref={barRef}
-        className="pointer-events-auto flex items-center h-13 rounded-full pl-4 pr-2 bg-white/7 border border-clear-ink/10 backdrop-blur-xl backdrop-saturate-180"
-      >
-        <Search className="size-5 text-clear-ink/40 shrink-0" />
-        <input
-          type="text"
-          placeholder="Search category"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          data-no-keyboard-scroll
-          className="flex-1 min-w-0 bg-transparent px-3 outline-none placeholder:text-clear-ink/40"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => onSearchChange("")}
-            aria-label="Clear search"
-            className="size-9 rounded-full flex items-center justify-center text-clear-ink/50 hover:bg-clear-primary/10 shrink-0"
-          >
-            <X className="size-4.5" />
-          </button>
-        )}
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-export function CategoryGrid({
+/**
+ * The category list: a search field, then every category grouped under Needs · Wants ·
+ * Savings · Other, children indented under their parent. Arrow keys move through the
+ * list, Enter selects (and, when `onConfirm` is set, Enter on the selected one confirms
+ * it). Two columns from lg, like the Clear mockup.
+ */
+function CategoryGrid({
   categories,
   current,
-  isFormMode,
-  fill = false,
-  budgetType = "",
-  showSubcategories = true,
-  onChange,
-  onClose,
-  search: controlledSearch,
+  onSelect,
+  onConfirm,
+  search,
   onSearchChange,
-  hideSearch = false,
+  autoFocusSearch = false,
+  between,
 }: {
   categories: Category[];
+  /** The selected value ("none" = Uncategorized). */
   current?: string;
-  isFormMode: boolean;
-  fill?: boolean;
-  budgetType?: string;
-  showSubcategories?: boolean;
-  onChange: (v: string) => void;
-  onClose: () => void;
-  // Optional controlled search — pass these (plus hideSearch) to render the search
-  // bar elsewhere, e.g. in the sheet's pinned footer. Falls back to internal state.
-  search?: string;
-  onSearchChange?: (v: string) => void;
-  hideSearch?: boolean;
+  onSelect: (value: string) => void;
+  onConfirm?: () => void;
+  search: string;
+  onSearchChange: (v: string) => void;
+  /** Focus the search field on open — desktop only, a phone would pop its keyboard. */
+  autoFocusSearch?: boolean;
+  /** Rendered between the search field and the list (the suggestions). */
+  between?: React.ReactNode;
 }) {
-  const [internalSearch, setInternalSearch] = useState("");
-  const search = controlledSearch ?? internalSearch;
-  const setSearch = onSearchChange ?? setInternalSearch;
-  const [layout, setLayout] = useCategoryLayout();
-
-  function select(value: string) { onChange(value); onClose(); }
+  const t = useTranslations("categoryPicker");
+  const uid = useId();
+  const [activeValue, setActiveValue] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const query = search.trim().toLowerCase();
 
-  const { topLevel, childrenByParentId } = useMemo(() => {
-    // budgetType is stored in mixed vocabularies (Dutch/English) — normalize before comparing.
-    const matches = (c: Category) =>
-      (!budgetType || normalizeBudgetType(c.budgetType) === budgetType) && (!query || c.name.toLowerCase().includes(query));
-
+  // Groups of [parent, ...children] blocks, plus the flat option order the keys use.
+  const { special, groups, options } = useMemo(() => {
+    const matches = (c: Category) => !query || c.name.toLowerCase().includes(query);
     const idsPresent = new Set(categories.filter(matches).map((c) => c.id));
     const topLevel: Category[] = [];
     const childrenByParentId = new Map<number, Category[]>();
 
     for (const cat of categories) {
       if (!matches(cat)) continue;
-
-      // "Only parent" (showSubcategories false): show real top-level categories only,
-      // dropping every child instead of flattening them into the top-level list.
-      if (!showSubcategories) {
-        if (cat.parentCategoryId === null) topLevel.push(cat);
-        continue;
-      }
-
-      // A category is "top-level" here if it has no parent, or its parent got
-      // filtered out — orphaned matches are promoted so they're never lost.
+      // Top-level here = no parent, or its parent got filtered out — orphaned matches
+      // are promoted so they're never lost.
       const isTop = cat.parentCategoryId === null || !idsPresent.has(cat.parentCategoryId);
-      if (isTop) {
-        topLevel.push(cat);
-      } else {
+      if (isTop) topLevel.push(cat);
+      else {
         const siblings = childrenByParentId.get(cat.parentCategoryId!);
         if (siblings) siblings.push(cat);
         else childrenByParentId.set(cat.parentCategoryId!, [cat]);
       }
     }
-    return { topLevel, childrenByParentId };
-  }, [categories, budgetType, query, showSubcategories]);
+
+    const toOption = (c: Category, child = false): PickOption => ({ value: String(c.id), label: c.name, iconKey: c.icon, color: c.color, child });
+    const special: PickOption[] = query ? [] : [{ value: "none", label: t("uncategorized"), iconKey: UNCATEGORIZED_ICON, color: UNCATEGORIZED_COLOR }];
+    const groups = GROUPS.map((g) => ({
+      ...g,
+      blocks: topLevel.filter((c) => groupOf(c) === g.key).map((c) => [toOption(c), ...(childrenByParentId.get(c.id) ?? []).map((ch) => toOption(ch, true))]),
+    })).filter((g) => g.blocks.length > 0);
+    const options = [...special, ...groups.flatMap((g) => g.blocks.flat())];
+    return { special, groups, options };
+  }, [categories, query, t]);
+
+  // The highlighted option: the one the arrows reached, else the first match while
+  // searching (so Enter picks it), else the selected category.
+  const has = (v: string | null | undefined): v is string => v != null && options.some((o) => o.value === v);
+  const active = has(activeValue) ? activeValue : query ? (options[0]?.value ?? null) : has(current) ? current : null;
+
+  const optionId = (value: string) => `${uid}-opt-${value}`;
+
+  function move(e: React.KeyboardEvent, key: string) {
+    if (options.length === 0) return;
+    const index = active == null ? -1 : options.findIndex((o) => o.value === active);
+    let next = index;
+    if (key === "ArrowDown" || key === "ArrowRight") next = Math.min(options.length - 1, index + 1);
+    else if (key === "ArrowUp" || key === "ArrowLeft") next = Math.max(0, index - 1);
+    else if (key === "Home") next = 0;
+    else if (key === "End") next = options.length - 1;
+    e.preventDefault();
+    const value = options[next]?.value;
+    if (value == null) return;
+    setActiveValue(value);
+    const node = document.getElementById(optionId(value));
+    node?.scrollIntoView({ block: "nearest" });
+    // When focus is already in the list (a click or Tab put it there), move it along.
+    if (listRef.current?.contains(document.activeElement)) node?.focus();
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    // Keys from a dialog opened out of the list bubble here through the React tree;
+    // only this list's own field and options count.
+    if (!(e.target instanceof Node) || !e.currentTarget.contains(e.target)) return;
+    const inSearch = e.target === searchRef.current;
+    const inList = listRef.current?.contains(e.target) ?? false;
+    if (!inSearch && !inList) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") return move(e, e.key);
+    // Left/Right and Home/End belong to the text field while typing.
+    if (!inSearch && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return move(e, e.key);
+    if (e.key === "Enter" && inSearch && active != null) {
+      e.preventDefault();
+      if (onConfirm && active === current) onConfirm();
+      else onSelect(active);
+    }
+  }
+
+  const renderOption = (o: PickOption) => {
+    const selected = current === o.value;
+    const isActive = active === o.value;
+    return (
+      <button
+        key={o.value}
+        id={optionId(o.value)}
+        role="option"
+        aria-selected={selected}
+        tabIndex={-1}
+        type="button"
+        onClick={() => onSelect(o.value)}
+        onMouseMove={() => !isActive && setActiveValue(o.value)}
+        className={cn(
+          "flex w-full cursor-pointer items-center gap-2.5 pr-2 pl-1 text-left outline-none transition-colors",
+          o.child ? "h-9 rounded-[10px] lg:h-[30px]" : "h-10 rounded-clear-icon lg:h-[34px]",
+          selected ? "bg-clear-tile ring-2 ring-clear-ink ring-inset" : isActive ? "bg-clear-tile" : "hover:bg-clear-tile",
+        )}
+      >
+        <span aria-hidden className={cn("inline-flex shrink-0", o.child ? "[&>*]:size-[22px]! [&>*]:rounded-[7px]!" : "[&>*]:size-[26px]! [&>*]:rounded-lg!")}>
+          <Icon iconKey={o.iconKey ?? null} color={o.color ?? null} soft size="xs" glyphSize={o.child ? 13 : 15} />
+        </span>
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate",
+            o.child ? "text-[13px] font-semibold text-clear-ink-2" : "text-sm",
+            !o.child && (selected ? "font-extrabold" : "font-bold"),
+            o.child && selected && "font-bold text-clear-ink",
+          )}
+        >
+          {o.label}
+        </span>
+        {selected && (
+          <span className="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink">
+            <IconCheck size={13} stroke={3} />
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  const empty = special.length === 0 && groups.length === 0;
 
   return (
-    <div className={cn("flex flex-col gap-3 -mx-1 px-1", fill && "flex-1 min-h-0")}>
-      <div className="flex items-center justify-end shrink-0 pt-3">
-        <CategoryLayoutToggle value={layout} onChange={setLayout} />
-      </div>
-
-      {/* `fill` means "take whatever height the sheet gives you", at every width. The
-          old lg:flex-none lg:max-h-[60vh] here dated from when this dialog was a
-          centered modal on desktop and had to stay short; now that it's always a
-          full-height sheet, that cap just left the bottom of the screen empty. */}
-      <div className={cn("overflow-y-auto -mx-1 px-1", fill ? "flex-1 min-h-0" : "max-h-[50vh]")}>
-        {layout === "grid" ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {!isFormMode && !query && (
-              <CategoryTile label="Alle" active={!current} onClick={() => select("")} />
-            )}
-            {!query && (
-              <CategoryTile
-                label="Uncategorized"
-                iconKey={UNCATEGORIZED_ICON}
-                color={UNCATEGORIZED_COLOR}
-                active={current === "none"}
-                onClick={() => select("none")}
-              />
-            )}
-            {/* Flat in grid mode — a tiled layout has no room for the indented
-                parent/child nesting the row layout uses, so children sit alongside
-                their parent as their own tiles. */}
-            {topLevel.flatMap((cat) => [cat, ...(childrenByParentId.get(cat.id) ?? [])]).map((cat) => (
-              <CategoryTile
-                key={cat.id}
-                label={cat.name}
-                iconKey={cat.icon}
-                color={cat.color}
-                active={current === String(cat.id)}
-                onClick={() => select(String(cat.id))}
-              />
-            ))}
-            {topLevel.length === 0 && (
-              <p className="col-span-full text-sm text-clear-ink/40 text-center py-6">No categories found</p>
-            )}
-          </div>
-        ) : (
-        <div className="flex flex-col gap-1.5">
-          {!isFormMode && !query && (
-            <CategoryRow label="Alle" active={!current} onClick={() => select("")} />
-          )}
-          {!query && (
-            <CategoryRow
-              label="Uncategorized"
-              iconKey={UNCATEGORIZED_ICON}
-              color={UNCATEGORIZED_COLOR}
-              active={current === "none"}
-              onClick={() => select("none")}
-            />
-          )}
-
-          {topLevel.map((cat) => {
-            const children = childrenByParentId.get(cat.id) ?? [];
-            return (
-              <div key={cat.id} className="rounded-xl bg-[var(--dialog-content-background)] p-1.5">
-                <CategoryRow
-                  label={cat.name}
-                  iconKey={cat.icon}
-                  color={cat.color}
-                  budgetType={cat.budgetType}
-                  active={current === String(cat.id)}
-                  onClick={() => select(String(cat.id))}
-                />
-                {children.length > 0 && (
-                  <div className="flex flex-col gap-1.5 mt-1.5 pl-4">
-                    {children.map((child) => (
-                      <CategoryRow
-                        key={child.id}
-                        label={child.name}
-                        iconKey={child.icon}
-                        color={child.color}
-                        budgetType={child.budgetType}
-                        iconSize="xs"
-                        active={current === String(child.id)}
-                        onClick={() => select(String(child.id))}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {topLevel.length === 0 && (
-            <p className="text-sm text-clear-ink/40 text-center py-6">No categories found</p>
-          )}
-        </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-3.5 font-clear text-clear-ink" onKeyDown={onKeyDown}>
+      <div className="flex h-12 shrink-0 items-center gap-2.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile pr-1.5 pl-4 text-clear-muted transition-colors focus-within:border-clear-ink">
+        <IconSearch className="size-[18px] shrink-0" />
+        <input
+          ref={searchRef}
+          type="search"
+          role="combobox"
+          aria-expanded
+          aria-controls={`${uid}-list`}
+          aria-activedescendant={active != null ? optionId(active) : undefined}
+          aria-label={t("search")}
+          placeholder={t("search")}
+          value={search}
+          onChange={(e) => {
+            onSearchChange(e.target.value);
+            setActiveValue(null);
+          }}
+          autoFocus={autoFocusSearch}
+          data-no-keyboard-scroll
+          className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-semibold text-clear-ink outline-none placeholder:font-medium placeholder:text-clear-placeholder [&::-webkit-search-cancel-button]:hidden"
+        />
+        {search && (
+          <button
+            type="button"
+            onClick={() => onSearchChange("")}
+            aria-label={t("clearSearch")}
+            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-card text-clear-ink-2"
+          >
+            <IconX className="size-4" />
+          </button>
         )}
       </div>
 
-      {/* Search sits below the scrollable list. Callers that render it in a pinned
-          footer instead (so it floats above the keyboard) pass hideSearch. */}
-      {!hideSearch && (
-        <CategorySearchBar
-          search={search}
-          onSearchChange={setSearch}
-          categories={categories}
-          className="shrink-0"
-        />
-      )}
+      {between}
+
+      <div
+        ref={listRef}
+        id={`${uid}-list`}
+        role="listbox"
+        aria-label={t("list")}
+        className="clear-scrollbar -mx-1 min-h-0 flex-1 overflow-y-auto border-t border-clear-ground px-1 pt-3.5 pb-0.5 lg:max-h-[476px]"
+      >
+        {empty ? (
+          <p className="py-8 text-center text-sm text-clear-muted">{t("empty")}</p>
+        ) : (
+          <div className="lg:columns-2 lg:gap-4">
+            {special.length > 0 && <div className="mb-3 flex break-inside-avoid flex-col gap-0.5">{special.map(renderOption)}</div>}
+            {groups.map((g) => (
+              <div key={g.key} role="group" aria-label={t(`groups.${g.key || "other"}`)} className="mb-3 flex flex-col">
+                <GroupHeading dot={g.dot} label={t(`groups.${g.key || "other"}`)} />
+                {g.blocks.map(([parent, ...children]) => (
+                  <div key={parent.value} className="flex break-inside-avoid flex-col">
+                    {renderOption(parent)}
+                    {children.length > 0 && (
+                      <div className="mt-0.5 mb-1 ml-4 flex flex-col border-l-2 border-clear-stone pl-2.5">{children.map(renderOption)}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-/** Grid-layout counterpart to CategoryRow: icon above a wrapped label, selection
- *  shown as a ring rather than a radio dot (there's no room for one in a tile). */
-function CategoryTile({
-  label,
-  iconKey,
-  color,
-  active,
-  onClick,
-}: {
-  label: string;
-  iconKey?: string | null;
-  color?: string | null;
-  active: boolean;
-  onClick: () => void;
-}) {
+function GroupHeading({ dot, label }: { dot: string; label: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex flex-col items-center gap-2 rounded-xl px-2 py-3 transition-colors cursor-pointer text-center",
-        active ? "bg-clear-card ring-2 ring-clear-ember" : "bg-[var(--dialog-content-background)] hover:bg-clear-card",
-      )}
-    >
-      <Icon iconKey={iconKey ?? null} color={color ?? null} round size="lg" />
-      <span
-        className={cn(
-          "block w-full text-xs leading-tight line-clamp-2",
-          active ? "font-semibold text-clear-ink" : "text-clear-ink",
-        )}
-      >
-        {label}
-      </span>
-    </button>
-  );
-}
-
-function CategoryRow({
-  label,
-  iconKey,
-  color,
-  budgetType,
-  iconSize = "sm",
-  active,
-  onClick,
-}: {
-  label: string;
-  iconKey?: string | null;
-  color?: string | null;
-  budgetType?: string | null;
-  iconSize?: "xs" | "sm";
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-2 transition-colors cursor-pointer text-left",
-        active ? "bg-clear-card" : "hover:bg-clear-card",
-      )}
-    >
-      <span
-        className={cn(
-          "size-4.5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors",
-          active ? "border-clear-ember" : "border-clear-ink/25",
-        )}
-      >
-        {active && <span className="size-2.5 rounded-full bg-clear-ember" />}
-      </span>
-      <Icon iconKey={iconKey ?? null} color={color ?? null} round size={iconSize} />
-      <span className="flex-1 min-w-0">
-        <span className={cn("block text-sm truncate", active ? "font-semibold text-clear-ink" : "text-clear-ink")}>
-          {label}
-        </span>
-        {budgetType && (
-          <span className="block text-xs text-clear-ink/40">
-            {BUDGET_TYPE_LABELS[normalizeBudgetType(budgetType)] ?? budgetType}
-          </span>
-        )}
-      </span>
-    </button>
+    <div className="flex h-[26px] break-after-avoid items-center gap-2 px-1.5 text-[13px] font-bold text-clear-ink-2">
+      <span aria-hidden className={cn("size-2 shrink-0 rounded-full", dot)} />
+      {label}
+    </div>
   );
 }
 
 /**
- * The picker sheet on its own, without a trigger — the same full-height sheet
- * (filter menu, rows/grid toggle, floating search bar above the keyboard) that
- * <CategoryPicker> opens, for callers that already have their own control and just
- * need to open it. This is the app's single category picker: nothing should
- * hand-roll a category list dialog beside it.
+ * Setting the category of saved transactions: the picker stages a pick, shows the
+ * suggested categories and an "Also create a rule" switch, and applies it all on
+ * "Apply to N transactions".
  */
-export function CategoryPickerSheet({
-  categories,
-  current,
-  open,
-  onOpenChange,
-  onChange,
-  /** false → no "Alle" (all categories) row; that option only makes sense for filters. */
-  isFormMode = true,
-}: {
+export interface CategoryApply {
+  /** The transactions being categorised. */
+  ids: number[];
+  /** Their names, when the caller already knows them (the subtitle shows them before
+   *  the suggestions arrive). */
+  names?: string[];
+  /** False hides the rule switch — e.g. a recurring item already decides the category. */
+  allowRule?: boolean;
+  /** After the save: the category set (null = Uncategorized) and every id it changed. */
+  onApplied: (categoryId: number | null, ids: number[]) => void;
+}
+
+type SheetProps = {
   categories: Category[];
   current?: string;
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onChange: (value: string) => void;
-  isFormMode?: boolean;
-}) {
+  /** Defaults to "Category" (pick) or "Set category" (apply). */
+  title?: string;
+  /** Layering for a picker opened over another sheet (see DialogContent). */
+  sheetClassName?: string;
+  overlayClassName?: string;
+} & (
+  | {
+      /** Pick-and-close: reports the picked value ("none" = Uncategorized). */
+      onChange: (value: string) => void;
+      apply?: never;
+    }
+  | { apply: CategoryApply; onChange?: never }
+);
+
+async function postJson(url: string, method: string, body: unknown) {
+  const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`${method} ${url} failed`);
+  return res;
+}
+
+/**
+ * The picker on its own, without a trigger — for callers that already have their own
+ * control and just need to open it. A full-height bottom sheet on phones, a centred
+ * modal from lg. This is the app's single category picker: nothing should hand-roll a
+ * category list dialog beside it.
+ *
+ * Two modes: with `onChange` a tap picks and closes (forms); with `apply` it sets the
+ * category of saved transactions, with suggestions, a rule switch and an Apply footer.
+ */
+export function CategoryPickerSheet(props: SheetProps) {
+  const { categories, current, open, onOpenChange, sheetClassName, overlayClassName, apply } = props;
+  const t = useTranslations("categoryPicker");
+  const locale = useLocale();
+  const isDesktop = useIsDesktop();
   const [search, setSearch] = useState("");
-  const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: "size-11 rounded-full bg-white dark:bg-white/7 text-clear-ink",
-  });
+  const [staged, setStaged] = useState<string | undefined>(current);
+  const [ruleOn, setRuleOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [info, setInfo] = useState<{ key: string; data: CategorySuggestions } | null>(null);
+  const ruleLabelId = useId();
 
   useKeyboardSafePicker(open);
 
+  // Every opening starts from the transaction's own category, rule off.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setStaged(current);
+      setRuleOn(false);
+      setFailed(false);
+    }
+  }
+
+  const idsKey = apply ? apply.ids.join(",") : "";
+  useEffect(() => {
+    if (!open || !idsKey) return;
+    let cancelled = false;
+    postJson("/api/category-suggestions", "POST", { ids: idsKey.split(",").map(Number) })
+      .then((r) => r.json())
+      .then((data: CategorySuggestions) => {
+        if (!cancelled) setInfo({ key: idsKey, data });
+      })
+      .catch(() => {
+        // No suggestions and no rule — the plain list still works.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, idsKey]);
+  const data = info && info.key === idsKey ? info.data : null;
+
+  function change(next: boolean) {
+    onOpenChange(next);
+    if (!next) setSearch("");
+  }
+
+  const title = props.title ?? (apply ? t("setTitle") : t("title"));
+
+  // ── apply mode
+  const stagedId = staged && staged !== "none" ? Number(staged) : null;
+  const ruleAvailable = !!apply && apply.allowRule !== false && (data?.patterns.length ?? 0) > 0;
+  const withRule = ruleAvailable && ruleOn && stagedId != null;
+  const applyIds = apply ? (withRule && data ? [...new Set([...apply.ids, ...data.similarIds])] : apply.ids) : [];
+  const listFormat = new Intl.ListFormat(locale, { style: "long", type: "conjunction" });
+
+  async function applyStaged() {
+    if (!apply || busy || staged === undefined) return;
+    // Nothing changes: the same category and no rule.
+    if (staged === (current ?? "none") && !withRule) return change(false);
+    setBusy(true);
+    setFailed(false);
+    try {
+      await postJson("/api/transactions", "PATCH", { ids: applyIds, categoryId: stagedId });
+      if (withRule && data) {
+        for (const pattern of data.patterns) {
+          await postJson("/api/category-rules", "POST", {
+            categoryId: stagedId,
+            namePattern: pattern,
+            nameWildcard: true,
+            nameWholeWord: false,
+            direction: data.direction,
+            bankId: null,
+            amount: null,
+            amountMin: null,
+            amountMax: null,
+          });
+        }
+        await postJson("/api/apply-rules", "POST", {});
+      }
+      apply.onApplied(stagedId, applyIds);
+      change(false);
+    } catch {
+      setFailed(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  let subtitle: string | undefined;
+  if (apply) {
+    const names = data?.names.length ? data.names : (apply.names ?? []);
+    if (apply.ids.length === 1) subtitle = names[0] ? t("subtitleOne", { name: names[0] }) : undefined;
+    else {
+      const shown = names.slice(0, 2).join(", ") + (names.length > 2 ? ` ${t("moreNames", { count: names.length - 2 })}` : "");
+      subtitle = [t("subtitleMany", { count: apply.ids.length }), shown].filter(Boolean).join(" · ");
+    }
+  }
+
+  const suggested = (data?.suggested ?? []).map((id) => categories.find((c) => c.id === id)).filter((c): c is Category => !!c);
+  const suggestions = apply && suggested.length > 0 && (
+    <div role="group" aria-labelledby={`${ruleLabelId}-sugg`} className="flex shrink-0 flex-wrap items-center gap-2">
+      <span id={`${ruleLabelId}-sugg`} className="mr-1 text-[13px] font-bold text-clear-ink-2">
+        {t("suggested")}
+      </span>
+      {suggested.map((c) => {
+        const on = staged === String(c.id);
+        return (
+          <button
+            key={c.id}
+            type="button"
+            aria-pressed={on}
+            onClick={() => setStaged(String(c.id))}
+            className={cn(
+              "inline-flex h-9 cursor-pointer items-center gap-2 rounded-full pr-3.5 pl-[5px] text-sm font-bold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+              on ? "bg-clear-primary text-clear-primary-ink" : "bg-clear-ground text-clear-ink hover:bg-clear-line",
+            )}
+          >
+            <span aria-hidden className="inline-flex shrink-0 [&>*]:size-[26px]!">
+              <Icon iconKey={c.icon} color={c.color} soft round size="xs" glyphSize={14} />
+            </span>
+            {c.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const similarCount = data?.similarIds.length ?? 0;
+  const patternNames = listFormat.format(data?.patterns ?? []);
+
   return (
-    <>
-      <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setSearch(""); }}>
-        <DialogContent
-          // Extra bottom padding so the last categories can scroll clear of the
-          // floating search bar that overlays the bottom of the sheet.
-          className="pb-28"
-          fullHeight
-          hideHandle
-          headerAction={filterMenu}
-          // The title is rendered by the sheet's own fixed header row, which reserves
-          // space around the close button — a separate in-flow DialogTitle here would
-          // sit right underneath it and visually overlap.
-          title="Category"
-        >
-          <CategoryGrid
-            categories={categories}
-            current={current}
-            isFormMode={isFormMode}
-            fill
-            budgetType={budgetType}
-            showSubcategories={showSubcategories}
-            onChange={onChange}
-            onClose={() => onOpenChange(false)}
-            search={search}
-            onSearchChange={setSearch}
-            // Search lives in the floating portal bar below instead of inline at the
-            // bottom of the grid, so it can sit above the keyboard.
-            hideSearch
-          />
-        </DialogContent>
-      </Dialog>
-      {/* Floating search — portalled to <body> so it's viewport-fixed. */}
-      {open && <FloatingSearchBar search={search} onSearchChange={setSearch} />}
-    </>
+    <Dialog open={open} onOpenChange={change}>
+      <DialogContent
+        hideHeaderRow
+        fullHeight
+        title={title}
+        sheetClassName={sheetClassName}
+        overlayClassName={overlayClassName}
+        className="gap-3.5 pt-[calc(var(--sat)+20px)] font-clear text-clear-ink lg:w-[600px] lg:max-w-full lg:pt-7"
+      >
+        <ClearDialogHeader title={title} subtitle={subtitle} onClose={() => change(false)} closeLabel={t("close")} />
+        {/* Apply mode is new (suggestions, the rule switch); the pick mode explains the
+            grouped, keyboard-driven list. */}
+        <ContextualTip id={apply ? "categoryPickerSuggestions" : "categoryPickerGroups"} active={open} />
+        <CategoryGrid
+          categories={categories}
+          current={apply ? staged : current}
+          onSelect={(v) => {
+            if (apply) return setStaged(v);
+            props.onChange?.(v);
+            change(false);
+          }}
+          onConfirm={apply ? applyStaged : undefined}
+          search={search}
+          onSearchChange={setSearch}
+          autoFocusSearch={isDesktop}
+          between={suggestions}
+        />
+
+        {apply && ruleAvailable && (
+          <label className="flex shrink-0 cursor-pointer items-center gap-3 rounded-clear-tile bg-clear-tile px-4 py-3">
+            <IconTile tone="sky" size="sm" className="size-8 rounded-full [&_svg]:size-4">
+              <IconFilter2 stroke={2.1} />
+            </IconTile>
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span id={ruleLabelId} className="text-[15px] font-bold">
+                {t("rule.title")}
+              </span>
+              <span className="text-[13px] font-medium text-clear-ink-2">
+                {similarCount > 0 ? t("rule.helpWithSimilar", { names: patternNames, count: similarCount }) : t("rule.help", { names: patternNames })}
+              </span>
+            </span>
+            <ClearSwitch checked={ruleOn && stagedId != null} onCheckedChange={setRuleOn} labelledBy={ruleLabelId} disabled={stagedId == null || busy} />
+          </label>
+        )}
+
+        {apply && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2.5 border-t border-clear-ground pt-4">
+            {failed && (
+              <p role="alert" className="m-0 min-w-0 flex-1 text-[13px] font-semibold text-clear-negative">
+                {t("applyFailed")}
+              </p>
+            )}
+            <span className="flex-1" />
+            <button type="button" onClick={() => change(false)} className={clearButtonVariants({ variant: "secondary" })}>
+              {t("cancel")}
+            </button>
+            <button type="button" onClick={applyStaged} disabled={busy || staged === undefined} className={clearButtonVariants()}>
+              {busy ? t("applying") : t("apply", { count: applyIds.length })}
+            </button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
+/** A trigger field plus the picker, for forms: reports the picked id ("" = none). */
 export function CategoryPicker({
   categories,
   current,
-  flat = false,
-  onChange: onChangeProp,
+  onChange,
   triggerClassName,
-  placeholder = "Category",
+  placeholder,
   showSelectedIcon = false,
-}: CategoryPickerProps) {
-  const router = useRouter();
-  const params = useSearchParams();
-  const isFormMode = !!onChangeProp;
+}: {
+  categories: Category[];
+  current?: string;
+  onChange: (value: string) => void;
+  triggerClassName?: string;
+  /** Label shown on the trigger when nothing is selected. Defaults to "Category". */
+  placeholder?: string;
+  /** When set, the trigger shows the selected category's icon beside its name. */
+  showSelectedIcon?: boolean;
+}) {
+  const t = useTranslations("categoryPicker");
   const [open, setOpen] = useState(false);
 
-  function onChange(value: string) {
-    if (onChangeProp) {
-      onChangeProp(value === "none" ? "" : value);
-      return;
-    }
-    const next = new URLSearchParams(params.toString());
-    if (value) next.set("category", value);
-    else next.delete("category");
-    router.push(`?${next.toString()}`);
-  }
-
-  let label = placeholder;
+  let label = placeholder ?? t("placeholder");
   let selectedCat: Category | undefined;
-  if (!current) label = placeholder;
-  else if (current === "none") label = "Uncategorized";
-  else {
+  if (current === "none") label = t("uncategorized");
+  else if (current) {
     selectedCat = categories.find((c) => String(c.id) === current);
     if (selectedCat) label = selectedCat.name;
   }
 
-  const isFiltered = !!current;
-
-  const triggerClass = cn(
-    flat
-      ? filterPillClass(isFiltered, "flex-1 min-w-0")
-      : `flex items-center gap-2 text-sm font-normal rounded-full pl-3 pr-3 py-2 cursor-pointer ${
-          isFiltered ? "text-clear-ink" : "text-clear-ink/60"
-        }`,
-    triggerClassName,
-  );
-
-  const triggerContent = (
-    <>
-      {showSelectedIcon && selectedCat && (
-        <Icon iconKey={selectedCat.icon} color={selectedCat.color} round size="xs" />
-      )}
-      <span className={flat || isFormMode ? "flex-1 truncate text-left" : "max-w-[140px] truncate"}>{label}</span>
-      {flat && isFiltered ? (
-        <span
-          role="button"
-          tabIndex={0}
-          aria-label="Clear filter"
-          onPointerDown={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onChange(""); }}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onChange(""); } }}
-          className="shrink-0"
-        >
-          <X className="size-4.5" />
-        </span>
-      ) : (
-        <ChevronDown className="size-4.5 shrink-0" />
-      )}
-    </>
-  );
-
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={triggerClass}>
-        {triggerContent}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-haspopup="dialog"
+        className={cn(
+          "flex h-12 cursor-pointer items-center gap-2.5 rounded-clear-row bg-clear-tile px-3.5 text-left font-clear text-[15px] font-bold text-clear-ink outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+          !current && "text-clear-muted",
+          triggerClassName,
+        )}
+      >
+        {showSelectedIcon && selectedCat && <Icon iconKey={selectedCat.icon} color={selectedCat.color} soft size="xs" />}
+        <span className="flex-1 truncate">{label}</span>
+        <IconChevronDown className="size-4.5 shrink-0" />
       </button>
       <CategoryPickerSheet
         categories={categories}
         current={current}
         open={open}
         onOpenChange={setOpen}
-        onChange={onChange}
-        isFormMode={isFormMode}
+        onChange={(value) => onChange(value === "none" ? "" : value)}
       />
     </>
   );

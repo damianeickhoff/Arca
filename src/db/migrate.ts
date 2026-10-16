@@ -461,6 +461,9 @@ try {
   sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN shared_with_count INTEGER`);
 } catch { /* column already exists */ }
 try {
+  sqlite.exec(`ALTER TABLE transactions ADD COLUMN shared_with_count INTEGER`);
+} catch { /* column already exists */ }
+try {
   sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN is_reimbursement INTEGER NOT NULL DEFAULT 0`);
 } catch { /* column already exists */ }
 try {

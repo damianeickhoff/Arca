@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { IconCalendarWeekFilled as CalendarIcon } from "@tabler/icons-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLocale, useTranslations } from "next-intl";
+import { IconCalendarEvent, IconCheck, IconChevronDown } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { clearButtonVariants } from "@/components/clear/button-variants";
 import { DatePicker } from "@/components/date-picker";
 import { cn } from "@/lib/utils";
 import { financialMonthRange, type FinancialMonthConfig } from "@/lib/date-range";
@@ -13,7 +16,6 @@ export interface CategoryPeriod {
   preset: CategoryPeriodPreset;
   from: string;
   to: string;
-  label: string;
 }
 
 function toDateStr(date: Date) {
@@ -34,9 +36,9 @@ function endOfWeek(date = new Date()) {
   return toDateStr(start);
 }
 
-/** Computes the [from,to] + label for every preset except "custom" (which needs
- * user-picked dates). `budgetPeriod` is the app's actual active budget range,
- * passed down from the dashboard so "Budget period" needs no extra query. */
+/** Computes the [from,to] for every preset except "custom" (which needs user-picked
+ * dates). `budgetPeriod` is the app's actual active budget range, passed down by the
+ * caller so "Budget period" needs no extra query. */
 export function resolveCategoryPeriod(
   preset: Exclude<CategoryPeriodPreset, "custom">,
   financialMonth: FinancialMonthConfig,
@@ -45,69 +47,60 @@ export function resolveCategoryPeriod(
   const year = new Date().getFullYear();
   switch (preset) {
     case "budget":
-      return { preset, from: budgetPeriod.from, to: budgetPeriod.to, label: "Budget period" };
+      return { preset, from: budgetPeriod.from, to: budgetPeriod.to };
     case "week":
-      return { preset, from: startOfWeek(), to: endOfWeek(), label: "Week" };
+      return { preset, from: startOfWeek(), to: endOfWeek() };
     case "month": {
       const r = financialMonthRange(financialMonth, 0);
-      return { preset, from: r.from, to: r.to, label: "Month" };
+      return { preset, from: r.from, to: r.to };
     }
-    case "3m": {
-      const from = financialMonthRange(financialMonth, -2).from;
-      const to = financialMonthRange(financialMonth, 0).to;
-      return { preset, from, to, label: "Last 3 months" };
-    }
-    case "6m": {
-      const from = financialMonthRange(financialMonth, -5).from;
-      const to = financialMonthRange(financialMonth, 0).to;
-      return { preset, from, to, label: "Last 6 months" };
-    }
+    case "3m":
+      return { preset, from: financialMonthRange(financialMonth, -2).from, to: financialMonthRange(financialMonth, 0).to };
+    case "6m":
+      return { preset, from: financialMonthRange(financialMonth, -5).from, to: financialMonthRange(financialMonth, 0).to };
     case "year":
-      return { preset, from: `${year}-01-01`, to: `${year}-12-31`, label: "Year" };
+      return { preset, from: `${year}-01-01`, to: `${year}-12-31` };
   }
 }
 
-/** Natural phrasing for the small "current period" caption under the Avg spent
- * card — distinct from the picker's own option labels ("Week", "Last 3 months") so
- * it reads as a sentence fragment ("This week") rather than a menu item. */
-export function periodDescriptor(preset: CategoryPeriodPreset): string {
-  switch (preset) {
-    case "budget": return "This period";
-    case "week": return "This week";
-    case "month": return "This month";
-    case "3m": return "Last 3 months";
-    case "6m": return "Last 6 months";
-    case "year": return "This year";
-    case "custom": return "Custom period";
-  }
+const PRESETS: Exclude<CategoryPeriodPreset, "custom">[] = ["budget", "week", "month", "3m", "6m", "year"];
+
+const DATE_TRIGGER =
+  "mt-0 mb-0 h-12 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 font-clear text-[15px] font-bold text-clear-ink focus-visible:border-clear-ink focus-visible:ring-0";
+
+/** The period's name for the trigger chip and captions: the preset, or the dates. */
+export function usePeriodLabel() {
+  const t = useTranslations("categoryDetail.period");
+  const locale = useLocale();
+  const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  return (p: CategoryPeriod) =>
+    p.preset === "custom"
+      ? t("range", { from: fmt.format(new Date(`${p.from}T12:00:00`)), to: fmt.format(new Date(`${p.to}T12:00:00`)) })
+      : t(`presets.${p.preset}`);
 }
 
-const PRESET_OPTIONS: { value: Exclude<CategoryPeriodPreset, "custom">; label: string }[] = [
-  { value: "budget", label: "Budget period" },
-  { value: "week", label: "Week" },
-  { value: "month", label: "Month" },
-  { value: "3m", label: "Last 3 months" },
-  { value: "6m", label: "Last 6 months" },
-  { value: "year", label: "Year" },
-];
-
+/**
+ * The period chip in the category detail: a pill naming the period that opens a
+ * small sheet (centred on desktop) with the presets and a custom range.
+ */
 export function CategoryPeriodPicker({
   value,
   onChange,
   financialMonth,
   budgetPeriod,
-  triggerClassName,
 }: {
   value: CategoryPeriod;
   onChange: (p: CategoryPeriod) => void;
   financialMonth: FinancialMonthConfig;
   budgetPeriod: { from: string; to: string };
-  triggerClassName?: string;
 }) {
+  const t = useTranslations("categoryDetail.period");
+  const label = usePeriodLabel();
   const [open, setOpen] = useState(false);
   const [customFrom, setCustomFrom] = useState(value.from);
   const [customTo, setCustomTo] = useState(value.to);
-  const [showCustom, setShowCustom] = useState(false);
+  const [showCustom, setShowCustom] = useState(value.preset === "custom");
+  const customValid = !!customFrom && !!customTo && customFrom <= customTo;
 
   function pick(preset: Exclude<CategoryPeriodPreset, "custom">) {
     onChange(resolveCategoryPeriod(preset, financialMonth, budgetPeriod));
@@ -116,77 +109,74 @@ export function CategoryPeriodPicker({
   }
 
   function applyCustom() {
-    if (!customFrom || !customTo || customFrom > customTo) return;
-    onChange({ preset: "custom", from: customFrom, to: customTo, label: "Custom period" });
+    if (!customValid) return;
+    onChange({ preset: "custom", from: customFrom, to: customTo });
     setOpen(false);
-    setShowCustom(false);
   }
+
+  const option = (active: boolean) =>
+    cn(
+      "flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-clear-row px-4 text-left font-clear text-[15px] transition-colors",
+      active ? "bg-clear-tile font-bold text-clear-ink" : "font-semibold text-clear-ink-2 hover:bg-clear-tile",
+    );
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Change period"
-        className={cn("size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center active:scale-95 transition-transform", triggerClassName)}
+        aria-haspopup="dialog"
+        aria-label={t("change", { period: label(value) })}
+        className="inline-flex h-9 cursor-pointer items-center gap-2 self-start rounded-full bg-clear-tile px-3.5 font-clear text-[13px] font-bold text-clear-ink transition-colors hover:bg-clear-line"
       >
-        <CalendarIcon className="size-5" />
+        <IconCalendarEvent size={16} stroke={2} aria-hidden />
+        {label(value)}
+        <IconChevronDown size={14} stroke={2.4} aria-hidden />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Period</DialogTitle>
-          </DialogHeader>
+        <DialogContent hideHeaderRow title={t("title")} className="gap-4 pt-6">
+          <ClearDialogHeader title={t("title")} onClose={() => setOpen(false)} closeLabel={t("close")} />
 
-          <div className="flex flex-col gap-1 -mx-1">
-            {PRESET_OPTIONS.map((opt) => {
-              const active = value.preset === opt.value;
+          <div role="radiogroup" aria-label={t("title")} className="flex flex-col gap-0.5">
+            {PRESETS.map((p) => {
+              const active = value.preset === p;
               return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => pick(opt.value)}
-                  className={cn(
-                    "w-full text-left text-sm px-4 py-3.5 rounded-xl transition-colors",
-                    active ? "bg-foreground text-primary-foreground font-medium" : "hover:bg-foreground/5 text-foreground",
-                  )}
-                >
-                  {opt.label}
+                <button key={p} type="button" role="radio" aria-checked={active} onClick={() => pick(p)} className={option(active)}>
+                  {t(`presets.${p}`)}
+                  {active && <IconCheck size={18} stroke={2.4} aria-hidden />}
                 </button>
               );
             })}
             <button
               type="button"
+              role="radio"
+              aria-checked={value.preset === "custom"}
               onClick={() => setShowCustom((v) => !v)}
-              className={cn(
-                "w-full text-left text-sm px-4 py-3.5 rounded-xl transition-colors",
-                value.preset === "custom" ? "bg-foreground text-primary-foreground font-medium" : "hover:bg-foreground/5 text-foreground",
-              )}
+              className={option(value.preset === "custom")}
             >
-              Custom period
+              {t("presets.custom")}
+              {value.preset === "custom" && <IconCheck size={18} stroke={2.4} aria-hidden />}
             </button>
           </div>
 
           {showCustom && (
-            <div className="pt-3 border-t border-foreground/10 space-y-3">
+            <div className="flex flex-col gap-3 border-t border-clear-line pt-4 pb-1">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-foreground/60 px-1">From</label>
-                  <DatePicker value={customFrom} onChange={setCustomFrom} triggerClassName="h-10 text-xs mt-0 mb-0" />
+                <div role="group" aria-labelledby="period-from" className="flex flex-col gap-1.5">
+                  <span id="period-from" className="text-[13px] font-bold text-clear-ink-2">{t("from")}</span>
+                  <DatePicker value={customFrom} onChange={setCustomFrom} triggerClassName={DATE_TRIGGER} />
                 </div>
-                <div>
-                  <label className="text-xs text-foreground/60">To</label>
-                  <DatePicker value={customTo} onChange={setCustomTo} triggerClassName="h-10 text-xs mt-0 mb-0" />
+                <div role="group" aria-labelledby="period-to" className="flex flex-col gap-1.5">
+                  <span id="period-to" className="text-[13px] font-bold text-clear-ink-2">{t("to")}</span>
+                  <DatePicker value={customTo} onChange={setCustomTo} triggerClassName={DATE_TRIGGER} />
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={applyCustom}
-                disabled={!customFrom || !customTo || customFrom > customTo}
-                className="w-full h-12 text-sm rounded-xl bg-foreground text-primary-foreground disabled:opacity-40 hover:opacity-90 transition-opacity"
-              >
-                Apply
+              {!customValid && customFrom && customTo && (
+                <span role="alert" className="text-[13px] font-semibold text-clear-negative">{t("rangeInvalid")}</span>
+              )}
+              <button type="button" onClick={applyCustom} disabled={!customValid} className={cn(clearButtonVariants({ size: "lg" }), "w-full")}>
+                {t("apply")}
               </button>
             </div>
           )}

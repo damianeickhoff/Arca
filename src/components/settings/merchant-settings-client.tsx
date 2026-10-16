@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronLeft } from "lucide-react";
 import { IconTrashFilled as Trash2, IconChartLine as ChartLine } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { BrandIconPicker } from "@/components/brand-icon-picker";
@@ -14,6 +16,7 @@ import { PickerField } from "@/components/picker-field";
 import { brandColorForIconKey, detectBrandIcon } from "@/lib/brand-detect";
 import { formatEur, formatDate } from "@/lib/format";
 import { MERCHANT_ICON_BACKGROUND } from "@/components/merchant-detail-portal";
+import { MoneyText } from "@/components/clear/money";
 
 /** Just the fields the editor needs — satisfied by both MerchantListItem (settings
  * list) and a MerchantDetail projection (the profile portal's edit action). */
@@ -41,6 +44,8 @@ interface Props {
  * back + delete header, glyph hero, name field, then a sticky Save. */
 export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDeleted }: Props) {
   const router = useRouter();
+  const t = useTranslations("settings.merchants");
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,7 +88,13 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile, onDel
   }
 
   async function remove() {
-    if (!confirm(`Delete merchant "${merchant.name}"? Its ${merchant.transactionCount} transaction(s) stay, but lose their merchant.`)) return;
+    const ok = await confirm({
+      title: t("deleteTitle", { name: merchant.name }),
+      body: t("deleteBody", { count: merchant.transactionCount }),
+      confirmLabel: t("deleteConfirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     setLoading(true);
     const res = await fetch("/api/merchants", {
       method: "DELETE",
@@ -257,7 +268,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between bg-[var(--dialog-content-background)] gap-3 px-4 py-3 min-h-[3.25rem]">
       <span className="text-sm font-medium text-ink shrink-0">{label}</span>
-      <span className="text-sm text-ink-2 tabular-nums">{value}</span>
+      <span className="text-sm text-ink-2 tabular-nums"><MoneyText>{value}</MoneyText></span>
     </div>
   );
 }

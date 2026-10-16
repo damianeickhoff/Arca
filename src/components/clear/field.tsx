@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 /** The Clear text input: 48px, grey fill, 14px radius, black border on focus. */
 export function ClearInput({ className, ...props }: React.ComponentProps<"input">) {
@@ -43,7 +44,7 @@ export function ClearField({
           {error}
         </span>
       ) : (
-        hint && <span className="text-[13px] text-clear-muted">{hint}</span>
+        hint && <span className="text-[13px] text-clear-muted"><MoneyText>{hint}</MoneyText></span>
       )}
     </div>
   );

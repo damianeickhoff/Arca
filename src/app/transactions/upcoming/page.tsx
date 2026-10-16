@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { BillsCalendar, type CalendarBill } from "@/app/budget/bills-calendar";
 import { billsDueTotal, hasPayableBill } from "@/lib/bill-amounts";
 import { MobileSubpageHeader } from "@/components/mobile-menu-ui";
+import { MoneyText } from "@/components/clear/money";
 
 export const dynamic = "force-dynamic";
 
@@ -72,14 +73,14 @@ export default async function UpcomingTransactionsPage() {
           </div>
         ) : (
           <section className="flex flex-col gap-3">
-            <SectionHead title={t("listTitle")} link={formatEur(total)} />
+            <SectionHead title={t("listTitle")} link={<MoneyText>{formatEur(total)}</MoneyText>} />
             <div className="flex flex-col gap-3">
               {[...byDate.entries()].map(([date, items]) => (
                 <div key={date} className="rounded-card border border-line bg-surface px-4 py-3 shadow-card lg:px-[18px]">
                   <div className="flex items-center justify-between pb-1">
                     <span className="mono-label text-[10px]">{fmtDay(date)}</span>
                     {items.length > 1 && hasPayableBill(items) && (
-                      <span className="text-xs tabular-nums text-ink-3">{formatEur(billsDueTotal(items))}</span>
+                      <span className="text-xs tabular-nums text-ink-3"><MoneyText>{formatEur(billsDueTotal(items))}</MoneyText></span>
                     )}
                   </div>
                   <div className="flex flex-col">
@@ -90,7 +91,7 @@ export default async function UpcomingTransactionsPage() {
                         {b.amount != null && (
                           <span className={cn("shrink-0 text-sm font-semibold tabular-nums", b.isIncome ? "text-positive" : "text-ink")}>
                             {b.isIncome ? "+" : ""}
-                            {formatEur(b.amount)}
+                            <MoneyText>{formatEur(b.amount)}</MoneyText>
                           </span>
                         )}
                       </div>

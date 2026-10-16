@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 // Manual mark-as-paid/unpaid toggle for a single bill in a single month. Only rendered
 // for bills that aren't already auto-marked paid via a matching transaction — those show
 // the existing static "Paid" tag instead, since there's nothing to toggle.
-// Mustard style: a 28px circle, a line ring while open and filled positive once paid.
+// Clear style: a 28px circle, a line ring while open and filled positive once paid.
 export function MarkPaidButton({
   recurringItemId,
   month,
@@ -43,10 +43,10 @@ export function MarkPaidButton({
       aria-label={optimisticPaid ? t("markUnpaid") : t("markPaid")}
       aria-pressed={optimisticPaid}
       className={cn(
-        "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors",
+        "inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-[1.5px] transition-colors",
         optimisticPaid
-          ? "border-positive bg-positive text-white"
-          : "border-line text-transparent hover:border-ink-3 hover:text-ink-3",
+          ? "border-clear-positive bg-clear-positive text-white"
+          : "border-clear-line text-transparent hover:border-clear-muted hover:text-clear-muted",
       )}
     >
       <Check className="size-3.5" stroke={2.4} />

@@ -2,6 +2,7 @@ import { IconArrowDownRight, IconArrowUpRight } from "@tabler/icons-react";
 
 import { cn } from "@/lib/utils";
 import { TONE_FILL, type ClearTone } from "./tones";
+import { MoneyText } from "@/components/clear/money";
 
 /** A 28px status chip on a pastel ("Recurring", "Needs a category", "On pace"). */
 export function ClearChip({
@@ -24,7 +25,7 @@ export function ClearChip({
       )}
     >
       {icon}
-      {children}
+      <MoneyText>{children}</MoneyText>
     </span>
   );
 }

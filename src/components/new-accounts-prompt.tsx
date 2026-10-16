@@ -1,28 +1,65 @@
 "use client";
 
-import { useState } from "react";
-import { IconBuildingBank as Landmark } from "@tabler/icons-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useId, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { IconBuildingBank, IconInfoCircle } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearField, ClearInput } from "@/components/clear/field";
+import { ClearChip } from "@/components/clear/chip";
+import { IconTile } from "@/components/clear/icon-tile";
+import { clearButtonVariants } from "@/components/clear/button-variants";
 import { DatePicker } from "@/components/date-picker";
+import { DATE_TRIGGER, FIELD_LABEL, MoneyInput, parseMoney, useAccountTypeLabels } from "@/app/settings/account-edit-dialogs";
+import { cn } from "@/lib/utils";
 import type { Bank } from "@/db/schema";
-import { currencySymbol } from "@/lib/format";
 
-// Shown right after a CSV import (or the onboarding import step) introduces one or more
-// brand-new bank accounts. Lets the user backfill a starting saldo/date for each — the
-// value is added to the account's displayed balance but never touches reports, since
-// import history rarely reaches back to when the account was actually opened.
-export function NewAccountsPrompt({ accounts, onDone }: { accounts: Bank[]; onDone: () => void }) {
+/**
+ * Shown right after a CSV import (or the onboarding import step) introduces one or more
+ * brand-new bank accounts. Lets the user name each and backfill a starting balance and
+ * date — added to the account's displayed balance but never to reports, since import
+ * history rarely reaches back to when the account was opened.
+ *
+ * `dark` renders it in the Clear dark palette for the onboarding wizard's fixed-dark
+ * scene; left out, it follows the onboarding route (/register) on its own.
+ */
+export function NewAccountsPrompt({ accounts, onDone, dark }: { accounts: Bank[]; onDone: () => void; dark?: boolean }) {
+  const t = useTranslations("newAccounts");
+  const pathname = usePathname();
+  const isDark = dark ?? pathname.startsWith("/register");
+  const title = t("title", { count: accounts.length });
+
+  return (
+    <Dialog open={accounts.length > 0} onOpenChange={(v) => !v && onDone()}>
+      <DialogContent
+        hideHeaderRow
+        title={title}
+        className="gap-5 pt-6 font-clear text-clear-ink"
+        // .dark on the sheet switches every clear-* token inside it to the dark palette.
+        sheetClassName={cn("lg:max-w-[560px]", isDark && "dark bg-clear-card")}
+      >
+        <PromptBody accounts={accounts} title={title} dark={isDark} onDone={onDone} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PromptBody({ accounts, title, dark, onDone }: { accounts: Bank[]; title: string; dark: boolean; onDone: () => void }) {
+  const t = useTranslations("newAccounts");
+  const labels = useAccountTypeLabels();
+  const ids = useId();
   const today = new Date().toISOString().slice(0, 10);
   const [values, setValues] = useState<Record<number, { name: string; balance: string; date: string }>>({});
   const [saving, setSaving] = useState(false);
+  const locale = useLocale();
+  const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
 
-  function fieldsFor(id: number, fallbackName: string) {
-    return values[id] ?? { name: fallbackName, balance: "", date: today };
+  function fieldsFor(a: Bank) {
+    return values[a.id] ?? { name: a.displayName ?? "", balance: "", date: today };
   }
-  function setField(id: number, fallbackName: string, key: "name" | "balance" | "date", value: string) {
-    setValues((v) => ({ ...v, [id]: { ...fieldsFor(id, fallbackName), [key]: value } }));
+  function setField(a: Bank, key: "name" | "balance" | "date", value: string) {
+    setValues((v) => ({ ...v, [a.id]: { ...fieldsFor(a), [key]: value } }));
   }
 
   async function save() {
@@ -30,14 +67,15 @@ export function NewAccountsPrompt({ accounts, onDone }: { accounts: Bank[]; onDo
     await Promise.all(
       accounts
         .filter((a) => {
-          const f = fieldsFor(a.id, a.displayName ?? "");
-          return f.balance.trim() !== "" || f.name.trim() !== (a.displayName ?? "");
+          const f = fieldsFor(a);
+          return parseMoney(f.balance) != null || f.name.trim() !== (a.displayName ?? "");
         })
         .map((a) => {
-          const f = fieldsFor(a.id, a.displayName ?? "");
+          const f = fieldsFor(a);
           const body: Record<string, unknown> = { id: a.id };
-          if (f.balance.trim() !== "") {
-            body.startingBalance = parseFloat(f.balance);
+          const balance = parseMoney(f.balance);
+          if (balance != null) {
+            body.startingBalance = balance;
             body.startingDate = f.date || null;
           }
           if (f.name.trim() !== (a.displayName ?? "")) body.displayName = f.name.trim() || null;
@@ -53,72 +91,80 @@ export function NewAccountsPrompt({ accounts, onDone }: { accounts: Bank[]; onDo
   }
 
   return (
-    <Dialog open={accounts.length > 0} onOpenChange={(v) => !v && onDone()}>
-      <DialogContent
-        className="max-h-[90dvh] overflow-y-auto [scrollbar-gutter:stable]"
-        sheetClassName="bg-[#0f1533]/95 backdrop-blur-xl text-white border border-white/10"
-      >
-        <DialogHeader>
-          <DialogTitle className="text-white">{accounts.length === 1 ? "New account found" : "New accounts found"}</DialogTitle>
-          <DialogDescription className="text-white/60">
-            Add a starting saldo if you want this account&apos;s balance to be accurate from before this import — it never affects reports.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {accounts.map((a) => {
-            const f = fieldsFor(a.id, a.displayName ?? "");
-            return (
-              <div key={a.id} className="rounded-xl bg-white/5 p-4 space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                    <Landmark className="size-4 text-white" />
-                  </div>
-                  <p className="font-semibold text-sm truncate text-white">{a.displayName ?? a.accountNumber}</p>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white/60">Friendly name</label>
-                  <Input
+    <>
+      <ClearDialogHeader
+        title={title}
+        subtitle={t("subtitle", { count: accounts.length })}
+        icon={
+          <IconTile tone="sky" className="size-12">
+            <IconBuildingBank stroke={1.9} />
+          </IconTile>
+        }
+        onClose={onDone}
+        closeLabel={t("close")}
+      />
+
+      <div className="flex flex-col gap-3">
+        {accounts.map((a) => {
+          const f = fieldsFor(a);
+          const heading = a.displayName ?? a.accountNumber ?? "";
+          const typeLabel = a.cardType ? labels.bankType(a.cardType) : null;
+          return (
+            <section key={a.id} aria-labelledby={`${ids}-${a.id}`} className="flex flex-col gap-4 rounded-clear-tile bg-clear-tile p-4">
+              <div className="flex items-center gap-3">
+                <IconTile tone="lilac">
+                  <IconBuildingBank stroke={2} />
+                </IconTile>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span id={`${ids}-${a.id}`} className="truncate text-[15px] font-bold">{heading}</span>
+                  <span className="truncate text-[13px] text-clear-muted">{typeLabel ? `${typeLabel} · ${t("foundHere")}` : t("foundHere")}</span>
+                </span>
+                <ClearChip tone="peach">{t("new")}</ClearChip>
+              </div>
+              <div className="grid grid-cols-2 gap-3.5">
+                <ClearField label={t("name")} htmlFor={`${ids}-${a.id}-name`} className="col-span-2">
+                  <ClearInput
+                    id={`${ids}-${a.id}-name`}
                     value={f.name}
-                    onChange={(e) => setField(a.id, a.displayName ?? "", "name", e.target.value)}
+                    onChange={(e) => setField(a, "name", e.target.value)}
                     placeholder={a.accountNumber ?? ""}
-                    className="bg-white/10 border-white/15 text-white placeholder:text-white/35 focus-visible:border-white/40 focus-visible:ring-white/20"
+                    className="bg-clear-card"
+                  />
+                </ClearField>
+                <ClearField label={t("startingBalance")} htmlFor={`${ids}-${a.id}-balance`} className="col-span-2 min-[420px]:col-span-1">
+                  <MoneyInput id={`${ids}-${a.id}-balance`} value={f.balance} onChange={(v) => setField(a, "balance", v)} className="bg-clear-card" />
+                </ClearField>
+                <div role="group" aria-labelledby={`${ids}-${a.id}-date`} className="col-span-2 flex flex-col gap-1.5 min-[420px]:col-span-1">
+                  <span id={`${ids}-${a.id}-date`} className={FIELD_LABEL}>{t("asOf")}</span>
+                  <DatePicker
+                    value={f.date}
+                    onChange={(v) => setField(a, "date", v)}
+                    label={f.date === today ? t("today") : dateFmt.format(new Date(`${f.date}T12:00:00`))}
+                    triggerClassName={cn(DATE_TRIGGER, "bg-clear-card")}
+                    dark={dark}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-white/60">Starting balance ({currencySymbol()})</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={f.balance}
-                      onChange={(e) => setField(a.id, a.displayName ?? "", "balance", e.target.value)}
-                      placeholder="0"
-                      className="bg-white/10 border-white/15 text-white placeholder:text-white/35 focus-visible:border-white/40 focus-visible:ring-white/20"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-white/60">Starting date</label>
-                    <DatePicker value={f.date} onChange={(v) => setField(a.id, a.displayName ?? "", "date", v)} dark />
-                  </div>
-                </div>
               </div>
-            );
-          })}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1 bg-white/10 text-white border-white/20 hover:bg-white/15"
-              onClick={onDone}
-              disabled={saving}
-            >
-              Skip
-            </Button>
-            <Button className="flex-1 bg-white text-[#0a1a5c] hover:bg-white/90" onClick={save} disabled={saving}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+            </section>
+          );
+        })}
+      </div>
+
+      <p className="m-0 flex items-start gap-2.5 text-[13px] leading-[1.5] text-clear-ink-2">
+        <IconInfoCircle aria-hidden size={16} stroke={2} className="mt-0.5 shrink-0" />
+        <span>{t("hint")}</span>
+      </p>
+
+      <div className="pb-1">
+        <ClearDialogFooter>
+          <button type="button" onClick={onDone} disabled={saving} className={clearButtonVariants({ variant: "secondary" })}>
+            {t("later")}
+          </button>
+          <button type="button" onClick={save} disabled={saving} className={clearButtonVariants()}>
+            {saving ? t("saving") : t("save", { count: accounts.length })}
+          </button>
+        </ClearDialogFooter>
+      </div>
+    </>
   );
 }

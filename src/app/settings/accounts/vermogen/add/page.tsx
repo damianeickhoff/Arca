@@ -1,7 +1,7 @@
-import { VermogenAddClient } from "./vermogen-add-client";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default function AddVermogenAccountPage() {
-  return <VermogenAddClient />;
+// Adding an asset is a dialog on the Accounts settings panel now; old links land
+// there with the dialog open.
+export default function AddAssetPage() {
+  redirect("/settings?panel=accounts&add=asset");
 }

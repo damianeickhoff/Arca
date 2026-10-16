@@ -11,6 +11,7 @@ export function HomeTips() {
   return (
     <>
       <AnchoredTip id="homeSafeToSpendSum" anchor="homeHero" />
+      <AnchoredTip id="privacyEye" anchor="privacyEye" />
       <AnchoredTip id="homeIncomeVsSpending" anchor="homeIncomeVsSpending" />
       <AnchoredTip id="homeMoneyFlow" anchor="homeMoneyFlow" />
       <AnchoredTip id="homeComingUp" anchor="homeComingUp" />

@@ -1,38 +1,41 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import {
-  IconArrowUp as ArrowUp,
-  IconArrowDown as ArrowDown,
-  IconPlus as Plus,
-  IconCreditCardFilled as CreditCard,
-  IconCoinEuroFilled as Coin,
-} from "@tabler/icons-react";
-import { formatEur, formatEurSignFirst } from "@/lib/format";
-import { Icon } from "@/components/icon";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { IconBuildingBank, IconPencil, IconPlus } from "@tabler/icons-react";
+import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { BankEditDialog, VermogenEditDialog, AddAccountDialog, vermogenTypeLabel, CARD_TYPE_LABELS } from "@/app/settings/account-edit-dialogs";
+import { Amount } from "@/components/clear/amount";
+import { DeltaChip } from "@/components/clear/chip";
+import { ListRow } from "@/components/clear/list-row";
+import { Segmented } from "@/components/clear/segmented";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
+import {
+  AccountGlyph,
+  AssetFormDialog,
+  BankFormDialog,
+  DEFAULT_ASSET_COLOR,
+  DEFAULT_BANK_COLOR,
+  assetGlyph,
+  useAccountTypeLabels,
+} from "@/app/settings/account-edit-dialogs";
 import type { Bank, VermogenAccount } from "@/db/schema";
 import type { BankBalance, BalancePoint } from "@/lib/account-balances";
+import { MoneyText } from "@/components/clear/money";
 
 const RANGES = [
-  { key: "1w", label: "1w", days: 7 },
-  { key: "1m", label: "1m", days: 30 },
-  { key: "3m", label: "3m", days: 90 },
-  { key: "6m", label: "6m", days: 180 },
-  { key: "1y", label: "1y", days: 365 },
+  { key: "1w", days: 7 },
+  { key: "1m", days: 30 },
+  { key: "3m", days: 90 },
+  { key: "6m", days: 180 },
+  { key: "1y", days: 365 },
 ] as const;
 
-type RangeKey = typeof RANGES[number]["key"];
+type RangeKey = (typeof RANGES)[number]["key"];
 
 interface Props {
   banks: BankBalance[];
@@ -40,23 +43,49 @@ interface Props {
   history: BalancePoint[];
 }
 
+/**
+ * The Accounts settings panel: the combined total and its history, then bank accounts
+ * and other assets, each with its add button. A row opens its edit dialog. The old
+ * /settings/accounts/{banks,vermogen}/add routes redirect here with ?add=bank|asset,
+ * which opens the matching add dialog.
+ */
 export function AccountsOverviewClient({ banks: initialBanks, assets: initialAssets, history }: Props) {
+  const t = useTranslations("accountForms");
+  const tSettings = useTranslations("settings");
+  const locale = useLocale();
+  const labels = useAccountTypeLabels();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [banks, setBanks] = useState<BankBalance[]>(initialBanks);
   const [assets, setAssets] = useState<VermogenAccount[]>(initialAssets);
   const [range, setRange] = useState<RangeKey>("6m");
 
-  // The local state above gives instant optimistic feedback on add/edit/delete, but a
-  // balance correction changes a transaction-derived total that only the server can
-  // recompute — resync with the server's fresh numbers whenever router.refresh() lands
-  // a new `banks`/`assets` prop (e.g. after BankEditDialog saves), so this panel and
-  // the totals it feeds never keep showing a pre-correction balance.
+  // The local state above gives instant feedback on add/edit/delete, but a balance
+  // correction changes a transaction-derived total only the server can recompute —
+  // resync whenever router.refresh() lands new `banks`/`assets` props, so this panel
+  // never keeps showing a pre-correction balance.
   useEffect(() => { setBanks(initialBanks); }, [initialBanks]);
   useEffect(() => { setAssets(initialAssets); }, [initialAssets]);
 
-  // Editing dialogs — the overview owns the open state; the balance shown for a bank
-  // is transaction-derived, so a starting-balance edit only takes effect after refresh.
+  const requestedAdd = searchParams.get("add");
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
   const [editingAsset, setEditingAsset] = useState<VermogenAccount | null>(null);
+  const [adding, setAdding] = useState<"bank" | "asset" | null>(
+    requestedAdd === "bank" || requestedAdd === "asset" ? requestedAdd : null,
+  );
+
+  function closeAdd() {
+    setAdding(null);
+    // Drop ?add= so a reload doesn't open the dialog again.
+    if (requestedAdd) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("add");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    }
+  }
 
   const bankTotal = banks.reduce((s, b) => s + b.balance, 0);
   const assetTotal = assets.reduce((s, a) => s + a.value, 0);
@@ -66,190 +95,196 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
   const days = RANGES.find((r) => r.key === range)!.days;
   const sliced = useMemo(() => history.slice(Math.max(0, history.length - days)), [history, days]);
 
-  // "vs last month": current total minus the balance ~30 days ago from the history.
+  // "vs last month": the current total minus the balance ~30 days ago in the history.
   const monthAgo = history.length > 30 ? history[history.length - 31].balance : history[0]?.balance ?? total;
   const delta = total - monthAgo;
-  const up = delta >= 0;
 
-  const hasChart = sliced.length >= 2;
+  const updatedFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
 
   return (
     <>
-    <PanelHeader
-      title="Accounts"
-      action={
-        <AddAccountButton
-          onBankAdded={(bank) => setBanks((list) => [...list, { ...bank, balance: bank.startingBalance ?? 0 }])}
-          onAssetAdded={(account) => setAssets((list) => [...list, account])}
+      <PanelHeader title={tSettings("panels.accounts.title")} />
+      <div className="flex flex-col gap-7 px-4 pt-1 pb-8 font-clear text-clear-ink">
+        {/* ── Total + delta ── */}
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-bold text-clear-ink-2">
+            {t("panel.total")} · {t("panel.accountCount", { count: accountCount })}
+          </span>
+          <Amount value={total} className="text-[40px] leading-none tracking-[-0.03em]" />
+          <div className="mt-1 flex items-center gap-2">
+            <DeltaChip direction={delta >= 0 ? "up" : "down"} good={delta >= 0}>
+              {delta >= 0 ? "+" : "−"}
+              <MoneyText>{formatEur(Math.abs(delta))}</MoneyText>
+            </DeltaChip>
+            <span className="text-[13px] text-clear-muted">{t("panel.vsLastMonth")}</span>
+          </div>
+        </div>
+
+        {history.length >= 2 && (
+          <div className="flex flex-col gap-3">
+            {sliced.length >= 2 && <BalanceChart data={sliced} locale={locale} />}
+            <Segmented
+              label={t("panel.range")}
+              surface="tile"
+              size="sm"
+              value={range}
+              onChange={setRange}
+              className="w-full [&>button]:flex-1"
+              items={RANGES.map((r) => ({ value: r.key, label: t(`panel.ranges.${r.key}`) }))}
+            />
+          </div>
+        )}
+
+        {/* ── Bank accounts ── */}
+        <AccountSection
+          title={t("panel.banks")}
+          count={banks.length}
+          total={bankTotal}
+          empty={t("panel.noBanks")}
+          addLabel={t("panel.addBank")}
+          onAdd={() => setAdding("bank")}
+          addAnchor="accountsAdd"
+        >
+          {banks.map((b) => {
+            const iban = b.accountNumber && !b.accountNumber.startsWith("CUSTOM-") ? `••${b.accountNumber.replace(/\s/g, "").slice(-4)}` : null;
+            const name = b.displayName ?? b.accountNumber ?? t("panel.bankFallback", { id: b.id });
+            return (
+              <ListRow
+                key={`bank-${b.id}`}
+                onClick={() => setEditingBank(b)}
+                icon={<AccountGlyph icon={b.icon} color={b.color ?? DEFAULT_BANK_COLOR} fallback={IconBuildingBank} />}
+                title={name}
+                meta={[b.cardType ? labels.bankType(b.cardType) : null, iban].filter(Boolean).join(" · ") || undefined}
+                trailing={<RowTrailing value={b.balance} editLabel={t("panel.edit", { name })} />}
+              />
+            );
+          })}
+        </AccountSection>
+
+        {/* ── Other assets ── */}
+        <AccountSection
+          title={t("panel.assets")}
+          count={assets.length}
+          total={assetTotal}
+          empty={t("panel.noAssets")}
+          addLabel={t("panel.addAsset")}
+          onAdd={() => setAdding("asset")}
+        >
+          {assets.map((a) => (
+            <ListRow
+              key={`asset-${a.id}`}
+              onClick={() => setEditingAsset(a)}
+              icon={<AccountGlyph icon={a.icon} color={a.color ?? DEFAULT_ASSET_COLOR} fallback={assetGlyph(a.type)} />}
+              title={a.name}
+              meta={[
+                labels.assetType(a.type),
+                a.lastUpdated ? t("panel.updated", { date: updatedFmt.format(new Date(`${a.lastUpdated}T12:00:00`)) }) : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              trailing={<RowTrailing value={a.value} editLabel={t("panel.edit", { name: a.name })} />}
+            />
+          ))}
+        </AccountSection>
+
+        {/* The add buttons now open real dialogs with every field (IBAN, starting
+            balance and date, transfer type; the asset kinds) — point them out once. */}
+        <AnchoredTip id="accountsAdd" anchor="accountsAdd" />
+
+        <BankFormDialog
+          bank={editingBank}
+          open={editingBank !== null}
+          onOpenChange={(v) => !v && setEditingBank(null)}
+          onSaved={(updated) => setBanks((list) => list.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)))}
+          onDeleted={(id) => setBanks((list) => list.filter((x) => x.id !== id))}
         />
-      }
-    />
-    <div className="px-4 pt-1 pb-8 space-y-6">
-      {/* ── Total + delta ── */}
-      <div>
-        <p className="text-sm text-ink-3 mb-1">
-          Total · <span className="text-ink-2 font-medium">{accountCount} account{accountCount === 1 ? "" : "s"}</span>
-        </p>
-        <p className="text-5xl font-semibold tabular-nums tracking-tight">{formatEurSignFirst(total)}</p>
-        <div className="mt-2 flex items-center gap-2">
-          <span className={cn("flex size-5 items-center justify-center rounded-full", up ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive")}>
-            {up ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />}
-          </span>
-          <span className={cn("text-sm font-medium", up ? "text-success" : "text-destructive")}>
-            {up ? "+" : "−"}{formatEur(Math.abs(delta))}
-          </span>
-          <span className="text-sm text-ink-3">vs last month</span>
-        </div>
+        <BankFormDialog
+          bank={null}
+          open={adding === "bank"}
+          onOpenChange={(v) => !v && closeAdd()}
+          onSaved={(bank) => setBanks((list) => [...list, { ...bank, balance: bank.startingBalance ?? 0 }])}
+        />
+        <AssetFormDialog
+          account={editingAsset}
+          open={editingAsset !== null}
+          onOpenChange={(v) => !v && setEditingAsset(null)}
+          onSaved={(updated) => setAssets((list) => list.map((x) => (x.id === updated.id ? updated : x)))}
+          onDeleted={(id) => setAssets((list) => list.filter((x) => x.id !== id))}
+        />
+        <AssetFormDialog
+          account={null}
+          open={adding === "asset"}
+          onOpenChange={(v) => !v && closeAdd()}
+          onSaved={(account) => setAssets((list) => [...list, account])}
+        />
       </div>
-
-      {/* ── Balance chart ── */}
-      {hasChart && (
-        <div className="-mx-1">
-          <BalanceChart data={sliced} />
-        </div>
-      )}
-
-      {/* ── Range selector ── */}
-      <div className="flex gap-1 rounded-full border border-line bg-surface p-1">
-        {RANGES.map((r) => (
-          <button
-            key={r.key}
-            type="button"
-            onClick={() => setRange(r.key)}
-            className={cn(
-              "flex-1 rounded-full py-2 text-sm font-medium transition-colors",
-              range === r.key ? "bg-foreground/10 text-foreground" : "text-foreground/50",
-            )}
-          >
-            {r.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Account groups ── */}
-      {accountCount === 0 ? (
-        <div className="rounded-card border border-line bg-surface py-16 text-center text-ink-3">
-          <p className="text-sm">No accounts yet</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {banks.length > 0 && (
-            <AccountGroup label="Bank" total={bankTotal}>
-              {banks.map((b) => (
-                <AccountCard
-                  key={`bank-${b.id}`}
-                  name={b.displayName ?? b.accountNumber ?? `Bank ${b.id}`}
-                  subtitle={b.cardType ? CARD_TYPE_LABELS[b.cardType] ?? b.cardType : undefined}
-                  amount={b.balance}
-                  color={b.color ?? "#2f7bf6"}
-                  icon={b.icon ? <Icon iconKey={b.icon} color={b.color ?? undefined} size="xl" round /> : <CreditCard className="size-6" />}
-                  bareIcon={!!b.icon}
-                  onClick={() => setEditingBank(b)}
-                />
-              ))}
-            </AccountGroup>
-          )}
-
-          {assets.length > 0 && (
-            <AccountGroup label="Assets" total={assetTotal}>
-              {assets.map((a) => (
-                <AccountCard
-                  key={`asset-${a.id}`}
-                  name={a.name}
-                  subtitle={vermogenTypeLabel(a.type)}
-                  amount={a.value}
-                  color={a.color ?? "#0f9d8c"}
-                  icon={a.icon ? <Icon iconKey={a.icon} color={a.color ?? undefined} size="xl" round /> : <Coin className="size-6" />}
-                  bareIcon={!!a.icon}
-                  onClick={() => setEditingAsset(a)}
-                />
-              ))}
-            </AccountGroup>
-          )}
-        </div>
-      )}
-
-      <BankEditDialog
-        bank={editingBank}
-        open={editingBank !== null}
-        onOpenChange={(v) => !v && setEditingBank(null)}
-        onSaved={(updated) => setBanks((list) => list.map((x) => (x.id === updated.id ? { ...x, ...updated } : x)))}
-        onDeleted={(id) => setBanks((list) => list.filter((x) => x.id !== id))}
-      />
-      <VermogenEditDialog
-        account={editingAsset}
-        open={editingAsset !== null}
-        onOpenChange={(v) => !v && setEditingAsset(null)}
-        onSaved={(updated) => setAssets((list) => list.map((x) => (x.id === updated.id ? updated : x)))}
-        onDeleted={(id) => setAssets((list) => list.filter((x) => x.id !== id))}
-      />
-    </div>
     </>
   );
 }
 
-function AccountGroup({ label, total, children }: { label: string; total: number; children: React.ReactNode }) {
+function AccountSection({
+  title,
+  count,
+  total,
+  empty,
+  addLabel,
+  onAdd,
+  addAnchor,
+  children,
+}: {
+  title: string;
+  count: number;
+  total: number;
+  empty: string;
+  addLabel: string;
+  onAdd: () => void;
+  addAnchor?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section>
-      <div className="flex items-baseline justify-between px-1 mb-2.5">
-        <h2 className="text-sm font-medium text-ink-3">{label}</h2>
-        <span className="text-sm font-medium text-ink-3 tabular-nums">{formatEurSignFirst(total)}</span>
+    <section className="flex flex-col gap-1.5">
+      <div className="flex h-10 items-center justify-between gap-2 rounded-clear-icon bg-clear-tile px-3">
+        <h3 className="m-0 text-[15px] font-bold">
+          {title} <span className="font-semibold text-clear-muted">· {count}</span>
+        </h3>
+        <Amount value={total} splitCents={false} className="text-sm" />
       </div>
-      <div className="space-y-3">{children}</div>
+      {count === 0 ? (
+        <div className="rounded-clear-tile border-2 border-dashed border-clear-line px-4 py-5 text-center text-[13px] text-clear-muted">{empty}</div>
+      ) : (
+        <div className="flex flex-col">{children}</div>
+      )}
+      <button
+        type="button"
+        onClick={onAdd}
+        data-tip-anchor={addAnchor}
+        className={cn(clearButtonVariants({ variant: "secondary" }), "mt-2 self-start")}
+      >
+        <IconPlus aria-hidden stroke={2.2} />
+        {addLabel}
+      </button>
     </section>
   );
 }
 
-function AccountCard({
-  name,
-  subtitle,
-  amount,
-  color,
-  icon,
-  bareIcon = false,
-  onClick,
-}: {
-  name: string;
-  subtitle?: string;
-  amount: number;
-  color: string;
-  icon: React.ReactNode;
-  /** When true, `icon` is a self-contained chip (e.g. <Icon />) rendered without the
-   *  default colored square wrapper. */
-  bareIcon?: boolean;
-  onClick: () => void;
-}) {
+function RowTrailing({ value, editLabel }: { value: number; editLabel: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full flex items-center gap-4 rounded-row border border-line bg-surface px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
-    >
-      {bareIcon ? (
-        <span className="size-12 shrink-0">{icon}</span>
-      ) : (
-        <span className="flex size-12 items-center justify-center rounded-card text-white shrink-0" style={{ backgroundColor: color }}>
-          {icon}
-        </span>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-lg truncate leading-tight">{name}</p>
-        {subtitle && <p className="text-sm text-ink-3 truncate mt-0.5">{subtitle}</p>}
-      </div>
-      <span className="tabular-nums font-semibold text-lg shrink-0">{formatEurSignFirst(amount)}</span>
-    </button>
+    <>
+      <Amount value={value} className="shrink-0 text-[17px]" />
+      <span aria-hidden title={editLabel} className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-clear-tile text-clear-ink">
+        <IconPencil size={18} stroke={2} />
+      </span>
+    </>
   );
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
-
-function BalanceChart({ data }: { data: BalancePoint[] }) {
+function BalanceChart({ data, locale }: { data: BalancePoint[]; locale: string }) {
   const display = data.map((d) => ({ date: d.date, value: d.balance }));
   const tickInterval = Math.max(0, Math.ceil(display.length / 6) - 1);
   const negative = display[display.length - 1].value < 0;
-  const color = negative ? "var(--destructive)" : "var(--success)";
+  const color = negative ? "var(--clr-negative-fill)" : "var(--clr-positive-fill)";
+  const monthFmt = new Intl.DateTimeFormat(locale, { month: "short" });
+  const dayFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
 
   return (
     <ResponsiveContainer width="100%" height={150}>
@@ -262,8 +297,8 @@ function BalanceChart({ data }: { data: BalancePoint[] }) {
         </defs>
         <XAxis
           dataKey="date"
-          tickFormatter={(d) => new Date(d + "T00:00:00").toLocaleDateString("en-GB", { month: "short" })}
-          tick={{ fontSize: 11, fill: "currentColor", opacity: 0.4 }}
+          tickFormatter={(d) => monthFmt.format(new Date(`${d}T00:00:00`))}
+          tick={{ fontSize: 12, fill: "var(--clr-muted)" }}
           axisLine={false}
           tickLine={false}
           interval={tickInterval}
@@ -271,12 +306,12 @@ function BalanceChart({ data }: { data: BalancePoint[] }) {
         />
         <YAxis hide domain={["dataMin", "dataMax"]} />
         <Tooltip
-          cursor={{ stroke: "currentColor", strokeOpacity: 0.15, strokeWidth: 1 }}
+          cursor={{ stroke: "var(--clr-line)", strokeWidth: 1 }}
           content={({ active, payload }) =>
             active && payload?.length ? (
-              <div className="rounded-tile border border-line bg-surface px-3 py-2 text-xs shadow-float">
-                <p className="text-ink-2 mb-0.5">{fmtDate(String(payload[0].payload.date))}</p>
-                <p className="font-bold tabular-nums">{formatEurSignFirst(Number(payload[0].value))}</p>
+              <div className="rounded-clear-row bg-clear-card px-3 py-2 font-clear text-[13px] text-clear-ink shadow-clear-dialog">
+                <p className="m-0 mb-0.5 text-clear-muted">{dayFmt.format(new Date(`${String(payload[0].payload.date)}T00:00:00`))}</p>
+                <Amount value={Number(payload[0].value)} className="text-sm" />
               </div>
             ) : null
           }
@@ -293,38 +328,5 @@ function BalanceChart({ data }: { data: BalancePoint[] }) {
         />
       </AreaChart>
     </ResponsiveContainer>
-  );
-}
-
-// ─── Header add-account button ───────────────────────────────────────────────
-// Opens AddAccountDialog directly — the dialog's own "Type" picker decides bank
-// vs. asset, so there's no more up-front chooser step.
-
-export function AddAccountButton({
-  onBankAdded,
-  onAssetAdded,
-}: {
-  onBankAdded: (bank: Bank) => void;
-  onAssetAdded: (account: VermogenAccount) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label="Add account"
-        className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
-      >
-        <Plus className="size-5 text-ink" />
-      </button>
-
-      <AddAccountDialog
-        open={open}
-        onOpenChange={setOpen}
-        onBankAdded={onBankAdded}
-        onAssetAdded={onAssetAdded}
-      />
-    </>
   );
 }

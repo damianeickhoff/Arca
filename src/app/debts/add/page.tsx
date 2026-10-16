@@ -1,11 +1,6 @@
-import { db } from "@/db";
-import { recurringItems } from "@/db/schema";
-import { asc } from "drizzle-orm";
-import { DebtForm } from "../debt-form";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default async function AddDebtPage() {
-  const bills = await db.select().from(recurringItems).orderBy(asc(recurringItems.name));
-  return <DebtForm bills={bills} />;
+// Adding a debt happens in the form sheet on the Debts page; old links land there.
+export default function AddDebtPage() {
+  redirect("/debts?add=owe");
 }

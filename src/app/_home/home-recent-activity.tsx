@@ -113,7 +113,7 @@ export function HomeRecentActivity({
                   )}
                 >
                   <span className="flex min-w-0 items-center gap-3">
-                    <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} initials={icon.initials} size="md" />
+                    <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} initials={icon.initials} size="md" soft />
                     <span className="flex min-w-0 flex-col">
                       <span className="truncate text-[15px] font-bold">{resolveDisplayName(row)}</span>
                       <span className="truncate text-[13px] text-clear-muted">

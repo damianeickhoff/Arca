@@ -1,12 +1,14 @@
+import { toClientUser } from "@/lib/auth";
 import { Suspense } from "react";
 import { db } from "@/db";
-import { categories, categoryRules, banks, recurringItems, vermogenAccounts, users } from "@/db/schema";
+import { categories, categoryRules, banks, recurringItems, vermogenAccounts, users, brandIconRules } from "@/db/schema";
 import type { CategoryRule } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { CategoriesClient } from "@/components/settings/categories/categories-client";
 import { RecurringMenuClient } from "@/components/settings/recurring/recurring-menu-client";
 import { AccountsOverviewClient } from "@/components/settings/accounts/accounts-overview-client";
 import { MerchantsClient } from "@/components/settings/merchants-client";
+import { BrandIconsClient } from "@/app/settings/brand-icons-client";
 import { DataHealthClient } from "@/components/settings/data-health-client";
 import { ImportProfilesClient } from "@/components/settings/import-profiles-client";
 import { findBrokenDateTransactions } from "@/lib/data-health";
@@ -14,23 +16,22 @@ import { listImportProfiles } from "@/lib/import-profiles";
 import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
-import { disableExpiredRecurring } from "@/lib/recurring-period";
+import { syncRecurringLifecycle } from "@/lib/recurring-period";
+import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
-// Server-rendered content for the data-heavy panels of the settings dialog (opened
-// from the dashboard profile button). Rendered once as part of the dashboard page
-// load and passed down into the client SettingsDialog, which reveals one panel at a
-// time. Mirrors app/reports/reports-portal-content.tsx: each panel is its own async
-// server component wrapped in <Suspense> so its query streams and never blocks the
-// dashboard's initial response.
-//
-// The Accounts / Categories / Recurring panels render the redesigned clients in
-// `embedded` mode (no page header — the dialog panel supplies its own back + title).
+// Server-rendered content for the data-heavy settings panels. Two hosts:
+//   • the phone SettingsDialog (opened from the Home avatar) gets every panel at once
+//     (getSettingsPanelContent) and reveals one at a time;
+//   • the /settings page renders only the open panel (getSettingsPanel).
+// Each panel is its own async server component wrapped in <Suspense> so its query
+// streams and never blocks the host page's initial response. The panels draw their
+// own header through PanelHeader (settings-panel-chrome.tsx), which adapts to the host.
 
 function PanelSkeleton() {
   return (
     <div className="space-y-3 px-4 pt-2">
       {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="h-16 rounded-card bg-surface-2 animate-pulse" />
+        <div key={i} className="h-16 rounded-clear-tile bg-clear-tile animate-pulse" />
       ))}
     </div>
   );
@@ -50,7 +51,7 @@ async function CategoriesPanel() {
 
 async function RecurringPanel() {
   // Auto-disable items whose period end has passed before loading the list.
-  await disableExpiredRecurring();
+  await syncRecurringLifecycle();
 
   const [recurringAll, cats] = await Promise.all([
     db.select().from(recurringItems).orderBy(recurringItems.type, recurringItems.name),
@@ -78,8 +79,15 @@ async function AccountsPanel() {
   return <AccountsOverviewClient banks={bankBalances} assets={assets} history={history} />;
 }
 
+/** Merchants, then the brand-icon rules that give them their logos. */
 async function MerchantsPanel() {
-  return <MerchantsClient initialMerchants={await listMerchants()} />;
+  const [merchants, rules] = await Promise.all([listMerchants(), db.select().from(brandIconRules)]);
+  return (
+    <>
+      <MerchantsClient initialMerchants={merchants} />
+      <BrandIconsClient initialRules={rules} />
+    </>
+  );
 }
 
 async function DataHealthPanel() {
@@ -92,23 +100,39 @@ async function ImportProfilesPanel() {
 
 async function UsersPanel({ currentUserId }: { currentUserId: number }) {
   const allUsers = await db.select().from(users).orderBy(users.email);
-  return <UsersClient users={allUsers} currentUserId={currentUserId} />;
+  // Only profile fields reach the browser; hashes and TOTP secrets stay on the server.
+  return <UsersClient users={allUsers.map(toClientUser)} currentUserId={currentUserId} />;
 }
 
-export function getSettingsPanelContent(currentUser: { id: number; isAdmin: boolean }) {
-  return {
-    accounts: <Suspense key="accounts" fallback={<PanelSkeleton />}><AccountsPanel /></Suspense>,
-    categories: <Suspense key="categories" fallback={<PanelSkeleton />}><CategoriesPanel /></Suspense>,
-    recurring: <Suspense key="recurring" fallback={<PanelSkeleton />}><RecurringPanel /></Suspense>,
-    merchants: <Suspense key="merchants" fallback={<PanelSkeleton />}><MerchantsPanel /></Suspense>,
-    dataHealth: <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel /></Suspense>,
-    importProfiles: <Suspense key="importProfiles" fallback={<PanelSkeleton />}><ImportProfilesPanel /></Suspense>,
-    // Only fetched/embedded for admins — the row that opens this panel is itself
-    // admin-gated in SettingsDialog, so non-admins never get the user list in props.
-    ...(currentUser.isAdmin
-      ? { users: <Suspense key="users" fallback={<PanelSkeleton />}><UsersPanel currentUserId={currentUser.id} /></Suspense> }
-      : {}),
-  };
+/** One heavy panel's server-rendered content — the /settings page renders only the
+ *  open one. Users is admin-only: null for everyone else. */
+export function getSettingsPanel(key: HeavyPanelKey, currentUser: { id: number; isAdmin: boolean }): React.ReactNode {
+  switch (key) {
+    case "accounts":
+      return <Suspense key="accounts" fallback={<PanelSkeleton />}><AccountsPanel /></Suspense>;
+    case "categories":
+      return <Suspense key="categories" fallback={<PanelSkeleton />}><CategoriesPanel /></Suspense>;
+    case "recurring":
+      return <Suspense key="recurring" fallback={<PanelSkeleton />}><RecurringPanel /></Suspense>;
+    case "merchants":
+      return <Suspense key="merchants" fallback={<PanelSkeleton />}><MerchantsPanel /></Suspense>;
+    case "dataHealth":
+      return <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel /></Suspense>;
+    case "importProfiles":
+      return <Suspense key="importProfiles" fallback={<PanelSkeleton />}><ImportProfilesPanel /></Suspense>;
+    case "users":
+      return currentUser.isAdmin
+        ? <Suspense key="users" fallback={<PanelSkeleton />}><UsersPanel currentUserId={currentUser.id} /></Suspense>
+        : null;
+  }
 }
 
-export type SettingsPanelContent = ReturnType<typeof getSettingsPanelContent>;
+/** Every heavy panel, for the phone SettingsDialog (which can open any of them). Users
+ *  is only fetched/embedded for admins — its row is admin-gated too, so non-admins
+ *  never get the user list in props. */
+export function getSettingsPanelContent(currentUser: { id: number; isAdmin: boolean }): SettingsPanelContent {
+  const keys = HEAVY_PANELS.filter((key) => key !== "users" || currentUser.isAdmin);
+  return Object.fromEntries(keys.map((key) => [key, getSettingsPanel(key, currentUser)]));
+}
+
+export type SettingsPanelContent = Partial<Record<HeavyPanelKey, React.ReactNode>>;

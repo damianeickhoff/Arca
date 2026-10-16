@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   IconArrowUp,
   IconArrowDown,
+  IconArrowRight,
+  IconArrowsMinimize,
+  IconBuildingBank,
+  IconDownload,
+  IconInfoCircle,
+  IconTag,
+  IconZoomIn,
+  IconZoomOut,
   IconArrowsLeftRight,
   IconBrandGoogle,
   IconBuildingStore,
@@ -26,16 +34,20 @@ import {
   IconTrash,
   IconArrowsSplit2,
   IconBolt,
+  IconCheck,
+  IconCopy,
   IconTransfer,
   IconX,
 } from "@tabler/icons-react";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { Icon } from "@/components/icon";
 import { Amount } from "@/components/clear/amount";
-import { clearButtonVariants } from "@/components/clear/button-variants";
 import { ClearChip } from "@/components/clear/chip";
-import { ClearProgress } from "@/components/clear/progress";
-import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/clear/confirm-dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { IconTile } from "@/components/clear/icon-tile";
+import { RuleDialog, emptyRuleDraft, fetchRuleMatches, toRuleAmountInput, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -44,8 +56,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CategoryGrid, useCategoryFilter } from "@/components/category-picker";
-import { OptionDropdown } from "@/components/option-dropdown";
+import { CategoryPickerSheet as SharedCategoryPickerSheet } from "@/components/category-picker";
 import { BrandIconPicker } from "@/components/brand-icon-picker";
 import { MerchantDetailPortal, type MerchantRef } from "@/components/merchant-detail-portal";
 import { RecurringClient } from "@/components/settings/recurring/recurring-client";
@@ -61,12 +72,16 @@ import { cn } from "@/lib/utils";
 import type { Category, Goal, Merchant } from "@/db/schema";
 import { SplitTransactionDialog } from "../split-transaction-dialog";
 import { TransactionMap } from "@/components/transaction-map";
+import { ClearTile } from "@/components/clear/card";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { parseTransactionLocation } from "@/lib/parse-transaction-location";
 import { LinkDialog } from "../link-dialog";
 import { MerchantPickerDialog } from "./merchant-picker";
 import { buildRecurringPrefill, guessMerchant } from "@/lib/recurring-prefill";
 import type { TransactionRow } from "../transaction-types";
 import { RowIcon, needsCategory } from "./activity-list";
 import type { ActivityContext } from "./context";
+import { MoneyText } from "@/components/clear/money";
 
 // Loaded lazily, as in the old detail sheet: the recurring sheet lists linked
 // transactions and can open transaction sheets in turn — a module cycle otherwise.
@@ -82,9 +97,6 @@ const BUDGET_KEY: Record<string, "needs" | "wants" | "save"> = { nodig: "needs",
 
 type ReimbursementLink = { amount: number; reimbursementTransactionId: number; originalTransactionId: number };
 type Charge = { date: string; amount: number; correctedAmount: number | null };
-
-/** Distinct, theme-aware colours for the merchant segments of the category bar. */
-const SEGMENT_COLORS = ["var(--clr-info-fill)", "var(--clr-positive-fill)", "var(--clr-negative-fill)", "var(--clr-warning-fill)", "var(--clr-ember)"];
 
 async function patchTransaction(body: Record<string, unknown>) {
   await fetch("/api/transactions", {
@@ -137,10 +149,12 @@ export function TransactionDetailPanel({
   onDeleted: () => void;
 }) {
   const t = useTranslations("activity.detail");
+  const tHistory = useTranslations("activity.detail.history");
   const tTags = useTranslations("activity.tags");
   const tFreq = useTranslations("activity.frequency");
   const locale = useLocale();
   const router = useRouter();
+  const confirm = useConfirm();
 
   // ── local copies of what this panel edits, so it reflects changes before the list
   //    re-renders (the list's row object is a snapshot).
@@ -188,6 +202,21 @@ export function TransactionDetailPanel({
     return () => { cancelled = true; };
   }, [recurringId]);
 
+  // What was spent at this merchant this calendar month, for the merchant row. Always
+  // this month (also on an older transaction): the row answers "how am I doing there now".
+  const merchantId = merchant?.id ?? null;
+  const thisMonth = monthOf(isoToday());
+  const [merchantPeriod, setMerchantPeriod] = useState<{ total: number; visits: number } | null>(null);
+  useEffect(() => {
+    if (merchantId == null) return;
+    let cancelled = false;
+    fetch(`/api/merchants/${merchantId}/detail?from=${thisMonth.from}&to=${thisMonth.to}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setMerchantPeriod({ total: d.totalSpent, visits: d.visitCount }); })
+      .catch(() => { /* the row keeps its plain title */ });
+    return () => { cancelled = true; };
+  }, [merchantId, thisMonth.from, thisMonth.to]);
+
   const paidBack = (links ?? []).filter((l) => l.originalTransactionId === row.id).reduce((s, l) => s + l.amount, 0);
   const allocated = (links ?? []).filter((l) => l.reimbursementTransactionId === row.id).reduce((s, l) => s + l.amount, 0);
 
@@ -207,6 +236,10 @@ export function TransactionDetailPanel({
   const [openMerchant, setOpenMerchant] = useState<MerchantRef | null>(null);
   const [rule, setRule] = useState<RuleDraft | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [tab, setTab] = useState<"summary" | "details">("summary");
+  const [fieldsOpen, setFieldsOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const currentCat = categories.find((c) => c.id === categoryId) ?? null;
@@ -236,7 +269,6 @@ export function TransactionDetailPanel({
   // ── Budget impact
   const budget = categoryId != null ? context.budgets[categoryId] : undefined;
   const showBudget = isExpense && !row.isInternalTransfer && !row.isSplit && budget?.budget != null && budget.budget > 0;
-  const budgetPct = showBudget ? (budget!.spent / budget!.budget!) * 100 : 0;
 
   // ── Next charge
   const nextDate = recurringItem && recurringItem.active ? nextOccurrence(recurringItem) : null;
@@ -260,17 +292,47 @@ export function TransactionDetailPanel({
     .filter((c) => c.date.startsWith(String(year)))
     .reduce((s, c) => s + Math.abs(c.correctedAmount ?? c.amount), 0);
 
-  // ── Category context (expenses in a category only)
-  const showContext = isExpense && !row.isInternalTransfer && !row.isSplit && categoryId != null;
-  const merchants = showContext ? context.merchantSpend[categoryId!] ?? [] : [];
-  const monthTotal = merchants.reduce((s, m) => s + m.amount, 0);
-  const segments = [
-    ...merchants.slice(0, 4),
-    ...(merchants.length > 4 ? [{ name: t("other"), amount: merchants.slice(4).reduce((s, m) => s + m.amount, 0) }] : []),
-  ];
-  const contextBudget = budget?.budget != null && budget.budget > 0 ? budget.budget : null;
-  const denominator = Math.max(contextBudget ?? 0, monthTotal) || 1;
-  const ownMerchant = (merchant?.name ?? row.merchantName ?? "").toLowerCase();
+  // ── The rows under Edit details: where it happened, and this month at the merchant
+  //    (or, without a merchant, a recurring item's rhythm). Both open a popup.
+  const isIncomeRow = isIncomeRowOf(row);
+  const locationName = row.customName || row.description;
+  // Only when the bank line names a place; without one there is nothing to show on a map.
+  const parsedLocation = row.isInternalTransfer ? null : parseTransactionLocation(locationName);
+  const location = parsedLocation ? { label: parsedLocation.label } : null;
+  // "About €X a week" only means something with more than one visit; weeks so far this month.
+  const weeks = Math.max(1, (daysUntilFrom(thisMonth.from) + 1) / 7);
+  const visits = merchantPeriod?.visits ?? null;
+  const merchantRow =
+    merchant && !isIncomeRowOf(row)
+      ? {
+          title:
+            merchantPeriod != null
+              ? t("history.thisMonthAt", { name: merchant.name, amount: formatEur(merchantPeriod.total) })
+              : t("history.thisMonthAtName", { name: merchant.name }),
+          sub:
+            visits == null
+              ? ""
+              : visits === 0
+                ? t("history.noVisits")
+                : visits === 1
+                  ? t("history.oneVisit")
+                  : t("history.visits", { count: visits, weekly: compactEur(Math.round(merchantPeriod!.total / weeks)) }),
+        }
+      : null;
+  const historyRow: { title: string; sub: string } | null = merchantRow ?? (recurringItem
+    ? {
+        title: t("history.recurringTitle", {
+          frequency: frequencyLabel(recurringItem.frequency),
+          amount: formatEur(Math.abs(recurringItem.amount ?? shownAmountOf(row))),
+        }),
+        sub: nextDate
+          ? t(isIncomeRow ? "history.nextPayment" : "history.nextCharge", {
+              date: fmtDay(nextDate, { weekday: "short", day: "numeric", month: "short" }),
+              when: t("inDays", { count: daysUntil(nextDate) }),
+            })
+          : t("history.noNext"),
+      }
+    : null);
 
   // ── actions
   // The merchant name and the Merchant row both open the profile, or the picker when
@@ -280,16 +342,12 @@ export function TransactionDetailPanel({
     else setMerchantPickerOpen(true);
   }
 
-  async function applyCategory(value: string) {
-    const next = value ? Number(value) : null;
-    setPickerOpen(false);
+  // The picker saved it (and, with "Also create a rule", the rule and the similar
+  // transactions); this only mirrors the result here and in the list.
+  function applyCategory(next: number | null) {
     setCategoryId(next);
-    await patchTransaction({ id: row.id, categoryId: next });
     onCategorized(row.id, next);
     router.refresh();
-    // Offer to apply the same category to similar transactions — unless a recurring
-    // item already drives this row's category, which would make it redundant.
-    if (next != null && recurringId == null) setRule(newRuleDraft(row, next, "afterChange"));
   }
 
   async function saveBudgetType(value: string | null) {
@@ -367,7 +425,13 @@ export function TransactionDetailPanel({
   }
 
   async function remove() {
-    if (!confirm(t("confirmDelete"))) return;
+    const ok = await confirm({
+      title: t("confirmDelete"),
+      body: t("confirmDeleteBody"),
+      confirmLabel: t("confirmDeleteLabel"),
+      destructive: true,
+    });
+    if (!ok) return;
     await fetch("/api/transactions", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -388,15 +452,21 @@ export function TransactionDetailPanel({
   const shownAmount = Math.abs(row.isReimbursement ? row.amount : row.correctedAmount ?? row.amount);
   const budgetLabel = effectiveBudgetType && BUDGET_KEY[effectiveBudgetType] ? t(`budgetType.${BUDGET_KEY[effectiveBudgetType]}`) : null;
   const overBy = showBudget ? budget!.spent - budget!.budget! : 0;
+  // This payment's own part of the budget bar, when it falls in the budget period.
+  const period = context.budgetPeriod;
+  const inPeriod = !!period && row.date >= period.from && row.date <= period.to;
+  const ownPart = showBudget && inPeriod ? Math.min(shownAmount, budget!.spent) : 0;
 
   const moreMenu = (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger className={cn(clearButtonVariants({ variant: "secondary", size: "md" }), "pl-3.5 pr-[18px]")}>
-        <IconDots aria-hidden />
+      <DropdownMenuTrigger className="group flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1.5 bg-transparent text-xs font-bold text-clear-ink outline-none">
+        <span className="inline-flex size-11 items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink transition-opacity group-hover:opacity-90 group-focus-visible:ring-3 group-focus-visible:ring-clear-ember/50 [&_svg]:size-5">
+          <IconDots aria-hidden />
+        </span>
         {t("more")}
       </DropdownMenuTrigger>
-      {/* Link reimbursement and Make recurring are action tiles; the menu holds the rest. */}
-      <DropdownMenuContent align="start" side="top" className="min-w-60">
+      {/* The four main actions are the buttons beside this one; the menu holds the rest. */}
+      <DropdownMenuContent align="end" side="top" sideOffset={8} className="min-w-60">
         <DropdownMenuItem onClick={() => setCorrectOpen(true)}>
           <IconPencil className="size-4" />
           {t("menu.correctAmount")}
@@ -417,19 +487,21 @@ export function TransactionDetailPanel({
           <IconPhoto className="size-4" />
           {t("menu.brandIcon")}
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => fileRef.current?.click()}>
+          <IconCamera className="size-4" />
+          {receiptUrl ? t("actions.replaceReceipt") : t("actions.receipt")}
+        </DropdownMenuItem>
         {receiptUrl && (
-          <>
-            <DropdownMenuItem onClick={() => setViewingReceipt(true)}>
-              <IconCamera className="size-4" />
-              {t("viewReceipt")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={removeReceipt}>
-              <IconX className="size-4" />
-              {t("removeReceipt")}
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem onClick={removeReceipt}>
+            <IconX className="size-4" />
+            {t("removeReceipt")}
+          </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={toggleExcluded}>
+          {excluded ? <IconEye className="size-4" /> : <IconEyeOff className="size-4" />}
+          {excluded ? t("actions.include") : t("actions.exclude")}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => toggleFlag("isReimbursement", !row.isReimbursement)}>
           <IconReceiptRefund className="size-4" />
           {row.isReimbursement ? t("menu.unmarkReimbursement") : t("menu.markReimbursement")}
@@ -450,7 +522,7 @@ export function TransactionDetailPanel({
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={remove} className="text-clear-negative">
+        <DropdownMenuItem variant="destructive" onClick={remove}>
           <IconTrash className="size-4" />
           {t("menu.delete")}
         </DropdownMenuItem>
@@ -459,19 +531,29 @@ export function TransactionDetailPanel({
   );
 
   const nameNode = row.isInternalTransfer ? (
-    <h2 className="truncate text-lg font-extrabold tracking-[-0.02em] text-clear-ink">{resolveDisplayName(row)}</h2>
+    <h2 className="m-0 truncate text-[17px] font-extrabold tracking-[-0.02em] text-clear-ink">{resolveDisplayName(row)}</h2>
   ) : (
     <button
       type="button"
       onClick={openMerchantOrPicker}
       title={merchant ? t("openMerchant") : t("setMerchant")}
-      className="min-w-0 truncate text-left text-lg font-extrabold tracking-[-0.02em] text-clear-ink underline-offset-4 hover:underline"
+      className="min-w-0 cursor-pointer truncate text-left text-[17px] font-extrabold tracking-[-0.02em] text-clear-ink underline-offset-4 hover:underline"
     >
       {resolveDisplayName(row)}
     </button>
   );
 
-  const body = (
+  // What "Edit details" holds, as its one-line preview while closed.
+  const fieldPreview = [
+    !row.isInternalTransfer ? merchant?.name ?? t("fields.merchant") : null,
+    goal ? goal.name : t("noGoal"),
+    notes ? t("fields.note") : null,
+    receiptUrl ? t("fields.receipt") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const header = (
     <>
       {/* 1. Position and ↑/↓ navigation. The phone sheet brings its own close button. */}
       {position && (
@@ -490,28 +572,28 @@ export function TransactionDetailPanel({
         </div>
       )}
 
-      {/* 2. The amount, who it was with, and its status chips */}
-      <div className="flex flex-col gap-3.5">
-        <Amount
-          value={isExpense ? -shownAmount : shownAmount}
-          sign="always"
-          className={cn("text-[44px] leading-none tracking-[-0.035em]", isExpense ? "text-clear-ink" : "text-clear-positive")}
-        />
+      {/* 2. Who it was with and the amount on one row, the status chips under it */}
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           {/* The shared icon components draw circles; the panel wants the 12px-radius tile. */}
           <span className="inline-flex shrink-0 [&>*]:size-11! [&>*]:rounded-clear-icon!">
             {uncategorised ? (
               <RowIcon row={{ ...row, categoryId }} size="xl" />
             ) : (
-              <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} initials={icon.initials} size="xl" glyphSize={22} />
+              <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} initials={icon.initials} size="xl" glyphSize={22} soft />
             )}
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             {nameNode}
             <span className="truncate text-[13px] text-clear-muted">{[dateLabel, row.bankName].filter(Boolean).join(" · ")}</span>
           </div>
+          <Amount
+            value={isExpense ? -shownAmount : shownAmount}
+            sign="always"
+            className={cn("shrink-0 text-[30px] leading-none tracking-[-0.03em] lg:text-[34px]", isExpense ? "text-clear-ink" : "text-clear-positive")}
+          />
         </div>
-        {(row.isInternalTransfer || uncategorised || row.isSplit || row.isReimbursement || paidBack > 0 || recurringId != null || excluded) && (
+        {(row.isInternalTransfer || uncategorised || row.isSplit || row.isReimbursement || paidBack > 0 || recurringId != null || excluded || priceChange) && (
           <div className="flex flex-wrap gap-2">
             {!!row.isInternalTransfer && (
               <ClearChip icon={<IconTransfer aria-hidden />}>{(transferType && TRANSFER_TYPE_LABELS[transferType]) || t("internalTransfer")}</ClearChip>
@@ -524,257 +606,330 @@ export function TransactionDetailPanel({
             )}
             {(row.isReimbursement || paidBack > 0) && (
               <ClearChip tone="mint" icon={<IconReceiptRefund aria-hidden />}>
-                {paidBack > 0 ? t("paidBackPill", { amount: formatEur(paidBack) }) : tTags("paidBack")}
+                <MoneyText>{paidBack > 0 ? t("paidBackPill", { amount: formatEur(paidBack) }) : tTags("paidBack")}</MoneyText>
               </ClearChip>
             )}
             {recurringId != null && (
               <ClearChip tone="sky" icon={<IconRepeat aria-hidden />}>
-                {tTags("recurring")}
+                {recurringItem ? frequencyLabel(recurringItem.frequency) : tTags("recurring")}
               </ClearChip>
             )}
             {excluded && <ClearChip>{tTags("notInReports")}</ClearChip>}
-          </div>
-        )}
-      </div>
-
-      {/* 3. The fields, each opening the editor it had as a tile */}
-      <div className="flex flex-col border-t border-clear-ground">
-        {row.isInternalTransfer ? (
-          <FieldRow label={t("fields.transferType")} onClick={() => setTransferOpen(true)}>
-            <span className="truncate">{(transferType && TRANSFER_TYPE_LABELS[transferType]) || t("transferAuto")}</span>
-          </FieldRow>
-        ) : (
-          <FieldRow label={t("fields.category")} onClick={row.isSplit ? undefined : () => setPickerOpen(true)}>
-            {row.isSplit ? (
-              <span className="truncate">{row.splitSummary ?? t("splitInto", { count: row.splitCount })}</span>
-            ) : currentCat ? (
-              <>
-                <span className="inline-flex shrink-0 [&>*]:size-[22px]! [&>*]:rounded-lg!">
-                  <Icon iconKey={currentCat.icon} color={currentCat.color} size="xs" glyphSize={13} />
-                </span>
-                <span className="truncate">{currentCat.name}</span>
-              </>
-            ) : (
-              <span className="truncate text-clear-warning">{t("choose")}</span>
-            )}
-          </FieldRow>
-        )}
-        {/* What this cost you after a payback or correction; the correction is editable. */}
-        {isExpense && (paidBack > 0 || row.correctedAmount != null) && (
-          <FieldRow label={t("fields.yourShare")} onClick={paidBack > 0 ? undefined : () => setCorrectOpen(true)}>
-            <span className="truncate tabular-nums">
-              {paidBack > 0
-                ? t("shareAfterPayback", { amount: formatEur(Math.max(0, total - paidBack)) })
-                : t("shareCorrected", { amount: formatEur(row.correctedAmount!), original: formatEur(row.amount) })}
-            </span>
-          </FieldRow>
-        )}
-        {!row.isInternalTransfer && (
-          <FieldRow label={t("fields.merchant")} onClick={openMerchantOrPicker}>
-            {merchant ? <span className="truncate">{merchant.name}</span> : <span className={mutedValue}>{t("unknown")}</span>}
-          </FieldRow>
-        )}
-        <FieldRow label={t("fields.budgetType")} onClick={currentCat?.budgetType ? () => setBudgetTypeOpen(true) : undefined}>
-          {budgetLabel ? (
-            <ClearChip tone={effectiveBudgetType === "nodig" ? "sky" : effectiveBudgetType === "sparen" ? "mint" : "butter"} className="h-[26px] px-2.5">
-              {budgetLabel}
-            </ClearChip>
-          ) : (
-            <span className={mutedValue}>—</span>
-          )}
-        </FieldRow>
-        <FieldRow label={t("fields.savingsGoal")} onClick={savingsGoals.length > 0 && !row.isInternalTransfer ? () => setGoalOpen(true) : undefined}>
-          {goal ? <span className="truncate">{goal.name}</span> : <span className={mutedValue}>{t("notLinked")}</span>}
-        </FieldRow>
-        <FieldRow label={t("fields.note")} onClick={() => setNoteOpen(true)}>
-          {notes ? <span className="truncate">{notes}</span> : <span className={mutedValue}>{t("addNote")}</span>}
-        </FieldRow>
-        <FieldRow label={t("fields.receipt")} onClick={receiptUrl ? () => setViewingReceipt(true) : () => fileRef.current?.click()}>
-          {receiptUrl ? (
-            <span className="inline-flex min-w-0 items-center gap-1.5 text-clear-ember-text">
-              <IconReceipt className="size-4 shrink-0" aria-hidden />
-              <span className="truncate">{t("viewReceipt")}</span>
-            </span>
-          ) : (
-            <span className={mutedValue}>{t("actions.receipt")}</span>
-          )}
-        </FieldRow>
-      </div>
-
-      {/* 4. Budget impact */}
-      {showBudget && (
-        <div className="flex flex-col gap-2.5 rounded-clear-tile bg-clear-tile p-4">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="min-w-0 truncate text-sm font-bold text-clear-ink">
-              {[t("budgetImpact"), currentCat?.name].filter(Boolean).join(" · ")}
-            </span>
-            <span className="shrink-0 text-sm font-bold tabular-nums text-clear-ink">
-              {t("budgetOf", { spent: compactEur(budget!.spent), budget: compactEur(budget!.budget!) })}
-            </span>
-          </div>
-          <ClearProgress
-            value={budgetPct / 100}
-            className="h-2.5"
-            fillClassName={overBy > 0 ? "bg-clear-negative-fill" : budgetPct >= 98 ? "bg-clear-warning-fill" : "bg-clear-primary"}
-          />
-          <span className={cn("text-[13px]", overBy > 0 ? "font-bold text-clear-negative" : "font-semibold text-clear-muted")}>
-            {overBy > 0
-              ? t("overBudget", { amount: compactEur(overBy) })
-              : t("left", { amount: compactEur(Math.max(0, budget!.budget! - budget!.spent)) })}
-          </span>
-        </div>
-      )}
-
-      {/* 5. Next charge of a recurring item */}
-      {nextDate && recurringItem && (
-        <div className="flex flex-col gap-0.5 rounded-clear-tile bg-clear-tile p-4">
-          <span className="text-[13px] font-bold text-clear-muted">{t("nextCharge")}</span>
-          <span className="text-sm font-bold text-clear-ink">
-            {fmtDay(nextDate, { weekday: "short", day: "numeric", month: "short" })} · {formatEur(recurringItem.amount ?? 0)}
-          </span>
-          <span className="text-xs text-clear-muted">
-            {t("inDays", { count: daysUntil(nextDate) })} · {frequencyLabel(recurringItem.frequency)}
-          </span>
-        </div>
-      )}
-
-      {/* 6. The last 12 charges of a recurring item */}
-      {recurringId != null && last12.length > 0 && (
-        <section className="flex flex-col gap-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-[13px] font-bold text-clear-muted">{t("last12")}</h3>
             {priceChange && (
-              <ClearChip tone="peach" icon={priceChange.diff > 0 ? <IconArrowUp aria-hidden /> : <IconArrowDown aria-hidden />}>
-                {t(priceChange.diff > 0 ? "priceUp" : "priceDown", {
+              <ClearChip
+                tone={(priceChange.diff > 0) === isIncomeRow ? "mint" : "peach"}
+                icon={priceChange.diff > 0 ? <IconArrowUp aria-hidden /> : <IconArrowDown aria-hidden />}
+              >
+                <MoneyText>{t(isIncomeRow ? (priceChange.diff > 0 ? "incomeUp" : "incomeDown") : priceChange.diff > 0 ? "priceUp" : "priceDown", {
                   amount: formatEur(Math.abs(priceChange.diff)),
                   month: fmtDay(priceChange.date, { month: "long" }),
-                })}
+                })}</MoneyText>
               </ClearChip>
             )}
           </div>
-          <ChargesChart
-            charges={last12}
-            next={nextDate && recurringItem ? { date: nextDate, value: Math.abs(recurringItem.amount ?? last12[last12.length - 1].value) } : null}
-            locale={locale}
-          />
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs leading-normal text-clear-muted">
-              {[
-                recurringItem ? recurringItem.friendlyName || recurringItem.name : null,
-                recurringItem
-                  ? recurringItem.startDate && isValidISODate(recurringItem.startDate)
-                    ? t("since", { frequency: frequencyLabel(recurringItem.frequency), date: fmtDay(recurringItem.startDate, { month: "long", year: "numeric" }) })
-                    : frequencyLabel(recurringItem.frequency)
-                  : null,
-                paidThisYear > 0 ? t("paidInYear", { amount: formatEur(paidThisYear), year }) : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </span>
-            {recurringItem && (
-              <button type="button" onClick={() => setRecurringDetailOpen(true)} className="shrink-0 text-[13px] font-semibold text-clear-ember-text hover:underline">
-                {t("editRecurring")}
-              </button>
-            )}
-          </div>
-        </section>
-      )}
+        )}
+      </div>
 
-      {/* 7. The category this month, by merchant */}
-      {showContext && currentCat && monthTotal > 0 && (
-        <section className="flex flex-col gap-2.5" data-tip-anchor="activityContext">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-[13px] font-bold text-clear-muted">{t("thisMonth", { category: currentCat.name })}</h3>
-            <span className="text-xs font-bold tabular-nums text-clear-ink">
-              {contextBudget != null
-                ? t("budgetOf", { spent: formatEur(monthTotal), budget: compactEur(contextBudget) })
-                : formatEur(monthTotal)}
-            </span>
-          </div>
-          <div className="flex h-3 gap-0.5 overflow-hidden rounded-full bg-clear-tile">
-            {segments.map((s, i) => {
-              const own = s.name.toLowerCase() === ownMerchant;
-              return (
-                <span
-                  key={s.name}
-                  title={`${s.name} ${formatEur(s.amount)}`}
-                  style={{
-                    width: `${Math.min(100, (s.amount / denominator) * 100).toFixed(1)}%`,
-                    background: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
-                    boxShadow: own ? "inset 0 0 0 2px var(--clr-ink)" : undefined,
-                    opacity: own ? 1 : 0.75,
-                  }}
-                />
-              );
-            })}
-          </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {segments.map((s, i) => {
-              const own = s.name.toLowerCase() === ownMerchant;
-              return (
-                <span key={s.name} className={cn("inline-flex items-center gap-1.5 text-xs", own ? "font-bold text-clear-ink" : "font-medium text-clear-ink-2")}>
-                  <span className="size-2 rounded-full" style={{ background: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }} />
-                  {s.name} {formatEur(s.amount)}
+      {/* 3. Summary | Details */}
+      <div role="tablist" aria-label={t("tabs.label")} data-tip-anchor="activityDetailTabs" className="flex gap-1 rounded-full bg-clear-tile p-[5px]">
+        {(["summary", "details"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            id={`tx-tab-${key}`}
+            aria-selected={tab === key}
+            aria-controls={`tx-panel-${key}`}
+            tabIndex={tab === key ? 0 : -1}
+            onClick={() => setTab(key)}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+                e.preventDefault();
+                setTab(tab === "summary" ? "details" : "summary");
+              }
+            }}
+            className={cn(
+              "inline-flex h-9 flex-1 cursor-pointer items-center justify-center rounded-full text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+              tab === key ? "bg-clear-primary font-bold text-clear-primary-ink" : "font-semibold text-clear-ink-2 hover:text-clear-ink",
+            )}
+          >
+            {t(`tabs.${key}`)}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+
+  const summary = (
+    <div role="tabpanel" id="tx-panel-summary" aria-labelledby="tx-tab-summary" className="flex flex-col gap-4">
+      {/* What it is and what it did to the budget */}
+      <section aria-label={t("tabs.summary")} className="flex flex-col gap-4 rounded-clear-tile bg-clear-tile p-4">
+        <div className="flex items-center gap-3">
+          {row.isInternalTransfer ? (
+            <button type="button" onClick={() => setTransferOpen(true)} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left">
+              <span className="flex min-w-0 flex-col">
+                <span className="text-xs font-semibold text-clear-muted">{t("fields.transferType")}</span>
+                <span className="inline-flex items-center gap-1 truncate text-[15px] font-extrabold">
+                  {(transferType && TRANSFER_TYPE_LABELS[transferType]) || t("transferAuto")}
+                  <IconChevronDown className="size-3.5 shrink-0 text-clear-muted" stroke={2.2} aria-hidden />
                 </span>
-              );
-            })}
-            {contextBudget != null && (
-              <span className="text-xs text-clear-muted">· {t("left", { amount: compactEur(Math.max(0, contextBudget - monthTotal)) })}</span>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* 8. Details from the bank line */}
-      {(infoFields.length > 0 || (row.rawDescription && row.rawDescription !== row.description)) && (
-        <section className="flex flex-col gap-2">
-          <h3 className="text-[13px] font-bold text-clear-muted">{t("details")}</h3>
-          <div className="flex flex-col gap-1 rounded-clear-tile bg-clear-tile p-4">
-            {infoFields.map((f) => (
-              <span key={f.key} className="text-[13px] text-clear-muted">
-                {f.label}: <span className="font-semibold text-clear-ink-2">{f.value}</span>
               </span>
-            ))}
-            {row.rawDescription && row.rawDescription !== row.description && (
-              <p className="break-all text-[13px] text-clear-muted">{row.rawDescription}</p>
-            )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={row.isSplit ? undefined : () => setPickerOpen(true)}
+              disabled={!!row.isSplit}
+              aria-label={t("categoryChange", { name: row.isSplit ? t("splitInto", { count: row.splitCount }) : currentCat?.name ?? t("choose") })}
+              className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left disabled:cursor-default"
+            >
+              {currentCat && !row.isSplit && (
+                <span className="inline-flex shrink-0 [&>*]:size-10! [&>*]:rounded-clear-icon!">
+                  <Icon iconKey={currentCat.icon} color={currentCat.color} size="md" glyphSize={18} soft />
+                </span>
+              )}
+              <span className="flex min-w-0 flex-col">
+                <span className="text-xs font-semibold text-clear-muted">{t("fields.category")}</span>
+                <span className={cn("inline-flex min-w-0 items-center gap-1 text-[15px] font-extrabold", !currentCat && !row.isSplit && "text-clear-warning")}>
+                  <span className="truncate">{row.isSplit ? row.splitSummary ?? t("splitInto", { count: row.splitCount }) : currentCat?.name ?? t("choose")}</span>
+                  {!row.isSplit && <IconChevronDown className="size-3.5 shrink-0 text-clear-muted" stroke={2.2} aria-hidden />}
+                </span>
+              </span>
+            </button>
+          )}
+          {budgetLabel && (
+            <button
+              type="button"
+              onClick={currentCat?.budgetType ? () => setBudgetTypeOpen(true) : undefined}
+              disabled={!currentCat?.budgetType}
+              aria-label={t("budgetTypeChange", { type: budgetLabel })}
+              className={cn(
+                "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-full px-3 text-[13px] font-extrabold disabled:cursor-default",
+                effectiveBudgetType === "nodig" ? "bg-clear-sky text-clear-sky-ink" : effectiveBudgetType === "sparen" ? "bg-clear-mint text-clear-mint-ink" : "bg-clear-butter text-clear-butter-ink",
+              )}
+            >
+              {budgetLabel}
+              {currentCat?.budgetType && <IconChevronDown className="size-3.5" stroke={2.2} aria-hidden />}
+            </button>
+          )}
+        </div>
+
+        {showBudget && (
+          <div className="flex flex-col gap-2 border-t border-clear-line pt-3.5">
+            <div className="flex items-baseline justify-between gap-2 text-sm">
+              <span className="font-semibold text-clear-ink-2">{t("budgetThisPeriod")}</span>
+              <span className="tabular-nums text-clear-muted">
+                <MoneyText>{t.rich("budgetOfRich", {
+                  spent: formatEur(budget!.spent),
+                  budget: compactEur(budget!.budget!),
+                  b: (c) => <b className="text-[15px] text-clear-ink"><MoneyText>{c}</MoneyText></b>,
+                })}</MoneyText>
+              </span>
+            </div>
+            <div aria-hidden className="clear-hatch flex h-2.5 overflow-hidden rounded-full">
+              <span
+                className={overBy > 0 ? "bg-clear-negative-fill" : "bg-clear-primary"}
+                style={{ width: `${Math.min(100, (Math.max(0, budget!.spent - ownPart) / budget!.budget!) * 100)}%` }}
+              />
+              <span className="bg-clear-ember" style={{ width: `${Math.min(100, (ownPart / budget!.budget!) * 100)}%` }} />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px]">
+              {ownPart > 0 ? (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-clear-ink-2">
+                  <span aria-hidden className="size-2.5 rounded-[3px] bg-clear-ember" />
+                  <MoneyText>{t("thisPayment", { amount: formatEur(ownPart) })}</MoneyText>
+                </span>
+              ) : (
+                <span />
+              )}
+              <span className={cn(overBy > 0 ? "font-bold text-clear-negative" : "font-semibold text-clear-muted")}>
+                <MoneyText>{overBy > 0
+                  ? t("overBudget", { amount: compactEur(overBy) })
+                  : period
+                    ? t("leftDays", { amount: compactEur(Math.max(0, budget!.budget! - budget!.spent)), count: period.daysLeft })
+                    : t("left", { amount: compactEur(Math.max(0, budget!.budget! - budget!.spent)) })}</MoneyText>
+              </span>
+            </div>
           </div>
-        </section>
+        )}
+      </section>
+
+      {/* Edit details: the remaining fields, folded away until needed */}
+      <div className="flex flex-col overflow-hidden rounded-clear-tile border border-clear-line">
+        <button
+          type="button"
+          onClick={() => setFieldsOpen((o) => !o)}
+          aria-expanded={fieldsOpen}
+          aria-controls="tx-fields"
+          className="flex min-h-[60px] w-full cursor-pointer items-center gap-3 px-4 text-left transition-colors hover:bg-clear-tile"
+        >
+          <IconPencil className="size-[18px] shrink-0 text-clear-ink-2" aria-hidden />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-sm font-bold">{t("editDetails")}</span>
+            <span className="truncate text-xs text-clear-muted">{fieldPreview}</span>
+          </span>
+          <IconChevronDown className={cn("size-4 shrink-0 text-clear-muted transition-transform duration-200", fieldsOpen && "rotate-180")} stroke={2.2} aria-hidden />
+        </button>
+        <div
+          id="tx-fields"
+          className={cn("grid transition-[grid-template-rows] duration-200 ease-out", fieldsOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}
+        >
+          <div className="min-h-0 overflow-hidden" inert={!fieldsOpen}>
+            <div className="flex flex-col border-t border-clear-line px-3">
+              {/* What this cost you after a payback or correction; the correction is editable. */}
+              {isExpense && (paidBack > 0 || row.correctedAmount != null) && (
+                <FieldRow label={t("fields.yourShare")} onClick={paidBack > 0 ? undefined : () => setCorrectOpen(true)}>
+                  <span className="truncate tabular-nums">
+                    <MoneyText>{paidBack > 0
+                      ? t("shareAfterPayback", { amount: formatEur(Math.max(0, total - paidBack)) })
+                      : t("shareCorrected", { amount: formatEur(row.correctedAmount!), original: formatEur(row.amount) })}</MoneyText>
+                  </span>
+                </FieldRow>
+              )}
+              {!row.isInternalTransfer && (
+                <FieldRow label={t("fields.merchant")} onClick={openMerchantOrPicker}>
+                  {merchant ? <span className="truncate">{merchant.name}</span> : <span className={mutedValue}>{t("unknown")}</span>}
+                </FieldRow>
+              )}
+              <FieldRow label={t("fields.savingsGoal")} onClick={savingsGoals.length > 0 && !row.isInternalTransfer ? () => setGoalOpen(true) : undefined}>
+                {goal ? <span className="truncate">{goal.name}</span> : <span className={mutedValue}>{t("notLinked")}</span>}
+              </FieldRow>
+              <FieldRow label={t("fields.note")} onClick={() => setNoteOpen(true)}>
+                {notes ? <span className="truncate">{notes}</span> : <span className={mutedValue}>{t("addNote")}</span>}
+              </FieldRow>
+              <FieldRow label={t("fields.receipt")} onClick={receiptUrl ? () => setViewingReceipt(true) : () => fileRef.current?.click()}>
+                {receiptUrl ? (
+                  <span className="inline-flex min-w-0 items-center gap-1.5 text-clear-ember-text">
+                    <IconReceipt className="size-4 shrink-0" aria-hidden />
+                    <span className="truncate">{t("viewReceipt")}</span>
+                  </span>
+                ) : (
+                  <span className={mutedValue}>{t("actions.receipt")}</span>
+                )}
+              </FieldRow>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Where it happened: a button card; the map itself opens in a dialog */}
+      {location && (
+        <button
+          type="button"
+          onClick={() => setMapOpen(true)}
+          className="group flex w-full cursor-pointer items-center gap-3.5 text-left"
+        >
+          <MapThumb />
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-xs font-semibold text-clear-muted">{t("location.label")}</span>
+            <span className="truncate text-[15px] font-bold group-hover:underline group-hover:underline-offset-4">{location.label}</span>
+            <span className="text-xs text-clear-muted">{t("location.open")}</span>
+          </span>
+          <IconChevronRight className="size-4 shrink-0 text-clear-muted" stroke={2.2} aria-hidden />
+        </button>
       )}
 
-      {/* 9. Where it happened. */}
-      {!row.isInternalTransfer && <TransactionMap name={row.customName || row.description} />}
-
-      {/* 10. Actions: the main ones as tiles, the rest in More actions */}
-      <div className="grid grid-cols-3 gap-2">
-        <ActionTile
-          icon={<IconArrowsSplit2 aria-hidden />}
-          label={row.isSplit ? t("actions.adjustSplit") : t("actions.split")}
-          disabled={!!row.isInternalTransfer}
-          onClick={() => setSplitOpen(true)}
-        />
-        <ActionTile icon={<IconLink aria-hidden />} label={t("actions.link")} disabled={row.direction !== "income"} onClick={() => setLinkOpen(true)} />
-        <ActionTile icon={<IconRepeat aria-hidden />} label={t("actions.recurring")} disabled={recurringId != null} onClick={() => setRecurringOpen(true)} />
-        <ActionTile icon={<IconBolt aria-hidden />} label={t("actions.rule")} onClick={() => setRule(newRuleDraft(row, categoryId, "create"))} />
-        <ActionTile
-          icon={<IconCamera aria-hidden />}
-          label={receiptUrl ? t("actions.replaceReceipt") : t("actions.receipt")}
-          onClick={() => fileRef.current?.click()}
-        />
-        <ActionTile
-          icon={excluded ? <IconEye aria-hidden /> : <IconEyeOff aria-hidden />}
-          label={excluded ? t("actions.include") : t("actions.exclude")}
-          onClick={toggleExcluded}
-        />
-      </div>
-
-      <div className="flex items-center justify-between gap-3 pt-1">
-        {moreMenu}
-        <button type="button" onClick={remove} className={cn(clearButtonVariants({ variant: "danger", size: "md" }), "px-3")}>
-          <IconTrash aria-hidden />
-          {t("menu.delete")}
+      {/* This month at the merchant, or the recurring item's rhythm: opens the history */}
+      {historyRow && (
+        <button
+          type="button"
+          onClick={() => setHistoryOpen(true)}
+          data-tip-anchor="activityHistory"
+          className="group flex min-h-14 w-full cursor-pointer items-center gap-3.5 border-t border-clear-line pt-3 text-left"
+        >
+          <span aria-hidden className="inline-flex size-10 shrink-0 items-center justify-center rounded-clear-icon bg-clear-tile text-clear-ink-2">
+            {merchantRow ? <ColumnsGlyph /> : <IconRepeat className="size-[18px]" stroke={1.9} />}
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="truncate text-sm font-bold group-hover:underline group-hover:underline-offset-4"><MoneyText>{historyRow.title}</MoneyText></span>
+            <span className="truncate text-xs text-clear-muted"><MoneyText>{historyRow.sub}</MoneyText></span>
+          </span>
+          <IconChevronRight className="size-4 shrink-0 text-clear-muted" stroke={2.2} aria-hidden />
         </button>
-      </div>
+      )}
+    </div>
+  );
+
+  // The raw bank data, read-only, with copy buttons for the codes people paste elsewhere.
+  const bankRows: { key: string; label: string; value: string; copy?: boolean }[] = [
+    ...infoFields.map((f) => ({ key: f.key, label: f.label, value: f.value, copy: /iban|ref|kenmerk|id/i.test(`${f.key} ${f.label}`) })),
+  ];
+  const transactionRows: { key: string; label: string; value: string; copy?: boolean }[] = [
+    { key: "date", label: t("bank.date"), value: dateLabel },
+    ...(row.bankName ? [{ key: "account", label: t("bank.account"), value: row.bankName }] : []),
+    { key: "amount", label: t("bank.amount"), value: formatEur(row.amount) },
+    ...(row.correctedAmount != null ? [{ key: "corrected", label: t("bank.corrected"), value: formatEur(row.correctedAmount) }] : []),
+    { key: "description", label: t("bank.description"), value: row.description },
+  ];
+
+  const details = (
+    <div role="tabpanel" id="tx-panel-details" aria-labelledby="tx-tab-details" className="flex flex-col gap-4">
+      {bankRows.length > 0 && <BankGroup title={t("bank.fromBank")} rows={bankRows} copyLabel={(label) => t("bank.copy", { label })} copiedLabel={t("bank.copied")} />}
+      <BankGroup title={t("bank.transaction")} rows={transactionRows} copyLabel={(label) => t("bank.copy", { label })} copiedLabel={t("bank.copied")} />
+      {row.rawDescription && row.rawDescription !== row.description && (
+        <section className="flex flex-col gap-2">
+          <h3 className="m-0 text-[13px] font-bold text-clear-muted">{t("bank.raw")}</h3>
+          <p className="m-0 break-all rounded-clear-tile bg-clear-tile p-4 font-mono text-[13px] leading-relaxed text-clear-ink-2">{row.rawDescription}</p>
+        </section>
+      )}
+    </div>
+  );
+
+  // The four main actions as round buttons, More (black) holding the rest and Delete.
+  const actionBar = (
+    <div role="toolbar" aria-label={t("actions.label")} className="flex items-start gap-1">
+      <ActionButton
+        icon={<IconArrowsSplit2 aria-hidden />}
+        label={row.isSplit ? t("actions.adjustSplitShort") : t("actions.split")}
+        disabled={!!row.isInternalTransfer}
+        onClick={() => setSplitOpen(true)}
+      />
+      <ActionButton icon={<IconLink aria-hidden />} label={t("actions.reimburse")} title={t("actions.link")} disabled={row.direction !== "income"} onClick={() => setLinkOpen(true)} />
+      <ActionButton icon={<IconRepeat aria-hidden />} label={t("actions.recurringShort")} title={t("actions.recurring")} disabled={recurringId != null} onClick={() => setRecurringOpen(true)} />
+      <ActionButton icon={<IconBolt aria-hidden />} label={t("actions.ruleShort")} title={t("actions.rule")} onClick={() => setRule(newRuleDraft(row, categoryId))} />
+      {moreMenu}
+    </div>
+  );
+
+  // ── what the popups say about this transaction
+  const txName = resolveDisplayName(row);
+  const txWhen = fmtDay(row.date, { weekday: "short", day: "numeric", month: "short" });
+  const txSubtitle = `${txName} · ${txWhen}`;
+  const signedAmount = `${isExpense ? "−" : "+"}${formatEur(shownAmount)}`;
+  // Correct amount: what the new figure does to the category's budget this period.
+  const correctBudget: BudgetPreview | null =
+    showBudget && inPeriod && currentCat
+      ? { name: currentCat.name, icon: <TxIcon icon={{ iconKey: currentCat.icon, color: currentCat.color }} size="md" />, budget: budget!.budget!, spent: budget!.spent, current: shownAmount }
+      : null;
+  // Brand icon: the row as it would look with the picked icon.
+  const brandPreview = (key: string | null) => (
+    <div className="flex min-h-16 items-center gap-3.5 rounded-clear-tile bg-clear-tile py-2.5 pr-4 pl-2.5">
+      <TxIcon
+        icon={resolveTransactionIcon({
+          ...row,
+          categoryIcon: currentCat?.icon ?? row.categoryIcon,
+          categoryColor: currentCat?.color ?? row.categoryColor,
+          merchantIcon: merchant?.icon ?? row.merchantIcon,
+          merchantColor: merchant?.color ?? row.merchantColor,
+          transferType,
+          brandIcon: key,
+          brandIconColor: null,
+          brandIconBgColor: null,
+        })}
+        size="lg"
+      />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-[15px] font-bold">{txName}</span>
+        <span className="truncate text-[13px] text-clear-muted">{[currentCat?.name, row.bankName, txWhen].filter(Boolean).join(" · ")}</span>
+      </span>
+      <Amount value={isExpense ? -shownAmount : shownAmount} className="shrink-0 text-[15px]" />
+    </div>
+  );
+
+  const body = (
+    <>
+      {header}
+      {tab === "summary" ? summary : details}
     </>
   );
 
@@ -782,78 +937,81 @@ export function TransactionDetailPanel({
     <>
       {layout === "card" ? (
         <div className="flex h-full min-h-0 flex-col" data-tip-anchor="activityDetail">
-          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6 [scrollbar-width:thin]">{body}</div>
+          <div className="relative min-h-0 flex-1">
+            <div className="clear-scrollbar flex h-full flex-col gap-5 overflow-y-auto p-6 pb-10">{body}</div>
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-clear-card" />
+          </div>
+          <div className="shrink-0 border-t border-clear-line px-4 pt-3 pb-4">{actionBar}</div>
         </div>
       ) : (
-        <div className="flex flex-col gap-5 pb-2" data-tip-anchor="activityDetail">
+        <div className="flex flex-col gap-5" data-tip-anchor="activityDetail">
           {body}
+          <div className="sticky bottom-0 -mx-1 border-t border-clear-line bg-[var(--dialog-background)] px-1 pt-3 pb-[calc(0.5rem+var(--sab))]">{actionBar}</div>
         </div>
       )}
       <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={uploadReceipt} />
 
       {/* ── dialogs ─────────────────────────────────────────────────────────── */}
-      <CategoryPickerSheet
+      <SharedCategoryPickerSheet
+        {...NESTED}
         open={pickerOpen && !row.isSplit}
         onOpenChange={setPickerOpen}
         categories={categories}
-        current={categoryId}
-        onPick={applyCategory}
-        title={t("fields.category")}
+        current={categoryId != null ? String(categoryId) : undefined}
+        apply={{
+          ids: [row.id],
+          names: [resolveDisplayName(row)],
+          // A recurring item already decides this row's category; a rule would be redundant.
+          allowRule: recurringId == null,
+          onApplied: applyCategory,
+        }}
       />
 
-      <Dialog open={goalOpen} onOpenChange={setGoalOpen}>
-        <DialogContent {...NESTED} title={t("chooseGoal")}>
-          <div className="flex max-h-[60vh] flex-col gap-1 overflow-y-auto">
-            <ChoiceRow active={goalId == null} onClick={() => applyGoal(null)}>
-              {t("notLinked")}
-            </ChoiceRow>
-            {savingsGoals.map((g) => (
-              <ChoiceRow key={g.id} active={goalId === g.id} onClick={() => applyGoal(g.id)}>
-                <Icon iconKey={g.icon} color={g.color} size="xs" round />
-                {g.name}
-              </ChoiceRow>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ChoiceDialog open={goalOpen} onOpenChange={setGoalOpen} title={t("chooseGoal")} subtitle={txSubtitle}>
+        <ChoiceRow active={goalId == null} onClick={() => applyGoal(null)}>
+          {t("notLinked")}
+        </ChoiceRow>
+        {savingsGoals.map((g) => (
+          <ChoiceRow key={g.id} active={goalId === g.id} onClick={() => applyGoal(g.id)}>
+            <span aria-hidden className="inline-flex shrink-0 [&>*]:size-9! [&>*]:rounded-clear-icon!">
+              <Icon iconKey={g.icon} color={g.color} size="sm" glyphSize={16} soft />
+            </span>
+            <span className="truncate">{g.name}</span>
+          </ChoiceRow>
+        ))}
+      </ChoiceDialog>
 
-      <Dialog open={budgetTypeOpen} onOpenChange={setBudgetTypeOpen}>
-        <DialogContent {...NESTED} title={t("fields.budgetType")}>
-          <div className="flex flex-col gap-1">
-            <ChoiceRow active={budgetTypeOverride == null} onClick={() => saveBudgetType(null)}>
-              {t("budgetTypeDefault", {
-                type: currentCat?.budgetType && BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]
-                  ? t(`budgetType.${BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]}`)
-                  : "—",
-              })}
-            </ChoiceRow>
-            {(["nodig", "willen", "sparen"] as const).map((key) => (
-              <ChoiceRow key={key} active={normalizeBudgetType(budgetTypeOverride) === key} onClick={() => saveBudgetType(key)}>
-                {t(`budgetType.${BUDGET_KEY[key]}`)}
-              </ChoiceRow>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ChoiceDialog open={budgetTypeOpen} onOpenChange={setBudgetTypeOpen} title={t("fields.budgetType")} subtitle={currentCat?.name}>
+        <ChoiceRow active={budgetTypeOverride == null} onClick={() => saveBudgetType(null)}>
+          {t("budgetTypeDefault", {
+            type: currentCat?.budgetType && BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]
+              ? t(`budgetType.${BUDGET_KEY[normalizeBudgetType(currentCat.budgetType)]}`)
+              : "—",
+          })}
+        </ChoiceRow>
+        {(["nodig", "willen", "sparen"] as const).map((key) => (
+          <ChoiceRow key={key} active={normalizeBudgetType(budgetTypeOverride) === key} onClick={() => saveBudgetType(key)}>
+            <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", key === "nodig" ? "bg-clear-sky-ink" : key === "sparen" ? "bg-clear-mint-ink" : "bg-clear-butter-ink")} />
+            {t(`budgetType.${BUDGET_KEY[key]}`)}
+          </ChoiceRow>
+        ))}
+      </ChoiceDialog>
 
-      <Dialog open={transferOpen} onOpenChange={setTransferOpen}>
-        <DialogContent {...NESTED} title={t("fields.transferType")}>
-          <div className="flex flex-col gap-1">
-            <ChoiceRow active={transferType == null} onClick={() => saveTransferType(null)}>
-              {t("transferAuto")}
-            </ChoiceRow>
-            {TRANSFER_TYPES.map((x) => (
-              <ChoiceRow key={x.value} active={transferType === x.value} onClick={() => saveTransferType(x.value)}>
-                {x.label}
-              </ChoiceRow>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ChoiceDialog open={transferOpen} onOpenChange={setTransferOpen} title={t("fields.transferType")} subtitle={txSubtitle}>
+        <ChoiceRow active={transferType == null} onClick={() => saveTransferType(null)}>
+          {t("transferAuto")}
+        </ChoiceRow>
+        {TRANSFER_TYPES.map((x) => (
+          <ChoiceRow key={x.value} active={transferType === x.value} onClick={() => saveTransferType(x.value)}>
+            {x.label}
+          </ChoiceRow>
+        ))}
+      </ChoiceDialog>
 
       <NoteDialog
         open={noteOpen}
         onOpenChange={setNoteOpen}
+        subtitle={txSubtitle}
         initial={notes ?? ""}
         onSave={async (value) => {
           const next = value.trim() || null;
@@ -867,8 +1025,11 @@ export function TransactionDetailPanel({
       <AmountDialog
         open={correctOpen}
         onOpenChange={setCorrectOpen}
+        subtitle={txSubtitle}
         original={row.amount}
+        isExpense={row.direction === "expense"}
         initial={row.correctedAmount}
+        budget={correctBudget}
         onSave={async (value) => {
           await patchTransaction({ id: row.id, correctedAmount: value });
           setCorrectOpen(false);
@@ -879,7 +1040,9 @@ export function TransactionDetailPanel({
       <BrandIconDialog
         open={iconOpen}
         onOpenChange={setIconOpen}
+        subtitle={txName}
         initial={row.brandIcon}
+        preview={brandPreview}
         onSave={async (key) => {
           await patchTransaction({ id: row.id, brandIcon: key, brandIconColor: null, brandIconBgColor: null });
           setIconOpen(false);
@@ -892,7 +1055,7 @@ export function TransactionDetailPanel({
           open={splitOpen}
           onOpenChange={setSplitOpen}
           transactionId={row.id}
-          description={row.description}
+          subtitle={`${txSubtitle} · ${signedAmount}`}
           totalAmount={total}
           categories={categories}
           initialSplits={row.splits}
@@ -930,31 +1093,77 @@ export function TransactionDetailPanel({
         onClose={() => { setRecurringDetailOpen(false); router.refresh(); }}
       />
 
-      <RuleDialog draft={rule} categories={categories} onClose={() => { setRule(null); router.refresh(); }} />
+      <HistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        title={merchant?.name ?? resolveDisplayName(row)}
+        isIncome={isIncomeRow}
+        merchantId={row.direction === "expense" ? merchantId : null}
+        period={merchantPeriod}
+        periodLabel={tHistory("thisMonth")}
+        recurring={
+          recurringItem && last12.length > 0
+            ? {
+                charges: last12,
+                next: nextDate ? { date: nextDate, value: Math.abs(recurringItem.amount ?? last12[last12.length - 1].value) } : null,
+                info: [
+                  recurringItem.friendlyName || recurringItem.name,
+                  recurringItem.startDate && isValidISODate(recurringItem.startDate)
+                    ? t("since", { frequency: frequencyLabel(recurringItem.frequency), date: fmtDay(recurringItem.startDate, { month: "long", year: "numeric" }) })
+                    : frequencyLabel(recurringItem.frequency),
+                  paidThisYear > 0 ? t(isIncomeRow ? "receivedInYear" : "paidInYear", { amount: formatEur(paidThisYear), year }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · "),
+              }
+            : null
+        }
+        onEditRecurring={recurringItem ? () => { setHistoryOpen(false); setRecurringDetailOpen(true); } : undefined}
+        onOpenProfile={merchant ? () => { setHistoryOpen(false); setOpenMerchant({ id: merchant.id, name: merchant.name }); } : undefined}
+        locale={locale}
+      />
+
+      {location && (
+        <Dialog open={mapOpen} onOpenChange={setMapOpen}>
+          <DialogContent {...NESTED} title={location.label}>
+            {mapOpen && <TransactionMap name={locationName} />}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      <TransactionRuleDialog draft={rule} categories={categories} onClose={() => { setRule(null); router.refresh(); }} />
 
       <MerchantDetailPortal merchant={openMerchant} onClose={() => setOpenMerchant(null)} onChangeMerchant={() => setMerchantPickerOpen(true)} />
       <MerchantPickerDialog
         open={merchantPickerOpen}
         currentId={merchant?.id ?? null}
         suggestion={guessMerchant(row.description)}
+        subtitle={t("merchantFor", { name: txName, amount: signedAmount })}
         onOpenChange={setMerchantPickerOpen}
         onPick={pickMerchant}
       />
 
-      {viewingReceipt && receiptUrl && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90" onClick={() => setViewingReceipt(false)}>
-          <button
-            type="button"
-            onClick={() => setViewingReceipt(false)}
-            aria-label={t("close")}
-            className="absolute right-4 top-[calc(1rem+var(--sat))] flex size-10 items-center justify-center rounded-full text-white"
-          >
-            <IconX className="size-5" />
-          </button>
-          {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded receipt */}
-          <img src={receiptUrl} alt="" className="max-h-full max-w-full object-contain" />
-        </div>
-      )}
+      <ReceiptViewer
+        open={viewingReceipt}
+        onOpenChange={setViewingReceipt}
+        url={receiptUrl}
+        name={txName}
+        transaction={
+          <div className="flex items-center gap-3 rounded-clear-tile border border-clear-line p-3">
+            <TxIcon icon={icon} size="md" />
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="truncate text-[15px] font-bold">{txName}</span>
+              <span className="truncate text-[13px] text-clear-muted">{[txWhen, currentCat?.name].filter(Boolean).join(" · ")}</span>
+            </span>
+            <Amount value={isExpense ? -shownAmount : shownAmount} className="shrink-0 text-[15px]" />
+          </div>
+        }
+        onReplace={() => fileRef.current?.click()}
+        onRemove={async () => {
+          setViewingReceipt(false);
+          await removeReceipt();
+        }}
+      />
     </>
   );
 }
@@ -981,18 +1190,85 @@ function FieldRow({ label, onClick, children }: { label: string; onClick?: () =>
   );
 }
 
-/** One of the action tiles under the panel: icon top, label bottom. */
-function ActionTile({ icon, label, onClick, disabled }: { icon: React.ReactNode; label: string; onClick: () => void; disabled?: boolean }) {
+/** One of the round buttons in the panel's action bar: a 44px circle with its label under it. */
+function ActionButton({
+  icon,
+  label,
+  title,
+  onClick,
+  disabled,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  /** The longer name, as a tooltip, when the label is shortened. */
+  title?: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex min-h-[76px] min-w-0 flex-col items-start justify-between gap-2 rounded-clear-tile bg-clear-tile p-3 text-left text-[13px] font-bold leading-tight text-clear-ink transition-colors hover:bg-clear-line disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-clear-tile [&_svg]:size-5 [&_svg]:shrink-0"
+      title={title}
+      aria-label={title}
+      className="group flex min-w-0 flex-1 cursor-pointer flex-col items-center gap-1.5 text-xs font-bold text-clear-ink outline-none disabled:cursor-not-allowed disabled:opacity-40"
     >
-      {icon}
-      <span className="break-words">{label}</span>
+      <span className="inline-flex size-11 items-center justify-center rounded-full bg-clear-tile transition-colors group-hover:bg-clear-line group-disabled:group-hover:bg-clear-tile group-focus-visible:ring-3 group-focus-visible:ring-clear-ember/50 [&_svg]:size-5">
+        {icon}
+      </span>
+      <span className="max-w-full truncate">{label}</span>
     </button>
+  );
+}
+
+/** A group of read-only bank fields: label over value, with a copy button where useful. */
+function BankGroup({
+  title,
+  rows,
+  copyLabel,
+  copiedLabel,
+}: {
+  title: string;
+  rows: { key: string; label: string; value: string; copy?: boolean }[];
+  copyLabel: (label: string) => string;
+  copiedLabel: string;
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
+  async function copy(key: string, value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(key);
+      setTimeout(() => setCopied((c) => (c === key ? null : c)), 1500);
+    } catch {
+      // Clipboard blocked: nothing to do, the value is on screen to select by hand.
+    }
+  }
+  return (
+    <section className="flex flex-col gap-2">
+      <h3 className="m-0 text-[13px] font-bold text-clear-muted">{title}</h3>
+      <dl className="m-0 flex flex-col rounded-clear-tile bg-clear-tile px-4">
+        {rows.map((r) => (
+          <div key={r.key} className="flex items-center gap-3 border-b border-clear-line py-2.5 last:border-b-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <dt className="text-xs font-semibold text-clear-muted">{r.label}</dt>
+              <dd className="m-0 break-words text-sm font-bold text-clear-ink"><MoneyText>{r.value}</MoneyText></dd>
+            </div>
+            {r.copy && (
+              <button
+                type="button"
+                onClick={() => copy(r.key, r.value)}
+                aria-label={copied === r.key ? copiedLabel : copyLabel(r.label)}
+                title={copied === r.key ? copiedLabel : copyLabel(r.label)}
+                className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-card text-clear-ink-2 transition-colors hover:text-clear-ink"
+              >
+                {copied === r.key ? <IconCheck className="size-3.5" stroke={2.6} /> : <IconCopy className="size-3.5" stroke={2} />}
+              </button>
+            )}
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -1051,347 +1327,785 @@ function ChargesChart({
   );
 }
 
+/** The calendar month a date falls in, as YYYY-MM-DD bounds. */
+function monthOf(date: string) {
+  const [y, m] = date.slice(0, 7).split("-").map(Number);
+  const last = new Date(y, m, 0).getDate();
+  const mm = String(m).padStart(2, "0");
+  return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${String(last).padStart(2, "0")}` };
+}
+
+function isIncomeRowOf(row: TransactionRow) {
+  return row.direction === "income";
+}
+
+/** The mockup's column-chart glyph for the merchant row. */
+function ColumnsGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 20V12M10 20V6M16 20v-9M22 20H2" />
+    </svg>
+  );
+}
+
+/** Whole days from a date until today (0 on the day itself). */
+function daysUntilFrom(date: string) {
+  const a = new Date(`${date}T12:00:00`).getTime();
+  const b = new Date(`${isoToday()}T12:00:00`).getTime();
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
+
+function shownAmountOf(row: TransactionRow) {
+  return Math.abs(row.isReimbursement ? row.amount : row.correctedAmount ?? row.amount);
+}
+
+/** A small drawn map for the location card — decorative, theme-aware. */
+function MapThumb() {
+  return (
+    <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden className="shrink-0 overflow-hidden rounded-clear-icon">
+      <rect width="72" height="72" fill="var(--clr-tile)" />
+      <rect x="6" y="6" width="22" height="16" rx="3" fill="var(--clr-line)" />
+      <rect x="6" y="30" width="22" height="14" rx="3" fill="var(--clr-mint)" />
+      <rect x="40" y="6" width="26" height="22" rx="3" fill="var(--clr-line)" />
+      <rect x="44" y="40" width="22" height="12" rx="3" fill="var(--clr-line)" />
+      <path d="M0 26H72M34 0V72" stroke="var(--clr-card)" strokeWidth="5" />
+      <path d="M0 62C20 54 46 66 72 56" stroke="var(--clr-sky)" strokeWidth="6" fill="none" />
+      <path d="M34 42c-5-6-8-10-8-15a8 8 0 0 1 16 0c0 5-3 9-8 15z" fill="var(--clr-ember)" />
+      <circle cx="34" cy="27" r="3" fill="var(--clr-card)" />
+    </svg>
+  );
+}
+
+type MerchantHistory = { chart: { date: string; actual: number | null }[]; recent: { id: number; date: string; amount: number }[]; visitCount: number; avgVisit: number | null };
+
+/**
+ * The history behind a transaction: a recurring item's last 12 charges or payments
+ * (with the price change and the next one), and for a merchant the last 12 months of
+ * spend there plus the latest visits. Opened from the history row of the panel.
+ */
+function HistoryDialog({
+  open,
+  onOpenChange,
+  title,
+  isIncome,
+  merchantId,
+  period,
+  periodLabel,
+  recurring,
+  onEditRecurring,
+  onOpenProfile,
+  locale,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  isIncome: boolean;
+  merchantId: number | null;
+  period: { total: number; visits: number } | null;
+  /** "This month", or the transaction's month name. */
+  periodLabel: string;
+  recurring: { charges: { date: string; value: number }[]; next: { date: string; value: number } | null; info: string } | null;
+  onEditRecurring?: () => void;
+  onOpenProfile?: () => void;
+  locale: string;
+}) {
+  const t = useTranslations("activity.detail.history");
+  const tDetail = useTranslations("activity.detail");
+  const [history, setHistory] = useState<MerchantHistory | null>(null);
+
+  useEffect(() => {
+    if (!open || merchantId == null) return;
+    let cancelled = false;
+    fetch(`/api/merchants/${merchantId}/detail`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled && d) setHistory(d); })
+      .catch(() => { /* the section stays empty */ });
+    return () => { cancelled = true; };
+  }, [open, merchantId]);
+
+  // The detail's chart is cumulative per month; the last 12 differences are the months.
+  const months: { date: string; value: number }[] = [];
+  if (history) {
+    const pts = history.chart;
+    for (let i = Math.max(1, pts.length - 12); i < pts.length; i++) {
+      months.push({ date: pts[i].date, value: Math.max(0, (pts[i].actual ?? 0) - (pts[i - 1].actual ?? 0)) });
+    }
+  }
+  const fmt = (date: string, opts: Intl.DateTimeFormatOptions) => new Date(`${date}T12:00:00`).toLocaleDateString(locale, opts);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent {...NESTED} title={title}>
+        <div className="flex flex-col gap-6 pb-1 font-clear text-clear-ink">
+          {recurring && (
+            <section className="flex flex-col gap-3">
+              <h3 className="m-0 text-sm font-bold text-clear-muted">{tDetail(isIncome ? "last12Income" : "last12")}</h3>
+              <ChargesChart charges={recurring.charges} next={recurring.next} locale={locale} />
+              {recurring.next && (
+                <ClearTile className="flex items-center justify-between gap-3 py-3">
+                  <span className="text-[13px] font-semibold text-clear-muted">{tDetail(isIncome ? "nextPayment" : "nextCharge")}</span>
+                  <span className="text-sm font-bold">
+                    <MoneyText>{fmt(recurring.next.date, { weekday: "short", day: "numeric", month: "short" })}</MoneyText> · <MoneyText>{formatEur(recurring.next.value)}</MoneyText>
+                  </span>
+                </ClearTile>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs leading-normal text-clear-muted"><MoneyText>{recurring.info}</MoneyText></span>
+                {onEditRecurring && (
+                  <button type="button" onClick={onEditRecurring} className="shrink-0 cursor-pointer text-[13px] font-bold text-clear-ember-text hover:underline">
+                    {tDetail("editRecurring")}
+                  </button>
+                )}
+              </div>
+            </section>
+          )}
+
+          {merchantId != null && (
+            <section className="flex flex-col gap-3">
+              <h3 className="m-0 text-sm font-bold text-clear-muted">{t("last12Months")}</h3>
+              <div className="grid grid-cols-3 gap-2">
+                <ClearTile className="flex flex-col gap-0.5 p-3">
+                  <span className="text-xs text-clear-muted">{periodLabel}</span>
+                  <span className="clear-amount text-base"><MoneyText>{formatEur(period?.total ?? 0)}</MoneyText></span>
+                </ClearTile>
+                <ClearTile className="flex flex-col gap-0.5 p-3">
+                  <span className="text-xs text-clear-muted">{t("visitsLabel")}</span>
+                  <span className="clear-amount text-base">{period?.visits ?? 0}</span>
+                </ClearTile>
+                <ClearTile className="flex flex-col gap-0.5 p-3">
+                  <span className="text-xs text-clear-muted">{t("avgVisit")}</span>
+                  <span className="clear-amount text-base"><MoneyText>{history?.avgVisit != null ? formatEur(history.avgVisit) : "—"}</MoneyText></span>
+                </ClearTile>
+              </div>
+              {months.length > 0 && <MonthBars months={months} locale={locale} />}
+              {history && history.recent.length > 0 && (
+                <ul className="m-0 flex list-none flex-col p-0">
+                  {history.recent.slice(0, 6).map((v) => (
+                    <li key={v.id} className="flex items-center justify-between gap-3 border-b border-clear-line py-2.5 text-sm last:border-b-0">
+                      <span className="text-clear-ink-2">{fmt(v.date, { weekday: "short", day: "numeric", month: "short" })}</span>
+                      <span className="font-bold tabular-nums"><MoneyText>{formatEur(v.amount)}</MoneyText></span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {onOpenProfile && (
+                <button type="button" onClick={onOpenProfile} className={cn(clearButtonVariants({ variant: "secondary" }), "w-full")}>
+                  {t("openProfile")}
+                </button>
+              )}
+            </section>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Spend per month at a merchant: the current month in ember, the others in line grey. */
+function MonthBars({ months, locale }: { months: { date: string; value: number }[]; locale: string }) {
+  const max = Math.max(...months.map((m) => m.value), 0.01);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div aria-hidden className="flex h-20 items-end gap-1.5">
+        {months.map((m, i) => (
+          <span
+            key={m.date}
+            title={formatEur(m.value)}
+            className={cn("flex-1 rounded-[4px]", i === months.length - 1 ? "bg-clear-ember" : "bg-clear-line")}
+            style={{ height: `${Math.max(4, (m.value / max) * 100)}%` }}
+          />
+        ))}
+      </div>
+      <div className="flex gap-1.5">
+        {months.map((m) => (
+          <span key={m.date} className="flex-1 text-center text-xs text-clear-muted">
+            {new Date(`${m.date.slice(0, 10)}T12:00:00`).toLocaleDateString(locale, { month: "narrow" })}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── small building blocks ──────────────────────────────────────────────────────
+
+/** A transaction, category or merchant icon as the Clear 12px-radius tile. */
+function TxIcon({
+  icon,
+  size,
+}: {
+  icon: { iconKey?: string | null; color?: string | null; background?: string | null; initials?: string | null };
+  size: "md" | "lg";
+}) {
+  return (
+    <span aria-hidden className={cn("inline-flex shrink-0 [&>*]:rounded-clear-icon!", size === "md" ? "[&>*]:size-10!" : "[&>*]:size-11!")}>
+      <Icon
+        iconKey={icon.iconKey}
+        color={icon.color}
+        background={icon.background}
+        initials={icon.initials}
+        size={size === "md" ? "md" : "xl"}
+        glyphSize={size === "md" ? 18 : 22}
+        soft
+      />
+    </span>
+  );
+}
+
+/** "12.5" → "12,50": amount inputs take a comma as the decimal separator. */
+const toAmountInput = (n: number) => n.toFixed(2).replace(".", ",");
+const parseAmountInput = (v: string) => parseFloat(v.replace(",", "."));
+const AMOUNT_INPUT_CHARS = /[^0-9.,]/g;
+
+/** A short choice list (savings goal, budget type, transfer type) in a Clear dialog. */
+function ChoiceDialog({
+  open,
+  onOpenChange,
+  title,
+  subtitle,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  const t = useTranslations("activity.detail");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent {...NESTED} hideHeaderRow title={title} className="gap-5 pt-7 font-clear text-clear-ink">
+        <ClearDialogHeader title={title} subtitle={subtitle} onClose={() => onOpenChange(false)} closeLabel={t("close")} />
+        <div role="listbox" aria-label={title} className="clear-scrollbar -mx-1 flex max-h-[60vh] flex-col gap-1 overflow-y-auto px-1 py-0.5">
+          {children}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function ChoiceRow({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
+      role="option"
+      aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 rounded-clear-row px-3 py-2.5 text-left text-sm transition-colors",
-        active ? "bg-clear-tile font-semibold text-clear-ink" : "text-clear-ink hover:bg-clear-tile/60",
+        "flex min-h-14 w-full shrink-0 cursor-pointer items-center gap-3 rounded-clear-row px-3 text-left text-[15px] text-clear-ink transition-colors",
+        active ? "bg-clear-tile font-bold ring-2 ring-clear-ink ring-inset" : "font-semibold hover:bg-clear-tile",
       )}
     >
-      {children}
+      <span className="flex min-w-0 flex-1 items-center gap-3 truncate">{children}</span>
+      {active && (
+        <span aria-hidden className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink">
+          <IconCheck className="size-4" stroke={2.6} />
+        </span>
+      )}
     </button>
-  );
-}
-
-function CategoryPickerSheet({
-  open,
-  onOpenChange,
-  categories,
-  current,
-  onPick,
-  title,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  categories: Category[];
-  current: number | null;
-  onPick: (value: string) => void;
-  title: string;
-}) {
-  const { budgetType, showSubcategories, filterMenu } = useCategoryFilter({
-    triggerClassName: "size-10 rounded-full border border-clear-line bg-clear-card text-clear-ink",
-  });
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent {...NESTED} fullHeight hideHandle headerAction={filterMenu} title={title}>
-        <CategoryGrid
-          categories={categories}
-          current={current != null ? String(current) : undefined}
-          isFormMode
-          fill
-          budgetType={budgetType}
-          showSubcategories={showSubcategories}
-          onChange={(v) => onPick(v === "none" ? "" : v)}
-          onClose={() => onOpenChange(false)}
-        />
-      </DialogContent>
-    </Dialog>
   );
 }
 
 function NoteDialog({
   open,
   onOpenChange,
+  subtitle,
   initial,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  subtitle: string;
   initial: string;
   onSave: (value: string) => Promise<void>;
 }) {
   const t = useTranslations("activity.detail");
+  const formId = useId();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent {...NESTED} title={t("fields.note")}>
-        {open && <NoteBody initial={initial} onSave={onSave} />}
+      <DialogContent
+        {...NESTED}
+        hideHeaderRow
+        title={t("fields.note")}
+        className="gap-5 pt-7 font-clear text-clear-ink"
+        footer={
+          <ClearDialogFooter>
+            <button type="button" onClick={() => onOpenChange(false)} className={clearButtonVariants({ variant: "secondary" })}>
+              {t("cancel")}
+            </button>
+            <button type="submit" form={formId} className={clearButtonVariants()}>
+              {t("save")}
+            </button>
+          </ClearDialogFooter>
+        }
+      >
+        <ClearDialogHeader title={t("fields.note")} subtitle={subtitle} onClose={() => onOpenChange(false)} closeLabel={t("close")} />
+        {open && <NoteBody formId={formId} initial={initial} onSave={onSave} />}
       </DialogContent>
     </Dialog>
   );
 }
 
-function NoteBody({ initial, onSave }: { initial: string; onSave: (value: string) => Promise<void> }) {
+function NoteBody({ formId, initial, onSave }: { formId: string; initial: string; onSave: (value: string) => Promise<void> }) {
   const t = useTranslations("activity.detail");
   const [value, setValue] = useState(initial);
   const [saving, setSaving] = useState(false);
+  async function submit() {
+    if (saving) return;
+    setSaving(true);
+    await onSave(value);
+    setSaving(false);
+  }
   return (
-    <div className="flex flex-col gap-3">
+    <form
+      id={formId}
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      className="flex flex-col gap-1.5"
+    >
+      <label htmlFor={`${formId}-note`} className="sr-only">
+        {t("fields.note")}
+      </label>
       <textarea
+        id={`${formId}-note`}
         rows={4}
         autoFocus
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder={t("notePlaceholder")}
-        className="w-full resize-none rounded-[14px] bg-clear-tile px-4 py-3 text-sm text-clear-ink outline-none focus:ring-3 focus:ring-clear-ember/25"
-      />
-      <p className="text-xs text-clear-muted">{t("noteHint")}</p>
-      <Button
-        className="w-full"
-        disabled={saving}
-        onClick={async () => {
-          setSaving(true);
-          await onSave(value);
-          setSaving(false);
+        onKeyDown={(e) => {
+          // Enter saves; Shift+Enter starts a new line.
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            submit();
+          }
         }}
-      >
-        {saving ? t("saving") : t("save")}
-      </Button>
-    </div>
+        placeholder={t("notePlaceholder")}
+        className="w-full resize-none rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 py-3 text-[15px] text-clear-ink outline-none transition-colors placeholder:text-clear-placeholder focus:border-clear-ink"
+      />
+      <p className="m-0 text-[13px] text-clear-muted">{t("noteHint")}</p>
+    </form>
   );
 }
+
+type BudgetPreview = { name: string; icon: React.ReactNode; budget: number; spent: number; current: number };
 
 function AmountDialog({
   open,
   onOpenChange,
+  subtitle,
   original,
+  isExpense,
   initial,
+  budget,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  subtitle: string;
   original: number;
+  isExpense: boolean;
   initial: number | null;
+  /** The category's budget this period, when this payment counts in it. */
+  budget: BudgetPreview | null;
   onSave: (value: number | null) => Promise<void>;
 }) {
   const t = useTranslations("activity.detail");
+  const formId = useId();
+  const [saving, setSaving] = useState(false);
+  async function save(value: number | null) {
+    setSaving(true);
+    await onSave(value);
+    setSaving(false);
+  }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent {...NESTED} title={t("menu.correctAmount")}>
-        {open && <AmountBody original={original} initial={initial} onSave={onSave} />}
+      <DialogContent
+        {...NESTED}
+        hideHeaderRow
+        title={t("menu.correctAmount")}
+        className="gap-5 pt-7 font-clear text-clear-ink"
+        footer={
+          <ClearDialogFooter
+            destructive={
+              initial != null ? (
+                <button type="button" onClick={() => save(null)} disabled={saving} className={clearButtonVariants({ variant: "danger" })}>
+                  {t("correct.remove")}
+                </button>
+              ) : undefined
+            }
+          >
+            <button type="button" onClick={() => onOpenChange(false)} className={clearButtonVariants({ variant: "secondary" })}>
+              {t("cancel")}
+            </button>
+            <button type="submit" form={formId} disabled={saving} className={clearButtonVariants()}>
+              {saving ? t("saving") : t("save")}
+            </button>
+          </ClearDialogFooter>
+        }
+      >
+        <ClearDialogHeader
+          title={t("menu.correctAmount")}
+          subtitle={subtitle}
+          icon={
+            <IconTile tone="peach">
+              <IconPencil stroke={1.9} />
+            </IconTile>
+          }
+          onClose={() => onOpenChange(false)}
+          closeLabel={t("close")}
+        />
+        {open && <AmountBody formId={formId} original={original} isExpense={isExpense} initial={initial} budget={budget} onSave={save} />}
+        <AnchoredTip id="correctAmountPreview" anchor="correctAmountPreview" active={open && budget != null} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function AmountBody({ original, initial, onSave }: { original: number; initial: number | null; onSave: (value: number | null) => Promise<void> }) {
+function AmountBody({
+  formId,
+  original,
+  isExpense,
+  initial,
+  budget,
+  onSave,
+}: {
+  formId: string;
+  original: number;
+  isExpense: boolean;
+  initial: number | null;
+  budget: BudgetPreview | null;
+  onSave: (value: number | null) => Promise<void>;
+}) {
   const t = useTranslations("activity.detail");
-  const [value, setValue] = useState(initial != null ? String(initial) : "");
-  const [saving, setSaving] = useState(false);
+  const [value, setValue] = useState(initial != null ? toAmountInput(initial) : "");
+  const parsed = parseAmountInput(value);
+  const valid = value.trim() !== "" && !isNaN(parsed);
+  const next = valid ? parsed : original;
+  const diff = Math.round((next - original) * 100) / 100;
+
+  // The budget before and after: the spend loses what this payment counts for now
+  // and gains the new figure.
+  const after = budget ? budget.spent - budget.current + next : 0;
+
   return (
-    <div className="flex flex-col gap-3 text-sm">
-      <div className="rounded-[14px] bg-clear-tile px-4 py-3">
-        <p className="text-[13px] font-bold text-clear-muted">{t("originalAmount")}</p>
-        <p className="clear-amount mt-1 text-lg text-clear-ink">{formatEur(original)}</p>
-      </div>
-      <label className="flex flex-col gap-1">
-        <span className="text-[13px] font-bold text-clear-muted px-1">{t("correctedAmount")}</span>
-        <span className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-clear-muted">{currencySymbol()}</span>
-          <input
-            inputMode="decimal"
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={String(original)}
-            className="h-12 w-full rounded-[14px] bg-clear-tile pl-8 pr-4 font-semibold tabular-nums text-clear-ink outline-none focus:ring-3 focus:ring-clear-ember/25"
-          />
+    <form
+      id={formId}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(valid ? parsed : null);
+      }}
+      className="flex flex-col gap-5"
+    >
+      <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)]">
+        <div className="flex flex-col gap-2.5 rounded-clear-tile bg-clear-tile p-4">
+          <span className="text-[13px] font-bold text-clear-ink-2">{t("originalAmount")}</span>
+          <Amount value={isExpense ? -original : original} className="text-[28px] leading-none tracking-[-0.03em] text-clear-ink-2" />
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-clear-muted">
+            <IconBuildingBank className="size-4 shrink-0" stroke={1.9} aria-hidden />
+            {t("correct.fromBank")}
+          </span>
+        </div>
+        <span aria-hidden className="hidden size-7 items-center justify-center self-center rounded-full bg-clear-ground text-clear-ink-2 sm:inline-flex">
+          <IconArrowRight className="size-4" stroke={2.2} />
         </span>
-      </label>
-      <p className="text-xs text-clear-muted">{t("correctHint")}</p>
-      <Button
-        className="w-full"
-        disabled={saving}
-        onClick={async () => {
-          setSaving(true);
-          const parsed = parseFloat(value.replace(",", "."));
-          await onSave(value.trim() === "" || isNaN(parsed) ? null : parsed);
-          setSaving(false);
-        }}
-      >
-        {saving ? t("saving") : t("save")}
-      </Button>
-    </div>
+        <div className="flex flex-col justify-center gap-2">
+          <label htmlFor={`${formId}-amount`} className="text-[13px] font-bold text-clear-ink-2">
+            {t("correctedAmount")}
+          </label>
+          <div className="flex h-[60px] items-center gap-1 rounded-clear-row border-[1.5px] border-clear-line bg-clear-card px-4 transition-colors focus-within:border-clear-ink focus-within:ring-4 focus-within:ring-clear-ink/8">
+            <span aria-hidden className="clear-amount text-[26px] text-clear-muted">
+              {currencySymbol()}
+            </span>
+            <input
+              id={`${formId}-amount`}
+              inputMode="decimal"
+              autoComplete="off"
+              autoFocus
+              value={value}
+              onChange={(e) => setValue(e.target.value.replace(AMOUNT_INPUT_CHARS, ""))}
+              placeholder={toAmountInput(original)}
+              aria-describedby={`${formId}-help`}
+              className="clear-amount h-full min-w-0 flex-1 bg-transparent p-0 text-[26px] tracking-[-0.02em] text-clear-ink outline-none placeholder:text-clear-placeholder"
+            />
+          </div>
+          {valid && (
+            <span className={cn("text-[13px] font-semibold", diff === 0 ? "text-clear-muted" : (diff < 0) === isExpense ? "text-clear-positive" : "text-clear-warning")}>
+              <MoneyText>{diff === 0 ? t("correct.same") : diff < 0 ? t("correct.less", { amount: formatEur(-diff) }) : t("correct.more", { amount: formatEur(diff) })}</MoneyText>
+            </span>
+          )}
+        </div>
+      </div>
+
+      <p id={`${formId}-help`} className="m-0 flex gap-2.5 text-sm leading-normal text-clear-ink-2">
+        <IconInfoCircle className="mt-0.5 size-[18px] shrink-0" stroke={2} aria-hidden />
+        <span>{t("correct.help")}</span>
+      </p>
+
+      {budget && (
+        <div data-tip-anchor="correctAmountPreview" className="flex items-center gap-3 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+          {budget.icon}
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="truncate text-[15px] font-bold">{t("correct.previewTitle", { category: budget.name })}</span>
+            <span className="text-[13px] text-clear-muted">
+              <MoneyText>{after > budget.budget
+                ? t("correct.previewOver", { over: formatEur(after - budget.budget), budget: compactEur(budget.budget) })
+                : t("correct.previewLeft", { left: formatEur(budget.budget - after), budget: compactEur(budget.budget) })}</MoneyText>
+            </span>
+          </span>
+          <span className="inline-flex shrink-0 items-center gap-2 text-[15px] font-extrabold whitespace-nowrap tabular-nums">
+            <span className="font-bold text-clear-muted"><MoneyText>{formatEur(budget.spent)}</MoneyText></span>
+            <IconArrowRight className="size-3.5 text-clear-muted" stroke={2.2} aria-hidden />
+            <span><MoneyText>{formatEur(after)}</MoneyText></span>
+          </span>
+        </div>
+      )}
+    </form>
   );
 }
 
 function BrandIconDialog({
   open,
   onOpenChange,
+  subtitle,
   initial,
+  preview,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  subtitle: string;
   initial: string | null;
+  /** The transaction's row as it would look with this icon. */
+  preview: (key: string | null) => React.ReactNode;
   onSave: (key: string | null) => Promise<void>;
 }) {
   const t = useTranslations("activity.detail");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent {...NESTED} title={t("menu.brandIcon")}>
-        {open && <BrandIconBody initial={initial} onSave={onSave} />}
+      <DialogContent {...NESTED} hideHeaderRow title={t("menu.brandIcon")} className="gap-5 pt-7 font-clear text-clear-ink">
+        <ClearDialogHeader title={t("menu.brandIcon")} subtitle={subtitle} onClose={() => onOpenChange(false)} closeLabel={t("close")} />
+        {open && <BrandIconBody initial={initial} preview={preview} onSave={onSave} onCancel={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
   );
 }
 
-function BrandIconBody({ initial, onSave }: { initial: string | null; onSave: (key: string | null) => Promise<void> }) {
+function BrandIconBody({
+  initial,
+  preview,
+  onSave,
+  onCancel,
+}: {
+  initial: string | null;
+  preview: (key: string | null) => React.ReactNode;
+  onSave: (key: string | null) => Promise<void>;
+  onCancel: () => void;
+}) {
   const t = useTranslations("activity.detail");
   const [value, setValue] = useState<string | null>(initial);
   const [saving, setSaving] = useState(false);
   return (
-    <div className="flex flex-col gap-3">
-      <BrandIconPicker value={value} onChange={setValue} />
-      <Button
-        className="w-full"
-        disabled={saving}
-        onClick={async () => {
-          setSaving(true);
-          await onSave(value);
-          setSaving(false);
-        }}
-      >
-        {saving ? t("saving") : t("save")}
-      </Button>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <span className="text-[13px] font-bold text-clear-ink-2">{t("brand.icon")}</span>
+        <BrandIconPicker value={value} onChange={setValue} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-[13px] font-bold text-clear-ink-2">{t("brand.preview")}</span>
+        {preview(value)}
+      </div>
+      <div className="border-t border-clear-line pt-4">
+        <ClearDialogFooter
+          destructive={
+            <button type="button" onClick={() => setValue(null)} disabled={value == null} className={clearButtonVariants({ variant: "secondary" })}>
+              <IconTag aria-hidden />
+              {t("brand.useDefault")}
+            </button>
+          }
+        >
+          <button type="button" onClick={onCancel} className={clearButtonVariants({ variant: "secondary" })}>
+            {t("cancel")}
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              await onSave(value);
+              setSaving(false);
+            }}
+            className={clearButtonVariants()}
+          >
+            {saving ? t("saving") : t("save")}
+          </button>
+        </ClearDialogFooter>
+      </div>
     </div>
+  );
+}
+
+/**
+ * The receipt, big: zoomable on the left (desktop) or on top (phone), with the linked
+ * transaction and Download / Replace / Remove beside it.
+ */
+function ReceiptViewer({
+  open,
+  onOpenChange,
+  url,
+  name,
+  transaction,
+  onReplace,
+  onRemove,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  url: string | null;
+  name: string;
+  /** The transaction card: icon, name, meta line and amount, already rendered. */
+  transaction: React.ReactNode;
+  onReplace: () => void;
+  onRemove: () => void;
+}) {
+  const t = useTranslations("activity.detail");
+  const [zoom, setZoom] = useState(1);
+  const ZOOMS = [1, 1.5, 2, 3, 4];
+  const level = ZOOMS.indexOf(zoom);
+  const roundBtn =
+    "inline-flex size-10 cursor-pointer items-center justify-center rounded-full bg-clear-ground text-clear-ink transition-colors hover:bg-clear-line disabled:cursor-not-allowed disabled:opacity-40";
+
+  return (
+    <Dialog
+      open={open && !!url}
+      onOpenChange={(v) => {
+        onOpenChange(v);
+        if (!v) setZoom(1);
+      }}
+    >
+      <DialogContent
+        hideHeaderRow
+        title={t("receipt.title")}
+        sheetClassName={cn(NESTED.sheetClassName, "lg:max-w-[1000px]")}
+        overlayClassName={NESTED.overlayClassName}
+        className="gap-5 pt-7 font-clear text-clear-ink lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] lg:gap-x-2 lg:gap-y-5 lg:p-3.5"
+      >
+        <div className="lg:col-start-2 lg:row-start-1 lg:px-3.5 lg:pt-3.5">
+          <ClearDialogHeader title={t("receipt.title")} subtitle={t("receipt.subtitle")} onClose={() => onOpenChange(false)} closeLabel={t("close")} />
+        </div>
+
+        <div className="relative flex h-[52dvh] min-h-0 overflow-hidden rounded-clear-tile bg-clear-tile lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:h-[min(720px,82dvh)]">
+          <div className="clear-scrollbar flex min-h-0 flex-1 overflow-auto p-6 pb-20">
+            {url && (
+              // eslint-disable-next-line @next/next/no-img-element -- user-uploaded receipt
+              <img
+                src={url}
+                alt={t("receipt.alt", { name })}
+                className={cn("m-auto shadow-clear-dialog", zoom === 1 && "max-h-full max-w-full object-contain")}
+                style={zoom === 1 ? undefined : { width: `${zoom * 100}%`, maxWidth: "none" }}
+              />
+            )}
+          </div>
+          <div
+            role="toolbar"
+            aria-label={t("receipt.zoom")}
+            data-tip-anchor="receiptZoom"
+            className="absolute bottom-5 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-clear-card p-1.5 shadow-clear-float"
+          >
+            <button type="button" onClick={() => setZoom(ZOOMS[level - 1])} disabled={level <= 0} aria-label={t("receipt.zoomOut")} className={roundBtn}>
+              <IconZoomOut className="size-[18px]" stroke={2} />
+            </button>
+            <output aria-label={t("receipt.zoomLevel")} className="min-w-[58px] text-center text-sm font-extrabold tabular-nums">
+              {Math.round(zoom * 100)}%
+            </output>
+            <button type="button" onClick={() => setZoom(ZOOMS[level + 1])} disabled={level >= ZOOMS.length - 1} aria-label={t("receipt.zoomIn")} className={roundBtn}>
+              <IconZoomIn className="size-[18px]" stroke={2} />
+            </button>
+            <span aria-hidden className="mx-1 h-6 w-px bg-clear-line" />
+            <button
+              type="button"
+              onClick={() => setZoom(1)}
+              aria-label={t("receipt.fit")}
+              title={t("receipt.fit")}
+              className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink transition-opacity hover:opacity-90"
+            >
+              <IconArrowsMinimize className="size-[18px]" stroke={2} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-5 lg:col-start-2 lg:row-start-2 lg:px-3.5 lg:pb-3.5">
+          <div className="flex flex-col gap-2">
+            <span className="text-[13px] font-bold text-clear-ink-2">{t("receipt.linked")}</span>
+            {transaction}
+          </div>
+          <div className="mt-auto flex flex-col gap-2">
+            {url && (
+              <a href={url} download className={cn(clearButtonVariants(), "w-full")}>
+                <IconDownload aria-hidden />
+                {t("receipt.download")}
+              </a>
+            )}
+            <button type="button" onClick={onReplace} className={cn(clearButtonVariants({ variant: "secondary" }), "w-full")}>
+              <IconCamera aria-hidden />
+              {t("actions.replaceReceipt")}
+            </button>
+            <button type="button" onClick={onRemove} className={cn(clearButtonVariants({ variant: "danger" }), "w-full")}>
+              <IconTrash aria-hidden />
+              {t("removeReceipt")}
+            </button>
+          </div>
+        </div>
+        <AnchoredTip id="receiptViewer" anchor="receiptZoom" active={open && !!url} />
+      </DialogContent>
+    </Dialog>
   );
 }
 
 // ── rules ──────────────────────────────────────────────────────────────────────
 
-type RuleDraft = {
-  mode: "afterChange" | "create";
-  categoryId: number | null;
-  pattern: string;
-  matchType: "contains" | "word" | "exact";
-  amountMode: "none" | "exact" | "range";
-  amountExact: string;
-  amountMin: string;
-  amountMax: string;
-};
-
-function newRuleDraft(row: TransactionRow, categoryId: number | null, mode: RuleDraft["mode"]): RuleDraft {
+/** A rule from this transaction: its merchant-ish description and, for "This amount",
+ *  its own amount. */
+function newRuleDraft(row: TransactionRow, categoryId: number | null): RuleDraft {
   const amount = row.correctedAmount ?? row.amount;
   return {
-    mode,
-    categoryId,
+    ...emptyRuleDraft(categoryId),
     pattern: guessMerchant(row.description),
-    matchType: "contains",
-    amountMode: "none",
-    amountExact: amount != null ? String(amount) : "",
-    amountMin: "",
-    amountMax: "",
+    amountExact: amount != null ? toRuleAmountInput(amount) : "",
   };
 }
 
 /**
- * Create a category rule from this transaction (and apply it). Opened by "Create a
- * rule", and after a category change as "also apply to other transactions?" — the same
- * flow the old detail sheet offered, now with a whole-word option too.
+ * "Create a rule" from this transaction: the shared rule dialog over this panel. Saving
+ * creates the rule, moves every transaction it matches now (hand-categorised ones too —
+ * what the preview promises) and runs the rules pass so future imports follow.
  */
-function RuleDialog({ draft, categories, onClose }: { draft: RuleDraft | null; categories: Category[]; onClose: () => void }) {
+function TransactionRuleDialog({ draft, categories, onClose }: { draft: RuleDraft | null; categories: Category[]; onClose: () => void }) {
   const t = useTranslations("activity.rule");
-  return (
-    <Dialog open={draft != null} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent {...NESTED} title={draft?.mode === "afterChange" ? t("titleAfterChange") : t("titleCreate")}>
-        {draft && <RuleBody key={`${draft.mode}:${draft.categoryId}:${draft.pattern}`} initial={draft} categories={categories} onClose={onClose} />}
-      </DialogContent>
-    </Dialog>
-  );
-}
+  // Keep the last draft through the close animation.
+  const [last, setLast] = useState(draft);
+  if (draft && draft !== last) setLast(draft);
 
-function RuleBody({ initial, categories, onClose }: { initial: RuleDraft; categories: Category[]; onClose: () => void }) {
-  const t = useTranslations("activity.rule");
-  const [d, setD] = useState(initial);
-  const [saving, setSaving] = useState(false);
-  const set = (patch: Partial<RuleDraft>) => setD((prev) => ({ ...prev, ...patch }));
-  const seg = (active: boolean) =>
-    cn("flex-1 h-8 rounded-full px-2 text-[12px] font-semibold transition-colors", active ? "bg-clear-primary text-clear-primary-ink" : "text-clear-ink-2 hover:text-clear-ink");
-  const input = "h-11 w-full rounded-[14px] bg-clear-tile px-4 text-sm text-clear-ink outline-none focus:ring-3 focus:ring-clear-ember/25";
-
-  async function save() {
-    if (!d.pattern.trim() || d.categoryId == null) return;
-    setSaving(true);
-    const num = (v: string) => (v.trim() ? parseFloat(v.replace(",", ".")) : null);
-    const amountFields =
-      d.amountMode === "exact"
-        ? { amount: num(d.amountExact), amountMin: null, amountMax: null }
-        : d.amountMode === "range"
-          ? { amount: null, amountMin: num(d.amountMin), amountMax: num(d.amountMax) }
-          : { amount: null, amountMin: null, amountMax: null };
-    // Without an amount condition every name match is categorised straight away; with
-    // one, the rule + apply-rules pass does the matching so the amount is respected.
-    if (d.amountMode === "none" && d.matchType !== "word") {
-      await fetch("/api/transactions", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: d.pattern.trim(), categoryId: d.categoryId, matchType: d.matchType }),
-      });
-    }
-    await fetch("/api/category-rules", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        categoryId: d.categoryId,
-        namePattern: d.pattern.trim(),
-        nameWildcard: d.matchType === "contains",
-        nameWholeWord: d.matchType === "word",
-        direction: null,
-        bankId: null,
-        ...amountFields,
-      }),
-    });
+  async function save(fields: RuleFields, categoryId: number | null) {
+    if (categoryId == null) return;
+    const json = (method: string, body: unknown) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    await fetch("/api/category-rules", json("POST", { categoryId, ...fields }));
+    const { ids = [] } = await fetchRuleMatches(fields, { ids: true }).catch(() => ({ ids: [] as number[] }));
+    if (ids.length > 0) await fetch("/api/transactions", json("PATCH", { ids, categoryId }));
     await fetch("/api/apply-rules", { method: "POST" });
-    setSaving(false);
     onClose();
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-[13px] text-clear-ink-2">{t("intro")}</p>
-      <input className={input} value={d.pattern} onChange={(e) => set({ pattern: e.target.value })} aria-label={t("pattern")} />
-      <div className="flex gap-0.5 rounded-full bg-clear-tile p-[3px]">
-        {(["contains", "word", "exact"] as const).map((m) => (
-          <button key={m} type="button" className={seg(d.matchType === m)} onClick={() => set({ matchType: m })}>
-            {t(`match.${m}`)}
-          </button>
-        ))}
-      </div>
-      <OptionDropdown
-        value={d.categoryId != null ? String(d.categoryId) : ""}
-        onChange={(v) => set({ categoryId: v ? Number(v) : null })}
-        options={[{ value: "", label: t("chooseCategory") }, ...categories.map((c) => ({ value: String(c.id), label: c.name }))]}
-        triggerClassName="h-11 w-full justify-between rounded-[14px] bg-clear-tile px-4 text-sm font-semibold text-clear-ink"
-      />
-      <div className="flex gap-0.5 rounded-full bg-clear-tile p-[3px]">
-        {(["none", "exact", "range"] as const).map((m) => (
-          <button key={m} type="button" className={seg(d.amountMode === m)} onClick={() => set({ amountMode: m })}>
-            {t(`amount.${m}`)}
-          </button>
-        ))}
-      </div>
-      {d.amountMode === "exact" && (
-        <input className={input} inputMode="decimal" value={d.amountExact} onChange={(e) => set({ amountExact: e.target.value })} aria-label={t("amount.exact")} />
-      )}
-      {d.amountMode === "range" && (
-        <div className="grid grid-cols-2 gap-2">
-          <input className={input} inputMode="decimal" placeholder={t("min")} value={d.amountMin} onChange={(e) => set({ amountMin: e.target.value })} />
-          <input className={input} inputMode="decimal" placeholder={t("max")} value={d.amountMax} onChange={(e) => set({ amountMax: e.target.value })} />
-        </div>
-      )}
-      <div className="flex gap-2 pt-1">
-        <Button variant="outline" className="flex-1" onClick={onClose}>
-          {initial.mode === "afterChange" ? t("onlyThis") : t("cancel")}
-        </Button>
-        <Button className="flex-1" onClick={save} disabled={saving || !d.pattern.trim() || d.categoryId == null}>
-          {saving ? t("saving") : t("apply")}
-        </Button>
-      </div>
-    </div>
+    <RuleDialog
+      {...NESTED}
+      open={draft != null}
+      onOpenChange={(v) => !v && onClose()}
+      initial={last}
+      title={t("titleCreate")}
+      categories={categories}
+      moveAll
+      onSubmit={save}
+    />
   );
 }

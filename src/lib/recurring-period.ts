@@ -51,6 +51,3 @@ export async function syncRecurringLifecycle() {
       ),
     );
 }
-
-/** @deprecated use {@link syncRecurringLifecycle} — kept as a thin alias for older call sites. */
-export const disableExpiredRecurring = syncRecurringLifecycle;

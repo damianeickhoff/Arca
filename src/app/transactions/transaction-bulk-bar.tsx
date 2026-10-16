@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { useTranslations } from "next-intl";
-import { IconEyeOff, IconEye, IconTrash, IconX } from "@tabler/icons-react";
+import { IconEyeOff, IconEye, IconTag, IconTrash, IconX } from "@tabler/icons-react";
 import { bottomDockClass } from "@/components/dock";
-import { CategoryPicker } from "@/components/category-picker";
+import { CategoryPickerSheet } from "@/components/category-picker";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/db/schema";
@@ -36,8 +37,10 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
   const t = useTranslations("transactions");
   const tActivity = useTranslations("activity");
   const router = useRouter();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => acquireNavHidden(), []);
 
@@ -65,7 +68,13 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
 
   async function remove() {
     if (count === 0) return;
-    if (!confirm(t("bulkConfirmDelete", { count }))) return;
+    const ok = await confirm({
+      title: t("bulkConfirmDelete", { count }),
+      body: t("bulkConfirmDeleteBody", { count }),
+      confirmLabel: t("bulkConfirmDeleteLabel", { count }),
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -104,15 +113,22 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
           {t("bulkSelected", { count })}
         </span>
 
-        {/* CategoryPicker brings its own trigger button and full-screen sheet, so it
-            only needs to be dressed to match the buttons beside it. Passing onChange
-            puts it in form mode: it reports the picked category instead of writing a
-            `category` search param. */}
-        <CategoryPicker
+        <button type="button" onClick={() => setPickerOpen(true)} disabled={busy || count === 0} aria-haspopup="dialog" className={actionClass}>
+          <IconTag />
+          {t("bulkCategory")}
+        </button>
+        {/* The picker saves the category itself (and the rule, when switched on). */}
+        <CategoryPickerSheet
           categories={categories}
-          placeholder={t("bulkCategory")}
-          onChange={(value) => patch({ categoryId: value ? Number(value) : null })}
-          triggerClassName={actionClass}
+          open={pickerOpen}
+          onOpenChange={setPickerOpen}
+          apply={{
+            ids: selectedIds,
+            onApplied: () => {
+              router.refresh();
+              onDone();
+            },
+          }}
         />
 
         <button type="button" onClick={() => patch({ excludeFromReports: !allExcluded })} disabled={busy || count === 0} className={actionClass}>

@@ -15,11 +15,10 @@ import { getNeedsReviewTransactions } from "@/lib/needs-review";
 import { billsDueTotal } from "@/lib/bill-amounts";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, getDisplayedTransactionCategory, groupTransactionSplits } from "@/lib/transaction-splits";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, toClientUser } from "@/lib/auth";
 import { getSettingsPanelContent } from "@/app/settings-panel-content";
 import { DashboardReadySignal } from "@/components/dashboard-ready-signal";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
-import { SearchButton } from "@/components/shell/search-context";
 import { HomeHero } from "@/app/_home/home-hero";
 import {
   AccountsCard,
@@ -293,7 +292,7 @@ export default async function HomePage({
       <div className="flex items-center justify-between gap-3 lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <SettingsDialog
-            user={user}
+            user={toClientUser(user)}
             panels={getSettingsPanelContent(user)}
             financialMonth={financialMonth}
             budgetRecurringMode={budgetRecurringMode}
@@ -305,7 +304,6 @@ export default async function HomePage({
             <span className="truncate text-lg font-extrabold tracking-[-0.02em]">{firstName}</span>
           </span>
         </div>
-        <SearchButton />
       </div>
 
       {/* Heading — desktop title row; on phones only the review strip shows. */}
@@ -316,7 +314,6 @@ export default async function HomePage({
         </div>
         <div className="flex flex-wrap items-center gap-2.5 empty:hidden">
           <ReviewLink count={needsReview.length} />
-          <SearchButton className="hidden lg:inline-flex" />
         </div>
       </div>
 

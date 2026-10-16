@@ -3,6 +3,8 @@ import { categories, appSettings, banks, transactions } from "@/db/schema";
 import { eq, asc, isNotNull, sql } from "drizzle-orm";
 import { AddTransactionClient } from "./add-transaction-client";
 import { backfillBankAccountNumbers } from "@/lib/bank-account-numbers";
+import { getFinancialMonthConfig } from "@/lib/app-settings";
+import { getActivityContext } from "@/lib/activity-context";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,8 @@ export default async function AddTransactionPage({
   // opening balance plus the signed transaction sum. Display only.
   const signedAmount = sql<number>`COALESCE(${banks.startingBalance}, 0) + COALESCE(SUM(CASE WHEN ${transactions.direction} = 'income' THEN ${transactions.amount} ELSE -${transactions.amount} END), 0)`;
 
-  const [cats, calcRow, accounts] = await Promise.all([
+  const financialMonth = await getFinancialMonthConfig();
+  const [cats, calcRow, accounts, context] = await Promise.all([
     db.select().from(categories).orderBy(categories.group, categories.name),
     db.select().from(appSettings).where(eq(appSettings.key, CALCULATOR_SETTING_KEY)).limit(1),
     db
@@ -39,6 +42,9 @@ export default async function AddTransactionPage({
       .where(isNotNull(banks.accountNumber))
       .groupBy(banks.id)
       .orderBy(asc(banks.displayName), asc(banks.accountNumber)),
+    // This budget period's budget and spend per category, for the line under the
+    // amount that says what the new expense does to its budget.
+    getActivityContext(financialMonth, []),
   ]);
 
   // Default off — the plain 3-column keypad — until the user turns the calculator on.
@@ -47,6 +53,9 @@ export default async function AddTransactionPage({
     <AddTransactionClient
       categories={cats}
       calculatorEnabled={calculatorEnabled}
+      financialMonth={financialMonth}
+      budgets={context.budgets}
+      budgetPeriod={context.budgetPeriod}
       openScanner={scan === "1"}
       accounts={accounts.filter((a): a is typeof a & { accountNumber: string } => a.accountNumber !== null)}
     />

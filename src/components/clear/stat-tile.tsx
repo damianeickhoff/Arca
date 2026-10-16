@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 /**
  * A stat tile from the "This month" grid: label + round icon on top, a big figure,
@@ -42,8 +43,8 @@ export function StatTile({
           </span>
         )}
       </div>
-      <div className="text-[32px]">{value}</div>
-      {foot && <div className={cn("text-[13px] font-semibold", !highlight && "text-clear-ink-2")}>{foot}</div>}
+      <div className="text-[32px]"><MoneyText>{value}</MoneyText></div>
+      {foot && <div className={cn("text-[13px] font-semibold", !highlight && "text-clear-ink-2")}><MoneyText>{foot}</MoneyText></div>}
     </div>
   );
 }

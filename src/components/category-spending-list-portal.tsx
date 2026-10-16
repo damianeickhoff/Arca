@@ -1,145 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { IconChevronLeft } from "@tabler/icons-react";
+import { useTranslations } from "next-intl";
+import { IconChevronRight } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { Icon } from "@/components/icon";
-import { ListItemRow } from "@/components/list-item-row";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { SHEET_COLUMN } from "@/components/page-container";
 import type { CategorySpendCard } from "@/components/category-spending-row";
-import { acquireNavHidden } from "@/lib/nav-visibility";
-import { useEscapeToClose } from "@/lib/use-escape-to-close";
+import { MoneyText } from "@/components/clear/money";
 
-const springOut = "cubic-bezier(0.32, 0.72, 0, 1)";
-const springIn = "cubic-bezier(0.16, 1, 0.3, 1)";
-
-/** Full list of every category with spend this period, including ones hidden from
- * the row itself — opened from the dashboard's "Spending by category" row via its
- * "View all"/"Show more" controls. Sits underneath CategoryDetailPortal (both z-45,
- * this one mounted first) so tapping a row opens the detail portal on top without
- * closing this list behind it; re-including a hidden category is done from there
- * (the 3-dot menu's "Show in spending row"). */
+/**
+ * Every category with spend (or income) this period, including ones hidden from the
+ * spending overview — opened from Insights' donut card ("Details" / "N more"). Tapping
+ * a row opens the category detail. The shared Dialog: a centred modal sized to its
+ * content on desktop, a bottom sheet on phones.
+ */
 export function CategorySpendingListPortal({
   open,
   rows,
   onClose,
   onSelect,
-  title = "Spending by category",
+  title,
+  income = false,
 }: {
   open: boolean;
   rows: CategorySpendCard[];
   onClose: () => void;
   onSelect: (categoryId: number) => void;
+  /** Already translated; defaults to "Spending by category". */
   title?: string;
+  /** Income categories: amounts with a plus and no budget line. */
+  income?: boolean;
 }) {
-  const [mounted, setMounted] = useState(false);
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- portal must not render until after mount, to avoid SSR/hydration mismatch
-  useEffect(() => { setMounted(true); }, []);
-  const isIncome = title === "Income by category";
-
-  useEffect(() => {
-    if (!open) return;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, [open]);
-
-  // Hide the mobile bottom nav while this full-screen portal is open — otherwise
-  // it floats above the list since the nav sits at a higher z-index (same
-  // treatment as CategoryDetailPortal, which this list opens into).
-  useEffect(() => {
-    if (!open) return;
-    return acquireNavHidden();
-  }, [open]);
-
-  useEscapeToClose(open, onClose);
+  const t = useTranslations("categoryList");
+  const isIncome = income || title === t("incomeTitle");
+  const heading = title ?? t("title");
 
   return (
-    <>
-      {mounted &&
-        createPortal(
-          <>
-            <div
-              className="fixed inset-x-0 bottom-0 bg-background"
-              style={{
-                top: 0,
-                zIndex: 45,
-                opacity: open ? 1 : 0,
-                pointerEvents: "none",
-                transition: open ? "opacity 480ms cubic-bezier(0.25, 0, 0.15, 1)" : "opacity 320ms ease",
-              }}
-            />
-
-            <div
-              className={cn(SHEET_COLUMN, "fixed inset-x-0 bottom-0 flex flex-col overflow-hidden")}
-              style={{
-                top: 0,
-                zIndex: 45,
-                opacity: open ? 1 : 0,
-                transform: open ? "translateY(0)" : "translateY(24px)",
-                transition: open
-                  ? `opacity 400ms ease 180ms, transform 500ms ${springIn} 160ms`
-                  : `opacity 220ms ease, transform 260ms ${springOut}`,
-                pointerEvents: open ? "auto" : "none",
-              }}
-            >
-              <div className="relative shrink-0 grid grid-cols-[auto_1fr_auto] items-center gap-2 px-4 pb-3" style={{ paddingTop: "calc(0.75rem + var(--sat))" }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent hideHeaderRow title={heading} className="gap-4 pt-6">
+        <ClearDialogHeader title={heading} subtitle={t("count", { count: rows.length })} onClose={onClose} closeLabel={t("close")} />
+        <ul className="m-0 flex list-none flex-col p-0">
+          {rows.map((c) => {
+            const over = c.pct != null && c.pct > 1;
+            const sub = isIncome
+              ? null
+              : c.excluded
+                ? t("hidden")
+                : c.budget != null
+                  ? over
+                    ? t("over", { amount: formatEur(c.spent - c.budget) })
+                    : t("ofBudget", { amount: formatEur(c.budget) })
+                  : t("noLimit");
+            return (
+              <li key={c.categoryId} className="border-b border-clear-line last:border-b-0">
                 <button
                   type="button"
-                  onClick={onClose}
-                  aria-label="Back"
-                  className="size-11 rounded-full bg-white/12 backdrop-blur-xs flex items-center justify-center active:scale-[0.97] transition-transform"
+                  onClick={() => onSelect(c.categoryId)}
+                  className="group flex min-h-14 w-full cursor-pointer items-center gap-3 py-2 text-left"
                 >
-                  <IconChevronLeft className="size-5" />
+                  <Icon iconKey={c.icon} color={c.color} size="md" soft />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className={cn("truncate text-[15px] font-bold group-hover:underline group-hover:underline-offset-4", c.excluded && "text-clear-muted")}>
+                      {c.categoryName}
+                    </span>
+                    {sub && (
+                      <span className={cn("truncate text-xs", over && !c.excluded ? "font-semibold text-clear-negative" : "text-clear-muted")}>
+                        <MoneyText>{sub}</MoneyText>
+                      </span>
+                    )}
+                  </span>
+                  <span className={cn("clear-amount shrink-0 text-[15px]", isIncome ? "text-clear-positive" : c.excluded ? "text-clear-muted" : "text-clear-ink")}>
+                    <MoneyText>{`${isIncome ? "+" : ""}${formatEur(c.spent)}`}</MoneyText>
+                  </span>
+                  <IconChevronRight aria-hidden className="size-4 shrink-0 text-clear-muted" stroke={2.2} />
                 </button>
-                <h1 className="text-lg text-foreground text-center truncate">{title}</h1>
-                <div className="size-11" />
-              </div>
-
-              <div className="relative flex-1 overflow-y-auto overflow-x-hidden" style={{ WebkitOverflowScrolling: "touch" }}>
-                <div className="space-y-2 mx-3 mb-[calc(2rem+var(--sab))]">
-                  {rows.map((c) => {
-                    const over = c.pct != null && c.pct > 1;
-                    return (
-                      <button
-                        key={c.categoryId}
-                        type="button"
-                        onClick={() => onSelect(c.categoryId)}
-                        className="w-full text-left rounded-2xl bg-card overflow-hidden active:bg-foreground/5 transition-colors"
-                      >
-                        <ListItemRow
-                          icon={<Icon iconKey={c.icon} color={c.color} size="lg" round />}
-                          name={c.categoryName}
-                          subtitle={
-                            isIncome
-                              ? undefined
-                              : c.excluded
-                                ? "Hidden from spending row"
-                                : c.budget != null
-                                  ? over
-                                    ? <span className="text-[var(--color-expense)]">{formatEur(c.spent - c.budget)} over</span>
-                                    : `of ${formatEur(c.budget)}`
-                                  : "No limit"
-                          }
-                          right={
-                            <span
-                              className={cn("font-semibold text-base tabular-nums", c.excluded && "text-foreground/40")}
-                              style={isIncome ? { color: "var(--color-income)" } : undefined}
-                            >
-                              {isIncome ? "+" : ""}{formatEur(c.spent)}
-                            </span>
-                          }
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </>,
-          document.body,
-        )}
-    </>
+              </li>
+            );
+          })}
+        </ul>
+      </DialogContent>
+    </Dialog>
   );
 }

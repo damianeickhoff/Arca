@@ -13,9 +13,14 @@ has no mockup, build it from the tokens and components below and follow the clos
 drawn screen.
 
 Status: the Clear tokens (`src/app/globals.css`, `clear-*` utilities), the shared
-components (`src/components/clear/`), the app shell (sidebar + phone tab bar), Home and Activity
-are on Clear. Every other screen is still on the old mustard design and keeps working
-until it is migrated. New UI is Clear only — never build new UI with the mustard tokens
+components (`src/components/clear/`), the app shell (sidebar + phone tab bar), Home,
+Activity, Plan (Budget, Debts, Goals and their dialogs), Insights (all five tabs), the
+Settings page and the popups (add transaction, split, link, rule, receipt, pickers, search,
+merchant/category/recurring details, account and import dialogs) are on Clear. Still on the old mustard design: the inner forms of several
+Settings panels, the phone SettingsDialog chrome, Upcoming (bills calendar), Needs review,
+Import, onboarding and auth. They keep working until migrated. The shared Dialog
+(`components/ui/dialog.tsx`) is a centred modal from lg and a bottom sheet on phones.
+New UI is Clear only — never build new UI with the mustard tokens
 (`bg-surface`, `text-ink`, `bg-mustard`, `rounded-card`, `mono-label`, …).
 
 ## Delete what you replace
@@ -66,20 +71,25 @@ when the last user of a legacy token (`--arca-*`, the mustard `--color-*` mappin
 danger, ghost), `ClearCard` (+ `hero`), `ClearCardHeader`, `ClearCardLink`, `ClearTile`,
 `StatTile`, `ClearChip`, `DeltaChip`, `StatusDot`, `IconTile`, `Amount`,
 `ClearProgress`, `Segmented`, `ListRow`, `ClearSwitch`, `ClearInput`, `ClearField`,
-`ClearDialogPanel` / `ClearDialogHeader` / `ClearDialogFooter`, tones in `tones.ts`.
+`ClearDialogPanel` / `ClearDialogHeader` / `ClearDialogFooter`, `ResponsivePopover` (desktop popover,
+phone sheet), `useConfirm()` from `confirm-dialog.tsx` (never `window.confirm`), tones in `tones.ts`.
 Components take already translated strings (labels, aria-labels) as props; they never
 contain user-facing text themselves.
 
 ## Layout
 
 - Desktop (`lg`+): a floating white sidebar (260px, 16px from the window edges, card
-  radius) with the logo, the signed-in user, the navigation (Home · Activity · Plan ·
+  radius) with the logo, the signed-in user, the "Search everything" field (the global
+  search, also Ctrl/Cmd+K), the navigation (Home · Activity · Plan ·
   Insights, active row black; Plan shows Budget · Debts · Goals under it while one is
-  open) and Import CSV, Settings, the theme and Sign out at the bottom. Pages start 276px
+  open, Insights its five tabs while it is open) and Import CSV, Settings, the theme and Sign out at the bottom. Pages start 276px
   from the left (MainContent) with `28px 32px 48px` padding: a heading row (40px title,
-  subtitle, actions incl. the round search button), then the cards, 20px apart.
+  subtitle, actions), then the cards, 20px apart. Pages never add their own global search
+  button — search lives in the shell so it never reads as "search this page" (a page
+  may have a search that filters its own list, like Activity).
 - Phone: header (avatar/title + round buttons), content in 16px gutters, and the
-  floating black tab bar (Home, Activity, ember add button, Plan, Insights). Pages
+  floating black tab bar (Home, Activity, ember add button, Plan, Insights, and the
+  global search button set apart at the end). Pages
   reserve space at the bottom so the last row clears the tab bar.
 - Pages fill the available width; content never sets its own max width or centres
   itself (`mx-auto max-w-*`), except single-card pages (sign-in, errors) and dialogs.
@@ -90,7 +100,8 @@ contain user-facing text themselves.
   fills the space. Never a fixed-width column. Wide tables scroll inside their card.
 - Plan pages show a Budget · Debts · Goals `Segmented` (links) under the heading;
   Insights pages show the Overview · Trends · Net worth · Forecast · Health tab row.
-- Dialogs: a centred modal (`ClearDialogPanel`, 520–640px wide) on desktop and a
-  bottom sheet on phones. Menus and pickers are popovers anchored to their trigger.
+- Dialogs: a centred modal on desktop, sized to its content (520–800px wide, as tall as
+  needed up to the window, the body scrolling inside beyond that) and a bottom sheet on
+  phones. Never give a dialog a fixed width or height that can cut text off. Menus and pickers are popovers anchored to their trigger.
 - Empty states keep the page shell and show a simple shape illustration, one sentence,
   a primary action and, where useful, dashed placeholders — never fake numbers.

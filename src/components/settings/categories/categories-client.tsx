@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { IconChevronRight as ChevronRight, IconPlus as Plus, IconSearch as Search } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { CategoryClient } from "@/components/settings/categories/category-client";
 import { CategorySettingsClient } from "@/components/settings/categories/category-settings-client";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
@@ -22,6 +24,8 @@ interface Props {
 
 export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
   const router = useRouter();
+  const t = useTranslations("settings.categories");
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -29,12 +33,13 @@ export function CategoriesClient({ categories, rulesByCat, banks }: Props) {
   // Wipes every category and re-seeds src/config/categories.ts. Only reachable from
   // edit mode (the "Done" state), since it throws away all custom categories.
   async function resetToDefaults() {
-    if (
-      !confirm(
-        "Reset categories to the defaults? All custom categories and rules are deleted and the default set is restored. Your transactions are kept, but lose their category until the default rules re-assign them.",
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: t("resetTitle"),
+      body: t("resetBody"),
+      confirmLabel: t("resetConfirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     setResetting(true);
     const res = await fetch("/api/categories/reset", { method: "POST" });
     setResetting(false);

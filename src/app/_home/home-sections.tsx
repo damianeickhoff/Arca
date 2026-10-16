@@ -8,6 +8,7 @@ import { StatTile } from "@/components/clear/stat-tile";
 import { Icon } from "@/components/icon";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 /* ── Needs a category ─────────────────────────────────────────────────────────── */
 
@@ -72,7 +73,7 @@ export async function ThisMonthCard({ figures }: { figures: MonthFigures }) {
         label={t("spent")}
         icon={<IconShoppingBag aria-hidden />}
         value={<Amount value={spent} whole className="text-[26px] lg:text-[30px]" />}
-        foot={fixed > 0 ? t("fixed", { amount: formatEurWhole(fixed) }) : null}
+        foot={fixed > 0 ? <MoneyText>{t("fixed", { amount: formatEurWhole(fixed) })}</MoneyText> : null}
       />
       <StatTile
         label={t("saved")}
@@ -156,7 +157,7 @@ export async function IncomeSpendingCard({ months }: { months: MonthBar[] }) {
           {[0, 0.5, 1].map((f) => (
             <g key={f}>
               <line x1="36" x2="396" y1={y(top * f)} y2={y(top * f)} stroke="var(--clr-line)" strokeDasharray={f === 0 ? undefined : "3 4"} />
-              <text x="28" y={y(top * f) + 4} textAnchor="end" fontSize="11" fill="var(--clr-muted)">
+              <text x="28" y={y(top * f) + 4} textAnchor="end" fontSize="11" fill="var(--clr-muted)" className="money">
                 {f === 0 ? "0" : `${Math.round((top * f) / 1000)}k`}
               </text>
             </g>
@@ -227,8 +228,8 @@ export async function BudgetCard({
       <div className="flex flex-col gap-2.5">
         <ClearProgress value={target > 0 ? spent / target : 0} hatchRemainder size="lg" />
         <div className="flex items-baseline justify-between text-sm text-clear-ink-2">
-          <span>{t.rich("spentOf", { amount: formatEur(spent), b: (c) => <b className="text-base text-clear-ink">{c}</b> })}</span>
-          <b className="text-base text-clear-ink">{formatEur(target)}</b>
+          <span><MoneyText>{t.rich("spentOf", { amount: formatEur(spent), b: (c) => <b className="text-base text-clear-ink"><MoneyText>{c}</MoneyText></b> })}</MoneyText></span>
+          <b className="text-base text-clear-ink"><MoneyText>{formatEur(target)}</MoneyText></b>
         </div>
       </div>
       {rows.length > 0 && (
@@ -239,17 +240,12 @@ export async function BudgetCard({
             const near = !over && r.spent / r.budget >= 0.85;
             return (
               <li key={r.categoryId} className="flex items-center gap-3 py-2">
-                <Icon
-                  iconKey={r.icon}
-                  color={r.color}
-                  background={r.color ? `color-mix(in srgb, ${r.color} 16%, transparent)` : "var(--clr-tile)"}
-                  size="md"
-                />
+                <Icon iconKey={r.icon} color={r.color} size="md" soft />
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <span className="flex justify-between gap-2 text-sm">
                     <span className="truncate font-bold">{r.name}</span>
                     <span className={cn("shrink-0 font-bold", over ? "text-clear-negative" : near ? "text-clear-warning" : "text-clear-ink-2")}>
-                      {over ? t("over", { amount: formatEurWhole(-left) }) : t("left", { amount: formatEurWhole(left) })}
+                      <MoneyText>{over ? t("over", { amount: formatEurWhole(-left) }) : t("left", { amount: formatEurWhole(left) })}</MoneyText>
                     </span>
                   </span>
                   <ClearProgress
@@ -300,7 +296,7 @@ export async function ComingUpCard({ bills, totalDue, today }: { bills: ComingUp
     <ClearCard aria-labelledby="home-coming-up-title" data-tip-anchor="homeComingUp">
       <ClearCardHeader
         title={<span id="home-coming-up-title">{t("title")}</span>}
-        action={<ClearCardLink href="/transactions/upcoming">{totalDue > 0 ? t("due", { amount: formatEur(totalDue) }) : t("all")}</ClearCardLink>}
+        action={<ClearCardLink href="/transactions/upcoming"><MoneyText>{totalDue > 0 ? t("due", { amount: formatEur(totalDue) }) : t("all")}</MoneyText></ClearCardLink>}
       />
       {bills.length === 0 ? (
         <p className="m-0 text-sm text-clear-muted">{t("empty")}</p>
@@ -344,13 +340,13 @@ export async function AccountsCard({ accounts, total }: { accounts: AccountTile[
     <ClearCard aria-labelledby="home-accounts-title">
       <ClearCardHeader
         title={<span id="home-accounts-title">{t("title")}</span>}
-        action={<ClearCardLink href="/reports?tab=vermogen">{t("total", { amount: formatEur(total) })}</ClearCardLink>}
+        action={<ClearCardLink href="/reports?tab=vermogen"><MoneyText>{t("total", { amount: formatEur(total) })}</MoneyText></ClearCardLink>}
       />
       <ul className="m-0 grid flex-1 list-none auto-rows-fr grid-cols-2 gap-2.5 p-0">
         {accounts.map((a, i) => (
           <li key={a.key} className={cn("min-w-0", spansRow(i, accounts.length) && "col-span-2")}>
             <Link
-              href="/settings?tab=banks"
+              href="/settings?panel=accounts"
               className="flex h-full min-w-0 flex-col justify-center gap-1 rounded-clear-tile bg-clear-tile p-3.5 text-clear-ink no-underline transition-colors hover:bg-clear-line"
             >
               <span className="truncate text-[13px] text-clear-ink-2">{a.name}</span>

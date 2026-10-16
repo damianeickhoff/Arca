@@ -2,33 +2,6 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /**
- * A page's title row: the title (28px on phones, 30px from lg), an optional subtitle
- * line in ink-3, and whatever actions the page puts on the right (search, filters,
- * the primary button).
- */
-export function PageHeading({
-  title,
-  subtitle,
-  actions,
-  className,
-}: {
-  title: React.ReactNode;
-  subtitle?: React.ReactNode;
-  actions?: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <header className={cn("flex items-center gap-4", className)}>
-      <div className="flex min-w-0 flex-col gap-[3px]">
-        <h1 className="heading truncate text-[28px] leading-[1.15] text-ink lg:text-[30px]">{title}</h1>
-        {subtitle && <p className="truncate text-[13px] text-ink-3">{subtitle}</p>}
-      </div>
-      {actions && <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>}
-    </header>
-  );
-}
-
-/**
  * A section's title with an optional link on the right in accent-strong — "Coming up
  * · €1.173 due", "Spending · All categories". Pass `href` for a link, or `onClick`
  * for an in-page action; `link` alone renders as a plain caption.

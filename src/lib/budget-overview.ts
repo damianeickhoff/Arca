@@ -8,7 +8,6 @@ import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction
 import { getBudgetStrategy, getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
 
-const DEFAULT_BUDGET_MONTH = "0000-00";
 const VARIABLE_TYPES = ["nodig", "willen", "sparen"] as const;
 
 function toDateStr(d: Date) {
@@ -110,7 +109,12 @@ export interface BudgetOverview {
   categories: BudgetCategoryRow[];
 }
 
-export async function getBudgetOverview(financialMonth: FinancialMonthConfig): Promise<BudgetOverview> {
+/**
+ * The budget for the current period, or — with `month` (a financial month, YYYY-MM) — for
+ * that month. A weekly budget always shows the current week.
+ */
+export async function getBudgetOverview(financialMonth: FinancialMonthConfig, opts: { month?: string } = {}): Promise<BudgetOverview> {
+  const month = opts.month ?? currentFinancialMonth(financialMonth);
   const [budgetRow] = await db.select().from(budgets).where(eq(budgets.active, true)).orderBy(asc(budgets.id)).limit(1);
 
   const period: BudgetPeriod = budgetRow?.period === "weekly" ? "weekly" : "monthly";
@@ -119,7 +123,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
   // to Monday–Sunday. See src/lib/budget-overview.ts's WEEKLY_START_DOW.
   const { from, to } = period === "weekly"
     ? weeklyPeriodRange()
-    : financialMonthRangeByMonth(currentFinancialMonth(financialMonth), financialMonth);
+    : financialMonthRangeByMonth(month, financialMonth);
 
   const now = new Date();
   const todayStr = toDateStr(now);
@@ -152,7 +156,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig): P
   ]);
 
   // Current financial-month income — used to compute the strategy-based advised amount.
-  const fmRange = financialMonthRangeByMonth(currentFinancialMonth(financialMonth), financialMonth);
+  const fmRange = financialMonthRangeByMonth(month, financialMonth);
   const incomeRows = await db.select({
     id: transactions.id,
     date: transactions.date,

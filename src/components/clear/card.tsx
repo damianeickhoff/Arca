@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 /**
  * The Clear card: borderless white (dark: #17171A) on the grey ground, 24px radius,
@@ -44,7 +45,7 @@ export function ClearCardHeader({
     <div className={cn("flex flex-wrap items-start justify-between gap-3", className)}>
       <div className="flex min-w-0 flex-col gap-1">
         <Heading className="m-0 text-lg font-bold">{title}</Heading>
-        {subtitle && <span className="text-sm text-clear-muted">{subtitle}</span>}
+        {subtitle && <span className="text-sm text-clear-muted"><MoneyText>{subtitle}</MoneyText></span>}
       </div>
       {action}
     </div>

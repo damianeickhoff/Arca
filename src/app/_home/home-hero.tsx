@@ -5,6 +5,8 @@ import { Amount } from "@/components/clear/amount";
 import { ClearCard } from "@/components/clear/card";
 import { ClearChip } from "@/components/clear/chip";
 import { ClearProgress } from "@/components/clear/progress";
+import { MoneyText } from "@/components/clear/money";
+import { PrivacyToggle } from "@/components/privacy-toggle";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import type { SafeToSpend } from "@/lib/safe-to-spend";
@@ -62,17 +64,20 @@ export async function HomeHero({
     <ClearCard hero aria-labelledby="home-hero-title" className="gap-4" data-tip-anchor="homeHero">
       <div className="flex items-center justify-between gap-3">
         <h2 id="home-hero-title" className="m-0 text-[17px] font-bold">{t("title")}</h2>
-        <ClearChip tone={paceTone} icon={pace === "onPace" ? <IconCheck stroke={3} aria-hidden /> : <IconAlertTriangle stroke={2.4} aria-hidden />}>
-          {t(`pace.${pace}`)}
-        </ClearChip>
+        <div className="flex items-center gap-2">
+          <ClearChip tone={paceTone} icon={pace === "onPace" ? <IconCheck stroke={3} aria-hidden /> : <IconAlertTriangle stroke={2.4} aria-hidden />}>
+            {t(`pace.${pace}`)}
+          </ClearChip>
+          <PrivacyToggle />
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Amount value={amount} className="text-[44px] lg:text-[48px]" />
         <p className="m-0 text-[15px] text-clear-hero-ink-2">
-          {amount > 0
-            ? t.rich("perDay", { amount: formatEurWhole(perDay), date: resetsOn, b: (c) => <b className="text-clear-hero-ink">{c}</b> })
-            : t("overBudget")}
+          <MoneyText>{amount > 0
+            ? t.rich("perDay", { amount: formatEurWhole(perDay), date: resetsOn, b: (c) => <b className="text-clear-hero-ink"><MoneyText>{c}</MoneyText></b> })
+            : t("overBudget")}</MoneyText>
         </p>
       </div>
 
@@ -96,8 +101,8 @@ export async function HomeHero({
         />
         {/* The sum behind the number, so it never has to be taken on trust. */}
         <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-[13px] text-clear-hero-ink-2">
-          <span>{t("sum", { spent: formatEur(spent), bills: formatEur(reserved) })}</span>
-          <span>{t("budget", { amount: formatEurWhole(target) })}</span>
+          <span><MoneyText>{t("sum", { spent: formatEur(spent), bills: formatEur(reserved) })}</MoneyText></span>
+          <span><MoneyText>{t("budget", { amount: formatEurWhole(target) })}</MoneyText></span>
         </div>
       </div>
 
@@ -165,7 +170,7 @@ function PaceLine({
     <div className="flex flex-auto flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3 text-[13px]">
         <span className="font-bold text-clear-hero-ink-2">{title}</span>
-        <span className="font-bold">{diff >= 0 ? under(formatEurWhole(diff)) : over(formatEurWhole(-diff))}</span>
+        <span className="font-bold"><MoneyText>{diff >= 0 ? under(formatEurWhole(diff)) : over(formatEurWhole(-diff))}</MoneyText></span>
       </div>
       <svg
         viewBox={`0 0 ${W} ${H}`}

@@ -1,47 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  IconAdjustmentsHorizontal,
-  IconAlertTriangle,
-  IconCalendar,
-  IconCheck,
-  IconPlus,
-  IconTrash,
-  IconTrendingUp,
-  IconWallet,
-} from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck, IconChevronLeft, IconChevronRight, IconDots, IconPencil, IconPlus, IconSparkles, IconTag } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { formatEur, formatEurWhole } from "@/lib/format";
-import { PageHeading, SectionHead } from "@/components/ui/page-heading";
-import { Stat } from "@/components/ui/stat";
-import { Pill } from "@/components/ui/pill";
-import { Bar } from "@/components/ui/ring";
-import { CategoryIcon } from "@/components/ui/category-icon";
-import { buttonVariants } from "@/components/ui/button";
-import { SearchButton } from "@/components/shell/search-context";
+import { Icon } from "@/components/icon";
+import { Amount } from "@/components/clear/amount";
+import { ClearCard, ClearCardHeader, ClearCardLink } from "@/components/clear/card";
+import { ClearChip } from "@/components/clear/chip";
+import { ClearProgress } from "@/components/clear/progress";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLinkItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PlanSwitch } from "@/components/shell/plan-switch";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { ContextualTip } from "@/components/contextual-tip";
 import { MarkPaidButton } from "@/app/mark-paid-button";
+import { CategoryDetailPortal } from "@/components/category-detail-portal";
+import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetPeriod } from "@/lib/budget-overview";
+import type { SafeToSpend } from "@/lib/safe-to-spend";
 import { useBudgetEditor } from "./budget-editor";
-
-const CARD = "rounded-card border border-line bg-surface shadow-card";
-const GHOST = cn(buttonVariants({ variant: "outline", size: "lg" }), "h-10 px-3.5 text-[13px] font-semibold");
+import { MoneyText } from "@/components/clear/money";
 
 type Strategy = { nodig: number; willen: number; sparen: number };
 
 export interface BudgetSuggestion {
   categoryId: number;
   name: string;
+  budget: number;
+  spent: number;
   pct: number;
   /** How far over budget it already is (0 when not over yet). */
   over: number;
   daysLeft: number;
-  move: { fromId: number; fromName: string; amount: number } | null;
+  move: { fromId: number; fromName: string; fromBudget: number; fromSpent: number; amount: number } | null;
 }
 
 export interface BudgetBill {
@@ -55,18 +49,25 @@ export interface BudgetBill {
   /** Paid because a transaction matched it — nothing to toggle. */
   paidByMatch: boolean;
   overdue: boolean;
+  isIncome: boolean;
 }
 
 export interface BudgetViewData {
   hasBudget: boolean;
   period: BudgetPeriod;
   hasOverall: boolean;
-  limit: number;
-  spent: number;
-  pace: "onPace" | "fast" | "over" | null;
+  /** Home's safe-to-spend figures; null without a budget. */
+  figures: SafeToSpend | null;
+  from: string;
+  to: string;
+  /** Today is day `day` of `totalDays` in the budget period. */
+  day: number;
+  totalDays: number;
   daysLeft: number;
+  /** How far through the period today is, 0–1 (the pace marker). */
+  elapsed: number;
   allocated: number;
-  resetDay: number;
+  unbudgeted: number;
   strategy: Strategy;
   income: number;
   actuals: Strategy;
@@ -75,7 +76,6 @@ export interface BudgetViewData {
     name: string;
     icon: string | null;
     color: string | null;
-    budgetType: string | null;
     budget: number;
     spent: number;
     child: boolean;
@@ -83,491 +83,777 @@ export interface BudgetViewData {
   suggestion: BudgetSuggestion | null;
   bills: BudgetBill[];
   billsMonth: string;
-  billsRange: { from: string; to: string };
-  monthName: string;
+  budgetMonthName: string;
+  billsMonthName: string;
   today: string;
+  /** An earlier budget month, looked back at: no pace, no suggestion, nothing still to pay. */
+  ended: boolean;
+  /** The next expected income, also when it lands in the next financial month. */
+  nextIncome: { name: string; amount: number | null; date: string } | null;
+  /** Earlier / later budget month (?month=); "" is the current month, null is none. Null for weekly budgets. */
+  periodNav: { prev: string | null; next: string | null } | null;
+  /** For the category detail's period picker. */
+  financialMonth: FinancialMonthConfig;
 }
 
-const STRATEGY_COLORS: Record<keyof Strategy, string> = {
-  nodig: "var(--arca-info)",
-  willen: "var(--arca-accent)",
-  sparen: "var(--arca-positive)",
+const KINDS = ["nodig", "willen", "sparen"] as const;
+const KIND_FILL: Record<(typeof KINDS)[number], string> = {
+  nodig: "bg-clear-primary",
+  willen: "bg-clear-ember",
+  sparen: "bg-clear-info",
 };
 
-const KIND_TONE = { nodig: "info", willen: "accent", sparen: "positive" } as const;
+/** "25 Oct" in the user's locale. */
+function useShortDate() {
+  const locale = useLocale();
+  const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  return (date: string) => fmt.format(new Date(`${date}T12:00:00`));
+}
 
-/** "Resets on the 25th" (the financial month start) or "Resets every Monday". */
-function useResetsLabel() {
-  const t = useTranslations("plan.budget");
-  return (period: BudgetPeriod, resetDay: number) => (period === "weekly" ? t("resetsWeekly") : t("resetsMonthly", { day: resetDay }));
+function dayAfter(date: string) {
+  const d = new Date(`${date}T12:00:00`);
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Plan · Budget. One grid: the budget (black hero), the strategy and a suggestion on
+ * top; the category budgets (two columns wide) beside this month's bills underneath.
+ * At lg (two columns) the bills move up beside the suggestion and the category list
+ * spans the full width at the bottom. Phones follow the phone mockup: budget,
+ * suggestion and categories first, the strategy and the bills after them.
+ */
+export function BudgetView({ data }: { data: BudgetViewData }) {
+  return (
+    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
+      <BudgetHeader data={data} />
+
+      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        {data.figures ? <HeroCard data={data} figures={data.figures} /> : <EmptyHeroCard />}
+        <StrategyCard strategy={data.strategy} income={data.income} actuals={data.actuals} />
+        <SuggestionCard data={data} />
+        <CategoryBudgetsCard data={data} />
+        <BillsCard data={data} />
+      </div>
+
+      <ContextualTip id="budget" />
+      <AnchoredTip id="budgetStrategyTarget" anchor="budgetStrategy" />
+      <AnchoredTip id="budgetMove" anchor="budgetMove" active={data.suggestion?.move != null} />
+      <AnchoredTip id="budgetUnbudgeted" anchor="budgetUnbudgeted" active={data.rows.length > 0} />
+      <AnchoredTip id="budgetBills" anchor="budgetBills" />
+      <AnchoredTip id="budgetPeriodNav" anchor="budgetPeriodNav" active={data.periodNav != null && data.hasBudget} />
+    </div>
+  );
 }
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
-export function BudgetHeader({
-  period,
-  hasBudget,
-  resetDay,
-  strategy,
-}: {
-  period: BudgetPeriod;
-  hasBudget: boolean;
-  resetDay: number;
-  strategy: Strategy;
-}) {
+function BudgetHeader({ data }: { data: BudgetViewData }) {
   const t = useTranslations("plan.budget");
   const tPlan = useTranslations("plan");
-  const tBudget = useTranslations("budget");
   const editor = useBudgetEditor();
-  const resetsLabel = useResetsLabel();
-  const subtitle = hasBudget
-    ? [tBudget(`period.${period}`), resetsLabel(period, resetDay).toLowerCase(), t("strategyShort", { needs: strategy.nodig, wants: strategy.willen, savings: strategy.sparen })].join(" · ")
-    : t("strategyShort", { needs: strategy.nodig, wants: strategy.willen, savings: strategy.sparen });
+  const short = useShortDate();
+  const resetDay = dayAfter(data.to).getDate();
+  const editLabel = data.hasBudget ? t("editBudget") : t("createBudget");
+
   return (
-    <PageHeading
-      className="w-full"
-      title={
-        <>
-          <span className="lg:hidden">{tPlan("title")}</span>
-          <span className="hidden lg:inline">{t("title")}</span>
-        </>
-      }
-      subtitle={<span className="hidden lg:inline">{subtitle}</span>}
-      actions={
-        <>
-          {hasBudget && (
-            <button
-              type="button"
-              onClick={editor.openEdit}
-              aria-label={t("editBudget")}
-              className="inline-flex size-10 items-center justify-center rounded-full border border-line bg-surface text-ink transition-colors hover:bg-surface-2 lg:hidden"
-            >
-              <IconAdjustmentsHorizontal size={18} stroke={1.8} />
-            </button>
-          )}
-          <Link href="/reports?tab=prognose" className={cn(GHOST, "hidden lg:inline-flex")}>
-            <IconTrendingUp size={16} stroke={1.8} />
-            {t("forecast")}
-          </Link>
-          <SearchButton />
-        </>
-      }
-    />
-  );
-}
-
-// ── Page body ─────────────────────────────────────────────────────────────────
-
-export function BudgetView({ data }: { data: BudgetViewData }) {
-  return (
-    <>
-      <PlanSwitch className="self-start" />
-
-      {/* Phones: one column. lg: gauge + strategy | category budgets, with the bills
-          under the gauge. 2xl: the three columns of the design. */}
-      <div className="flex flex-col gap-5 lg:grid lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-start 2xl:grid-cols-[minmax(340px,1fr)_minmax(0,1.5fr)_minmax(340px,1fr)] 2xl:grid-rows-1">
-        <div className="flex flex-col gap-5 lg:col-start-1 lg:row-start-1">
-          {data.hasBudget ? <GaugeCard data={data} /> : <EmptyBudgetCard />}
-          <StrategyCard strategy={data.strategy} income={data.income} actuals={data.actuals} />
+    <div className="flex flex-col gap-4 lg:gap-[18px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 lg:items-end lg:gap-4">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[40px]">{tPlan("title")}</h1>
+          <span className="hidden text-base text-clear-ink-2 lg:inline">
+            {data.hasBudget ? t("subtitle", { period: data.period, day: resetDay }) : t("subtitleNone")}
+          </span>
         </div>
-        <div className="flex flex-col gap-3 lg:col-start-2 lg:row-span-2 lg:row-start-1 2xl:row-span-1">
-          <CategoryBudgets data={data} />
-        </div>
-        <div className="flex flex-col gap-3 lg:col-start-1 lg:row-start-2 2xl:col-start-3 2xl:row-start-1">
-          <BillsSection data={data} />
+        <div className="flex items-center gap-2.5">
+          {data.hasBudget && <MoreMenu />}
+          <button
+            type="button"
+            onClick={editor.openEdit}
+            data-tip-anchor="budgetEdit"
+            aria-label={editLabel}
+            className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}
+          >
+            {data.hasBudget ? <IconPencil aria-hidden /> : <IconPlus aria-hidden />}
+          </button>
+          <button type="button" onClick={editor.openEdit} className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
+            {data.hasBudget ? <IconPencil aria-hidden /> : <IconPlus aria-hidden />}
+            {editLabel}
+          </button>
         </div>
       </div>
 
-      <ContextualTip id="budget" />
-      <AnchoredTip id="budgetStrategyCard" anchor="budgetStrategy" />
-      <AnchoredTip id="budgetMove" anchor="budgetMove" active={data.suggestion?.move != null} />
-      <AnchoredTip id="budgetBills" anchor="budgetBills" />
-    </>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <PlanSwitch />
+        {data.hasBudget && <PeriodStepper data={data} label={
+          data.ended
+            ? t("periodLabelEnded", { from: short(data.from), to: short(data.to) })
+            : t("periodLabel", { from: short(data.from), to: short(data.to), day: data.day, total: data.totalDays })
+        } />}
+      </div>
+    </div>
   );
 }
 
-// ── Gauge ─────────────────────────────────────────────────────────────────────
+/** "‹ 25 Sep – 24 Oct · day 21 of 30 ›": steps through earlier budget months (?month=). */
+function PeriodStepper({ data, label }: { data: BudgetViewData; label: string }) {
+  const t = useTranslations("plan.budget");
+  const nav = data.periodNav;
+  const btn = "inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-clear-ground text-clear-ink transition-colors";
+  const href = (month: string) => (month ? `/budget?month=${month}` : "/budget");
+  return (
+    <div data-tip-anchor="budgetPeriodNav" className="inline-flex h-[50px] items-center gap-1 rounded-full bg-clear-card px-[5px]">
+      {nav &&
+        (nav.prev != null ? (
+          <Link href={href(nav.prev)} scroll={false} aria-label={t("previousPeriod")} className={cn(btn, "hover:bg-clear-line")}>
+            <IconChevronLeft size={18} stroke={2.2} aria-hidden />
+          </Link>
+        ) : (
+          <span aria-hidden className={cn(btn, "text-clear-placeholder")}>
+            <IconChevronLeft size={18} stroke={2.2} />
+          </span>
+        ))}
+      <span aria-live="polite" className={cn("text-sm font-bold tabular-nums", nav ? "px-2.5" : "px-[13px]")}>
+        {label}
+      </span>
+      {nav &&
+        (nav.next != null ? (
+          <Link href={href(nav.next)} scroll={false} aria-label={t("nextPeriod")} className={cn(btn, "hover:bg-clear-line")}>
+            <IconChevronRight size={18} stroke={2.2} aria-hidden />
+          </Link>
+        ) : (
+          <span aria-hidden className={cn(btn, "text-clear-placeholder")}>
+            <IconChevronRight size={18} stroke={2.2} />
+          </span>
+        ))}
+    </div>
+  );
+}
 
-function GaugeCard({ data }: { data: BudgetViewData }) {
+/** "⋯": the budget's less common actions — the reset day lives in Settings. */
+function MoreMenu() {
   const t = useTranslations("plan.budget");
   const editor = useBudgetEditor();
-  const resetsLabel = useResetsLabel();
-  const left = data.limit - data.spent;
-  const perDay = Math.max(0, left) / Math.max(1, data.daysLeft);
-  const free = data.limit - data.allocated;
-  const pct = data.limit > 0 ? data.spent / data.limit : 0;
-  const fill = data.pace === "over" ? "var(--arca-negative)" : data.pace === "fast" ? "var(--arca-warning)" : "var(--arca-accent)";
-  const paceClass = data.pace === "over" ? "text-negative" : data.pace === "fast" ? "text-warning" : "text-positive";
+  return (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger aria-label={t("more")} className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 lg:size-11")}>
+        <IconDots aria-hidden />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="min-w-52 p-1.5">
+        <DropdownMenuLinkItem render={<Link href="/settings?panel=financialMonth" />}>{t("resetDay")}</DropdownMenuLinkItem>
+        <DropdownMenuItem variant="destructive" disabled={editor.busy} onClick={editor.deleteBudget}>
+          {t("deleteBudget")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
-  // Semicircle: 300 wide, the arc's centre on the bottom edge (minus the cap room).
-  const size = 300;
-  const r = size / 2 - 12;
-  const arc = Math.PI * r;
-  const d = `M12 ${size / 2} A${r} ${r} 0 0 1 ${size - 12} ${size / 2}`;
+// ── Hero ──────────────────────────────────────────────────────────────────────
+
+function HeroCard({ data, figures }: { data: BudgetViewData; figures: SafeToSpend }) {
+  const t = useTranslations("plan.budget.hero");
+  const short = useShortDate();
+  const { target, spent, reserved, perDay, pace } = figures;
+  const left = target - spent;
+  const even = (target * data.day) / data.totalDays;
+  const paceTone = data.ended ? (left >= 0 ? "mint" : "rose") : pace === "onPace" ? "mint" : pace === "fast" ? "butter" : "rose";
+  const billsToCome = data.bills.filter((b) => !b.isIncome && !b.paid && b.dueDate != null && b.dueDate >= data.today).length;
+  const tile = "flex min-w-0 flex-col gap-1 rounded-clear-tile px-3.5 py-3";
 
   return (
-    <section className={cn(CARD, "flex flex-col items-center gap-[18px] p-[18px] lg:p-[22px]")}>
-      <div className="relative flex w-full max-w-[300px] items-end justify-center" style={{ aspectRatio: `${size} / ${size / 2 + 10}` }}>
-        <svg viewBox={`0 0 ${size} ${size / 2 + 10}`} aria-hidden className="absolute inset-0 size-full">
-          <path d={d} fill="none" stroke="var(--arca-surface-2)" strokeWidth={14} strokeLinecap="round" />
-          {pct > 0 && (
-            <path
-              d={d}
-              fill="none"
-              stroke={fill}
-              strokeWidth={14}
-              strokeLinecap="round"
-              strokeDasharray={`${(arc * Math.min(1, pct)).toFixed(1)} ${arc.toFixed(1)}`}
-              style={{ transition: "stroke-dasharray 500ms ease" }}
-            />
-          )}
-        </svg>
-        <span className="relative flex flex-col items-center gap-1.5 pb-0.5 text-center">
-          <span className="text-[13px] font-semibold text-ink-2">{t("spentOf", { amount: formatEurWhole(data.limit) })}</span>
-          <span className="amount text-[40px] leading-none tracking-[-0.035em] text-ink lg:text-[48px]">{formatEurWhole(data.spent)}</span>
-          <span className="text-[13px] text-ink-2">
-            {left >= 0 ? t("left", { amount: formatEurWhole(left) }) : t("over", { amount: formatEurWhole(-left) })}
-            {data.pace && (
-              <>
-                {" · "}
-                <span className={cn("font-bold", paceClass)}>{t(`pace.${data.pace}`)}</span>
-              </>
-            )}
+    <ClearCard hero aria-labelledby="budget-hero-title" className="gap-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="budget-hero-title" className="m-0 text-[17px] font-bold">
+          {data.period === "weekly" ? t("titleWeekly") : t("title", { month: data.budgetMonthName })}
+        </h2>
+        {data.ended ? (
+          <ClearChip tone={paceTone} icon={left >= 0 ? <IconCheck stroke={3} aria-hidden /> : <IconAlertTriangle stroke={2.4} aria-hidden />}>
+            {left >= 0 ? t("endedUnder") : t("endedOver")}
+          </ClearChip>
+        ) : (
+          <ClearChip tone={paceTone} icon={pace === "onPace" ? <IconCheck stroke={3} aria-hidden /> : <IconAlertTriangle stroke={2.4} aria-hidden />}>
+            {t(`pace.${pace}`)}
+          </ClearChip>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <span className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+          <Amount value={left} className="text-[44px] lg:text-[52px]" />
+          <span className="text-base font-semibold text-clear-hero-ink-2">
+            <MoneyText>{left >= 0 ? t("leftOf", { amount: formatEurWhole(target) }) : t("overOf", { amount: formatEurWhole(target) })}</MoneyText>
           </span>
+        </span>
+        <span className="text-sm text-clear-hero-ink-2">
+          <MoneyText>{data.ended
+            ? t("endedOn", { date: short(data.to) })
+            : even >= spent
+              ? t("underPace", { amount: formatEurWhole(even - spent), day: data.day })
+              : t("overPace", { amount: formatEurWhole(spent - even), day: data.day })}</MoneyText>
         </span>
       </div>
 
-      <div className="grid w-full grid-cols-3 gap-2">
-        <Stat label={t("allocated")} value={formatEurWhole(data.allocated)} />
-        <Stat label={t("free")} value={data.hasOverall ? formatEurWhole(free) : "—"} tone={data.hasOverall && free < 0 ? "negative" : "default"} />
-        <Stat label={t("perDay")} value={formatEurWhole(perDay)} />
+      <div className="flex flex-col gap-2">
+        <ClearProgress onHero value={spent / target} reserved={reserved / target} marker={data.ended ? undefined : data.elapsed} />
+        <div className="flex flex-wrap justify-between gap-x-3 gap-y-1.5 text-[13px] text-clear-hero-ink-2">
+          <span className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="size-2.5 rounded-[3px] bg-clear-ember" />
+            <MoneyText>{t("spent", { amount: formatEur(spent) })}</MoneyText>
+          </span>
+          {reserved > 0 && (
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden className="clear-hatch-hero size-2.5 rounded-[3px]" />
+              <MoneyText>{t("bills", { amount: formatEur(reserved) })}</MoneyText>
+            </span>
+          )}
+          {!data.ended && (
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden className="h-3 w-0.5 bg-clear-hero-ink" />
+              {t("today")}
+            </span>
+          )}
+        </div>
       </div>
 
-      <div className="flex w-full flex-wrap gap-2">
-        <button type="button" onClick={editor.openEdit} data-tip-anchor="budgetEdit" className={GHOST}>
-          <IconAdjustmentsHorizontal size={16} stroke={1.8} />
-          {t("editBudget")}
-        </button>
-        {/* The reset day is the financial month's start day, which lives in Settings. */}
-        <Link href="/settings?tab=general" className={GHOST}>
-          <IconCalendar size={16} stroke={1.8} />
-          {resetsLabel(data.period, data.resetDay)}
-        </Link>
-        <button
-          type="button"
-          onClick={editor.deleteBudget}
-          disabled={editor.busy}
-          aria-label={t("deleteBudget")}
-          title={t("deleteBudget")}
-          className={cn(GHOST, "ml-auto w-10 px-0")}
-        >
-          <IconTrash size={16} stroke={1.8} />
-        </button>
+      <div className="mt-auto grid grid-cols-3 gap-2">
+        <div className={cn(tile, "bg-clear-hero-ink/8")}>
+          <span className="text-[13px] text-clear-hero-ink-2">{t("allocated")}</span>
+          <span className="clear-amount text-xl"><MoneyText>{formatEurWhole(data.allocated)}</MoneyText></span>
+          <span className="truncate text-xs text-clear-hero-ink-2">{t("categories", { count: data.rows.length })}</span>
+        </div>
+        {data.hasOverall ? (
+          <div className={cn(tile, "bg-clear-hero-ink/8")}>
+            <span className="text-[13px] text-clear-hero-ink-2">{t("free")}</span>
+            <Amount value={target - data.allocated} whole splitCents={false} className={cn("text-xl", target - data.allocated < 0 && "text-clear-negative")} />
+            <span className="truncate text-xs text-clear-hero-ink-2">{t("freeSub")}</span>
+          </div>
+        ) : (
+          <div className={cn(tile, "bg-clear-hero-ink/8")}>
+            <span className="text-[13px] text-clear-hero-ink-2">{t("billsLeft")}</span>
+            <span className="clear-amount text-xl"><MoneyText>{formatEurWhole(reserved)}</MoneyText></span>
+            <span className="truncate text-xs text-clear-hero-ink-2">{t("billsLeftSub", { count: billsToCome })}</span>
+          </div>
+        )}
+        <div className={cn(tile, "bg-clear-ember text-clear-ember-ink")}>
+          <span className="text-[13px] font-semibold">{data.ended ? t("avgPerDay") : t("perDay")}</span>
+          <span className="clear-amount text-xl"><MoneyText>{formatEurWhole(data.ended ? spent / data.totalDays : perDay)}</MoneyText></span>
+          <span className="truncate text-xs font-semibold">
+            {data.ended ? t("overDays", { count: data.totalDays }) : t("until", { date: short(figures.resetsOn) })}
+          </span>
+        </div>
       </div>
-    </section>
+    </ClearCard>
   );
 }
 
-function EmptyBudgetCard() {
+function EmptyHeroCard() {
   const t = useTranslations("plan.budget.empty");
   const editor = useBudgetEditor();
   return (
-    <section className={cn(CARD, "flex flex-col items-center gap-4 px-6 py-10 text-center")}>
-      <span className="inline-flex size-14 items-center justify-center rounded-full bg-mustard-soft text-mustard-strong">
-        <IconWallet size={26} stroke={1.8} />
-      </span>
-      <div className="flex flex-col gap-1.5">
-        <h2 className="heading text-lg text-ink">{t("title")}</h2>
-        <p className="max-w-xs text-[13px] leading-[1.45] text-ink-2">{t("body")}</p>
+    <ClearCard hero aria-labelledby="budget-hero-title" className="justify-between gap-5">
+      <div className="flex flex-col gap-3">
+        <h2 id="budget-hero-title" className="m-0 text-[17px] font-bold">{t("title")}</h2>
+        <span className="clear-amount text-[52px]">—</span>
+        <p className="m-0 text-[15px] leading-[1.45] text-clear-hero-ink-2">{t("body")}</p>
       </div>
-      <button type="button" onClick={editor.openEdit} data-tip-anchor="budgetEdit" className={buttonVariants({ variant: "default", size: "lg" })}>
-        <IconPlus size={16} stroke={2} />
+      <button
+        type="button"
+        onClick={editor.openEdit}
+        data-tip-anchor="budgetEdit"
+        className={cn(clearButtonVariants({ size: "lg" }), "bg-clear-hero-ink text-clear-hero hover:opacity-90")}
+      >
+        <IconPlus aria-hidden />
         {t("create")}
       </button>
-    </section>
+    </ClearCard>
   );
 }
 
 // ── Strategy ──────────────────────────────────────────────────────────────────
 
+/**
+ * The Needs / Wants / Savings split, one bar per kind: the share of income actually
+ * spent or saved so far (solid) over the target share (hatched, ending in a tick), all
+ * on one shared scale. Kept short so the cards beside it don't stretch.
+ */
 function StrategyCard({ strategy, income, actuals }: { strategy: Strategy; income: number; actuals: Strategy }) {
   const t = useTranslations("plan.budget.strategy");
   const editor = useBudgetEditor();
-  const parts = (["nodig", "willen", "sparen"] as const).map((key) => ({ key, pct: strategy[key] })).filter((p) => p.pct > 0);
+  const actualPct = (k: (typeof KINDS)[number]) => (income > 0 ? (actuals[k] / income) * 100 : 0);
+  const top = Math.max(...KINDS.map((k) => Math.max(strategy[k], actualPct(k))));
+  // The scale runs to the next multiple of 20 (at least 60%), so short bars stay readable.
+  const scale = Math.min(100, Math.max(60, Math.ceil(top / 20) * 20));
+  const pos = (pct: number) => `${Math.min(100, (pct / scale) * 100)}%`;
   const share = (pct: number) => formatEurWhole((income * pct) / 100);
+
   return (
-    <section data-tip-anchor="budgetStrategy" className={cn(CARD, "flex flex-col gap-3.5 p-[18px]")}>
-      <SectionHead title={t("title")} link={t("adjust")} onClick={editor.openStrategy} size="sm" />
-      <div className="flex gap-1.5">
-        {parts.map((p) => (
-          <div key={p.key} className="flex min-w-0 flex-col gap-2" style={{ flexBasis: `${p.pct}%` }}>
-            <span className="block h-2.5 rounded-full" style={{ background: STRATEGY_COLORS[p.key] }} />
-            <span className="flex min-w-0 flex-col">
-              <span className="mono-label truncate text-[10px]">{t(p.key)}</span>
-              <span className="text-sm font-bold text-ink">{p.pct}%</span>
+    <ClearCard data-tip-anchor="budgetStrategy" aria-labelledby="budget-strategy-title" className="order-1 gap-4 lg:order-none">
+      <ClearCardHeader
+        title={<span id="budget-strategy-title">{t("title")}</span>}
+        subtitle={t("subtitle")}
+        action={
+          <ClearChip>
+            {strategy.nodig} / {strategy.willen} / {strategy.sparen}
+          </ClearChip>
+        }
+      />
+      <div className="flex flex-col gap-3">
+        {KINDS.map((k) => {
+          const actual = actualPct(k);
+          const over = actual > strategy[k] && k !== "sparen";
+          return (
+            <div key={k} className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between gap-2 text-sm">
+                <span className="truncate font-bold">
+                  {t(k)} <span className="font-semibold text-clear-muted">· <MoneyText>{formatEurWhole(actuals[k])}</MoneyText></span>
+                </span>
+                <span className="shrink-0 tabular-nums text-clear-ink-2">
+                  {t.rich("of", {
+                    actual: `${Math.round(actual)}%`,
+                    target: `${strategy[k]}%`,
+                    b: (c) => <b className={cn("text-[15px]", over ? "text-clear-negative" : "text-clear-ink")}>{c}</b>,
+                  })}
+                </span>
+              </div>
+              <span aria-hidden className="relative block h-2.5 rounded-full bg-clear-tile">
+                <span
+                  className="absolute inset-y-0 left-0 rounded-full bg-[repeating-linear-gradient(135deg,var(--clr-line)_0_3px,var(--clr-card)_3px_7px)]"
+                  style={{ width: pos(strategy[k]) }}
+                />
+                <span className={cn("absolute inset-y-0 left-0 rounded-full", KIND_FILL[k])} style={{ width: pos(actual) }} />
+                <span className="absolute -inset-y-1 w-0.5 rounded-full bg-clear-ink" style={{ left: `calc(${pos(strategy[k])} - 1px)` }} />
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {/* Legend right under the bars; the income split and Adjust in a tile at the foot. */}
+      <div aria-hidden className="-mt-1 flex flex-wrap items-center gap-x-3.5 gap-y-1 text-xs font-semibold text-clear-ink-2">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-[18px] rounded-full bg-clear-primary" />
+          {t("actual")}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-[18px] rounded-full bg-[repeating-linear-gradient(135deg,var(--clr-line)_0_2px,var(--clr-card)_2px_4px)] ring-1 ring-clear-line ring-inset" />
+          {t("target")}
+        </span>
+      </div>
+      <div className="mt-auto flex items-center justify-between gap-3 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+        <span className="text-sm leading-[1.45] text-clear-ink-2">
+          <MoneyText>{income > 0
+            ? t("onIncome", { income: formatEurWhole(income), needs: share(strategy.nodig), wants: share(strategy.willen), savings: share(strategy.sparen) })
+            : t("noIncome")}</MoneyText>
+        </span>
+        <button type="button" onClick={editor.openStrategy} className="shrink-0 cursor-pointer text-[15px] font-bold text-clear-ember-text hover:underline">
+          {t("adjust")}
+        </button>
+      </div>
+    </ClearCard>
+  );
+}
+
+// ── Suggestion ────────────────────────────────────────────────────────────────
+
+// "Not now" hides a suggestion for this category until the next budget period. It is a
+// per-browser convenience, so it lives in localStorage (guarded: it can be unavailable).
+const DISMISS_KEY = "centje.budget.suggestionDismissed";
+const DISMISS_EVENT = "centje-budget-suggestion";
+
+function readDismissed() {
+  try {
+    return localStorage.getItem(DISMISS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function subscribeDismissed(onChange: () => void) {
+  window.addEventListener(DISMISS_EVENT, onChange);
+  return () => window.removeEventListener(DISMISS_EVENT, onChange);
+}
+
+function SuggestionCard({ data }: { data: BudgetViewData }) {
+  const t = useTranslations("plan.budget.suggestion");
+  const editor = useBudgetEditor();
+  const dismissed = useSyncExternalStore(subscribeDismissed, readDismissed, () => null);
+  const s = data.suggestion;
+  const dismissId = s ? `${s.categoryId}:${data.from}` : null;
+
+  function dismiss() {
+    try {
+      localStorage.setItem(DISMISS_KEY, dismissId!);
+    } catch {
+      // Unavailable storage: the suggestion simply comes back on the next visit.
+    }
+    window.dispatchEvent(new Event(DISMISS_EVENT));
+  }
+
+  if (data.rows.length === 0) return <StartCard />;
+  if (!s || dismissed === dismissId) return <OnTrackCard data={data} />;
+
+  const tileClass = "flex min-w-0 flex-col gap-1 rounded-clear-tile bg-white/70 px-3.5 py-3 dark:bg-clear-card/60";
+  const afterHot = s.move ? s.budget + s.move.amount - s.spent : null;
+  const afterDonor = s.move ? s.move.fromBudget - s.move.amount - s.move.fromSpent : null;
+
+  return (
+    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-peach text-clear-ink lg:self-start xl:self-stretch">
+      <div className="flex items-center gap-2.5">
+        <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-clear-card text-clear-peach-ink">
+          <IconAlertTriangle size={18} stroke={2} />
+        </span>
+        <span className="text-sm font-bold text-clear-ink-2">{t("label")}</span>
+      </div>
+      <h2 id="budget-suggestion-title" className="m-0 text-2xl leading-[1.25] font-extrabold tracking-[-0.02em]">
+        <MoneyText>{s.over > 0
+          ? t("over", { name: s.name, amount: formatEurWhole(s.over), days: s.daysLeft })
+          : t("near", { name: s.name, pct: s.pct, days: s.daysLeft })}</MoneyText>
+      </h2>
+      {s.move && afterHot != null && afterDonor != null && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className={tileClass}>
+            <span className="truncate text-[13px] font-bold text-clear-peach-ink">{s.name}</span>
+            <span className="text-[15px] font-extrabold tabular-nums">
+              <MoneyText>{t("change", { from: formatEurWhole(s.budget), to: formatEurWhole(s.budget + s.move.amount) })}</MoneyText>
+            </span>
+            <span className="text-xs text-clear-ink-2">
+              <MoneyText>{afterHot >= 0 ? t("backOnBudget") : t("stillOver", { amount: formatEurWhole(-afterHot) })}</MoneyText>
             </span>
           </div>
-        ))}
+          <div className={tileClass}>
+            <span className="truncate text-[13px] font-bold text-clear-ink-2">{s.move.fromName}</span>
+            <span className="text-[15px] font-extrabold tabular-nums">
+              <MoneyText>{t("change", { from: formatEurWhole(s.move.fromBudget), to: formatEurWhole(s.move.fromBudget - s.move.amount) })}</MoneyText>
+            </span>
+            <span className="text-xs text-clear-ink-2"><MoneyText>{t("stillLeft", { amount: formatEurWhole(Math.max(0, afterDonor)) })}</MoneyText></span>
+          </div>
+        </div>
+      )}
+      <div className="mt-auto flex flex-wrap gap-2.5">
+        {s.move ? (
+          <button
+            type="button"
+            data-tip-anchor="budgetMove"
+            disabled={editor.busy}
+            onClick={() => editor.moveBudget(s.move!.fromId, s.categoryId, s.move!.amount)}
+            className={clearButtonVariants()}
+          >
+            <MoneyText>{t("move", { amount: formatEurWhole(s.move.amount), name: s.move.fromName })}</MoneyText>
+          </button>
+        ) : (
+          <button type="button" onClick={() => editor.openCategory(s.categoryId)} className={clearButtonVariants()}>
+            {t("editCategory", { name: s.name })}
+          </button>
+        )}
+        <button type="button" onClick={dismiss} className={cn(clearButtonVariants({ variant: "surface" }), "bg-white/70 dark:bg-clear-card/60")}>
+          {t("notNow")}
+        </button>
       </div>
-      <p className="text-xs leading-[1.5] text-ink-2">
-        {income > 0
-          ? `${t("onIncome", { income: formatEurWhole(income), needs: share(strategy.nodig), wants: share(strategy.willen), savings: share(strategy.sparen) })} ${t("soFar", {
-              needs: formatEurWhole(actuals.nodig),
-              wants: formatEurWhole(actuals.willen),
-              savings: formatEurWhole(actuals.sparen),
-            })}`
-          : t("noIncome")}
-      </p>
-    </section>
+    </ClearCard>
+  );
+}
+
+/** No category runs hot: which one is closest to its limit, and which has most room. */
+function OnTrackCard({ data }: { data: BudgetViewData }) {
+  const t = useTranslations("plan.budget.suggestion.onTrack");
+  const closest = [...data.rows].sort((a, z) => z.spent / z.budget - a.spent / a.budget)[0];
+  const roomiest = [...data.rows].sort((a, z) => z.budget - z.spent - (a.budget - a.spent))[0];
+  const tileClass = "flex min-w-0 flex-col gap-1 rounded-clear-tile bg-white/70 px-3.5 py-3 dark:bg-clear-card/60";
+  return (
+    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-mint text-clear-ink lg:self-start xl:self-stretch">
+      <div className="flex items-center gap-2.5">
+        <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-clear-card text-clear-mint-ink">
+          <IconCheck size={18} stroke={2.4} />
+        </span>
+        <span className="text-sm font-bold text-clear-ink-2">{t("label")}</span>
+      </div>
+      <h2 id="budget-suggestion-title" className="m-0 text-2xl leading-[1.25] font-extrabold tracking-[-0.02em]">
+        {t("title")}
+      </h2>
+      <div className="mt-auto grid grid-cols-2 gap-2">
+        <div className={tileClass}>
+          <span className="text-xs text-clear-ink-2">{t("closest")}</span>
+          <span className="truncate text-[15px] font-extrabold">{closest.name}</span>
+          <span className="text-xs font-bold text-clear-mint-ink">{t("used", { pct: Math.round((closest.spent / closest.budget) * 100) })}</span>
+        </div>
+        <div className={tileClass}>
+          <span className="text-xs text-clear-ink-2">{t("room")}</span>
+          <span className="truncate text-[15px] font-extrabold">{roomiest.name}</span>
+          <span className="text-xs font-bold text-clear-mint-ink"><MoneyText>{t("left", { amount: formatEurWhole(roomiest.budget - roomiest.spent) })}</MoneyText></span>
+        </div>
+      </div>
+    </ClearCard>
+  );
+}
+
+/** No category budgets yet: suggestions need them. */
+function StartCard() {
+  const t = useTranslations("plan.budget.suggestion.start");
+  const editor = useBudgetEditor();
+  return (
+    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-butter text-clear-ink lg:self-start xl:self-stretch">
+      <div className="flex items-center gap-2.5">
+        <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-clear-card text-clear-butter-ink">
+          <IconSparkles size={18} stroke={2} />
+        </span>
+        <span className="text-sm font-bold text-clear-ink-2">{t("label")}</span>
+      </div>
+      <h2 id="budget-suggestion-title" className="m-0 text-2xl leading-[1.25] font-extrabold tracking-[-0.02em]">
+        {t("title")}
+      </h2>
+      <div className="mt-auto">
+        <button type="button" onClick={editor.openManage} className={clearButtonVariants()}>
+          <IconPlus aria-hidden />
+          {t("add")}
+        </button>
+      </div>
+    </ClearCard>
   );
 }
 
 // ── Category budgets ──────────────────────────────────────────────────────────
 
-function CategoryBudgets({ data }: { data: BudgetViewData }) {
+function CategoryBudgetsCard({ data }: { data: BudgetViewData }) {
   const t = useTranslations("plan.budget.categories");
-  const tSug = useTranslations("plan.budget.suggestion");
   const editor = useBudgetEditor();
-  const s = data.suggestion;
+  const [openId, setOpenId] = useState<number | null>(null);
+  const opened = data.rows.find((r) => r.categoryId === openId) ?? null;
+  const spent = data.rows.reduce((s, r) => s + r.spent, 0);
+  const free = (data.figures?.target ?? 0) - data.allocated;
 
   return (
-    <>
-      <SectionHead
-        title={
-          <>
-            <span className="lg:hidden">{t("titleShort")}</span>
-            <span className="hidden lg:inline">{t("title")}</span>
-          </>
+    <ClearCard aria-labelledby="budget-categories-title" className="gap-3.5 lg:order-last lg:col-span-2 xl:order-none">
+      <ClearCardHeader
+        title={<span id="budget-categories-title">{t("title")}</span>}
+        subtitle={<MoneyText>{data.rows.length > 0 ? t("subtitle", { spent: formatEurWhole(spent), allocated: formatEurWhole(data.allocated) }) : undefined}</MoneyText>}
+        action={
+          <button type="button" onClick={editor.openManage} className={clearButtonVariants({ variant: "secondary", size: "sm" })}>
+            <IconPlus aria-hidden />
+            {t("add")}
+          </button>
         }
-        link={
-          <>
-            <span className="lg:hidden">{t("manage")}</span>
-            <span className="hidden lg:inline">{t("add")}</span>
-          </>
-        }
-        onClick={editor.openManage}
       />
-      <div className={cn(CARD, "px-4 py-1 lg:px-5 lg:py-1.5")}>
-        {data.rows.length === 0 ? (
-          <div className="flex flex-col items-start gap-3 py-4">
-            <p className="text-[13px] text-ink-3">{t("empty")}</p>
-            <button type="button" onClick={editor.openManage} className={GHOST}>
-              <IconPlus size={16} stroke={1.8} />
-              {t("add")}
-            </button>
-          </div>
-        ) : (
-          data.rows.map((row) => {
-            const pct = (row.spent / row.budget) * 100;
-            const color = pct > 100 ? "var(--arca-negative)" : pct >= 98 ? "var(--arca-warning)" : row.color ?? "var(--arca-accent)";
-            const kind = row.budgetType === "nodig" || row.budgetType === "willen" || row.budgetType === "sparen" ? row.budgetType : null;
-            return (
-              <button
-                key={row.categoryId}
-                type="button"
-                onClick={() => editor.openCategory(row.categoryId)}
-                aria-label={t("edit", { name: row.name })}
-                className={cn(
-                  "-mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-row px-2 text-left transition-colors hover:bg-surface-2",
-                  row.child && "pl-7",
-                )}
-              >
-                <CategoryIcon icon={row.icon} color={row.color} size={row.child ? "sm" : "md"} />
-                <span className="flex min-w-0 flex-1 flex-col gap-[7px]">
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-ink">{row.name}</span>
-                      {kind && (
-                        <Pill tone={KIND_TONE[kind]} className="hidden sm:inline-flex">
-                          {t(`kind.${kind}`)}
-                        </Pill>
-                      )}
-                    </span>
-                    <span className="shrink-0 text-xs text-ink-3">
-                      {t.rich("of", {
-                        spent: formatEurWhole(row.spent),
-                        budget: formatEurWhole(row.budget),
-                        b: (chunks) => <span className="text-[13px] font-semibold tabular-nums text-ink">{chunks}</span>,
-                      })}
-                    </span>
-                  </span>
-                  <Bar pct={pct} color={color} height={5} />
-                </span>
-              </button>
-            );
-          })
-        )}
-      </div>
 
-      {s && (
-        <div
-          data-tip-anchor="budgetMove"
-          className={cn(
-            "flex flex-wrap items-center gap-3 rounded-banner px-4 py-3.5 text-[13px] font-bold sm:flex-nowrap",
-            s.over > 0 ? "bg-negative-soft text-negative" : "bg-warning-soft text-warning",
-          )}
-        >
-          <IconAlertTriangle size={18} stroke={1.8} className="shrink-0" />
-          <span className="min-w-0 flex-1 leading-[1.35]">
-            {s.over > 0
-              ? tSug("over", { name: s.name, amount: formatEurWhole(s.over), days: s.daysLeft })
-              : tSug("near", { name: s.name, pct: s.pct, days: s.daysLeft })}
-          </span>
-          {s.move && (
-            <button
-              type="button"
-              disabled={editor.busy}
-              onClick={() => editor.moveBudget(s.move!.fromId, s.categoryId, s.move!.amount)}
-              className={cn(
-                "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-xs font-bold text-white transition-opacity disabled:opacity-60",
-                s.over > 0 ? "bg-negative" : "bg-warning",
-              )}
-            >
-              {tSug("move", { amount: formatEurWhole(s.move.amount), name: s.move.fromName })}
-            </button>
-          )}
-        </div>
+      {data.rows.length === 0 ? (
+        <p className="m-0 text-sm text-clear-muted">{t("empty")}</p>
+      ) : (
+        <ul className="m-0 flex list-none flex-col p-0">
+          {data.rows.map((row, i) => {
+            const left = row.budget - row.spent;
+            const over = left < 0;
+            const near = !over && row.spent / row.budget >= 0.85;
+            return (
+              <li key={row.categoryId} className="flex items-center gap-2 border-b border-clear-ground last:border-b-0">
+                {/* The row opens the category's detail; the pencil beside it edits its budget. */}
+                <button
+                  type="button"
+                  onClick={() => setOpenId(row.categoryId)}
+                  aria-label={t("open", { name: row.name })}
+                  data-tip-anchor={i === 0 ? "budgetCategoryRow" : undefined}
+                  className={cn(
+                    "-ml-2 flex min-h-[72px] min-w-0 flex-1 cursor-pointer items-center gap-3.5 rounded-clear-row px-2 py-2 text-left transition-shadow hover:ring-2 hover:ring-clear-ink/10",
+                    row.child && "pl-8",
+                  )}
+                >
+                  <Icon iconKey={row.icon} color={row.color} size={row.child ? "sm" : "md"} soft />
+                  <span className="flex min-w-0 flex-1 flex-col gap-2">
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className="truncate text-[15px] font-bold">{row.name}</span>
+                      <span className="shrink-0 text-sm tabular-nums text-clear-ink-2">
+                        <MoneyText>{t.rich("of", { spent: formatEurWhole(row.spent), budget: formatEurWhole(row.budget), b: (c) => <b className="text-clear-ink"><MoneyText>{c}</MoneyText></b> })}</MoneyText>
+                      </span>
+                    </span>
+                    <ClearProgress
+                      size="sm"
+                      value={row.spent / row.budget}
+                      marker={data.elapsed}
+                      className="bg-clear-tile"
+                      fillColor={over ? undefined : row.color ?? undefined}
+                      fillClassName={over ? "bg-clear-negative-fill" : undefined}
+                      markerClassName="bg-clear-ink/35"
+                    />
+                  </span>
+                  <span className="hidden w-[104px] shrink-0 flex-col items-end gap-0.5 sm:flex">
+                    <span className={cn("text-[15px] font-extrabold tabular-nums", over ? "text-clear-negative" : near ? "text-clear-warning" : "text-clear-ink-2")}>
+                      <MoneyText>{over ? t("over", { amount: formatEurWhole(-left) }) : t("left", { amount: formatEurWhole(left) })}</MoneyText>
+                    </span>
+                    <span className="text-xs text-clear-muted"><MoneyText>{over ? t("overBudget") : t("perDay", { amount: formatEur(left / data.daysLeft) })}</MoneyText></span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor.openCategory(row.categoryId)}
+                  aria-label={t("edit", { name: row.name })}
+                  className={cn(clearButtonVariants({ variant: "secondary", size: "icon" }), "shrink-0")}
+                >
+                  <IconPencil aria-hidden />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </>
+
+      {data.unbudgeted > 0 && (
+        <Link
+          href="/transactions"
+          data-tip-anchor="budgetUnbudgeted"
+          className="mt-auto flex min-h-[68px] items-center gap-3.5 rounded-clear-tile bg-clear-tile px-4 text-clear-ink no-underline transition-shadow hover:ring-2 hover:ring-clear-ink/10"
+        >
+          <span aria-hidden className="inline-flex size-11 shrink-0 items-center justify-center rounded-clear-icon bg-clear-card text-clear-ink-2">
+            <IconTag size={20} stroke={1.9} />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-bold">{t("unbudgeted.title")}</span>
+            <span className="truncate text-[13px] text-clear-muted">
+              <MoneyText>{data.hasOverall ? t("unbudgeted.bodyFree", { amount: formatEurWhole(Math.max(0, free)) }) : t("unbudgeted.body")}</MoneyText>
+            </span>
+          </span>
+          <Amount value={data.unbudgeted} sign="none" className="text-[17px]" splitCents={false} />
+          <IconChevronRight aria-hidden size={18} stroke={2.2} className="shrink-0 text-clear-muted" />
+        </Link>
+      )}
+
+      <AnchoredTip id="budgetCategoryDetail" anchor="budgetCategoryRow" active={data.rows.length > 0 && openId == null} />
+      <CategoryDetailPortal
+        category={opened ? { categoryId: opened.categoryId, categoryName: opened.name, color: opened.color, icon: opened.icon } : null}
+        financialMonth={data.financialMonth}
+        budgetPeriod={{ from: data.from, to: data.to }}
+        onClose={() => setOpenId(null)}
+      />
+    </ClearCard>
   );
 }
 
 // ── Bills ─────────────────────────────────────────────────────────────────────
 
-const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0];
-
-function toDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function BillsSection({ data }: { data: BudgetViewData }) {
+/**
+ * This month's bills: the paid ones, a "Today" line, then the ones still to come, with
+ * a paid-of-total bar on top and the next income beside what is still to pay below.
+ */
+function BillsCard({ data }: { data: BudgetViewData }) {
   const t = useTranslations("plan.budget.bills");
-  const locale = useLocale();
-  const [day, setDay] = useState<string | null>(null);
+  const short = useShortDate();
+  const out = data.bills.filter((b) => !b.isIncome);
+  const paid = out.filter((b) => b.paid);
+  const due = out.filter((b) => !b.paid);
+  const paidTotal = paid.reduce((s, b) => s + (b.amount ?? 0), 0);
+  const dueTotal = due.reduce((s, b) => s + (b.amount ?? 0), 0);
+  const total = paidTotal + dueTotal;
+  const next = data.ended ? undefined : due.find((b) => b.dueDate != null && b.dueDate >= data.today);
+  const days = (date: string) =>
+    Math.round((new Date(`${date}T12:00:00`).getTime() - new Date(`${data.today}T12:00:00`).getTime()) / 86_400_000);
+  const nextIncome = data.nextIncome;
 
-  const byDate = new Map<string, BudgetBill[]>();
-  for (const b of data.bills) {
-    if (!b.dueDate) continue;
-    byDate.set(b.dueDate, [...(byDate.get(b.dueDate) ?? []), b]);
+  const summary = [
+    t("summary", { paid: paid.length, due: due.length }),
+    next ? t("next", { name: next.name, days: days(next.dueDate!) }) : due.length === 0 && out.length > 0 ? t("allPaid") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  function status(b: BudgetBill): { text: string; tone: "mint" | "neutral" | "rose" | "peach"; ink: string } {
+    if (b.paid) return { text: b.dueDate ? t("paidOn", { date: short(b.dueDate) }) : t("paid"), tone: "mint", ink: "text-clear-positive" };
+    if (!b.dueDate) return { text: t("noDate"), tone: "neutral", ink: "text-clear-muted" };
+    if (b.overdue) return { text: t("overdue", { date: short(b.dueDate) }), tone: "rose", ink: "text-clear-negative" };
+    return { text: b.dueDate === data.today ? t("dueToday") : t("due", { date: short(b.dueDate) }), tone: "peach", ink: "text-clear-ember-text" };
   }
 
-  // The financial month's days, padded to whole Monday–Sunday weeks.
-  const { from, to } = data.billsRange;
-  const start = new Date(`${from}T12:00:00`);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-  const end = new Date(`${to}T12:00:00`);
-  end.setDate(end.getDate() + (6 - ((end.getDay() + 6) % 7)));
-  const cells: string[] = [];
-  for (const c = new Date(start); c <= end; c.setDate(c.getDate() + 1)) cells.push(toDateStr(c));
-
-  const weekday = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
-  const short = new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" });
-  const fmt = (date: string) => short.format(new Date(`${date}T12:00:00`));
-
-  const shown = day ? data.bills.filter((b) => b.dueDate === day) : data.bills;
+  function row(b: BudgetBill) {
+    const st = status(b);
+    return (
+      <li key={b.id} className="flex min-h-[52px] items-center gap-3 border-b border-clear-ground py-1.5 last:border-b-0">
+        <Icon iconKey={b.icon} color={b.iconColor} size="md" soft />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="truncate text-sm font-bold">{b.name}</span>
+          <span className={cn("truncate text-xs font-semibold sm:hidden", st.ink)}>{st.text}</span>
+        </span>
+        <ClearChip
+          tone={st.tone}
+          icon={b.paid ? <IconCheck stroke={3} aria-hidden /> : undefined}
+          className="hidden h-[26px] px-2.5 text-xs font-bold sm:inline-flex"
+        >
+          {st.text}
+        </ClearChip>
+        <span className={cn("w-[76px] shrink-0 text-right text-[15px] font-extrabold tabular-nums", b.paid && "text-clear-ink-2")}>
+          <MoneyText>{b.amount != null ? formatEur(b.amount) : "—"}</MoneyText>
+        </span>
+        {b.paidByMatch ? (
+          <span
+            role="img"
+            aria-label={t("paidAuto")}
+            title={t("paidAuto")}
+            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-clear-positive text-white"
+          >
+            <IconCheck className="size-3.5" stroke={2.4} />
+          </span>
+        ) : (
+          <MarkPaidButton recurringItemId={b.id} month={data.billsMonth} paid={b.paid} />
+        )}
+      </li>
+    );
+  }
 
   return (
-    <>
-      <SectionHead title={t("title", { month: data.monthName })} link={t("view")} href="/transactions/upcoming" />
-      <section data-tip-anchor="budgetBills" className={cn(CARD, "flex flex-col gap-3.5 p-[18px]")}>
-        <div className="flex flex-col gap-1.5">
-          <div className="grid grid-cols-7 gap-0.5">
-            {WEEKDAYS.map((w) => (
-              <span key={w} className="text-center font-mono text-[10px] uppercase text-ink-3">
-                {weekday.format(new Date(2024, 0, w === 0 ? 7 : w, 12))}
-              </span>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-0.5">
-            {cells.map((date) => {
-              const inRange = date >= from && date <= to;
-              if (!inRange) return <span key={date} />;
-              const dayBills = byDate.get(date) ?? [];
-              const isToday = date === data.today;
-              const past = date < data.today;
-              const allPaid = dayBills.length > 0 && dayBills.every((b) => b.paid);
-              const overdue = dayBills.some((b) => b.overdue);
-              const dot = dayBills.length === 0 ? null : allPaid ? "bg-positive" : overdue ? "bg-negative" : "bg-ink-3";
-              const dayNum = Number(date.slice(8, 10));
-              const selected = day === date;
-              return (
-                <button
-                  key={date}
-                  type="button"
-                  disabled={dayBills.length === 0}
-                  onClick={() => setDay(selected ? null : date)}
-                  aria-pressed={selected}
-                  aria-label={dayBills.length > 0 ? `${fmt(date)} · ${dayBills.map((b) => b.name).join(", ")}` : fmt(date)}
-                  className={cn(
-                    "flex h-[34px] flex-col items-center justify-center gap-[3px] rounded-full transition-colors",
-                    isToday ? "bg-mustard text-mustard-ink" : selected ? "bg-ink text-bg" : dayBills.length > 0 ? "hover:bg-surface-2" : "",
-                    !isToday && !selected && past && "text-ink-3",
-                    dayBills.length === 0 && "cursor-default",
-                  )}
-                >
-                  <span className="font-mono text-[11px] leading-none">
-                    {dayNum}
-                  </span>
-                  <span className={cn("size-[5px] rounded-full", isToday || selected ? "bg-transparent" : dot ?? "bg-transparent")} />
-                </button>
-              );
-            })}
-          </div>
-        </div>
+    <ClearCard data-tip-anchor="budgetBills" aria-labelledby="budget-bills-title" className="order-2 gap-3.5 lg:order-none">
+      <ClearCardHeader
+        title={<span id="budget-bills-title">{t("title", { month: data.billsMonthName })}</span>}
+        subtitle={out.length > 0 ? summary : undefined}
+        action={<ClearCardLink href="/transactions/upcoming">{t("view")}</ClearCardLink>}
+      />
 
-        {day && (
-          <div className="flex items-center justify-between gap-2 text-[13px]">
-            <span className="font-semibold text-ink">{fmt(day)}</span>
-            <button type="button" onClick={() => setDay(null)} className="font-semibold text-mustard-strong hover:underline underline-offset-4">
-              {t("showAll")}
-            </button>
-          </div>
-        )}
-
-        {data.bills.length === 0 ? (
-          <p className="text-[13px] text-ink-3">{t("empty")}</p>
-        ) : (
+      {out.length === 0 ? (
+        <p className="m-0 text-sm text-clear-muted">{t("empty")}</p>
+      ) : (
+        <>
+          {total > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <ClearProgress value={paidTotal / total} hatchRemainder fillClassName="bg-clear-primary" />
+              <div className="flex justify-between gap-3 text-[13px] tabular-nums text-clear-ink-2">
+                <span><MoneyText>{t("paidAmount", { amount: formatEur(paidTotal) })}</MoneyText></span>
+                <span><MoneyText>{t("total", { amount: formatEur(total) })}</MoneyText></span>
+              </div>
+            </div>
+          )}
           <div className="flex flex-col">
-            {shown.map((b) => {
-              const when = b.dueDate
-                ? b.paid
-                  ? t("paidOn", { date: fmt(b.dueDate) })
-                  : b.overdue
-                    ? t("overdue", { date: fmt(b.dueDate) })
-                    : b.dueDate === data.today
-                      ? t("today")
-                      : fmt(b.dueDate)
-                : b.paid
-                  ? t("paid")
-                  : t("noDate");
-              return (
-                <div key={b.id} className="flex min-h-[54px] items-center gap-3">
-                  <CategoryIcon icon={b.icon} color={b.iconColor} />
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-sm font-semibold text-ink">{b.name}</span>
-                    <span className={cn("truncate text-xs", b.paid ? "text-positive" : b.overdue ? "text-negative" : "text-ink-3")}>{when}</span>
+            {paid.length > 0 && <ul className="m-0 flex list-none flex-col p-0">{paid.map(row)}</ul>}
+            {due.length > 0 && (
+              <>
+                <div className="flex items-center gap-2.5 py-2.5">
+                  <span className="inline-flex h-6 items-center rounded-full bg-clear-primary px-2.5 text-xs font-extrabold text-clear-primary-ink">
+                    {data.ended ? t("notPaid") : t("today", { date: short(data.today) })}
                   </span>
-                  {b.amount != null && (
-                    <span className={cn("shrink-0 text-sm font-semibold tabular-nums", b.paid ? "text-ink-3" : "text-ink")}>{formatEur(b.amount)}</span>
-                  )}
-                  {b.paidByMatch ? (
-                    <span
-                      role="img"
-                      aria-label={t("paidAuto")}
-                      title={t("paidAuto")}
-                      className="inline-flex size-7 shrink-0 items-center justify-center rounded-full border-[1.5px] border-positive bg-positive text-white"
-                    >
-                      <IconCheck className="size-3.5" stroke={2.4} />
-                    </span>
-                  ) : (
-                    <MarkPaidButton recurringItemId={b.id} month={data.billsMonth} paid={b.paid} />
-                  )}
+                  <span aria-hidden className="h-px flex-1 bg-clear-line" />
                 </div>
-              );
-            })}
+                <ul className="m-0 flex list-none flex-col p-0">{due.map(row)}</ul>
+              </>
+            )}
           </div>
-        )}
-      </section>
-    </>
+        </>
+      )}
+
+      {(dueTotal > 0 || nextIncome) && (
+        <div className="mt-auto flex items-center justify-between gap-3 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+          {nextIncome ? (
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="truncate text-[13px] text-clear-ink-2">{t("nextIncome", { name: nextIncome.name, date: short(nextIncome.date) })}</span>
+              {nextIncome.amount != null && (
+                <Amount value={nextIncome.amount} sign="always" splitCents={false} className="text-sm text-clear-positive" />
+              )}
+            </span>
+          ) : (
+            <span />
+          )}
+          {dueTotal > 0 && (
+            <span className="flex shrink-0 flex-col items-end gap-0.5">
+              <Amount value={dueTotal} sign="none" splitCents={false} className="text-xl" />
+              <span className="text-[13px] font-semibold text-clear-ink-2">{t("stillToPay")}</span>
+            </span>
+          )}
+        </div>
+      )}
+    </ClearCard>
   );
 }

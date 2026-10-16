@@ -9,7 +9,7 @@ import type { TransactionDetail, TransactionRow } from "../transaction-types";
 import type { ActivityContext } from "./context";
 import { TransactionDetailPanel } from "./detail-panel";
 
-const EMPTY_CONTEXT: ActivityContext = { budgets: {}, merchantSpend: {}, recurring: {} };
+const EMPTY_CONTEXT: ActivityContext = { budgets: {}, recurring: {} };
 
 /** The looser detail shape other lists carry, filled out to the row the panel reads. */
 function toRow(d: TransactionDetail): TransactionRow {

@@ -1,52 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useLocale, useTranslations } from "next-intl";
+import { IconPencil, IconPlayerPause, IconPlayerPlay, IconTrash } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearChip } from "@/components/clear/chip";
+import { Amount } from "@/components/clear/amount";
+import { ListRow } from "@/components/clear/list-row";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
+import { AnchoredTip } from "@/components/anchored-tip";
 import { RecurringClient } from "./recurring-client";
+import { RecurringCharges, useLinkedTransactions, type LinkedTx } from "./recurring-charges";
 import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
-import { formatEur } from "@/lib/format";
+import { formatEur, normalizeBudgetType } from "@/lib/format";
+import { isValidISODate } from "@/lib/date-valid";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
-import { cn } from "@/lib/utils";
-import {
-  IconPencilFilled as Pencil,
-  IconTrashFilled as Trash2,
-  IconPlayerPauseFilled as Pause,
-  IconPlayerPlayFilled as Play,
-} from "@tabler/icons-react";
 import type { RecurringItem, Category } from "@/db/schema";
-import type { TransactionDetail } from "@/app/transactions/transaction-types";
+import { MoneyText } from "@/components/clear/money";
 
-const FREQ_LABELS: Record<string, string> = { monthly: "Monthly", yearly: "Yearly", weekly: "Weekly", once: "One-time", quarterly: "Per quarter" };
-const TYPE_LABELS: Record<string, string> = { income: "Income", bill: "Bill", subscription: "Subscription", debt: "Debt", savings: "Savings" };
-const BUDGET_TYPE_LABELS: Record<string, string> = { nodig: "Needs", willen: "Wants", sparen: "Savings" };
+const BUDGET_TYPE_KEY: Record<string, "needs" | "wants" | "savings"> = { nodig: "needs", willen: "wants", sparen: "savings" };
 
-// Linked-transaction row: the full TransactionDetail shape plus the couple of fields
-// only this list needs (bankName, account) — so a row can be tapped to open the same
-// transaction detail panel (in a sheet) used everywhere else in the app.
-type LinkedTx = TransactionDetail & {
-  account: string | null;
-  bankName: string | null;
-};
-
-function fmtDate(iso: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function relativeLabel(iso: string) {
-  const today = new Date();
-  const d = new Date(iso + "T00:00:00");
-  const diff = Math.round(
-    (new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() -
-      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86400000,
-  );
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  return fmtDate(iso);
-}
-
+/**
+ * One recurring item in full, in the Popup-Recurring look: what it costs and whether
+ * it runs, the last 12 charges with any price change, its details, and the linked
+ * transactions (each opens its transaction). Pause/resume and delete act here; Edit
+ * opens the recurring form stacked on top, so closing it returns here.
+ */
 export function RecurringDetailDialog({
   item,
   category,
@@ -60,120 +43,72 @@ export function RecurringDetailDialog({
   dueDate?: string | null;
   onClose: () => void;
 }) {
-  const router = useRouter();
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  // Keeps the body rendered through the close animation. Without it the caller clears
-  // `item` the instant the sheet starts closing, so the content vanishes a frame later
-  // and the sheet slides away empty — which reads as an abrupt cut rather than a
-  // dismissal. Synced during render (same pattern as the transaction panel sheet) and
-  // compared by id, since `item` is used directly while open.
+  const t = useTranslations("recurringDetail");
+  // Keeps the body rendered through the close animation — the caller clears `item`
+  // the instant the sheet starts closing. Compared by id, since `item` is used directly
+  // while open.
   const [lastItem, setLastItem] = useState<RecurringItem | null>(null);
   if (item && item.id !== lastItem?.id) setLastItem(item);
   const shown = item ?? lastItem;
 
-  async function remove() {
-    if (!item) return;
-    if (!confirm(`Delete "${item.name}"?`)) return;
-    setDeleting(true);
-    await fetch("/api/recurring", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: item.id }),
-    });
-    setDeleting(false);
-    onClose();
-    router.refresh();
-  }
-
   return (
-    <>
-      <Dialog open={item != null} onOpenChange={(o) => { if (!o) onClose(); }}>
-        <DialogContent
-          accentColor={category?.color ?? null}
-          scrollBlur
-          headerAction={
-            shown ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditOpen(true)}
-                  aria-label="Edit"
-                  className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
-                >
-                  <Pencil className="size-4.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={remove}
-                  disabled={deleting}
-                  aria-label="Delete"
-                  className="size-11 rounded-full bg-white dark:bg-white/7 backdrop-blur-lg flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
-                >
-                  <Trash2 className="size-4.5" />
-                </button>
-              </div>
-            ) : undefined
-          }
-        >
-          <DialogTitle className="sr-only">Recurrence details</DialogTitle>
-          {/* Prefixed keys: this and the editor below are siblings in the same child
-              list, so a bare item id would be the same key on both. */}
-          {shown && <DetailBody key={`body-${shown.id}`} item={shown} category={category} categories={categories} dueDate={dueDate} />}
-
-          {/* Edit dialog — controlled by the pencil button. Rendered INSIDE this dialog's
-              content so it's a nested sheet: closing it returns here instead of tearing
-              down the detail dialog too. */}
-          {/* Keyed by item id: this dialog is mounted once and re-pointed at whichever
-              item is tapped, but the editor seeds its form state from `item` only on
-              mount — without the key it would keep (and save) the values of the first
-              item opened, e.g. an empty period where the real one has a start date. */}
-          {shown && <RecurringClient key={`edit-${shown.id}`} action="edit" item={shown} open={editOpen} onOpenChange={setEditOpen} />}
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={item != null} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent hideHeaderRow title={shown ? shown.friendlyName || shown.name : t("title")} className="gap-4 pt-6">
+        {/* Keyed by item id: the dialog is mounted once and re-pointed at whichever
+            item is tapped. */}
+        {shown && (
+          <DetailBody
+            key={shown.id}
+            item={shown}
+            open={item != null}
+            category={category}
+            categories={categories}
+            dueDate={dueDate}
+            onClose={onClose}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function DetailBody({
   item,
+  open,
   category,
   categories,
   dueDate,
+  onClose,
 }: {
   item: RecurringItem;
+  open: boolean;
   category?: Category | null;
   categories: Category[];
   dueDate?: string | null;
+  onClose: () => void;
 }) {
-  const router = useRouter();
+  const t = useTranslations("recurringDetail");
+  const tForm = useTranslations("recurringForm");
   const tShared = useTranslations("sharedCost");
+  const locale = useLocale();
+  const router = useRouter();
+  const confirm = useConfirm();
   const [active, setActive] = useState(item.active);
   const [busy, setBusy] = useState(false);
-  const [txs, setTxs] = useState<LinkedTx[] | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [selectedTx, setSelectedTx] = useState<LinkedTx | null>(null);
+  const txs = useLinkedTransactions(item.id);
 
-  // This component isn't remounted when just the active flag changes (item.id, the
-  // key it's rendered with, stays the same), so without this, saving "active" from
-  // the edit form (rather than the pause button below, which sets local state itself)
-  // would only show up here after the dialog is closed and reopened. Adjusting state
-  // during render (React's documented pattern for this) instead of in an effect,
-  // so this doesn't trigger an extra render pass.
+  // Saving "active" from the edit form (rather than the pause button, which sets local
+  // state itself) changes item.active without remounting this body.
   const [prevItemActive, setPrevItemActive] = useState(item.active);
   if (item.active !== prevItemActive) {
     setPrevItemActive(item.active);
     setActive(item.active);
   }
 
-  // Load linked transactions once for this item (component is keyed by item.id).
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/recurring/transactions?itemId=${item.id}`)
-      .then((r) => r.json())
-      .then((rows: LinkedTx[]) => { if (!cancelled) setTxs(Array.isArray(rows) ? rows : []); })
-      .catch(() => { if (!cancelled) setTxs([]); });
-    return () => { cancelled = true; };
-  }, [item.id]);
+  const longDate = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
+  const fmt = (iso: string) => (isValidISODate(iso) ? longDate.format(new Date(`${iso}T12:00:00`)) : iso);
 
   async function togglePause() {
     const next = !active;
@@ -188,141 +123,159 @@ function DetailBody({
     router.refresh();
   }
 
-  const iconKey = category?.icon ?? UNCATEGORIZED_ICON;
-  const iconColor = category?.icon ? category.color : UNCATEGORIZED_COLOR;
-  const freq = item.frequency;
-  const isFutureStart = !!item.startDate && item.startDate > new Date().toISOString().slice(0, 10);
-  // Prefer the friendly bank name over the raw account number/IBAN.
-  const derivedAccount = txs?.find((t) => t.bankName || t.account);
-  const derivedAccountLabel = derivedAccount?.bankName ?? derivedAccount?.account ?? null;
-
-  const groups: { label: string; total: number; rows: LinkedTx[] }[] = [];
-  for (const t of txs ?? []) {
-    const label = relativeLabel(t.date);
-    let g = groups.find((x) => x.label === label);
-    if (!g) { g = { label, total: 0, rows: [] }; groups.push(g); }
-    g.rows.push(t);
-    g.total += t.correctedAmount ?? t.amount;
+  async function remove() {
+    const ok = await confirm({
+      title: tForm("confirmDelete", { name: item.name }),
+      body: tForm("confirmDeleteBody"),
+      confirmLabel: tForm("confirmDeleteLabel"),
+      destructive: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    await fetch("/api/recurring", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id }),
+    });
+    setBusy(false);
+    onClose();
+    router.refresh();
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Hero */}
-      <div className="relative -mx-6 -mt-2 lg:-mx-7 lg:-mt-7 px-6 lg:px-7 pt-2 lg:pt-7">
-        <div className="flex flex-col items-center text-center gap-1 pb-1">
-          <Icon iconKey={iconKey} color={iconColor} round size="xxl" />
-          <p className="text-3xl font-bold tabular-nums mt-3">{item.amount != null ? formatEur(item.amount) : "—"}</p>
-          <div className="flex items-center gap-2 mt-1.5 text-sm text-ink-2">
-            <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-2 rounded-full", active ? "bg-emerald-500" : "bg-foreground/30")} />
-              {active ? "Active" : "Paused"}
-            </span>
-          </div>
-        </div>
-      </div>
+  const iconKey = category?.icon ?? UNCATEGORIZED_ICON;
+  const iconColor = category?.icon ? category.color : UNCATEGORIZED_COLOR;
+  const isFutureStart = !!item.startDate && item.startDate > new Date().toISOString().slice(0, 10);
+  // Prefer the friendly bank name over the raw account number/IBAN.
+  const derived = txs?.find((x) => x.bankName || x.account);
+  const accountLabel = derived?.bankName ?? derived?.account ?? null;
+  const typeLabel = tForm.has(`types.${item.type}`) ? tForm(`types.${item.type}`) : item.type;
+  const freqLabel = tForm.has(`frequencies.${item.frequency}`) ? tForm(`frequencies.${item.frequency}`) : item.frequency;
+  const budgetKey = item.budgetType ? BUDGET_TYPE_KEY[normalizeBudgetType(item.budgetType)] : undefined;
+  const isIncome = item.type === "income";
+  const signed = (v: number) => (isIncome ? Math.abs(v) : -Math.abs(v));
 
-      {/* Category */}
-      <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
-        <DetailRow label="Category" valueIcon={<Icon iconKey={iconKey} color={iconColor} size="xs" round />} value={category?.name ?? "Uncategorized"} />
-      </div>
-
-      {/* Account (derived from a linked transaction) */}
-      {derivedAccountLabel && (
-        <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
-          <DetailRow label="Account" value={derivedAccountLabel} />
-        </div>
-      )}
-
-      {/* Frequency + type + budget type */}
-      <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
-        <DetailRow label="Frequency" value={FREQ_LABELS[freq] ?? freq} />
-        <DetailRow label="Type" value={TYPE_LABELS[item.type] ?? item.type} />
-        {item.budgetType && <DetailRow label="Budget type" value={BUDGET_TYPE_LABELS[item.budgetType] ?? item.budgetType} />}
-        {/* Shared costs: the amount above stays the gross charge (that's what leaves the
-            account), so spell out what actually lands on you. */}
-        {item.sharedReimbursedAmount != null && item.amount != null && (
-          <>
-            <DetailRow label={tShared("row")} value={tShared("preview", {
+  const details: { label: string; value: React.ReactNode }[] = [
+    {
+      label: t("category"),
+      value: (
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <Icon iconKey={iconKey} color={iconColor} size="xs" soft />
+          <span className="truncate">{category?.name ?? t("uncategorized")}</span>
+        </span>
+      ),
+    },
+    ...(accountLabel ? [{ label: t("account"), value: accountLabel }] : []),
+    ...(budgetKey && !isIncome ? [{ label: t("budgetType"), value: tForm(`budgetTypes.${budgetKey}`) }] : []),
+    // Shared costs: the amount stays the gross charge (that's what leaves the account),
+    // so spell out what actually lands on you.
+    ...(item.sharedReimbursedAmount != null && item.amount != null
+      ? [
+          {
+            label: tShared("row"),
+            value: tShared("preview", {
               share: formatEur(Math.max(0, Math.round((item.amount - item.sharedReimbursedAmount) * 100) / 100)),
               total: formatEur(item.amount),
-            })} />
-            {item.sharedWithCount != null && (
-              <DetailRow label={tShared("peopleLabel")} value={String(item.sharedWithCount)} />
-            )}
-          </>
-        )}
-        {item.isReimbursement && <DetailRow label={tShared("row")} value={tShared("rowPayback")} />}
+            }),
+          },
+          ...(item.sharedWithCount != null ? [{ label: tShared("peopleLabel"), value: String(item.sharedWithCount) }] : []),
+        ]
+      : []),
+    ...(item.isReimbursement ? [{ label: tShared("row"), value: tShared("rowPayback") }] : []),
+    // Always shown when set — it's the recurrence's anchor. Flagged when it hasn't
+    // arrived yet, since nothing is due before then.
+    ...(item.startDate ? [{ label: t("startDate"), value: isFutureStart ? t("startsLater", { date: fmt(item.startDate) }) : fmt(item.startDate) }] : []),
+    ...(item.dueDay != null ? [{ label: t("dueDay"), value: t("dueDayValue", { day: item.dueDay }) }] : []),
+    ...(dueDate ? [{ label: t("next"), value: fmt(dueDate) }] : []),
+    ...(item.endDate ? [{ label: t("endDate"), value: fmt(item.endDate) }] : []),
+    ...(item.notes ? [{ label: t("notes"), value: item.notes }] : []),
+  ];
+
+  return (
+    <>
+      <AnchoredTip id="recurringCharges" anchor="recurringCharges" active={open && !editOpen && selectedTx == null && (txs?.length ?? 0) >= 2} />
+
+      <ClearDialogHeader
+        title={item.friendlyName || item.name}
+        subtitle={[typeLabel, freqLabel, item.friendlyName && item.friendlyName !== item.name ? item.name : null].filter(Boolean).join(" · ")}
+        icon={<Icon iconKey={iconKey} color={iconColor} size="xl" soft />}
+        onClose={onClose}
+        closeLabel={t("close")}
+      />
+
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1.5">
+          {item.amount != null ? (
+            <Amount value={signed(item.amount)} sign={isIncome ? "always" : "auto"} className="text-[36px] sm:text-[42px]" />
+          ) : (
+            <span className="clear-amount text-[36px]">—</span>
+          )}
+          <span className="text-[15px] text-clear-ink-2">
+            {active && dueDate ? t("nextOn", { date: fmt(dueDate) }) : freqLabel}
+          </span>
+        </div>
+        <ClearChip tone={active ? "mint" : "stone"}>
+          <span aria-hidden className={active ? "size-2 rounded-full bg-clear-positive-fill" : "size-2 rounded-full bg-clear-placeholder"} />
+          {active ? t("active") : t("paused")}
+        </ClearChip>
       </div>
 
-      {/* Dates + notes */}
-      {(item.startDate || item.dueDay != null || dueDate || item.endDate || item.notes) && (
-        <div className="rounded-card bg-[var(--dialog-content-background)] backdrop-blur-xs">
-          {/* Always shown when set — it's the recurrence's anchor, and the one field
-              you go looking for after creating a bill with a specific start date.
-              Flagged when it hasn't arrived yet, since nothing is due before then. */}
-          {item.startDate && (
-            <DetailRow
-              label="Start date"
-              value={isFutureStart ? `${fmtDate(item.startDate)} (starts later)` : fmtDate(item.startDate)}
+      {txs && <RecurringCharges txs={txs} />}
+
+      <dl className="m-0 flex flex-col overflow-hidden rounded-clear-tile border border-clear-line">
+        {details.map((d, i) => (
+          <div key={`${d.label}-${i}`} className="flex min-h-[52px] items-center justify-between gap-3 border-b border-clear-ground px-4 py-2 last:border-b-0">
+            <dt className="shrink-0 text-[15px] font-semibold text-clear-ink-2">{d.label}</dt>
+            <dd className="m-0 min-w-0 truncate text-right text-[15px] font-bold"><MoneyText>{d.value}</MoneyText></dd>
+          </div>
+        ))}
+      </dl>
+
+      <section aria-labelledby="recurring-linked" className="flex flex-col">
+        <div className="flex items-baseline justify-between gap-3 pb-1">
+          <h3 id="recurring-linked" className="m-0 text-lg font-bold">{t("linked")}</h3>
+          {txs && txs.length > 0 && <span className="text-[13px] text-clear-muted">{t("linkedCount", { count: txs.length })}</span>}
+        </div>
+        {txs === null ? (
+          <p role="status" className="m-0 py-4 text-center text-[15px] text-clear-muted">{t("loading")}</p>
+        ) : txs.length === 0 ? (
+          <p className="m-0 rounded-clear-tile bg-clear-tile px-4 py-5 text-center text-[15px] text-clear-muted">{t("noLinked")}</p>
+        ) : (
+          txs.map((x) => (
+            <ListRow
+              key={x.id}
+              icon={<Icon iconKey={iconKey} color={iconColor} size="lg" soft />}
+              title={fmt(x.date)}
+              meta={x.bankName ?? x.account ?? undefined}
+              trailing={<Amount value={signed(x.correctedAmount ?? x.amount)} sign={isIncome ? "always" : "auto"} className="text-[15px]" />}
+              onClick={() => setSelectedTx(x)}
             />
-          )}
-          {item.dueDay != null && <DetailRow label="Due day" value={`Day ${item.dueDay}`} />}
-          {dueDate && <DetailRow label="Next transaction" value={fmtDate(dueDate)} />}
-          {item.endDate && <DetailRow label="End date" value={fmtDate(item.endDate)} />}
-          {item.notes && <DetailRow label="Notes" value={item.notes} />}
-        </div>
-      )}
+          ))
+        )}
+      </section>
 
-      {/* Linked transactions */}
-      {txs === null ? (
-        <p className="text-center text-sm text-ink-3 py-4">Loading…</p>
-      ) : groups.length === 0 ? (
-        <p className="text-center text-sm text-ink-3 py-4">No linked transactions yet</p>
-      ) : (
-        <div className="space-y-4">
-          {groups.map((g) => (
-            <div key={g.label}>
-              <div className="flex items-center justify-between px-3 mb-2">
-                <span className="text-sm font-medium text-ink-3">{g.label}</span>
-                <span className="text-xs text-ink-3 tabular-nums">{formatEur(g.total)}</span>
-              </div>
-              <div className="space-y-2">
-                {g.rows.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setSelectedTx(t)}
-                    className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-3 text-left active:bg-surface-2 transition-colors"
-                  >
-                    <Icon iconKey={iconKey} color={iconColor} size="lg" round />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate leading-tight">{item.friendlyName || item.name}</p>
-                      {(t.bankName || t.account) && <p className="text-sm text-ink-3 truncate mt-0.5">{t.bankName ?? t.account}</p>}
-                    </div>
-                    <span className="tabular-nums font-normal text-sm shrink-0">{formatEur(t.correctedAmount ?? t.amount)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Clears the fixed pause/resume button below (h-12 + its bottom offset) so it
-          doesn't float on top of the last linked-transaction row. */}
-      <div className="h-16" aria-hidden />
-
-      {/* Pause / resume */}
-
-        <button
-          type="button"
-          onClick={togglePause}
-          disabled={busy}
-          className="fixed bottom-[calc(1.5rem+var(--sab))] left-1/2 -translate-x-1/2 inline-flex items-center gap-2 rounded-full bg-foreground/8 backdrop-blur-lg px-6 h-12 text-sm font-medium text-ink active:scale-[0.97] transition-transform disabled:opacity-50 z-50"
+      <div className="pb-1">
+        <ClearDialogFooter
+          destructive={
+            <button type="button" onClick={remove} disabled={busy} className={clearButtonVariants({ variant: "danger" })}>
+              <IconTrash aria-hidden />
+              {t("delete")}
+            </button>
+          }
         >
-          {active ? <Pause className="size-4" /> : <Play className="size-4" />}
-          {active ? "Pause the recurrence" : "Resume the recurrence"}
-        </button>
+          <button type="button" onClick={togglePause} disabled={busy} className={clearButtonVariants({ variant: "secondary" })}>
+            {active ? <IconPlayerPause aria-hidden /> : <IconPlayerPlay aria-hidden />}
+            {active ? t("pause") : t("resume")}
+          </button>
+          <button type="button" onClick={() => setEditOpen(true)} className={clearButtonVariants()}>
+            <IconPencil aria-hidden />
+            {t("edit")}
+          </button>
+        </ClearDialogFooter>
+      </div>
+
+      {/* Rendered inside this dialog's content so it's a nested sheet: closing it
+          returns here instead of tearing down the detail dialog too. */}
+      <RecurringClient action="edit" item={item} open={editOpen} onOpenChange={setEditOpen} />
 
       <TransactionPanelSheet
         row={selectedTx}
@@ -330,18 +283,6 @@ function DetailBody({
         onClose={() => setSelectedTx(null)}
         onCategorized={() => router.refresh()}
       />
-    </div>
-  );
-}
-
-function DetailRow({ label, value, valueIcon }: { label: string; value: string; valueIcon?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <span className="text-ink-3 shrink-0 text-sm">{label}</span>
-      <span className="flex items-center gap-1.5 font-light text-right min-w-0">
-        {valueIcon}
-        <span className="truncate text-sm">{value}</span>
-      </span>
-    </div>
+    </>
   );
 }

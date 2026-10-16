@@ -2,87 +2,213 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { formatEur, formatEurWhole } from "@/lib/format";
+import { IconChevronRight } from "@tabler/icons-react";
+import { ClearCard, ClearCardHeader } from "@/components/clear/card";
+import { Segmented } from "@/components/clear/segmented";
 import { CategorySpendingListPortal } from "@/components/category-spending-list-portal";
 import { CategoryDetailPortal } from "@/components/category-detail-portal";
 import type { CategorySpendCard } from "@/components/category-spending-row";
 import type { FinancialMonthConfig } from "@/lib/date-range";
-import { SectionHead } from "@/components/ui/page-heading";
-import { Donut, LegendRow, CHART_COLORS } from "@/components/ui/charts";
+import { formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { MoneyText, SvgMoneyText } from "@/components/clear/money";
 
-const SHOWN = 4;
+/** Theme colours for categories without a colour of their own. */
+const PALETTE = [
+  "var(--clr-ink)",
+  "var(--clr-ember)",
+  "var(--clr-info-fill)",
+  "var(--clr-positive-fill)",
+  "var(--clr-warning-fill)",
+  "var(--clr-lilac-ink)",
+  "var(--clr-rose-ink)",
+  "var(--clr-stone-ink)",
+];
+const OTHER_COLOR = "var(--clr-placeholder)";
+/** Categories drawn as their own slice; the rest is one "Other" slice. */
+const SLICES = 7;
+/** Legend rows on a phone before "N more". */
+const PHONE_ROWS = 4;
+
+type Mode = "expense" | "income";
 
 /**
- * Overview's "Spending by category": a donut of the biggest categories plus "Other",
- * with a legend underneath. Tapping a category opens its detail portal and "All
- * categories" opens the full list — the same two portals the old top-three preview
- * opened, so nothing that was reachable from here before has gone.
+ * Insights · Overview "Spending by category": a donut of the biggest categories plus
+ * "Other", with a legend of amounts and shares. A switch flips it to income by category.
+ * A legend row opens that category's detail; Details (and "Other") opens the full list.
  */
-export function SpendingDonutCard({
-  visibleRows,
-  allRows,
-  total,
-  periodShort,
+export function CategoryBreakdownCard({
+  spendingVisible,
+  spendingAll,
+  spendingTotal,
+  incomeAll,
+  incomeTotal,
+  ongoing,
   financialMonth,
   budgetPeriod,
   className,
 }: {
-  visibleRows: CategorySpendCard[];
-  allRows: CategorySpendCard[];
-  total: number;
-  periodShort: string;
+  /** Spending categories shown on the card (the ones not hidden from spending rows). */
+  spendingVisible: CategorySpendCard[];
+  /** Every spending category, for the full list. */
+  spendingAll: CategorySpendCard[];
+  spendingTotal: number;
+  incomeAll: CategorySpendCard[];
+  incomeTotal: number;
+  /** The period includes today, so the total is "so far". */
+  ongoing: boolean;
   financialMonth: FinancialMonthConfig;
   budgetPeriod: { from: string; to: string };
   className?: string;
 }) {
   const t = useTranslations("insights.overview");
+  const [mode, setMode] = useState<Mode>("expense");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const selected = allRows.find((r) => r.categoryId === selectedId) ?? null;
 
-  const top = visibleRows.slice(0, SHOWN);
-  const shownTotal = top.reduce((s, r) => s + r.spent, 0);
-  const other = Math.max(0, total - shownTotal);
-  const colorOf = (row: CategorySpendCard, i: number) => row.color ?? CHART_COLORS[i % CHART_COLORS.length];
-  const parts = [
-    ...top.map((r, i) => ({ value: r.spent, color: colorOf(r, i) })),
-    ...(other > 0.005 ? [{ value: other, color: "#A9A294" }] : []),
+  const isIncome = mode === "income";
+  const visible = isIncome ? incomeAll : spendingVisible;
+  const all = isIncome ? incomeAll : spendingAll;
+  const total = isIncome ? incomeTotal : spendingTotal;
+  const selected = all.find((r) => r.categoryId === selectedId) ?? null;
+  const title = isIncome ? t("incomeByCategory") : t("byCategory");
+
+  const top = visible.slice(0, SLICES);
+  const other = Math.max(0, total - top.reduce((s, r) => s + r.spent, 0));
+  const colorOf = (row: CategorySpendCard, i: number) => row.color ?? PALETTE[i % PALETTE.length];
+  const rows = [
+    ...top.map((r, i) => ({ key: String(r.categoryId), id: r.categoryId as number | null, name: r.categoryName, value: r.spent, color: colorOf(r, i) })),
+    ...(other > 0.005 ? [{ key: "other", id: null, name: t("other"), value: other, color: OTHER_COLOR }] : []),
   ];
+  const share = (v: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
+  const hiddenOnPhone = Math.max(0, rows.length - PHONE_ROWS);
+  const description = t("donutLabel", {
+    title,
+    total: formatEur(total),
+    parts: rows.map((r) => `${r.name} ${share(r.value)}%`).join(", "),
+  });
 
   return (
-    <section className={cn("flex flex-col gap-3.5 rounded-card border border-line bg-surface p-[18px] shadow-card lg:px-5", className)}>
-      <SectionHead title={t("byCategory")} size="sm" link={allRows.length > 0 ? t("allCategories") : undefined} onClick={allRows.length > 0 ? () => setShowAll(true) : undefined} />
-      {top.length === 0 ? (
-        <p className="text-[13px] text-ink-3">{t("noSpending")}</p>
+    <ClearCard aria-labelledby="insights-categories-title" className={className}>
+      <ClearCardHeader
+        title={<span id="insights-categories-title">{title}</span>}
+        action={
+          all.length > 0 ? (
+            <button type="button" onClick={() => setShowAll(true)} className="cursor-pointer text-sm font-bold text-clear-ember-text hover:underline">
+              {t("details")}
+            </button>
+          ) : undefined
+        }
+      />
+      <div data-tip-anchor="insightsCategorySwitch" className="self-start">
+        <Segmented
+          label={t("categorySwitch")}
+          surface="tile"
+          size="sm"
+          value={mode}
+          onChange={(v) => {
+            setMode(v);
+            setShowAll(false);
+          }}
+          items={[
+            { value: "expense", label: t("spending") },
+            { value: "income", label: t("incomeShort") },
+          ]}
+        />
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="m-0 flex flex-1 items-center justify-center py-8 text-center text-sm text-clear-muted">
+          {isIncome ? t("noIncome") : t("noSpending")}
+        </p>
       ) : (
-        <div className="flex items-center gap-[18px] lg:flex-col lg:items-stretch">
-          <Donut parts={parts} size={110} className="lg:hidden">
-            <span className="amount text-base leading-none text-ink">{formatEurWhole(total)}</span>
-            <span className="mono-label mt-1 text-[9px]">{periodShort}</span>
-          </Donut>
-          <div className="hidden justify-center lg:flex">
-            <Donut parts={parts} size={170}>
-              <span className="amount text-[22px] leading-none text-ink">{formatEurWhole(total)}</span>
-              <span className="mono-label mt-1 text-[9px]">{periodShort}</span>
-            </Donut>
+        <div className="flex flex-1 items-center gap-3.5 lg:flex-col lg:items-stretch lg:gap-[18px]">
+          <div className="w-28 shrink-0 lg:mx-auto lg:w-44">
+            <Donut parts={rows} total={total} label={description} caption={isIncome ? t("received") : ongoing ? t("spentSoFar") : t("spentCaption")} />
           </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            {top.map((row, i) => (
-              <LegendRow key={row.categoryId} color={colorOf(row, i)} label={row.categoryName} value={formatEur(row.spent)} onClick={() => setSelectedId(row.categoryId)} />
+          <ul className="m-0 flex min-w-0 flex-1 list-none flex-col p-0 lg:gap-0">
+            {rows.map((r, i) => (
+              <li key={r.key} className={cn(i >= PHONE_ROWS && "max-lg:hidden")}>
+                <button
+                  type="button"
+                  onClick={() => (r.id != null ? setSelectedId(r.id) : setShowAll(true))}
+                  className="flex min-h-8 w-full cursor-pointer items-center gap-2 rounded-clear-row text-left text-[13px] transition-colors hover:bg-clear-tile lg:-mx-2 lg:min-h-[38px] lg:w-[calc(100%+1rem)] lg:gap-2.5 lg:border-b lg:border-clear-ground lg:px-2 lg:text-sm"
+                >
+                  <span aria-hidden className="size-2.5 shrink-0 rounded-full lg:rounded-[3px]" style={{ background: r.color }} />
+                  <span className="min-w-0 flex-1 truncate font-semibold text-clear-ink-2 lg:text-clear-ink">{r.name}</span>
+                  <span className="hidden w-10 shrink-0 text-right text-[13px] tabular-nums text-clear-muted lg:inline">{share(r.value)}%</span>
+                  <span className="shrink-0 text-right font-extrabold tabular-nums lg:w-[88px]">
+                    <span className="lg:hidden"><MoneyText>{formatEurWhole(r.value)}</MoneyText></span>
+                    <span className="hidden lg:inline"><MoneyText>{formatEur(r.value)}</MoneyText></span>
+                  </span>
+                </button>
+              </li>
             ))}
-            {other > 0.005 && <LegendRow color="#A9A294" label={t("other")} value={formatEur(other)} onClick={() => setShowAll(true)} />}
-          </div>
+            {hiddenOnPhone > 0 && (
+              <li className="lg:hidden">
+                <button type="button" onClick={() => setShowAll(true)} className="inline-flex min-h-8 cursor-pointer items-center gap-1 text-[13px] font-bold text-clear-ember-text">
+                  {t("moreCount", { count: hiddenOnPhone })}
+                  <IconChevronRight size={14} stroke={2.4} aria-hidden />
+                </button>
+              </li>
+            )}
+          </ul>
         </div>
       )}
 
-      <CategorySpendingListPortal open={showAll} rows={allRows} onClose={() => setShowAll(false)} onSelect={(id) => setSelectedId(id)} title={t("byCategory")} />
+      <CategorySpendingListPortal open={showAll} rows={all} onClose={() => setShowAll(false)} onSelect={(id) => setSelectedId(id)} title={title} income={isIncome} />
       <CategoryDetailPortal
         category={selected ? { categoryId: selected.categoryId, categoryName: selected.categoryName, color: selected.color, icon: selected.icon } : null}
         financialMonth={financialMonth}
         budgetPeriod={budgetPeriod}
         onClose={() => setSelectedId(null)}
+        direction={mode}
       />
-    </section>
+    </ClearCard>
+  );
+}
+
+/** The ring itself: one arc per part with a small gap between them, the total in the middle. */
+function Donut({
+  parts,
+  total,
+  label,
+  caption,
+}: {
+  parts: { key: string; value: number; color: string }[];
+  total: number;
+  label: string;
+  caption: string;
+}) {
+  const r = 60;
+  const c = 2 * Math.PI * r;
+  const gap = parts.length > 1 ? 2 : 0;
+  const sum = parts.reduce((s, p) => s + p.value, 0) || 1;
+  const lengths = parts.map((p) => (p.value / sum) * c);
+  const starts = lengths.map((_, i) => lengths.slice(0, i).reduce((s, l) => s + l, 0));
+
+  return (
+    <svg viewBox="0 0 160 160" className="block h-auto w-full font-clear" role="img" aria-label={label}>
+      <g transform="rotate(-90 80 80)" fill="none" strokeWidth="22">
+        <circle cx="80" cy="80" r={r} stroke="var(--clr-ground)" />
+        {parts.map((p, i) => (
+          <circle
+            key={p.key}
+            cx="80"
+            cy="80"
+            r={r}
+            stroke={p.color}
+            strokeDasharray={`${Math.max(0, lengths[i] - gap)} ${c}`}
+            strokeDashoffset={-starts[i]}
+          />
+        ))}
+      </g>
+      <text x="80" y="82" textAnchor="middle" fontSize="22" fontWeight="800" letterSpacing="-0.5" fill="var(--clr-ink)" className="tabular-nums">
+        <SvgMoneyText>{formatEurWhole(total)}</SvgMoneyText>
+      </text>
+      <text x="80" y="100" textAnchor="middle" fontSize="12" fill="var(--clr-muted)">
+        {caption}
+      </text>
+    </svg>
   );
 }

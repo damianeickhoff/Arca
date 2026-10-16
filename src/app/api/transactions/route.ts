@@ -89,9 +89,14 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    // The split dialog saves its shared-cost section in the same request.
+    const shared =
+      body.sharedWithCount !== undefined
+        ? { sharedWithCount: body.sharedWithCount ?? null, expectedReimbursement: body.expectedReimbursement ?? null }
+        : {};
     const [row] = await db
       .update(transactions)
-      .set({ manuallyCategorized: parsed.splits.length > 0 })
+      .set({ manuallyCategorized: parsed.splits.length > 0, ...shared })
       .where(eq(transactions.id, body.id))
       .returning();
 

@@ -20,6 +20,7 @@ import { nextOccurrence } from "@/lib/recurring-occurrence";
 import { shiftDate } from "@/lib/date-range";
 import { cn } from "@/lib/utils";
 import type { RecurringItem, Category } from "@/db/schema";
+import { MoneyText } from "@/components/clear/money";
 
 const FILTERS = [
   { value: "all",          label: "All" },
@@ -137,7 +138,7 @@ export function RecurringMenuClient({ items, categories }: Props) {
           <p className="text-md text-ink-3">
             {filter === "all" ? "Total" : activeFilterLabel} <span className="font-black px-1">·</span> <span className="text-ink-3"><span className="bg-[var(--dialog-content-background)] px-2 py-0.5 rounded-full">{visible.length}/{activeItems.length}</span> transaction{activeItems.length === 1 ? "" : "s"} active</span>
           </p>
-          <p className="text-4xl font-medium tabular-nums tracking-tight py-3">{formatEur(monthlyTotal)}</p>
+          <p className="text-4xl font-medium tabular-nums tracking-tight py-3"><MoneyText>{formatEur(monthlyTotal)}</MoneyText></p>
           <p className="text-md text-ink-3 -mt-1">{perMonthLabel}</p>
         </div>
 
@@ -204,7 +205,7 @@ export function RecurringMenuClient({ items, categories }: Props) {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-lg font-semibold tabular-nums leading-tight">
-                          {item.amount ? formatEur(item.amount) : "—"}
+                          <MoneyText>{item.amount ? formatEur(item.amount) : "—"}</MoneyText>
                         </p>
                         {/* Under the amount: transaction type + budget type. */}
                         <p className="text-xs text-ink-3 mt-0.5 truncate">{typeBudget}</p>

@@ -1,12 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
-
-type PanelKey =
-  | "accounts" | "categories" | "recurring" | "merchants"
-  | "financialMonth" | "monthOverrides"
-  | "import" | "appearance" | "privacy" | "appLock" | "language" | "currency"
-  | "help" | "users";
+import type { SettingsPanelKey as PanelKey } from "@/components/settings/settings-sections";
 
 interface Ctx {
   requestedPanel: PanelKey | null;

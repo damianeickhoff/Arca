@@ -350,7 +350,7 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
 
 /* ── Clear type and fill roles ─────────────────────────────────────────────────
    clear-amount — every money figure in the redesign: Plus Jakarta Sans 800, tight
-                  tracking, tabular digits (tabular-nums also drives privacy blur).
+                  tracking, tabular digits.
    clear-hatch  — the diagonal stripes for "still available / projected" on bars. */
 @utility clear-amount {
   font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
@@ -483,14 +483,36 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   background-image: var(--auth-bg-dark);
 }
 
-/* Privacy mode — blur all tabular-nums (amounts) */
-html.privacy .tabular-nums {
-  filter: blur(6px);
-  transition: filter 0.2s ease;
-  user-select: none;
+/* Privacy mode — html.privacy (set by components/privacy-toggle.tsx and the inline
+   script in the root layout) hides every money figure behind dots, the way the concept
+   draws it ("€•••,••"). <Amount>, <Money> and <MoneyText> (components/clear/money.tsx)
+   render the real figure (.money-real) next to fixed-length dots (.money-mask) and this
+   swaps which one shows, so the size of an amount gives nothing away either. Text that
+   cannot be split (chart labels) carries the `money` class and is masked glyph by
+   glyph; inside an SVG, where that does not apply, it is hidden instead. */
+.money-mask {
+  display: none;
 }
-html.privacy .tabular-nums:hover {
-  filter: blur(0);
+html.privacy .money-real {
+  display: none;
+}
+html.privacy .money-mask {
+  display: inline;
+}
+html.privacy .money {
+  -webkit-text-security: disc;
+}
+@supports not (-webkit-text-security: disc) {
+  html.privacy .money {
+    -webkit-text-fill-color: transparent;
+    background-image: radial-gradient(circle, currentColor 0.11em, transparent 0.13em);
+    background-size: 0.55em 1em;
+    background-position: left center;
+    background-repeat: repeat-x;
+  }
+}
+html.privacy svg .money {
+  visibility: hidden;
 }
 
 /* Hide the scrollbar on horizontally-scrollable rows (e.g. the Reports comparison cards) while keeping them scrollable. */
@@ -735,24 +757,6 @@ button, a, [role="button"] {
        real (document/<html>) scrolling box and makes them never appear to
        "stick" — they just sit static. <html> already clips horizontal
        overflow above, so body doesn't need to repeat it. */
-  }
-
-  @keyframes search-content-in {
-    from { opacity: 0; transform: translateY(22px); }
-    to   { opacity: 1; transform: translateY(0);    }
-  }
-
-  @keyframes search-item-in {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0);    }
-  }
-
-  .search-content-enter {
-    animation: search-content-in 380ms var(--easing-out-quart) both;
-  }
-
-  .search-item-enter {
-    animation: search-item-in 340ms var(--easing-out-quart) both;
   }
 
   /* Undo-toast countdown bar (transactions list). */

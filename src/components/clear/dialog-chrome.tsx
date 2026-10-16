@@ -3,6 +3,7 @@
 import { IconX } from "@tabler/icons-react";
 
 import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 /**
  * The visual parts of a Clear dialog, independent of how it opens (centred modal
@@ -43,7 +44,7 @@ export function ClearDialogHeader({
         <h2 id={titleId} className="m-0 text-[22px] font-extrabold tracking-[-0.02em]">
           {title}
         </h2>
-        {subtitle && <p className="m-0 text-sm text-clear-muted">{subtitle}</p>}
+        {subtitle && <p className="m-0 text-sm text-clear-muted"><MoneyText>{subtitle}</MoneyText></p>}
       </div>
       {onClose && (
         <button

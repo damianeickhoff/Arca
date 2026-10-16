@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { IconCheck, IconPhoto, IconSearch, IconUpload, IconX } from "@tabler/icons-react";
 import { BRAND_MAP } from "@/lib/brand-map";
-import {
-  IconSearchFilled as Search,
-  IconPlusFilled as Plus
-} from "@tabler/icons-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { BrandIcon } from "@/components/brand-icon";
-import { Segmented, PickerTrigger, NoneTile, GridTile } from "@/components/icon-picker";
+import { IconGlyph } from "@/components/icon-picker";
+import { ClearButton } from "@/components/clear/button";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearInput } from "@/components/clear/field";
+import { Segmented } from "@/components/clear/segmented";
 import { cn } from "@/lib/utils";
 import { parseImgKey, buildImgKey, parseBrandKey, buildBrandKey, isBrandIcon } from "@/components/icon";
 
 // Curated list of brands relevant to recurring bills & subscriptions
-export const BRAND_ICONS: { key: string; label: string }[] = [
+const BRAND_ICONS: { key: string; label: string }[] = [
   // Streaming & music
   { key: "spotify",         label: "Spotify" },
   { key: "netflix",         label: "Netflix" },
@@ -85,62 +87,82 @@ export const BRAND_ICONS: { key: string; label: string }[] = [
 // De-duplicate by key
 const DEDUPED_BRANDS = BRAND_ICONS.filter((v, i, a) => a.findIndex((x) => x.key === v.key) === i);
 
+const TILE =
+  "relative flex aspect-square cursor-pointer items-center justify-center rounded-clear-tile bg-clear-tile text-clear-ink outline-none transition-colors hover:bg-clear-line focus-visible:ring-3 focus-visible:ring-clear-ember/50";
+const TILE_SELECTED = "ring-2 ring-clear-ink ring-offset-2 ring-offset-clear-card hover:bg-clear-tile";
+
+/** The black check badge on a selected tile's corner. */
+function SelectedBadge() {
+  return (
+    <span className="absolute -top-2 -right-2 flex size-[22px] items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink ring-2 ring-clear-card">
+      <IconCheck size={13} stroke={2.8} />
+    </span>
+  );
+}
+
+/** Arrow keys move focus between the tiles of a grid (Enter / Space pick natively). */
+function moveInTileGrid(e: React.KeyboardEvent<HTMLElement>) {
+  const grid = e.currentTarget;
+  const columns = getComputedStyle(grid).gridTemplateColumns.split(" ").length || 1;
+  const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns }[e.key];
+  if (delta == null) return;
+  const tiles = Array.from(grid.querySelectorAll<HTMLButtonElement>(":scope > button"));
+  const index = tiles.indexOf(document.activeElement as HTMLButtonElement);
+  if (index < 0) return;
+  const next = tiles[index + delta];
+  if (!next) return;
+  e.preventDefault();
+  next.focus();
+}
+
 function SliderRow({ label, value, min, max, step, unit, onChange }: {
   label: string; value: number; min: number; max: number; step: number; unit: string;
   onChange: (v: number) => void;
 }) {
+  const id = useId();
   return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-clear-ink/50 w-20 shrink-0">{label}</span>
+    <div className="flex items-center gap-3">
+      <label htmlFor={id} className="w-24 shrink-0 text-[13px] font-semibold text-clear-ink-2">{label}</label>
       <input
+        id={id}
         type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="flex-1 h-1.5 accent-clear-ember cursor-pointer"
+        className="h-1.5 flex-1 cursor-pointer accent-clear-ink"
       />
-      <span className="text-xs text-clear-ink/60 w-12 text-right tabular-nums">{value}{unit}</span>
+      <span className="w-12 text-right text-[13px] font-bold tabular-nums">{value}{unit}</span>
     </div>
   );
 }
 
-function ImgAdjuster({ value, onChange }: { value: string; onChange: (key: string) => void }) {
-  const { src, scale, ox, oy } = parseImgKey(value);
+/** Size and position sliders for a brand logo or an uploaded image — both store the
+ *  transform in the icon key (?s=…&x=…&y=…). */
+function IconAdjuster({ value, onChange }: { value: string; onChange: (key: string) => void }) {
+  const t = useTranslations("brandIconPicker.adjust");
+  const isImg = value.startsWith("img:");
+  const parsed = isImg ? parseImgKey(value) : parseBrandKey(value);
+  const base = "src" in parsed ? parsed.src : parsed.base;
+  const { scale, ox, oy } = parsed;
   const hasTransform = scale !== 1 || ox !== 0 || oy !== 0;
-  function update(s: number, x: number, y: number) { onChange(buildImgKey(src, s, x, y)); }
+  function update(s: number, x: number, y: number) {
+    onChange(isImg ? buildImgKey(base, s, x, y) : buildBrandKey(base, s, x, y));
+  }
   return (
-    <div className="rounded-xl bg-clear-primary/[0.04] p-3 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-clear-ink/60">Formaat &amp; positie</p>
+    <div className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[13px] font-bold text-clear-ink-2">{t("title")}</span>
         {hasTransform && (
-          <button type="button" onClick={() => update(1, 0, 0)} className="text-xs text-clear-ink/40 hover:text-clear-ink/70 cursor-pointer">Reset</button>
+          <button type="button" onClick={() => update(1, 0, 0)} className="cursor-pointer rounded-full px-2.5 py-1 text-[13px] font-bold text-clear-ink hover:bg-clear-line">
+            {t("reset")}
+          </button>
         )}
       </div>
-      <div className="flex justify-center"><BrandIcon iconKey={value} size="xxl" /></div>
-      <div className="space-y-2">
-        <SliderRow label="Grootte" value={Math.round(scale * 100)} min={20} max={250} step={5} unit="%" onChange={(v) => update(v / 100, ox, oy)} />
-        <SliderRow label="Links/Rechts" value={ox} min={-40} max={40} step={1} unit="px" onChange={(v) => update(scale, v, oy)} />
-        <SliderRow label="Boven/Onder" value={oy} min={-40} max={40} step={1} unit="px" onChange={(v) => update(scale, ox, v)} />
+      <div className="flex justify-center">
+        <BrandIcon iconKey={value} size="xxl" />
       </div>
-    </div>
-  );
-}
-
-function BrandAdjuster({ value, onChange }: { value: string; onChange: (key: string) => void }) {
-  const { base, scale, ox, oy } = parseBrandKey(value);
-  const hasTransform = scale !== 1 || ox !== 0 || oy !== 0;
-  function update(s: number, x: number, y: number) { onChange(buildBrandKey(base, s, x, y)); }
-  return (
-    <div className="rounded-xl bg-clear-primary/[0.04] p-3 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-clear-ink/60">Formaat &amp; positie</p>
-        {hasTransform && (
-          <button type="button" onClick={() => update(1, 0, 0)} className="text-xs text-clear-ink/40 hover:text-clear-ink/70 cursor-pointer">Reset</button>
-        )}
-      </div>
-      <div className="flex justify-center"><BrandIcon iconKey={value} size="xxl" /></div>
-      <div className="space-y-2">
-        <SliderRow label="Grootte" value={Math.round(scale * 100)} min={20} max={250} step={5} unit="%" onChange={(v) => update(v / 100, ox, oy)} />
-        <SliderRow label="Links/Rechts" value={ox} min={-40} max={40} step={1} unit="px" onChange={(v) => update(scale, v, oy)} />
-        <SliderRow label="Boven/Onder" value={oy} min={-40} max={40} step={1} unit="px" onChange={(v) => update(scale, ox, v)} />
+      <div className="flex flex-col gap-2.5">
+        <SliderRow label={t("size")} value={Math.round(scale * 100)} min={20} max={250} step={5} unit="%" onChange={(v) => update(v / 100, ox, oy)} />
+        <SliderRow label={t("horizontal")} value={ox} min={-40} max={40} step={1} unit="px" onChange={(v) => update(scale, v, oy)} />
+        <SliderRow label={t("vertical")} value={oy} min={-40} max={40} step={1} unit="px" onChange={(v) => update(scale, ox, v)} />
       </div>
     </div>
   );
@@ -153,7 +175,14 @@ interface BrandIconPickerProps {
 
 interface UploadedIcon { key: string; url: string; name: string }
 
+/**
+ * The merchant / brand icon chooser (Popup-BrandIcon, the picker grid part): a tile
+ * trigger that opens a dialog with a search field, Popular · All brands, the logo grid,
+ * your uploaded images, an emoji-or-text icon, and size/position sliders for a chosen
+ * logo or image. Picks apply straight away (onChange); Done closes.
+ */
 export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
+  const t = useTranslations("brandIconPicker");
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [searchAll, setSearchAll] = useState(false);
@@ -161,6 +190,7 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
   const [uploadedIcons, setUploadedIcons] = useState<UploadedIcon[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ids = useId();
 
   useEffect(() => {
     fetch("/api/icons/upload")
@@ -172,22 +202,18 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
   // The base key for the currently selected brand icon (strips any transform params)
   const selectedBrandBase = value && isBrandIcon(value) ? parseBrandKey(value).base : null;
 
-  // Build list: either curated list or all available in BRAND_MAP
+  // Either the curated list or everything in BRAND_MAP
   const allKeys = searchAll
     ? Object.keys(BRAND_MAP).map((k) => ({ key: k, label: BRAND_MAP[k].title ?? k }))
     : DEDUPED_BRANDS;
 
-  const filtered = (() => {
-    const list = allKeys
-      .filter((b) => BRAND_MAP[b.key])
-      .filter(
-        (b) =>
-          !search ||
-          b.label.toLowerCase().includes(search.toLowerCase()) ||
-          b.key.toLowerCase().includes(search.toLowerCase())
-      )
-      .slice(0, searchAll && !search ? 80 : undefined);
+  const query = search.trim().toLowerCase();
+  const matching = allKeys
+    .filter((b) => BRAND_MAP[b.key])
+    .filter((b) => !query || b.label.toLowerCase().includes(query) || b.key.toLowerCase().includes(query));
 
+  const filtered = (() => {
+    const list = matching.slice(0, searchAll && !query ? 80 : undefined);
     // Pin the currently selected brand to the top (by base key)
     if (selectedBrandBase) {
       const idx = list.findIndex((b) => b.key === selectedBrandBase);
@@ -217,169 +243,211 @@ export function BrandIconPicker({ value, onChange }: BrandIconPickerProps) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  const selectedLabel = DEDUPED_BRANDS.find((b) => b.key === selectedBrandBase)?.label
-    ?? (selectedBrandBase ? BRAND_MAP[selectedBrandBase]?.title : undefined)
-    ?? value;
+  const selectedLabel =
+    DEDUPED_BRANDS.find((b) => b.key === selectedBrandBase)?.label ??
+    (selectedBrandBase ? BRAND_MAP[selectedBrandBase]?.title : undefined) ??
+    (value?.startsWith("img:") ? t("uploadedImage") : value?.startsWith("custom:") ? value.slice(7) : value);
 
   // The base src for the selected uploaded image (strips transform params for list matching)
   const selectedImgSrc = value?.startsWith("img:") ? parseImgKey(value).src : null;
 
-  // Whether we're showing the adjuster (brand icon or img: selected)
-  const showBrandAdjuster = !!selectedBrandBase;
-  const showImgAdjuster = !!value?.startsWith("img:");
-  const showAdjuster = showBrandAdjuster || showImgAdjuster;
-
   function selectBrand(key: string) {
-    // Keep the dialog open so the adjuster is visible; preserve existing transforms if same brand
-    if (selectedBrandBase === key && value) {
-      // already selected — do nothing (adjuster stays)
-    } else {
-      onChange(key);
-    }
+    // Keep the dialog open so the sliders show; re-picking the same brand keeps its transform.
+    if (selectedBrandBase !== key || !value) onChange(key);
   }
 
   function selectNone() {
+    setCustomInput("");
     onChange(null);
     setOpen(false);
   }
 
   return (
     <>
-      <PickerTrigger value={value ?? null} onClick={() => setOpen(true)} />
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={value ? t("change", { name: selectedLabel ?? "" }) : t("choose")}
+        className="flex size-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-clear-tile bg-clear-tile text-clear-muted outline-none transition-colors hover:bg-clear-line focus-visible:ring-3 focus-visible:ring-clear-ember/50"
+      >
+        {value ? <BrandIcon iconKey={value} size="sm" /> : <IconPhoto className="size-5" stroke={1.9} />}
+      </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         {/* z-90/85: this picker is always the topmost thing on screen when open, and it
-            is now opened from editors that themselves stack above full-screen portals
+            is opened from editors that themselves stack above full-screen portals
             (merchant editor, z-72) — anything lower would render behind its own host. */}
-        <DialogContent className="max-h-[90dvh] overflow-y-auto" sheetClassName="z-[90]" overlayClassName="z-[85] backdrop-blur-lg bg-clear-primary/20">
-          <DialogHeader>
-            <DialogTitle>Merk kiezen</DialogTitle>
-          </DialogHeader>
+        <DialogContent
+          hideHeaderRow
+          title={t("title")}
+          sheetClassName="z-[90]"
+          overlayClassName="z-[85]"
+          className="gap-5 pt-6 font-clear text-clear-ink lg:px-7 lg:pt-7"
+          footer={
+            <ClearDialogFooter
+              destructive={
+                value ? (
+                  <ClearButton variant="danger" onClick={selectNone}>
+                    {t("noIcon")}
+                  </ClearButton>
+                ) : undefined
+              }
+            >
+              <ClearButton variant="primary" onClick={() => setOpen(false)}>
+                {t("done")}
+              </ClearButton>
+            </ClearDialogFooter>
+          }
+        >
+          <ClearDialogHeader
+            title={t("title")}
+            subtitle={value ? t("selected", { name: selectedLabel ?? "" }) : t("subtitle")}
+            onClose={() => setOpen(false)}
+            closeLabel={t("close")}
+          />
 
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-clear-ink/40" />
-                <input
-                  type="text"
-                  placeholder="Search merk..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-full pl-9 pr-3 py-2 text-sm bg-clear-primary/5"
-                />
-              </div>
-              <Segmented
-                value={searchAll ? "all" : "popular"}
-                onChange={(v) => setSearchAll(v === "all")}
-                options={[{ value: "popular", label: "Populair" }, { value: "all", label: "Alle" }]}
+          <div className="flex flex-col gap-3">
+            <div className="flex h-12 items-center gap-2.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile pr-2 pl-4 text-clear-muted transition-colors focus-within:border-clear-ink">
+              <IconSearch className="size-[18px] shrink-0" />
+              <input
+                type="search"
+                aria-label={t("search")}
+                placeholder={t("search")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-semibold text-clear-ink outline-none placeholder:font-medium placeholder:text-clear-placeholder [&::-webkit-search-cancel-button]:hidden"
               />
+              {query && (
+                <>
+                  <span className="shrink-0 text-[13px] font-semibold whitespace-nowrap" aria-live="polite">
+                    {t("matches", { count: matching.length })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label={t("clearSearch")}
+                    className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-card text-clear-ink-2"
+                  >
+                    <IconX className="size-4" />
+                  </button>
+                </>
+              )}
             </div>
+            <Segmented
+              label={t("scope")}
+              surface="tile"
+              size="sm"
+              value={searchAll ? "all" : "popular"}
+              onChange={(v) => setSearchAll(v === "all")}
+              items={[
+                { value: "popular", label: t("popular") },
+                { value: "all", label: t("all") },
+              ]}
+              className="self-start"
+            />
+          </div>
 
-            <div className="grid grid-cols-6 gap-1.5">
-              <NoneTile selected={!value} onClick={selectNone} />
-              {filtered.map((brand) => (
-                <GridTile
-                  key={brand.key}
-                  iconKey={brand.key}
-                  label={brand.label}
-                  selected={selectedBrandBase === brand.key}
-                  onClick={() => selectBrand(brand.key)}
-                />
-              ))}
-            </div>
-
-            {/* Brand adjuster */}
-            {showBrandAdjuster && value && (
-              <BrandAdjuster value={value} onChange={onChange} />
-            )}
-
-            {/* Uploaded images */}
-            <div className="border-t border-clear-ink/10 pt-3 space-y-3">
-              <p className="text-xs font-bold text-clear-muted">Eigen afbeelding</p>
-              <div className="flex flex-wrap gap-1.5">
-                {uploadedIcons.map((img) => {
-                  const isSelected = selectedImgSrc === img.key.slice(4) || value === img.key;
+          <div className="flex flex-col gap-2.5">
+            <span id={`${ids}-brands`} className="text-[13px] font-bold text-clear-ink-2">{t("brands")}</span>
+            {filtered.length === 0 ? (
+              <p className="m-0 py-4 text-center text-sm text-clear-muted">{t("noMatches")}</p>
+            ) : (
+              <div role="radiogroup" aria-labelledby={`${ids}-brands`} onKeyDown={moveInTileGrid} className="grid grid-cols-5 gap-3 sm:grid-cols-6">
+                {filtered.map((brand) => {
+                  const selected = selectedBrandBase === brand.key;
                   return (
                     <button
-                      key={img.key}
+                      key={brand.key}
                       type="button"
-                      title={img.name}
-                      onClick={() => {
-                        if (!isSelected) onChange(img.key);
-                      }}
-                      className={cn(
-                        "rounded-xl p-1.5 transition-colors cursor-pointer",
-                        isSelected ? "ring-2 ring-clear-ink bg-clear-primary/5" : "hover:bg-clear-primary/5",
-                      )}
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={brand.label}
+                      title={brand.label}
+                      onClick={() => selectBrand(brand.key)}
+                      className={cn(TILE, selected && TILE_SELECTED)}
                     >
-                      <BrandIcon iconKey={isSelected && value ? value : img.key} size="sm" />
+                      <IconGlyph iconKey={brand.key} size={28} />
+                      {selected && <SelectedBadge />}
                     </button>
                   );
                 })}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="size-10 rounded-xl border border-dashed border-clear-ink/25 text-clear-ink/40 hover:border-clear-ink/50 hover:text-clear-ink/70 transition-colors flex items-center justify-center disabled:opacity-50 cursor-pointer"
-                  title="Upload image"
-                >
-                  {uploading ? "…" : <Plus className="size-4" />}
-                </button>
-                <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleUpload} />
               </div>
-
-              {/* Img adjuster */}
-              {showImgAdjuster && value && (
-                <ImgAdjuster value={value} onChange={onChange} />
-              )}
-            </div>
-
-            {/* Custom emoji/text icon */}
-            <div className="border-t border-clear-ink/10 pt-3">
-              <p className="text-xs font-bold text-clear-muted mb-1.5">Eigen icoon (emoji of tekst)</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  maxLength={2}
-                  placeholder="🏠 or AB"
-                  value={customInput}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCustomInput(v);
-                    if (v) onChange(`custom:${v}`);
-                  }}
-                  className="w-24 rounded-full px-3 py-1.5 text-sm bg-clear-primary/5 text-center"
-                />
-                {customInput && <BrandIcon iconKey={`custom:${customInput}`} size="sm" />}
-                {value?.startsWith("custom:") && (
-                  <button
-                    type="button"
-                    onClick={() => { setCustomInput(""); onChange(null); }}
-                    className="text-xs text-clear-ink/50 hover:text-clear-ink cursor-pointer"
-                  >
-                    Wissen
-                  </button>
-                )}
-              </div>
-            </div>
+            )}
+            {selectedBrandBase && value && <IconAdjuster value={value} onChange={onChange} />}
           </div>
 
-          {value && !showAdjuster && (
-            <p className="text-xs text-clear-ink/50 -mt-1">
-              Geselecteerd: {selectedLabel}
-            </p>
-          )}
-
-          {/* Confirm button when an adjustable icon is selected */}
-          {showAdjuster && (
+          <div className="flex flex-col gap-2.5">
+            <span id={`${ids}-uploads`} className="text-[13px] font-bold text-clear-ink-2">{t("uploads")}</span>
+            <div role="radiogroup" aria-labelledby={`${ids}-uploads`} onKeyDown={moveInTileGrid} className="grid grid-cols-5 gap-3 sm:grid-cols-6">
+              {uploadedIcons.map((img) => {
+                const selected = selectedImgSrc === img.key.slice(4) || value === img.key;
+                return (
+                  <button
+                    key={img.key}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    aria-label={t("uploadedNamed", { name: img.name })}
+                    title={img.name}
+                    onClick={() => {
+                      if (!selected) onChange(img.key);
+                    }}
+                    className={cn(TILE, selected && TILE_SELECTED)}
+                  >
+                    <BrandIcon iconKey={selected && value ? value : img.key} size="sm" />
+                    {selected && <SelectedBadge />}
+                  </button>
+                );
+              })}
+            </div>
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              className="w-full rounded-xl bg-clear-primary text-clear-ember-ink py-2.5 text-sm font-medium mt-1 cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex h-16 cursor-pointer items-center gap-3 self-start rounded-clear-tile border-[1.5px] border-dashed border-clear-placeholder px-5 text-left transition-colors hover:border-clear-ink disabled:opacity-50"
             >
-              Save
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-clear-ground">
+                <IconUpload className="size-[18px]" stroke={2} />
+              </span>
+              <span className="flex flex-col gap-px">
+                <span className="text-sm font-bold">{uploading ? t("uploading") : t("upload")}</span>
+                <span className="text-xs font-medium text-clear-muted">{t("uploadHint")}</span>
+              </span>
             </button>
-          )}
+            <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleUpload} />
+            {value?.startsWith("img:") && <IconAdjuster value={value} onChange={onChange} />}
+          </div>
+
+          <div className="flex flex-col gap-2.5 border-t border-clear-ground pt-4">
+            <label htmlFor={`${ids}-custom`} className="text-[13px] font-bold text-clear-ink-2">{t("custom")}</label>
+            <div className="flex items-center gap-3">
+              <ClearInput
+                id={`${ids}-custom`}
+                maxLength={2}
+                placeholder={t("customPlaceholder")}
+                value={customInput}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCustomInput(v);
+                  if (v) onChange(`custom:${v}`);
+                }}
+                className="w-24 text-center"
+              />
+              {customInput && <BrandIcon iconKey={`custom:${customInput}`} size="sm" />}
+              {value?.startsWith("custom:") && (
+                <ClearButton
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCustomInput("");
+                    onChange(null);
+                  }}
+                >
+                  {t("clearCustom")}
+                </ClearButton>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

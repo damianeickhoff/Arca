@@ -45,9 +45,9 @@ export interface MerchantDetail {
   largestPurchase: number | null;
   firstVisit: string | null;
   lastVisit: string | null;
-  /** Cumulative spend per month across the merchant's whole history — feeds the same
-   * CategorySpendChart the category detail uses. `forecast` is always null: a merchant
-   * profile has no budget period to project a pace against. */
+  /** Cumulative spend per month across the merchant's whole history — the profile
+   * derives its month-by-month visit strip from it. `forecast` is always null: a
+   * merchant profile has no budget period to project a pace against. */
   chart: CategorySpendPoint[];
   yearly: MerchantYearPoint[];
   categories: MerchantCategorySlice[];

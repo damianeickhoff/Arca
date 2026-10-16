@@ -85,6 +85,10 @@ export interface CategoryDetail {
   popularDay: { weekday: number; amounts: number[] } | null; // weekday: 0=Mon..6=Sun, amounts = total spend per weekday
   biggestSpent: number | null;
   excludeFromSpendingRow: boolean;
+  /** The category's own budget type ("nodig" / "willen" / "sparen", or legacy English). */
+  budgetType: string | null;
+  /** The stored, period-agnostic budget target (one budget period's worth), unscaled. */
+  budgetTarget: number | null;
 }
 
 /** Per-category (rolled up to include children) variable-expense spend, honoring
@@ -263,7 +267,9 @@ export async function getCategoryDetail(categoryId: number, from: string, to: st
     popularDay = { weekday, amounts };
   }
 
-  const avgChart = txList.length >= 4 ? await getAvgChartBuckets(categoryIds, avgUnit, to, direction) : null;
+  // Always: the history chart is worth showing even when this period has few
+  // transactions (or none) — the earlier buckets are what it is about.
+  const avgChart = await getAvgChartBuckets(categoryIds, avgUnit, to, direction);
 
   return {
     categoryId: category.id,
@@ -282,5 +288,7 @@ export async function getCategoryDetail(categoryId: number, from: string, to: st
     popularDay,
     biggestSpent,
     excludeFromSpendingRow: category.excludeFromSpendingRow,
+    budgetType: category.budgetType ?? null,
+    budgetTarget: rawBudget,
   };
 }

@@ -1,174 +1,369 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import {
-  IconTrashFilled as Trash2,
-  IconChevronRight as ChevronRight,
-  IconCheck as Check,
-  IconCreditCardFilled as CreditCard,
-  IconCoinEuro as Coin,
-  IconCalendarEvent as Calendar,
-  IconCategory2 as CategoryIcon,
-  IconNote as Note,
-  IconPencilFilled as Pencil,
-  IconScale as Scale,
-  IconAlertTriangle as AlertTriangle,
+  IconAlertTriangle,
+  IconBuildingBank,
+  IconCash,
+  IconChartLine,
+  IconCheck,
+  IconCreditCard,
+  IconHome,
+  IconInfoCircle,
+  IconLink,
+  IconPigMoney,
+  IconTrash,
+  IconWallet,
 } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { AmountInput } from "@/components/ui/amount-input";
-import { Button } from "@/components/ui/button";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearField, ClearInput } from "@/components/clear/field";
+import { ClearSwitch } from "@/components/clear/switch";
+import { Segmented } from "@/components/clear/segmented";
+import { IconTile } from "@/components/clear/icon-tile";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { useConfirm } from "@/components/clear/confirm-dialog";
+import type { ClearTone } from "@/components/clear/tones";
+import { ClearSelect } from "@/components/settings/accounts/clear-select";
 import { DatePicker } from "@/components/date-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { ColorPicker } from "@/components/color-picker";
-import { ToggleSwitch } from "@/components/toggle-switch";
-import { SubSheet } from "@/components/sub-sheet";
-import { Icon, isBrandIcon } from "@/components/icon";
-import { AmountKeypad } from "@/components/amount-keypad";
-import { WarningBanner } from "@/components/warning-banner";
-import { evaluateExpression } from "@/lib/amount-expression";
-import { formatEur } from "@/lib/format";
+import { PickerField } from "@/components/picker-field";
+import { Icon, softIconColors } from "@/components/icon";
+import { parseAmountInput } from "@/app/debts/debt-form-dialog";
+import { currencySymbol, formatEur } from "@/lib/format";
 import { roundToCents } from "@/lib/transaction-splits";
+import { TRANSFER_TYPES } from "@/lib/transfer-types";
 import { cn } from "@/lib/utils";
 import type { Bank, VermogenAccount } from "@/db/schema";
-import { TRANSFER_TYPES } from "@/lib/transfer-types";
+import { MoneyText } from "@/components/clear/money";
 
-// ─── Shared option constants / labels (single source of truth) ───────────────
+// ─── Account vocabularies ────────────────────────────────────────────────────
+// banks.cardType and vermogen_accounts.type keep their stored values; only the
+// labels (accountForms.bankTypes / accountForms.assetTypes) and glyphs live here.
 
-export const TRANSFER_KIND_OPTIONS = [
-  { value: "", label: "None" },
-  ...TRANSFER_TYPES.filter((t) => t.value !== "other").map((t) => ({ value: t.value, label: t.label })),
-];
+export const BANK_TYPES = ["debitcard", "savings", "creditcard", "cash"] as const;
+type BankType = (typeof BANK_TYPES)[number];
 
-export const VERMOGEN_TYPES: { value: string; label: string }[] = [
-  { value: "spaarrekening", label: "Savings account" },
-  { value: "beleggingen",   label: "Investments" },
-  { value: "betaalrekening", label: "Checking account" },
-  { value: "bezitting",     label: "Possession" },
-];
-
-export const VERMOGEN_TYPE_OPTIONS = VERMOGEN_TYPES;
-
-export function vermogenTypeLabel(type: string) {
-  return VERMOGEN_TYPES.find((t) => t.value === type)?.label ?? type;
-}
-
-// "Type" options for the mobile add/edit account dialogs. Bank-kind values reuse
-// the existing banks.cardType vocabulary (just relabeled: debitcard -> "Bank"), so
-// no schema change is needed for them. "investment" is the one value that maps to
-// a vermogen_accounts row instead (type="beleggingen") — only offered in the Add
-// dialog, since converting an existing bank row into an asset row isn't supported.
-export const BANK_TYPE_OPTIONS = [
-  { value: "cash",       label: "Cash" },
-  { value: "debitcard",  label: "Bank" },
-  { value: "creditcard", label: "Credit card" },
-  { value: "savings",    label: "Savings" },
-];
-
-export const ACCOUNT_TYPE_OPTIONS = [
-  ...BANK_TYPE_OPTIONS,
-  { value: "investment", label: "Investment" },
-];
-
-export const CARD_TYPE_OPTIONS = BANK_TYPE_OPTIONS;
-
-export const CARD_TYPE_LABELS: Record<string, string> = {
-  debitcard:  "Betaalpas",
-  creditcard: "Creditcard",
-  savings:    "Spaarrekening",
-  cash:       "Contant",
+const BANK_TYPE_ICON: Record<BankType, typeof IconWallet> = {
+  debitcard: IconWallet,
+  savings: IconPigMoney,
+  creditcard: IconCreditCard,
+  cash: IconCash,
 };
 
-// Row that opens a slide-in SubSheet subpage — matches the debt/savings-goal/
-// recurring-item edit dialogs, so tapping any field behaves the same everywhere.
-function Row({
+export const ASSET_TYPES = ["spaarrekening", "beleggingen", "bezitting", "betaalrekening"] as const;
+type AssetType = (typeof ASSET_TYPES)[number];
+
+export const ASSET_TYPE_STYLE: Record<AssetType, { icon: typeof IconWallet; tone: ClearTone }> = {
+  spaarrekening: { icon: IconPigMoney, tone: "sky" },
+  beleggingen: { icon: IconChartLine, tone: "mint" },
+  bezitting: { icon: IconHome, tone: "butter" },
+  betaalrekening: { icon: IconWallet, tone: "stone" },
+};
+
+const TRANSFER_KINDS = TRANSFER_TYPES.filter((t) => t.value !== "other").map((t) => t.value);
+
+export const DEFAULT_BANK_COLOR = "#2f7bf6";
+export const DEFAULT_ASSET_COLOR = "#0f9d8c";
+
+function isBankType(v: string | null | undefined): v is BankType {
+  return !!v && (BANK_TYPES as readonly string[]).includes(v);
+}
+
+function isAssetType(v: string | null | undefined): v is AssetType {
+  return !!v && (ASSET_TYPES as readonly string[]).includes(v);
+}
+
+/** Translated labels for a bank's cardType and an asset's type; unknown values pass through. */
+export function useAccountTypeLabels() {
+  const t = useTranslations("accountForms");
+  return {
+    bankType: (v: string | null | undefined) => (isBankType(v) ? t(`bankTypes.${v}`) : v ?? ""),
+    assetType: (v: string | null | undefined) => (isAssetType(v) ? t(`assetTypes.${v}`) : v ?? ""),
+  };
+}
+
+/** The glyph of an account: its chosen icon as a soft tile, else `fallback` tinted with its colour. */
+export function AccountGlyph({
   icon,
+  color,
+  fallback: Fallback,
+  size = "md",
+}: {
+  icon: string | null;
+  color: string;
+  fallback: typeof IconWallet;
+  size?: "sm" | "md";
+}) {
+  if (icon) return <Icon iconKey={icon} color={color} size={size} soft />;
+  const tint = softIconColors(color);
+  return (
+    <span
+      aria-hidden
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-clear-icon", size === "sm" ? "size-8" : "size-10")}
+      style={{ background: tint.background, color: tint.foreground }}
+    >
+      <Fallback size={size === "sm" ? 17 : 20} stroke={2} />
+    </span>
+  );
+}
+
+export function assetGlyph(type: string) {
+  return isAssetType(type) ? ASSET_TYPE_STYLE[type].icon : IconWallet;
+}
+
+// ─── Shared form bits ────────────────────────────────────────────────────────
+
+function todayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/** An amount as typed, a leading minus allowed ("−420,00", "-1.950,50", "100+25"). */
+export function parseMoney(raw: string): number | null {
+  const s = raw.trim();
+  const negative = /^[-−]/.test(s);
+  const value = parseAmountInput(negative ? s.slice(1) : s);
+  return value == null ? null : negative ? -value : value;
+}
+
+/** A number as the money field shows it: "1950,5" → "1950,50"-style, no float noise. */
+export function moneyToExpr(n: number) {
+  return String(roundToCents(n)).replace(".", ",");
+}
+
+const OPERATOR = /\d\s*[+*/×÷]\s*\d|\d\s*[-−]\s*\d/;
+
+const FIELD_BOX =
+  "flex h-12 items-center gap-1.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 transition-colors focus-within:border-clear-ink";
+const FIELD_INPUT =
+  "min-w-0 w-full flex-1 border-none bg-transparent p-0 font-clear text-[15px] font-extrabold tabular-nums text-clear-ink outline-none placeholder:font-semibold placeholder:text-clear-placeholder";
+export const FIELD_LABEL = "text-[13px] font-bold text-clear-ink-2";
+export const DATE_TRIGGER =
+  "mt-0 mb-0 h-12 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 font-clear text-[15px] font-bold text-clear-ink focus-visible:border-clear-ink focus-visible:ring-0";
+
+/** A money field: currency sign, the amount (sums and a leading minus allowed) and what a sum comes to. */
+export function MoneyInput({
+  id,
+  value,
+  onChange,
+  describedBy,
+  className,
+}: {
+  id: string;
+  value: string;
+  onChange: (v: string) => void;
+  describedBy?: string;
+  className?: string;
+}) {
+  const result = OPERATOR.test(value) ? parseMoney(value) : null;
+  return (
+    <div className={cn(FIELD_BOX, className)}>
+      <span aria-hidden className="text-[15px] font-bold text-clear-muted">{currencySymbol()}</span>
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="0,00"
+        aria-describedby={describedBy}
+        className={FIELD_INPUT}
+      />
+      {result != null && <span className="shrink-0 text-[13px] font-semibold whitespace-nowrap text-clear-muted">= <MoneyText>{formatEur(result)}</MoneyText></span>}
+    </div>
+  );
+}
+
+function useDateLabel() {
+  const t = useTranslations("accountForms");
+  const locale = useLocale();
+  const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
+  return (date: string) => (date === todayISO() ? t("today") : fmt.format(new Date(`${date}T12:00:00`)));
+}
+
+/** Label + DatePicker, the label naming the picker's group. */
+function DateField({
   label,
   value,
-  onClick,
+  onChange,
+  onClear,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string;
-  onClick: () => void;
+  onChange: (v: string) => void;
+  onClear?: () => void;
 }) {
+  const t = useTranslations("accountForms");
+  const dateLabel = useDateLabel();
+  const id = useId();
   return (
-    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-surface-2 transition-colors">
-      <span className="text-ink-3 shrink-0">{icon}</span>
-      <span className="flex-1 font-medium text-ink">{label}</span>
-      <span className="flex items-center gap-1.5 text-ink-2 min-w-0">
-        <span className="truncate max-w-[45vw]">{value}</span>
-      </span>
-      <ChevronRight className="size-5 text-ink-3 shrink-0" />
-    </button>
+    <div role="group" aria-labelledby={id} className="flex flex-col gap-1.5">
+      <span id={id} className={FIELD_LABEL}>{label}</span>
+      <DatePicker
+        value={value}
+        onChange={onChange}
+        onClear={onClear}
+        label={value ? dateLabel(value) : t("notSet")}
+        triggerClassName={DATE_TRIGGER}
+      />
+    </div>
   );
 }
 
-function OptionList({ options, value, onSelect }: { options: { value: string; label: string }[]; value: string; onSelect: (v: string) => void }) {
+/** The "Include in net worth" tile. */
+function NetWorthSwitch({ checked, onChange, hint }: { checked: boolean; onChange: (v: boolean) => void; hint: string }) {
+  const t = useTranslations("accountForms");
+  const id = useId();
   return (
-    <div className="rounded-card bg-[var(--dialog-content-background)] overflow-hidden divide-y divide-border/50">
-      {options.map((o) => (
-        <button key={o.value} type="button" onClick={() => onSelect(o.value)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-surface-2 transition-colors">
-          <span className="flex-1 font-medium">{o.label}</span>
-          {value === o.value && <Check className="size-5 text-ink-2 shrink-0" />}
+    <div className="flex items-center justify-between gap-4 rounded-clear-tile bg-clear-tile px-4 py-3.5">
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span id={`${id}-label`} className="text-[15px] font-bold">{t("includeInNetWorth")}</span>
+        <span id={`${id}-hint`} className="text-[13px] text-clear-muted">{hint}</span>
+      </div>
+      <ClearSwitch checked={checked} onCheckedChange={onChange} labelledBy={`${id}-label`} />
+    </div>
+  );
+}
+
+/** Name field with the account glyph inside it; the glyph opens the icon & colour sheet. */
+function NameField({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+  glyph,
+  onGlyphClick,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  glyph: React.ReactNode;
+  onGlyphClick: () => void;
+}) {
+  const t = useTranslations("accountForms");
+  return (
+    <ClearField label={label} htmlFor={id}>
+      <div className={cn(FIELD_BOX, "gap-2.5 pl-2")}>
+        <button
+          type="button"
+          onClick={onGlyphClick}
+          aria-label={t("chooseIconColor")}
+          title={t("chooseIconColor")}
+          className="shrink-0 cursor-pointer rounded-clear-icon outline-none transition-transform focus-visible:ring-3 focus-visible:ring-clear-ember/50 active:scale-[0.94]"
+        >
+          {glyph}
         </button>
-      ))}
-    </div>
+        <input
+          id={id}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete="off"
+          className="min-w-0 w-full flex-1 border-none bg-transparent p-0 font-clear text-[15px] font-bold text-clear-ink outline-none placeholder:font-semibold placeholder:text-clear-placeholder"
+        />
+      </div>
+    </ClearField>
   );
 }
 
-// Compact +/- segmented pill for picking the sign of the balance being entered —
-// same "raised active segment" language as the Expense/Income toggle on the add-
-// transaction page, just reduced to two icon-only segments.
-function SignPill({ value, onChange }: { value: "+" | "−"; onChange: (v: "+" | "−") => void }) {
+/** The nested "Icon & colour" sheet. */
+function IconColorDialog({
+  open,
+  onOpenChange,
+  icon,
+  onIconChange,
+  color,
+  onColorChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  icon: string | null;
+  onIconChange: (v: string | null) => void;
+  color: string;
+  onColorChange: (v: string) => void;
+}) {
+  const t = useTranslations("accountForms");
   return (
-    <div className="inline-flex items-center gap-1 rounded-full bg-surface p-1">
-      {(["+", "−"] as const).map((s) => {
-        const active = value === s;
-        return (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onChange(s)}
-            aria-label={s === "+" ? "Positive" : "Negative"}
-            className={cn(
-              "flex items-center justify-center size-10 rounded-full text-lg font-bold transition-colors",
-              active
-                ? s === "+"
-                  ? "bg-success text-background"
-                  : "bg-destructive text-background"
-                : "bg-foreground/8 text-foreground/45",
-            )}
-          >
-            {s}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent title={t("iconColor")} sheetClassName="lg:max-w-[520px]">
+        <div className="flex flex-col gap-3 pb-2 font-clear">
+          <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
+            <PickerField label={t("icon")}>
+              <IconPicker value={icon} onChange={onIconChange} previewColor={color} />
+            </PickerField>
+          </div>
+          <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
+            <PickerField label={t("color")}>
+              <ColorPicker value={color} onChange={onColorChange} previewIcon={icon} />
+            </PickerField>
+          </div>
+          <button type="button" onClick={() => onOpenChange(false)} className={cn(clearButtonVariants({ size: "lg" }), "mt-1 w-full")}>
+            {t("done")}
           </button>
-        );
-      })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormFooter({
+  busy,
+  canSave,
+  primaryLabel,
+  onCancel,
+  onSave,
+  onDelete,
+}: {
+  busy: boolean;
+  canSave: boolean;
+  primaryLabel: string;
+  onCancel: () => void;
+  onSave: () => void;
+  onDelete?: () => void;
+}) {
+  const t = useTranslations("accountForms");
+  return (
+    <div className="border-t border-clear-ground pt-[18px] pb-1">
+      <ClearDialogFooter
+        destructive={
+          onDelete && (
+            <button type="button" onClick={onDelete} disabled={busy} className={clearButtonVariants({ variant: "danger" })}>
+              <IconTrash aria-hidden />
+              {t("delete")}
+            </button>
+          )
+        }
+      >
+        <button type="button" onClick={onCancel} className={clearButtonVariants({ variant: "secondary" })}>
+          {t("cancel")}
+        </button>
+        <button type="button" onClick={onSave} disabled={!canSave} className={clearButtonVariants()}>
+          {busy ? t("saving") : primaryLabel}
+        </button>
+      </ClearDialogFooter>
     </div>
   );
 }
 
-// Simple boolean row — no tap-to-expand needed for a single switch.
-function NetWorthToggleRow({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className="w-full flex items-center gap-3 rounded-row bg-[var(--dialog-content-background)] px-4 py-4 text-left active:bg-surface-2 transition-colors"
-    >
-      <span className="text-ink-3 shrink-0"><Scale className="size-5" /></span>
-      <span className="flex-1 font-medium text-ink">Include in net worth</span>
-      <ToggleSwitch on={checked} />
-    </button>
-  );
-}
+// ─── Bank account: add or edit ───────────────────────────────────────────────
 
-// ─── Bank edit dialog (controlled) ───────────────────────────────────────────
-// The caller owns open/close state; on a successful save/delete the dialog reports
-// the change back so the caller can update its own local list and refresh.
-
-export function BankEditDialog({
+/**
+ * Add a bank account (`bank` null) or edit one. Adding sets the IBAN that imported
+ * rows are matched on, a starting balance and the date it was true, and the transfer
+ * type; editing corrects the live, transaction-derived balance instead (recomputing
+ * startingBalance — never a fake transaction). The caller owns open/close and gets
+ * the saved row back.
+ */
+export function BankFormDialog({
   bank,
   open,
   onOpenChange,
@@ -178,254 +373,290 @@ export function BankEditDialog({
   bank: Bank | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSaved: (updated: Bank) => void;
-  onDeleted: (id: number) => void;
+  onSaved: (bank: Bank) => void;
+  onDeleted?: (id: number) => void;
 }) {
-  const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [subpage, setSubpage] = useState<string | null>(null);
-  const [subVisible, setSubVisible] = useState(false);
-  function openSub(k: string) { setSubpage(k); requestAnimationFrame(() => setSubVisible(true)); }
-  function closeSub() { setSubVisible(false); setTimeout(() => setSubpage(null), 300); }
-
-  const [displayName, setDisplayName]       = useState("");
-  const [icon, setIcon]                     = useState<string | null>(null);
-  const [color, setColor]                   = useState("#2f7bf6");
-  const [iconOpen, setIconOpen]             = useState(false);
-  const [cardType, setCardType]             = useState("");
-  const [expiration, setExpiration]         = useState("");
-  const [includeInNetWorth, setIncludeInNetWorth] = useState(false);
-
-  // The "Balance" row edits the account's live, transaction-derived balance (not the
-  // raw startingBalance column directly) — see the balance-correction math in save().
-  // Nothing here takes effect until the balance subpage's own Save button is pressed
-  // and its warning is accepted — closing the subpage via the back arrow (or the whole
-  // dialog) discards whatever was typed, per confirmedBalance staying untouched.
-  const [liveBalance, setLiveBalance] = useState<number | null>(null);
-  const [confirmedBalance, setConfirmedBalance] = useState<number | null>(null);
-  const [balanceExpr, setBalanceExpr] = useState("");
-  const [balanceSign, setBalanceSign] = useState<"+" | "−">("+");
-
-  // Re-seed the form whenever a different bank is opened.
-  const [seededFor, setSeededFor] = useState<number | null>(null);
-  if (bank && open && seededFor !== bank.id) {
-    setSeededFor(bank.id);
-    setDisplayName(bank.displayName ?? "");
-    setIcon(bank.icon ?? null);
-    setColor(bank.color ?? "#2f7bf6");
-    setCardType(bank.cardType ?? "");
-    setExpiration(bank.expirationDate ?? "");
-    setIncludeInNetWorth(bank.includeInNetWorth ?? false);
-    setLiveBalance(null);
-    setConfirmedBalance(null);
-  }
-  if (!open && seededFor !== null) setSeededFor(null);
-
-  // Fetch the live balance once per bank — just for display and for the txnSum math,
-  // the amount pad itself is seeded lazily when the subpage opens (see openBalanceSub).
-  useEffect(() => {
-    if (!bank || !open) return;
-    let cancelled = false;
-    fetch(`/api/banks/${bank.id}/balance`)
-      .then((r) => r.json())
-      .then((data: { balance?: number }) => {
-        if (cancelled || data.balance == null) return;
-        setLiveBalance(data.balance);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only bank.id/open should retrigger the fetch
-  }, [bank?.id, open]);
-
-  const displayBalance = confirmedBalance ?? liveBalance;
-  const enteredBalance = (balanceSign === "−" ? -1 : 1) * (evaluateExpression(balanceExpr) ?? 0);
-
-  function openBalanceSub() {
-    const base = confirmedBalance ?? liveBalance ?? 0;
-    setBalanceSign(base < 0 ? "−" : "+");
-    // Rounded again on the way into the input: the balance arrives clean from the API,
-    // but `base` can also be a value the user just confirmed here, and this string is
-    // what they see and edit — it must never show float noise.
-    setBalanceExpr(String(roundToCents(Math.abs(base))).replace(".", ","));
-    openSub("balance");
-  }
-
-  // Pressing "Save balance" persists immediately (everything else currently in the
-  // form too, same as the outer Save) and closes the whole dialog — it does not just
-  // stage the value for a second, separate press of the outer Save button.
-  async function confirmBalance() {
-    if (!confirm("You're correcting this account's balance directly, not logging a transaction. This shifts every past and future balance shown for this account — make sure the new amount is right. Continue?")) {
-      return;
-    }
-    setConfirmedBalance(enteredBalance);
-    await save(enteredBalance);
-  }
-
-  async function save(balanceOverride?: number) {
-    if (!bank) return;
-    // Editing "Balance" corrects the transaction-derived total, not the raw offset —
-    // recompute startingBalance so that startingBalance + (existing txn sum) equals
-    // whatever the user confirmed on the balance subpage. This is a balance correction,
-    // never a fake transaction.
-    const effectiveBalance = balanceOverride ?? confirmedBalance;
-    let nextStartingBalance = bank.startingBalance ?? null;
-    if (effectiveBalance != null && liveBalance != null) {
-      const txnSum = liveBalance - (bank.startingBalance ?? 0);
-      nextStartingBalance = effectiveBalance - txnSum;
-    }
-    setSaving(true);
-    const res = await fetch("/api/banks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: bank.id,
-        displayName: displayName || null,
-        icon: icon || null,
-        color: color || null,
-        cardType: cardType || null,
-        expirationDate: expiration || null,
-        startingBalance: nextStartingBalance,
-        includeInNetWorth,
-      }),
-    });
-    const updated = await res.json();
-    onSaved(updated);
-    onOpenChange(false);
-    setSaving(false);
-    router.refresh();
-  }
-
-  async function remove() {
-    if (!bank) return;
-    if (!confirm("Delete this bank account?")) return;
-    await fetch("/api/banks", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: bank.id }) });
-    onDeleted(bank.id);
-    onOpenChange(false);
-    router.refresh();
-  }
-
-  const cardTypeLabel = BANK_TYPE_OPTIONS.find((o) => o.value === cardType)?.label ?? "—";
-
+  const t = useTranslations("accountForms");
+  // The caller clears `bank` as the sheet closes; keep showing the last one while it
+  // animates out, so the form never flips to "add" on its way down.
+  const [shown, setShown] = useState(bank);
+  if (bank && bank !== shown) setShown(bank);
+  const current = bank ?? (open ? null : shown);
+  const title = current ? t("bank.editTitle") : t("bank.addTitle");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="px-0"
-        title="Edit account"
-        accentColor={color || null}
-        scrollBlur
-        headerAction={
-          <button
-            type="button"
-            onClick={remove}
-            aria-label="Delete"
-            className="size-11 rounded-full bg-white dark:bg-white/7 flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
-          >
-            <Trash2 className="size-4.5" />
-          </button>
-        }
-        footer={
-          <Button
-            onClick={() => save()}
-            disabled={saving}
-            className="w-full h-13 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold"
-          >
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        }
-      >
-        {/* Hero — big account glyph (tap to change icon) + name. */}
-        <div className="flex flex-col items-center gap-3 pb-6 pt-1">
-          <button
-            type="button"
-            onClick={() => setIconOpen(true)}
-            aria-label="Change icon"
-            className="relative active:scale-95 transition-transform"
-          >
-            {icon ? (
-              <Icon iconKey={icon} color={color} size="xxl" />
-            ) : (
-              <span className="flex size-16 items-center justify-center rounded-card text-white shadow-lg" style={{ backgroundColor: color }}>
-                <CreditCard className="size-8" />
-              </span>
-            )}
-            <span className="absolute -right-1.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-black text-white shadow-md ring-2 ring-background">
-              <Pencil className="size-3.5" />
-            </span>
-          </button>
-          <p className="text-xl font-bold text-ink text-center px-6 truncate max-w-full">
-            {displayName || bank?.accountNumber || "Account"}
-          </p>
-          {/* Controlled — opened by tapping the hero above. */}
-          <IconPicker value={icon} onChange={setIcon} previewColor={color} open={iconOpen} onOpenChange={setIconOpen} hideDefaultTrigger />
-        </div>
-
-        <div className="space-y-3 px-5 pb-2">
-          {/* Name input + color swatch, matching the account edit sheet. */}
-          <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-card bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
-            {!(icon && isBrandIcon(icon)) && (
-              <ColorPicker value={color} onChange={setColor} inline />
-            )}
-          </div>
-
-          <Row icon={<CreditCard className="size-5" />} label="Type" value={cardTypeLabel} onClick={() => openSub("cardType")} />
-          <Row icon={<Calendar className="size-5" />} label="Expiry date" value={expiration || "—"} onClick={() => openSub("expiration")} />
-          <Row icon={<Coin className="size-5" />} label="Balance" value={displayBalance != null ? formatEur(displayBalance) : "—"} onClick={openBalanceSub} />
-
-          <NetWorthToggleRow checked={includeInNetWorth} onChange={setIncludeInNetWorth} />
-        </div>
-
-        {subpage && (
-          <SubSheet title={BANK_SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
-            {subpage === "cardType" && (
-              <OptionList options={BANK_TYPE_OPTIONS} value={cardType} onSelect={(v) => { setCardType(v); closeSub(); }} />
-            )}
-            {subpage === "expiration" && (
-              <div className="pt-2">
-                <DatePicker value={expiration} onChange={(v) => { setExpiration(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]" />
-              </div>
-            )}
-            {subpage === "balance" && (
-              <div className="pt-2 space-y-4">
-                <WarningBanner severity="warning">
-                  <AlertTriangle className="size-4 shrink-0" />
-                  <span>This corrects the account&apos;s balance directly — it does not create a transaction. Changing it shifts every balance shown for this account, so only use it to fix a real discrepancy. Nothing changes until you save below.</span>
-                </WarningBanner>
-                <div className="flex justify-center">
-                  <SignPill value={balanceSign} onChange={setBalanceSign} />
-                </div>
-                <AmountKeypad
-                  expr={balanceExpr}
-                  onChange={setBalanceExpr}
-                  onEnter={confirmBalance}
-                  sign={balanceSign}
-                  positive={balanceSign === "+"}
-                  calcEnabled
-                />
-                <Button
-                  onClick={confirmBalance}
-                  className="w-full h-13 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold"
-                >
-                  Save balance
-                </Button>
-              </div>
-            )}
-          </SubSheet>
-        )}
+      <DialogContent hideHeaderRow title={title} className="gap-[18px] pt-6 font-clear text-clear-ink" sheetClassName="lg:max-w-[560px]">
+        {/* Mounted per opening (the sheet unmounts its content once closed), so every
+            opening starts from the account as saved — or a blank form. */}
+        <BankFormBody bank={current} title={title} onClose={() => onOpenChange(false)} onSaved={onSaved} onDeleted={onDeleted} />
       </DialogContent>
     </Dialog>
   );
 }
 
-const BANK_SUB_TITLES: Record<string, string> = {
-  cardType: "Type",
-  expiration: "Expiry date",
-  balance: "Balance",
-};
+function BankFormBody({
+  bank,
+  title,
+  onClose,
+  onSaved,
+  onDeleted,
+}: {
+  bank: Bank | null;
+  title: string;
+  onClose: () => void;
+  onSaved: (bank: Bank) => void;
+  onDeleted?: (id: number) => void;
+}) {
+  const t = useTranslations("accountForms");
+  const router = useRouter();
+  const confirm = useConfirm();
+  const isEdit = bank != null;
+  const ids = useId();
 
-// ─── Asset (vermogen) edit dialog (controlled) ───────────────────────────────
+  const [busy, setBusy] = useState(false);
+  const [name, setName] = useState(bank?.displayName ?? "");
+  const [icon, setIcon] = useState<string | null>(bank?.icon ?? null);
+  const [color, setColor] = useState(bank?.color ?? DEFAULT_BANK_COLOR);
+  const [iconColorOpen, setIconColorOpen] = useState(false);
+  const savedType = bank?.cardType;
+  const [cardType, setCardType] = useState<BankType>(isBankType(savedType) ? savedType : "debitcard");
+  const [expiration, setExpiration] = useState(bank?.expirationDate ?? "");
+  const [includeInNetWorth, setIncludeInNetWorth] = useState(bank?.includeInNetWorth ?? false);
+  // Adding only.
+  const [accountNumber, setAccountNumber] = useState("");
+  const [startingExpr, setStartingExpr] = useState("");
+  const [startingDate, setStartingDate] = useState(todayISO());
+  const [transferKind, setTransferKind] = useState("");
 
-export function VermogenEditDialog({
+  // Editing only: the live balance (transactions + starting balance). The field shows
+  // it until the user types; a changed amount is a balance correction (see save()).
+  const [liveBalance, setLiveBalance] = useState<number | null>(null);
+  const [balanceExpr, setBalanceExpr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!bank) return;
+    let cancelled = false;
+    fetch(`/api/banks/${bank.id}/balance`)
+      .then((r) => r.json())
+      .then((data: { balance?: number }) => {
+        if (!cancelled && data.balance != null) setLiveBalance(data.balance);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [bank]);
+
+  const shownBalance = balanceExpr ?? (liveBalance != null ? moneyToExpr(liveBalance) : "");
+  const enteredBalance = balanceExpr != null ? parseMoney(balanceExpr) : null;
+  const balanceChanged = enteredBalance != null && liveBalance != null && Math.abs(enteredBalance - liveBalance) >= 0.005;
+
+  // A real IBAN (not the CUSTOM-<id> placeholder a manual account gets) is shown on edit.
+  const iban = bank?.accountNumber && !bank.accountNumber.startsWith("CUSTOM-") ? bank.accountNumber : null;
+  const canSave = !busy && (!!name.trim() || (!isEdit && !!accountNumber.trim()));
+
+  async function save() {
+    if (!canSave) return;
+    if (bank) {
+      if (
+        balanceChanged &&
+        !(await confirm({
+          title: t("bank.balanceConfirm"),
+          body: t("bank.balanceConfirmBody"),
+          confirmLabel: t("bank.balanceConfirmLabel"),
+        }))
+      )
+        return;
+      // startingBalance + (existing transaction sum) must equal the confirmed balance.
+      let nextStartingBalance = bank.startingBalance ?? null;
+      if (balanceChanged && enteredBalance != null && liveBalance != null) {
+        const txnSum = liveBalance - (bank.startingBalance ?? 0);
+        nextStartingBalance = roundToCents(enteredBalance - txnSum);
+      }
+      setBusy(true);
+      const res = await fetch("/api/banks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: bank.id,
+          displayName: name.trim() || null,
+          icon: icon || null,
+          color: color || null,
+          cardType,
+          expirationDate: expiration || null,
+          startingBalance: nextStartingBalance,
+          includeInNetWorth,
+        }),
+      });
+      onSaved(await res.json());
+    } else {
+      setBusy(true);
+      const res = await fetch("/api/banks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountNumber: accountNumber.trim() || null,
+          displayName: name.trim() || null,
+          icon: icon || null,
+          color: color || null,
+          cardType,
+          expirationDate: expiration || null,
+          startingBalance: parseMoney(startingExpr),
+          startingDate: startingDate || null,
+          transferKind: transferKind || null,
+          includeInNetWorth,
+        }),
+      });
+      onSaved(await res.json());
+    }
+    setBusy(false);
+    onClose();
+    router.refresh();
+  }
+
+  async function remove() {
+    if (!bank) return;
+    const ok = await confirm({
+      title: t("bank.confirmDelete"),
+      body: t("bank.confirmDeleteBody"),
+      confirmLabel: t("bank.confirmDeleteLabel"),
+      destructive: true,
+    });
+    if (!ok) return;
+    setBusy(true);
+    await fetch("/api/banks", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: bank.id }) });
+    setBusy(false);
+    onDeleted?.(bank.id);
+    onClose();
+    router.refresh();
+  }
+
+  return (
+    <>
+      <ClearDialogHeader
+        title={title}
+        subtitle={isEdit ? t("bank.editSubtitle") : t("bank.addSubtitle")}
+        onClose={onClose}
+        closeLabel={t("close")}
+      />
+
+      <NameField
+        id={`${ids}-name`}
+        label={t("bank.name")}
+        value={name}
+        onChange={setName}
+        placeholder={t("bank.namePlaceholder")}
+        glyph={<AccountGlyph icon={icon} color={color} fallback={IconBuildingBank} size="sm" />}
+        onGlyphClick={() => setIconColorOpen(true)}
+      />
+
+      {isEdit ? (
+        iban && (
+          <p className="m-0 -mt-2 inline-flex items-center gap-1.5 text-[13px] text-clear-muted">
+            <IconLink aria-hidden size={14} stroke={2} />
+            <span className="tabular-nums">{t("bank.ibanReadOnly", { iban })}</span>
+          </p>
+        )
+      ) : (
+        <ClearField
+          label={t("bank.iban")}
+          htmlFor={`${ids}-iban`}
+          hint={
+            <span className="inline-flex items-center gap-1.5">
+              <IconLink aria-hidden size={14} stroke={2} />
+              {t("bank.ibanHint")}
+            </span>
+          }
+        >
+          <ClearInput
+            id={`${ids}-iban`}
+            value={accountNumber}
+            onChange={(e) => setAccountNumber(e.target.value)}
+            placeholder="NL00 BANK 0000 0000 00"
+            autoComplete="off"
+            className="font-bold tracking-[0.02em] tabular-nums"
+          />
+        </ClearField>
+      )}
+
+      <div className="flex flex-col gap-1.5">
+        <span className={FIELD_LABEL} aria-hidden>{t("bank.type")}</span>
+        <Segmented
+          label={t("bank.type")}
+          surface="tile"
+          value={cardType}
+          onChange={setCardType}
+          className="w-full [&>button]:flex-1 [&>button]:gap-2 [&>button]:px-2"
+          items={BANK_TYPES.map((v) => {
+            const TypeIcon = BANK_TYPE_ICON[v];
+            return {
+              value: v,
+              label: (
+                <>
+                  <TypeIcon aria-hidden size={16} stroke={2} className="hidden sm:block" />
+                  {t(`bankTypes.${v}`)}
+                </>
+              ),
+            };
+          })}
+        />
+      </div>
+
+      {isEdit ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ClearField label={t("bank.balance")} htmlFor={`${ids}-balance`} hint={t("bank.balanceHint")}>
+            <MoneyInput id={`${ids}-balance`} value={shownBalance} onChange={setBalanceExpr} />
+          </ClearField>
+          <DateField label={t("bank.expiry")} value={expiration} onChange={setExpiration} />
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ClearField label={t("bank.startingBalance")} htmlFor={`${ids}-start`}>
+            <MoneyInput id={`${ids}-start`} value={startingExpr} onChange={setStartingExpr} describedBy={`${ids}-start-hint`} />
+          </ClearField>
+          <DateField label={t("bank.balanceAsOf")} value={startingDate} onChange={setStartingDate} />
+          <p id={`${ids}-start-hint`} className="m-0 -mt-1.5 text-[13px] text-clear-muted sm:col-span-2">{t("bank.startingBalanceHint")}</p>
+          <DateField label={t("bank.expiry")} value={expiration} onChange={setExpiration} onClear={() => setExpiration("")} />
+          <div className="flex flex-col gap-1.5">
+            <span id={`${ids}-kind`} className={FIELD_LABEL}>{t("bank.transferKind")}</span>
+            <ClearSelect
+              value={transferKind}
+              onChange={setTransferKind}
+              ariaLabelledBy={`${ids}-kind`}
+              options={[{ value: "", label: t("transferKinds.none") }, ...TRANSFER_KINDS.map((v) => ({ value: v, label: t(`transferKinds.${v}`) }))]}
+            />
+          </div>
+          <p className="m-0 -mt-1.5 text-[13px] text-clear-muted sm:col-span-2">{t("bank.transferKindHint")}</p>
+        </div>
+      )}
+
+      {isEdit && balanceChanged && (
+        <div role="note" className="flex items-start gap-3 rounded-clear-tile bg-clear-butter px-4 py-3.5 text-clear-butter-ink">
+          <IconAlertTriangle aria-hidden size={18} stroke={2} className="mt-0.5 shrink-0" />
+          <span className="text-[13px] leading-[1.5] font-semibold">{t("bank.balanceWarning")}</span>
+        </div>
+      )}
+
+      <NetWorthSwitch checked={includeInNetWorth} onChange={setIncludeInNetWorth} hint={t("bank.netWorthHint")} />
+
+      <FormFooter
+        busy={busy}
+        canSave={canSave}
+        primaryLabel={isEdit ? t("save") : t("bank.add")}
+        onCancel={onClose}
+        onSave={save}
+        onDelete={isEdit ? remove : undefined}
+      />
+
+      <IconColorDialog open={iconColorOpen} onOpenChange={setIconColorOpen} icon={icon} onIconChange={setIcon} color={color} onColorChange={setColor} />
+    </>
+  );
+}
+
+// ─── Asset: add or edit ──────────────────────────────────────────────────────
+
+/** Add an asset (`account` null) or edit one — a vermogen_accounts row. */
+export function AssetFormDialog({
   account,
   open,
   onOpenChange,
@@ -435,358 +666,192 @@ export function VermogenEditDialog({
   account: VermogenAccount | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSaved: (updated: VermogenAccount) => void;
-  onDeleted: (id: number) => void;
+  onSaved: (account: VermogenAccount) => void;
+  onDeleted?: (id: number) => void;
 }) {
+  const t = useTranslations("accountForms");
+  // Keeps the last account while the sheet animates out (see BankFormDialog).
+  const [shown, setShown] = useState(account);
+  if (account && account !== shown) setShown(account);
+  const current = account ?? (open ? null : shown);
+  const title = current ? t("asset.editTitle") : t("asset.addTitle");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent hideHeaderRow title={title} className="gap-5 pt-6 font-clear text-clear-ink" sheetClassName="lg:max-w-[560px]">
+        <AssetFormBody account={current} title={title} onClose={() => onOpenChange(false)} onSaved={onSaved} onDeleted={onDeleted} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AssetFormBody({
+  account,
+  title,
+  onClose,
+  onSaved,
+  onDeleted,
+}: {
+  account: VermogenAccount | null;
+  title: string;
+  onClose: () => void;
+  onSaved: (account: VermogenAccount) => void;
+  onDeleted?: (id: number) => void;
+}) {
+  const t = useTranslations("accountForms");
   const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [subpage, setSubpage] = useState<string | null>(null);
-  const [subVisible, setSubVisible] = useState(false);
-  function openSub(k: string) { setSubpage(k); requestAnimationFrame(() => setSubVisible(true)); }
-  function closeSub() { setSubVisible(false); setTimeout(() => setSubpage(null), 300); }
+  const confirm = useConfirm();
+  const isEdit = account != null;
+  const ids = useId();
 
-  const [name, setName]               = useState("");
-  const [type, setType]               = useState("");
-  const [value, setValue]             = useState("");
-  const [icon, setIcon]               = useState<string | null>(null);
-  const [iconOpen, setIconOpen]       = useState(false);
-  const [color, setColor]             = useState("#0f9d8c");
-  const [notes, setNotes]             = useState("");
-  const [lastUpdated, setLastUpdated] = useState("");
-  const [includeInNetWorth, setIncludeInNetWorth] = useState(true);
+  const [busy, setBusy] = useState(false);
+  // An unknown stored type stays as it is until another one is picked.
+  const [type, setType] = useState<string>(account?.type ?? "beleggingen");
+  const [name, setName] = useState(account?.name ?? "");
+  const [valueExpr, setValueExpr] = useState(account ? moneyToExpr(account.value) : "");
+  const [lastUpdated, setLastUpdated] = useState(account ? account.lastUpdated ?? "" : todayISO());
+  const [notes, setNotes] = useState(account?.notes ?? "");
+  const [icon, setIcon] = useState<string | null>(account?.icon ?? null);
+  const [color, setColor] = useState(account?.color ?? DEFAULT_ASSET_COLOR);
+  const [iconColorOpen, setIconColorOpen] = useState(false);
+  const [includeInNetWorth, setIncludeInNetWorth] = useState(account?.includeInNetWorth ?? true);
 
-  const [seededFor, setSeededFor] = useState<number | null>(null);
-  if (account && open && seededFor !== account.id) {
-    setSeededFor(account.id);
-    setName(account.name);
-    setType(account.type);
-    setValue(String(account.value));
-    setIcon(account.icon ?? null);
-    setColor(account.color ?? "#0f9d8c");
-    setNotes(account.notes ?? "");
-    setLastUpdated(account.lastUpdated ?? "");
-    setIncludeInNetWorth(account.includeInNetWorth ?? true);
-  }
-  if (!open && seededFor !== null) setSeededFor(null);
+  const value = parseMoney(valueExpr);
+  const canSave = !busy && !!name.trim() && !!type;
 
   async function save() {
-    if (!account) return;
-    setSaving(true);
+    if (!canSave) return;
+    setBusy(true);
+    const body = {
+      name: name.trim(),
+      type,
+      value: value ?? 0,
+      icon: icon || null,
+      color: color || null,
+      notes: notes.trim() || null,
+      lastUpdated: lastUpdated || null,
+      includeInNetWorth,
+    };
     const res = await fetch("/api/vermogen", {
-      method: "PATCH",
+      method: isEdit ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: account.id,
-        name,
-        type,
-        value: parseFloat(value) || 0,
-        icon: icon || null,
-        color: color || null,
-        notes: notes || null,
-        lastUpdated: lastUpdated || null,
-        includeInNetWorth,
-      }),
+      body: JSON.stringify(account ? { id: account.id, ...body } : body),
     });
-    const updated = await res.json();
-    onSaved(updated);
-    onOpenChange(false);
-    setSaving(false);
+    onSaved(await res.json());
+    setBusy(false);
+    onClose();
     router.refresh();
   }
 
   async function remove() {
     if (!account) return;
-    if (!confirm("Delete dit item?")) return;
+    const ok = await confirm({
+      title: t("asset.confirmDelete"),
+      body: t("asset.confirmDeleteBody"),
+      confirmLabel: t("asset.confirmDeleteLabel"),
+      destructive: true,
+    });
+    if (!ok) return;
+    setBusy(true);
     await fetch("/api/vermogen", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: account.id }) });
-    onDeleted(account.id);
-    onOpenChange(false);
+    setBusy(false);
+    onDeleted?.(account.id);
+    onClose();
     router.refresh();
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="px-0"
-        title="Edit item"
-        accentColor={color || null}
-        scrollBlur
-        headerAction={
-          <button
-            type="button"
-            onClick={remove}
-            aria-label="Delete"
-            className="size-11 rounded-full bg-foreground/10 flex items-center justify-center text-ink active:scale-[0.95] transition-transform"
-          >
-            <Trash2 className="size-4.5" />
-          </button>
-        }
-        footer={
-          <Button
-            onClick={save}
-            disabled={saving}
-            className="w-full h-13 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold"
-          >
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        }
-      >
-        {/* Hero — big account glyph (tap to change icon) + name, matching the bank edit sheet. */}
-        <div className="flex flex-col items-center gap-3 pb-6 pt-1">
-          <button
-            type="button"
-            onClick={() => setIconOpen(true)}
-            aria-label="Change icon"
-            className="relative active:scale-95 transition-transform"
-          >
-            {icon ? (
-              <Icon iconKey={icon} color={color} size="xxl" />
-            ) : (
-              <span className="flex size-16 items-center justify-center rounded-card text-white shadow-lg" style={{ backgroundColor: color }}>
-                <Coin className="size-8" />
-              </span>
-            )}
-            <span className="absolute -right-1.5 -top-0.5 flex size-5 items-center justify-center rounded-full bg-black text-white shadow-md ring-2 ring-background">
-              <Pencil className="size-3.5" />
-            </span>
-          </button>
-          <p className="text-xl font-bold text-ink text-center px-6 truncate max-w-full">
-            {name || "Account"}
-          </p>
-          {/* Controlled — opened by tapping the hero above. */}
-          <IconPicker value={icon} onChange={setIcon} previewColor={color} open={iconOpen} onOpenChange={setIconOpen} hideDefaultTrigger />
-        </div>
-
-        <div className="space-y-3 px-5 pb-2">
-          <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-card bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
-            {!(icon && isBrandIcon(icon)) && (
-              <ColorPicker value={color} onChange={setColor} inline />
-            )}
-          </div>
-
-          <Row icon={<CategoryIcon className="size-5" />} label="Type" value={vermogenTypeLabel(type)} onClick={() => openSub("type")} />
-          <Row icon={<Coin className="size-5" />} label="Value" value={value !== "" ? formatEur(parseFloat(value)) : "—"} onClick={() => openSub("value")} />
-          <Row icon={<Calendar className="size-5" />} label="Last updated" value={lastUpdated || "—"} onClick={() => openSub("lastUpdated")} />
-          <Row icon={<Note className="size-5" />} label="Notes" value={notes || "—"} onClick={() => openSub("notes")} />
-
-          <NetWorthToggleRow checked={includeInNetWorth} onChange={setIncludeInNetWorth} />
-        </div>
-
-        {subpage && (
-          <SubSheet title={VERMOGEN_SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
-            {subpage === "type" && (
-              <OptionList options={VERMOGEN_TYPE_OPTIONS} value={type} onSelect={(v) => { setType(v); closeSub(); }} />
-            )}
-            {subpage === "value" && (
-              <div className="pt-2">
-                <AmountInput value={value} onChange={(e) => setValue(e.target.value)} data-autofocus data-no-keyboard-scroll />
-              </div>
-            )}
-            {subpage === "lastUpdated" && (
-              <div className="pt-2">
-                <DatePicker value={lastUpdated} onChange={(v) => { setLastUpdated(v); closeSub(); }} triggerClassName="w-full justify-between border rounded-row px-4 h-12 bg-[var(--dialog-content-background)]" />
-              </div>
-            )}
-            {subpage === "notes" && (
-              <div className="pt-2">
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} data-autofocus data-no-keyboard-scroll className="h-12" />
-              </div>
-            )}
-          </SubSheet>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-const VERMOGEN_SUB_TITLES: Record<string, string> = {
-  type: "Type",
-  value: "Value",
-  lastUpdated: "Last updated",
-  notes: "Notes",
-};
-
-// ─── Add account dialog (controlled) ─────────────────────────────────────────
-// Single entry point for adding either kind of account — the "Type" picker decides
-// whether Save creates a `banks` row or a `vermogen_accounts` row (see ACCOUNT_TYPE_OPTIONS).
-// Styled to match BankEditDialog/VermogenEditDialog rather than the old two-step
-// chooser + routed form pages.
-
-export function AddAccountDialog({
-  open,
-  onOpenChange,
-  onBankAdded,
-  onAssetAdded,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onBankAdded: (bank: Bank) => void;
-  onAssetAdded: (account: VermogenAccount) => void;
-}) {
-  const router = useRouter();
-  const [saving, setSaving] = useState(false);
-  const [subpage, setSubpage] = useState<string | null>(null);
-  const [subVisible, setSubVisible] = useState(false);
-  function openSub(k: string) { setSubpage(k); requestAnimationFrame(() => setSubVisible(true)); }
-  function closeSub() { setSubVisible(false); setTimeout(() => setSubpage(null), 300); }
-
-  const [name, setName]                 = useState("");
-  const [icon, setIcon]                 = useState<string | null>(null);
-  const [color, setColor]               = useState("#2f7bf6");
-  const [iconOpen, setIconOpen]         = useState(false);
-  const [type, setType]                 = useState("");
-  const [initialBalanceExpr, setInitialBalanceExpr] = useState("");
-  const [initialBalanceSign, setInitialBalanceSign] = useState<"+" | "−">("+");
-  const [includeInNetWorth, setIncludeInNetWorth] = useState(false);
-
-  const isAsset = type === "investment";
-  const initialBalance = initialBalanceExpr === "" ? null : (initialBalanceSign === "−" ? -1 : 1) * (evaluateExpression(initialBalanceExpr) ?? 0);
-
-  // Reset the form whenever the dialog is (re-)opened.
-  const [wasOpen, setWasOpen] = useState(open);
-  if (open !== wasOpen) {
-    setWasOpen(open);
-    if (open) {
-      setName("");
-      setIcon(null);
-      setColor("#2f7bf6");
-      setType("");
-      setInitialBalanceExpr("");
-      setInitialBalanceSign("+");
-      setIncludeInNetWorth(false);
-    }
-  }
-
-  async function save() {
-    if (!name || !type) return;
-    setSaving(true);
-    if (isAsset) {
-      const res = await fetch("/api/vermogen", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          type: "beleggingen",
-          value: initialBalance ?? 0,
-          color: color || null,
-          includeInNetWorth,
-        }),
-      });
-      const created = await res.json();
-      onAssetAdded(created);
-    } else {
-      const res = await fetch("/api/banks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          displayName: name,
-          icon: icon || null,
-          color: color || null,
-          cardType: type,
-          startingBalance: initialBalance,
-          includeInNetWorth,
-        }),
-      });
-      const created = await res.json();
-      onBankAdded(created);
-    }
-    setSaving(false);
-    onOpenChange(false);
-    router.refresh();
-  }
-
-  const typeLabel = ACCOUNT_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? "—";
-  const canSave = !saving && !!name && !!type;
+  const bold = (chunks: React.ReactNode) => <b className="font-extrabold tabular-nums">{chunks}</b>;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="px-0"
-        title="Add account"
-        accentColor={color || null}
-        scrollBlur
-        footer={
-          <Button
-            onClick={save}
-            disabled={!canSave}
-            className="w-full h-13 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-semibold"
-          >
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        }
-      >
-        {/* Hero — big account glyph (tap to change icon) + name. */}
-        <div className="flex flex-col items-center gap-3 pb-6 pt-1">
-          <button
-            type="button"
-            onClick={() => setIconOpen(true)}
-            aria-label="Change icon"
-            className="relative active:scale-95 transition-transform"
-          >
-            {icon ? (
-              <Icon iconKey={icon} color={color} size="xxl" />
-            ) : (
-              <span className="flex size-16 items-center justify-center rounded-card text-white shadow-lg" style={{ backgroundColor: color }}>
-                {isAsset ? <Coin className="size-8" /> : <CreditCard className="size-8" />}
-              </span>
-            )}
-            <span className="absolute -right-1.5 -top-1.5 flex size-7 items-center justify-center rounded-full bg-foreground text-background shadow-md ring-2 ring-background">
-              <Pencil className="size-3.5" />
-            </span>
-          </button>
-          <p className="text-xl font-bold text-ink text-center px-6 truncate max-w-full">
-            {name || "Account"}
-          </p>
-          <IconPicker value={icon} onChange={setIcon} previewColor={color} open={iconOpen} onOpenChange={setIconOpen} hideDefaultTrigger />
+    <>
+      <ClearDialogHeader title={title} subtitle={t("asset.subtitle")} onClose={onClose} closeLabel={t("close")} />
+
+      <div className="flex flex-col gap-2">
+        <span id={`${ids}-type`} className={FIELD_LABEL}>{t("asset.type")}</span>
+        <div role="radiogroup" aria-labelledby={`${ids}-type`} className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {ASSET_TYPES.map((v) => {
+            const { icon: TypeIcon, tone } = ASSET_TYPE_STYLE[v];
+            const selected = type === v;
+            return (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setType(v)}
+                className={cn(
+                  "relative flex h-[104px] cursor-pointer flex-col items-start justify-between rounded-clear-tile border-2 p-3 text-left font-clear text-clear-ink outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50 sm:h-28",
+                  selected ? "border-clear-ink bg-clear-card" : "border-transparent bg-clear-tile hover:bg-clear-line",
+                )}
+              >
+                <IconTile tone={tone}>
+                  <TypeIcon stroke={2} />
+                </IconTile>
+                <span className={cn("text-sm leading-tight", selected ? "font-extrabold" : "font-bold")}>{t(`assetTypes.${v}`)}</span>
+                {selected && (
+                  <span aria-hidden className="absolute top-2.5 right-2.5 inline-flex size-[22px] items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink">
+                    <IconCheck size={14} stroke={3} />
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        <div className="space-y-3 px-5 pb-2">
-          <div className="flex flex-wrap items-center gap-x-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className="flex-1 h-14 rounded-card bg-[var(--dialog-content-background)] border-0 px-4 text-base" />
-            {!(icon && isBrandIcon(icon)) && (
-              <ColorPicker value={color} onChange={setColor} inline />
+      <NameField
+        id={`${ids}-name`}
+        label={t("asset.name")}
+        value={name}
+        onChange={setName}
+        placeholder={t("asset.namePlaceholder")}
+        glyph={<AccountGlyph icon={icon} color={color} fallback={assetGlyph(type)} size="sm" />}
+        onGlyphClick={() => setIconColorOpen(true)}
+      />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <ClearField label={t("asset.value")} htmlFor={`${ids}-value`}>
+          <MoneyInput id={`${ids}-value`} value={valueExpr} onChange={setValueExpr} />
+        </ClearField>
+        <DateField label={t("asset.valueAsOf")} value={lastUpdated} onChange={setLastUpdated} />
+      </div>
+
+      <ClearField label={t("asset.notes")} htmlFor={`${ids}-notes`}>
+        <ClearInput id={`${ids}-notes`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("asset.notesPlaceholder")} />
+      </ClearField>
+
+      <NetWorthSwitch checked={includeInNetWorth} onChange={setIncludeInNetWorth} hint={t("asset.netWorthHint")} />
+
+      {value != null && (
+        <div className={cn("flex items-center gap-3 rounded-clear-tile px-4 py-3.5", includeInNetWorth ? "bg-clear-mint" : "bg-clear-tile")}>
+          <span
+            aria-hidden
+            className={cn(
+              "inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-clear-card",
+              includeInNetWorth ? "text-clear-mint-ink" : "text-clear-muted",
             )}
-          </div>
-
-          <Row icon={<CategoryIcon className="size-5" />} label="Type" value={typeLabel} onClick={() => openSub("type")} />
-          {!isAsset && (
-            <Row icon={<Coin className="size-5" />} label="Initial balance" value={initialBalance !== null ? formatEur(initialBalance) : "—"} onClick={() => openSub("initialBalance")} />
-          )}
-
-          <NetWorthToggleRow checked={includeInNetWorth} onChange={setIncludeInNetWorth} />
+          >
+            {includeInNetWorth ? <IconChartLine size={16} stroke={2.2} /> : <IconInfoCircle size={16} stroke={2.2} />}
+          </span>
+          <span className="text-[15px] leading-[1.4] font-semibold">
+            <MoneyText>{!includeInNetWorth
+              ? t("asset.notInNetWorth")
+              : isEdit
+                ? t.rich("asset.countsInNetWorth", { amount: formatEur(value), b: bold })
+                : t.rich("asset.addsToNetWorth", { amount: formatEur(value), b: bold })}</MoneyText>
+          </span>
         </div>
+      )}
 
-        {subpage && (
-          <SubSheet title={ADD_ACCOUNT_SUB_TITLES[subpage]} visible={subVisible} onClose={closeSub}>
-            {subpage === "type" && (
-              <OptionList options={ACCOUNT_TYPE_OPTIONS} value={type} onSelect={(v) => { setType(v); closeSub(); }} />
-            )}
-            {subpage === "initialBalance" && (
-              <div className="pt-2 space-y-4">
-                <div className="flex justify-center">
-                  <SignPill value={initialBalanceSign} onChange={setInitialBalanceSign} />
-                </div>
-                <AmountKeypad
-                  expr={initialBalanceExpr}
-                  onChange={setInitialBalanceExpr}
-                  onEnter={closeSub}
-                  sign={initialBalanceSign}
-                  positive={initialBalanceSign === "+"}
-                  calcEnabled
-                />
-                <p className="text-xs text-ink-3 text-center">
-                  The initial balance is added to this account&apos;s balance but never affects reports.
-                </p>
-              </div>
-            )}
-          </SubSheet>
-        )}
-      </DialogContent>
-    </Dialog>
+      <FormFooter
+        busy={busy}
+        canSave={canSave}
+        primaryLabel={isEdit ? t("save") : t("asset.add")}
+        onCancel={onClose}
+        onSave={save}
+        onDelete={isEdit ? remove : undefined}
+      />
+
+      <IconColorDialog open={iconColorOpen} onOpenChange={setIconColorOpen} icon={icon} onIconChange={setIcon} color={color} onColorChange={setColor} />
+    </>
   );
 }
-
-const ADD_ACCOUNT_SUB_TITLES: Record<string, string> = {
-  type: "Type",
-  initialBalance: "Initial balance",
-};

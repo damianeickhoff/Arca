@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
+import { MoneyText } from "@/components/clear/money";
 
 /**
  * A Clear list row: icon tile, title + meta, and a trailing slot (amount, chip,
@@ -31,7 +32,7 @@ export function ListRow({
       {icon}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
         <span className="truncate text-[15px] font-bold">{title}</span>
-        {meta && <span className="truncate text-[13px] text-clear-muted">{meta}</span>}
+        {meta && <span className="truncate text-[13px] text-clear-muted"><MoneyText>{meta}</MoneyText></span>}
       </span>
       {trailing}
     </>

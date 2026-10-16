@@ -6,16 +6,10 @@ import {
   IconUpload as Upload,
   IconCrop as Crop,
   IconCamera as Camera,
-  IconLock as Lock,
-  IconLockOpen as LockOpen,
-  IconFingerprint as Fingerprint,
-  IconCheck as Check,
-  IconShieldCheck as ShieldCheck,
 } from "@tabler/icons-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { updateOwnProfileAction, updateOwnEmailAction, updateOwnPasswordAction } from "@/app/actions/auth";
 import {
   setAppLockEnabledAction,
   setPinAction,
@@ -32,8 +26,6 @@ import {
   regenerateBackupCodesAction,
 } from "@/app/actions/mfa";
 import { AvatarCropDialog } from "./avatar-crop-dialog";
-import { BudgetStrategyCard } from "./budget-strategy-card";
-import type { BudgetStrategy } from "@/components/budget-strategy-sliders";
 import type { User } from "@/db/schema";
 
 function b64urlToBuffer(b64url: string): ArrayBuffer {
@@ -49,26 +41,6 @@ function bufToB64(buf: ArrayBuffer): string {
   let str = "";
   for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
   return btoa(str);
-}
-
-export function ProfileSettingsClient({
-  user,
-  budgetStrategy,
-}: {
-  user: User;
-  budgetStrategy: BudgetStrategy;
-}) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-      <AvatarForm user={user} />
-      <NameForm user={user} />
-      <EmailForm user={user} />
-      <PasswordForm />
-      <BudgetStrategyCard initial={budgetStrategy} />
-      <AppLockSection />
-      <TwoFactorSection />
-    </div>
-  );
 }
 
 export function AvatarFormContent({ user }: { user: User }) {
@@ -192,91 +164,6 @@ export function AvatarFormContent({ user }: { user: User }) {
         }}
       />
     </>
-  );
-}
-
-function AvatarForm({ user }: { user: User }) {
-  return (
-    <div className="rounded-card bg-surface p-5">
-      <h2 className="font-semibold text-base">Profile photo</h2>
-      <p className="text-xs text-ink-3 mb-4">Shown in the sidebar.</p>
-      <AvatarFormContent user={user} />
-    </div>
-  );
-}
-
-function NameForm({ user }: { user: User }) {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  async function handleSubmit(formData: FormData) {
-    setError(null);
-    setSuccess(false);
-    setPending(true);
-    const result = await updateOwnProfileAction(formData);
-    setPending(false);
-    if (result?.error) setError(result.error);
-    else setSuccess(true);
-  }
-
-  return (
-    <div className="rounded-card bg-surface p-5">
-      <h2 className="font-semibold text-base">Profile</h2>
-      <p className="text-xs text-ink-3 mb-4">Change your name.</p>
-
-      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Name updated.</div>}
-
-      <form action={handleSubmit}>
-        <label className="text-sm font-medium text-ink-2">Name</label>
-        <Input type="text" name="name" defaultValue={user.name} required />
-        <Button type="submit" disabled={pending} size="lg" variant="default" className="mt-3">
-          {pending ? "Saving..." : "Save"}
-        </Button>
-      </form>
-    </div>
-  );
-}
-
-function EmailForm({ user }: { user: User }) {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  async function handleSubmit(formData: FormData) {
-    setError(null);
-    setSuccess(false);
-    setPending(true);
-    const result = await updateOwnEmailAction(formData);
-    setPending(false);
-    if (result?.error) setError(result.error);
-    else {
-      setSuccess(true);
-      (document.getElementById("email-form") as HTMLFormElement | null)?.reset();
-    }
-  }
-
-  return (
-    <div className="rounded-card bg-surface p-5">
-      <h2 className="font-semibold text-base">Login email</h2>
-      <p className="text-xs text-ink-3 mb-4">Change the email address you sign in with.</p>
-
-      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Email updated.</div>}
-
-      <form id="email-form" action={handleSubmit}>
-        <label className="text-sm font-medium text-ink-2">Email</label>
-        <Input type="email" name="email" defaultValue={user.email} required autoComplete="email" />
-
-        <label className="text-sm font-medium text-ink-2">Current password</label>
-        <Input type="password" name="currentPassword" required autoComplete="current-password" />
-
-        <Button type="submit" disabled={pending} size="lg" variant="default" className="mt-1">
-          {pending ? "Saving..." : "Save"}
-        </Button>
-      </form>
-    </div>
   );
 }
 
@@ -507,57 +394,6 @@ export function AppLockSectionContent() {
   );
 }
 
-function AppLockSection() {
-  return (
-    <div className="rounded-card bg-surface p-5">
-      <h2 className="font-semibold text-base">App lock</h2>
-      <p className="text-xs text-ink-3 mb-4">Protect the app with a passcode.</p>
-      <AppLockSectionContent />
-    </div>
-  );
-}
-
-function PasswordForm() {
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  async function handleSubmit(formData: FormData) {
-    setError(null);
-    setSuccess(false);
-    setPending(true);
-    const result = await updateOwnPasswordAction(formData);
-    setPending(false);
-    if (result?.error) setError(result.error);
-    else {
-      setSuccess(true);
-      (document.getElementById("password-form") as HTMLFormElement | null)?.reset();
-    }
-  }
-
-  return (
-    <div className="rounded-card bg-surface p-5">
-      <h2 className="font-semibold text-base">Password</h2>
-      <p className="text-xs text-ink-3 mb-4">Change your password.</p>
-
-      {error && <div className="mb-3 rounded-tile bg-destructive/10 text-destructive text-sm px-3 py-2">{error}</div>}
-      {success && <div className="mb-3 rounded-tile bg-positive-soft text-positive text-sm px-3 py-2">Password updated.</div>}
-
-      <form id="password-form" action={handleSubmit}>
-        <label className="text-sm font-medium text-ink-2">Current password</label>
-        <Input type="password" name="currentPassword" required autoComplete="current-password" />
-
-        <label className="text-sm font-medium text-ink-2">New password</label>
-        <Input type="password" name="newPassword" required autoComplete="new-password" placeholder="At least 8 characters" />
-
-        <Button type="submit" disabled={pending} size="lg" className="mt-1">
-          {pending ? "Saving..." : "Save"}
-        </Button>
-      </form>
-    </div>
-  );
-}
-
 export function TwoFactorSectionContent() {
   const [loading, setLoading] = useState(true);
   const [enabled, setEnabled] = useState(false);
@@ -747,16 +583,6 @@ export function TwoFactorSectionContent() {
           Setup
         </Button>
       )}
-    </div>
-  );
-}
-
-function TwoFactorSection() {
-  return (
-    <div className="rounded-card bg-surface p-5">
-      <h2 className="font-semibold text-base">Two-factor authentication</h2>
-      <p className="text-xs text-ink-3 mb-4">Extra beveiliging met een authenticator-app zoals Google Authenticator.</p>
-      <TwoFactorSectionContent />
     </div>
   );
 }

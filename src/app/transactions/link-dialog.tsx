@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  IconLinkFilled as Link2
-} from "@tabler/icons-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { formatEur, formatDate, currencySymbol } from "@/lib/format";
+import { useLocale, useTranslations } from "next-intl";
+import { IconArrowRight, IconCheck, IconLink, IconReceiptRefund, IconSearch } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearField } from "@/components/clear/field";
+import { Amount } from "@/components/clear/amount";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { formatEur, currencySymbol } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { AnchoredTip } from "@/components/anchored-tip";
+import { MoneyText } from "@/components/clear/money";
 
 interface Suggestion {
   id: number;
@@ -25,6 +26,7 @@ interface Suggestion {
 }
 
 interface Props {
+  /** The money that came in (a Tikkie, a refund) — the transaction the panel shows. */
   tikkie: {
     id: number;
     amount: number;
@@ -32,250 +34,279 @@ interface Props {
     date: string;
     allocatedAmount: number;
   };
-  /** Controlled mode (Activity's detail panel opens it from its own action button):
-   *  pass both and no trigger button is rendered. */
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function LinkDialog({ tikkie, open: controlledOpen, onOpenChange }: Props) {
+const num = (v: string) => parseFloat(v.replace(",", "."));
+const toInput = (n: number) => n.toFixed(2).replace(".", ",");
+const AMOUNT_CHARS = /[^0-9.,]/g;
+
+/**
+ * Link money that came in (a Tikkie, a refund) to the expense it paid back. Pick one of
+ * the expenses around its date, or search for an older one; how much of this payment goes to it, and how much you
+ * expect back for it in total (several Tikkies can cover one dinner), are pre-filled.
+ * The preview shows what the expense costs you after linking.
+ */
+export function LinkDialog({ tikkie, open, onOpenChange }: Props) {
+  const t = useTranslations("transactions.link");
+  const locale = useLocale();
   const router = useRouter();
+  const ids = useId();
   const remainingBalance = tikkie.amount - tikkie.allocatedAmount;
-  const controlled = controlledOpen !== undefined;
 
-  const [internalOpen, setInternalOpen] = useState(false);
-  const open = controlled ? controlledOpen : internalOpen;
-  function setOpen(next: boolean) {
-    if (controlled) onOpenChange?.(next);
-    else setInternalOpen(next);
-  }
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [loading, setLoading] = useState(controlled);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Suggestion | null>(null);
+  // How much of THIS payment goes to the selected expense
+  const [portion, setPortion] = useState("");
+  // Total expected back for the expense (may differ when several payments cover it)
+  const [expectedBack, setExpectedBack] = useState("");
+  const [linking, setLinking] = useState(false);
 
-  // Controlled mode has no trigger to load from, so the suggestions load when it opens.
   useEffect(() => {
-    if (!controlled || !controlledOpen) return;
+    if (!open) return;
     let cancelled = false;
     fetch(`/api/reimbursements/suggestions?transactionId=${tikkie.id}`)
       .then((r) => r.json())
       .then((d) => { if (!cancelled) { setSuggestions(Array.isArray(d) ? d : []); setLoading(false); } })
       .catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [controlled, controlledOpen, tikkie.id]);
-  const [confirming, setConfirming] = useState<Suggestion | null>(null);
-  // How much of THIS TIKKIE goes to the selected expense
-  const [tikkiePortion, setTikkiePortion] = useState("");
-  // Total expected back from the expense (may differ if multiple Tikkies cover it)
-  const [expectedBack, setExpectedBack] = useState("");
-  const [linking, setLinking] = useState(false);
+  }, [open, tikkie.id]);
 
-  async function handleOpen() {
-    setOpen(true);
-    setConfirming(null);
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/reimbursements/suggestions?transactionId=${tikkie.id}`);
-      setSuggestions(await res.json());
-    } finally {
-      setLoading(false);
+  // Searching looks past the recent window: every open expense whose name matches.
+  const term = query.trim().toLowerCase();
+  const [searched, setSearched] = useState<{ term: string; rows: Suggestion[] } | null>(null);
+  useEffect(() => {
+    if (!open || term.length < 2) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      fetch(`/api/reimbursements/suggestions?transactionId=${tikkie.id}&q=${encodeURIComponent(term)}`)
+        .then((r) => r.json())
+        .then((d) => { if (!cancelled) setSearched({ term, rows: Array.isArray(d) ? d : [] }); })
+        .catch(() => { /* the recent list stays filtered locally */ });
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [open, term, tikkie.id]);
+
+  function handleOpenChange(v: boolean) {
+    onOpenChange(v);
+    if (!v) {
+      setSelected(null);
+      setQuery("");
     }
   }
 
-  function selectExpense(s: Suggestion) {
-    setConfirming(s);
-    // Default expected back = remaining expected on this expense
-    const expenseRemaining = s.expectedReimbursement != null
-      ? s.expectedReimbursement - s.alreadyLinked
-      : s.amount;
-    // Tikkie portion = min(remaining tikkie balance, expense remaining)
-    const portion = Math.min(remainingBalance, expenseRemaining);
-    setTikkiePortion(portion.toFixed(2));
-    setExpectedBack((s.alreadyLinked + portion).toFixed(2));
+  function select(s: Suggestion) {
+    setSelected(s);
+    // By default: whatever is still open on both sides.
+    const expenseRemaining = s.expectedReimbursement != null ? s.expectedReimbursement - s.alreadyLinked : s.amount;
+    const p = Math.max(0, Math.min(remainingBalance, expenseRemaining));
+    setPortion(toInput(p));
+    setExpectedBack(toInput(s.alreadyLinked + p));
   }
 
   async function confirmLink() {
-    if (!confirming) return;
-    const portion = parseFloat(tikkiePortion.replace(",", "."));
-    const expected = parseFloat(expectedBack.replace(",", "."));
-    if (isNaN(portion) || portion <= 0) return;
-    if (isNaN(expected) || expected <= 0) return;
-
+    if (!selected) return;
+    const p = num(portion);
+    const expected = num(expectedBack);
+    if (isNaN(p) || p <= 0 || isNaN(expected) || expected <= 0) return;
     setLinking(true);
     await fetch("/api/reimbursements", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         reimbursementTransactionId: tikkie.id,
-        originalTransactionId: confirming.id,
-        amount: portion,
+        originalTransactionId: selected.id,
+        amount: p,
         expectedReimbursement: expected,
       }),
     });
     setLinking(false);
-    setOpen(false);
-    setConfirming(null);
+    handleOpenChange(false);
     router.refresh();
   }
 
+  const fmtDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+  const localMatches = suggestions.filter((s) => s.description.toLowerCase().includes(term) || (s.categoryName ?? "").toLowerCase().includes(term));
+  const shown = !term ? suggestions : searched?.term === term ? searched.rows : localMatches;
+
+  const p = num(portion);
+  const validPortion = !isNaN(p) && p > 0;
+  const validExpected = !isNaN(num(expectedBack)) && num(expectedBack) > 0;
+  const costNow = selected ? Math.max(0, selected.amount - selected.alreadyLinked) : 0;
+  const costAfter = selected && validPortion ? Math.max(0, costNow - p) : costNow;
+  const cents = (n: number) => Math.round(n * 100);
+
+  const amountField = (id: string, label: string, hint: string, value: string, onChange: (v: string) => void) => (
+    <ClearField label={label} htmlFor={id} hint={hint} className="min-w-0">
+      <div className="flex h-12 items-center gap-1.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 transition-colors focus-within:border-clear-ink">
+        <span aria-hidden className="text-[15px] font-bold text-clear-muted">
+          {currencySymbol()}
+        </span>
+        <input
+          id={id}
+          inputMode="decimal"
+          autoComplete="off"
+          value={value}
+          onChange={(e) => onChange(e.target.value.replace(AMOUNT_CHARS, ""))}
+          className="h-full min-w-0 flex-1 bg-transparent p-0 text-[15px] font-extrabold tabular-nums text-clear-ink outline-none"
+        />
+      </div>
+    </ClearField>
+  );
+
   return (
-    <>
-      {!controlled && (
-      <button
-        onClick={handleOpen}
-        className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-clear-ember/10 text-clear-ember-text hover:bg-clear-ember/20 transition-colors shrink-0"
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        hideHeaderRow
+        title={t("title")}
+        className="gap-5 pt-7 font-clear text-clear-ink"
+        footer={
+          <ClearDialogFooter>
+            <button type="button" onClick={() => handleOpenChange(false)} className={clearButtonVariants({ variant: "secondary" })}>
+              {t("cancel")}
+            </button>
+            <button type="submit" form={`${ids}-form`} disabled={!selected || linking || !validPortion || !validExpected} className={clearButtonVariants()}>
+              <IconLink aria-hidden />
+              {linking ? t("linking") : t("link")}
+            </button>
+          </ClearDialogFooter>
+        }
       >
-        <Link2 className="size-3.5" />
-        Koppelen
-      </button>
-      )}
+        <ClearDialogHeader
+          title={t("title")}
+          subtitle={
+            <MoneyText>{tikkie.allocatedAmount > 0
+              ? t("subtitleRemaining", { name: tikkie.description, amount: formatEur(tikkie.amount), left: formatEur(remainingBalance) })
+              : t("subtitle", { name: tikkie.description, amount: formatEur(tikkie.amount) })}</MoneyText>
+          }
+          onClose={() => handleOpenChange(false)}
+          closeLabel={t("close")}
+        />
 
-      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setConfirming(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {confirming ? "Confirm link" : "Koppel Tikkie aan uitgave"}
-            </DialogTitle>
-          </DialogHeader>
+        <form
+          id={`${ids}-form`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            confirmLink();
+          }}
+          className="flex flex-col gap-5"
+        >
+          <label
+            data-tip-anchor="linkSearch"
+            className="flex h-12 cursor-text items-center gap-2.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 text-clear-muted transition-colors focus-within:border-clear-ink"
+          >
+            <IconSearch className="size-[18px] shrink-0" stroke={2} aria-hidden />
+            <span className="sr-only">{t("search")}</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("searchPlaceholder")}
+              className="min-w-0 flex-1 bg-transparent p-0 text-[15px] text-clear-ink outline-none placeholder:text-clear-placeholder"
+            />
+          </label>
+          <AnchoredTip id="linkSearchOlder" anchor="linkSearch" active={open && !loading} />
 
-          {/* Tikkie info */}
-          <div className="rounded-xl bg-clear-tile px-4 py-3 text-sm">
-            <p className="font-semibold">{tikkie.description}</p>
-            <p className="text-clear-muted mt-0.5">
-              {formatDate(tikkie.date)} · <span className="tabular-nums text-green-600 font-semibold">+{formatEur(tikkie.amount)}</span>
-              {tikkie.allocatedAmount > 0 && (
-                <> · <span className="tabular-nums text-amber-600 font-semibold">nog {formatEur(remainingBalance)} over</span></>
-              )}
-            </p>
-          </div>
-
-          {confirming ? (
-            /* Confirmation step */
-            <div className="space-y-4">
-              <div className="rounded-xl border bg-clear-card px-4 py-3 text-sm">
-                <p className="font-medium">{confirming.description}</p>
-                <p className="text-clear-muted mt-0.5">
-                  {formatDate(confirming.date)} · <span className="tabular-nums text-red-500 font-semibold">-{formatEur(confirming.amount)}</span>
-                  {confirming.categoryName && (
-                    <> · <span style={{ color: confirming.categoryColor ?? undefined }}>{confirming.categoryName}</span></>
-                  )}
-                </p>
-              </div>
-
-              {/* Amount of Tikkie allocated to this expense */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">
-                  Hoeveel van deze Tikkie gaat naar deze uitgave?
-                </label>
-                <p className="text-xs text-clear-muted">
-                  Nog <span className="tabular-nums">{formatEur(remainingBalance)}</span> beschikbaar van de Tikkie
-                </p>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-clear-muted">{currencySymbol()}</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={0.01}
-                    max={remainingBalance}
-                    step={0.01}
-                    value={tikkiePortion}
-                    onChange={(e) => setTikkiePortion(e.target.value)}
-                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm bg-clear-ground"
-                    autoFocus
-                  />
-                </div>
-              </div>
-
-              {/* Total expected back from this expense */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">
-                  Hoeveel verwacht je totaal terug van deze uitgave?
-                </label>
-                <p className="text-xs text-clear-muted">
-                  Jouw deel: <span className="tabular-nums">{formatEur(confirming.amount - parseFloat(expectedBack.replace(",", ".") || "0"))}</span> of <span className="tabular-nums">{formatEur(confirming.amount)}</span>
-                </p>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-clear-muted">{currencySymbol()}</span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={0.01}
-                    max={confirming.amount}
-                    step={0.01}
-                    value={expectedBack}
-                    onChange={(e) => setExpectedBack(e.target.value)}
-                    className="w-full border rounded-lg pl-7 pr-3 py-2 text-sm bg-clear-ground"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setConfirming(null)}
-                  className="flex-1 px-4 py-2 rounded-lg border text-sm hover:bg-clear-tile transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={confirmLink}
-                  disabled={linking}
-                  className="flex-1 px-4 py-2 rounded-lg bg-clear-ember text-clear-ember-ink text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
-                >
-                  {linking ? "Koppelen…" : "Confirm link"}
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Expense selection step */
-            <div className="space-y-2 max-h-80 overflow-y-auto">
-              {loading && (
-                <p className="text-sm text-clear-muted text-center py-4">Search expenses…</p>
-              )}
-              {!loading && suggestions.length === 0 && (
-                <p className="text-sm text-clear-muted text-center py-4">
-                  No suggestions found binnen 14 dagen.
-                </p>
-              )}
-              {!loading && suggestions.map((s) => {
+          <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
+            <legend className="mb-2 p-0 text-[13px] font-bold text-clear-ink-2">{term ? t("results") : t("candidates", { date: fmtDay(tikkie.date) })}</legend>
+            {loading && <p className="m-0 py-4 text-center text-sm text-clear-muted">{t("loading")}</p>}
+            {!loading && shown.length === 0 && <p className="m-0 rounded-clear-tile bg-clear-tile px-4 py-5 text-center text-sm text-clear-muted">{term ? t("noMatches", { query: query.trim() }) : t("none")}</p>}
+            <MoneyText>{!loading &&
+              shown.map((s) => {
+                const on = selected?.id === s.id;
                 const target = s.expectedReimbursement ?? s.amount;
-                const remaining = target - s.alreadyLinked;
                 const pct = s.alreadyLinked > 0 ? Math.round((s.alreadyLinked / target) * 100) : 0;
+                const chip =
+                  cents(s.amount) === cents(remainingBalance) ? t("sameAmount") : cents(s.amount / 2) === cents(remainingBalance) ? t("exactlyHalf") : null;
+                const meta = [
+                  fmtDay(s.date),
+                  s.categoryName,
+                  s.alreadyLinked > 0 ? t("covered", { pct, left: formatEur(Math.max(0, target - s.alreadyLinked)) }) : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
                 return (
-                  <button
+                  <label
                     key={s.id}
-                    onClick={() => selectExpense(s)}
-                    className="w-full text-left rounded-xl border bg-clear-card px-4 py-3 hover:bg-clear-tile transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{s.description}</p>
-                        <p className="text-xs text-clear-muted mt-0.5">
-                          {formatDate(s.date)}
-                          {s.categoryName && (
-                            <> · <span style={{ color: s.categoryColor ?? undefined }}>{s.categoryName}</span></>
-                          )}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold tabular-nums text-red-500">-{formatEur(s.amount)}</p>
-                        {s.alreadyLinked > 0 && (
-                          <p className="text-xs tabular-nums text-clear-muted">
-                            {pct}% gedekt · nog {formatEur(remaining)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {s.alreadyLinked > 0 && (
-                      <div className="mt-2 h-1 rounded-full bg-clear-tile overflow-hidden">
-                        <div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} />
-                      </div>
+                    className={cn(
+                      "relative flex min-h-[68px] cursor-pointer items-center gap-3 rounded-clear-tile border-2 py-2 pr-4 pl-3 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-clear-ember/50",
+                      on ? "border-clear-ink bg-clear-card" : "border-transparent bg-clear-tile hover:bg-clear-line/60",
                     )}
-                  </button>
+                  >
+                    <input type="radio" name={`${ids}-expense`} checked={on} onChange={() => select(s)} className="sr-only" />
+                    <span aria-hidden className="inline-flex size-10 shrink-0 items-center justify-center rounded-clear-icon bg-clear-peach text-sm font-extrabold text-clear-peach-ink">
+                      {s.description.trim().charAt(0).toUpperCase() || "?"}
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-[15px] font-bold">{s.description}</span>
+                        {chip && <span className="inline-flex h-6 items-center rounded-full bg-clear-sky px-2.5 text-xs font-bold text-clear-sky-ink">{chip}</span>}
+                      </span>
+                      <span className="truncate text-[13px] text-clear-muted">{meta}</span>
+                    </span>
+                    <Amount value={-s.amount} className="shrink-0 text-[15px]" />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "inline-flex size-6 shrink-0 items-center justify-center rounded-full border-2",
+                        on ? "border-clear-primary bg-clear-primary text-clear-primary-ink" : "border-clear-line bg-clear-card",
+                      )}
+                    >
+                      {on && <IconCheck className="size-3.5" stroke={3} />}
+                    </span>
+                  </label>
                 );
-              })}
-            </div>
+              })}</MoneyText>
+          </fieldset>
+
+          {selected && (
+            <>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <MoneyText>{amountField(`${ids}-portion`, t("portion"), t("portionHint", { amount: formatEur(remainingBalance) }), portion, setPortion)}</MoneyText>
+                <MoneyText>{amountField(
+                  `${ids}-expected`,
+                  t("expected"),
+                  t("expectedHint", { share: formatEur(Math.max(0, selected.amount - (num(expectedBack) || 0))), total: formatEur(selected.amount) }),
+                  expectedBack,
+                  setExpectedBack,
+                )}</MoneyText>
+              </div>
+
+              <section aria-label={t("previewLabel")} className="flex flex-col gap-3.5 rounded-clear-tile bg-clear-mint p-[18px] text-clear-ink">
+                <div className="flex items-start gap-2.5">
+                  <span aria-hidden className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-full bg-clear-card text-clear-positive">
+                    <IconReceiptRefund className="size-4" stroke={2} />
+                  </span>
+                  <p className="m-0 text-sm leading-normal font-medium">
+                    <MoneyText>{t.rich("preview", {
+                      name: selected.description,
+                      share: formatEur(costAfter),
+                      amount: formatEur(validPortion ? p : 0),
+                      b: (c) => <b className="font-extrabold"><MoneyText>{c}</MoneyText></b>,
+                    })}</MoneyText>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <div className="flex flex-1 flex-col gap-0.5 rounded-clear-icon bg-clear-card px-3.5 py-3">
+                    <span className="text-xs font-bold text-clear-ink-2">{t("was")}</span>
+                    <Amount value={costNow} className="text-xl text-clear-muted line-through" />
+                  </div>
+                  <span aria-hidden className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-clear-card text-clear-positive">
+                    <IconArrowRight className="size-4" stroke={2.2} />
+                  </span>
+                  <div className="flex flex-1 flex-col gap-0.5 rounded-clear-icon bg-clear-card px-3.5 py-3">
+                    <span className="text-xs font-bold text-clear-ink-2">{t("now")}</span>
+                    <Amount value={costAfter} className="text-xl text-clear-positive" />
+                  </div>
+                </div>
+              </section>
+            </>
           )}
-        </DialogContent>
-      </Dialog>
-    </>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

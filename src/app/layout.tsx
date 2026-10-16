@@ -118,7 +118,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} suppressHydrationWarning className={`${dmSans.variable} ${dmMono.variable} ${jakarta.variable}`}>
       <head>
-        <script dangerouslySetInnerHTML={{__html:`(function(){var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}})()` }} />
+        <script dangerouslySetInnerHTML={{__html:`(function(){var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark')}try{if(localStorage.getItem('privacy')==='1')document.documentElement.classList.add('privacy')}catch(e){}})()` }} />
       </head>
       <body className="min-h-dvh antialiased">
       <CurrencySync currency={defaultCurrency} />

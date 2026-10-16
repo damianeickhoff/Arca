@@ -51,34 +51,67 @@ export type TipId =
   | "transactionDetail"
   // redesign: the shell (Clear sidebar) and Home (Clear)
   | "clearNavigation"
+  | "settingsNav"
   | "planHub"
   | "homeSafeToSpendSum"
   | "homeComingUp"
   | "homeIncomeVsSpending"
   | "homeMoneyFlow"
+  | "privacyEye"
   // redesign (mustard): Activity
   | "activityDetail"
   | "activityFilters"
   | "activityBulkSelect"
   | "activitySearchBar"
-  | "activityContext"
+  | "activityHistory"
+  | "globalSearch"
   | "activityKeys"
-  // redesign (mustard): Budget
-  | "budgetStrategyCard"
+  | "activityDetailTabs"
+  // redesign (Clear): Budget
+  | "budgetStrategyTarget"
+  | "budgetUnbudgeted"
   | "budgetMove"
   | "budgetBills"
+  | "budgetAddCategory"
+  | "budgetPeriodNav"
   // redesign (mustard): Debts
   | "debtsDetail"
   | "debtsSimulator"
+  | "debtsSortAndImpact"
   | "debtsOwed"
-  // redesign (mustard): Goals
+  // redesign (Clear): Goals
   | "goalsContributions"
   | "goalsDetail"
+  | "goalsSuggestions"
   // redesign (mustard): Insights
   | "insightsMerchants"
+  | "insightsCategorySwitch"
   | "insightsNeedsWants"
-  | "insightsHealthCompare"
-  | "insightsComingUp";
+  | "insightsHealthNextStep"
+  | "insightsHealthHistory"
+  | "insightsComingUp"
+  | "insightsForecastRange"
+  | "insightsNetWorthRange"
+  // redesign (Clear): shared pickers and search
+  | "categoryPickerGroups"
+  | "categoryPickerSuggestions"
+  | "dateQuickPicks"
+  | "searchActions"
+  // redesign (Clear): detail popups (merchant, category, recurring)
+  | "merchantVisits"
+  | "categoryMerchants"
+  | "recurringCharges"
+  | "recurringMatchPreview"
+  | "budgetCategoryDetail"
+  // redesign (Clear): Settings › Accounts
+  | "accountsAdd"
+  // redesign (Clear): transaction popups
+  | "addTransactionAnother"
+  | "correctAmountPreview"
+  | "receiptViewer"
+  | "rulePreview"
+  | "splitSharedCost"
+  | "linkSearchOlder";
 
 interface TipState {
   /** Tips already shown. A tip is recorded the moment it appears rather than when
@@ -94,7 +127,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityContext", "activityKeys", "budgetStrategyCard", "budgetMove", "budgetBills", "debtsDetail", "debtsSimulator", "debtsOwed", "goalsContributions", "goalsDetail", "insightsMerchants", "insightsNeedsWants", "insightsHealthCompare", "insightsComingUp"];
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "budgetBills", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsCategorySwitch", "insightsNeedsWants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","insightsNetWorthRange", "categoryPickerGroups", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;

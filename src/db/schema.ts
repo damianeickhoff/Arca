@@ -98,6 +98,11 @@ export const transactions = sqliteTable("transactions", {
   // How much you expect to get back from this expense (other person's share).
   // null = assume full amount (legacy). Set when linking a Tikkie.
   expectedReimbursement: real("expected_reimbursement"),
+  // Set (people sharing it, including you) when this one expense is a shared cost —
+  // the split dialog's "Others pay me back for this". expectedReimbursement then holds
+  // the others' part, which reports subtract in net shared-cost mode before anything
+  // is linked (see reimbursedAmountExpr). NULL = not a shared cost.
+  sharedWithCount: integer("shared_with_count"),
   // Path under /uploads/receipts/ for a photographed receipt/invoice, if attached.
   receiptUrl: text("receipt_url"),
   // Links this transaction to a savings goal (see `goals` below, goalType = "savings").
@@ -160,7 +165,7 @@ export const recurringItems = sqliteTable("recurring_items", {
   frequency: text("frequency").notNull().default("monthly"),
   dueDay: integer("due_day"), // day of month (1-31); derived from startDate's day when set
   // Period: the recurrence's start (anchor/first due date) and an optional end date.
-  // Once endDate has passed the item is auto-disabled (see disableExpiredRecurring).
+  // Once endDate has passed the item is auto-disabled (see syncRecurringLifecycle).
   startDate: text("start_date"), // ISO date YYYY-MM-DD
   endDate: text("end_date"),     // ISO date YYYY-MM-DD, optional
   categoryId: integer("category_id").references(() => categories.id, { onDelete: "cascade" }),

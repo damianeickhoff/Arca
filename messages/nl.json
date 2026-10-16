@@ -22,79 +22,219 @@
     "recentTransactions": "Recente Transacties",
     "back": "Terug"
   },
-  "settingsMenu": {
+  "settings": {
     "title": "Instellingen",
-    "categories": "Categorieën",
-    "brandIcons": "Merk-iconen",
-    "accounts": "Rekeningen",
-    "general": "Algemeen",
-    "admin": "Beheer"
+    "subtitle": "{name} · {email}",
+    "navLabel": "Onderdelen van instellingen",
+    "allSettings": "Alle instellingen",
+    "helpAndTips": "Hulp & tips",
+    "open": "Instellingen openen",
+    "editProfile": "Profiel bewerken",
+    "signOut": "Uitloggen",
+    "back": "Terug",
+    "close": "Sluiten",
+    "sections": {
+      "account": "Account",
+      "manage": "Beheren",
+      "data": "Gegevens",
+      "app": "App",
+      "about": "Over"
+    },
+    "panels": {
+      "profile": {
+        "title": "Profiel",
+        "subtitle": "Je foto, je naam en het e-mailadres waarmee je inlogt."
+      },
+      "security": {
+        "title": "Wachtwoord & 2FA",
+        "subtitle": "Hoe je inlogt, en een tweede stap om anderen buiten te houden."
+      },
+      "accounts": {
+        "title": "Rekeningen",
+        "subtitle": "Deze saldi tellen mee in je vermogen, de prognose en wat je vrij kunt besteden."
+      },
+      "categories": {
+        "title": "Categorieën",
+        "subtitle": "Hoe je transacties gegroepeerd en automatisch herkend worden."
+      },
+      "recurring": {
+        "title": "Terugkerend",
+        "subtitle": "Inkomsten en rekeningen die volgens een schema terugkomen."
+      },
+      "merchants": {
+        "title": "Winkels & merk-iconen",
+        "subtitle": "Waar je betaalt, en met welk logo dat getoond wordt."
+      },
+      "financialMonth": {
+        "title": "Financiële maand",
+        "subtitle": "De dag waarop je maand begint, meestal je betaaldag."
+      },
+      "monthOverrides": {
+        "title": "Maanduitzonderingen",
+        "subtitle": "Een andere startdag voor één maand."
+      },
+      "budgetRecurring": {
+        "title": "Budget & rekeningen",
+        "subtitle": "Wat als uitgave telt in je budget en rapporten."
+      },
+      "import": {
+        "title": "CSV importeren",
+        "subtitle": "Voeg transacties toe uit de export van je bank."
+      },
+      "importProfiles": {
+        "title": "Importprofielen",
+        "subtitle": "Opgeslagen kolomindelingen voor je bankexports."
+      },
+      "dataHealth": {
+        "title": "Gegevenscontrole",
+        "subtitle": "Vind en herstel transacties die kapot binnenkwamen."
+      },
+      "appearance": {
+        "title": "Weergave",
+        "subtitle": "Licht, donker of hetzelfde als je apparaat."
+      },
+      "privacy": {
+        "title": "Privacy",
+        "subtitle": "Verberg bedragen als anderen je scherm kunnen zien."
+      },
+      "appLock": {
+        "title": "App-vergrendeling",
+        "subtitle": "Vraag om een pincode of je vingerafdruk als de app opent."
+      },
+      "language": {
+        "title": "Taal",
+        "subtitle": "De taal van de app."
+      },
+      "currency": {
+        "title": "Valuta",
+        "subtitle": "Het symbool naast bedragen."
+      },
+      "help": {
+        "title": "Hulp",
+        "subtitle": "Vragen, problemen of ideeën."
+      },
+      "users": {
+        "title": "Gebruikers",
+        "subtitle": "Wie er in dit huishouden kan inloggen."
+      }
+    },
+    "inline": {
+      "appearanceHint": "Bepaalt hoe de app eruitziet. \"Systeemstandaard\" volgt de instellingen van je apparaat.",
+      "privacyHint": "Verbergt elk bedrag in de app achter puntjes, zodat je hem in het openbaar kunt gebruiken zonder je saldi te laten zien.",
+      "privacyMode": "Privacymodus",
+      "showAmounts": "Bedragen tonen",
+      "hideAmounts": "Bedragen verbergen",
+      "languageHint": "Kies de taal van de app.",
+      "currencyHint": "Valutasymbool dat bij bedragen staat.",
+      "addOverride": "Uitzondering toevoegen",
+      "helpTitle": "Vragen of problemen?",
+      "helpBody": "Mail de support en we reageren zo snel mogelijk.",
+      "contactSupport": "Contact opnemen"
+    },
+    "account": {
+      "photo": "Profielfoto",
+      "name": "Naam",
+      "loginEmail": "Inlog-e-mail",
+      "email": "E-mail",
+      "emailHint": "Hiermee log je in.",
+      "currentPassword": "Huidig wachtwoord",
+      "password": "Wachtwoord",
+      "newPassword": "Nieuw wachtwoord",
+      "newPasswordHint": "Minimaal 8 tekens",
+      "twoFactor": "Tweestapsverificatie",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "nameUpdated": "Naam bijgewerkt.",
+      "emailUpdated": "E-mail bijgewerkt.",
+      "passwordUpdated": "Wachtwoord bijgewerkt."
+    },
+    "brandIcons": {
+      "title": "Merk-iconen",
+      "subtitle": "Transacties waarvan de naam bij een regel past, krijgen dat logo.",
+      "rules": "Regels",
+      "empty": "Nog geen regels",
+      "addRule": "Regel toevoegen",
+      "saving": "Opslaan…",
+      "matchWord": "Heel woord",
+      "matchContains": "Bevat",
+      "matchExact": "Exact",
+      "deleteRuleTitle": "Deze regel verwijderen?",
+      "deleteRuleBody": "Transacties die alleen bij deze regel pasten, krijgen weer hun gewone icoon.",
+      "deleteRuleConfirm": "Regel verwijderen"
+    },
+    "categories": {
+      "resetTitle": "Categorieën terugzetten naar de standaard?",
+      "resetBody": "Alle eigen categorieën en regels worden verwijderd en de standaardset wordt teruggezet. Je transacties blijven bewaard, maar verliezen hun categorie tot de standaardregels ze opnieuw toewijzen.",
+      "resetConfirm": "Categorieën terugzetten",
+      "deleteTitle": "De categorie “{name}” verwijderen?",
+      "deleteBody": "De transacties, vaste lasten, het budget en de regels ervan worden ook verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "deleteConfirm": "Categorie verwijderen"
+    },
+    "merchants": {
+      "deleteTitle": "De winkel “{name}” verwijderen?",
+      "deleteBody": "{count, plural, =0 {Geen enkele transactie gebruikt deze winkel.} one {De # transactie blijft bestaan, maar verliest haar winkel.} other {De # transacties blijven bestaan, maar verliezen hun winkel.}}",
+      "deleteConfirm": "Winkel verwijderen"
+    },
+    "users": {
+      "deleteTitle": "{name} verwijderen?",
+      "deleteBody": "Deze gebruiker wordt uitgelogd en kan niet meer inloggen. Dit kan niet ongedaan worden gemaakt.",
+      "deleteConfirm": "Gebruiker verwijderen"
+    },
+    "monthOverrides": {
+      "deleteTitle": "De uitzondering voor {month} verwijderen?",
+      "deleteBody": "Die maand begint dan weer op je gewone startdag.",
+      "deleteConfirm": "Uitzondering verwijderen"
+    }
   },
   "budget": {
-    "alert": {
-      "over": "{amount} over je budget",
-      "left": "{amount} over in budget",
-      "success1": "Ruim onder schema. Je hebt een mooie buffer opgebouwd.",
-      "success2": "Je uitgaven liggen ruim onder schema. Dat ziet er goed uit.",
-      "success3": "Je ligt mooi op schema voor deze periode.",
-      "warning1": "Je geeft iets sneller uit dan gepland. Houd het goed in de gaten.",
-      "warning2": "Er is niet veel budget meer over. Wat rustiger aan doen kan helpen.",
-      "danger": "Je zit over je budget. Overweeg om je budget voor volgende maand aan te passen."
-    },
-    "emptyTitle": "Geen budget ingesteld",
-    "emptyDesc": "Maak een budget om je uitgaven te volgen en grip te houden op je financiën.",
     "create": "Budget aanmaken",
+    "createSubtitle": "Stel een limiet in en verdeel die over je categorieën.",
+    "editSubtitle": "Geldt vanaf deze periode · {from} – {to}",
     "period": {
       "weekly": "Wekelijks",
       "monthly": "Maandelijks"
     },
-    "over": "Te veel",
-    "left": "Resterend",
-    "used": "{pct}% gebruikt",
-    "daysLeft": "Resterende dagen",
-    "days": "{count, plural, one {# dag} other {# dagen}}",
-    "amount": "Bedrag",
-    "allocated": "Toegewezen",
-    "leftToAllocate": "Nog toe te wijzen",
-    "budgetedCategories": "Categorieën met budget",
+    "overallBudget": "Totaal budget",
+    "periodLabel": "Periode",
+    "resets": "{period, select, weekly {Begint elke maandag opnieuw} other {Begint opnieuw op de {day}e}}",
+    "noOverallHint": "Zonder totaal budget vormen je categoriebudgetten samen de limiet.",
     "categoryBudgets": "Categoriebudgetten",
-    "totalAllocated": "{amount} totaal",
-    "manage": "Beheren",
-    "overLabel": "te veel",
-    "leftLabel": "over",
-    "ofAmount": "van {amount}",
+    "categoryBudgetsHint": "Onder elke naam staat wat er deze periode al is uitgegeven",
     "addCategory": "Categoriebudget toevoegen",
+    "pickCategory": "Kies een categorie",
+    "allBudgeted": "Elke categorie heeft al een budget.",
+    "noCategoryBudgets": "Nog geen categoriebudgetten.",
+    "clearAll": "Alles wissen",
+    "spentHint": "{amount} uitgegeven",
+    "spentOver": "{spent} · {over} te veel",
+    "allocatedOf": "<b>{allocated}</b> van {overall} toegewezen",
     "leftToAllocateAmount": "{amount} nog toe te wijzen",
+    "overAllocated": "{amount} boven je totale budget",
+    "categoryTotal": "Categoriebudgetten komen samen op <b>{amount}</b>",
+    "categorySpent": "{amount} uitgegeven deze periode",
+    "budgetPer": "{period, select, weekly {Budget per week} other {Budget per maand}}",
     "editBudget": "Budget bewerken",
     "deleteBudget": "Budget verwijderen",
     "close": "Sluiten",
-    "back": "Terug",
-    "reset": "Wissen",
     "save": "Opslaan",
     "saving": "Opslaan…",
-    "allocatedPct": "{pct}% toegewezen",
-    "amountLeft": "{amount} over",
-    "totalCategoryBudgets": "Totaal categoriebudgetten",
-    "totalBecomesLimit": "Dit totaal wordt je totale budgetlimiet.",
     "last30": "Laatste 30 dagen: {amount}",
     "last7": "Laatste 7 dagen: {amount}",
-    "setCategoryBudget": "Stel een budget in voor deze categorie",
     "removeBudget": "Budget verwijderen",
     "strategyTitle": "Budgetstrategie",
     "strategyDesc": "Hoe je inkomen wordt verdeeld over Nodig, Willen en Sparen.",
-    "strategyCommon": "Veelgebruikt is 50/25/25.",
+    "strategyBasedOn": "Op basis van <b>{income}</b> inkomen deze maand",
+    "strategyNoIncome": "Nog geen inkomen deze maand, dus nog geen bedragen.",
     "advisedBudget": "Aanbevolen budget: <b>{amount}</b> ({pct}% van {income} inkomen)",
     "advised": "Aanbevolen: {amount}",
     "exceedTitle": "Categoriebudgetten overschrijden je totale budget",
     "exceedDesc": "Je categoriebudgetten komen samen op {total}, meer dan je totale budget van {overall}. Verhoog het totale budget naar {total}, of annuleer en verlaag het categoriebedrag.",
     "increaseOverall": "Verhoog totaal naar {amount}",
     "cancel": "Annuleren",
-    "confirmDelete": "Dit budget verwijderen? Categoriebudgetten worden ook gewist.",
+    "confirmDelete": "Dit budget verwijderen?",
+    "confirmDeleteBody": "Je categoriebudgetten worden ook gewist. Je transacties blijven in Activiteit staan.",
     "confirmRemoveCategory": "Het budget voor {name} verwijderen?",
-    "overallLimit": "Stel je totale budgetlimiet in voor deze periode",
-    "skip": "Overslaan",
-    "continue": "Doorgaan",
-    "skipHint": "Je kunt overslaan en categoriebudgetten hierna instellen",
+    "confirmRemoveCategoryBody": "De categorie zelf blijft bestaan, alleen zonder budget.",
     "strategyLabels": {
       "nodig": "Nodig",
       "willen": "Willen",
@@ -178,7 +318,15 @@
       "save": "Sparen",
       "amount": "Bedrag",
       "min": "Min",
-      "max": "Max"
+      "max": "Max",
+      "selectCategories": "Categorieën kiezen",
+      "selectAccounts": "Rekeningen kiezen",
+      "confirm": "Bevestigen",
+      "searchCategory": "Categorie zoeken",
+      "selectAll": "Alles selecteren",
+      "deselectAll": "Alles deselecteren",
+      "noCategories": "Geen categorieën gevonden",
+      "noAccounts": "Geen rekeningen"
     },
     "bulkSelected": "{count, plural, =0 {Niets geselecteerd} one {# geselecteerd} other {# geselecteerd}}",
     "bulkSelectAll": "Alles selecteren ({count})",
@@ -191,6 +339,156 @@
     "bulkDelete": "Verwijderen",
     "bulkDone": "Selectiemodus verlaten",
     "bulkConfirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?",
+    "bulkConfirmDeleteBody": "Dit kan niet ongedaan worden gemaakt. Wat {count, plural, one {deze transactie} other {deze transacties}} aan een spaardoel {count, plural, one {heeft} other {hebben}} toegevoegd, gaat er weer af.",
+    "bulkConfirmDeleteLabel": "{count, plural, one {Transactie} other {# transacties}} verwijderen",
+    "add": {
+      "title": "Transactie toevoegen",
+      "phoneTitle": "Nieuwe transactie",
+      "countsTowards": "Telt mee voor {month} ({from} – {to})",
+      "type": "Soort transactie",
+      "expense": "Uitgave",
+      "income": "Inkomsten",
+      "transfer": "Overboeking",
+      "amount": "Bedrag",
+      "amountResult": "= {amount}",
+      "amountInvalid": "Maak de som af om het bedrag te zien",
+      "budget": {
+        "alreadyOver": "{category} zit {over} over het budget · hiermee wordt dat {after}",
+        "becomesOver": "Hiermee gaat {category} {over} over het budget",
+        "left": "{category}: hierna nog {left} over"
+      },
+      "today": "Vandaag",
+      "yesterday": "Gisteren",
+      "tomorrow": "Morgen",
+      "category": "Categorie",
+      "chooseCategory": "Kies een categorie",
+      "categoryChip": "Categorie: {name}",
+      "merchant": "Winkel",
+      "merchantPlaceholder": "Waar was het?",
+      "merchantChip": "Winkel: {name}",
+      "description": "Omschrijving",
+      "descriptionPlaceholder": "Waar was het voor?",
+      "account": "Rekening",
+      "accountChip": "Rekening: {name}",
+      "chooseAccount": "Kies een rekening",
+      "from": "Van",
+      "to": "Naar",
+      "fromAccount": "Van rekening",
+      "toAccount": "Naar rekening",
+      "fromChip": "Van {name}",
+      "toChip": "Naar {name}",
+      "swap": "Rekeningen omdraaien",
+      "date": "Datum",
+      "note": "Notitie",
+      "notePlaceholder": "Notitie toevoegen…",
+      "addNote": "Notitie toevoegen",
+      "editNote": "Notitie bewerken",
+      "scanTitle": "Bon scannen",
+      "scanBody": "Maak of kies een foto en winkel, bedrag en datum worden ingevuld",
+      "scanReceipt": "Bon scannen",
+      "calculator": "Rekenmachine",
+      "keypad": "Toetsenblok",
+      "backspace": "Wissen",
+      "divide": "Delen",
+      "multiply": "Vermenigvuldigen",
+      "subtract": "Aftrekken",
+      "add": "Optellen",
+      "save": "Opslaan",
+      "saving": "Opslaan…",
+      "saveAnother": "Opslaan en nog een",
+      "savedAnother": "Opgeslagen. Klaar voor de volgende.",
+      "saveFailed": "Opslaan is niet gelukt. Probeer het opnieuw.",
+      "done": "Klaar",
+      "close": "Sluiten",
+      "fallbackDescription": "Transactie",
+      "fallbackAccount": "Rekening"
+    },
+    "scan": {
+      "title": "Bon scannen",
+      "subtitle": "Gelezen op dit apparaat — de foto gaat nergens heen",
+      "pick": "Maak of kies een foto",
+      "local": "Lokaal gelezen door Ollama, er wordt niets geüpload",
+      "reading": "Bon lezen…",
+      "slow": "Met een lokaal model kan dit even duren.",
+      "error": "Er ging iets mis bij het lezen van deze bon.",
+      "retry": "Opnieuw proberen",
+      "review": "Controleer de gegevens — er is nog niets opgeslagen",
+      "name": "Winkel",
+      "namePlaceholder": "Naam van de winkel",
+      "amount": "Bedrag",
+      "date": "Datum",
+      "matched": "Gevonden categorie:",
+      "suggested": "Voorgestelde categorie (geen match gevonden):",
+      "detected": "Totaal op de bon: {amount}",
+      "another": "Andere foto",
+      "apply": "Deze gegevens gebruiken",
+      "close": "Sluiten"
+    },
+    "split": {
+      "title": "Transactie splitsen",
+      "parts": "Delen",
+      "basis": "Splitsen op",
+      "byAmount": "Op bedrag",
+      "byCount": "Op aantal",
+      "countHint": "Elk deel krijgt een stuk van het totaal naar zijn aantal, zo afgerond dat het precies klopt.",
+      "chooseCategory": "Kies een categorie",
+      "categoryFor": "Categorie voor deel {n}: {name}",
+      "amountFor": "Bedrag voor deel {n}",
+      "countFor": "Aantal voor deel {n}",
+      "remove": "Deel {n} verwijderen ({name})",
+      "minPartsHint": "Een splitsing heeft minstens 2 delen",
+      "addPart": "Deel toevoegen",
+      "allocated": "Helemaal verdeeld",
+      "left": "Nog {amount} te verdelen",
+      "tooMuch": "{amount} meer dan het totaal",
+      "removeAll": "Splitsing verwijderen",
+      "fewer": "Eén persoon minder",
+      "more": "Eén persoon meer",
+      "each": "{amount} per persoon",
+      "yourShare": "Jouw deel",
+      "ofTotal": "van {total}",
+      "cancel": "Annuleren",
+      "save": "Splitsing opslaan",
+      "saving": "Opslaan…",
+      "close": "Sluiten",
+      "errors": {
+        "minParts": "Voeg minstens 2 delen toe voor een splitsing.",
+        "chooseEach": "Kies een categorie voor elk deel.",
+        "positiveCount": "Elk deel heeft een aantal boven 0 nodig.",
+        "positiveAmount": "Elk deel heeft een bedrag boven 0 nodig.",
+        "sumMismatch": "De delen samen moeten precies het totaal van de transactie zijn.",
+        "saveFailed": "De splitsing kon niet worden opgeslagen.",
+        "removeFailed": "De splitsing kon niet worden verwijderd.",
+        "share": "Jouw deel moet meer dan 0 zijn en niet meer dan het totaal."
+      }
+    },
+    "link": {
+      "title": "Terugbetaling koppelen",
+      "subtitle": "Kies de uitgave die {name} ({amount}) terugbetaalde",
+      "subtitleRemaining": "Kies de uitgave die {name} ({amount}) terugbetaalde · nog {left} te koppelen",
+      "search": "Uitgaven zoeken",
+      "searchPlaceholder": "Zoek in de uitgaven",
+      "candidates": "Uitgaven rond {date}",
+      "loading": "Uitgaven zoeken…",
+      "none": "Geen openstaande uitgaven in de maand voor deze betaling. Zoek om een oudere te vinden.",
+      "results": "Gevonden uitgaven",
+      "noMatches": "Geen openstaande uitgaven gevonden voor “{query}”.",
+      "sameAmount": "Zelfde bedrag",
+      "exactlyHalf": "Precies de helft",
+      "covered": "{pct}% terugbetaald · nog {left}",
+      "portion": "Van deze betaling",
+      "portionHint": "Hiervan is nog {amount} niet gekoppeld",
+      "expected": "Totaal verwacht terug",
+      "expectedHint": "Jouw deel: {share} van {total}",
+      "previewLabel": "Na het koppelen",
+      "preview": "Na het koppelen kost <b>{name}</b> je <b>{share}</b> · de {amount} telt in rapporten niet als inkomsten",
+      "was": "Was",
+      "now": "Nu",
+      "cancel": "Annuleren",
+      "link": "Koppelen",
+      "linking": "Koppelen…",
+      "close": "Sluiten"
+    },
     "periods": {
       "all": "Alles",
       "today": "Vandaag",
@@ -201,99 +499,96 @@
       "year": "Jaar"
     }
   },
-  "debts": {
-    "paymentFromLinked": "Overgenomen van de gekoppelde {count, plural, one {vaste last} other {vaste lasten}}: {amount} per maand.",
-    "paymentOverridden": "Je hebt dit bedrag zelf ingesteld. De gekoppelde {count, plural, one {vaste last komt} other {vaste lasten komen}} uit op {amount} per maand.",
-    "useLinkedAmount": "Bedrag van gekoppelde vaste last gebruiken",
-    "interestHelp": "Optioneel. Het jaarlijkse rentepercentage op deze schuld. Elke betaling dekt eerst de rente van die maand; alleen wat overblijft verlaagt het saldo. Laat leeg als er geen rente is.",
-    "interestPerMonth": "Bij het huidige saldo is dat ongeveer {amount} rente in de eerste maand.",
-    "interestTooLow": "De minimale maandelijkse aflossing dekt de rente niet, waardoor dit saldo nooit omlaag gaat."
-  },
   "goals": {
-    "savings": "Sparen",
-    "monthly": "Maandelijks",
-    "lastGoalReachedBy": "Laatste doel bereikt op",
-    "allocated": "Toegewezen",
-    "savingsGoals": "Spaardoelen",
-    "emptyTitle": "Begin met je eerste spaardoel",
-    "emptyDesc": "Klaar om te sparen? Tik op de knop hieronder om je eerste spaardoel in te stellen.",
-    "addSaving": "Spaardoel toevoegen",
-    "addNewSaving": "Nieuw spaardoel toevoegen",
-    "filterAll": "Alle",
-    "filterBudget": "Budget",
-    "filterSavings": "Sparen",
-    "typeBudget": "Budget",
-    "typeSavings": "Sparen",
-    "spent": "besteed",
-    "saved": "gespaard",
     "recurrence": {
       "none": "Geen",
       "weekly": "Wekelijks",
       "monthly": "Maandelijks",
       "yearly": "Jaarlijks"
     },
-    "detailsTitle": "Spaardoel details",
-    "edit": "Bewerken",
+    "colors": {
+      "blue": "Blauw",
+      "orange": "Oranje",
+      "purple": "Paars",
+      "pink": "Roze",
+      "teal": "Blauwgroen",
+      "indigo": "Indigo",
+      "amber": "Amber",
+      "green": "Groen"
+    },
     "delete": "Verwijderen",
+    "cancel": "Annuleren",
     "close": "Sluiten",
-    "ofAmount": "van {amount}",
     "reached": "Bereikt",
     "savedPct": "{pct}% gespaard",
     "targetAmount": "Doelbedrag",
-    "monthlyContribution": "Maandelijkse inleg",
     "startDate": "Startdatum",
     "endDate": "Einddatum",
-    "endDateOptional": "Einddatum (optioneel)",
-    "noEndDate": "Geen einddatum",
     "recurrenceLabel": "Herhaling",
-    "reachedBy": "Bereikt op",
     "category": "Categorie",
-    "currentBalance": "Huidig saldo",
-    "name": "Naam",
-    "confirmDelete": "\"{name}\" verwijderen?",
-    "chooseCategory": "Kies categorie",
-    "chooseACategory": "Kies een categorie",
     "categoryOptional": "Categorie (optioneel)",
-    "required": "Verplicht",
-    "all": "Alle",
-    "done": "Klaar",
-    "recurrency": "Herhaling",
-    "clear": "Wissen",
-    "savingsGoal": "Spaardoel",
-    "moreOptions": "Meer opties",
-    "calculator": "Rekenmachine",
-    "whatDoButtonsDo": "Wat doen deze knoppen?",
-    "chooseIconColor": "Kies icoon en kleur",
-    "namePlaceholder": "bijv. Nieuwe auto",
-    "setStartEndDate": "Start- en einddatum instellen",
-    "startEndDate": "Start / einddatum",
-    "setMonthlyContribution": "Maandelijkse inleg instellen",
-    "monthlyContributionAmount": "Maandelijkse inleg {amount}",
+    "currentBalance": "Huidig saldo",
     "startingBalance": "Startsaldo",
-    "setStartingBalance": "Startsaldo instellen",
-    "startingBalanceAmount": "Startsaldo {amount}",
-    "backspace": "Backspace",
-    "divide": "Delen",
-    "multiply": "Vermenigvuldigen",
-    "subtract": "Aftrekken",
-    "add": "Optellen",
-    "dates": "Datums",
-    "autoCalc": "Automatisch berekend op basis van de einddatum ({amount}) — wis de einddatum om dit handmatig in te stellen.",
-    "iconColor": "Icoon & kleur",
-    "icon": "Icoon",
-    "color": "Kleur",
-    "editSaving": "Spaardoel bewerken",
+    "name": "Naam",
+    "namePlaceholder": "bijv. Nieuwe auto",
+    "confirmDelete": "\"{name}\" verwijderen?",
+    "confirmDeleteBody": "De transacties blijven in Activiteit staan, ze tellen alleen niet meer mee voor dit doel.",
+    "confirmDeleteLabel": "Doel verwijderen",
+    "autoCalc": "Berekend uit de einddatum. Wis de einddatum om dit zelf in te stellen.",
     "saving": "Opslaan…",
-    "save": "Opslaan",
-    "untitled": "Naamloos doel",
-    "editBudget": "Budget bewerken",
-    "addNewGoal": "Nieuw doel toevoegen",
-    "newBudget": "Nieuw budget",
-    "newSaving": "Nieuwe spaarpot",
-    "typeBudgetSubtitle": "Stel een budget in en houd je uitgaven verstandig in de hand",
-    "typeSavingsSubtitle": "Klaar om te sparen? Begin hier met je eerste doel",
-    "monthlyPlaceholder": "bijv. 100",
-    "balancePlaceholder": "bijv. 0"
+    "form": {
+      "newSavings": "Nieuw spaardoel",
+      "newBudget": "Nieuw budgetdoel",
+      "editSavings": "Spaardoel bewerken",
+      "editBudget": "Budgetdoel bewerken",
+      "subtitleSavings": "Stel een doel in en zie wanneer je er bent",
+      "subtitleBudget": "Stel een maximum in voor wat je in één categorie uitgeeft",
+      "type": "Soort doel",
+      "typeSavings": "Spaardoel",
+      "typeBudget": "Budgetdoel",
+      "iconColour": "Icoon & kleur",
+      "changeIcon": "Icoon wijzigen",
+      "budgetAmount": "Budgetbedrag",
+      "contribution": "{period, select, weekly {Wekelijkse inleg} yearly {Jaarlijkse inleg} other {Maandelijkse inleg}}",
+      "per": "{period, select, weekly {per week} yearly {per jaar} other {per maand}}",
+      "frequency": "Hoe vaak je inlegt",
+      "noCategory": "Geen",
+      "chooseCategory": "Kies een categorie",
+      "optional": "Optioneel",
+      "sum": "= {amount}",
+      "help": "Wat doen deze velden?",
+      "save": "Doel opslaan",
+      "projection": {
+        "reach": "Met <b>{amount} {period, select, weekly {per week} yearly {per jaar} other {per maand}}</b> bereik je <b>{target}</b> in <b>{date}</b>",
+        "reached": "Je hebt de volle <b>{target}</b> al gespaard.",
+        "none": "Vul een inleg in om te zien wanneer je <b>{target}</b> bereikt.",
+        "hint": "Of stel een einddatum in: dan wordt de inleg voor je berekend.",
+        "toGo": "Nog {count, plural, one {# maand} other {# maanden}}",
+        "target": "Doel {amount}",
+        "today": "Vandaag",
+        "chartLabel": "Verwachting: vanaf {balance} vandaag bereik je met {amount} {period, select, weekly {per week} yearly {per jaar} other {per maand}} het doel van {target} in {date}."
+      }
+    },
+    "detail": {
+      "title": "Spaardoel",
+      "edit": "Doel bewerken",
+      "savedOf": "{saved} van {target}",
+      "toGo": "Nog {amount}",
+      "target": "Doel",
+      "monthly": "Per maand",
+      "started": "Gestart",
+      "projected": "Verwacht",
+      "reachedOn": "Bereikt in {date}",
+      "noProjection": "Stel een maandbedrag in om te zien wanneer je dit doel bereikt.",
+      "targetLine": "Doel {amount}",
+      "today": "Vandaag",
+      "chartLabel": "Tot nu toe {saved} gespaard; met het geplande maandbedrag bereik je het doel van {target} in {date}.",
+      "chartLabelNoEnd": "Tot nu toe {saved} gespaard voor een doel van {target}.",
+      "account": "Gekoppeld aan {name}",
+      "category": "categorie “{name}”",
+      "noLinks": "Geen rekening of categorie gekoppeld",
+      "accountLabel": "Rekening"
+    }
   },
   "tips": {
     "gotIt": "Duidelijk",
@@ -301,6 +596,22 @@
     "next": "Volgende",
     "back": "Vorige",
     "skipTour": "Overslaan",
+    "categoryPickerSuggestions": {
+      "title": "Voorgestelde categorieën en regels",
+      "body": "De categorieën waar deze transactie waarschijnlijk bij hoort staan bovenaan. Kies er een en pas hem toe — zet de regel aan en vergelijkbare transacties krijgen hem ook, nu en voortaan."
+    },
+    "categoryPickerGroups": {
+      "title": "Categorieën, gegroepeerd",
+      "body": "Categorieën staan nu gegroepeerd onder nodig, willen en sparen. Typ om de lijst te verkleinen, gebruik de pijltjestoetsen om te bewegen en Enter om te kiezen."
+    },
+    "dateQuickPicks": {
+      "title": "Snel een datum",
+      "body": "Vandaag, gisteren en eergisteren kies je met één tik boven de kalender. Met een toetsenbord ga je met de pijltjestoetsen van dag naar dag en kies je met Enter."
+    },
+    "searchActions": {
+      "title": "Zoeken kan ook iets doen",
+      "body": "Voordat je typt, toont zoeken snelle acties zoals een transactie toevoegen of een CSV importeren. Gebruik de pijltjestoetsen om door de resultaten te gaan en Enter om er een te openen."
+    },
     "debtFormTour": {
       "title": "Nieuwe schuld",
       "body": "",
@@ -311,11 +622,11 @@
         },
         "debtIcon": {
           "title": "Icoon en kleur",
-          "body": "Tik om een symbool en kleur te kiezen. Zo herken je deze schuld in lijsten en grafieken."
+          "body": "Kies een kleur, of tik op het icoon om een ander symbool te kiezen. Zo herken je deze schuld in lijsten en grafieken."
         },
         "debtBalanceDate": {
           "title": "Saldo per",
-          "body": "Bij welke datum het bedrag hierboven hoort. Laat het op vandaag staan en het is gewoon wat je nu schuldig bent. Zet je het terug, dan gaat de app ervan uit dat er sindsdien elke maand is afgelost."
+          "body": "Bij welke datum het saldo hoort. Laat het op vandaag staan en het is gewoon wat je nu schuldig bent. Zet je het terug, dan gaat de app ervan uit dat er sindsdien elke maand is afgelost."
         },
         "debtStartDate": {
           "title": "Startdatum",
@@ -345,17 +656,13 @@
           "title": "Bestaande vaste last koppelen",
           "body": "Heb je hier al een vaste last voor? Koppel die, dan bepalen je echte betalingen de voortgang in plaats van een aangenomen schema."
         },
-        "debtMenu": {
-          "title": "Meer opties",
-          "body": "Zet de rekenmachine aan om te rekenen tijdens het invoeren, of speel deze uitleg opnieuw af."
+        "debtHelp": {
+          "title": "Rekenen en deze uitleg",
+          "body": "In bedragvelden kun je ook rekenen, zoals 120+35. Tik op deze knop om deze uitleg opnieuw af te spelen."
         },
         "debtSave": {
           "title": "Opslaan",
-          "body": "Beschikbaar zodra de schuld een naam en een bedrag boven nul heeft."
-        },
-        "debtClose": {
-          "title": "Sluiten",
-          "body": "Verlaat het scherm zonder op te slaan. Dat was alles — je kunt aan de slag."
+          "body": "Beschikbaar zodra de schuld een naam en een saldo boven nul heeft. Dat was alles — je kunt aan de slag."
         }
       }
     },
@@ -365,7 +672,11 @@
       "steps": {
         "savingIcon": {
           "title": "Icoon en kleur",
-          "body": "Tik om een symbool en kleur te kiezen voor dit doel. Zo herken je het in je lijst met spaardoelen."
+          "body": "Kies een kleur, of tik op het icoon om een symbool te kiezen. Zo herken je dit doel in je lijst met spaardoelen."
+        },
+        "savingTarget": {
+          "title": "Doelbedrag",
+          "body": "Waar je voor spaart. Je kunt ook een som typen, zoals 250*12, die wordt voor je uitgerekend."
         },
         "savingDates": {
           "title": "Start- en einddatum",
@@ -373,7 +684,7 @@
         },
         "savingMonthly": {
           "title": "Maandelijkse inleg",
-          "body": "Wat je elke maand opzij wilt zetten. Een einddatum hierboven berekent dit juist voor je, en gaat voor."
+          "body": "Wat je elke maand opzij wilt zetten. Een einddatum hieronder berekent dit juist voor je, en gaat voor."
         },
         "savingBalance": {
           "title": "Startsaldo",
@@ -383,16 +694,16 @@
           "title": "Categorie",
           "body": "Optioneel. Koppel een categorie zodat transacties daarin automatisch meetellen voor dit doel."
         },
-        "savingMenu": {
-          "title": "Meer opties",
-          "body": "Zet de rekenmachine aan om te rekenen tijdens het invoeren, of speel deze uitleg opnieuw af."
+        "savingHelp": {
+          "title": "Deze uitleg",
+          "body": "Speel hem hier opnieuw af wanneer je wilt."
         },
         "savingSave": {
           "title": "Opslaan",
           "body": "Beschikbaar zodra het doel een naam en een streefbedrag boven nul heeft."
         },
         "savingClose": {
-          "title": "Sluiten",
+          "title": "Annuleren",
           "body": "Verlaat het scherm zonder op te slaan. Dat was alles — je kunt aan de slag."
         }
       }
@@ -416,6 +727,26 @@
     "merchant": {
       "title": "Winkelprofiel",
       "body": "Elke winkel waar je betaalt krijgt een eigen pagina: wat je er uitgeeft, hoe vaak, en hoe dat door de jaren heen is veranderd."
+    },
+    "merchantVisits": {
+      "title": "Maand voor maand",
+      "body": "Elke balk is wat je hier die maand uitgaf; maanden die nog komen zijn gestreept. Met meer dan een jaar geschiedenis wissel je naar één balk per jaar."
+    },
+    "categoryMerchants": {
+      "title": "Waar het heen ging",
+      "body": "De winkels achter het totaal van deze categorie, grootste eerst, naast de laatste transacties. Tik op een transactie om hem te openen."
+    },
+    "recurringCharges": {
+      "title": "Elke afschrijving in één oogopslag",
+      "body": "De laatste 12 afschrijvingen van deze vaste last. Verandert de prijs, dan zie je dat hier meteen."
+    },
+    "recurringMatchPreview": {
+      "title": "Zie wat hij gaat matchen",
+      "body": "Terwijl je het zoekpatroon of bedrag typt, laat deze grafiek de eerdere afschrijvingen zien die erbij horen. Zo controleer je de regel voordat je opslaat."
+    },
+    "budgetCategoryDetail": {
+      "title": "Open een categorie",
+      "body": "Tik op een categorie om te zien waar het geld heen ging, het tempo en de afgelopen maanden. Met het potlood bewerk je het budget."
     },
     "budget": {
       "title": "Je budget",
@@ -467,7 +798,7 @@
     },
     "debtLinkedPayment": {
       "title": "Gekoppelde vaste last bepaalt de aflossing",
-      "body": "Koppel je een vaste last aan een schuld, dan wordt het maandbedrag daarvan de minimale aflossing. Open Minimale maandelijkse aflossing om een ander bedrag in te vullen."
+      "body": "Koppel je een vaste last aan een schuld, dan wordt het maandbedrag daarvan de minimale aflossing. Vul bij Minimale maandbetaling zelf een ander bedrag in om dat te overschrijven."
     },
     "googleLookup": {
       "title": "Wie heeft dit afgeschreven?",
@@ -517,17 +848,17 @@
       "title": "Zoeken zit onderin",
       "body": "Zoek in je transacties met de balk vlak boven de tabbalk, binnen bereik van je duim. De lijst filtert terwijl je typt."
     },
-    "activityContext": {
-      "title": "De categorie deze maand",
-      "body": "Hoe de uitgaven in deze categorie deze maand zijn opgebouwd, per winkel, tegenover het budget. De winkel van deze transactie is omlijnd."
+    "activityHistory": {
+      "title": "Geschiedenis met één tik",
+      "body": "Deze regel laat zien wat je deze periode bij deze winkel uitgaf, of wanneer een terugkerende betaling weer komt. Tik erop voor de laatste 12 maanden of de laatste 12 betalingen."
     },
     "activityKeys": {
       "title": "Bladeren met de pijltjestoetsen",
       "body": "Druk op ↑ en ↓ om door de lijst te gaan; de transactie rechts volgt mee."
     },
-    "budgetStrategyCard": {
-      "title": "Je verdeling in euro's",
-      "body": "Hoe je inkomen verdeeld wordt over nodig, willen en sparen, en wat je daar tot nu toe aan hebt uitgegeven. Tik op Aanpassen om de verdeling te wijzigen."
+    "activityDetailTabs": {
+      "title": "Overzicht en bankgegevens",
+      "body": "Overzicht laat zien wat een betaling is en wat die met je budget deed. Details toont alles wat de bank meestuurde, zoals IBAN en kenmerk, met kopieerknoppen."
     },
     "budgetMove": {
       "title": "Budget verplaatsen met één tik",
@@ -535,19 +866,31 @@
     },
     "budgetBills": {
       "title": "De rekeningen van deze maand",
-      "body": "Elke rekening op de dag dat hij betaald moet worden. Tik op een dag om alleen die rekeningen te zien, en vink een rekening af als hij betaald is."
+      "body": "Betaalde rekeningen staan boven de streep Vandaag, de rest eronder. Vink een rekening af als hij betaald is."
+    },
+    "budgetPeriodNav": {
+      "title": "Terugkijken naar eerdere maanden",
+      "body": "Met de pijlen naast de datums zie je hoe een eerdere budgetmaand afliep: wat je uitgaf, welke categorieën over budget gingen en welke rekeningen betaald zijn."
+    },
+    "budgetAddCategory": {
+      "title": "Alles op één plek",
+      "body": "Je totale budget, de strategie en alle categoriebudgetten staan nu bij elkaar. Voeg categorieën één voor één toe; onder elke naam zie je wat er deze periode is uitgegeven."
     },
     "debtsDetail": {
       "title": "Alles over één schuld",
-      "body": "Kies een schuld in de lijst om de gekoppelde vaste last te zien, hoeveel van elke betaling rente is en wanneer hij is afgelost."
+      "body": "Open een schuld om de gekoppelde vaste last te zien, hoeveel van elke betaling rente is en elke betaling die nog komt. Met het potlood bewerk je hem."
     },
     "debtsSimulator": {
       "title": "Probeer wat extra af te lossen",
-      "body": "Schuif om te zien hoeveel eerder je schuldenvrij bent en hoeveel rente je bespaart. Het verloop erboven beweegt mee."
+      "body": "Schuif om te zien hoeveel eerder je schuldenvrij bent en hoeveel rente je bespaart. Het aflossingsverloop beweegt mee."
+    },
+    "debtsSortAndImpact": {
+      "title": "Jouw volgorde, jouw maand",
+      "body": "Sorteer je schulden om te kiezen welke het extra bedrag als eerste krijgt. Hier zie je ook wat je na de extra aflossing per maand vrij te besteden hebt."
     },
     "debtsOwed": {
       "title": "Geld dat terugkomt",
-      "body": "Schulden die anderen bij jou hebben en voorschotten die nog maar deels terugbetaald zijn. Vink een voorschot af zodra het is afgehandeld."
+      "body": "Schulden die anderen bij jou hebben en voorschotten die nog maar deels terugbetaald zijn. Markeer er een als afgehandeld zodra het rond is."
     },
     "goalsContributions": {
       "title": "Wat je opzij zet",
@@ -555,7 +898,11 @@
     },
     "goalsDetail": {
       "title": "Wanneer je er bent",
-      "body": "Kies een doel om de geschiedenis te zien en, bij je maandbedrag, de maand waarin je het bereikt."
+      "body": "Open een doel om de geschiedenis te zien en, bij je maandbedrag, de maand waarin je het bereikt. Daar kun je het ook bewerken."
+    },
+    "goalsSuggestions": {
+      "title": "Begin met een suggestie",
+      "body": "Gebruiken vult een naam, icoon en kleur in voor een veelgekozen eerste doel. Vul je eigen bedragen in en pas alles aan voordat je opslaat."
     },
     "insightsMerchants": {
       "title": "Waar het geld naartoe ging",
@@ -563,15 +910,63 @@
     },
     "insightsNeedsWants": {
       "title": "Nodig en willen, per maand",
-      "body": "Elke balk verdeelt de uitgaven van een maand in nodig (donker) en willen (mosterd), op basis van het budgettype van je categorieën."
+      "body": "Elke balk verdeelt de uitgaven van een maand in nodig (zwart) en willen (oranje), op basis van het budgettype van je categorieën. De stippellijn is het deel van je inkomen dat je plan voor nodig reserveert."
     },
-    "insightsHealthCompare": {
-      "title": "Deze maand tegenover vorige maand",
-      "body": "Inkomen, uitgaven en je spaarquote naast die van vorige maand, plus de categorie die het meest veranderde."
+    "insightsHealthNextStep": {
+      "title": "Wat je score het meest verhoogt",
+      "body": "De stap die de meeste punten oplevert, waar je staat ten opzichte van het doel, en wat ervoor nodig is."
+    },
+    "insightsHealthHistory": {
+      "title": "Je score per maand",
+      "body": "De score van elke budgetmaand naast het inkomen, de uitgaven, de spaarquote en het vermogen. De lopende maand staat gemarkeerd als tot nu toe."
+    },
+    "insightsCategorySwitch": {
+      "title": "Uitgaven of inkomen",
+      "body": "Wissel deze kaart tussen uitgaven en inkomen per categorie. Inkomen per categorie, eerst een eigen kaart, staat nu hier."
     },
     "insightsComingUp": {
       "title": "Wat er aankomt",
-      "body": "De eerstvolgende geboekte en verwachte betalingen in je prognose. Open de kalender hieronder voor elke dag waarop er geld beweegt."
+      "body": "De eerstvolgende geboekte en verwachte betalingen in je prognose. Kies Kalender voor elke dag waarop er geld beweegt, en tik op een betaling voor de details."
+    },
+    "insightsForecastRange": {
+      "title": "30 dagen of 3 maanden",
+      "body": "Wissel de prognose tussen de komende 30 dagen en de komende 3 maanden. De cijfers en de status ernaast gaan mee."
+    },
+    "insightsNetWorthRange": {
+      "title": "Verder terugkijken",
+      "body": "Zet de grafiek op 30, 90 of 180 dagen om te zien hoe je vermogen zich over een kortere of langere periode ontwikkelde."
+    },
+    "accountsAdd": {
+      "title": "Rekeningen en bezittingen toevoegen",
+      "body": "Geef een bankrekening haar IBAN, zodat geïmporteerde regels erop terechtkomen, en een beginsaldo zodat het totaal klopt met je bank. Spaargeld, beleggingen en wat je bezit voeg je toe via Bezitting toevoegen."
+    },
+    "addTransactionAnother": {
+      "title": "Meerdere achter elkaar",
+      "body": "Opslaan en nog een houdt dit open voor de volgende, met dezelfde datum en rekening. Kies een categorie om vóór het opslaan te zien wat het bedrag met het budget doet."
+    },
+    "correctAmountPreview": {
+      "title": "Zie wat het budget doet",
+      "body": "Terwijl je het gecorrigeerde bedrag typt, zie je hier wat het met het budget van de categorie in deze periode doet."
+    },
+    "receiptViewer": {
+      "title": "Lees de kleine lettertjes",
+      "body": "Zoom in op de bon, of download de foto om ergens anders een kopie te bewaren."
+    },
+    "rulePreview": {
+      "title": "Controleer de regel voor je opslaat",
+      "body": "Terwijl je de omschrijving, overeenkomst of het bedrag aanpast, zie je hier welke eerdere transacties de regel oppikt."
+    },
+    "splitSharedCost": {
+      "title": "Ook voor anderen betaald?",
+      "body": "Zet dit aan als anderen je terugbetalen. Je cashflow houdt het hele bedrag, terwijl rapporten alleen jouw deel kunnen tonen."
+    },
+    "linkSearchOlder": {
+      "title": "Staat hij er niet tussen?",
+      "body": "De lijst toont recente uitgaven. Zoek om een oudere op naam te vinden."
+    },
+    "privacyEye": {
+      "title": "Verberg je bedragen",
+      "body": "Tik op het oog om elk bedrag op elk scherm in puntjes te veranderen, tot je er nog een keer op tikt. Handig als iemand over je schouder meekijkt."
     },
     "homeSafeToSpendSum": {
       "title": "Eén bedrag, met de som erbij",
@@ -585,15 +980,169 @@
       "title": "Alles staat in de zijbalk",
       "body": "Home, Activiteit, Plan en Inzichten staan links, met Importeren, Instellingen, het thema en Uitloggen eronder. Op je telefoon staan ze in de balk onderin."
     },
+    "settingsNav": {
+      "title": "Alle instellingen in één lijst",
+      "body": "Rekeningen, categorieën, terugkerende posten, importeren, weergave en je profiel staan hier allemaal. Kies er een om hem te openen."
+    },
     "homeMoneyFlow": {
       "title": "Geldstroom",
       "body": "Geld erin en eruit deze maand, per dag opgeteld. Het verschil tussen de twee lijnen vandaag is wat je tot nu toe hebt overgehouden."
+    },
+    "budgetStrategyTarget": {
+      "title": "Doel tegen werkelijkheid",
+      "body": "Per soort zie je het doel als aandeel van je inkomen (gestreept) boven wat je tot nu toe echt hebt uitgegeven of gespaard. Tik op Aanpassen om de verdeling te wijzigen."
+    },
+    "budgetUnbudgeted": {
+      "title": "Uitgaven zonder budget",
+      "body": "Uitgaven in categorieën zonder eigen budget staan nu onder de lijst, zodat je ziet wat er van het vrije geld af gaat."
+    },
+    "globalSearch": {
+      "title": "Zoeken is verhuisd",
+      "body": "Zoeken vindt alles in de app — transacties, winkels, categorieën, instellingen. Het staat nu in de zijbalk (en op telefoons aan het eind van de balk), zodat duidelijk is dat het overal zoekt, niet alleen op deze pagina. Ctrl/Cmd+K werkt nog steeds."
     }
+  },
+  "categoryPicker": {
+    "title": "Categorie",
+    "close": "Sluiten",
+    "placeholder": "Categorie",
+    "search": "Zoek categorieën",
+    "clearSearch": "Zoekopdracht wissen",
+    "list": "Categorieën",
+    "uncategorized": "Zonder categorie",
+    "empty": "Geen categorieën gevonden",
+    "groups": {
+      "nodig": "Nodig",
+      "willen": "Willen",
+      "sparen": "Sparen",
+      "other": "Overig"
+    },
+    "setTitle": "Categorie instellen",
+    "subtitleOne": "Voor {name}",
+    "subtitleMany": "Voor {count, plural, one {# geselecteerde transactie} other {# geselecteerde transacties}}",
+    "moreNames": "+{count} meer",
+    "suggested": "Voorgesteld",
+    "rule": {
+      "title": "Maak ook een regel voor vergelijkbare transacties",
+      "help": "Transacties met {names} krijgen voortaan deze categorie.",
+      "helpWithSimilar": "Transacties met {names} krijgen voortaan deze categorie, en {count, plural, one {# eerdere transactie krijgt} other {# eerdere transacties krijgen}} hem nu al."
+    },
+    "cancel": "Annuleren",
+    "apply": "Toepassen op {count, plural, one {# transactie} other {# transacties}}",
+    "applying": "Bezig…",
+    "applyFailed": "De categorie kon niet worden ingesteld. Probeer het opnieuw."
+  },
+  "datePicker": {
+    "chooseDate": "Kies een datum",
+    "chooseMonth": "Kies een maand",
+    "close": "Sluiten",
+    "today": "Vandaag",
+    "yesterday": "Gisteren",
+    "tomorrow": "Morgen",
+    "daysAgo": "{count, plural, one {# dag geleden} other {# dagen geleden}}",
+    "thisMonth": "Deze maand",
+    "lastMonth": "Vorige maand",
+    "quickPicks": "Snelkeuzes",
+    "previousMonth": "Vorige maand",
+    "nextMonth": "Volgende maand",
+    "previousYear": "Vorig jaar",
+    "nextYear": "Volgend jaar",
+    "previousYears": "Vorige 12 jaar",
+    "nextYears": "Volgende 12 jaar",
+    "chooseMonthOf": "{month}, kies een andere maand",
+    "chooseYearOf": "{year}, kies een ander jaar",
+    "clear": "Wissen",
+    "escToClose": "Esc om te sluiten"
+  },
+  "brandIconPicker": {
+    "title": "Merkicoon",
+    "subtitle": "Kies een logo, upload je eigen of gebruik een emoji.",
+    "selected": "Gekozen: {name}",
+    "choose": "Kies een merkicoon",
+    "change": "Merkicoon: {name}. Wijzigen",
+    "close": "Sluiten",
+    "search": "Zoek merken",
+    "clearSearch": "Zoekopdracht wissen",
+    "matches": "{count, plural, one {# resultaat} other {# resultaten}}",
+    "scope": "Welke merken",
+    "popular": "Populair",
+    "all": "Alle",
+    "brands": "Merken",
+    "noMatches": "Geen merken gevonden",
+    "uploads": "Jouw uploads",
+    "uploadedNamed": "Geüpload logo: {name}",
+    "uploadedImage": "Eigen afbeelding",
+    "upload": "Logo uploaden",
+    "uploading": "Uploaden…",
+    "uploadHint": "PNG, JPG, SVG of WebP, vierkant werkt het best",
+    "custom": "Eigen icoon (emoji of tekst)",
+    "customPlaceholder": "🏠 of AB",
+    "clearCustom": "Wissen",
+    "noIcon": "Geen icoon",
+    "done": "Klaar",
+    "adjust": {
+      "title": "Formaat & positie",
+      "reset": "Herstellen",
+      "size": "Grootte",
+      "horizontal": "Links/rechts",
+      "vertical": "Boven/onder"
+    }
+  },
+  "globalSearch": {
+    "title": "Zoeken",
+    "openAnywhere": "Open het overal met",
+    "close": "Sluiten",
+    "label": "Zoek in transacties, categorieën, vaste lasten, schulden en acties",
+    "placeholder": "Zoek in alles…",
+    "clear": "Zoekopdracht wissen",
+    "results": "Zoekresultaten",
+    "searching": "Zoeken…",
+    "noResults": "Geen resultaten voor “{query}”",
+    "matches": "{count, plural, one {# resultaat} other {# resultaten}} voor “{query}”",
+    "groups": {
+      "transactions": "Transacties",
+      "categories": "Categorieën",
+      "recurring": "Vaste lasten",
+      "debts": "Schulden",
+      "actions": "Acties",
+      "accounts": "Rekeningen",
+      "brands": "Merken"
+    },
+    "actions": {
+      "addTransaction": "Transactie toevoegen",
+      "importCsv": "CSV importeren",
+      "budget": "Naar Budget",
+      "insights": "Naar Inzichten"
+    },
+    "actionHints": {
+      "budget": "Plan",
+      "insights": "Overzicht"
+    },
+    "openInSettings": "Openen in Instellingen",
+    "allCategories": "Alle",
+    "allAccounts": "Alle",
+    "allActivity": "Activiteit",
+    "last30Days": "{count, plural, one {# transactie} other {# transacties}} in de laatste 30 dagen",
+    "lastTransaction": "Laatste transactie {ago}",
+    "brand": "Merk",
+    "keys": {
+      "up": "Pijl omhoog",
+      "down": "Pijl omlaag",
+      "move": "om te bewegen",
+      "open": "om te openen",
+      "close": "om te sluiten"
+    }
+  },
+  "confirmDialog": {
+    "cancel": "Annuleren",
+    "confirm": "Bevestigen",
+    "delete": "Verwijderen"
   },
   "importMapping": {
     "title": "Onherkend bankformaat",
     "description": "We konden deze bank niet automatisch herkennen. Geef aan welke kolom wat is — we onthouden het voor de volgende keer.",
-    "bankName": "Banknaam (optioneel)",
+    "close": "Sluiten",
+    "optional": "(optioneel)",
+    "bankName": "Banknaam",
     "bankNamePlaceholder": "bijv. Mijn Bank",
     "column": "Kolom {index}",
     "none": "Geen",
@@ -611,19 +1160,35 @@
     "decimalSeparator": "Decimaalteken",
     "decimalComma": "Komma (1.234,56)",
     "decimalDot": "Punt (1,234.56)",
-    "directionHint": "Richting (optioneel — laat op \"Gebruik teken van bedrag\" staan als een negatief bedrag al geld uit betekent)",
     "directionColumn": "Richtingkolom",
+    "directionColumnHint": "Laat op \"Gebruik teken van bedrag\" staan als een negatief bedrag al geld uit betekent.",
     "useAmountSign": "Gebruik teken van bedrag",
     "directionExpenseValue": "Waarde in die kolom die \"geld uit\" betekent",
     "directionExpenseValuePlaceholder": "bijv. Debet",
-    "accountColumn": "Rekeningkolom (optioneel)",
-    "counterAccountColumn": "Tegenrekening (optioneel)",
-    "balanceColumn": "Resulterend saldo (optioneel)",
+    "accountColumn": "Rekeningkolom",
+    "counterAccountColumn": "Tegenrekening",
+    "balanceColumn": "Resulterend saldo",
     "balanceColumnHint": "Het saldo dat je bank na elke transactie meldt — vaak Saldo, Saldo na mutatie of Balance genoemd. We bewaren het precies zoals het binnenkomt, voor toekomstige saldohistorie en prognoses.",
     "cancel": "Annuleren",
     "import": "Importeren",
     "importing": "Importeren…",
     "previewLabel": "Zo worden je datums gelezen",
+    "amountPreviewLabel": "Zo worden je bedragen gelezen",
+    "datesLookRight": "Klopt",
+    "datesUnreadable": "Niet leesbaar",
+    "previewTable": "Voorbeeld van de eerste {count, plural, one {regel} other {# regels}} van het bestand",
+    "roles": {
+      "date": "Datum",
+      "description": "Omschrijving",
+      "amount": "Bedrag",
+      "direction": "Richting",
+      "account": "Rekening",
+      "counterAccount": "Tegenrekening",
+      "balance": "Saldo"
+    },
+    "savedAsProfile": "Wordt bij het importeren opgeslagen als importprofiel “{label}”",
+    "savedAsProfileUnnamed": "Wordt opgeslagen als importprofiel, zodat deze bank de volgende keer herkend wordt",
+    "genericError": "Er ging iets mis",
     "notADate": "geen datum",
     "notAnAmount": "geen bedrag",
     "datePreviewInvalid": "Deze kolom is niet als datum te lezen. Kies een andere kolom of pas het datumformaat aan.",
@@ -641,7 +1206,9 @@
     "fix": "Herstel",
     "deleteSelected": "Verwijder selectie ({count})",
     "deleteAll": "Verwijder alles ({count})",
-    "confirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?"
+    "confirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?",
+    "confirmDeleteBody": "Dit kan niet ongedaan worden gemaakt. Wat {count, plural, one {deze transactie} other {deze transacties}} aan een spaardoel {count, plural, one {heeft} other {hebben}} toegevoegd, gaat er weer af.",
+    "confirmDeleteLabel": "{count, plural, one {Transactie} other {# transacties}} verwijderen"
   },
   "importProfiles": {
     "title": "Importprofielen",
@@ -649,13 +1216,409 @@
     "empty": "Nog geen opgeslagen importprofielen.",
     "dateColumn": "Datumkolom",
     "delete": "Profiel verwijderen",
-    "confirmDelete": "Opgeslagen koppeling \"{label}\" verwijderen? Bij de volgende import van dat bestand word je opnieuw om de kolommen gevraagd."
+    "confirmDelete": "Opgeslagen koppeling \"{label}\" verwijderen?",
+    "confirmDeleteBody": "Bij de volgende import van dat bestand word je opnieuw om de kolommen gevraagd."
+  },
+  "accountForms": {
+    "close": "Sluiten",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "saving": "Opslaan…",
+    "delete": "Verwijderen",
+    "done": "Klaar",
+    "today": "Vandaag",
+    "notSet": "Niet ingesteld",
+    "iconColor": "Icoon & kleur",
+    "icon": "Icoon",
+    "color": "Kleur",
+    "chooseIconColor": "Kies icoon en kleur",
+    "includeInNetWorth": "Meetellen in vermogen",
+    "bankTypes": {
+      "debitcard": "Betaalrekening",
+      "savings": "Spaarrekening",
+      "creditcard": "Creditcard",
+      "cash": "Contant"
+    },
+    "assetTypes": {
+      "spaarrekening": "Spaarrekening",
+      "beleggingen": "Beleggingen",
+      "bezitting": "Bezitting",
+      "betaalrekening": "Betaalrekening"
+    },
+    "transferKinds": {
+      "none": "Geen",
+      "savings": "Sparen",
+      "investments": "Beleggen",
+      "credit_card_payment": "Creditcardbetaling",
+      "cash_withdrawal": "Geldopname",
+      "shared_account": "Overboeking gedeelde rekening"
+    },
+    "bank": {
+      "addTitle": "Bankrekening toevoegen",
+      "editTitle": "Bankrekening bewerken",
+      "addSubtitle": "Saldi komen uit je imports; stel een beginpunt in zodat de totalen kloppen met je bank.",
+      "editSubtitle": "Het saldo komt uit je imports plus het beginsaldo.",
+      "name": "Naam rekening",
+      "namePlaceholder": "bijv. ING Betaalrekening",
+      "iban": "IBAN",
+      "ibanHint": "Hiermee koppelen we geïmporteerde regels aan deze rekening",
+      "ibanReadOnly": "{iban} · koppelt geïmporteerde regels",
+      "type": "Soort rekening",
+      "startingBalance": "Beginsaldo",
+      "startingBalanceHint": "Telt mee in het saldo van deze rekening, maar nooit in rapporten.",
+      "balanceAsOf": "Saldo op",
+      "balance": "Huidig saldo",
+      "balanceHint": "Pas dit alleen aan om een echt verschil met je bank te herstellen.",
+      "balanceWarning": "Dit corrigeert het saldo rechtstreeks — er komt geen transactie bij. Elk saldo dat voor deze rekening getoond wordt, schuift mee.",
+      "balanceConfirm": "Het saldo van deze rekening corrigeren?",
+      "balanceConfirmBody": "Je corrigeert het saldo van deze rekening rechtstreeks, je registreert geen transactie. Elk eerder en later saldo van deze rekening schuift hierdoor mee, dus controleer of het nieuwe bedrag klopt.",
+      "balanceConfirmLabel": "Saldo corrigeren",
+      "expiry": "Vervaldatum",
+      "transferKind": "Soort overboeking",
+      "transferKindHint": "Overboekingen van en naar deze rekening krijgen dit soort in je transactielijsten.",
+      "netWorthHint": "Telt het saldo van deze rekening mee in je vermogen",
+      "add": "Rekening toevoegen",
+      "confirmDelete": "Deze bankrekening verwijderen?",
+      "confirmDeleteBody": "De transacties blijven in Activiteit staan, maar het saldo telt niet meer mee in je vermogen, de prognose en wat je vrij kunt besteden.",
+      "confirmDeleteLabel": "Rekening verwijderen"
+    },
+    "asset": {
+      "addTitle": "Bezitting toevoegen",
+      "editTitle": "Bezitting bewerken",
+      "subtitle": "Wat je bezit en meetelt in je vermogen.",
+      "type": "Wat voor bezitting?",
+      "name": "Naam",
+      "namePlaceholder": "bijv. Indexfonds",
+      "value": "Huidige waarde",
+      "valueAsOf": "Waarde op",
+      "notes": "Notities",
+      "notesPlaceholder": "Optionele notitie",
+      "netWorthHint": "Telt deze bezitting mee in je vermogen",
+      "addsToNetWorth": "Dit voegt <b>{amount}</b> toe aan je bezittingen in Vermogen.",
+      "countsInNetWorth": "Vermogen telt deze bezitting mee voor <b>{amount}</b>.",
+      "notInNetWorth": "Deze bezitting telt niet mee in Vermogen.",
+      "add": "Bezitting toevoegen",
+      "confirmDelete": "Deze bezitting verwijderen?",
+      "confirmDeleteBody": "De waarde telt dan niet meer mee in je vermogen.",
+      "confirmDeleteLabel": "Bezitting verwijderen"
+    },
+    "panel": {
+      "total": "Totaal",
+      "accountCount": "{count, plural, one {# rekening} other {# rekeningen}}",
+      "vsLastMonth": "t.o.v. vorige maand",
+      "range": "Periode van de grafiek",
+      "ranges": {
+        "1w": "1W",
+        "1m": "1M",
+        "3m": "3M",
+        "6m": "6M",
+        "1y": "1J"
+      },
+      "banks": "Bankrekeningen",
+      "assets": "Overige bezittingen",
+      "noBanks": "Nog geen bankrekeningen",
+      "noAssets": "Nog geen bezittingen",
+      "addBank": "Bankrekening toevoegen",
+      "addAsset": "Bezitting toevoegen",
+      "edit": "{name} bewerken",
+      "bankFallback": "Bank {id}",
+      "updated": "Bijgewerkt {date}"
+    }
+  },
+  "newAccounts": {
+    "title": "{count, plural, one {Nieuwe rekening gevonden} other {Nieuwe rekeningen gevonden}}",
+    "subtitle": "{count, plural, one {Deze import bevat een rekening die Centje nog niet kende.} other {Deze import bevat # rekeningen die Centje nog niet kende.}}",
+    "close": "Sluiten",
+    "foundHere": "Gevonden in deze import",
+    "new": "Nieuw",
+    "name": "Naam rekening",
+    "startingBalance": "Beginsaldo",
+    "asOf": "Op",
+    "today": "Vandaag",
+    "hint": "Het beginsaldo telt alleen mee in het getoonde saldo van de rekening — rapporten veranderen nooit.",
+    "later": "Later",
+    "save": "{count, plural, one {Saldo opslaan} other {Saldi opslaan}}",
+    "saving": "Opslaan…"
+  },
+  "avatarCrop": {
+    "title": "Foto bijsnijden",
+    "subtitle": "Sleep om te verplaatsen, gebruik de schuif om te zoomen",
+    "close": "Sluiten",
+    "cropArea": "Je foto met een rond uitsnijgebied in het midden",
+    "zoom": "Zoom",
+    "zoomIn": "Inzoomen",
+    "zoomOut": "Uitzoomen",
+    "zoomValue": "{percent} procent",
+    "preview": "Voorbeeld",
+    "previewHint": "Zo zie je hem in de app",
+    "places": {
+      "topBar": "Bovenbalk",
+      "settings": "Instellingen",
+      "profile": "Profiel"
+    },
+    "cancel": "Annuleren",
+    "save": "Foto opslaan"
+  },
+  "merchantProfile": {
+    "title": "Winkelprofiel",
+    "close": "Sluiten",
+    "loading": "Laden…",
+    "subtitleMostly": "Vooral {category}",
+    "subtitleSince": "sinds {date}",
+    "uncategorized": "Geen categorie",
+    "rename": "Hernoemen",
+    "changeMerchant": "Andere winkel",
+    "empty": "Nog geen uitgaven bij deze winkel.",
+    "totalSpent": "Totaal uitgegeven",
+    "visits": "Bezoeken",
+    "average": "Gemiddeld",
+    "largest": "Grootste aankoop",
+    "firstVisit": "Eerste bezoek",
+    "lastVisitLabel": "Laatste bezoek",
+    "transactions": "Transacties",
+    "summary": "{count, plural, one {# bezoek} other {# bezoeken}} · {amount}",
+    "done": "Klaar",
+    "byMonth": "Bezoeken in {year}",
+    "byYear": "Bezoeken per jaar",
+    "viewLabel": "Bezoeken tonen per",
+    "months": "Maanden",
+    "years": "Jaren",
+    "lastVisit": "Laatste bezoek {date}",
+    "chartAria": "Uitgaven bij {name} per maand in {year}: {list}.",
+    "chartAriaYears": "Uitgaven bij {name} per jaar: {list}.",
+    "noVisits": "geen bezoeken",
+    "categories": "Categorieën",
+    "categoryMeta": "{count, plural, one {# bezoek} other {# bezoeken}} · {amount}",
+    "renameTitle": "Winkel hernoemen",
+    "renameLabel": "Naam",
+    "renameHint": "De nieuwe naam geldt voor elke transactie die aan deze winkel gekoppeld is.",
+    "renameError": "Deze winkel kon niet worden hernoemd.",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "saving": "Opslaan…"
+  },
+  "categoryDetail": {
+    "title": "Categorie",
+    "close": "Sluiten",
+    "loading": "Laden…",
+    "income": "Inkomsten",
+    "budgetTypes": {
+      "need": "Nodig",
+      "want": "Willen",
+      "saving": "Sparen"
+    },
+    "budgetMonth": "budget {amount} per maand",
+    "budgetWeek": "budget {amount} per week",
+    "editCategory": "Categorie bewerken",
+    "editBudget": "Budget bewerken",
+    "viewAll": "Alle transacties bekijken",
+    "empty": "Geen transacties in deze periode.",
+    "spendingRow": "Tonen in het uitgavenoverzicht",
+    "spendingRowHint": "Houdt {name} bij de uitgavencategorieën in Inzichten.",
+    "status": {
+      "over": "Over budget",
+      "close": "Bijna op",
+      "onPace": "Op koers"
+    },
+    "ofBudget": "van <b>{budget}</b> · <b>nog {left}</b>",
+    "ofBudgetOver": "van <b>{budget}</b> · <b>{over} erover</b>",
+    "spentIn": "uitgegeven {when}",
+    "receivedIn": "ontvangen {when}",
+    "pace": "Dag {day} van {days} · bij een gelijk tempo zat je nu op {amount}",
+    "daysLeft": "{count, plural, one {nog # dag} other {nog # dagen}}",
+    "saving": "Opslaan…",
+    "suggested": {
+      "title": "Voorgesteld budget: {amount}",
+      "body": "Berekend uit je uitgaventempo tot nu toe.",
+      "use": "Gebruiken"
+    },
+    "stats": {
+      "forecast": "Verwachting",
+      "forecastOver": "{amount} over budget",
+      "perDayLeft": "nog {amount} per dag",
+      "pace": "{amount} per dag tot nu toe",
+      "perWeek": "Per week",
+      "biggest": "Grootste aankoop",
+      "busiestDay": "Drukste dag"
+    },
+    "chart": {
+      "viewLabel": "Grafiek",
+      "history": {
+        "day": "Laatste zes dagen",
+        "week": "Laatste zes weken",
+        "month": "Laatste zes maanden"
+      },
+      "thisPeriod": "Deze periode",
+      "spent": "Uitgegeven",
+      "received": "Ontvangen",
+      "budget": "Budget",
+      "budgetLine": "Budget {amount}",
+      "historyAria": "{name}: {list}.{hasBudget, select, yes { Budget {budget} per staaf.} other {}}",
+      "periodAria": "{name} deze periode: tot nu toe {spent}{hasProjection, select, yes {, op weg naar {projected}} other {}}."
+    },
+    "merchants": "Winkels",
+    "sources": "Van",
+    "visits": "{count, plural, one {# bezoek} other {# bezoeken}}",
+    "recent": "Recent",
+    "recentCount": "Laatste {count}",
+    "showAll": "Alle {count} tonen",
+    "showLess": "Minder tonen",
+    "allTitle": "Alle transacties",
+    "budgetDialog": {
+      "title": "Budget voor {name}",
+      "perMonth": "Per maand",
+      "perWeek": "Per week",
+      "amount": "Bedrag",
+      "hint": "Laat het leeg of op 0 voor geen budget.",
+      "close": "Sluiten",
+      "remove": "Budget verwijderen",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "saving": "Opslaan…"
+    },
+    "period": {
+      "title": "Periode",
+      "close": "Sluiten",
+      "change": "Periode: {period}. Wijzigen",
+      "range": "{from} – {to}",
+      "presets": {
+        "budget": "Budgetperiode",
+        "week": "Deze week",
+        "month": "Deze maand",
+        "3m": "Laatste 3 maanden",
+        "6m": "Laatste 6 maanden",
+        "year": "Dit jaar",
+        "custom": "Eigen periode"
+      },
+      "when": {
+        "budget": "deze periode",
+        "week": "deze week",
+        "month": "deze maand",
+        "3m": "in de laatste 3 maanden",
+        "6m": "in de laatste 6 maanden",
+        "year": "dit jaar",
+        "custom": "van {from} tot {to}"
+      },
+      "from": "Van",
+      "to": "Tot",
+      "rangeInvalid": "De einddatum ligt voor de begindatum.",
+      "apply": "Toepassen"
+    }
+  },
+  "recurringDetail": {
+    "title": "Vaste last",
+    "close": "Sluiten",
+    "category": "Categorie",
+    "uncategorized": "Geen categorie",
+    "account": "Rekening",
+    "budgetType": "Budgettype",
+    "startDate": "Startdatum",
+    "startsLater": "{date} (begint later)",
+    "dueDay": "Vervaldag",
+    "dueDayValue": "Dag {day}",
+    "next": "Volgende transactie",
+    "endDate": "Einddatum",
+    "notes": "Notities",
+    "nextOn": "Volgende op {date}",
+    "active": "Actief",
+    "paused": "Gepauzeerd",
+    "linked": "Gekoppelde transacties",
+    "linkedCount": "{count, plural, one {# transactie} other {# transacties}}",
+    "loading": "Laden…",
+    "noLinked": "Nog geen gekoppelde transacties.",
+    "delete": "Verwijderen",
+    "pause": "Pauzeren",
+    "resume": "Hervatten",
+    "edit": "Bewerken",
+    "charges": {
+      "title": "Laatste {count} afschrijvingen",
+      "summary": "<b>{total}</b> in totaal · gem. {avg}",
+      "aria": "Afschrijvingen, oudste eerst: {list}.",
+      "priceUp": "Prijs ging {amount} omhoog in {month}",
+      "priceDown": "Prijs ging {amount} omlaag in {month}"
+    }
+  },
+  "recurringForm": {
+    "editTitle": "Vaste last bewerken",
+    "makeRecurring": "Terugkerend maken",
+    "newTitle": "Nieuwe vaste last",
+    "newSubtitle": "Een rekening, abonnement of inkomen dat terugkomt",
+    "add": "Vaste last toevoegen",
+    "close": "Sluiten",
+    "confirmDelete": "\"{name}\" verwijderen?",
+    "confirmDeleteBody": "Eerdere transacties blijven in Activiteit staan, ze zijn er alleen niet meer aan gekoppeld.",
+    "confirmDeleteLabel": "Vaste last verwijderen",
+    "duplicate": "Er bestaat al een vaste last met deze naam.",
+    "fromName": "Van {name}",
+    "amountOn": "{amount} op {date}",
+    "name": "Naam",
+    "namePlaceholder": "bijv. Huur",
+    "friendlyName": "Weergavenaam",
+    "friendlyHint": "Staat bij gematchte transacties in plaats van de banknaam.",
+    "friendlyPlaceholder": "bijv. Sportschool",
+    "amount": "Bedrag",
+    "startDate": "Begint op",
+    "startHint": "Vervalt op dag {day}",
+    "category": "Categorie",
+    "noCategory": "Kiezen",
+    "type": "Type",
+    "types": {
+      "bill": "Rekening",
+      "subscription": "Abonnement",
+      "income": "Inkomen",
+      "debt": "Schuld",
+      "savings": "Sparen"
+    },
+    "budgetType": "Budgettype",
+    "budgetTypes": {
+      "needs": "Nodig",
+      "wants": "Willen",
+      "savings": "Sparen"
+    },
+    "frequency": "Frequentie",
+    "frequencies": {
+      "once": "Eenmalig",
+      "daily": "Dagelijks",
+      "weekly": "Wekelijks",
+      "monthly": "Maandelijks",
+      "quarterly": "Per kwartaal",
+      "yearly": "Jaarlijks"
+    },
+    "endDate": "Stopt op een datum",
+    "endHint": "Na deze datum zet de vaste last zichzelf uit.",
+    "noEnd": "Geen einddatum — loopt door tot je hem stopt.",
+    "endLocked": "De einddatum volgt de laatste betaling van de gekoppelde schuld.",
+    "endLockedOn": "Stopt op {date} — volgt de laatste betaling van de gekoppelde schuld.",
+    "matchPattern": "Zoekterm",
+    "matchPlaceholder": "Tekst in de omschrijving, bijv. Netflix",
+    "wholeWord": "Alleen heel woord",
+    "wholeWordHint": "Alleen als los woord — „NS” matcht niet met „NSPCC”.",
+    "containsHint": "Matcht overal in de omschrijving, ook midden in een woord.",
+    "linkedHint": "{count, plural, one {# transactie is gekoppeld} other {# transacties zijn gekoppeld}}; nieuwe worden automatisch gekoppeld.",
+    "autoHint": "Nieuwe transacties die matchen worden automatisch gekoppeld.",
+    "matchesHint": "{count, plural, =0 {Nog geen eerdere transacties die matchen.} one {Matcht # eerdere transactie. Nieuwe worden automatisch gekoppeld.} other {Matcht # eerdere transacties. Nieuwe worden automatisch gekoppeld.}}",
+    "matchAmount": "Bedrag matchen",
+    "exact": "Precies bedrag",
+    "between": "Tussen",
+    "anyAmount": "Elk bedrag",
+    "min": "Min",
+    "max": "Max",
+    "setTo": "Deze vaste last staat op {amount}.",
+    "useIt": "Gebruiken",
+    "notes": "Notities",
+    "notesPlaceholder": "Iets om te onthouden",
+    "active": "Actief",
+    "activeHint": "Zet hem uit om de vaste last te pauzeren zonder hem te verwijderen.",
+    "delete": "Verwijderen",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "saving": "Opslaan…",
+    "restore": "Terugzetten",
+    "restoring": "Terugzetten…"
   },
   "sharedCost": {
     "row": "Gedeelde kosten",
-    "rowNotShared": "Niet gedeeld",
     "rowPayback": "Geld dat aan mij wordt terugbetaald",
-    "rowYourShare": "Jouw deel {amount}",
     "sharedToggle": "Anderen betalen mij hiervoor terug",
     "paidBackLabel": "Elke keer aan mij terugbetaald",
     "peopleLabel": "Aantal personen (inclusief jij)",
@@ -694,7 +1657,8 @@
       "light": "Licht",
       "system": "Auto",
       "dark": "Donker"
-    }
+    },
+    "searchEverything": "Alles doorzoeken"
   },
   "insights": {
     "title": "Inzichten",
@@ -714,23 +1678,30 @@
       "forecast": "Kasstroomprognose · uit je saldo, rekeningen en inkomen",
       "health": "Financiële gezondheid · maandelijks berekend uit je eigen gegevens"
     },
-    "budgetTabs": {
-      "budget": "Budget",
-      "prognose": "Prognose"
-    },
     "filters": {
       "categories": "Categorieën",
       "accounts": "Rekeningen",
-      "resetCategories": "Categorieën wissen",
-      "resetAccounts": "Rekeningen wissen"
+      "categoriesCount": "Categorieën · {count}",
+      "accountsCount": "Rekeningen · {count}",
+      "clear": "Filters wissen"
     },
     "period": {
       "title": "Periode",
+      "subtitle": "Budget volgt je budgetperiode, van betaaldag tot betaaldag",
+      "triggerLabel": "Periode: {period}. Periode wijzigen",
+      "presetsLabel": "Snelkeuzes",
       "previous": "Vorige periode",
       "next": "Volgende periode",
-      "budgetPeriod": "Budgetperiode",
+      "previousMonth": "Vorige maand",
+      "nextMonth": "Volgende maand",
+      "budgetPeriods": "{count, plural, one {Budgetperiode} other {Budgetperiodes}}",
+      "days": "{count, plural, one {# dag} other {# dagen}}",
+      "dayToday": "vandaag dag {day}",
+      "today": "Vandaag, {date}",
       "from": "Van",
       "to": "Tot",
+      "close": "Sluiten",
+      "cancel": "Annuleren",
       "apply": "Toepassen",
       "presets": {
         "budget": "Budget",
@@ -746,218 +1717,523 @@
       "income": "Inkomen",
       "expenses": "Uitgaven",
       "saved": "Gespaard",
-      "savedValue": "{amount} · {pct}%",
+      "ofIncome": "van je inkomen",
       "largest": "Grootste uitgave",
-      "weekByWeek": "Per week",
+      "largestWhere": "{name}, {date}",
+      "avgPerDay": "Gemiddeld per dag",
       "spending": "Uitgaven",
       "incomeShort": "Inkomen",
-      "cashflow": "Kasstroom",
-      "leftPerDay": "Nog ongeveer {amount} per dag voor de resterende {days, plural, one {# dag} other {# dagen}}",
+      "spent": "Uitgegeven",
+      "billsDue": "Nog te betalen",
+      "flow": {
+        "day": {
+          "title": "Per dag",
+          "subtitle": "Inkomsten en uitgaven voor elke dag van deze periode"
+        },
+        "week": {
+          "title": "Per week",
+          "subtitle": "Inkomsten en uitgaven voor elke week van deze periode"
+        },
+        "month": {
+          "title": "Per maand",
+          "subtitle": "Inkomsten en uitgaven voor elke maand van deze periode"
+        },
+        "year": {
+          "title": "Per jaar",
+          "subtitle": "Inkomsten en uitgaven voor elk jaar van deze periode"
+        },
+        "today": "Vandaag",
+        "thisWeek": "Deze week",
+        "weekN": "Week {n}"
+      },
+      "flowLabel": "Staafdiagram van inkomsten en uitgaven. {list}",
+      "noActivity": "Deze periode geen geld in of uit.",
+      "leftPerDay": "Nog ongeveer <b>{amount} per dag</b> voor de resterende {days, plural, one {# dag} other {# dagen}}",
+      "nothingLeft": "Niets meer te besteden voor de resterende {days, plural, one {# dag} other {# dagen}}",
+      "safeToSpend": "{amount} veilig te besteden",
+      "overBudget": "{amount} over budget",
       "topMerchants": "Topwinkels",
-      "all": "Alles",
       "noMerchants": "Deze periode geen uitgaven bij een bekende winkel.",
       "visits": "{count, plural, one {# bezoek} other {# bezoeken}}",
       "byAccount": "Per rekening",
+      "spentTotal": "{amount} uitgegeven",
+      "transactionCount": "{count, plural, one {# transactie} other {# transacties}}",
+      "otherAccounts": "Overige rekeningen",
       "noSpending": "Nog geen uitgaven deze periode.",
       "unknownAccount": "Onbekende rekening",
       "accountsNote": "Sparen en overboekingen tussen je eigen rekeningen tellen niet mee als uitgaven.",
       "noIncome": "Nog geen inkomen deze periode.",
-      "budget": "Budget",
-      "open": "Openen",
-      "left": "Over",
-      "weekly": "Wekelijks",
-      "monthly": "Maandelijks",
-      "daysLeft": "Dagen over",
-      "days": "{count, plural, one {# dag} other {# dagen}}",
-      "favoriteCategory": "Favoriete categorie",
-      "transactions": "Transacties",
-      "vsLastPeriod": "{change} t.o.v. vorige periode",
       "popularDay": "Populaire dag",
       "calendar": "Kalender",
+      "calendarLabel": "Uitgaven per dag in deze periode, donkerder op drukkere dagen",
+      "stillToCome": "Nog te gaan",
+      "heatLess": "Minder",
+      "heatMore": "Meer",
       "avgExpense": "Gem. uitgaven / dag",
-      "avgIncome": "Gem. inkomen / dag",
       "byCategory": "Uitgaven per categorie",
-      "allCategories": "Alle categorieën",
-      "other": "Overig",
       "incomeByCategory": "Inkomen per categorie",
-      "viewAll": "Alles tonen"
+      "categorySwitch": "Uitgaven of inkomen per categorie tonen",
+      "details": "Details",
+      "spentSoFar": "tot nu toe",
+      "spentCaption": "uitgegeven",
+      "received": "ontvangen",
+      "donutLabel": "{title}, {total} in totaal: {parts}",
+      "other": "Overig",
+      "moreCount": "Nog {count}",
+      "viewAll": "Alles tonen",
+      "empty": {
+        "title": "Inzichten hebben wat geschiedenis nodig",
+        "body": "Zodra er een maand aan transacties in staat, zie je waar je geld naartoe gaat, je trends en een prognose van de komende weken.",
+        "import": "CSV importeren",
+        "add": "Transactie toevoegen",
+        "tip": "Tip: importeer de laatste drie maanden om meteen trends te zien.",
+        "noTransactions": "Nog geen transacties",
+        "savedLater": "Spaarquote verschijnt na een maand",
+        "avgLater": "Heeft een paar weken uitgaven nodig",
+        "categoriesTitle": "Uitgaven per categorie verschijnen hier",
+        "categoriesBody": "Waar je geld naartoe gaat, per categorie",
+        "merchantsTitle": "Topwinkels verschijnen hier",
+        "merchantsBody": "Waar je het meest uitgeeft, en hoe vaak"
+      }
     },
     "trends": {
-      "months": "{count, plural, one {# maand} other {# maanden}}",
       "avgIncome": "Gem. inkomen",
       "avgExpenses": "Gem. uitgaven",
       "avgBalance": "Gem. saldo",
       "totalExpenses": "Totale uitgaven",
-      "noPrevious": "t.o.v. vorige periode: geen gegevens",
+      "perMonth": "/mnd",
+      "highestIn": "Hoogst in {month} · {amount}",
+      "positiveCount": "{count} van {total}",
+      "positiveLabel": "{total, plural, one {maand positief afgesloten} other {maanden positief afgesloten}}",
+      "topShare": "ging naar {category}",
+      "noTransactions": "Nog geen transacties",
       "needsWants": "Nodig en willen per maand",
+      "needsWantsSubtitle": "Je plan is {needs} / {wants} / {savings}",
+      "needsWantsDescription": "Nodig en willen per maand: {months}",
+      "needsTarget": "Doel voor nodig, {pct}% van inkomen",
+      "needsIn": "Nodig in {month}",
       "needs": "Nodig",
       "wants": "Willen",
+      "savings": "Sparen",
       "incomeVsExpenses": "Inkomen tegenover uitgaven",
+      "incomeVsExpensesSubtitle": "Per budgetmaand, met wat er overbleef eronder",
+      "chartDescription": "Inkomen en uitgaven per maand: {months}",
+      "inProgress": "Lopende maand",
+      "soFar": "tot nu",
       "income": "Inkomen",
       "expenses": "Uitgaven",
       "balance": "Saldo",
       "comparison": "Maandvergelijking",
+      "comparisonSubtitle": "{b} t.o.v. {a}",
+      "comparisonSubtitleSoFar": "{b} t.o.v. {a} tot nu",
+      "comparisonRunsUntil": "{month} loopt tot {date}.",
+      "comparisonStillDue": "{month} loopt tot {date}. {list} · nog {amount} te betalen",
+      "billsMore": "{list} +{count} meer",
+      "runsUntil": "Loopt tot {date}",
+      "vsMonth": "t.o.v. {month}",
+      "ofIncomeLeft": "van inkomen over",
+      "changeMonths": "Maanden wijzigen",
+      "category": "Categorie",
+      "change": "Verschil",
+      "moreCategories": "{count, plural, one {nog # categorie} other {nog # categorieën}}",
       "noData": "Geen gegevens",
       "perCategory": "Uitgaven per categorie",
-      "perCategoryNote": "Per maand · de getoonde periode",
+      "perCategorySubtitle": "{count, plural, one {Eén budgetmaand} other {# budgetmaanden}}, grootste eerst",
+      "filterByType": "Filter op budgettype",
+      "seeTransactions": "Transacties bekijken",
+      "trend": "{count, plural, one {Deze maand} other {Laatste # maanden}}",
+      "monthSoFar": "{month} tot nu",
+      "avgMonthHeader": "Gem. / maand",
+      "total": "Totaal",
+      "shareOfExpenses": "{pct}% van alle uitgaven",
+      "sparkLabel": "{name} per maand, van {min} tot {max}",
       "all": "Alles",
       "noExpenses": "Geen uitgaven in deze periode.",
       "avgPerMonth": "gem. {amount}/mnd",
       "showLess": "Minder tonen",
-      "showMore": "Meer tonen ({count})",
-      "vs": "t.o.v."
+      "showMore": "Meer tonen ({count})"
     },
     "netWorth": {
-      "title": "Vermogen · bezittingen min schulden",
-      "vsDaysAgo": "t.o.v. {count, plural, one {# dag} other {# dagen}} geleden",
+      "title": "Vermogen",
+      "rangeLabel": "Periode van de grafiek",
+      "rangeDays": "{count}d",
+      "vsDaysAgo": "{amount} t.o.v. {count, plural, one {# dag} other {# dagen}} geleden",
+      "sinceUp": "{amount} gestegen sinds {date}.",
+      "sinceDown": "{amount} gedaald sinds {date}.",
+      "sinceSame": "Onveranderd sinds {date}.",
+      "daysAgoAt": "{count, plural, one {# dag} other {# dagen}} geleden · {amount}",
+      "todayAt": "Vandaag · {amount}",
+      "heroChartDescription": "Vermogen over de laatste {count, plural, one {# dag} other {# dagen}}, van {start} naar {end} vandaag.",
+      "chartDescription": "Saldo van {start} op {from} naar {end} op {to}.",
+      "building": "De grafiek wordt opgebouwd: je vermogen wordt één keer per dag vastgelegd, dus kom morgen terug voor de eerste vergelijking.",
+      "assetsVsDebts": "Bezittingen tegenover schulden",
       "assets": "Bezittingen",
       "debts": "Schulden",
-      "days": "{count, plural, one {# dag} other {# dagen}}",
-      "building": "De trendgrafiek wordt opgebouwd — kom morgen terug voor je eerste vergelijking.",
+      "shareDescription": "Bezittingen {assets}%, schulden {debts}%",
+      "assetsShare": "{pct}% bezittingen",
+      "debtsShare": "{pct}% schulden",
       "projection": "Verwachting voor {count, plural, one {één maand} other {# maanden}}",
-      "projectedBy": "{amount} in {date}",
+      "byDate": "in {date}",
+      "now": "Nu",
+      "projectionDescription": "Verwacht vermogen van {start} nu naar {end} in {date}.",
       "projectionNote": "Op basis van vast inkomen, spaarbijdragen en terugbetalingen die je nog tegoed hebt. Je eigen vaste lasten zijn niet afgetrokken, dus dit is waar het naartoe gaat als dat blijft binnenkomen.",
-      "savingsGoals": "Spaardoelen",
+      "ownOwe": "Wat je bezit en schuldig bent",
+      "manage": "Beheren",
+      "bankAccounts": "Bankrekeningen",
+      "bankAccount": "Bankrekening",
+      "bankMeta": "••{suffix}",
+      "assetsSplit": "Zo zijn je bezittingen verdeeld",
+      "groupShare": "{pct}%",
       "types": {
         "spaarrekening": "Spaarrekening",
         "beleggingen": "Beleggingen",
         "betaalrekening": "Betaalrekening",
         "bezitting": "Bezittingen"
       },
-      "bankAccounts": "Bankrekeningen",
-      "owedToYou": "Te ontvangen",
       "other": "Overig",
-      "manage": "Beheren",
-      "noGoals": "Geen spaardoelen.",
-      "ofGoal": "{pct}% van het doel",
-      "paidPct": "{pct}% afgelost",
-      "total": "Totaal",
-      "noDebts": "Geen schulden.",
-      "ownOwe": "Wat je bezit en schuldig bent",
-      "accounts": "Rekeningen",
-      "totalAssets": "totale bezittingen",
-      "noAssets": "Geen bezittingen gevonden."
+      "updated": "Bijgewerkt {date}",
+      "goalsInAssets": "Gespaard in je doelen",
+      "goalsInAssetsMeta": "{count, plural, =0 {Nog niets gespaard} one {# doel} other {# doelen}} · details hieronder",
+      "owedToYou": "Te ontvangen",
+      "owedMeta": "Open · telt mee voor je vermogen",
+      "noAssets": "Nog geen bezittingen. Voeg je bankrekeningen, spaargeld of beleggingen toe om ze hier te zien.",
+      "addAccount": "Rekening toevoegen",
+      "openDebts": "Naar Schulden",
+      "noDebts": "Geen schulden, niets af te lossen.",
+      "addDebt": "Schuld toevoegen",
+      "debtMeta": "{amount}/mnd",
+      "debtMetaRate": "{amount}/mnd · {rate, number}% per jaar",
+      "leftOf": "over van {amount}",
+      "paidSoFar": "<b>{pct}% afgelost</b> · tot nu toe {amount}",
+      "debtFree": "Schuldenvrij {date}",
+      "neverPaysOff": "Betaling dekt de rente niet",
+      "noPayment": "Geen maandbedrag ingesteld",
+      "paidOff": "Afgelost",
+      "minimumPayments": "Minimale aflossingen",
+      "perMonth": "{amount}/mnd",
+      "savingsGoals": "Spaardoelen",
+      "goalsSummary": "{saved} gespaard, {monthly}/mnd",
+      "openGoals": "Naar Doelen",
+      "noGoals": "Nog geen spaardoelen.",
+      "addGoal": "Doel toevoegen",
+      "goalMeta": "{monthly}/mnd",
+      "goalMetaReady": "{monthly}/mnd · klaar {date}",
+      "goalMetaNone": "Geen maandbedrag ingesteld",
+      "goalOf": "<b>{saved}</b> van {target}",
+      "toGo": "nog {amount}",
+      "reached": "Bereikt",
+      "empty": {
+        "title": "Houd bij wat je bezit en schuldig bent",
+        "body": "Voeg je rekeningen, spaargeld en schulden toe en je ziet je vermogen, en hoe het van dag tot dag verandert.",
+        "addAccount": "Rekening toevoegen",
+        "addDebt": "Schuld toevoegen",
+        "chart": "Je vermogen door de tijd verschijnt hier",
+        "chartBody": "Eén punt per dag, vanaf de dag dat je begint",
+        "split": "Bezittingen tegenover schulden verschijnen hier",
+        "splitBody": "Wat je bezit tegenover wat je schuldig bent"
+      }
     },
     "health": {
       "title": "Financiële gezondheid",
-      "up": "{count, plural, one {# punt} other {# punten}} omhoog sinds {month}",
-      "down": "{count, plural, one {# punt} other {# punten}} omlaag sinds {month}",
+      "outOf": "van de {max}",
+      "gaugeLabel": "Financiële gezondheidsscore: {score} van de {max}.",
+      "gaugeLabelPrev": "Financiële gezondheidsscore: {score} van de {max}. In {month} was het {prev}.",
+      "marker": "{month} {score}",
+      "states": {
+        "excellent": "Uitstekend",
+        "good": "Goed",
+        "fair": "Redelijk",
+        "attention": "Vraagt aandacht"
+      },
+      "band": "{from}–{to} {label}",
+      "bandTop": "{from}+ {label}",
+      "since": "{count, plural, one {# punt} other {# punten}} sinds {month}",
       "same": "Dezelfde score als in {month}",
-      "areas": "{count, plural, one {# onderdeel} other {# onderdelen}}",
-      "na": "n.v.t.",
-      "notEnough": "Nog niet genoeg gegevens.",
-      "vsMonth": "{now} t.o.v. {prev}",
-      "trends": "Trends",
+      "focus": "Je grootste kans op verbetering: {area}.",
+      "allFull": "Elk onderdeel haalt zijn volle punten.",
+      "partial": "Gemeten op {count} van {total} onderdelen; voor de rest zijn meer gegevens nodig.",
+      "trendLabel": "Score per maand: {list}.",
+      "nextStep": "Beste volgende stap",
+      "gain": "+{count, plural, one {# punt} other {# punten}}",
+      "potential": "Dat kan je score met {count, plural, one {# punt} other {# punten}} verhogen.",
+      "now": "Nu",
+      "target": "Doel",
+      "perMonth": "{amount} per maand",
+      "monthsCount": "{count, plural, one {# maand} other {# maanden}}",
+      "action": {
+        "savingsRate": "Verhoog je spaarquote naar {target}",
+        "emergencyFund": "Laat je buffer groeien naar {count} maanden",
+        "budgetAdherence": "Blijf binnen je budget",
+        "recurringExpenses": "Breng je vaste lasten terug naar {target} van je inkomen",
+        "debtRatio": "Los je schulden af",
+        "incomeStability": "Maak je maandinkomen gelijkmatiger"
+      },
+      "gap": {
+        "savingsRate": "Spaar {amount} per maand meer om er te komen",
+        "emergencyFund": "Zet nog {amount} opzij om er te komen",
+        "budgetAdherence": "Houd je uitgaven elke maand binnen je totaalbudget",
+        "recurringExpenses": "Schrap {amount} per maand aan vaste lasten om er te komen",
+        "debtRatio": "Zonder schulden houd je {amount} per maand over",
+        "incomeStability": "Een buffer voor rustigere maanden vangt dit op"
+      },
+      "links": {
+        "budget": "Budget openen",
+        "goals": "Doelen bekijken",
+        "debts": "Schulden bekijken",
+        "recurring": "Vaste lasten bekijken",
+        "trends": "Trends bekijken"
+      },
+      "areasTitle": "Waar je score uit bestaat",
+      "areasSubtitle": "{count, plural, one {# onderdeel} other {# onderdelen}} · {points} punten in totaal",
+      "upTo": "Tot {count, plural, one {# punt} other {# punten}}",
+      "status": {
+        "good": "Goed",
+        "fair": "Redelijk",
+        "weak": "Kan beter",
+        "none": "Nog geen gegevens"
+      },
+      "pts": "{points} / {max} ptn",
+      "area": {
+        "savingsRate": "Spaarquote",
+        "emergencyFund": "Buffer",
+        "budgetAdherence": "Binnen budget",
+        "recurringExpenses": "Vaste lasten",
+        "debtRatio": "Schuldratio",
+        "incomeStability": "Stabiel inkomen"
+      },
+      "unit": {
+        "ofIncome": "van je inkomen",
+        "months": "{count, plural, one {maand} other {maanden}}",
+        "onBudget": "binnen budget",
+        "steady": "Stabiel",
+        "monthlyIncome": "maandinkomen",
+        "monthToMonth": "per maand"
+      },
+      "detail": {
+        "savingsRate": "Je hield de afgelopen {count, plural, one {maand} other {# maanden}} {amount} van {income} per maand over. Bij {target} krijg je de volle {max} punten.",
+        "savingsRateNegative": "Je gaf de afgelopen {count, plural, one {maand} other {# maanden}} {amount} per maand meer uit dan je verdiende.",
+        "emergencyFund": "Je {amount} aan spaargeld dekt {months, plural, one {# maand} other {# maanden}} aan uitgaven. Het doel is {target} maanden.",
+        "budgetAdherenceFull": "Je bleef elke gemeten maand binnen je budget.",
+        "budgetAdherenceOver": "Je uitgaven liepen in de gemeten maanden ruim over je budget.",
+        "budgetAdherence": "Gemiddeld liepen je uitgaven zo'n {pct} over je budget.",
+        "recurringExpenses": "Vaste lasten kosten {amount} per maand. Op of onder {target} van je inkomen krijg je de volle punten.",
+        "debtRatioNone": "Je hebt geen maandelijkse aflossingen, goed voor de volle punten.",
+        "debtRatio": "Aflossingen kosten {amount} per maand. Schuldenvrij geeft de volle punten.",
+        "incomeStabilitySteady": "Je maandinkomen is heel gelijkmatig geweest.",
+        "incomeStability": "Je maandinkomen schommelt zo'n {pct} van maand tot maand."
+      },
+      "missing": {
+        "savingsRate": "Heeft minstens één afgesloten maand met inkomen nodig.",
+        "emergencyFund": "Heeft een spaar- of betaalrekening en wat uitgaven nodig.",
+        "budgetAdherence": "Heeft een totaalbudget en minstens één afgesloten maand met uitgaven nodig.",
+        "recurringExpenses": "Heeft inkomen en minstens één actieve vaste last nodig.",
+        "debtRatio": "Heeft inkomen nodig om aflossingen mee te vergelijken.",
+        "incomeStability": "Heeft minstens drie afgesloten maanden met inkomen nodig."
+      },
+      "history": "Geschiedenis per maand",
+      "historySubtitle": "Elke budgetmaand begint op de {day}e · de score wordt vastgelegd als de maand sluit",
+      "month": "Maand",
+      "score": "Gezondheid",
       "income": "Inkomen",
       "expenses": "Uitgaven",
       "savingsRate": "Spaarquote",
-      "points": "{count, plural, one {# pt} other {# ptn}}",
-      "biggestChange": "Grootste verandering: {name}, {amount} {direction, select, up {hoger} other {lager}} dan in {month}.",
-      "history": "Geschiedenis per maand",
-      "month": "Maand",
-      "score": "Gezondheid",
       "netWorth": "Vermogen",
+      "soFar": "tot nu toe",
+      "range": "{from} – {to}",
+      "closes": "De maand {month} sluit op {date}.",
+      "overspent": "In {months} waren je uitgaven hoger dan je inkomen.",
       "trendLater": "Je score wordt eens per maand vastgelegd. Het verloop verschijnt vanaf je tweede vastgelegde maand.",
-      "details": "Details",
-      "inDays": "{amount} in {count, plural, one {# dag} other {# dagen}}",
-      "checking": "Betaalrekening",
-      "savings": "Sparen",
-      "investments": "Beleggingen",
-      "possessions": "Bezittingen",
-      "owed": "Te ontvangen",
-      "debts": "Schulden",
-      "nextStep": "Beste volgende stap",
-      "potential": "{label} kan je score met {count, plural, one {# punt} other {# punten}} verhogen.",
-      "pts": "{count} ptn"
+      "empty": {
+        "title": "Je gezondheidsscore heeft wat geschiedenis nodig",
+        "body": "Zodra je rekeningen, een budget en een paar weken aan transacties erin staan, zie je je score en wat hem het meest verhoogt.",
+        "import": "CSV importeren",
+        "accounts": "Rekening toevoegen"
+      }
     },
     "forecast": {
-      "override": {
-        "clear": "Aanpassing verwijderen",
-        "close": "Sluiten",
-        "collapse": "Subcategorieën inklappen",
-        "expand": "Subcategorieën uitklappen",
-        "cardTitle": "Bedrag voor {name} deze maand aanpassen",
-        "forMonth": "Bedrag voor {month}",
-        "defaultAmount": "(standaard: {amount}/mnd)"
+      "range": {
+        "label": "Prognoseperiode",
+        "d30": "30 dagen",
+        "d90": "3 maanden"
       },
-      "perMonth": "{amount}/mnd",
-      "freq": {
-        "yearly": "jaar",
-        "quarterly": "kwartaal",
-        "weekly": "week",
-        "once": "eenmalig"
+      "chart": {
+        "title": "Verwacht saldo · {range, select, d30 {komende 30 dagen} other {komende 3 maanden}}",
+        "subtitle": "Geplande rekeningen, verwacht inkomen en betalingen die je al hebt geboekt",
+        "subtitleCumulative": "Er is geen rekeningsaldo ingesteld, dus dit telt de kasstroom vanaf vandaag op",
+        "balanceToday": "Saldo vandaag <b>{amount}</b>",
+        "cashFlowToday": "Kasstroom vanaf vandaag",
+        "label": "Lijngrafiek van het verwachte saldo van {from} tot {to}. Het begint op {start}, is het laagst met {lowest} op {lowestDate} en eindigt op {end}.",
+        "today": "Vandaag",
+        "safety": "Veiligheidsgrens {amount}",
+        "lowestPill": "Laagste {amount} · {date}",
+        "more": "nog {count}"
       },
-      "nothingScheduled": "Niets gepland in de prognoseperiode.",
-      "projected": "Verwacht",
-      "previousMonth": "Vorige maand",
-      "nextMonth": "Volgende maand",
-      "month": "Maand",
-      "chooseMonth": "Kies een maand",
-      "projectedTitle": "Verwacht saldo · komende {days} dagen",
-      "lowest": "Laagste {amount}",
-      "onDate": "op {date}",
-      "currentLabel": "Huidige kasstroom",
-      "projectedLabel": "Verwachte kasstroom",
+      "legend": {
+        "expected": "Verwacht",
+        "lowest": "Laagste punt",
+        "in": "Geld erin",
+        "safety": "Veiligheidsgrens"
+      },
+      "numbers": {
+        "label": "{range, select, d30 {Komende 30 dagen} other {Komende 3 maanden}} in cijfers",
+        "nextIncome": "Volgend inkomen",
+        "nextIncomeFoot": "{name} · {date} · {days, plural, =0 {vandaag} =1 {morgen} other {over # dagen}}",
+        "noIncome": "Niets in deze periode",
+        "in": "Verwacht erin",
+        "inFoot": "{count, plural, =0 {Niets verwacht} one {# betaling} other {# betalingen}}",
+        "out": "Verwacht eruit",
+        "outFoot": "{count, plural, =0 {Niets gepland} one {# rekening of betaling} other {# rekeningen en betalingen}}",
+        "net": "Netto verandering",
+        "netFoot": "Tot {date}"
+      },
       "status": {
+        "label": "Prognosestatus",
         "healthy": "Gezond",
         "warning": "Let op",
         "critical": "Kritiek",
-        "empty": "Geen gegevens"
+        "empty": "Geen gegevens",
+        "healthyTitle": "Je blijft {range, select, d30 {de hele maand} other {drie maanden lang}} boven je veiligheidsgrens",
+        "healthyBody": "Op het laagste punt, op {date}, heb je nog <b>{amount}</b>, {diff} meer dan je veiligheidsgrens van {threshold}.",
+        "warningTitle": "Je zakt onder je veiligheidsgrens",
+        "warningBody": "Op {date} zit je op <b>{amount}</b>, {diff} onder je veiligheidsgrens van {threshold}.",
+        "criticalTitle": "Je komt tekort op {date}",
+        "criticalBody": "De prognose zakt tot <b>{amount}</b> op {date}. Verschuif een betaling of plan extra inkomen voor die tijd.",
+        "emptyTitle": "Nog niets om te voorspellen",
+        "emptyBody": "Stel een beginsaldo in voor een rekening of voeg je rekeningen en inkomen toe, dan laat Centje zien waar je geld naartoe gaat.",
+        "emptyAction": "Vaste post toevoegen",
+        "cumulative": "Er is geen rekeningsaldo ingesteld, dus deze cijfers tellen de kasstroom vanaf vandaag op."
       },
-      "balanceNote": "Je saldo, vooruit geprojecteerd met het komende inkomen en de rekeningen.",
-      "cumulativeNote": "Opgetelde verwachte kasstroom — er is geen rekeningsaldo ingesteld, dus dit is geen saldo.",
-      "legend": {
-        "expected": "Verwacht",
-        "safety": "Veiligheidsgrens {amount}",
-        "lowest": "Laagste punt",
-        "in": "Geld erin",
-        "today": "Vandaag"
-      },
-      "nextIncome": "Volgend inkomen",
-      "expectedIn": "Verwacht erin",
-      "expectedOut": "Verwacht eruit",
-      "netChange": "Netto verandering",
-      "savingsPlanned": "Gepland sparen",
-      "monthPlan": "Plan voor {month}",
       "plan": {
-        "income": "Inkomen",
+        "title": "Plan voor {month}",
+        "subtitle": "{from} – {to} · op basis van je vaste posten",
+        "monthGroup": "Planmaand",
+        "previous": "Vorige maand, {month}",
+        "previousNone": "Geen eerdere maand",
+        "next": "Volgende maand, {month}",
+        "nextNone": "Geen latere maand",
+        "income": "verwacht inkomen",
+        "incomeFrom": "verwacht inkomen · {names}",
+        "noIncome": "Geen inkomen gepland voor deze maand",
+        "barLabel": "Inkomen van {income}, verdeeld over {parts}",
+        "part": "{name} {amount} ({pct})",
+        "andMore": "{names} en nog {count}",
         "recurring": "Vaste lasten",
-        "freeInclSaves": "Vrij te besteden incl. sparen",
-        "free": "Vrij te besteden"
+        "savings": "Sparen",
+        "savingsMeta": "{count, plural, one {# doel} other {# doelen}} · {names}",
+        "budgets": "Categoriebudgetten",
+        "budgetsMeta": "{count, plural, one {# categorie} other {# categorieën}} · {names}",
+        "budgetOverall": "Budget",
+        "budgetOverallMeta": "Je totale budget voor dagelijkse uitgaven",
+        "debts": "Aflossingen",
+        "debtsMeta": "Minimale aflossing van schulden zonder vaste last",
+        "free": "Vrij te besteden",
+        "freeMeta": "Ongeveer {amount} per dag voor al het andere",
+        "short": "Tekort",
+        "shortMeta": "Dit plan geeft {amount} meer uit dan er binnenkomt",
+        "emptyBody": "Voeg je inkomen en rekeningen toe om te zien hoe deze maand verdeeld wordt.",
+        "emptyAction": "Vaste post toevoegen"
       },
-      "noPrevious": "t.o.v. vorige maand: geen gegevens",
-      "distribution": "Verdeling van je inkomen",
-      "distributionNote": "Hoe je inkomen verdeeld wordt over {month}",
-      "budgetDistribution": "Budgetverdeling",
-      "strategyNote": "Je budget staat op {needs} / {wants} / {savings}",
       "strategy": {
+        "title": "Budgetverdeling",
+        "setTo": "Je budget staat op <b>{needs} / {wants} / {savings}</b>",
+        "change": "Strategie aanpassen",
         "needs": "Nodig",
         "wants": "Willen",
-        "savings": "Sparen"
+        "savings": "Sparen",
+        "ofTarget": "Doel {target}%",
+        "savingsOn": "Je spaarplan van {amount} zit precies op het doel van {target}%.",
+        "savingsUnder": "Je spaarplan van {amount} is {pct}% van je inkomen, {diff} onder het doel van {target}%.",
+        "savingsOver": "Je spaarplan van {amount} is {pct}% van je inkomen, {diff} boven het doel van {target}%."
       },
-      "projectedBalance": "Verwacht saldo · 12 maanden",
-      "projectedBalanceNote": "Vermogen en wat je nog tegoed hebt, vooruit geprojecteerd",
-      "comingUp": "Binnenkort",
-      "calendar": "Kalender",
-      "comingUpNote": "Geboekte transacties en verwachte vaste posten, allebei meegenomen in de lijn links.",
-      "calendarTitle": "Kasstroomkalender",
-      "calendarNote": "Dagen waarop er geld in of uit gaat",
-      "upcomingTitle": "Komende kasstroom",
-      "categories": "Categorieën",
-      "recurringItems": "Vaste posten",
-      "types": {
-        "income": "Inkomen",
-        "bill": "Vaste lasten",
-        "subscription": "Abonnementen",
-        "debt": "Schulden",
-        "savings": "Sparen"
+      "comingUp": {
+        "title": "Binnenkort",
+        "view": "Weergave",
+        "list": "Lijst",
+        "calendar": "Kalender",
+        "when": "{date} · {days, plural, =0 {vandaag} =1 {morgen} other {over # dagen}}",
+        "whenExpected": "{date} · {days, plural, =0 {vandaag} =1 {morgen} other {over # dagen}} · verwacht",
+        "dueBeforePayday": "<b>{amount}</b> te betalen voor je salaris binnenkomt",
+        "showAll": "Alle {count} tonen",
+        "showLess": "Minder tonen",
+        "nothing": "Niets gepland in de komende 3 maanden.",
+        "calendarLabel": "Geld dat de komende vijf weken in- of uitgaat",
+        "dayLabel": "{date}: {amount}",
+        "dayEmpty": "Op deze dag gebeurt er niets."
       },
-      "otherIncome": "Overig inkomen",
-      "otherOf": "Overige {type}",
-      "noItems": "Geen actieve vaste posten gevonden.",
-      "manageRecurring": "Vaste posten beheren →",
-      "variableExpenses": "Variabele uitgaven",
-      "freeToSpend": "Vrij te besteden"
+      "projection": {
+        "title": "Verwacht vermogen · 12 maanden",
+        "subtitle": "Vermogen en wat je nog tegoed hebt, doorgerekend met het plan van elke maand"
+      },
+      "items": {
+        "title": "Vaste posten",
+        "subtitle": "Wat Centje elke maand verwacht · de prognose en je budget gebruiken ze allebei",
+        "add": "Vaste post toevoegen",
+        "empty": "Nog geen vaste posten. Voeg je inkomen en rekeningen toe, dan vullen de prognose en het plan zich.",
+        "types": {
+          "income": "Inkomen",
+          "bill": "Vaste lasten",
+          "subscription": "Abonnementen",
+          "debt": "Schulden",
+          "savings": "Sparen",
+          "budget": "Categoriebudgetten"
+        },
+        "count": "· {count}",
+        "goals": "· {count, plural, one {# doel} other {# doelen}}",
+        "perMonth": "{amount} / mnd",
+        "open": "{name} aanpassen voor {month}",
+        "override": "{month}: {amount} in plaats van {usual}",
+        "hint": "Pas één maand aan zonder de regel te wijzigen, zoals een hogere energierekening in de winter.",
+        "manage": "Vaste posten beheren",
+        "meta": {
+          "monthly": "Maandelijks",
+          "monthlyOn": "Maandelijks op de {day}e",
+          "weekly": "{amount} per week",
+          "quarterly": "{amount} per kwartaal",
+          "yearly": "{amount} per jaar",
+          "daily": "{amount} per dag",
+          "once": "Eenmalig · {date}",
+          "onceNoDate": "Eenmalig",
+          "goal": "{current} van {target}",
+          "goalBy": "{current} van {target} · {date}",
+          "budget": "Maandbudget",
+          "subOf": "Onderdeel van {parent}"
+        }
+      },
+      "override": {
+        "kind": {
+          "income": "Inkomen",
+          "bill": "Vaste last",
+          "subscription": "Abonnement",
+          "debt": "Schuld",
+          "savings": "Spaardoel",
+          "budget": "Categoriebudget"
+        },
+        "subtitle": "{kind} · normaal {amount} per maand",
+        "question": "Bedrag voor {month} aanpassen",
+        "monthGroup": "Maand",
+        "previous": "Vorige maand, {month}",
+        "previousNone": "Geen eerdere maand",
+        "next": "Volgende maand, {month}",
+        "nextNone": "Geen latere maand",
+        "changed": "Aangepast voor deze maand",
+        "usual": "Normaal bedrag",
+        "amountFor": "Bedrag voor {month}",
+        "default": "(standaard: {amount}/mnd)",
+        "invalid": "Vul een bedrag van 0 of meer in.",
+        "more": "<b>{amount} meer</b> dan normaal",
+        "less": "<b>{amount} minder</b> dan normaal",
+        "error": "Opslaan is niet gelukt. Probeer het opnieuw.",
+        "strip": "Per maand",
+        "legendUsual": "Normaal",
+        "legendOverride": "Aangepast",
+        "stripLabel": "{name} per maand: {months}",
+        "overrideTag": "aangepast",
+        "info": "Alleen {month} verandert. De prognose en het plan voor {month} passen zich meteen aan.",
+        "delete": "Aanpassing verwijderen",
+        "cancel": "Annuleren",
+        "save": "Opslaan",
+        "close": "Sluiten"
+      }
     }
   },
   "home": {
@@ -1140,6 +2416,8 @@
       "title": "Transactiedetails",
       "more": "Meer acties",
       "confirmDelete": "Deze transactie verwijderen?",
+      "confirmDeleteBody": "Dit kan niet ongedaan worden gemaakt. Als ze aan een spaardoel heeft bijgedragen, gaat dat bedrag er weer af.",
+      "confirmDeleteLabel": "Transactie verwijderen",
       "internalTransfer": "Eigen overboeking",
       "needsCategory": "Heeft een categorie nodig",
       "splitInto": "Gesplitst in {count}",
@@ -1162,7 +2440,36 @@
       "saving": "Opslaan…",
       "originalAmount": "Oorspronkelijk bedrag",
       "correctedAmount": "Gecorrigeerd bedrag",
-      "correctHint": "Laat leeg om de correctie te verwijderen.",
+      "cancel": "Annuleren",
+      "merchantFor": "Voor {name} · {amount}",
+      "correct": {
+        "fromBank": "Van je bank",
+        "same": "Gelijk aan het bedrag van de bank",
+        "less": "{amount} minder dan het bedrag van de bank",
+        "more": "{amount} meer dan het bedrag van de bank",
+        "help": "Laat leeg om de correctie te verwijderen. Rapporten en budgetten gebruiken het gecorrigeerde bedrag; je banksaldo verandert niet.",
+        "previewTitle": "{category} deze periode",
+        "previewOver": "{over} over het budget van {budget}",
+        "previewLeft": "Nog {left} over van het budget van {budget}",
+        "remove": "Correctie verwijderen"
+      },
+      "brand": {
+        "icon": "Icoon",
+        "preview": "Voorbeeld",
+        "useDefault": "Standaardicoon gebruiken"
+      },
+      "receipt": {
+        "title": "Bon",
+        "subtitle": "Gekoppeld aan deze transactie",
+        "alt": "Bon van {name}",
+        "zoom": "Zoomen",
+        "zoomIn": "Inzoomen",
+        "zoomOut": "Uitzoomen",
+        "zoomLevel": "Zoomniveau",
+        "fit": "Passend maken",
+        "linked": "Gekoppelde transactie",
+        "download": "Downloaden"
+      },
       "budgetType": {
         "needs": "Nodig",
         "wants": "Willen",
@@ -1188,7 +2495,12 @@
         "receipt": "Bon toevoegen",
         "replaceReceipt": "Bon vervangen",
         "exclude": "Niet in rapporten",
-        "include": "Weer in rapporten"
+        "include": "Weer in rapporten",
+        "label": "Transactieacties",
+        "reimburse": "Terugbetaling",
+        "recurringShort": "Terugkerend",
+        "ruleShort": "Regel",
+        "adjustSplitShort": "Splitsen"
       },
       "menu": {
         "correctAmount": "Bedrag corrigeren",
@@ -1199,7 +2511,7 @@
         "unmarkReimbursement": "Terugbetalingsmarkering verwijderen",
         "markTransfer": "Markeren als eigen overboeking",
         "unmarkTransfer": "Overboekingsmarkering verwijderen",
-        "delete": "Verwijderen"
+        "delete": "Transactie verwijderen"
       },
       "position": "Transactie · {index} van {total}",
       "keysHint": "↑ ↓ om te bladeren",
@@ -1207,8 +2519,31 @@
       "next": "Volgende transactie",
       "openMerchant": "Winkelprofiel openen",
       "setMerchant": "Winkel kiezen",
-      "budgetImpact": "Effect op budget",
-      "budgetOf": "{spent} van {budget}",
+      "tabs": {
+        "label": "Onderdelen van de transactie",
+        "summary": "Overzicht",
+        "details": "Details"
+      },
+      "noGoal": "Geen doel",
+      "categoryChange": "Categorie: {name}. Wijzigen",
+      "budgetTypeChange": "Budgetsoort: {type}. Wijzigen",
+      "budgetThisPeriod": "Budget deze periode",
+      "budgetOfRich": "<b>{spent}</b> van {budget}",
+      "thisPayment": "Deze betaling {amount}",
+      "leftDays": "{amount} over · {count, plural, =0 {laatste dag} one {nog # dag} other {nog # dagen}}",
+      "editDetails": "Details bewerken",
+      "bank": {
+        "fromBank": "Van de bank",
+        "transaction": "Transactie",
+        "date": "Boekdatum",
+        "account": "Rekening",
+        "amount": "Bedrag",
+        "corrected": "Gecorrigeerd bedrag",
+        "description": "Omschrijving",
+        "raw": "Bankregel",
+        "copy": "{label} kopiëren",
+        "copied": "Gekopieerd"
+      },
       "left": "{amount} over",
       "nextCharge": "Volgende afschrijving",
       "inDays": "{count, plural, =0 {vandaag} one {over # dag} other {over # dagen}}",
@@ -1218,14 +2553,35 @@
       "since": "{frequency} sinds {date}",
       "paidInYear": "{amount} betaald in {year}",
       "editRecurring": "Vaste last bewerken",
-      "details": "Details",
-      "thisMonth": "{category} deze maand",
-      "other": "Overig",
-      "overBudget": "{amount} te veel"
+      "overBudget": "{amount} te veel",
+      "location": {
+        "label": "Locatie",
+        "open": "Open de kaart"
+      },
+      "history": {
+        "recurringTitle": "{frequency} · {amount}",
+        "nextPayment": "Volgende betaling {date} · {when}",
+        "nextCharge": "Volgende afschrijving {date} · {when}",
+        "noNext": "Geen volgende datum gepland",
+        "thisMonthAt": "Deze maand bij {name} · {amount}",
+        "visits": "{count} bezoeken deze maand · ongeveer {weekly} per week",
+        "last12Months": "Laatste 12 maanden hier",
+        "visitsLabel": "Bezoeken",
+        "avgVisit": "Gemiddeld bezoek",
+        "openProfile": "Open het winkelprofiel",
+        "thisMonth": "Deze maand",
+        "thisMonthAtName": "Deze maand bij {name}",
+        "noVisits": "Nog geen bezoeken deze maand",
+        "oneVisit": "1 bezoek deze maand"
+      },
+      "last12Income": "Laatste 12 betalingen",
+      "nextPayment": "Volgende betaling",
+      "incomeUp": "{amount} hoger sinds {month}",
+      "incomeDown": "{amount} lager sinds {month}",
+      "receivedInYear": "{amount} ontvangen in {year}"
     },
     "rule": {
       "titleCreate": "Regel maken",
-      "titleAfterChange": "Ook op andere transacties toepassen?",
       "intro": "Transacties waarvan de omschrijving overeenkomt krijgen deze categorie, nu en bij elke volgende import.",
       "pattern": "Omschrijving",
       "chooseCategory": "Kies een categorie",
@@ -1241,10 +2597,34 @@
       },
       "min": "Min",
       "max": "Max",
-      "onlyThis": "Alleen deze",
       "cancel": "Annuleren",
       "apply": "Opslaan en toepassen",
-      "saving": "Opslaan…"
+      "category": "Categorie",
+      "matchLabel": "Overeenkomst",
+      "amountLabel": "Bedrag",
+      "close": "Sluiten",
+      "saving": "Opslaan…",
+      "titleNew": "Nieuwe regel",
+      "titleEdit": "Regel bewerken",
+      "save": "Regel opslaan",
+      "directionLabel": "Richting",
+      "direction": {
+        "both": "Beide",
+        "expense": "Geld uit",
+        "income": "Geld in"
+      },
+      "accountLabel": "Rekening",
+      "allAccounts": "Alle rekeningen",
+      "preview": {
+        "empty": "Typ een omschrijving om te zien wat erbij past",
+        "checking": "Eerdere transacties bekijken…",
+        "count": "{count, plural, =0 {Geen eerdere transacties komen overeen} one {Komt overeen met # eerdere transactie} other {Komt overeen met # eerdere transacties}}",
+        "noneHint": "Hij geldt wel voor alles wat je vanaf nu importeert.",
+        "moveAll": "{count, plural, one {Hij gaat} other {Alle # gaan}} naar {category}{review, plural, =0 {.} one {, waaronder één nog zonder categorie.} other {, waaronder # nog zonder categorie.}}",
+        "moveAuto": "Die je niet zelf een categorie gaf, gaan naar {category}{review, plural, =0 {.} one {, waaronder één nog zonder categorie.} other {, waaronder # nog zonder categorie.}}",
+        "pickCategory": "Kies een categorie om ze naartoe te verplaatsen.",
+        "more": "en nog {count}"
+      }
     },
     "searchPlaceholder": "Zoek transacties",
     "tiles": {
@@ -1265,9 +2645,20 @@
       "title": "Winkel",
       "search": "Zoek of voeg een winkel toe",
       "searchSuggestion": "Zoek of voeg toe — bijv. {suggestion}",
-      "add": "“{name}” toevoegen",
+      "add": "“{name}” als nieuwe winkel toevoegen",
+      "addHint": "Er wordt een nieuw winkelprofiel voor gemaakt",
       "loading": "Laden…",
-      "none": "Nog geen winkels."
+      "none": "Nog geen winkels.",
+      "find": "Zoek een winkel",
+      "clear": "Zoekopdracht wissen",
+      "matches": "{count, plural, =0 {Geen winkels gevonden} one {# winkel gevonden} other {# winkels gevonden}}",
+      "all": "{count, plural, one {# winkel} other {# winkels}}",
+      "current": "Huidig",
+      "count": "{count, plural, one {# transactie} other {# transacties}}",
+      "footerHint": "Een andere winkel kiezen verandert het icoon en het profiel waar deze transactie bij hoort.",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "close": "Sluiten"
     },
     "listTitle": "Transacties",
     "sort": {
@@ -1281,210 +2672,381 @@
   "plan": {
     "title": "Plan",
     "budget": {
-      "title": "Budget",
-      "forecast": "Prognose",
+      "subtitle": "{period, select, weekly {Weekbudget · begint elke maandag opnieuw} other {Maandbudget · begint opnieuw op de {day}e}}",
+      "subtitleNone": "Nog geen budget · stel een limiet in en verdeel die over je categorieën",
       "editBudget": "Budget bewerken",
+      "createBudget": "Budget maken",
+      "more": "Meer budgetacties",
+      "resetDay": "Startdag wijzigen",
       "deleteBudget": "Budget verwijderen",
-      "resetsMonthly": "Begint opnieuw op de {day}e",
-      "resetsWeekly": "Begint elke maandag opnieuw",
-      "strategyShort": "{needs} / {wants} / {savings}-verdeling",
-      "spentOf": "Uitgegeven van {amount}",
-      "left": "{amount} over",
-      "over": "{amount} te veel",
-      "pace": {
-        "onPace": "op schema",
-        "fast": "gaat snel",
-        "over": "over budget"
+      "periodLabel": "{from} – {to} · dag {day} van {total}",
+      "periodLabelEnded": "{from} – {to} · afgelopen",
+      "previousPeriod": "Vorige budgetmaand",
+      "nextPeriod": "Volgende budgetmaand",
+      "hero": {
+        "title": "Budget {month}",
+        "titleWeekly": "Budget deze week",
+        "pace": {
+          "onPace": "Op schema",
+          "fast": "Gaat snel",
+          "over": "Over budget"
+        },
+        "leftOf": "over van {amount}",
+        "overOf": "boven een budget van {amount}",
+        "underPace": "{amount} onder een gelijkmatig tempo voor dag {day}",
+        "overPace": "{amount} boven een gelijkmatig tempo voor dag {day}",
+        "spent": "{amount} uitgegeven",
+        "bills": "{amount} rekeningen",
+        "today": "Vandaag",
+        "allocated": "Verdeeld",
+        "categories": "{count, plural, one {# categorie} other {# categorieën}}",
+        "free": "Vrij",
+        "freeSub": "Niet in een categorie",
+        "billsLeft": "Nog te betalen",
+        "billsLeftSub": "{count, plural, one {# rekening} other {# rekeningen}}",
+        "perDay": "Veilig per dag",
+        "until": "Tot {date}",
+        "endedUnder": "Binnen budget",
+        "endedOver": "Over budget",
+        "endedOn": "Afgelopen op {date}",
+        "avgPerDay": "Gemiddeld per dag",
+        "overDays": "Over {count} dagen"
       },
-      "allocated": "Verdeeld",
-      "free": "Vrij",
-      "perDay": "Per dag",
       "empty": {
         "title": "Nog geen budget",
-        "body": "Stel een maand- of weeklimiet in en verdeel die over je categorieën. Arca houdt bij of je op schema ligt.",
+        "body": "Stel een maand- of weeklimiet in en verdeel die over je categorieën. Je ziet in één oogopslag of je op schema ligt.",
         "create": "Budget maken"
       },
       "strategy": {
         "title": "Budgetverdeling",
+        "subtitle": "Aandeel van je inkomen tot nu toe, tegen het doel",
         "adjust": "Aanpassen",
         "nodig": "Nodig",
         "willen": "Willen",
         "sparen": "Sparen",
+        "of": "<b>{actual}</b> van {target}",
+        "target": "Doel",
+        "actual": "Werkelijk",
         "onIncome": "Bij {income} inkomen: nodig {needs}, willen {wants}, sparen {savings}.",
-        "soFar": "Tot nu toe deze maand: nodig {needs}, willen {wants}, sparen {savings}.",
         "noIncome": "Nog geen inkomen deze maand, dus er valt nog niets te verdelen. De percentages gelden zodra er inkomen binnenkomt."
       },
       "categories": {
         "title": "Budget per categorie",
-        "titleShort": "Categorieën",
+        "subtitle": "{spent} uitgegeven van {allocated} verdeeld · het streepje is een gelijkmatig tempo voor vandaag",
         "add": "Categoriebudget toevoegen",
-        "manage": "Beheren",
         "empty": "Nog geen categoriebudgetten. Geef een categorie een eigen limiet en hij verschijnt hier.",
         "of": "<b>{spent}</b> van {budget}",
         "edit": "Budget voor {name} bewerken",
-        "kind": {
-          "nodig": "Nodig",
-          "willen": "Willen",
-          "sparen": "Sparen"
+        "open": "{name} openen",
+        "left": "{amount} over",
+        "over": "{amount} te veel",
+        "perDay": "{amount} per dag",
+        "overBudget": "Over budget",
+        "unbudgeted": {
+          "title": "Uitgaven zonder budget",
+          "bodyFree": "Categorieën zonder budget · gaat af van de vrije {amount}",
+          "body": "Categorieën zonder budget · buiten dit budget"
         }
       },
       "suggestion": {
+        "label": "Suggestie",
         "near": "{name} zit op {pct}% en er {days, plural, one {is nog # dag} other {zijn nog # dagen}} te gaan.",
         "over": "{name} zit {amount} over budget en er {days, plural, one {is nog # dag} other {zijn nog # dagen}} te gaan.",
-        "move": "Verplaats {amount} van {name}"
+        "change": "{from} → {to}",
+        "backOnBudget": "Weer binnen budget",
+        "stillOver": "Nog {amount} te veel",
+        "stillLeft": "Nog {amount} over",
+        "move": "Verplaats {amount} van {name}",
+        "editCategory": "Budget voor {name} bewerken",
+        "notNow": "Niet nu",
+        "onTrack": {
+          "label": "Op schema",
+          "title": "Elke categorie blijft binnen haar budget.",
+          "closest": "Dichtst bij de limiet",
+          "used": "{pct}% gebruikt",
+          "room": "Meeste ruimte over",
+          "left": "{amount} over"
+        },
+        "start": {
+          "label": "Suggestie",
+          "title": "Geef je categorieën een eigen limiet, dan verschijnen hier tips om binnen budget te blijven.",
+          "add": "Categoriebudget toevoegen"
+        }
       },
       "bills": {
         "title": "Rekeningen {month}",
         "view": "Alle rekeningen",
         "empty": "Geen rekeningen of abonnementen deze maand.",
+        "summary": "{paid} betaald · {due} te gaan",
+        "next": "{name} {days, plural, =0 {vandaag} one {morgen} other {over # dagen}}",
+        "allPaid": "alles betaald",
         "paid": "Betaald",
         "paidOn": "Betaald · {date}",
+        "due": "Vervalt {date}",
+        "dueToday": "Vervalt vandaag",
         "overdue": "Te laat · {date}",
-        "today": "Vandaag",
         "noDate": "Geen vaste datum",
-        "paidAuto": "Betaald, gekoppeld aan een transactie",
-        "showAll": "Alles tonen"
+        "today": "Vandaag · {date}",
+        "paidAmount": "{amount} betaald",
+        "total": "{amount} in totaal",
+        "nextIncome": "Volgend inkomen · {name} op {date}",
+        "stillToPay": "nog te betalen",
+        "notPaid": "Niet betaald",
+        "paidAuto": "Betaald, gekoppeld aan een transactie"
       }
     },
     "debts": {
-      "title": "Schulden",
       "add": "Schuld toevoegen",
       "yours": "Je schulden",
+      "yoursOrder": "{count, plural, one {# schuld} other {# schulden}} · {order}",
+      "yoursCount": "{count, plural, one {# schuld} other {# schulden}}",
+      "sort": {
+        "label": "Schulden sorteren: {order}",
+        "options": {
+          "interest": "Hoogste rente eerst",
+          "smallest": "Kleinste saldo eerst",
+          "soonest": "Eerst afgelost",
+          "largest": "Grootste saldo eerst"
+        },
+        "inline": {
+          "interest": "hoogste rente eerst",
+          "smallest": "kleinste saldo eerst",
+          "soonest": "eerst afgelost bovenaan",
+          "largest": "grootste saldo eerst"
+        }
+      },
+      "noneOfYourOwn": "Geen eigen schulden. Voeg een lening of creditcard toe om te zien wanneer die is afgelost.",
       "count": "{count, plural, =0 {Geen open schulden} one {# schuld} other {# schulden}}",
       "minimums": "minimaal {amount} per maand",
       "toReceive": "{count, plural, one {# nog te ontvangen} other {# nog te ontvangen}}",
+      "subtitleNone": "Geen schulden — top",
       "empty": {
         "title": "Nog geen schulden",
-        "body": "Voeg een lening, creditcard of geleend geld toe om te zien hoe snel het afneemt en wanneer je schuldenvrij bent."
+        "body": "Voeg een lening, creditcard of geld dat je aan iemand hebt geleend toe om te zien hoe snel het afneemt en wanneer je schuldenvrij bent.",
+        "add": "Schuld toevoegen",
+        "owedToMe": "Iemand is mij geld schuldig",
+        "track": {
+          "title": "Wat je kunt bijhouden",
+          "subtitle": "Wat jij schuldig bent en wat jij nog krijgt, naast elkaar.",
+          "loan": {
+            "title": "Een lening",
+            "body": "Studie-, auto- of persoonlijke lening. Zie de einddatum en probeer een extra aflossing."
+          },
+          "card": {
+            "title": "Een creditcard",
+            "body": "Houd het saldo, de rente en je minimale maandbedrag in de gaten."
+          },
+          "lent": {
+            "title": "Geld dat je hebt uitgeleend",
+            "body": "Is een vriend je geld schuldig? Houd het bij tot het terugbetaald is en handel het dan af."
+          },
+          "total": "Totale schuld"
+        }
       },
-      "owe": {
-        "title": "Je bent schuldig",
-        "paidOff": "{pct}% afgelost",
-        "monthly": "{amount} per maand over {count, plural, one {# schuld} other {# schulden}}"
+      "tiles": {
+        "owe": "Je bent schuldig",
+        "oweNone": "Niets van jezelf af te lossen",
+        "paidOffFirst": "{name} is als eerste afgelost · {count, plural, =0 {deze maand} one {over # maand} other {over # maanden}} ({date})",
+        "paidOffOnly": "{name} is {count, plural, =0 {deze maand} one {over # maand} other {over # maanden}} afgelost ({date})",
+        "oweNever": "De aflossing op {name} dekt de rente niet, dus die wordt nooit afgelost",
+        "more": "+{count} meer",
+        "owed": "Te ontvangen",
+        "owedNone": "Niets te ontvangen",
+        "toReceive": "<n>{count}</n> nog te ontvangen",
+        "free": {
+          "title": "Schuldenvrij",
+          "atMinimums": "Minimaal · {amount} per maand",
+          "never": "Minimaal wordt het nooit afgelost",
+          "now": "Nu",
+          "allPaid": "Alles is afgelost",
+          "none": "Geen eigen schulden"
+        }
+      },
+      "tile": {
+        "paidBy": "Betaald via “{name}”",
+        "paidByOn": "Betaald via “{name}” op de {day}e",
+        "notLinked": "Niet gekoppeld aan een vaste last",
+        "edit": "{name} bewerken",
+        "leftOf": "over van {amount}",
+        "freeBy": "Vrij {date}",
+        "never": "Zo nooit afgelost",
+        "noDate": "Geen einddatum",
+        "done": "Afgelost",
+        "paid": "<b>{pct}%</b> afgelost · {amount}",
+        "monthsLeft": "{count, plural, one {nog # maand} other {nog # maanden}}",
+        "monthly": "Per maand",
+        "interest": "Rente",
+        "perYear": "{rate}% p.j.",
+        "noInterest": "Geen"
+      },
+      "notice": {
+        "covers": "{dir, select, owed {Hun} other {Je}} <b>{payment}</b> dekt <b>{interest}</b> rente. <b>{principal}</b> gaat van de schuld af.",
+        "neverCovers": "{dir, select, owed {Hun} other {Je}} <b>{payment}</b> dekt de maandelijkse rente van <b>{interest}</b> niet, dus deze schuld wordt nooit kleiner.",
+        "noInterest": "Geen rente: {dir, select, owed {hun} other {je}} volledige <b>{payment}</b> gaat van de schuld af.",
+        "noPayment": "Geen maandbedrag ingesteld, dus er is nog geen einddatum.",
+        "payoff": "{dir, select, owed {Terugbetaald} other {Schuldenvrij}} over <b>{count, plural, one {# maand} other {# maanden}}</b> (<b>{date}</b>).",
+        "payoffPast": "Met dit bedrag was {dir, select, owed {het terugbetaald} other {het afgelost}} in <b>{date}</b>."
       },
       "owed": {
         "title": "Te ontvangen",
-        "debtSub": "{pct}% ontvangen",
-        "advanceSub": "Voorschot · {date} · {received} van {expected} terug",
+        "add": "Toevoegen",
+        "debtSub": "{amount} per maand",
+        "advanceSub": "Voorschot · {date}",
+        "leftOf": "over van {amount}",
+        "received": "<b>{pct}%</b> ontvangen",
+        "backSoFar": "{amount} al terug",
         "settle": "Markeren als afgehandeld",
-        "settleConfirm": "Het voorschot voor {name} als afgehandeld markeren? De {amount} die nog openstaat telt dan niet meer mee.",
-        "more": "+{count} meer"
-      },
-      "row": {
-        "perMonth": "{amount}/mnd",
-        "freeBy": "vrij {date}",
-        "never": "zo nooit afgelost",
-        "paid": "{pct}% afgelost",
-        "done": "Afgelost",
-        "paidOffSub": "Afgelost · niets meer te betalen"
-      },
-      "detail": {
-        "linked": "Gekoppeld aan de vaste last “{name}” · {amount}",
-        "linkedOn": "Gekoppeld aan de vaste last “{name}” · {amount} op de {day}e",
-        "notLinked": "Niet gekoppeld aan een vaste last · {amount} per maand",
-        "started": "Gestart",
-        "original": "Oorspronkelijk",
-        "interest": "Rente",
-        "perYear": "{rate}% p.j.",
-        "none": "Geen",
-        "debtFree": "Schuldenvrij",
-        "done": "Klaar",
-        "covers": "Je {payment} dekt {interest} rente. {principal} gaat van de schuld af.",
-        "neverCovers": "Je {payment} dekt de maandelijkse rente van {interest} niet, dus deze schuld wordt nooit kleiner.",
-        "noInterest": "Geen rente: je volledige {payment} gaat van de schuld af.",
-        "noPayment": "Geen maandbedrag ingesteld, dus er is nog geen einddatum.",
-        "edit": "Schuld bewerken",
-        "schedule": "Betaalschema"
+        "settleConfirm": "Het voorschot voor {name} als afgehandeld markeren?",
+        "settleConfirmBody": "De {amount} die nog openstaat telt dan niet meer mee.",
+        "settleDebtConfirm": "{name} als afgehandeld markeren?",
+        "settleDebtConfirmBody": "De {amount} die nog openstaat wordt dan niet meer verwacht, en de gekoppelde vaste betalingen stoppen vandaag.",
+        "settleNamed": "{name} markeren als afgehandeld"
       },
       "payoff": {
         "title": "Aflossingsverloop",
-        "withExtra": "+{amount}/mnd · {date}",
-        "minimums": "Minimaal · {date}",
-        "minimumsNever": "Minimaal wordt het nooit afgelost"
+        "subtitle": "{count, plural, one {Het saldo van je schuld, maand voor maand} other {Alle # schulden gestapeld, maand voor maand}}",
+        "debtFree": "Schuldenvrij {date}",
+        "debtFreeNever": "Niet schuldenvrij met deze betalingen",
+        "sooner": "{count, plural, one {# maand} other {# maanden}} eerder met {amount} extra per maand",
+        "today": "{amount} vandaag",
+        "paidOff": "{name} · {date}",
+        "paidOffNever": "{name} · nooit",
+        "atMinimums": "Minimaal · {date}",
+        "atMinimumsNever": "Minimaal · nooit",
+        "summary": "{amount} schuld vandaag. {end}",
+        "summaryDebt": "{name} afgelost {date}",
+        "summaryDebtNever": "{name} nooit afgelost"
       },
       "simulator": {
         "title": "Wat als ik extra betaal?",
+        "subtitle": "Bovenop de minimaal {amount}",
+        "valueText": "{amount} per maand",
         "extra": "Extra per maand",
         "debtFree": "Schuldenvrij",
         "sooner": "Eerder klaar",
         "saved": "Rente bespaard",
         "months": "{count, plural, one {# maand} other {# maanden}}",
         "orderOne": "Het extra bedrag gaat direct naar {name}.",
-        "orderRate": "Het extra bedrag gaat eerst naar {first} (hoogste rente), daarna naar {rest}.",
-        "orderBalance": "Het extra bedrag gaat eerst naar {first} (kleinste schuld), daarna naar {rest}."
+        "orderSort": "Het extra bedrag gaat eerst naar {first}, daarna naar {rest}: de volgorde van je lijst ({order}).",
+        "free": {
+          "title": "Vrij te besteden per maand",
+          "change": "{from} nu, {to} met het extra bedrag",
+          "short": "Je komt {amount} per maand tekort",
+          "basis": "Vast inkomen min vaste lasten, aflossingen, sparen en je budget",
+          "noIncome": "Voeg je vaste inkomen toe om te zien wat een extra aflossing overlaat om per maand te besteden."
+        }
       },
       "sheet": {
         "title": "Schulddetails",
-        "edit": "Bewerken",
+        "edit": "Schuld bewerken",
         "delete": "Verwijderen",
         "confirmDelete": "De schuld “{name}” verwijderen?",
+        "confirmDeleteBody": "De gekoppelde vaste betalingen blijven bestaan, maar horen niet meer bij deze schuld.",
+        "confirmDeleteLabel": "Schuld verwijderen",
         "owe": "Ik ben schuldig",
         "owed": "Ik krijg nog",
         "settled": "Afgehandeld",
         "paidOff": "Afgelost",
+        "never": "Zo nooit afgelost",
+        "freeBy": "Schuldenvrij {date}",
+        "backBy": "Terugbetaald {date}",
+        "noDate": "Geen einddatum",
+        "remaining": "resterend",
         "pctPaid": "{pct}% afgelost",
         "pctReceived": "{pct}% ontvangen",
+        "ofTotal": "{paid} van {total}",
+        "paymentsLeft": "{count, plural, one {nog # betaling} other {nog # betalingen}}",
         "original": "Oorspronkelijk bedrag",
         "alreadyPaid": "Al betaald",
         "alreadyReceived": "Al ontvangen",
-        "remaining": "Resterend",
-        "startingBalance": "Beginsaldo",
+        "monthly": "Maandbetaling",
         "minimum": "Minimale maandbetaling",
         "rate": "Rente",
         "perYear": "{rate}% per jaar",
+        "noInterest": "Geen",
         "interestToPay": "Nog te betalen rente",
         "interestToReceive": "Nog te ontvangen rente",
         "startDate": "Startdatum",
         "balanceAsOf": "Saldo per",
         "lastPayment": "Laatste betaling op",
-        "neverPaysOff": "De maandbetaling van {payment} dekt de rente op {balance} tegen {rate}% per jaar niet, dus deze schuld wordt nooit kleiner.",
+        "details": "Schulddetails",
         "notes": "Notities",
         "linkedBills": "Gekoppelde vaste lasten",
+        "billOn": "{amount} op de {day}e",
         "upcoming": "Komende betalingen · {count}",
-        "split": "{principal} aflossing · {interest} rente"
+        "inTotal": "{amount} in totaal",
+        "colDate": "Datum",
+        "colPayment": "Betaling",
+        "colSplit": "Verdeling",
+        "final": "Laatste betaling",
+        "split": "{principal} aflossing · {interest} rente",
+        "allPrincipal": "Alles van de schuld af"
       }
     },
     "goals": {
-      "title": "Spaardoelen",
       "add": "Nieuw doel",
-      "yours": "Je doelen",
       "count": "{count, plural, =0 {Geen doelen} one {# doel} other {# doelen}}",
       "next": "eerstvolgende bereikt {date}",
+      "subtitleEmpty": "Nog geen spaardoelen",
       "empty": {
         "title": "Nog geen spaardoelen",
-        "body": "Spaar voor iets — een buffer, een reis, een nieuwe laptop — en zie wanneer je er bent in het tempo waarin je spaart."
+        "body": "Spaar voor iets — een buffer, een reis, een nieuwe laptop — en zie wanneer je er bent in het tempo waarin je spaart.",
+        "account": "Spaarrekening toevoegen"
       },
-      "saved": {
+      "suggestions": {
+        "title": "Populaire eerste doelen",
+        "subtitle": "Begin met een suggestie en pas aan wat je wilt.",
+        "use": "Gebruiken",
+        "useLabel": "Gebruiken: {name}",
+        "buffer": {
+          "name": "Noodbuffer",
+          "body": "Drie maanden aan uitgaven"
+        },
+        "holiday": {
+          "name": "Vakantie",
+          "body": "Kies een datum, zie wat je opzij moet zetten"
+        },
+        "laptop": {
+          "name": "Nieuwe laptop",
+          "body": "Een vaste prijs, een duidelijke finish"
+        }
+      },
+      "hero": {
         "title": "Gespaard voor {count, plural, one {# doel} other {# doelen}}",
-        "thisMonth": "{amount} deze maand",
-        "plan": "{amount} per maand",
-        "planShare": "{amount} per maand · {pct}% van je inkomen",
-        "contributions": "Inleg · 12 maanden"
+        "ofTarget": "{pct}% van {amount}",
+        "plan": "<b>{amount} per maand</b>",
+        "planShare": "<b>{amount} per maand</b> · {pct}% van je inkomen",
+        "thisMonth": "Deze maand {amount}",
+        "nextUp": "Eerstvolgende: {name} in {date}",
+        "nextUpSub": "Nog {amount} met {monthly} per maand"
+      },
+      "contrib": {
+        "title": "Inleg",
+        "subtitle": "Per maand naar je doelen gegaan, op basis van de gekoppelde transacties",
+        "total": "12 maanden",
+        "thisMonth": "Deze maand",
+        "chartLabel": "Staafdiagram van het geld dat per maand naar je doelen ging, van {from} tot {to}: {total} in totaal, {last} deze maand."
       },
       "card": {
         "perMonth": "{amount} per maand",
         "noMonthly": "Geen maandbedrag",
         "by": "vóór {date}",
         "reached": "bereikt",
-        "of": "van {amount}"
+        "of": "van {amount}",
+        "toGo": "Nog {amount}",
+        "done": "Bereikt",
+        "reachedOn": "Bereikt in {date}",
+        "noProjection": "Nog geen datum",
+        "projected": "Verwacht komende 3 maanden",
+        "open": "{name} tonen",
+        "edit": "{name} bewerken",
+        "ring": "{name}: {pct}% gespaard"
       },
       "recent": {
         "title": "Recente inleg",
+        "subtitle": "Het laatste geld dat naar of uit een doel ging",
+        "view": "Bekijk in Activiteit",
         "empty": "De afgelopen 12 maanden is niets aan een doel gekoppeld. Koppel een transactie aan een doel via de details in Activiteit."
-      },
-      "detail": {
-        "account": "Gekoppeld aan {name}",
-        "category": "categorie “{name}”",
-        "noLinks": "Geen rekening of categorie gekoppeld",
-        "target": "Doel",
-        "monthly": "Per maand",
-        "started": "Gestart",
-        "reachedBy": "Bereikt in",
-        "reached": "Bereikt",
-        "projected": "Verwacht · bereikt {date}",
-        "noProjection": "Stel een maandbedrag in om een verwachting te zien",
-        "edit": "Doel bewerken",
-        "details": "Details"
       }
     }
   },
@@ -1492,66 +3054,76 @@
     "close": "Sluiten",
     "owe": "Ik ben schuldig",
     "owed": "Ik krijg nog",
-    "type": "Soort",
-    "moreOptions": "Meer opties",
-    "calculator": "Rekenmachine",
-    "whatDoButtonsDo": "Wat doen deze knoppen?",
-    "chooseIconColor": "Icoon en kleur kiezen",
+    "type": "Richting van de schuld",
+    "addDebt": "Schuld toevoegen",
+    "editDebt": "Schuld bewerken",
+    "subtitle": "Houd bij wat er nog over is en wanneer je schuldenvrij bent",
+    "name": "Naam",
     "namePlaceholderOwe": "bijv. Creditcard",
     "namePlaceholderOwed": "bijv. Lening aan Alex",
-    "balanceToday": "Saldo per vandaag",
-    "balanceOn": "Saldo per {date}",
+    "balance": "Saldo",
     "balanceAsOf": "Saldo per",
-    "startingBalance": "Beginsaldo",
-    "startDate": "Startdatum",
+    "today": "Vandaag",
+    "balanceDateHint": "De datum waarop het saldo klopte. Laat op vandaag staan om in te voeren wat er nu nog openstaat. Zet je hem terug, dan wordt aangenomen dat het maandbedrag sindsdien elke maand is betaald.",
+    "balanceDateInfo": "Over “Saldo per”",
     "minPayment": "Minimale maandbetaling",
-    "minPaymentAria": "Minimale betaling {amount}",
-    "setMinPayment": "Minimale maandbetaling instellen",
-    "minPaymentFallback": "de minimale betaling",
-    "originalAmount": "Oorspronkelijk schuldbedrag",
-    "originalAria": "Oorspronkelijk bedrag {amount}",
-    "setOriginal": "Oorspronkelijk schuldbedrag instellen",
+    "perMonth": "per maand",
+    "paymentFromLinked": "Overgenomen van de gekoppelde {count, plural, one {vaste last} other {vaste lasten}}: {amount} per maand.",
+    "paymentOverridden": "Je hebt dit bedrag zelf ingesteld. De gekoppelde {count, plural, one {vaste last komt} other {vaste lasten komen}} uit op {amount} per maand.",
+    "useLinkedAmount": "Bedrag van gekoppelde vaste last gebruiken",
     "interestRate": "Jaarlijkse rente",
-    "interestAria": "Rente {rate}%",
-    "setInterest": "Rente instellen",
-    "autoBillOn": "Er wordt een vaste last aangemaakt",
-    "autoBillOff": "Ook een vaste last aanmaken",
-    "autoBillTitle": "Ook een vaste last aanmaken voor deze schuld",
+    "startDate": "Startdatum",
+    "originalAmount": "Oorspronkelijk schuldbedrag",
+    "originalHint": "Optioneel — alleen nodig als je pas bent gaan bijhouden nadat er al een deel was afgelost.",
+    "originalInfo": "Over “Oorspronkelijk schuldbedrag”",
+    "paidSoFar": "{amount} al afgelost",
+    "receivedSoFar": "{amount} al ontvangen",
+    "linkedBills": "Gekoppelde vaste lasten",
+    "linkedNone": "Geen — de voortgang volgt de maandbetaling",
+    "linkedDisabled": "Zet “Ook een vaste last aanmaken” uit om in plaats daarvan een bestaande te koppelen",
+    "billsCount": "{count} vaste lasten",
+    "autoBill": "Ook een vaste last aanmaken",
     "autoBillSummary": "Maakt ook een maandelijkse vaste last “{name}” aan van {amount}.",
     "autoBillSummaryIn": "Maakt ook een maandelijkse vaste last “{name}” aan van {amount} in <cat>{category}</cat>.",
-    "addNote": "Notitie toevoegen",
+    "minPaymentFallback": "de minimale betaling",
     "note": "Notitie",
-    "notes": "Notities",
-    "notePlaceholderAdd": "Voeg een notitie toe bij deze schuld",
-    "notePlaceholder": "Optionele notitie",
-    "backspace": "Wissen",
-    "divide": "Delen",
-    "multiply": "Vermenigvuldigen",
-    "subtract": "Aftrekken",
-    "add": "Optellen",
-    "linkedBills": "Gekoppelde vaste lasten",
-    "linkedDisabled": "Zet “Ook een vaste last aanmaken” uit om in plaats daarvan een bestaande te koppelen",
-    "recurringBillsCount": "{count} vaste lasten",
-    "billsCount": "{count} vaste lasten",
+    "notePlaceholder": "Voeg een notitie toe bij deze schuld",
+    "whatDoFieldsDo": "Wat doen deze velden?",
+    "cancel": "Annuleren",
     "saving": "Opslaan…",
-    "save": "Opslaan",
-    "done": "Klaar",
-    "originalHelpAdd": "Optioneel — alleen nodig als je deze schuld pas bent gaan bijhouden nadat je er al een deel van had afgelost. Laat leeg om het saldo hierboven als totaal te gebruiken.",
-    "originalHelpEdit": "Optioneel — alleen nodig als je pas bent gaan bijhouden nadat een deel van deze schuld al was afgelost. Laat leeg om het beginsaldo als totaal te gebruiken.",
-    "balanceDateHelpAdd": "De datum waarop het bedrag hierboven klopte. Laat het op vandaag staan om in te voeren wat je nu schuldig bent. Zet je het terug, dan gaat de app ervan uit dat de maandbetaling sindsdien elke maand is gedaan, tenzij een gekoppelde vaste last iets anders laat zien.",
-    "balanceDateHelpEdit": "De datum waarop het beginsaldo klopte. Op vandaag geldt het saldo hierboven als wat je nu schuldig bent; zet je het terug, dan gaat de app ervan uit dat de maandbetaling sindsdien elke maand is gedaan, tenzij een gekoppelde vaste last iets anders laat zien.",
+    "save": "Schuld opslaan",
     "iconColor": "Icoon & kleur",
-    "icon": "Icoon",
-    "color": "Kleur",
-    "name": "Naam",
-    "editDebt": "Schuld bewerken",
+    "changeIcon": "Icoon wijzigen",
+    "colors": {
+      "red": "Rood",
+      "orange": "Oranje",
+      "amber": "Amber",
+      "green": "Groen",
+      "teal": "Blauwgroen",
+      "blue": "Blauw",
+      "indigo": "Indigo",
+      "purple": "Paars",
+      "pink": "Roze"
+    },
     "delete": "Verwijderen",
-    "confirmDelete": "Schuld “{name}” verwijderen?"
+    "confirmDelete": "Schuld “{name}” verwijderen?",
+    "confirmDeleteBody": "De gekoppelde vaste betalingen blijven bestaan, maar horen niet meer bij deze schuld.",
+    "confirmDeleteLabel": "Schuld verwijderen"
   },
   "upcoming": {
     "title": "Binnenkort",
     "calendarTitle": "Nog deze maand",
     "empty": "Geen komende transacties deze maand",
     "listTitle": "Komende transacties"
+  },
+  "categoryList": {
+    "title": "Uitgaven per categorie",
+    "incomeTitle": "Inkomsten per categorie",
+    "count": "{count, plural, one {# categorie} other {# categorieën}}",
+    "hidden": "Verborgen in het uitgavenoverzicht",
+    "over": "{amount} over budget",
+    "ofBudget": "van {amount}",
+    "noLimit": "Geen budget",
+    "close": "Sluiten"
   }
 }

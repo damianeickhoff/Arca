@@ -7,9 +7,11 @@ import { IconCircleCheck, IconTrash } from "@tabler/icons-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { formatEur } from "@/lib/format";
 import { isValidISODate } from "@/lib/date-valid";
 import type { BrokenDateRow } from "@/lib/data-health";
+import { MoneyText } from "@/components/clear/money";
 
 /**
  * Repairs transactions whose stored date isn't a real date — the wreckage of a CSV
@@ -22,6 +24,7 @@ import type { BrokenDateRow } from "@/lib/data-health";
 export function DataHealthClient({ rows, panelHeader = true }: { rows: BrokenDateRow[]; panelHeader?: boolean }) {
   const t = useTranslations("dataHealth");
   const router = useRouter();
+  const confirm = useConfirm();
 
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [fixes, setFixes] = useState<Record<number, string>>({});
@@ -39,7 +42,13 @@ export function DataHealthClient({ rows, panelHeader = true }: { rows: BrokenDat
 
   async function remove(ids: number[]) {
     if (ids.length === 0) return;
-    if (!confirm(t("confirmDelete", { count: ids.length }))) return;
+    const ok = await confirm({
+      title: t("confirmDelete", { count: ids.length }),
+      body: t("confirmDeleteBody", { count: ids.length }),
+      confirmLabel: t("confirmDeleteLabel", { count: ids.length }),
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {
@@ -110,7 +119,7 @@ export function DataHealthClient({ rows, panelHeader = true }: { rows: BrokenDat
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold truncate">{row.description || "—"}</p>
                       <p className="text-sm text-ink-3 tabular-nums">
-                        {formatEur(row.direction === "expense" ? -row.amount : row.amount)}
+                        <MoneyText>{formatEur(row.direction === "expense" ? -row.amount : row.amount)}</MoneyText>
                         {row.account ? ` · ${row.account}` : ""}
                       </p>
                       <p className="text-xs text-destructive mt-1 break-all">

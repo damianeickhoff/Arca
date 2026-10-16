@@ -2,52 +2,62 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations, useLocale } from "next-intl";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useLocale, useTranslations } from "next-intl";
+import { IconCheck, IconPencil } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearChip } from "@/components/clear/chip";
+import { ClearProgress } from "@/components/clear/progress";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
-import { CategoryIcon } from "@/components/ui/category-icon";
-import { formatEur } from "@/lib/format";
+import { formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import {
-  IconPencilFilled as Pencil,
-  IconTrashFilled as Trash2,
-} from "@tabler/icons-react";
-import type { Category, Goal } from "@/db/schema";
-import { goalProgressPct } from "./goal-shared";
-import { SavingsGoalEditDialog } from "./savings-goal-edit-dialog";
+import type { Goal } from "@/db/schema";
+import type { GoalsPageData } from "./load-goals";
+import { addMonths, futureBalances, goalColor, goalHistory, goalProgressPct, linkedAccount, monthsLeft } from "./goal-shared";
+import { GoalIcon, ProjectionChart } from "./goal-visuals";
+import { GoalFormDialog } from "./goal-form-dialog";
+import { MoneyText } from "@/components/clear/money";
 
-function fmtDay(iso: string, dateLocale: string) {
-  return new Date(iso + "T00:00:00").toLocaleDateString(dateLocale, { day: "numeric", month: "short", year: "numeric" });
-}
+type DetailData = Pick<GoalsPageData, "categories" | "byGoal" | "months" | "recent">;
 
-// Detail view for a single savings goal — same visual language as the debt detail
-// dialog (accent wash, pencil/trash header actions, rounded-2xl info rows). The pencil
-// button opens SavingsGoalEditDialog nested inside this one.
+/**
+ * One savings goal's detail: progress, the key figures, its projection and what feeds
+ * it — a centred modal from lg and a bottom sheet on phones (the shared Dialog). Edit
+ * opens the goal form nested inside it, so closing that returns here.
+ */
 export function SavingsGoalDetailDialog({
   goal,
-  categories,
+  data,
   onClose,
 }: {
   goal: Goal | null;
-  categories: Category[];
+  data: DetailData;
   onClose: () => void;
 }) {
   const router = useRouter();
   const t = useTranslations("goals");
+  const confirm = useConfirm();
   const [deleting, setDeleting] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
+  const [edit, setEdit] = useState({ key: 0, open: false });
 
-  // Keep rendering the last-open goal's content while the sheet animates closed —
-  // the caller nulls `goal` the instant it starts closing (see onClose), and without
-  // this the body unmounts synchronously, collapsing the sheet's height before the
-  // slide-down transition finishes.
+  // Keep rendering the last-open goal's content while the sheet animates closed — the
+  // caller nulls `goal` the instant it starts closing, and without this the body would
+  // unmount and collapse the sheet's height before the slide-down finishes.
   const [cached, setCached] = useState(goal);
   if (goal && goal !== cached) setCached(goal);
-  const displayGoal = goal ?? cached;
+  const shown = goal ?? cached;
 
   async function remove() {
     if (!goal) return;
-    if (!confirm(t("confirmDelete", { name: goal.name }))) return;
+    const ok = await confirm({
+      title: t("confirmDelete", { name: goal.name }),
+      body: t("confirmDeleteBody"),
+      confirmLabel: t("confirmDeleteLabel"),
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(true);
     await fetch("/api/goals", {
       method: "DELETE",
@@ -59,106 +69,155 @@ export function SavingsGoalDetailDialog({
     router.refresh();
   }
 
+  const pct = shown ? Math.round(goalProgressPct(shown)) : 0;
+
   return (
     <Dialog open={goal != null} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
-        accentColor={displayGoal?.color ?? null}
-        scrollBlur
-        headerAction={
-          displayGoal ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setEditOpen(true)}
-                aria-label={t("edit")}
-                className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
-              >
-                <Pencil className="size-4.5" />
+        hideHeaderRow
+        title={shown?.name ?? t("detail.title")}
+        className="gap-5 pt-7"
+        footer={
+          shown ? (
+            <ClearDialogFooter
+              destructive={
+                <button type="button" onClick={remove} disabled={deleting} className={clearButtonVariants({ variant: "danger" })}>
+                  {t("delete")}
+                </button>
+              }
+            >
+              <button type="button" onClick={() => setEdit((e) => ({ key: e.key + 1, open: true }))} className={clearButtonVariants()}>
+                <IconPencil aria-hidden />
+                {t("detail.edit")}
               </button>
-              <button
-                type="button"
-                onClick={remove}
-                disabled={deleting}
-                aria-label={t("delete")}
-                className="size-10 rounded-full border border-line bg-surface flex items-center justify-center text-ink hover:bg-surface-2 active:scale-[0.95] transition-transform"
-              >
-                <Trash2 className="size-4.5" />
-              </button>
-            </div>
+            </ClearDialogFooter>
           ) : undefined
         }
       >
-        <DialogTitle className="sr-only">{t("detailsTitle")}</DialogTitle>
-        {displayGoal && <DetailBody key={displayGoal.id} goal={displayGoal} categories={categories} />}
-
-        {/* Edit dialog — controlled by the pencil button. Rendered INSIDE this dialog's
-            content so it's a nested sheet: closing it returns here instead of tearing
-            down the detail dialog too. */}
-        {displayGoal && (
-          <SavingsGoalEditDialog goal={displayGoal} categories={categories} open={editOpen} onOpenChange={setEditOpen} />
+        {shown && (
+          <>
+            <ClearDialogHeader
+              icon={<GoalIcon icon={shown.icon} color={shown.color} size="xl" />}
+              title={shown.name}
+              subtitle={<MoneyText>{shown.targetAmount > 0 ? t("detail.savedOf", { saved: formatEur(shown.currentAmount), target: formatEur(shown.targetAmount) }) : formatEur(shown.currentAmount)}</MoneyText>}
+              onClose={onClose}
+              closeLabel={t("close")}
+            />
+            <DetailBody key={shown.id} goal={shown} data={data} pct={pct} />
+            {/* Nested: closing the form returns to this sheet instead of closing both. */}
+            <GoalFormDialog
+              key={edit.key}
+              target={{ mode: "edit", goal: shown }}
+              open={edit.open}
+              onOpenChange={(o) => setEdit((e) => ({ ...e, open: o }))}
+              categories={data.categories}
+            />
+          </>
         )}
       </DialogContent>
     </Dialog>
   );
 }
 
-function DetailBody({ goal, categories }: { goal: Goal; categories: Category[] }) {
+function DetailBody({ goal, data, pct }: { goal: Goal; data: DetailData; pct: number }) {
   const t = useTranslations("goals");
   const locale = useLocale();
-  const dateLocale = locale === "nl" ? "nl-NL" : "en-GB";
-  const pct = Math.round(goalProgressPct(goal));
-  const isDone = goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount;
-  const category = categories.find((c) => c.id === goal.categoryId);
+  const fmtDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+  const fmtMonth = (d: Date) => d.toLocaleDateString(locale, { month: "short", year: "numeric" });
+  const color = goalColor(goal);
+  const left = monthsLeft(goal);
+  const done = left === 0;
+  const category = data.categories.find((c) => c.id === goal.categoryId);
+  const account = linkedAccount(goal, data.recent);
+  const { past, firstMonth } = goalHistory(goal, data);
+  const future = futureBalances(goal.currentAmount, goal.targetAmount, goal.monthlyContribution ?? 0);
+  const end = left != null && left > 0 ? addMonths(left) : null;
+  const tile = "flex min-w-0 flex-col gap-0.5 rounded-clear-icon bg-clear-tile px-3 py-2.5";
 
-  const remaining = goal.targetAmount - goal.currentAmount;
-  const monthsLeft = goal.monthlyContribution && goal.monthlyContribution > 0 && remaining > 0 ? Math.ceil(remaining / goal.monthlyContribution) : null;
-  const targetDate = monthsLeft != null ? (() => { const d = new Date(); d.setMonth(d.getMonth() + monthsLeft); return d; })() : null;
-
-  return (
-    <div className="space-y-4">
-      {/* Hero */}
-      <div className="pt-2">
-        <div className="flex flex-col items-center text-center gap-1 pb-1">
-          <CategoryIcon icon={goal.icon} color={goal.color} size="lg" />
-          <p className="amount mt-3 text-[32px] leading-none tabular-nums text-ink">{formatEur(goal.currentAmount)}</p>
-          <div className="mt-2 flex items-center gap-2 text-[13px] text-ink-2">
-            <span>{t("ofAmount", { amount: formatEur(goal.targetAmount) })}</span>
-            <span>•</span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-2 rounded-full", isDone ? "bg-positive" : "bg-ink-3")} />
-              {isDone ? t("reached") : t("savedPct", { pct })}
+  type Row = { label: string; value: React.ReactNode };
+  const rows = ([
+    goal.startDate ? { label: t("startDate"), value: fmtDay(goal.startDate) } : null,
+    goal.endDate ? { label: t("endDate"), value: fmtDay(goal.endDate) } : null,
+    goal.recurrence && goal.recurrence !== "none" ? { label: t("recurrenceLabel"), value: t(`recurrence.${goal.recurrence}`) } : null,
+    category
+      ? {
+          label: t("category"),
+          value: (
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <Icon iconKey={category.icon} color={category.color} size="xs" round />
+              <span className="truncate">{category.name}</span>
             </span>
-          </div>
-        </div>
-      </div>
+          ),
+        }
+      : null,
+    account ? { label: t("detail.accountLabel"), value: account } : null,
+  ] as (Row | null)[]).filter((r): r is Row => r != null);
 
-      {/* Key figures */}
-      <div className="divide-y divide-line rounded-card border border-line bg-surface">
-        <DetailRow label={t("targetAmount")} value={formatEur(goal.targetAmount)} />
-        <DetailRow label={t("monthlyContribution")} value={goal.monthlyContribution != null ? formatEur(goal.monthlyContribution) : "—"} />
-        {goal.startDate && <DetailRow label={t("startDate")} value={fmtDay(goal.startDate, dateLocale)} />}
-        {goal.endDate && <DetailRow label={t("endDate")} value={fmtDay(goal.endDate, dateLocale)} />}
-        {goal.recurrence !== "none" && <DetailRow label={t("recurrenceLabel")} value={t(`recurrence.${goal.recurrence}`)} />}
-        {targetDate && !isDone && <DetailRow label={t("reachedBy")} value={targetDate.toLocaleDateString(dateLocale, { month: "long", year: "numeric" })} />}
-      </div>
-
-      {category && (
-        <div className="rounded-card border border-line bg-surface">
-          <DetailRow label={t("category")} valueIcon={<Icon iconKey={category.icon} color={category.color} size="xs" round />} value={category.name} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DetailRow({ label, value, valueIcon }: { label: string; value: string; valueIcon?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3">
-      <span className="shrink-0 text-sm text-ink-2">{label}</span>
-      <span className="flex min-w-0 items-center gap-1.5 text-right">
-        {valueIcon}
-        <span className="truncate text-sm font-semibold text-ink">{value}</span>
-      </span>
+    <div className="flex flex-col gap-5 font-clear text-clear-ink">
+      <div className="flex flex-col gap-2">
+        <ClearProgress value={pct / 100} fillColor={done ? undefined : color} fillClassName={done ? "bg-clear-positive-fill" : undefined} />
+        <div className="flex items-center justify-between gap-3 text-[13px] text-clear-ink-2">
+          {done ? (
+            <ClearChip tone="mint" icon={<IconCheck stroke={3} aria-hidden />}>
+              {t("reached")}
+            </ClearChip>
+          ) : (
+            <span className="font-bold text-clear-ink">{t("savedPct", { pct })}</span>
+          )}
+          {goal.targetAmount > goal.currentAmount && <span><MoneyText>{t("detail.toGo", { amount: formatEurWhole(goal.targetAmount - goal.currentAmount) })}</MoneyText></span>}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className={tile}>
+          <span className="text-xs text-clear-muted">{t("detail.target")}</span>
+          <span className="text-base font-extrabold tabular-nums"><MoneyText>{goal.targetAmount > 0 ? formatEurWhole(goal.targetAmount) : "—"}</MoneyText></span>
+        </div>
+        <div className={tile}>
+          <span className="text-xs text-clear-muted">{t("detail.monthly")}</span>
+          <span className="text-base font-extrabold tabular-nums"><MoneyText>{goal.monthlyContribution ? formatEurWhole(goal.monthlyContribution) : "—"}</MoneyText></span>
+        </div>
+        <div className={tile}>
+          <span className="text-xs text-clear-muted">{t("detail.started")}</span>
+          <span className="text-base font-extrabold">{firstMonth ? fmtMonth(new Date(`${firstMonth}-15T12:00:00`)) : "—"}</span>
+        </div>
+        <div className={cn(tile, end && "bg-clear-ember text-clear-ember-ink")}>
+          <span className={cn("text-xs", end ? "font-semibold" : "text-clear-muted")}>{t("detail.projected")}</span>
+          <span className="text-base font-extrabold">{done ? t("reached") : end ? t("detail.reachedOn", { date: fmtMonth(end) }) : "—"}</span>
+        </div>
+      </div>
+
+      {(past.length > 1 || future.length > 0) && goal.targetAmount > 0 ? (
+        <ProjectionChart
+          past={past}
+          future={future}
+          target={goal.targetAmount}
+          color={color}
+          targetLabel={t("detail.targetLine", { amount: formatEurWhole(goal.targetAmount) })}
+          todayLabel={t("detail.today")}
+          startLabel={firstMonth ? fmtMonth(new Date(`${firstMonth}-15T12:00:00`)) : null}
+          endLabel={end ? fmtMonth(end) : t("detail.today")}
+          ariaLabel={
+            end
+              ? t("detail.chartLabel", { saved: formatEurWhole(goal.currentAmount), target: formatEurWhole(goal.targetAmount), date: fmtMonth(end) })
+              : t("detail.chartLabelNoEnd", { saved: formatEurWhole(goal.currentAmount), target: formatEurWhole(goal.targetAmount) })
+          }
+        />
+      ) : (
+        !done && <p className="m-0 rounded-clear-tile bg-clear-tile px-4 py-3 text-sm text-clear-muted">{t("detail.noProjection")}</p>
+      )}
+
+      {rows.length > 0 && (
+        <dl className="m-0 flex flex-col rounded-clear-tile bg-clear-tile px-4">
+          {rows.map((r) => (
+            <div key={r.label} className="flex min-h-12 items-center justify-between gap-3 border-b border-clear-card py-2 last:border-b-0">
+              <dt className="shrink-0 text-sm text-clear-ink-2">{r.label}</dt>
+              <dd className="m-0 min-w-0 truncate text-right text-sm font-bold">{r.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </div>
   );
 }

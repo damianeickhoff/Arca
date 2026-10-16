@@ -22,7 +22,9 @@ import {
   firstOutstandingMonth,
   linkedBillsMonthlyTotal,
   monthsElapsed,
+  parseDebtSort,
   scheduledPaymentMonths,
+  sortDebts,
 } from "@/app/debts/debt-shared";
 import type { Debt, RecurringItem } from "@/db/schema";
 
@@ -241,5 +243,30 @@ describe("debtBalance and computeDebt", () => {
     expect(debtPaidPct(debt({ originalAmount: 2000 }), 400, 600)).toBe(70);
     expect(debtPaidPct(debt({ originalAmount: 500 }), 400, 600)).toBe(40);
     expect(debtPaidPct(debt({ startingBalance: 0 }), 0, 0)).toBe(0);
+  });
+});
+
+describe("debt-shared: sorting Your debts", () => {
+  const row = (id: number, currentBalance: number, interestRate: number | null, monthsRemaining: number | null, neverPaysOff = false) => ({
+    debt: debt({ id, interestRate }),
+    currentBalance,
+    monthsRemaining,
+    neverPaysOff,
+  });
+  const list = [row(1, 6900, 0.5, 33), row(2, 1520, 5.9, 10), row(3, 400, null, null), row(4, 0, 9, 0), row(5, 3000, 2, 20, true)];
+  const ids = (sort: Parameters<typeof sortDebts>[1]) => sortDebts(list, sort).map((c) => c.debt.id);
+
+  it("orders by the chosen sort, paid-off debts last", () => {
+    expect(ids("interest")).toEqual([2, 5, 1, 3, 4]);
+    expect(ids("smallest")).toEqual([3, 2, 5, 1, 4]);
+    // No date (3) and never (5) come after every debt that has a payoff date.
+    expect(ids("soonest")).toEqual([2, 1, 3, 5, 4]);
+    expect(ids("largest")).toEqual([1, 5, 2, 3, 4]);
+  });
+
+  it("reads ?sort= safely", () => {
+    expect(parseDebtSort("smallest")).toBe("smallest");
+    expect(parseDebtSort("nonsense")).toBe("interest");
+    expect(parseDebtSort(null)).toBe("interest");
   });
 });

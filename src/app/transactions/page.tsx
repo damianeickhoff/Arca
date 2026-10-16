@@ -11,6 +11,7 @@ import { normalizeBudgetType } from "@/lib/format";
 import { getLocale } from "next-intl/server";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
 import { ActivityHeader, ActivityView, type ActivityFilters } from "./_activity/activity-view";
+import { ActivityNavigationProvider } from "./_activity/filter-transition";
 import { ALL_FROM, todayStr } from "./periods";
 import {
   buildSplitAllocations,
@@ -285,6 +286,7 @@ export default async function TransactionsPage({
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:h-dvh lg:min-h-[720px] lg:gap-7 lg:px-8 lg:pt-7 lg:pb-4">
+      <ActivityNavigationProvider>
       <ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} />
       <ActivityView
         filters={filters}
@@ -301,6 +303,7 @@ export default async function TransactionsPage({
         tiles={tiles}
         context={context}
       />
+      </ActivityNavigationProvider>
     </div>
   );
 }

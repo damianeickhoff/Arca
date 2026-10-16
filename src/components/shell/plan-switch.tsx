@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { Segmented } from "@/components/clear/segmented";
 import { PLAN_ITEMS, activePlanKey } from "@/components/shell/nav-config";
-import { cn } from "@/lib/utils";
 
 /**
  * The Plan hub's segmented switch — Budget | Debts | Goals — shown at the top of each
@@ -19,27 +18,12 @@ export function PlanSwitch({ className }: { className?: string }) {
 
   return (
     <>
-      <nav
-        aria-label={t("plan")}
-        data-tip-anchor="planSwitch"
-        className={cn("inline-flex gap-0.5 rounded-full bg-surface-2 p-[3px]", className)}
-      >
-        {PLAN_ITEMS.map((item) => {
-          const isActive = item.key === active;
-          return (
-            <Link
-              key={item.key}
-              href={item.href}
-              aria-current={isActive ? "page" : undefined}
-              className={cn(
-                "inline-flex h-8 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors",
-                isActive ? "bg-ink text-bg" : "text-ink-2 hover:text-ink",
-              )}
-            >
-              {t(`planItems.${item.key}`)}
-            </Link>
-          );
-        })}
+      <nav aria-label={t("plan")} data-tip-anchor="planSwitch" className={className}>
+        <Segmented
+          label={t("plan")}
+          value={active ?? ""}
+          items={PLAN_ITEMS.map((item) => ({ value: item.key, label: t(`planItems.${item.key}`), href: item.href }))}
+        />
       </nav>
       <AnchoredTip id="planHub" anchor="planSwitch" />
     </>

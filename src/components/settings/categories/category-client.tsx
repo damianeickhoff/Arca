@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +21,8 @@ import { PickerField } from "@/components/picker-field";
 import { isBrandIcon } from "@/components/icon";
 import { OptionDropdown } from "@/components/option-dropdown";
 import { normalizeBudgetType, ruleAmountLabel } from "@/lib/format";
+import { RuleDialog, emptyRuleDraft, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { MoneyText } from "@/components/clear/money";
 
 interface AddProps { action: "add"; variant?: "default" | "icon" | "custom"; categories?: Category[]; onSave?: () => void; defaultParentId?: number | null; children?: React.ReactNode; className?: string }
 interface EditProps { action: "edit"; category: Category; rules: CategoryRule[]; banks: Bank[]; categories?: Category[]; onSave?: () => void; open?: boolean; onOpenChange?: (v: boolean) => void }
@@ -38,6 +42,9 @@ const BUDGET_TYPE_OPTIONS = [
 
 export function CategoryClient(props: Props) {
   const router = useRouter();
+  const t = useTranslations("settings.categories");
+  const tRule = useTranslations("activity.rule");
+  const confirm = useConfirm();
   const isEdit = props.action === "edit";
   const controlledOpen = isEdit ? props.open : undefined;
   const controlledOnOpenChange = isEdit ? props.onOpenChange : undefined;
@@ -103,13 +110,9 @@ export function CategoryClient(props: Props) {
     }
   }
 
-  // New rule form state — matchType: "contains" | "word" | "exact"
-  const [newRule, setNewRule] = useState({ namePattern: "", matchType: "contains" as "contains" | "word" | "exact", direction: "", bankId: "" });
-  const [ruleLoading, setRuleLoading] = useState(false);
-  const [addRuleOpen, setAddRuleOpen] = useState(false);
-
-  const [editingRule, setEditingRule] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ namePattern: "", matchType: "contains" as "contains" | "word" | "exact", direction: "", bankId: "" });
+  // The rule being added (id null) or edited; kept after closing for the exit animation.
+  const [ruleEditor, setRuleEditor] = useState<{ id: number | null; draft: RuleDraft } | null>(null);
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
 
   function set(key: string, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -140,6 +143,8 @@ export function CategoryClient(props: Props) {
             nameWildcard: rule.nameWildcard,
             nameWholeWord: rule.nameWholeWord,
             amount: rule.amount,
+            amountMin: rule.amountMin,
+            amountMax: rule.amountMax,
             direction: rule.direction,
             bankId: rule.bankId,
           }),
@@ -155,7 +160,13 @@ export function CategoryClient(props: Props) {
   }
 
   async function remove() {
-    if (!confirm(`Delete category "${cat?.name}"? All linked transactions, recurring items, budget targets, and rules will also be deleted.`)) return;
+    const ok = await confirm({
+      title: t("deleteTitle", { name: cat?.name ?? "" }),
+      body: t("deleteBody"),
+      confirmLabel: t("deleteConfirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     setLoading(true);
     const res = await fetch("/api/categories", {
       method: "DELETE",
@@ -173,52 +184,34 @@ export function CategoryClient(props: Props) {
     router.refresh();
   }
 
-  function matchTypeToFlags(matchType: "contains" | "word" | "exact") {
-    return {
-      nameWildcard: matchType === "contains",
-      nameWholeWord: matchType === "word",
-    };
+  function openRule(rule: CategoryRule | null) {
+    setRuleEditor({ id: rule?.id ?? null, draft: rule ? ruleDraftFromRule(rule) : emptyRuleDraft(cat?.id ?? null) });
+    setRuleDialogOpen(true);
   }
 
-  async function addRule() {
-    if (!newRule.namePattern && !newRule.bankId) return;
-    const fields = {
-      namePattern: newRule.namePattern || null,
-      ...matchTypeToFlags(newRule.matchType),
-      amount: null,
-      direction: newRule.direction || null,
-      bankId: newRule.bankId ? parseInt(newRule.bankId) : null,
-    };
-
-    if (!isEdit) {
-      // No category id yet — stage locally, created once the category itself is saved.
-      setRules((r) => [...r, { id: nextTempId.current--, categoryId: -1, createdAt: null, ...fields } as CategoryRule]);
-      setNewRule({ namePattern: "", matchType: "contains", direction: "", bankId: "" });
+  async function saveRule(fields: RuleFields) {
+    const id = ruleEditor?.id ?? null;
+    // No category id yet, or a rule staged before it had one: kept here, created once
+    // the category itself is saved.
+    if (!isEdit || (id != null && id < 0)) {
+      setRules((r) =>
+        id == null
+          ? [...r, { id: nextTempId.current--, categoryId: -1, createdAt: null, ...fields }]
+          : r.map((x) => (x.id === id ? { ...x, ...fields } : x)),
+      );
+      setRuleDialogOpen(false);
       return;
     }
-
-    setRuleLoading(true);
     const res = await fetch("/api/category-rules", {
-      method: "POST",
+      method: id == null ? "POST" : "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ categoryId: cat!.id, ...fields }),
+      body: JSON.stringify(id == null ? { categoryId: cat!.id, ...fields } : { id, ...fields }),
     });
-    const created = await res.json();
-    setRules((r) => [...r, created]);
-    setNewRule({ namePattern: "", matchType: "contains", direction: "", bankId: "" });
+    const saved: CategoryRule = await res.json();
+    setRules((r) => (id == null ? [...r, saved] : r.map((x) => (x.id === id ? saved : x))));
+    setRuleDialogOpen(false);
     await fetch("/api/apply-rules", { method: "POST" });
-    setRuleLoading(false);
     router.refresh();
-  }
-
-  function openAddRule() {
-    setNewRule({ namePattern: "", matchType: "contains", direction: "", bankId: "" });
-    setAddRuleOpen(true);
-  }
-
-  async function submitAddRule() {
-    await addRule();
-    setAddRuleOpen(false);
   }
 
   async function deleteRule(id: number) {
@@ -229,50 +222,6 @@ export function CategoryClient(props: Props) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    router.refresh();
-  }
-
-  function ruleToMatchType(rule: CategoryRule): "contains" | "word" | "exact" {
-    if (rule.nameWholeWord) return "word";
-    if (rule.nameWildcard) return "contains";
-    return "exact";
-  }
-
-  function startEdit(rule: CategoryRule) {
-    setEditingRule(rule.id);
-    setEditForm({
-      namePattern: rule.namePattern ?? "",
-      matchType: ruleToMatchType(rule),
-      direction: rule.direction ?? "",
-      bankId: rule.bankId !== null && rule.bankId !== undefined ? String(rule.bankId) : "",
-    });
-  }
-
-  async function saveEdit(id: number) {
-    const fields = {
-      namePattern: editForm.namePattern || null,
-      ...matchTypeToFlags(editForm.matchType),
-      amount: null,
-      direction: editForm.direction || null,
-      bankId: editForm.bankId ? parseInt(editForm.bankId) : null,
-    };
-
-    if (!isEdit || id < 0) {
-      // Staged rule (category not saved yet) — update locally only.
-      setRules((r) => r.map((x) => (x.id === id ? { ...x, ...fields } : x)));
-      setEditingRule(null);
-      return;
-    }
-
-    const res = await fetch("/api/category-rules", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...fields }),
-    });
-    const updated = await res.json();
-    setRules((r) => r.map((x) => (x.id === id ? updated : x)));
-    setEditingRule(null);
-    await fetch("/api/apply-rules", { method: "POST" });
     router.refresh();
   }
 
@@ -397,9 +346,9 @@ export function CategoryClient(props: Props) {
                                   <span className="font-mono text-ink">&ldquo;{rule.namePattern}&rdquo;</span>
                                 </span>
                               )}
-                              {ruleAmountLabel(rule) && (
-                                <span className="ml-1 text-xs">· {ruleAmountLabel(rule)}</span>
-                              )}
+                              <MoneyText>{ruleAmountLabel(rule) && (
+                                <span className="ml-1 text-xs">· <MoneyText>{ruleAmountLabel(rule)}</MoneyText></span>
+                              )}</MoneyText>
                               {rule.direction && (
                                 <span className="ml-1 text-xs">· {rule.direction === "income" ? "income" : "expense"}</span>
                               )}
@@ -412,7 +361,7 @@ export function CategoryClient(props: Props) {
                             </div>
                             <div className="flex gap-1.5 shrink-0">
                               <button
-                                onClick={() => startEdit(rule)}
+                                onClick={() => openRule(rule)}
                                 className="flex items-center justify-center mt-0 p-1.5 rounded-sm hover:bg-foreground/10 text-ink hover:text-ink shrink-0 size-9 cursor-pointer"
                               >
                                 <EllipsisVertical className="size-4" />
@@ -430,63 +379,13 @@ export function CategoryClient(props: Props) {
                     </div>
                   )}
 
-                  <Button size="lg" variant="default" onClick={openAddRule} className="w-full">
+                  <Button size="lg" variant="default" onClick={() => openRule(null)} className="w-full">
                     <Plus className="size-4 mr-1" />
                       Add rule
                   </Button>
                 </div>
               )}
             </div>
-
-            {/* Add rule inline panel */}
-            {addRuleOpen && (
-              <div className="rounded-tile border border-foreground/15 p-3 space-y-2 bg-surface-2">
-                <p className="text-md font-medium">New rule</p>
-                <Field label="Name">
-                  <Input
-                    placeholder="Name (optioneel)"
-                    value={newRule.namePattern}
-                    onChange={(e) => setNewRule((r) => ({ ...r, namePattern: e.target.value }))}
-                    className="text-sm"
-                  />
-                </Field>
-                <MatchTypePicker value={newRule.matchType} onChange={(v) => setNewRule((r) => ({ ...r, matchType: v }))} />
-                <DirectionPicker value={newRule.direction} onChange={(v) => setNewRule((r) => ({ ...r, direction: v }))} />
-                <BankPicker banks={banks} value={newRule.bankId} onChange={(v) => setNewRule((r) => ({ ...r, bankId: v }))} />
-                <div className="flex gap-2 pt-1">
-                  <Button size="lg" variant="default" onClick={submitAddRule}
-                    disabled={ruleLoading || (!newRule.namePattern && !newRule.bankId)}
-                    className="flex-1">
-                    Add
-                  </Button>
-                  <Button size="lg" variant="destructive" onClick={() => setAddRuleOpen(false)} className="flex-1">Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            {/* Edit rule inline panel */}
-            {editingRule !== null && (
-              <div className="rounded-tile border border-foreground/15 p-3 space-y-2 bg-surface-2">
-                <p className="text-sm font-medium">Regel bewerken</p>
-                <Field label="Name">
-                  <Input
-                    placeholder="Name (optioneel)"
-                    value={editForm.namePattern}
-                    onChange={(e) => setEditForm((f) => ({ ...f, namePattern: e.target.value }))}
-                    className="text-sm"
-                  />
-                </Field>
-                <MatchTypePicker value={editForm.matchType} onChange={(v) => setEditForm((f) => ({ ...f, matchType: v }))} />
-                <DirectionPicker value={editForm.direction} onChange={(v) => setEditForm((f) => ({ ...f, direction: v }))} />
-                <BankPicker banks={banks} value={editForm.bankId} onChange={(v) => setEditForm((f) => ({ ...f, bankId: v }))} />
-                <div className="flex gap-2 pt-1">
-                  <Button size="lg" variant="default" onClick={() => editingRule !== null && saveEdit(editingRule)} className="flex-1">
-                    Save
-                  </Button>
-                  <Button size="lg" variant="ghost" onClick={() => setEditingRule(null)} className="flex-1">Cancel</Button>
-                </div>
-              </div>
-            )}
 
             <div className="flex gap-2 pt-1">
               <Button onClick={save} disabled={loading || !form.name} className="flex-1">
@@ -499,87 +398,21 @@ export function CategoryClient(props: Props) {
               )}
             </div>
           </div>
+
+          {/* Inside the content so it stacks as a nested sheet over this one. */}
+          <RuleDialog
+            open={ruleDialogOpen}
+            onOpenChange={setRuleDialogOpen}
+            initial={ruleEditor?.draft ?? null}
+            title={ruleEditor?.id == null ? tRule("titleNew") : tRule("titleEdit")}
+            category={{ name: form.name, icon: form.icon, color: effectiveColor }}
+            banks={banks}
+            submitLabel={tRule("save")}
+            onSubmit={saveRule}
+          />
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-function MatchTypePicker({
-  value,
-  onChange,
-}: {
-  value: "contains" | "word" | "exact";
-  onChange: (v: "contains" | "word" | "exact") => void;
-}) {
-  const options: { value: "contains" | "word" | "exact"; label: string; title: string }[] = [
-    { value: "contains", label: "Contains", title: "Name contains the text (also as part of a word)" },
-    { value: "word", label: "Whole word", title: "Name contains it as a whole word (MCD does not match McDonalds)" },
-    { value: "exact", label: "Exact", title: "Name matches the text exactly" },
-  ];
-  return (
-    <div className="flex rounded-md overflow-hidden text-xs mb-5">
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          title={opt.title}
-          onClick={() => onChange(opt.value)}
-          className={`flex-1 px-2 py-2.5 transition-colors pb-2 ${
-            value === opt.value
-              ? "bg-foreground text-background font-bold text-md"
-              : "bg-[var(--dialog-content-background)] text-foreground/60 hover:bg-foreground/10"
-          } ${opt.value !== "contains" ? "border-l border-foreground/10" : ""}`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function DirectionPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const options = [
-    { value: "",        label: "Both" },
-    { value: "income",  label: "Income" },
-    { value: "expense", label: "Expense" },
-  ];
-  return (
-    <div className="flex rounded-md overflow-hidden text-xs">
-      {options.map((opt, i) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={`flex-1 px-2 py-2.5 transition-colors ${
-            value === opt.value
-              ? "bg-foreground text-background font-bold text-md"
-              : "bg-[var(--dialog-content-background)] text-foreground/60 hover:bg-foreground/10"
-          } ${i > 0 ? "border-l border-foreground/10" : ""}`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function BankPicker({ banks, value, onChange }: { banks: Bank[]; value: string; onChange: (v: string) => void }) {
-  if (banks.length === 0) return null;
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="px-5 mt-2 h-11 w-full rounded-md px-4 py-1.5 text-sm text-ink bg-background"
-    >
-      <option value="">All accounts</option>
-      {banks.map((bank) => (
-        <option key={bank.id} value={String(bank.id)}>
-          {bank.displayName ?? bank.accountNumber ?? `Bank ${bank.id}`}
-          {bank.displayName && bank.accountNumber ? ` (${bank.accountNumber})` : ""}
-        </option>
-      ))}
-    </select>
   );
 }
 

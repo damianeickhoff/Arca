@@ -9,6 +9,7 @@ import { CategorySpendingListPortal } from "@/components/category-spending-list-
 import { ProgressRing } from "@/components/progress-ring";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import { useTranslations } from "next-intl";
+import { MoneyText } from "@/components/clear/money";
 
 export interface CategorySpendCard {
   categoryId: number;
@@ -42,12 +43,12 @@ export function CategorySpendCardButton({ card, periodElapsedPct, onClick }: { c
     </p>
 
     <div className="mt-auto">
-      <p className="text-sm font-semibold text-foreground tabular-nums">{formatEur(card.spent)}</p>
+      <p className="text-sm font-semibold text-foreground tabular-nums"><MoneyText>{formatEur(card.spent)}</MoneyText></p>
       {card.budget != null ? (
         over ? (
-          <p className="text-sm text-[var(--color-expense)] tabular-nums">/ {formatEur(card.spent - card.budget)} over</p>
+          <p className="text-sm text-[var(--color-expense)] tabular-nums">/ <MoneyText>{formatEur(card.spent - card.budget)}</MoneyText> over</p>
         ) : (
-          <p className="text-sm text-foreground/40 tabular-nums">of {formatEur(card.budget)}</p>
+          <p className="text-sm text-foreground/40 tabular-nums">of <MoneyText>{formatEur(card.budget)}</MoneyText></p>
         )
       ) : (
         <p className="text-sm text-foreground/40">No limit</p>

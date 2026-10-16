@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { IconTrash } from "@tabler/icons-react";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import type { ColumnMapping } from "@/lib/import-parse";
 
 export interface ImportProfileListItem {
@@ -29,11 +30,18 @@ const FORMAT_LABELS: Record<ColumnMapping["dateFormat"], string> = {
 export function ImportProfilesClient({ profiles, panelHeader = true }: { profiles: ImportProfileListItem[]; panelHeader?: boolean }) {
   const t = useTranslations("importProfiles");
   const router = useRouter();
+  const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function remove(profile: ImportProfileListItem) {
-    if (!confirm(t("confirmDelete", { label: profile.label }))) return;
+    const ok = await confirm({
+      title: t("confirmDelete", { label: profile.label }),
+      body: t("confirmDeleteBody"),
+      confirmLabel: t("delete"),
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setError(null);
     try {

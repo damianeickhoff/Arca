@@ -9,6 +9,7 @@ import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/empty-state";
 import { MarkPaidButton } from "@/app/mark-paid-button";
+import { MoneyText } from "@/components/clear/money";
 
 export type CalendarBill = {
   id: number;
@@ -217,7 +218,7 @@ function BillLine({ bill: b, month, paidLabel }: { bill: CalendarBill; month: st
       {b.amount != null && (
         <span className={cn("shrink-0 text-sm font-semibold tabular-nums", b.isIncome ? "text-positive" : "text-ink")}>
           {b.isIncome ? "+" : ""}
-          {formatEur(b.amount)}
+          <MoneyText>{formatEur(b.amount)}</MoneyText>
         </span>
       )}
       {b.paidSource === "match" ? (

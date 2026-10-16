@@ -3,11 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { IconShield, IconMoon } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { IconMoon } from "@tabler/icons-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import { ToggleSwitch } from "@/components/toggle-switch";
 import { ThemeSegmented } from "@/components/theme-toggle";
 
 // Shared building blocks for the mobile menu page family (/menu, /menu/settings,
@@ -77,30 +75,6 @@ export function MobileMenuLinkRow({
       <span className="flex-1 text-lg font-medium text-foreground">{label}</span>
       <ChevronRight className="size-4 text-foreground shrink-0" />
     </Link>
-  );
-}
-
-export function MobileMenuPrivacyRow() {
-  const [blur, setBlur] = useState(false);
-  useEffect(() => {
-    // localStorage only exists in the browser; reading it during render would make the
-    // server and client markup disagree.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- post-hydration sync with localStorage
-    setBlur(localStorage.getItem("privacy") === "1");
-  }, []);
-  function toggle() {
-    const next = !blur;
-    setBlur(next);
-    document.documentElement.classList.toggle("privacy", next);
-    localStorage.setItem("privacy", next ? "1" : "0");
-  }
-  return (
-    <MobileMenuRow
-      icon={IconShield}
-      label="Privacy mode"
-      onTap={toggle}
-      right={<ToggleSwitch on={blur} />}
-    />
   );
 }
 

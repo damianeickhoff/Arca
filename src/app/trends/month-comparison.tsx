@@ -1,142 +1,135 @@
-import { IconArrowUpRight as ArrowUpRight, IconArrowDownRight as ArrowDownRight } from "@tabler/icons-react";
-import { formatEur } from "@/lib/format";
+"use client";
+
+import { useTranslations } from "next-intl";
+import { IconInfoCircle } from "@tabler/icons-react";
+import { Amount } from "@/components/clear/amount";
+import { ClearCard, ClearCardHeader } from "@/components/clear/card";
+import { ClearChip, DeltaChip } from "@/components/clear/chip";
+import { Icon } from "@/components/icon";
+import { formatEurWhole } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { ComparisonPicker } from "./comparison-picker";
+import { MoneyText } from "@/components/clear/money";
 
 export type MonthStats = {
   income: number;
   expense: number;
-  balance: number;
-  topCats: { name: string; color: string | null; total: number }[];
+  topCats: { id?: number; name: string; color: string | null; icon?: string | null; total: number }[];
 };
 
-// Presentational only — all data (including which financial month each stat set
-// represents) is resolved by the caller. Kept out of trends/page.tsx so the KPI-tile
-// and delta-list markup doesn't compete for attention with the page's data plumbing.
+const VISIBLE_ROWS = 7;
+
+/** A whole-euro figure with the minus first ("−€20"), for the quieter earlier-month column. */
+function signed(v: number) {
+  return `${Math.round(v) < 0 ? "−" : ""}${formatEurWhole(Math.abs(v))}`;
+}
+
+/** Change from B to A as a chip; `upIsGood` decides the colour (more income is good, more spending isn't). */
+function Change({ a, b, upIsGood }: { a: number; b: number; upIsGood: boolean }) {
+  const diff = Math.round(a - b);
+  if (diff === 0) return <ClearChip tone="stone" className="h-[26px] px-2.5 text-xs"><MoneyText>{formatEurWhole(0)}</MoneyText></ClearChip>;
+  const up = diff > 0;
+  return (
+    <DeltaChip direction={up ? "up" : "down"} good={up === upIsGood} className="h-[26px] px-2.5 text-xs">
+      <MoneyText>{formatEurWhole(Math.abs(diff))}</MoneyText>
+    </DeltaChip>
+  );
+}
+
+/**
+ * Two budget months side by side: per category what went out in each and the change,
+ * with a footnote while one of them still runs. Column B is the earlier pick, A the
+ * later one; the month totals are the Trends key figures, so they aren't repeated here.
+ * All data and month names are resolved by the caller.
+ */
 export function MonthComparison({
   cmpA,
   cmpB,
   labelA,
   labelB,
+  shortA,
+  shortB,
+  soFar,
   statsA,
   statsB,
+  months,
+  footnote,
+  className,
 }: {
   cmpA: string;
   cmpB: string;
+  /** The months' names for the subtitle ("October") and the column heads ("Oct"). */
   labelA: string;
   labelB: string;
+  shortA: string;
+  shortB: string;
+  /** Month A is still running ("September vs October so far"). */
+  soFar: boolean;
   statsA: MonthStats;
   statsB: MonthStats;
+  /** The months the picker offers, oldest first. */
+  months: { value: string; label: string }[];
+  /** "October runs until 24 Oct. …" — only while one of the months still runs. */
+  footnote: string | null;
+  className?: string;
 }) {
-  const savingsRateA = statsA.income > 0 ? (statsA.balance / statsA.income) * 100 : null;
-  const savingsRateB = statsB.income > 0 ? (statsB.balance / statsB.income) * 100 : null;
+  const t = useTranslations("insights.trends");
 
-  const kpis = [
-    { label: "Income", a: statsA.income, b: statsB.income, format: formatEur },
-    { label: "Expenses", a: statsA.expense, b: statsB.expense, format: formatEur },
-    { label: "Balance", a: statsA.balance, b: statsB.balance, format: formatEur },
-    {
-      label: "Savings rate",
-      a: savingsRateA,
-      b: savingsRateB,
-      format: (v: number) => `${v.toFixed(0)}%`,
-    },
-  ];
-
-  // Union of categories present in either month, sorted by |delta|, capped to 8 with a
-  // "show all" disclosure for the rest.
-  const catMap = new Map<string, { name: string; color: string | null; a: number; b: number }>();
-  for (const c of statsA.topCats) catMap.set(c.name, { name: c.name, color: c.color, a: c.total, b: 0 });
+  // Union of the categories in either month, largest first.
+  const catMap = new Map<string, { key: string; name: string; color: string | null; icon: string | null; a: number; b: number }>();
+  for (const c of statsA.topCats) catMap.set(c.name, { key: String(c.id ?? c.name), name: c.name, color: c.color, icon: c.icon ?? null, a: c.total, b: 0 });
   for (const c of statsB.topCats) {
     const existing = catMap.get(c.name);
     if (existing) existing.b = c.total;
-    else catMap.set(c.name, { name: c.name, color: c.color, a: 0, b: c.total });
+    else catMap.set(c.name, { key: String(c.id ?? c.name), name: c.name, color: c.color, icon: c.icon ?? null, a: 0, b: c.total });
   }
-  const deltaRows = [...catMap.values()]
-    .map((c) => ({ ...c, delta: c.a - c.b }))
-    .sort((x, y) => Math.abs(y.delta) - Math.abs(x.delta));
-  const topDeltas = deltaRows.slice(0, 8);
-  const restCount = deltaRows.length - topDeltas.length;
+  const rows = [...catMap.values()].sort((x, y) => Math.max(y.a, y.b) - Math.max(x.a, x.b));
+  const visible = rows.slice(0, VISIBLE_ROWS);
+  const restCount = rows.length - visible.length;
+
+  const grid = "grid grid-cols-[minmax(0,1fr)_64px_64px_auto] items-center gap-2.5 sm:grid-cols-[minmax(0,1fr)_80px_80px_104px]";
 
   return (
-    <div className="rounded-2xl bg-card overflow-hidden">
-      <div className="px-5 py-4 border-b border-foreground/5 flex flex-col items-center gap-2 text-center">
-        <h2 className="font-semibold text-sm">Month comparison</h2>
-        <ComparisonPicker cmpA={cmpA} cmpB={cmpB} />
-      </div>
+    <ClearCard aria-labelledby="trends-compare-title" className={cn("gap-4", className)}>
+      <ClearCardHeader
+        title={<span id="trends-compare-title">{t("comparison")}</span>}
+        subtitle={soFar ? t("comparisonSubtitleSoFar", { a: labelA, b: labelB }) : t("comparisonSubtitle", { a: labelA, b: labelB })}
+        action={<ComparisonPicker cmpA={cmpA} cmpB={cmpB} months={months} />}
+      />
 
-      <div className="p-5 space-y-4">
-        {/* KPI comparison row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {kpis.map(({ label, a, b, format }) => {
-            if (a == null || b == null) {
-              return (
-                <div key={label} className="rounded-xl bg-foreground/3 p-3">
-                  <p className="text-xs text-foreground/60 mb-1">{label}</p>
-                  <p className="text-base font-bold tabular-nums text-foreground/40">—</p>
-                </div>
-              );
-            }
-            const diff = a - b;
-            const diffPct = b !== 0 ? Math.round((diff / Math.abs(b)) * 100) : null;
-            return (
-              <div key={label} className="rounded-xl bg-foreground/3 p-3">
-                <p className="text-xs text-foreground/60 mb-1">{label}</p>
-                <div className="flex items-end justify-between gap-1 flex-wrap">
-                  <div>
-                    <p className="text-base font-bold tabular-nums">{format(a)}</p>
-                    <p className="text-[10px] text-foreground/50 tabular-nums">{labelB}: {format(b)}</p>
-                  </div>
-                  {diffPct !== null && (
-                    <span
-                      className="text-[11px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full"
-                      style={diff > 0
-                        ? { background: "color-mix(in srgb, var(--color-income) 15%, transparent)", color: "var(--color-income)" }
-                        : diff < 0
-                          ? { background: "color-mix(in srgb, var(--color-expense) 15%, transparent)", color: "var(--color-expense)" }
-                          : undefined}
-                    >
-                      {diff > 0 ? "+" : ""}{diffPct}%
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Per-category deltas, unified single list */}
-        {topDeltas.length > 0 ? (
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-foreground/60 mb-2">{labelA} vs {labelB}</p>
-            {topDeltas.map((row) => {
-              const up = row.delta > 0;
-              const flat = row.delta === 0;
-              return (
-                <div key={row.name} className="flex items-center justify-between gap-2 py-1.5 border-b border-foreground/5 last:border-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: row.color ?? "var(--primary)" }} />
-                    <span className="text-sm truncate">{row.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 text-xs tabular-nums">
-                    <span className="text-foreground/50">{formatEur(row.b)} → {formatEur(row.a)}</span>
-                    {!flat && (
-                      <span className={`flex items-center font-semibold ${up ? "text-red-500" : "text-emerald-600"}`}>
-                        {up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-                        {formatEur(Math.abs(row.delta))}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {restCount > 0 && (
-              <p className="text-xs text-foreground/50 pt-1">+{restCount} more categories</p>
-            )}
+      {rows.length === 0 && statsA.income === 0 && statsB.income === 0 ? (
+        <p className="m-0 py-6 text-center text-sm text-clear-muted">{t("noData")}</p>
+      ) : (
+        <div className="flex flex-col">
+          <div className={cn(grid, "h-10 rounded-clear-row bg-clear-tile px-3 text-[13px] font-bold text-clear-ink-2")}>
+            <span>{t("category")}</span>
+            <span className="text-right">{shortB}</span>
+            <span className="text-right">{shortA}</span>
+            <span className="text-right">{t("change")}</span>
           </div>
-        ) : (
-          <p className="text-xs text-foreground/50">No data</p>
-        )}
-      </div>
-    </div>
+          {visible.map((row) => (
+            <div key={row.key} className={cn(grid, "min-h-[52px] border-b border-clear-ground px-3")}>
+              <span className="flex min-w-0 items-center gap-2.5">
+                <Icon iconKey={row.icon} color={row.color} soft size="sm" />
+                <span className="truncate text-sm font-bold">{row.name}</span>
+              </span>
+              <span className="text-right text-sm whitespace-nowrap tabular-nums text-clear-ink-2"><MoneyText>{signed(row.b)}</MoneyText></span>
+              <Amount value={row.a} whole className="text-right text-sm" />
+              <span className="flex justify-end">
+                <Change a={row.a} b={row.b} upIsGood={false} />
+              </span>
+            </div>
+          ))}
+          {restCount > 0 && <p className="m-0 px-3 pt-2 text-[13px] text-clear-muted">{t("moreCategories", { count: restCount })}</p>}
+        </div>
+      )}
+
+      {footnote && (
+        <p className="m-0 mt-auto flex items-start gap-2.5 text-[13px] leading-normal text-clear-ink-2">
+          <IconInfoCircle size={18} stroke={1.9} aria-hidden className="mt-px shrink-0" />
+          <MoneyText>{footnote}</MoneyText>
+        </p>
+      )}
+    </ClearCard>
   );
 }

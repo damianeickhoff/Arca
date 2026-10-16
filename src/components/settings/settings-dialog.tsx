@@ -1,29 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconUser,
   IconChevronRight,
   IconLogout,
   IconPencil,
-  IconCreditCard,
-  IconTag,
-  IconReload,
-  IconBuildingStore,
-  IconCalendar,
-  IconCalendarEvent,
-  IconFileUpload,
-  IconMoon,
-  IconStethoscope,
-  IconTableOptions,
-  IconShield,
-  IconLock,
-  IconLanguage,
-  IconCoin,
-  IconWallet,
-  IconHelpCircle,
-  IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { SHEET_COLUMN } from "@/components/page-container";
@@ -33,102 +16,16 @@ import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useEscapeToClose } from "@/lib/use-escape-to-close";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { logoutAction, updateOwnProfileAction, updateOwnEmailAction, updateOwnPasswordAction } from "@/app/actions/auth";
-import { FinancieleMaandForm, MaandUitzonderingenSubPage } from "@/app/settings/general-client";
-import { BudgetRecurringCard } from "@/components/settings/budget-recurring-card";
-import { SharedCostCard } from "@/components/settings/shared-cost-card";
+import { logoutAction } from "@/app/actions/auth";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
-import { ImportCsvCard } from "@/components/import-csv-card";
-import { ThemeList } from "@/components/theme-toggle";
-import { LanguageList } from "@/components/language-switcher";
-import { CurrencyList } from "@/components/currency-switcher";
-import { PrivacyToggle } from "@/components/privacy-toggle";
-import { AvatarFormContent, AppLockSectionContent, TwoFactorSectionContent } from "@/app/settings/profile-client";
 import { PanelChromeContext, PanelHeader } from "@/components/settings/settings-panel-chrome";
+import { SettingsPanelBody } from "@/components/settings/settings-panel-body";
+import { settingsSections, isHeavyPanel, type SettingsPanelKey } from "@/components/settings/settings-sections";
+import { ProfileForms, SecurityForms } from "@/components/settings/account-forms";
 import { AnchoredTip } from "@/components/anchored-tip";
-import { AuthBackgroundPicker } from "@/components/settings/auth-background-picker";
 import { Sparkles } from "@/components/sparkles";
 import { LogoMark } from "@/components/brand-mark";
 import { useSettingsPortal } from "@/lib/settings-portal-state";
-
-type PanelKey =
-  | "accounts" | "categories" | "recurring" | "merchants"
-  | "financialMonth" | "monthOverrides" | "budgetRecurring"
-  | "import" | "importProfiles" | "dataHealth"
-  | "appearance" | "privacy" | "appLock" | "language" | "currency"
-  | "help" | "users";
-
-type Section = {
-  title: string;
-  rows: { key: PanelKey; label: string; icon: React.ComponentType<{ className?: string }> }[];
-};
-
-const SECTIONS: Section[] = [
-  {
-    title: "Manage",
-    rows: [
-      { key: "accounts", label: "Accounts", icon: IconCreditCard },
-      { key: "categories", label: "Categories", icon: IconTag },
-      { key: "recurring", label: "Recurring", icon: IconReload },
-      { key: "merchants", label: "Merchants", icon: IconBuildingStore },
-      { key: "financialMonth", label: "Financial Month", icon: IconCalendar },
-      { key: "monthOverrides", label: "Month Overrides", icon: IconCalendarEvent },
-      { key: "budgetRecurring", label: "Budget & Bills", icon: IconWallet },
-    ],
-  },
-  {
-    title: "Data",
-    rows: [
-      { key: "import", label: "Import CSV", icon: IconFileUpload },
-      { key: "importProfiles", label: "Import Profiles", icon: IconTableOptions },
-      { key: "dataHealth", label: "Data Health", icon: IconStethoscope },
-    ],
-  },
-  {
-    title: "App",
-    rows: [
-      { key: "appearance", label: "Appearance", icon: IconMoon },
-      { key: "privacy", label: "Privacy", icon: IconShield },
-      { key: "appLock", label: "App Lock", icon: IconLock },
-      { key: "language", label: "Language", icon: IconLanguage },
-      { key: "currency", label: "Currency", icon: IconCoin },
-    ],
-  },
-  {
-    title: "About",
-    rows: [{ key: "help", label: "Help", icon: IconHelpCircle }],
-  },
-];
-
-const PANEL_TITLES: Record<PanelKey, string> = {
-  accounts: "Accounts",
-  categories: "Categories",
-  recurring: "Recurring",
-  merchants: "Merchants",
-  financialMonth: "Financial Month",
-  monthOverrides: "Month Overrides",
-  budgetRecurring: "Budget & Bills",
-  import: "Import CSV",
-  importProfiles: "Import Profiles",
-  dataHealth: "Data Health",
-  appearance: "Appearance",
-  privacy: "Privacy",
-  appLock: "App Lock",
-  language: "Language",
-  currency: "Currency",
-  help: "Help",
-  users: "Users",
-};
-
-// The data-heavy panels are server-rendered on the dashboard and injected as
-// nodes; the rest are built inline here from existing client components.
-const HEAVY_KEYS: PanelKey[] = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles"];
-
-// Panels that render their own sticky header (back + panel-specific actions) via
-// PanelHeader, so SettingsDialog skips the generic header for them.
-const SELF_CHROMED = new Set<PanelKey>(["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles"]);
 
 function Avatar({ user, size }: { user: User; size: number }) {
   if (user.avatarUrl) {
@@ -152,6 +49,8 @@ function Avatar({ user, size }: { user: User; size: number }) {
   );
 }
 
+/** The phone Settings sheet, opened from the Home avatar. Desktop uses the /settings
+ *  page, which lists the same sections (settings-sections.ts). */
 export function SettingsDialog({
   user,
   panels,
@@ -169,12 +68,13 @@ export function SettingsDialog({
   triggerClassName?: string;
   iconOnly?: boolean;
 }) {
+  const t = useTranslations("settings");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   // Sub-panel with slide animation: `active` is the rendered panel, `visible`
   // drives the transform so it can animate out before unmounting.
-  const [active, setActive] = useState<PanelKey | null>(null);
+  const [active, setActive] = useState<SettingsPanelKey | null>(null);
   const [visible, setVisible] = useState(false);
 
   // Lets a server-rendered sibling (e.g. the dashboard's Accounts card) open this
@@ -188,7 +88,7 @@ export function SettingsDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestedPanel]);
 
-  function openPanel(key: PanelKey) {
+  function openPanel(key: SettingsPanelKey) {
     setActive(key);
     // Next frame so the initial (off-screen) transform is committed before flipping.
     requestAnimationFrame(() => setVisible(true));
@@ -250,22 +150,16 @@ export function SettingsDialog({
 
   const firstName = user.name.split(" ")[0] || user.name;
 
-  // Admins get an extra row at the bottom of the "App" section that opens the
-  // Users management sub-panel — same slide-over mechanism as every other panel.
-  const sections: Section[] = user.isAdmin
-    ? SECTIONS.map((s) =>
-        s.title === "App"
-          ? { ...s, rows: [...s.rows, { key: "users" as PanelKey, label: "Users", icon: IconUsers }] }
-          : s,
-      )
-    : SECTIONS;
+  // The profile is edited from the header here, so no Account group; admins get
+  // Users at the bottom of the App group.
+  const sections = settingsSections({ isAdmin: user.isAdmin, withAccount: false });
 
   return (
     <>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Open settings"
+        aria-label={t("open")}
         // Target for the "everything else is behind your photo" pointer tip. Only one
         // SettingsDialog is ever rendered per route, so the selector stays unambiguous.
         data-tip-anchor="settingsTrigger"
@@ -281,21 +175,16 @@ export function SettingsDialog({
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="px-0" sheetClassName="bg-bg" hideHandle hideHeaderRow title="Settings">
+        <DialogContent className="px-0" sheetClassName="bg-bg" hideHandle hideHeaderRow title={t("title")}>
           {/* ── Root menu ── shares the same sticky header chrome as every sub-panel
               (PanelHeader from settings-panel-chrome.tsx), with the X acting as a
               close button for the whole dialog. Rendered as a sibling of the hero
               content (not nested inside it) so its containing block is the full
               scrollable sheet body — nesting it inside a hero wrapper div would
-              only let it stay `sticky` for as long as that div is on-screen,
-              causing it to drift away as soon as the hero scrolls past.
-              Sparkles is a sibling too, not a wrapper: it's self-contained
-              (absolute, sizes itself to a fixed hero height off its own `top-0`)
-              and anchors fine directly against DialogContent's own `relative`
-              scroll container — so it still renders behind the header at rest
-              without the header needing to share a parent with it, and stays a
-              first-page touch instead of following the user into every
-              sub-panel or scrolling behind the plain settings list below. */}
+              only let it stay `sticky` for as long as that div is on-screen.
+              Sparkles is a sibling too: it's self-contained (absolute, sizes itself
+              to a fixed hero height off its own `top-0`) and anchors against
+              DialogContent's own `relative` scroll container. */}
           <PanelChromeContext.Provider value={{ closePanel: () => setOpen(false) }}>
             <PanelHeader title="" transparent closeIcon />
           </PanelChromeContext.Provider>
@@ -313,12 +202,12 @@ export function SettingsDialog({
                 className="flex items-center gap-2 rounded-full bg-destructive/10 text-destructive px-4 h-10 text-sm font-medium active:scale-[0.97] transition-transform"
               >
                 <IconLogout className="size-4.5" />
-                Log out
+                {t("signOut")}
               </button>
               <button
                 type="button"
                 onClick={() => setEditOpen(true)}
-                aria-label="Edit profile"
+                aria-label={t("editProfile")}
                 className="flex items-center justify-center size-10 rounded-full bg-foreground/8 text-ink active:scale-[0.97] transition-transform"
               >
                 <IconPencil className="size-4.5" />
@@ -330,35 +219,26 @@ export function SettingsDialog({
             {/* Section cards */}
             <div className="space-y-6">
               {sections.map((section) => (
-                <div key={section.title}>
-                  <p className="px-1 ml-5 mb-2 mono-label text-[10px]">
-                    {section.title}
+                <div key={section.key}>
+                  <p className="px-1 ml-5 mb-2 text-[13px] font-bold text-clear-muted">
+                    {t(`sections.${section.key}`)}
                   </p>
                   <div className="rounded-card border border-line bg-surface overflow-hidden">
-                    {section.rows.map(({ key, label, icon: Icon }, index) => {
-                      const divider = index !== section.rows.length - 1 && (
-                        <span className="absolute bottom-0 left-4 right-0 h-px" />
-                      );
-                      const rowClass =
-                        "relative w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-foreground/5 transition-colors";
-
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => openPanel(key)}
-                          className={rowClass}
-                          // Only the Data Health row is a tip target today; the attribute
-                          // is undefined on every other row so the selector stays unique.
-                          data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : undefined}
-                        >
-                          <Icon className="size-6 shrink-0 text-ink" />
-                          <span className="flex-1 text-base font-normal text-ink">{label}</span>
-                          <IconChevronRight className="size-5 text-ink-3 shrink-0" />
-                          {divider}
-                        </button>
-                      );
-                    })}
+                    {section.rows.map(({ key, icon: Icon }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => openPanel(key)}
+                        className="relative w-full flex items-center gap-3.5 px-4 py-3.5 text-left active:bg-foreground/5 transition-colors"
+                        // Only the Data Health row is a tip target today; the attribute
+                        // is undefined on every other row so the selector stays unique.
+                        data-tip-anchor={key === "dataHealth" ? "dataHealthMenu" : undefined}
+                      >
+                        <Icon className="size-6 shrink-0 text-ink" />
+                        <span className="flex-1 text-base font-normal text-ink">{t(`panels.${key}.title`)}</span>
+                        <IconChevronRight className="size-5 text-ink-3 shrink-0" />
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}
@@ -387,19 +267,17 @@ export function SettingsDialog({
               onTouchEnd={onPanelTouchEnd}
               onTouchCancel={onPanelTouchEnd}
             >
-              <PanelChromeContext.Provider value={{ closePanel }}>
-              {/* Panel body — the header sits inside the scroll container as a sticky
-                  row so content blurs and fades under it as it scrolls (HeaderBlurFade).
-                  Self-chromed panels (accounts/categories/recurring) draw their own
-                  sticky header with panel-specific actions, so skip it for those. */}
-              <div className="flex-1 overflow-y-auto pb-[calc(1.5rem+var(--sab))]">
-                {!SELF_CHROMED.has(active) && <PanelHeader title={PANEL_TITLES[active]} />}
-                {HEAVY_KEYS.includes(active) ? (
-                  panels[active as keyof SettingsPanelContent]
-                ) : (
-                  <InlinePanel panelKey={active} financialMonth={financialMonth} budgetRecurringMode={budgetRecurringMode} sharedCostMode={sharedCostMode} />
-                )}
-              </div>
+              <PanelChromeContext.Provider value={{ closePanel, variant: "sheet", title: t(`panels.${active}.title`) }}>
+                {/* Panel body — the header sits inside the scroll container as a sticky
+                    row so content blurs and fades under it as it scrolls. */}
+                <div className="flex-1 overflow-y-auto pb-[calc(1.5rem+var(--sab))]">
+                  <SettingsPanelBody
+                    panelKey={active}
+                    heavy={isHeavyPanel(active) ? panels[active] : undefined}
+                    user={user}
+                    settings={{ financialMonth, budgetRecurringMode, sharedCostMode }}
+                  />
+                </div>
               </PanelChromeContext.Provider>
             </div>
           )}
@@ -407,7 +285,14 @@ export function SettingsDialog({
           {/* Rendered inside DialogContent so it's a NESTED sheet (stacks on top of
               the menu) — closing it returns to the menu instead of tearing down the
               whole settings dialog. */}
-          <ProfileEditDialog open={editOpen} onOpenChange={setEditOpen} user={user} />
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="max-h-[85dvh] overflow-y-auto" title={t("editProfile")}>
+              <div className="flex flex-col gap-7 pt-2">
+                <ProfileForms user={user} />
+                <SecurityForms />
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <div className="pt-6 pb-8 flex flex-col items-center gap-2 text-center opacity-40">
             <LogoMark className="size-8" />
@@ -419,283 +304,5 @@ export function SettingsDialog({
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-// ── Inline (client-only) panels ────────────────────────────────────────────────
-
-function InlinePanel({
-  panelKey,
-  financialMonth,
-  budgetRecurringMode,
-  sharedCostMode,
-}: {
-  panelKey: PanelKey;
-  financialMonth: FinancialMonthConfig;
-  budgetRecurringMode: BudgetRecurringMode;
-  sharedCostMode: SharedCostMode;
-}) {
-  const [addOverrideOpen, setAddOverrideOpen] = useState(false);
-
-  switch (panelKey) {
-    case "import":
-      return <div className="px-4 pt-4"><ImportCsvCard /></div>;
-
-    case "appearance":
-      return (
-        <div className="px-4 pt-4 space-y-3">
-          <ThemeList />
-          <p className="px-2 text-sm text-ink-3">
-            Controls the visual appearance of the app. &quot;System Default&quot; follows your device settings.
-          </p>
-          <AuthBackgroundPicker />
-        </div>
-      );
-
-    case "privacy":
-      return (
-        <div className="px-4 pt-4 space-y-3">
-          <div className="rounded-card border border-line bg-surface p-2">
-            <PrivacyToggle variant="row" />
-          </div>
-          <p className="px-2 text-sm text-ink-3">
-            Blurs all amounts across the app so you can use it in public without revealing balances.
-          </p>
-        </div>
-      );
-
-    case "appLock":
-      return <div className="px-4 pt-4"><AppLockSectionContent /></div>;
-
-    case "language":
-      return (
-        <div className="px-4 pt-4 space-y-3">
-          <LanguageList />
-          <p className="px-2 text-sm text-ink-3">Choose the language for the interface.</p>
-        </div>
-      );
-
-    case "currency":
-      return (
-        <div className="px-4 pt-4 space-y-3">
-          <CurrencyList />
-          <p className="px-2 text-sm text-ink-3">Currency symbol shown on amounts.</p>
-        </div>
-      );
-
-    case "financialMonth":
-      return (
-        <div className="px-4 pt-4">
-          <div className="rounded-card border border-line bg-surface p-5">
-            <FinancieleMaandForm
-              currentStartDay={financialMonth.defaultStartDay}
-              currentWeekendRollback={financialMonth.weekendRollback ?? false}
-            />
-          </div>
-        </div>
-      );
-
-    case "budgetRecurring":
-      // Two related "what counts as spending" switches, so they share one panel
-      // rather than adding a key the settings menu would have to grow an entry for.
-      return (
-        <div className="space-y-6 pb-2">
-          <BudgetRecurringCard initialMode={budgetRecurringMode} />
-          <SharedCostCard initialMode={sharedCostMode} />
-        </div>
-      );
-
-    case "monthOverrides": {
-      const initialOverrides = Object.entries(financialMonth.overrides ?? {}).map(
-        ([month, startDay]) => ({ month, startDay: startDay as number }),
-      );
-      return (
-        <div className="pt-2">
-          <div className="flex justify-end px-4">
-            <button
-              type="button"
-              onClick={() => setAddOverrideOpen(true)}
-              className="text-sm font-medium px-2 py-1"
-            >
-              Add override
-            </button>
-          </div>
-          <MaandUitzonderingenSubPage
-            currentStartDay={financialMonth.defaultStartDay}
-            initialOverrides={initialOverrides}
-            addOpen={addOverrideOpen}
-            onAddOpenChange={setAddOverrideOpen}
-          />
-        </div>
-      );
-    }
-
-    case "help":
-      return (
-        <div className="px-4 pt-4 space-y-3">
-          <div className="rounded-card border border-line bg-surface p-5">
-            <p className="text-sm font-medium text-ink mb-1">Questions or problems?</p>
-            <p className="text-sm text-ink-2">
-              Email support and we&apos;ll get back to you as soon as possible.
-            </p>
-          </div>
-          <a
-            href="mailto:support@arca.app"
-            className="flex items-center gap-3.5 rounded-card border border-line bg-surface px-4 py-3.5 active:bg-surface-2 transition-colors"
-          >
-            <IconHelpCircle className="size-5 text-primary shrink-0" />
-            <span className="flex-1 text-sm font-medium text-ink">Contact support</span>
-            <IconChevronRight className="size-4 text-ink-3" />
-          </a>
-        </div>
-      );
-
-    default:
-      return null;
-  }
-}
-
-// ── Profile edit dialog — all settings shown directly, stacked ──────────────────
-
-function EditSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <h3 className="mono-label text-[10px]">{title}</h3>
-      {children}
-    </section>
-  );
-}
-
-function ProfileEditDialog({
-  open,
-  onOpenChange,
-  user,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  user: User;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto" title="Edit profile">
-        <div className="space-y-6 pt-2">
-          <AvatarFormContent user={user} />
-          <EditSection title="Name"><NameForm user={user} /></EditSection>
-          <EditSection title="Login email"><EmailForm user={user} /></EditSection>
-          <EditSection title="Password"><PasswordForm /></EditSection>
-          <EditSection title="Two-factor authentication"><TwoFactorSectionContent /></EditSection>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function NameForm({ user }: { user: User }) {
-  const router = useRouter();
-  const [name, setName] = useState(user.name);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  async function save() {
-    setSaving(true);
-    setError(null);
-    const fd = new FormData();
-    fd.append("name", name);
-    const result = await updateOwnProfileAction(fd);
-    setSaving(false);
-    if (result?.error) setError(result.error);
-    else { setSuccess(true); router.refresh(); }
-  }
-
-  return (
-    <div className="space-y-3">
-      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-tile px-3 py-2">{error}</div>}
-      {success && <div className="text-sm text-positive bg-positive-soft rounded-tile px-3 py-2">Name updated.</div>}
-      <div className="space-y-1">
-        <Input value={name} onChange={(e) => { setName(e.target.value); setSuccess(false); }} />
-      </div>
-      <Button onClick={save} disabled={saving || !name.trim()} className="w-full">
-        {saving ? "Saving..." : "Save"}
-      </Button>
-    </div>
-  );
-}
-
-function EmailForm({ user }: { user: User }) {
-  const router = useRouter();
-  const [email, setEmail] = useState(user.email);
-  const [password, setPassword] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  async function save() {
-    setSaving(true);
-    setError(null);
-    const fd = new FormData();
-    fd.append("email", email);
-    fd.append("currentPassword", password);
-    const result = await updateOwnEmailAction(fd);
-    setSaving(false);
-    if (result?.error) setError(result.error);
-    else { setSuccess(true); setPassword(""); router.refresh(); }
-  }
-
-  return (
-    <div className="space-y-3">
-      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-tile px-3 py-2">{error}</div>}
-      {success && <div className="text-sm text-positive bg-positive-soft rounded-tile px-3 py-2">Email updated.</div>}
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-ink-2">Email</label>
-        <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setSuccess(false); }} autoComplete="email" />
-      </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-ink-2">Current password</label>
-        <Input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setSuccess(false); }} autoComplete="current-password" />
-      </div>
-      <Button onClick={save} disabled={saving || !email.trim() || !password} className="w-full">
-        {saving ? "Saving..." : "Save"}
-      </Button>
-    </div>
-  );
-}
-
-function PasswordForm() {
-  const [current, setCurrent] = useState("");
-  const [next, setNext] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
-  async function save() {
-    if (!current || !next) return;
-    setSaving(true);
-    setError(null);
-    const fd = new FormData();
-    fd.append("currentPassword", current);
-    fd.append("newPassword", next);
-    const result = await updateOwnPasswordAction(fd);
-    setSaving(false);
-    if (result?.error) setError(result.error);
-    else { setSuccess(true); setCurrent(""); setNext(""); }
-  }
-
-  return (
-    <div className="space-y-3">
-      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-tile px-3 py-2">{error}</div>}
-      {success && <div className="text-sm text-positive bg-positive-soft rounded-tile px-3 py-2">Password updated.</div>}
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-ink-2">Current password</label>
-        <Input type="password" value={current} onChange={(e) => { setCurrent(e.target.value); setSuccess(false); }} autoComplete="current-password" />
-      </div>
-      <div className="space-y-1">
-        <label className="text-sm font-medium text-ink-2">New password</label>
-        <Input type="password" value={next} onChange={(e) => { setNext(e.target.value); setSuccess(false); }} placeholder="At least 8 characters" autoComplete="new-password" />
-      </div>
-      <Button onClick={save} disabled={saving || !current || !next} className="w-full">
-        {saving ? "Saving..." : "Save"}
-      </Button>
-    </div>
   );
 }

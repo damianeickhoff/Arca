@@ -76,6 +76,19 @@ interface IconProps {
   glyphSize?: number;
   /** Rendered instead of the plain placeholder dot when there's no iconKey — e.g. a person's initials. */
   initials?: string | null;
+  /** The Clear look: a pastel tile (the colour at 16%) with the glyph in a deeper shade
+   *  of the same colour, instead of a solid colour chip with a white glyph. Brand logos
+   *  and photos keep their own look, on the grey tile instead of plain white (light grey
+   *  in dark mode too, so dark logos stay visible). Theme-aware through the --clr-* tokens. */
+  soft?: boolean;
+}
+
+/** The soft tile's fill and glyph colour for a category colour. */
+export function softIconColors(color: string) {
+  return {
+    background: `color-mix(in srgb, ${color} 16%, transparent)`,
+    foreground: `color-mix(in srgb, ${color} 72%, var(--clr-ink))`,
+  };
 }
 
 const INITIALS_TEXT_SIZE: Record<string, string> = {
@@ -111,10 +124,17 @@ export function Icon({
   flat,
   initials,
   glyphSize,
+  soft = false,
 }: IconProps) {
   const { wrap, svg: baseSvgSize } = SIZE[size];
   const svgSize = glyphSize ?? baseSvgSize;
-  const shape = round ? "rounded-full" : "rounded-xl";
+  const shape = round ? "rounded-full" : soft ? "rounded-clear-icon" : "rounded-xl";
+  // Soft mode: a logo on the default white backdrop gets the grey tile instead, so it
+  // reads as a tile on a white card (a backdrop colour picked by the user is kept). In
+  // dark mode the tile stays light, or a black logo would vanish.
+  const isDefaultWhite = !background || /^#?(fff|ffffff)$/i.test(background.trim());
+  const logoTile = soft && !backgroundGradient && isDefaultWhite ? "bg-clear-tile dark:bg-clear-ink/90" : "";
+  const softTint = soft && color && !background && !backgroundGradient && !gradient ? softIconColors(color) : null;
 
   const chipBg = flat
     ? "dark:bg-black"
@@ -128,13 +148,31 @@ export function Icon({
       ${backgroundGradient[0]},
       ${backgroundGradient[1]}
     )`;
-  } else if (background) {
+  } else if (background && !(soft && isDefaultWhite)) {
     chipStyle.backgroundColor = background;
   }
 
   const gradId = gradient
     ? `ig-${gradient[0].replace("#", "")}-${gradient[1].replace("#", "")}`
     : null;
+
+  if (!iconKey && soft) {
+    if (softTint) chipStyle.backgroundColor = softTint.background;
+    return (
+      <div
+        className={`${wrap} ${shape} ${softTint || background || backgroundGradient ? "" : "bg-clear-tile"} shrink-0 flex items-center justify-center font-clear text-clear-muted`}
+        style={chipStyle}
+      >
+        {initials ? (
+          <span className={`${INITIALS_TEXT_SIZE[size]} font-extrabold leading-none select-none`} style={softTint ? { color: softTint.foreground } : undefined}>
+            {initials}
+          </span>
+        ) : (
+          <Tabler.IconQuestionMark size={svgSize} />
+        )}
+      </div>
+    );
+  }
 
   if (!iconKey) {
     const solid = color && !background && !backgroundGradient;
@@ -169,7 +207,7 @@ export function Icon({
     const { src, scale, ox, oy } = parseImgKey(iconKey);
     return (
       <div
-        className={`${wrap} ${shape} ${chipBg} shrink-0 relative overflow-hidden`}
+        className={`${wrap} ${shape} ${logoTile || chipBg} shrink-0 relative overflow-hidden`}
         style={chipStyle}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -191,12 +229,13 @@ export function Icon({
 
   if (iconKey.startsWith("custom:")) {
     const char = iconKey.slice(7);
-    const solid = color && !background && !backgroundGradient;
+    const solid = !soft && color && !background && !backgroundGradient;
     if (solid) chipStyle.backgroundColor = color!;
-    const fg = solid ? contrastIconColor(color!) : (color ?? undefined);
+    if (softTint) chipStyle.backgroundColor = softTint.background;
+    const fg = softTint ? softTint.foreground : solid ? contrastIconColor(color!) : (color ?? undefined);
     return (
       <div
-        className={`${wrap} ${shape} ${solid ? "" : chipBg} shrink-0 flex items-center justify-center`}
+        className={`${wrap} ${shape} ${solid || softTint ? "" : soft ? "bg-clear-tile" : chipBg} shrink-0 flex items-center justify-center`}
         style={chipStyle}
       >
         <span
@@ -219,7 +258,7 @@ export function Icon({
 
     return (
       <div
-        className={`${wrap} ${shape} ${chipBg} shrink-0 relative overflow-hidden`}
+        className={`${wrap} ${shape} ${logoTile || chipBg} shrink-0 relative overflow-hidden`}
         style={chipStyle}
         aria-label={icon.title}
       >
@@ -251,17 +290,21 @@ export function Icon({
   // color = the icon glyph color; the chip gets an automatic muted tint of that
   // same color (a lighter, opacity-based wash) unless an explicit background is set.
   const hasColorBackground =
-    color && !background && !backgroundGradient && !gradient;
+    !soft && color && !background && !backgroundGradient && !gradient;
 
   if (hasColorBackground) {
     chipStyle.backgroundColor = color;
   }
+  if (softTint) chipStyle.backgroundColor = softTint.background;
 
   const fg = gradient
     ? undefined
-    : hasColorBackground
-      ? contrastIconColor(color!)
-      : color ?? "#94a3b8";
+    : softTint
+      ? softTint.foreground
+      : hasColorBackground
+        ? contrastIconColor(color!)
+        : color ?? (soft ? "var(--clr-muted)" : "#94a3b8");
+  const softEmpty = soft && !softTint && !background && !backgroundGradient ? "bg-clear-tile" : "";
 
   const iconStyle: React.CSSProperties =
     gradient && gradId
@@ -273,7 +316,7 @@ export function Icon({
   if (!TablerIconComp) {
     return (
       <div
-        className={`${wrap} ${shape} ${hasColorBackground ? "" : chipBg} shrink-0`}
+        className={`${wrap} ${shape} ${hasColorBackground || softTint ? "" : softEmpty || chipBg} shrink-0`}
         style={chipStyle}
       />
     );
@@ -296,7 +339,7 @@ export function Icon({
       )}
 
       <div
-        className={`${wrap} ${shape} ${hasColorBackground ? "" : chipBg} shrink-0 flex items-center justify-center`}
+        className={`${wrap} ${shape} ${hasColorBackground || softTint ? "" : softEmpty || chipBg} shrink-0 flex items-center justify-center`}
         style={chipStyle}
       >
         <TablerIconComp size={svgSize} color={fg} style={iconStyle} />

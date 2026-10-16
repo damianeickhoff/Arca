@@ -47,8 +47,13 @@ function DropdownMenuContent({
         // then reads as an outside-press and vaul dismisses the sheet before the item
         // can act. The marker tells keepOpenOnOutside (components/ui/dialog.tsx) that
         // this subtree belongs to the sheet. Inert outside a dialog.
+        // pointer-events-auto: a modal vaul sheet (Radix Dialog underneath) sets
+        // `pointer-events: none` on <body> while it's open, and this portal inherits it —
+        // the menu then opens but every tap falls through it (the transaction panel's
+        // More actions, opened in a sheet from Home). The sheet itself opts back in the
+        // same way.
         data-dialog-keep-open=""
-        className="isolate z-[200] outline-none"
+        className="pointer-events-auto isolate z-[200] outline-none"
         align={align}
         alignOffset={alignOffset}
         side={side}

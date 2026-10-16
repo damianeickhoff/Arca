@@ -268,16 +268,6 @@ export function computeDebtPayoffSchedule(
   );
 }
 
-export function fmtShortMonth(date: Date) {
-  return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
-}
-export function fmtLongMonth(date: Date) {
-  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-}
-export function fmtLongDate(date: Date) {
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-}
-
 export type ComputedDebt = {
   debt: Debt;
   // The recurring bills that pay this debt off — their paid months drive amountPaid.
@@ -296,13 +286,8 @@ export type ComputedDebt = {
   lastRecordedMonth: string | null;
 };
 
-export type DebtChartRow = { name: string; Total: number; [key: string]: number | string };
-export type DebtChartSeries = { key: string; label: string; color: string };
-
-// Prop bag shared by DebtsMobile/DebtsDesktop — both are handed the exact same
-// server-computed data from page.tsx, only the layout differs per breakpoint.
+/** What the Debts page loads (see load-debts.ts). */
 export interface DebtsPageData {
-  rows: Debt[];
   bills: RecurringItem[];
   computed: ComputedDebt[];
   /** Debts in the "owed" direction — money others owe you. */
@@ -310,22 +295,49 @@ export interface DebtsPageData {
   totalDebt: number;
   /** Sum of current balances of "owed" debts (money coming in). */
   totalOwed: number;
-  /** totalDebt − totalOwed. */
-  netDebt: number;
-  totalStarting: number;
-  totalPaid: number;
-  totalPaidPct: number;
   totalMonthly: number;
-  latestPaymentDate: Date | null;
-  snowballTarget: ComputedDebt | null;
-  debtHistory: number[];
-  hasChart: boolean;
-  chartData: DebtChartRow[];
-  chartSeries: DebtChartSeries[];
-  /** "Owed" direction (money coming in) rollups, mirroring the "owe" totals above. */
-  totalOwedStarting: number;
-  totalOwedPaid: number;
-  totalOwedPaidPct: number;
-  totalOwedMonthly: number;
-  latestOwedPaymentDate: Date | null;
+}
+
+/** This month's free to spend, for the extra-payment simulator (see load-debts.ts). */
+export interface DebtsFreeToSpend {
+  /** Recurring income this month; 0 means there is nothing to measure against. */
+  income: number;
+  /** Free to spend each month before any extra payment. */
+  free: number;
+}
+
+// ── Sorting ───────────────────────────────────────────────────────────────────
+
+/** How "Your debts" is ordered — and so which debt the simulator's extra goes to first. */
+export const DEBT_SORTS = ["interest", "smallest", "soonest", "largest"] as const;
+export type DebtSort = (typeof DEBT_SORTS)[number];
+
+/** A ?sort= value as a sort; anything unknown is the default, highest interest first. */
+export function parseDebtSort(value: string | null | undefined): DebtSort {
+  return (DEBT_SORTS as readonly string[]).includes(value ?? "") ? (value as DebtSort) : "interest";
+}
+
+/**
+ * Debts in the chosen order. Paid-off debts always come last; ties go to the smaller
+ * balance. "Paid off soonest" puts debts without a payoff date (no payment, or one that
+ * never covers the interest) after every debt that has one.
+ */
+export function sortDebts<T extends Pick<ComputedDebt, "debt" | "currentBalance" | "monthsRemaining" | "neverPaysOff">>(
+  list: readonly T[],
+  sort: DebtSort,
+): T[] {
+  const rate = (c: T) => c.debt.interestRate ?? 0;
+  const months = (c: T) => (c.neverPaysOff || c.monthsRemaining == null ? Infinity : c.monthsRemaining);
+  const compare: Record<DebtSort, (a: T, b: T) => number> = {
+    interest: (a, b) => rate(b) - rate(a),
+    smallest: (a, b) => a.currentBalance - b.currentBalance,
+    soonest: (a, b) => (months(a) === months(b) ? 0 : months(a) < months(b) ? -1 : 1),
+    largest: (a, b) => b.currentBalance - a.currentBalance,
+  };
+  return [...list].sort(
+    (a, b) =>
+      Number(a.currentBalance <= 0) - Number(b.currentBalance <= 0) ||
+      compare[sort](a, b) ||
+      a.currentBalance - b.currentBalance,
+  );
 }

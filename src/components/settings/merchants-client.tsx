@@ -10,6 +10,7 @@ import { MerchantSettingsClient, MerchantSettingsOverlay } from "@/components/se
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { MerchantListItem } from "@/lib/merchants";
+import { MoneyText } from "@/components/clear/money";
 
 interface Props {
   initialMerchants: MerchantListItem[];
@@ -87,7 +88,7 @@ export function MerchantsClient({ initialMerchants, panelHeader = true }: Props)
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-lg truncate leading-tight">{m.name}</p>
                       <p className="text-sm text-ink-3 truncate mt-0.5 tabular-nums">
-                        {m.transactionCount} {m.transactionCount === 1 ? "transaction" : "transactions"} · {formatEur(m.totalSpent)}
+                        {m.transactionCount} {m.transactionCount === 1 ? "transaction" : "transactions"} · <MoneyText>{formatEur(m.totalSpent)}</MoneyText>
                       </p>
                     </div>
                     <ChevronRight className="size-4 text-ink-3 shrink-0" />

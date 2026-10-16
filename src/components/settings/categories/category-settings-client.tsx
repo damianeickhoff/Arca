@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { ChevronLeft } from "lucide-react";
 import {
@@ -15,13 +17,14 @@ import type { Category, CategoryRule, Bank } from "@/db/schema";
 import { Icon, isBrandIcon } from "@/components/icon";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RuleDialog, emptyRuleDraft, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
 import { ColorPicker } from "@/components/color-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { OptionDropdown } from "@/components/option-dropdown";
 import { cn } from "@/lib/utils";
 import { SHEET_COLUMN } from "@/components/page-container";
 import { normalizeBudgetType, ruleAmountLabel } from "@/lib/format";
+import { MoneyText } from "@/components/clear/money";
 
 const PRESET_COLORS = [
   "#22c55e", "#3b82f6", "#ef4444", "#f97316", "#a855f7",
@@ -47,6 +50,9 @@ interface Props {
 
 export function CategorySettingsClient({ category, rules: initialRules, banks, categories, onClose }: Props) {
   const router = useRouter();
+  const t = useTranslations("settings.categories");
+  const tRule = useTranslations("activity.rule");
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(false);
   const [iconOpen, setIconOpen] = useState(false);
 
@@ -102,7 +108,13 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
   }
 
   async function remove() {
-    if (!confirm(`Delete category "${category.name}"? All linked transactions, recurring items, budget targets, and rules will also be deleted.`)) return;
+    const ok = await confirm({
+      title: t("deleteTitle", { name: category.name }),
+      body: t("deleteBody"),
+      confirmLabel: t("deleteConfirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     setLoading(true);
     const res = await fetch("/api/categories", {
       method: "DELETE",
@@ -120,72 +132,25 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
 
   // ─── Rules ────────────────────────────────────────────────────────────────
   const [rulesOpen, setRulesOpen] = useState(false);
-  const [addRuleOpen, setAddRuleOpen] = useState(false);
-  const [editingRule, setEditingRule] = useState<number | null>(null);
-  const [ruleLoading, setRuleLoading] = useState(false);
-  const emptyRule = { namePattern: "", matchType: "contains" as "contains" | "word" | "exact", direction: "", bankId: "" };
-  const [newRule, setNewRule] = useState(emptyRule);
-  const [editForm, setEditForm] = useState(emptyRule);
+  // The rule being added (id null) or edited; kept after closing for the exit animation.
+  const [ruleEditor, setRuleEditor] = useState<{ id: number | null; draft: RuleDraft } | null>(null);
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
 
-  function matchTypeToFlags(matchType: "contains" | "word" | "exact") {
-    return { nameWildcard: matchType === "contains", nameWholeWord: matchType === "word" };
-  }
-  function ruleToMatchType(rule: CategoryRule): "contains" | "word" | "exact" {
-    if (rule.nameWholeWord) return "word";
-    if (rule.nameWildcard) return "contains";
-    return "exact";
+  function openRule(rule: CategoryRule | null) {
+    setRuleEditor({ id: rule?.id ?? null, draft: rule ? ruleDraftFromRule(rule) : emptyRuleDraft(category.id) });
+    setRuleDialogOpen(true);
   }
 
-  async function addRule() {
-    if (!newRule.namePattern && !newRule.bankId) return;
-    setRuleLoading(true);
+  async function saveRule(fields: RuleFields) {
+    const id = ruleEditor?.id ?? null;
     const res = await fetch("/api/category-rules", {
-      method: "POST",
+      method: id == null ? "POST" : "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        categoryId: category.id,
-        namePattern: newRule.namePattern || null,
-        ...matchTypeToFlags(newRule.matchType),
-        amount: null,
-        direction: newRule.direction || null,
-        bankId: newRule.bankId ? parseInt(newRule.bankId) : null,
-      }),
+      body: JSON.stringify(id == null ? { categoryId: category.id, ...fields } : { id, ...fields }),
     });
-    const created = await res.json();
-    setRules((r) => [...r, created]);
-    setNewRule(emptyRule);
-    setAddRuleOpen(false);
-    await fetch("/api/apply-rules", { method: "POST" });
-    setRuleLoading(false);
-    router.refresh();
-  }
-
-  function startEdit(rule: CategoryRule) {
-    setEditingRule(rule.id);
-    setEditForm({
-      namePattern: rule.namePattern ?? "",
-      matchType: ruleToMatchType(rule),
-      direction: rule.direction ?? "",
-      bankId: rule.bankId !== null && rule.bankId !== undefined ? String(rule.bankId) : "",
-    });
-  }
-
-  async function saveEdit(id: number) {
-    const res = await fetch("/api/category-rules", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id,
-        namePattern: editForm.namePattern || null,
-        ...matchTypeToFlags(editForm.matchType),
-        amount: null,
-        direction: editForm.direction || null,
-        bankId: editForm.bankId ? parseInt(editForm.bankId) : null,
-      }),
-    });
-    const updated = await res.json();
-    setRules((r) => r.map((x) => (x.id === id ? updated : x)));
-    setEditingRule(null);
+    const saved: CategoryRule = await res.json();
+    setRules((r) => (id == null ? [...r, saved] : r.map((x) => (x.id === id ? saved : x))));
+    setRuleDialogOpen(false);
     await fetch("/api/apply-rules", { method: "POST" });
     router.refresh();
   }
@@ -321,7 +286,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
                           <span className="font-mono text-ink">&ldquo;{rule.namePattern}&rdquo;</span>
                         </span>
                       )}
-                      {ruleAmountLabel(rule) && <span className="ml-1 text-xs">· {ruleAmountLabel(rule)}</span>}
+                      <MoneyText>{ruleAmountLabel(rule) && <span className="ml-1 text-xs">· <MoneyText>{ruleAmountLabel(rule)}</MoneyText></span>}</MoneyText>
                       {rule.direction && <span className="ml-1 text-xs">· {rule.direction === "income" ? "income" : "expense"}</span>}
                       {rule.bankId && (() => {
                         const bank = banks.find((b) => b.id === rule.bankId);
@@ -329,7 +294,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
                       })()}
                     </div>
                     <div className="flex gap-1.5 shrink-0">
-                      <button onClick={() => startEdit(rule)} className="size-9 flex items-center justify-center rounded-sm bg-white/5 hover:bg-foreground/10 text-ink cursor-pointer">
+                      <button onClick={() => openRule(rule)} className="size-9 flex items-center justify-center rounded-sm bg-white/5 hover:bg-foreground/10 text-ink cursor-pointer">
                         <EllipsisVertical className="size-5" />
                       </button>
                       <button onClick={() => deleteRule(rule.id)} className="size-9 flex items-center justify-center rounded-sm bg-destructive/10 hover:bg-destructive/20 text-destructive cursor-pointer">
@@ -341,7 +306,7 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
               ))}
 
               <button
-                onClick={() => { setNewRule(emptyRule); setAddRuleOpen(true); }}
+                onClick={() => openRule(null)}
                 className="w-full flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium text-ink-2 active:bg-black/[0.04] dark:active:bg-white/10 transition-colors cursor-pointer"
               >
                 <Plus className="size-4" />
@@ -352,36 +317,16 @@ export function CategorySettingsClient({ category, rules: initialRules, banks, c
         </div>
       </div>
 
-      {/* Add/edit rule dialog */}
-      <Dialog
-        open={addRuleOpen || editingRule !== null}
-        onOpenChange={(v) => { if (!v) { setAddRuleOpen(false); setEditingRule(null); } }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{addRuleOpen ? "New rule" : "Edit rule"}</DialogTitle>
-          </DialogHeader>
-          {addRuleOpen ? (
-            <RuleForm
-              value={newRule}
-              onChange={setNewRule}
-              banks={banks}
-              disabled={ruleLoading || (!newRule.namePattern && !newRule.bankId)}
-              onSubmit={addRule}
-              onCancel={() => { setAddRuleOpen(false); setNewRule(emptyRule); }}
-            />
-          ) : editingRule !== null ? (
-            <RuleForm
-              value={editForm}
-              onChange={setEditForm}
-              banks={banks}
-              disabled={false}
-              onSubmit={() => saveEdit(editingRule)}
-              onCancel={() => setEditingRule(null)}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <RuleDialog
+        open={ruleDialogOpen}
+        onOpenChange={setRuleDialogOpen}
+        initial={ruleEditor?.draft ?? null}
+        title={ruleEditor?.id == null ? tRule("titleNew") : tRule("titleEdit")}
+        category={{ name: form.name || category.name, icon: form.icon, color: effectiveColor }}
+        banks={banks}
+        submitLabel={tRule("save")}
+        onSubmit={saveRule}
+      />
 
       {/* Sticky save — embedded mode sits on the dialog's #1c1c1e sheet, not the page's
           pure-black --background, so the fade must match that instead of it, otherwise
@@ -421,79 +366,4 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 function Divider() {
   return <div className="h-px bg-foreground/8 dark:bg-white/10 mx-4" />;
-}
-
-type RuleValue = { namePattern: string; matchType: "contains" | "word" | "exact"; direction: string; bankId: string };
-
-function RuleForm({
-  value, onChange, banks, disabled, onSubmit, onCancel,
-}: {
-  value: RuleValue;
-  onChange: React.Dispatch<React.SetStateAction<RuleValue>>;
-  banks: Bank[];
-  disabled: boolean;
-  onSubmit: () => void;
-  onCancel: () => void;
-}) {
-  const matchOptions = [
-    { value: "contains", label: "Contains" },
-    { value: "word", label: "Whole word" },
-    { value: "exact", label: "Exact" },
-  ];
-  const dirOptions = [
-    { value: "", label: "Both" },
-    { value: "income", label: "Income" },
-    { value: "expense", label: "Expense" },
-  ];
-  return (
-    <div className="space-y-2.5">
-      <Input
-        placeholder="Name (optional)"
-        value={value.namePattern}
-        onChange={(e) => onChange((r) => ({ ...r, namePattern: e.target.value }))}
-        className="text-sm bg-[var(--dialog-content-background)]"
-      />
-      <Segmented value={value.matchType} options={matchOptions} onChange={(v) => onChange((r) => ({ ...r, matchType: v as RuleValue["matchType"] }))} />
-      <Segmented value={value.direction} options={dirOptions} onChange={(v) => onChange((r) => ({ ...r, direction: v }))} />
-      {banks.length > 0 && (
-        <select
-          value={value.bankId}
-          onChange={(e) => onChange((r) => ({ ...r, bankId: e.target.value }))}
-          className="h-11 w-full rounded-md px-4 text-sm text-ink bg-[var(--dialog-content-background)]"
-        >
-          <option value="">All accounts</option>
-          {banks.map((bank) => (
-            <option key={bank.id} value={String(bank.id)}>
-              {bank.displayName ?? bank.accountNumber ?? `Bank ${bank.id}`}
-            </option>
-          ))}
-        </select>
-      )}
-      <div className="flex gap-2 pt-1">
-        <Button size="lg" onClick={onSubmit} disabled={disabled} className="flex-1">
-            Save
-        </Button>
-        <Button size="lg" variant="ghost" onClick={onCancel} className="flex-1">Cancel</Button>
-      </div>
-    </div>
-  );
-}
-
-function Segmented({ value, options, onChange }: { value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
-  return (
-    <div className="flex h-12 rounded-md overflow-hidden text-xs">
-      {options.map((opt, i) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={`flex-1 px-2 py-2.5 transition-colors ${
-            value === opt.value ? "bg-[var(--dialog-content-background)] dark:bg-foreground dark:text-black text-foreground font-medium" : "bg-foreground/7 text-foreground/60"
-          } ${i > 0 ? "" : ""}`}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
 }

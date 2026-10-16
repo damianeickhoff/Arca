@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconTrashFilled as Trash2,
   IconCheckFilled as Check,
@@ -16,9 +17,8 @@ import { PickerField } from "@/components/picker-field";
 import { Icon } from "@/components/icon";
 import { Button } from "@/components/ui/button";
 import type { BrandIconRule } from "@/db/schema";
-import { FloatingAddButton } from "@/components/floating-add-button";
-import { PanelHeader } from "@/components/settings/settings-panel-chrome";
-import { cn } from "@/lib/utils";
+import { ClearButton } from "@/components/clear/button";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 
 type MatchType = "contains" | "word" | "exact";
 
@@ -31,16 +31,12 @@ function flagsToMatchType(rule: BrandIconRule): MatchType {
   return "exact";
 }
 
-interface Props {
-  initialRules: BrandIconRule[];
-  /** Renders the shared sticky PanelHeader (title + add button) — on for the settings-
-   *  dialog panel, which supplies no chrome of its own. The legacy standalone /settings
-   *  page draws its own header/add-button around this component, so it opts out. */
-  panelHeader?: boolean;
-}
-
-export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
+/** The brand-icon rules ("names containing KFC get the KFC logo"), shown as the
+ *  second section of the Merchants settings panel, under the merchant list. */
+export function BrandIconsClient({ initialRules }: { initialRules: BrandIconRule[] }) {
+  const t = useTranslations("settings.brandIcons");
   const router = useRouter();
+  const confirm = useConfirm();
   const [rules, setRules] = useState<BrandIconRule[]>(initialRules);
 
   // router.refresh() re-runs the server component and passes a new initialRules array,
@@ -60,7 +56,13 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
   const [editBgColor, setEditBgColor]     = useState<string | null>(null);
 
   async function deleteRule(id: number) {
-    if (!confirm("Delete this rule?")) return;
+    const ok = await confirm({
+      title: t("deleteRuleTitle"),
+      body: t("deleteRuleBody"),
+      confirmLabel: t("deleteRuleConfirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     await fetch("/api/brand-icon-rules", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -96,13 +98,19 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
 
   return (
     <>
-      {panelHeader && <PanelHeader title="Brand Icons" action={<BrandIconRuleAddButton variant="header" />} />}
-      <div className="px-4 pt-1 pb-8 space-y-6">
+      <div className="px-4 pt-2 pb-8 space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 font-clear text-clear-ink">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h3 className="m-0 text-lg font-bold">{t("title")}</h3>
+            <span className="text-sm text-clear-muted">{t("subtitle")}</span>
+          </div>
+          <BrandIconRuleAddButton />
+        </div>
         {rules.length > 0 ? (
           <section>
             <div className="flex items-baseline justify-between px-1 mb-2.5">
-              <h2 className="text-sm font-medium text-ink-3">Rules</h2>
-              <span className="text-sm font-medium text-ink-3 tabular-nums">{rules.length}</span>
+              <h4 className="m-0 text-sm font-bold text-clear-muted">{t("rules")}</h4>
+              <span className="text-sm font-bold text-clear-muted tabular-nums">{rules.length}</span>
             </div>
             <div className="space-y-3">
               {rules.map((rule) => (
@@ -110,10 +118,7 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
                   key={rule.id}
                   type="button"
                   onClick={() => startEdit(rule)}
-                  className={cn(
-                    "w-full flex items-center gap-4 rounded-row px-4 py-3.5 text-left active:scale-[0.99] transition-transform",
-                    panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface",
-                  )}
+                  className="w-full flex items-center gap-4 rounded-clear-row bg-clear-tile px-4 py-3.5 text-left active:scale-[0.99] transition-transform"
                 >
                   <span className="size-12 shrink-0">
                     <Icon iconKey={rule.brandIcon} round size="xl" background={rule.iconBgColor ?? null} />
@@ -121,7 +126,7 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-lg truncate leading-tight">{rule.namePattern}</p>
                     <p className="text-sm text-ink-3 truncate mt-0.5">
-                      {rule.nameWholeWord ? "Whole word" : rule.nameWildcard ? "Contains" : "Exact"}
+                      {t(rule.nameWholeWord ? "matchWord" : rule.nameWildcard ? "matchContains" : "matchExact")}
                     </p>
                   </div>
                   <Pencil className="size-4 text-ink-3 shrink-0" />
@@ -130,8 +135,8 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
             </div>
           </section>
         ) : (
-          <div className={cn("rounded-card py-16 text-center text-ink-3", panelHeader ? "bg-[var(--dialog-content-background)]" : "bg-surface")}>
-            <p className="text-sm">No rules yet</p>
+          <div className="rounded-clear-tile bg-clear-tile py-10 text-center text-clear-muted">
+            <p className="text-sm">{t("empty")}</p>
           </div>
         )}
       </div>
@@ -187,7 +192,8 @@ export function BrandIconsClient({ initialRules, panelHeader = true }: Props) {
 
 // ─── Add rule (popup) ────────────────────────────────────────────────────────
 
-export function BrandIconRuleAddButton({ variant = "default" }: { variant?: "default" | "icon" | "fab" | "header" }) {
+function BrandIconRuleAddButton() {
+  const t = useTranslations("settings.brandIcons");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -214,34 +220,10 @@ export function BrandIconRuleAddButton({ variant = "default" }: { variant?: "def
 
   return (
     <>
-      {variant === "fab" ? (
-        <FloatingAddButton onClick={() => setOpen(true)} ariaLabel="Add rule" />
-      ) : variant === "icon" ? (
-        <button
-          onClick={() => setOpen(true)}
-          className="glass-icon-btn size-12"
-          aria-label="Add rule"
-        >
-          <Plus className="size-5 text-ink dark:text-gray-300" />
-        </button>
-      ) : variant === "header" ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Add rule"
-          className="size-11 rounded-full border border-line bg-surface hover:bg-surface-2 flex items-center justify-center active:scale-[0.97] transition-transform shrink-0"
-        >
-          <Plus className="size-5 text-ink" />
-        </button>
-      ) : (
-        <button
-          onClick={() => setOpen(true)}
-          className="size-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-opacity shrink-0"
-          title="Add rule"
-        >
-          <Plus className="size-5" />
-        </button>
-      )}
+      <ClearButton variant="secondary" size="sm" onClick={() => setOpen(true)}>
+        <Plus aria-hidden />
+        {t("addRule")}
+      </ClearButton>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90dvh] overflow-y-auto">
@@ -271,7 +253,7 @@ export function BrandIconRuleAddButton({ variant = "default" }: { variant?: "def
               disabled={saving || !newPattern || !newIcon}
               className="w-full"
             >
-              {saving ? "Opslaan…" : "Add rule"}
+              {saving ? t("saving") : t("addRule")}
             </Button>
           </div>
         </DialogContent>

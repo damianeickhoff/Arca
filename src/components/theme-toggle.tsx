@@ -30,7 +30,7 @@ export function ThemeList() {
   );
 }
 
-// 3-way Light / Auto / Dark segmented control, sized to sit where ToggleSwitch does
+// 3-way Light / Auto / Dark segmented control, sized to sit where a switch does
 // in sidebar rows.
 export function ThemeSegmented() {
   const { mode, setMode } = useTheme();

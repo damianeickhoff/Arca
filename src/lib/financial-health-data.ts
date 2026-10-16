@@ -106,7 +106,7 @@ function coefficientOfVariation(values: number[]): number | null {
  *   • transfers into savings categories are not spending — they're the savings the
  *     savings rate is trying to measure (same rule as getMonthComparison).
  */
-async function getMonthTotals(months: string[], financialMonth: FinancialMonthConfig): Promise<MonthTotals[]> {
+export async function getMonthTotals(months: string[], financialMonth: FinancialMonthConfig): Promise<MonthTotals[]> {
   if (months.length === 0) return [];
 
   const ranges = months.map((month) => ({ month, ...financialMonthRangeByMonth(month, financialMonth) }));

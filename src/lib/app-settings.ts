@@ -48,14 +48,6 @@ export async function getBudgetStrategy(): Promise<{ nodig: number; willen: numb
   return { nodig: 60, willen: 25, sparen: 15 };
 }
 
-// Whether unused category budget from last month carries into this month's target.
-// Scope: category targets only, single-month lookback, no compounding chains — see
-// src/app/budget/page.tsx#getBudgetData for the calculation.
-export async function getBudgetRollover(): Promise<boolean> {
-  const row = await db.select().from(appSettings).where(eq(appSettings.key, "budget_rollover")).limit(1);
-  return row[0]?.value === "1";
-}
-
 // How transactions matched to a recurring bill count toward a category's budget spend:
 //   "always"   — always counted
 //   "exclude"  — never counted (a recurring bill isn't something you budget down this month)

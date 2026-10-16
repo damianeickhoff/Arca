@@ -7,6 +7,7 @@ import { Icon } from "@/components/icon";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { RecurringItem } from "@/db/schema";
+import { MoneyText } from "@/components/clear/money";
 
 // Multi-select sheet for the recurring bills that pay a debt off — same staged-selection
 // pattern as CategoryMultiPicker/AccountMultiPicker (selection only commits when the
@@ -109,7 +110,7 @@ export function RecurringMultiPicker({
                 <Icon iconKey={bill.icon} color={bill.iconColor} round size="sm" />
                 <span className="flex-1 min-w-0 text-sm truncate">{bill.name}</span>
                 {bill.amount != null && (
-                  <span className="text-xs text-foreground/50 tabular-nums shrink-0">{formatEur(bill.amount)}</span>
+                  <span className="text-xs text-foreground/50 tabular-nums shrink-0"><MoneyText>{formatEur(bill.amount)}</MoneyText></span>
                 )}
                 <span
                   className={cn(

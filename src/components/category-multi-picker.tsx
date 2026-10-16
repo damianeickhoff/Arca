@@ -1,29 +1,38 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { IconCheck as Check, IconSearch as Search } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ResponsivePopover } from "@/components/clear/responsive-popover";
+import { clearButtonVariants } from "@/components/clear/button-variants";
 import { Icon } from "@/components/icon";
+import { useIsDesktop } from "@/lib/use-is-desktop";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/db/schema";
 
-// Multi-select category sheet — grouped the same way as the single-select
+// Multi-select category picker — grouped the same way as the single-select
 // CategoryGrid (top-level cards with children indented beneath), but with a
-// checkbox per row instead of a radio dot, and selection only commits when the
-// header's checkmark is tapped (X/backdrop-dismiss discards the staged picks).
+// checkbox per row instead of a radio dot, and selection only commits on confirm
+// (X/backdrop-dismiss discards the staged picks). With a `trigger` it is a popover
+// anchored to that chip on desktop and a sheet on phones; without one, always a sheet.
 export function CategoryMultiPicker({
   categories,
   selected,
   open,
   onOpenChange,
   onApply,
+  trigger,
 }: {
   categories: Category[];
   selected: string[];
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onApply: (ids: string[]) => void;
+  trigger?: React.ReactElement<React.ComponentProps<"button">>;
 }) {
+  const t = useTranslations("transactions.filters");
+  const isDesktop = useIsDesktop();
   const [staged, setStaged] = useState<string[]>(selected);
   const [search, setSearch] = useState("");
 
@@ -69,71 +78,97 @@ export function CategoryMultiPicker({
     onOpenChange(false);
   }
 
+  const searchField = (
+    <div className="relative flex-1">
+      <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-clear-muted" />
+      <input
+        type="text"
+        placeholder={t("searchCategory")}
+        aria-label={t("searchCategory")}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="h-11 w-full rounded-full bg-clear-tile pl-10 pr-4 text-sm text-clear-ink outline-none placeholder:text-clear-placeholder focus:ring-3 focus:ring-clear-ember/25"
+      />
+    </div>
+  );
+
+  const list = (popover: boolean) => (
+    <div className="flex flex-col gap-1.5">
+      {topLevel.map((cat) => {
+        const children = childrenByParentId.get(cat.id) ?? [];
+        return (
+          <div key={cat.id} className={popover ? undefined : "rounded-clear-tile bg-clear-card p-1.5"}>
+            <CategoryCheckRow category={cat} active={staged.includes(String(cat.id))} onClick={() => toggle(String(cat.id))} />
+            {children.length > 0 && (
+              <div className="mt-0.5 flex flex-col gap-0.5 pl-4">
+                {children.map((child) => (
+                  <CategoryCheckRow
+                    key={child.id}
+                    category={child}
+                    iconSize="xs"
+                    active={staged.includes(String(child.id))}
+                    onClick={() => toggle(String(child.id))}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {topLevel.length === 0 && <p className="py-6 text-center text-sm text-clear-muted">{t("noCategories")}</p>}
+    </div>
+  );
+
+  const confirmButton = (
+    <button type="button" onClick={confirm} aria-label={t("confirm")} className={clearButtonVariants({ size: "icon" })}>
+      <Check className="size-5" />
+    </button>
+  );
+
+  const sheetFooter = (
+    <div className="flex items-center gap-3">
+      {searchField}
+      <button type="button" onClick={toggleAll} className={clearButtonVariants({ variant: "secondary" })}>
+        {allSelected ? t("deselectAll") : t("selectAll")}
+      </button>
+    </div>
+  );
+
+  if (!trigger) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent fullHeight hideHandle className="pt-3" title={t("selectCategories")} headerAction={confirmButton} footer={sheetFooter}>
+          {list(false)}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        fullHeight
-        hideHandle
-        className="pt-3"
-        title="Select Categories"
-        headerAction={
-          <button
-            type="button"
-            onClick={confirm}
-            aria-label="Confirm"
-            className="size-11 rounded-full bg-clear-primary text-clear-card flex items-center justify-center"
-          >
-            <Check className="size-5" />
-          </button>
-        }
-        footer={
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-clear-ink/40 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Search category"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-11 text-sm rounded-full pl-10 pr-4 bg-clear-primary/5 focus:outline-none"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={toggleAll}
-              className="shrink-0 h-11 rounded-full bg-clear-primary/5 px-4 text-sm font-semibold text-clear-ink"
-            >
-              {allSelected ? "Deselect All" : "Select All"}
+    <ResponsivePopover
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t("selectCategories")}
+      trigger={trigger}
+      sheet={{ fullHeight: true, hideHandle: true, className: "pt-3", headerAction: confirmButton }}
+      footer={
+        isDesktop ? (
+          <div className="flex items-center justify-between gap-2">
+            <button type="button" onClick={toggleAll} className={clearButtonVariants({ variant: "ghost", size: "sm" })}>
+              {allSelected ? t("deselectAll") : t("selectAll")}
+            </button>
+            <button type="button" onClick={confirm} className={clearButtonVariants({ size: "sm" })}>
+              {t("apply")}
             </button>
           </div>
-        }
-      >
-        <div className="flex flex-col gap-1.5">
-          {topLevel.map((cat) => {
-            const children = childrenByParentId.get(cat.id) ?? [];
-            return (
-              <div key={cat.id} className="rounded-xl bg-clear-card p-1.5">
-                <CategoryCheckRow category={cat} active={staged.includes(String(cat.id))} onClick={() => toggle(String(cat.id))} />
-                {children.length > 0 && (
-                  <div className="flex flex-col gap-1.5 mt-1.5 pl-4">
-                    {children.map((child) => (
-                      <CategoryCheckRow
-                        key={child.id}
-                        category={child}
-                        iconSize="xs"
-                        active={staged.includes(String(child.id))}
-                        onClick={() => toggle(String(child.id))}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {topLevel.length === 0 && <p className="text-sm text-clear-ink/40 text-center py-6">No categories found</p>}
-        </div>
-      </DialogContent>
-    </Dialog>
+        ) : (
+          sheetFooter
+        )
+      }
+    >
+      {isDesktop && <div className="sticky top-0 z-10 -mx-1.5 -mt-1.5 mb-1.5 bg-clear-card p-1.5">{searchField}</div>}
+      {list(isDesktop)}
+    </ResponsivePopover>
   );
 }
 
@@ -152,21 +187,27 @@ function CategoryCheckRow({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-2 py-2 transition-colors cursor-pointer text-left w-full",
-        active ? "bg-clear-card" : "hover:bg-clear-card",
-      )}
+      aria-pressed={active}
+      className="flex w-full cursor-pointer items-center gap-3 rounded-clear-row px-2 py-2 text-left transition-colors hover:bg-clear-tile"
     >
       <Icon iconKey={category.icon} color={category.color} round size={iconSize} />
-      <span className="flex-1 min-w-0 text-sm truncate">{category.name}</span>
-      <span
-        className={cn(
-          "size-6 rounded-md border flex items-center justify-center shrink-0",
-          active ? "bg-clear-primary text-clear-card" : "border-clear-ink/25",
-        )}
-      >
-        {active && <Check className="size-4" />}
-      </span>
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold">{category.name}</span>
+      <CheckBox active={active} />
     </button>
+  );
+}
+
+/** The square tick shared by the multi-pickers. */
+export function CheckBox({ active }: { active: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-5 shrink-0 items-center justify-center rounded-md border-[1.5px] transition-colors",
+        active ? "border-clear-primary bg-clear-primary text-clear-primary-ink" : "border-clear-line",
+      )}
+    >
+      {active && <Check className="size-3.5" stroke={3} />}
+    </span>
   );
 }

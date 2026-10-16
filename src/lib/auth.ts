@@ -76,6 +76,15 @@ export async function requireAuth(): Promise<NextResponse | null> {
   return null;
 }
 
+/**
+ * The user record with its secrets blanked, for passing to client components: the
+ * password hash, the TOTP secret and the backup-code hashes never leave the server.
+ * The shape stays `User` so profile components can take it unchanged.
+ */
+export function toClientUser(user: User): User {
+  return { ...user, passwordHash: "", totpSecret: null, totpBackupCodes: null };
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import {
   IconX,
+  IconCheck,
   IconChevronDown,
   IconCalendarFilled,
 } from "@tabler/icons-react";
@@ -19,6 +19,10 @@ import { DatePicker } from "@/components/date-picker";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
 import { AccountMultiPicker } from "@/components/account-multi-picker";
 import { Icon } from "@/components/icon";
+import { ResponsivePopover } from "@/components/clear/responsive-popover";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { useAnimatedWidth } from "@/lib/use-motion";
+import { useActivityNavigation } from "./_activity/filter-transition";
 import { cn } from "@/lib/utils";
 import { currencySymbol } from "@/lib/format";
 import { filterPillClass } from "@/components/filter-pill";
@@ -51,7 +55,7 @@ type Props = {
 
 /** Pushes a change to one filter while keeping every other filter in the URL. */
 function useFilterPush(props: Props) {
-  const router = useRouter();
+  const { navigate } = useActivityNavigation();
   return function push(overrides: Record<string, string | undefined>) {
     const base: Record<string, string | undefined> = {
       from: props.from,
@@ -71,7 +75,7 @@ function useFilterPush(props: Props) {
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries(merged)) if (v) params.set(k, v);
     const qs = params.toString();
-    router.push(qs ? `?${qs}` : "/transactions");
+    navigate(qs ? `?${qs}` : "/transactions");
   };
 }
 
@@ -170,6 +174,7 @@ function PeriodPill({
   const fmtDate = (d: string) =>
     new Date(d + "T00:00:00").toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "short" });
   const [customOpen, setCustomOpen] = useState(false);
+  const pillRef = useAnimatedWidth<HTMLButtonElement>();
   const [customFrom, setCustomFrom] = useState(from);
   const [customTo, setCustomTo] = useState(to);
   const periods = transactionPeriods(financialMonth);
@@ -192,18 +197,21 @@ function PeriodPill({
     <>
       <DropdownMenu modal={false}>
         {variant === "card" ? (
-          <DropdownMenuTrigger className="flex h-full w-full cursor-pointer flex-col justify-center gap-2 rounded-clear-card bg-clear-card px-5 py-[18px] text-left font-clear text-clear-ink transition-shadow hover:ring-2 hover:ring-clear-ink/10">
+          <div className="flex h-full w-full flex-col justify-center gap-2 rounded-clear-card bg-clear-card px-5 py-[18px] font-clear text-clear-ink">
             <span className="inline-flex items-center gap-2 text-[13px] font-bold text-clear-ink-2">
               <IconCalendarFilled className="size-4 shrink-0" />
               {t("filters.period")}
             </span>
-            <span className="inline-flex h-10 items-center justify-between gap-2 rounded-full bg-clear-ground pl-3.5 pr-2.5 text-[15px] font-extrabold">
+            <DropdownMenuTrigger
+              aria-label={`${t("filters.period")}: ${label}`}
+              className="inline-flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-full bg-clear-ground pl-3.5 pr-2.5 text-left text-[15px] font-extrabold transition-colors hover:bg-clear-line data-popup-open:bg-clear-line"
+            >
               <span className="truncate">{label}</span>
               <IconChevronDown className="size-[18px] shrink-0" stroke={2} />
-            </span>
-          </DropdownMenuTrigger>
+            </DropdownMenuTrigger>
+          </div>
         ) : (
-        <DropdownMenuTrigger className={cn(filterPillClass(!isAll, "shrink-0"), hideOnDesktop && "lg:hidden")}>
+        <DropdownMenuTrigger ref={pillRef} className={cn(filterPillClass(!isAll, "shrink-0 overflow-hidden"), hideOnDesktop && "lg:hidden")}>
           <span>{label}</span>
           {isAll && <IconChevronDown aria-hidden className="size-4 shrink-0" stroke={2.2} />}
           {!isAll && (
@@ -267,6 +275,7 @@ function CategoriesPill({
 }) {
   const t = useTranslations("transactions");
   const [open, setOpen] = useState(false);
+  const pillRef = useAnimatedWidth<HTMLButtonElement>();
   const selectedIds = value ? value.split(",").filter(Boolean) : [];
   const selectedCats = selectedIds
     .map((id) => cats.find((c) => String(c.id) === id))
@@ -274,8 +283,14 @@ function CategoriesPill({
   const active = selectedCats.length > 0;
 
   return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
+    <CategoryMultiPicker
+      categories={cats}
+      selected={selectedIds}
+      open={open}
+      onOpenChange={setOpen}
+      onApply={(ids) => onChange(ids.length ? ids.join(",") : undefined)}
+      trigger={
+      <button ref={pillRef} type="button" className={filterPillClass(active, "shrink-0 overflow-hidden")}>
         {active ? (
           <span className="flex items-center -space-x-1.5 shrink-0">
             {selectedCats.slice(0, 2).map((c) => (
@@ -306,14 +321,8 @@ function CategoriesPill({
           </span>
         )}
       </button>
-      <CategoryMultiPicker
-        categories={cats}
-        selected={selectedIds}
-        open={open}
-        onOpenChange={setOpen}
-        onApply={(ids) => onChange(ids.length ? ids.join(",") : undefined)}
-      />
-    </>
+      }
+    />
   );
 }
 
@@ -337,6 +346,7 @@ function AccountsPill({
 }) {
   const t = useTranslations("transactions");
   const [open, setOpen] = useState(false);
+  const pillRef = useAnimatedWidth<HTMLButtonElement>();
   const selectedIds = value ? value.split(",").filter(Boolean) : [];
   const selectedBanks = selectedIds
     .map((id) => banks.find((b) => b.accountNumber === id))
@@ -344,8 +354,14 @@ function AccountsPill({
   const active = selectedBanks.length > 0;
 
   return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
+    <AccountMultiPicker
+      banks={banks}
+      selected={selectedIds}
+      open={open}
+      onOpenChange={setOpen}
+      onApply={(ids) => onChange(ids.length ? ids.join(",") : undefined)}
+      trigger={
+      <button ref={pillRef} type="button" className={filterPillClass(active, "shrink-0 overflow-hidden")}>
         {active ? (
           <span className="flex items-center -space-x-1.5 shrink-0">
             {selectedBanks.slice(0, 2).map((b) => (
@@ -382,14 +398,8 @@ function AccountsPill({
           </span>
         )}
       </button>
-      <AccountMultiPicker
-        banks={banks}
-        selected={selectedIds}
-        open={open}
-        onOpenChange={setOpen}
-        onApply={(ids) => onChange(ids.length ? ids.join(",") : undefined)}
-      />
-    </>
+      }
+    />
   );
 }
 
@@ -407,12 +417,18 @@ function ChoicePill({
 }) {
   const t = useTranslations("transactions");
   const [open, setOpen] = useState(false);
+  const pillRef = useAnimatedWidth<HTMLButtonElement>();
   const active = !!value;
   const selectedLabel = options.find((o) => o.value === value)?.label;
 
   return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
+    <ResponsivePopover
+      open={open}
+      onOpenChange={setOpen}
+      title={label}
+      className="w-56"
+      trigger={
+      <button ref={pillRef} type="button" className={filterPillClass(active, "shrink-0 overflow-hidden")}>
         <span>{selectedLabel ?? label}</span>
         {!active && <IconChevronDown aria-hidden className="size-4 shrink-0" stroke={2.2} />}
         {active && (
@@ -429,29 +445,30 @@ function ChoicePill({
           </span>
         )}
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title={label}>
-          <div className="flex flex-col gap-1 -mx-1">
-            {options.map((o) => {
-              const isActive = value === o.value;
-              return (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => { onChange(o.value); setOpen(false); }}
-                  className={cn(
-                    "flex items-center rounded-clear-row px-4 py-3.5 text-sm text-left transition-colors",
-                    isActive ? "bg-clear-primary text-clear-primary-ink font-semibold" : "hover:bg-clear-tile text-clear-ink",
-                  )}
-                >
-                  {o.label}
-                </button>
-              );
-            })}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+      }
+    >
+      <div role="listbox" aria-label={label} className="flex flex-col gap-0.5">
+        {options.map((o) => {
+          const isActive = value === o.value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              role="option"
+              aria-selected={isActive}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              className={cn(
+                "flex cursor-pointer items-center justify-between gap-3 rounded-clear-row px-3 py-3 text-left text-sm text-clear-ink transition-colors hover:bg-clear-tile lg:py-2.5",
+                isActive && "font-bold",
+              )}
+            >
+              {o.label}
+              {isActive && <IconCheck aria-hidden className="size-4 shrink-0" stroke={2.4} />}
+            </button>
+          );
+        })}
+      </div>
+    </ResponsivePopover>
   );
 }
 
@@ -470,6 +487,7 @@ function AmountPill({
   const [open, setOpen] = useState(false);
   const [draftMin, setDraftMin] = useState(min ?? "");
   const [draftMax, setDraftMax] = useState(max ?? "");
+  const pillRef = useAnimatedWidth<HTMLButtonElement>();
   const active = !!min || !!max;
   const sym = currencySymbol();
   const label = active
@@ -485,13 +503,32 @@ function AmountPill({
     return v.trim() !== "" && Number.isFinite(n) && n >= 0 ? String(n) : undefined;
   }
 
+  function setOpenWithDraft(next: boolean) {
+    if (next) {
+      setDraftMin(min ?? "");
+      setDraftMax(max ?? "");
+    }
+    setOpen(next);
+  }
+
+  function apply() {
+    onChange(clean(draftMin), clean(draftMax));
+    setOpen(false);
+  }
+
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => { setDraftMin(min ?? ""); setDraftMax(max ?? ""); setOpen(true); }}
-        className={filterPillClass(active, "shrink-0")}
-      >
+    <ResponsivePopover
+      open={open}
+      onOpenChange={setOpenWithDraft}
+      title={t("filters.amount")}
+      className="w-72"
+      footer={
+        <button type="button" onClick={apply} className={cn(clearButtonVariants({ size: "sm" }), "w-full lg:h-10")}>
+          {t("filters.apply")}
+        </button>
+      }
+      trigger={
+      <button ref={pillRef} type="button" className={filterPillClass(active, "shrink-0 overflow-hidden")}>
         <span>{label}</span>
         {!active && <IconChevronDown aria-hidden className="size-4 shrink-0" stroke={2.2} />}
         {active && (
@@ -508,9 +545,12 @@ function AmountPill({
           </span>
         )}
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title={t("filters.amount")}>
-          <div className="grid grid-cols-2 gap-3 pt-1">
+      }
+    >
+          <form
+            className="grid grid-cols-2 gap-3 p-1.5 pt-1"
+            onSubmit={(e) => { e.preventDefault(); apply(); }}
+          >
             <label className="flex flex-col gap-1">
               <span className="text-[13px] font-bold text-clear-muted px-1">{t("filters.min")}</span>
               <input
@@ -531,24 +571,17 @@ function AmountPill({
                 className="h-11 rounded-[14px] bg-clear-tile px-4 text-sm font-semibold tabular-nums text-clear-ink outline-none focus:ring-3 focus:ring-clear-ember/25"
               />
             </label>
-          </div>
-          <button
-            type="button"
-            onClick={() => { onChange(clean(draftMin), clean(draftMax)); setOpen(false); }}
-            className="mt-4 w-full h-11 rounded-full bg-clear-primary text-clear-primary-ink text-sm font-bold"
-          >
-            {t("filters.apply")}
-          </button>
-        </DialogContent>
-      </Dialog>
-    </>
+            <button type="submit" hidden />
+          </form>
+    </ResponsivePopover>
   );
 }
 
 function RecurringPill({ active, onToggle }: { active: boolean; onToggle: () => void }) {
   const t = useTranslations("transactions");
+  const pillRef = useAnimatedWidth<HTMLButtonElement>();
   return (
-    <button type="button" onClick={onToggle} className={filterPillClass(active, "shrink-0")}>
+    <button ref={pillRef} type="button" onClick={onToggle} className={filterPillClass(active, "shrink-0 overflow-hidden")}>
       <span>{t("filters.recurring")}</span>
       {active && (
         <span

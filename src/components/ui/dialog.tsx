@@ -236,6 +236,15 @@ function DialogContent({
           // header row supplies its own safe-area-aware top spacing below.
           !hideHeaderRow && !fullHeight && "pt-3",
           fullHeight ? "h-[100dvh] max-h-[100dvh] rounded-t-none" : "max-h-[92dvh]",
+          // Desktop: a centred modal instead of a bottom sheet (fixed + inset-0 +
+          // m-auto + a fit-content height centres it). Full-height sheets get a tall
+          // fixed height there so their scroll areas still have a box to fill.
+          // Centring often lands on a half pixel; with vaul's will-change: transform the
+          // sheet stays on its own GPU layer there and its text renders blurry, so the
+          // hint is switched off from lg (the open animation still runs).
+          // Size to the content on desktop (between 520px and ~800px wide, as tall as needed up
+          // to the window), so nothing is cut off; a taller body scrolls inside.
+          "lg:inset-0 lg:m-auto lg:h-fit lg:max-h-[min(92dvh,940px)] lg:w-fit lg:min-w-[520px] lg:max-w-[min(92vw,800px)] lg:rounded-clear-dialog lg:shadow-clear-dialog lg:will-change-auto!",
           sheetClassName,
         )}
       >

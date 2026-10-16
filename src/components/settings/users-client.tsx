@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { IconUserFilled, IconTrashFilled } from "@tabler/icons-react";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { setUserAdminAction, deleteUserAction } from "@/app/actions/admin";
 import type { User } from "@/db/schema";
@@ -50,6 +52,8 @@ function UserRow({
   onRoleChanged: (id: number, isAdmin: boolean) => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("settings.users");
+  const confirm = useConfirm();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +67,13 @@ function UserRow({
   }
 
   async function remove() {
-    if (!confirm(`Delete ${user.name}? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: t("deleteTitle", { name: user.name }),
+      body: t("deleteBody"),
+      confirmLabel: t("deleteConfirm"),
+      destructive: true,
+    });
+    if (!ok) return;
     setPending(true);
     setError(null);
     const result = await deleteUserAction(user.id);

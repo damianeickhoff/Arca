@@ -1,14 +1,11 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { IconSearch } from "@tabler/icons-react";
-import { useTranslations } from "next-intl";
 import { GlobalSearchOverlay } from "@/components/global-search-overlay";
 import { useNavHidden } from "@/lib/nav-visibility";
-import { cn } from "@/lib/utils";
 
 // Search stays the existing full-screen overlay, opened with Cmd/Ctrl+K from anywhere
-// or from a search button a page puts in its own header. The overlay is owned here,
+// or from the shell's search controls (the sidebar field, the phone tab bar button). The overlay is owned here,
 // once, by the app shell — pages only ask for it to open.
 
 interface SearchContextValue {
@@ -56,24 +53,5 @@ export function SearchProvider({ children, enabled }: { children: React.ReactNod
       {children}
       {enabled && <GlobalSearchOverlay open={open} onClose={() => setOpen(false)} originRect={originRect} />}
     </SearchContext.Provider>
-  );
-}
-
-/** The header search control: a round button (Ctrl/Cmd+K does the same anywhere). */
-export function SearchButton({ className }: { className?: string }) {
-  const t = useTranslations("nav");
-  const { openSearch } = useGlobalSearch();
-  return (
-    <button
-      type="button"
-      onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
-      aria-label={t("search")}
-      className={cn(
-        "inline-flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-card text-clear-ink transition-colors hover:bg-clear-tile lg:size-11",
-        className,
-      )}
-    >
-      <IconSearch size={21} stroke={1.9} />
-    </button>
   );
 }

@@ -1,4 +1,4 @@
-import { formatEur, formatEurWhole } from "@/lib/format";
+import { currencySymbol, formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
  * `sign="auto"` shows only a minus; "always" also shows the plus for income.
  * `whole` rounds to whole euros, for figures in tight tiles.
  * The size comes from the caller's text-* class; the cents scale with it.
+ * In privacy mode CSS swaps the figure for fixed dots ("€•••,••", see clear/money.tsx).
  */
 export function Amount({
   value,
@@ -28,12 +29,20 @@ export function Amount({
   const comma = formatted.lastIndexOf(",");
   const main = splitCents && comma !== -1 ? formatted.slice(0, comma) : formatted;
   const cents = splitCents && comma !== -1 ? formatted.slice(comma) : "";
+  const centsClass = cn("text-[0.5em] opacity-60", centsClassName);
 
   return (
-    <span className={cn("clear-amount whitespace-nowrap", className)}>
-      {prefix}
-      {main}
-      {cents && <span className={cn("text-[0.5em] opacity-60", centsClassName)}>{cents}</span>}
+    <span className={cn("clear-amount money-swap whitespace-nowrap", className)}>
+      <span className="money-real">
+        {prefix}
+        {main}
+        {cents && <span className={centsClass}>{cents}</span>}
+      </span>
+      <span className="money-mask">
+        {prefix}
+        {currencySymbol()}•••
+        {comma !== -1 && (splitCents ? <span className={centsClass}>,••</span> : ",••")}
+      </span>
     </span>
   );
 }

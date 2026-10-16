@@ -1,11 +1,15 @@
 import { sql } from "drizzle-orm";
 import { recurringItems, reimbursements } from "@/db/schema";
 
-// How much of an expense comes back to you, per transaction. Two sources, in priority order:
+// How much of an expense comes back to you, per transaction. Three sources, in priority order:
 //
 //  1. Actually received money — `reimbursements` rows linked to this expense in the
 //     Voorschotten tab. Precise, but manual.
-//  2. The expected share of a shared recurring bill — `recurringItems.sharedReimbursedAmount`
+//  2. The others' part of a one-off shared expense — `transactions.expectedReimbursement`
+//     when the split dialog marked it shared (`sharedWithCount` set). Only that flag
+//     makes it count here: linking a Tikkie also writes expectedReimbursement, and those
+//     expenses are covered by source 1 anyway.
+//  3. The expected share of a shared recurring bill — `recurringItems.sharedReimbursedAmount`
 //     on the item this transaction matched. Zero upkeep: a €103 storage bill split with three
 //     housemates nets to your €25,75 every month without linking anything.
 //
@@ -39,6 +43,7 @@ export const reimbursedAmountExpr = sql<number>`COALESCE(
     from ${reimbursements}
     where ${col(RB, "original_transaction_id")} = ${col(TX, "id")}
   ),
+  CASE WHEN ${col(TX, "shared_with_count")} IS NOT NULL THEN ${col(TX, "expected_reimbursement")} END,
   (
     select ${col(RI, "shared_reimbursed_amount")}
     from ${recurringItems}

@@ -34,8 +34,11 @@ import type { FinancialMonthConfig } from "@/lib/date-range";
 import { TransactionFilterBar, TransactionPeriodCard } from "../transaction-filter-bar";
 import type { TransactionRow } from "../transaction-types";
 import { ActivityList } from "./activity-list";
+import { useActivityNavigation } from "./filter-transition";
+import { useFadeOnChange } from "@/lib/use-motion";
 import { TransactionDetailPanel } from "./detail-panel";
 import type { ActivityContext, ActivityTiles } from "./context";
+import { MoneyText } from "@/components/clear/money";
 
 export type ActivityFilters = {
   cats: Category[];
@@ -66,7 +69,7 @@ const SORTS = [
 /** "Newest first ▾": changes the list's order, keeping every filter. */
 function SortMenu({ sort, dir }: { sort?: string; dir?: string }) {
   const t = useTranslations("activity.sort");
-  const router = useRouter();
+  const { navigate } = useActivityNavigation();
   const params = useSearchParams();
   const current = SORTS.find((o) => o.sort === (sort ?? "date") && o.dir === (dir === "asc" ? "asc" : "desc")) ?? SORTS[0];
 
@@ -81,7 +84,7 @@ function SortMenu({ sort, dir }: { sort?: string; dir?: string }) {
     }
     next.delete("limit");
     next.delete("tx");
-    router.push(`?${next.toString()}`, { scroll: false });
+    navigate(`?${next.toString()}`);
   }
 
   return (
@@ -189,7 +192,7 @@ export function ActivityHeader({
 function ActivitySearch({ search, variant }: { search?: string; variant: "header" | "bottom" }) {
   const t = useTranslations("activity");
   const tTx = useTranslations("transactions");
-  const router = useRouter();
+  const { navigate } = useActivityNavigation();
   const params = useSearchParams();
   const [value, setValue] = useState(search ?? "");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -200,7 +203,7 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "header
     else next.delete("search");
     next.delete("limit");
     next.delete("tx");
-    router.push(`?${next.toString()}`, { scroll: false });
+    navigate(`?${next.toString()}`);
   }
 
   const field = (
@@ -218,7 +221,7 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "header
         placeholder={t("searchPlaceholder")}
         aria-label={t("searchPlaceholder")}
         className={cn(
-          "w-full border-[1.5px] border-transparent bg-clear-card pl-10 pr-10 font-clear text-[15px] text-clear-ink outline-none placeholder:text-clear-placeholder focus:border-clear-ink",
+          "w-full border-[1.5px] border-transparent bg-clear-card pl-10 pr-10 font-clear [&::-webkit-search-cancel-button]:appearance-none text-[15px] text-clear-ink outline-none placeholder:text-clear-placeholder focus:border-clear-ink",
           variant === "header" ? "h-12 rounded-full" : "h-[var(--bottom-bar-height)] rounded-clear-tile shadow-clear-float",
         )}
       />
@@ -278,7 +281,7 @@ function SummaryCard({ income, expense, fixed, incomeCount }: { income: number; 
           {t("out")}
         </span>
         <Amount value={expense} sign="none" className={fig} />
-        <span className={sub}>{fixed > 0 ? t("outSub", { amount: formatEur(fixed) }) : t("outSubNone")}</span>
+        <span className={sub}><MoneyText>{fixed > 0 ? t("outSub", { amount: formatEur(fixed) }) : t("outSubNone")}</MoneyText></span>
       </div>
       <div className={cn(col, "border-l border-clear-line")}>
         <span className={head}>
@@ -442,6 +445,14 @@ export function ActivityView({
   // Anything beyond the period narrows the list; "Clear all filters" shows then.
   const filtered = !!(filters.direction || filters.category || filters.account || filters.budgetType || filters.recurring || filters.search || filters.min || filters.max);
 
+  // Filter changes run as one transition: the list and the figures dim while the new
+  // results load, then fade in when the filters (or sort) actually changed.
+  const { navigate, pending } = useActivityNavigation();
+  const resultsKey = [filters.from, filters.to, filters.direction, filters.category, filters.account, filters.budgetType, filters.recurring, filters.search, filters.min, filters.max, filters.sort, filters.dir].join("|");
+  const listRef = useFadeOnChange<HTMLDivElement>(resultsKey);
+  const summaryRef = useFadeOnChange<HTMLDivElement>(resultsKey);
+  const dim = cn("transition-opacity duration-200", pending && "opacity-55");
+
   return (
     // Desktop: the page itself never scrolls. The summary row and the filter row sit on
     // top; the list and the transaction share the rest side by side, each scrolling
@@ -453,7 +464,7 @@ export function ActivityView({
         <div className="hidden min-w-0 lg:block lg:flex-[0_1_200px]">
           <TransactionPeriodCard {...filters} />
         </div>
-        <div className="min-w-0 lg:flex-[3_1_440px]">
+        <div ref={summaryRef} className={cn("min-w-0 lg:flex-[3_1_440px]", dim)}>
           <SummaryCard income={income} expense={expense} fixed={fixed} incomeCount={incomeCount} />
         </div>
         {/* The two link cards stack in one column beside the summary. */}
@@ -484,17 +495,24 @@ export function ActivityView({
         <div className="min-w-0 flex-1 lg:flex-none">
           <TransactionFilterBar {...filters} periodCardOnDesktop />
         </div>
-        {filtered && (
-          <Link href="/transactions" className="hidden h-12 items-center px-2 text-sm font-bold text-clear-ember-text no-underline hover:underline lg:inline-flex">
-            {t("clearFilters")}
-          </Link>
-        )}
+        <button
+          type="button"
+          onClick={() => navigate("/transactions")}
+          aria-hidden={!filtered}
+          tabIndex={filtered ? undefined : -1}
+          className={cn(
+            "hidden h-12 cursor-pointer items-center overflow-hidden whitespace-nowrap text-sm font-bold text-clear-ember-text transition-[max-width,opacity,padding] duration-200 ease-out hover:underline lg:inline-flex",
+            filtered ? "max-w-48 px-2 opacity-100" : "pointer-events-none max-w-0 px-0 opacity-0",
+          )}
+        >
+          {t("clearFilters")}
+        </button>
       </div>
 
       <div className={cn("order-3 flex flex-col gap-5 lg:order-none lg:grid lg:min-h-0 lg:flex-1", SPLIT_COLUMNS_WIDE)}>
         {/* Row 3, left: the list, scrolling inside its card on desktop */}
         <div className="relative lg:min-h-0 lg:overflow-hidden lg:rounded-clear-card lg:bg-clear-card">
-          <div className="clear-scrollbar lg:h-full lg:overflow-y-auto lg:px-4 lg:pb-10 lg:pt-5">
+          <div ref={listRef} className={cn("clear-scrollbar lg:h-full lg:overflow-y-auto lg:px-4 lg:pb-10 lg:pt-5", dim)}>
             {filteredCount === 0 ? (
               <div className={cn(CARD, "flex flex-col items-center gap-4 px-6 py-14 text-center lg:border-0 lg:shadow-none")}>
                 <p className="text-sm text-clear-muted">{tTx("noneFound")}</p>
@@ -583,7 +601,8 @@ export function ActivityView({
       <AnchoredTip id="activitySearchBar" anchor="activitySearchBar" active={!isDesktop && !navHidden} />
       <AnchoredTip id="activityFilters" anchor="activityFilters" />
       <AnchoredTip id="activityDetail" anchor="activityDetail" active={isDesktop || sheetRow != null} />
-      <AnchoredTip id="activityContext" anchor="activityContext" active={isDesktop || sheetRow != null} />
+      <AnchoredTip id="activityDetailTabs" anchor="activityDetailTabs" active={isDesktop ? desktopRow != null : sheetRow != null} />
+      <AnchoredTip id="activityHistory" anchor="activityHistory" active={isDesktop ? desktopRow != null : sheetRow != null} />
       <AnchoredTip id="activityKeys" anchor="activityKeys" active={isDesktop} />
     </div>
   );
@@ -611,7 +630,7 @@ function LinkTile({ href, icon, title, sub, warn }: { href: string; icon: React.
       </span>
       <span className="flex min-w-0 flex-col gap-px">
         <span className="truncate text-sm font-bold">{title}</span>
-        <span className="truncate text-[13px] text-clear-ink-2">{sub}</span>
+        <span className="truncate text-[13px] text-clear-ink-2"><MoneyText>{sub}</MoneyText></span>
       </span>
       <IconChevronRight size={16} stroke={2} aria-hidden className="ml-auto shrink-0 text-clear-muted" />
     </Link>

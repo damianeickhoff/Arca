@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { debts, debtRecurring, recurringItems } from "@/db/schema";
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNull, or } from "drizzle-orm";
 import type { Debt } from "@/db/schema";
 import { requireAuth } from "@/lib/auth";
 import { findRecurringItemByName } from "@/lib/recurring-dedupe";
-import { computeDebtBillEndDate } from "@/app/debts/debt-shared";
+import { getFinancialMonthConfig } from "@/lib/app-settings";
+import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
+import { computeDebt, computeDebtBillEndDate, debtEffectivePaid } from "@/app/debts/debt-shared";
 
 // Push the debt's start date, derived due-day and computed last-payment (end) date onto
 // every linked recurring bill, so a debt and its bills always share one period. The debt's
@@ -17,6 +19,37 @@ async function syncLinkedBillsPeriod(debt: Debt, billIds: number[]) {
   const dueDay = Number(startDate.slice(8, 10)) || 1;
   const endDate = computeDebtBillEndDate(startDate, debt.startingBalance, debt.minimumPayment, debt.interestRate);
   await db.update(recurringItems).set({ startDate, dueDay, endDate }).where(inArray(recurringItems.id, billIds));
+}
+
+/**
+ * Mark a debt as settled: whatever hasn't been paid back by now isn't expected any more —
+ * the same rule as settling an advance. The total drops to what was received (so it reads
+ * as fully settled without claiming money that never arrived), the balance to zero from
+ * today, and the linked recurring bills end today so the forecast stops expecting them.
+ */
+async function settleDebt(id: number) {
+  const [debt] = await db.select().from(debts).where(eq(debts.id, id));
+  if (!debt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { linkMap, paidFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
+  const { amountPaid, currentBalance } = computeDebt(debt, paidFor(debt));
+  const received = Math.max(0, Math.round(debtEffectivePaid(debt, amountPaid, currentBalance) * 100) / 100);
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const [row] = await db
+    .update(debts)
+    .set({ startingBalance: 0, originalAmount: received > 0 ? received : null, balanceDate: today })
+    .where(eq(debts.id, id))
+    .returning();
+  const billIds = linkMap.get(id) ?? [];
+  if (billIds.length > 0) {
+    await db
+      .update(recurringItems)
+      .set({ endDate: today })
+      .where(and(inArray(recurringItems.id, billIds), or(isNull(recurringItems.endDate), gt(recurringItems.endDate, today))));
+  }
+  return NextResponse.json(row);
 }
 
 export async function GET() {
@@ -76,7 +109,10 @@ export async function PATCH(req: NextRequest) {
   const denied = await requireAuth();
   if (denied) return denied;
 
-  const { id, recurringIds, recurringCategoryId, recurringBudgetType, createRecurringBill, ...data } = await req.json();
+  const body = await req.json();
+  // { id, settle: true } settles the debt — see settleDebt.
+  if (body.settle === true) return settleDebt(Number(body.id));
+  const { id, recurringIds, recurringCategoryId, recurringBudgetType, createRecurringBill, ...data } = body;
   void recurringCategoryId; void recurringBudgetType; void createRecurringBill;
   const [row] = await db.update(debts).set(data).where(eq(debts.id, id)).returning();
   // Replace the recurring-bill links

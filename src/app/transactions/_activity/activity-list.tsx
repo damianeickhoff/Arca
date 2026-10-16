@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import type { Category } from "@/db/schema";
 import { TransactionBulkBar } from "../transaction-bulk-bar";
 import type { TransactionRow } from "../transaction-types";
+import { MoneyText } from "@/components/clear/money";
 
 type T = ReturnType<typeof useTranslations>;
 
@@ -86,7 +87,7 @@ export function RowIcon({ row, size = "md", round = false }: { row: TransactionR
   const ic = resolveTransactionIcon(row);
   return (
     <span className="relative inline-flex shrink-0">
-      <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round={round} size={size} />
+      <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round={round} size={size} soft />
       {row.recurringItemId != null && (
         <span aria-hidden className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-clear-primary ring-2 ring-clear-card">
           <IconReload className="size-2.5 text-clear-primary-ink" stroke={3} />
@@ -130,9 +131,14 @@ function ActivityRow({
     <div
       data-row-id={row.id}
       className={cn(
-        "relative -mx-2 flex items-center gap-3.5 rounded-clear-row px-2 transition-colors lg:mx-0 lg:px-3",
-        // The open row stands apart from the grey day bars: white with an ink outline.
-        selected ? "bg-clear-peach" : active ? "bg-clear-card ring-[1.5px] ring-inset ring-clear-ink" : "hover:bg-clear-tile/70 active:bg-clear-tile",
+        "relative -mx-2 flex items-center gap-3.5 rounded-clear-row px-2 transition-[background-color,box-shadow] duration-150 lg:mx-0 lg:px-3",
+        // The open row stands apart from the grey day bars with a soft ember outline;
+        // hovering a row draws the same outline, fainter.
+        selected
+          ? "bg-clear-peach"
+          : active
+            ? "ring-[1.5px] ring-inset ring-clear-ember/45"
+            : "hover:ring-1 hover:ring-inset hover:ring-clear-ember/25 active:bg-clear-tile",
       )}
     >
       {/* Desktop: a real checkbox on every row; ticking one starts select mode. */}
@@ -188,7 +194,7 @@ function ActivityRow({
           </span>
         )}
         <span className={cn("w-[104px] shrink-0 text-right text-[15px] font-extrabold tabular-nums", value >= 0 ? "text-clear-positive" : "text-clear-ink")}>
-          {signedAmount(row)}
+          <MoneyText>{signedAmount(row)}</MoneyText>
         </span>
       </Pressable>
     </div>
@@ -239,7 +245,8 @@ export function ActivityList({
       const next = new Set(prev ?? []);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      return next;
+      // Unticking the last row leaves select mode, so the bar never shows "0 selected".
+      return next.size > 0 ? next : null;
     });
   }
 
@@ -251,7 +258,7 @@ export function ActivityList({
         if (allIn) next.delete(r.id);
         else next.add(r.id);
       }
-      return next;
+      return next.size > 0 ? next : null;
     });
   }
 
@@ -317,7 +324,7 @@ export function ActivityList({
               )}
               <span className={cn("tabular-nums", net >= 0 ? "text-clear-positive" : "text-clear-ink-2")}>
                 {net >= 0 ? "+" : "−"}
-                {formatEur(Math.abs(net))}
+                <MoneyText>{formatEur(Math.abs(net))}</MoneyText>
               </span>
             </div>
             )}
@@ -350,7 +357,7 @@ export function ActivityList({
           total={rows.length}
           allSelected={allSelected}
           onSelectAll={() =>
-            setSelectedIds((prev) => (prev && prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.id))))
+            setSelectedIds((prev) => (prev && prev.size === rows.length ? null : new Set(rows.map((r) => r.id))))
           }
           onDone={() => setSelectedIds(null)}
         />

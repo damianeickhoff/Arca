@@ -1,56 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { IconShieldFilled, IconShieldLockFilled } from "@tabler/icons-react"
-import { ToggleSwitch } from "@/components/toggle-switch";
+import { useId, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
+import { IconEye, IconEyeOff } from "@tabler/icons-react";
+import { ClearSwitch } from "@/components/clear/switch";
 import { cn } from "@/lib/utils";
 
-export function PrivacyToggle({ variant = "icon", compact }: { variant?: "icon" | "row"; compact?: boolean }) {
-  const [blur, setBlur] = useState(false);
+// Privacy mode is the `privacy` class on <html> (the inline script in the root layout
+// restores it from localStorage before the first paint); globals.css turns every money
+// figure into dots while it is set. The class is the single source of truth, so every
+// toggle on screen (Home's eye, the Settings row) stays in step.
+const STORAGE_KEY = "privacy";
 
-  useEffect(() => {
-    const stored = localStorage.getItem("privacy") === "1";
-    // One-time sync from localStorage; unknowable during SSR, so this can't be
-    // computed during render without a hydration mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setBlur(stored);
-    document.documentElement.classList.toggle("privacy", stored);
-  }, []);
+function subscribe(onChange: () => void) {
+  const observer = new MutationObserver(onChange);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
 
-  function toggle() {
-    const next = !blur;
-    setBlur(next);
-    document.documentElement.classList.toggle("privacy", next);
-    localStorage.setItem("privacy", next ? "1" : "0");
+const isOn = () => document.documentElement.classList.contains("privacy");
+
+function setPrivacy(next: boolean) {
+  document.documentElement.classList.toggle("privacy", next);
+  try {
+    localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+  } catch {
+    // Storage blocked: the setting lasts for this page view, which is the harmless way to fail.
   }
+}
+
+/**
+ * The privacy-mode switch. `icon` (default) is the round eye button the concept draws
+ * on the hero card (it takes the colours of what it sits on); `row` is the labelled
+ * switch row for Settings.
+ */
+export function PrivacyToggle({ variant = "icon", className }: { variant?: "icon" | "row"; className?: string }) {
+  const t = useTranslations("settings.inline");
+  const on = useSyncExternalStore(subscribe, isOn, () => false);
+  const labelId = useId();
 
   if (variant === "row") {
     return (
-      <button
-        type="button"
-        onClick={toggle}
-        className={cn(
-          "flex items-center rounded-xl font-normal transition-colors w-full",
-          compact ? "gap-2.5 px-3 py-2 text-sm" : "gap-3 px-3 py-2.5 text-base"
-        )}
-      >
-        <span className={cn(
-          "rounded-lg shrink-0",
-        )}>
-        </span>
-        <span className="flex-1 text-left">Privacy mode</span>
-        <ToggleSwitch on={blur} />
-      </button>
+      <div className={cn("flex items-center gap-3 px-3 py-2.5", className)}>
+        <span id={labelId} className="flex-1 text-[15px] font-semibold text-clear-ink">{t("privacyMode")}</span>
+        <ClearSwitch checked={on} onCheckedChange={setPrivacy} labelledBy={labelId} />
+      </div>
     );
   }
 
+  const label = on ? t("showAmounts") : t("hideAmounts");
   return (
     <button
-      onClick={toggle}
-      title={blur ? "Show amounts" : "Privacy mode"}
-      className="p-3 rounded-md text-foreground/40 hover:text-foreground cursor-pointer"
+      type="button"
+      onClick={() => setPrivacy(!on)}
+      aria-label={label}
+      aria-pressed={on}
+      title={label}
+      data-tip-anchor="privacyEye"
+      className={cn(
+        "inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-current/14 outline-none transition-[background-color,transform] duration-150 hover:bg-current/20 focus-visible:ring-3 focus-visible:ring-clear-ember/50 active:scale-[0.97]",
+        className,
+      )}
     >
-      {blur ? <IconShieldLockFilled className="size-6" /> : <IconShieldFilled className="size-5" />}
+      {on ? <IconEyeOff className="size-[19px]" aria-hidden /> : <IconEye className="size-[19px]" aria-hidden />}
     </button>
   );
 }

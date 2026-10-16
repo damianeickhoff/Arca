@@ -3,184 +3,83 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
-import { IconCategory, IconWallet, IconX } from "@tabler/icons-react";
+import { IconBuildingBank, IconChevronDown, IconTag } from "@tabler/icons-react";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
 import { AccountMultiPicker } from "@/components/account-multi-picker";
-import { Icon } from "@/components/icon";
 import { filterPillClass } from "@/components/filter-pill";
-import { cn } from "@/lib/utils";
 import type { Category, Bank } from "@/db/schema";
 
-// Category + account multi-select, shared by the Analytics and Trends tabs (see
-// AGENTS request: "select one or multiple and let the graphs change based on the
-// selection"). State lives in the URL (`cat`, `acct` — comma-separated ids), same
-// convention as ComparisonPicker/NettoToggle, so a page refresh or shared link keeps
-// the selection and every server-rendered graph on the page picks it up together.
-export function AnalyticsFilterBar({
-  categories,
-  banks,
-  stickyTop,
-}: {
-  categories: Category[];
-  banks: Bank[];
-  /** CSS `top` value for this bar's own `position: sticky` — callers know whether
-   * they sit in the page's window-level scroll (needs an offset clearing the
-   * header above them) or inside their own already-clipped scroll pane (the
-   * dashboard's Reports portal, where `0` is correct). No wrapping background
-   * here on purpose — it's meant to float, translucent, over whatever scrolls
-   * beneath it, not sit on a card/bar of its own. */
-  stickyTop: string;
-}) {
+// Category + account multi-select for Insights (Overview and Trends), as pills among
+// the page heading's actions — icon-only below lg, where the heading has no room for
+// the labels. The selection lives in the URL (`cat`, `acct` — comma-separated ids), so
+// a refresh or a shared link keeps it and every server-rendered chart on the page picks
+// it up together.
+export function AnalyticsFilterBar({ categories, banks }: { categories: Category[]; banks: Bank[] }) {
+  const t = useTranslations("insights.filters");
   const router = useRouter();
   const searchParams = useSearchParams();
   const catParam = searchParams.get("cat") ?? "";
   const acctParam = searchParams.get("acct") ?? "";
   const selectedCategoryIds = catParam ? catParam.split(",").filter(Boolean) : [];
   const selectedAccounts = acctParam ? acctParam.split(",").filter(Boolean) : [];
+  const [catOpen, setCatOpen] = useState(false);
+  const [acctOpen, setAcctOpen] = useState(false);
 
-  function update(key: "cat" | "acct", values: string[]) {
+  function update(values: { cat?: string[]; acct?: string[] }) {
     const params = new URLSearchParams(searchParams.toString());
-    if (values.length) params.set(key, values.join(","));
-    else params.delete(key);
+    for (const [key, list] of Object.entries(values)) {
+      if (list.length) params.set(key, list.join(","));
+      else params.delete(key);
+    }
     router.push(`?${params.toString()}`);
   }
 
-  return (
-    <div
-      className="sticky z-20 -mx-5 -my-1 flex items-center gap-2 overflow-x-auto bg-bg px-5 py-1 scrollbar-hide lg:mx-0 lg:px-0"
-      style={{ top: stickyTop }}
-    >
-      <CategoriesPill categories={categories} selected={selectedCategoryIds} onChange={(v) => update("cat", v)} />
-      <AccountsPill banks={banks} selected={selectedAccounts} onChange={(v) => update("acct", v)} />
-    </div>
-  );
-}
+  const catCount = selectedCategoryIds.filter((id) => categories.some((c) => String(c.id) === id)).length;
+  const acctCount = selectedAccounts.filter((id) => banks.some((b) => b.accountNumber === id)).length;
 
-function CategoriesPill({
-  categories,
-  selected,
-  onChange,
-}: {
-  categories: Category[];
-  selected: string[];
-  onChange: (v: string[]) => void;
-}) {
-  const t = useTranslations("insights.filters");
-  const [open, setOpen] = useState(false);
-  const selectedCats = selected
-    .map((id) => categories.find((c) => String(c.id) === id))
-    .filter((c): c is Category => !!c);
-  const active = selectedCats.length > 0;
+  const pill = (active: boolean) => filterPillClass(active, "shrink-0 max-lg:size-11 max-lg:justify-center max-lg:px-0");
+  const label = "max-lg:sr-only";
+  const chevron = "shrink-0 max-lg:hidden";
 
   return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
-        {active ? (
-          <span className="flex items-center -space-x-1.5 shrink-0">
-            {selectedCats.slice(0, 2).map((c) => (
-              <span key={c.id} className="rounded-full ring-2 ring-ink">
-                <Icon iconKey={c.icon} color={c.color} round size="xs" />
-              </span>
-            ))}
-            {selectedCats.length > 2 && (
-              <span className="size-6 rounded-full bg-foreground/20 text-[10px] font-bold flex items-center justify-center ring-2 ring-ink">
-                +{selectedCats.length - 2}
-              </span>
-            )}
-          </span>
-        ) : (
-          <IconCategory className="size-4 shrink-0" />
-        )}
-        <span>{t("categories")}</span>
-        {active && (
-          <span
-            role="button"
-            tabIndex={0}
-            aria-label={t("resetCategories")}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); onChange([]); }}
-            className="shrink-0"
-          >
-            <IconX className="size-5 rounded-full bg-bg p-1 text-ink" />
-          </span>
-        )}
-      </button>
+    <div className="flex items-center gap-2.5 font-clear">
       <CategoryMultiPicker
         categories={categories}
-        selected={selected}
-        open={open}
-        onOpenChange={setOpen}
-        onApply={onChange}
+        selected={selectedCategoryIds}
+        open={catOpen}
+        onOpenChange={setCatOpen}
+        onApply={(ids) => update({ cat: ids })}
+        trigger={
+          <button type="button" className={pill(catCount > 0)}>
+            <IconTag aria-hidden stroke={1.9} />
+            <span className={label}>{catCount > 0 ? t("categoriesCount", { count: catCount }) : t("categories")}</span>
+            <IconChevronDown aria-hidden stroke={2.2} className={chevron} />
+          </button>
+        }
       />
-    </>
-  );
-}
-
-const AVATAR_COLORS = ["bg-blue-500", "bg-emerald-500", "bg-violet-500", "bg-amber-500", "bg-rose-500", "bg-cyan-500"];
-function avatarColor(key: string): string {
-  let h = 0;
-  for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return AVATAR_COLORS[h % AVATAR_COLORS.length];
-}
-
-function AccountsPill({
-  banks,
-  selected,
-  onChange,
-}: {
-  banks: Bank[];
-  selected: string[];
-  onChange: (v: string[]) => void;
-}) {
-  const t = useTranslations("insights.filters");
-  const [open, setOpen] = useState(false);
-  const selectedBanks = selected
-    .map((id) => banks.find((b) => b.accountNumber === id))
-    .filter((b): b is Bank => !!b);
-  const active = selectedBanks.length > 0;
-
-  return (
-    <>
-      <button type="button" onClick={() => setOpen(true)} className={filterPillClass(active, "shrink-0")}>
-        {active ? (
-          <span className="flex items-center -space-x-1.5 shrink-0">
-            {selectedBanks.slice(0, 2).map((b) => (
-              <span
-                key={b.id}
-                className={cn(
-                  "size-6 rounded-full ring-2 ring-ink text-white text-[10px] font-semibold flex items-center justify-center",
-                  avatarColor(b.accountNumber ?? String(b.id)),
-                )}
-              >
-                {(b.displayName ?? b.accountNumber ?? "?").charAt(0).toUpperCase()}
-              </span>
-            ))}
-            {selectedBanks.length > 2 && (
-              <span className="size-6 rounded-full bg-foreground/20 text-[10px] font-bold flex items-center justify-center ring-2 ring-ink">
-                +{selectedBanks.length - 2}
-              </span>
-            )}
-          </span>
-        ) : (
-          <IconWallet className="size-4 shrink-0" />
-        )}
-        <span>{t("accounts")}</span>
-        {active && (
-          <span
-            role="button"
-            tabIndex={0}
-            aria-label={t("resetAccounts")}
-            onPointerDown={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); onChange([]); }}
-            className="shrink-0"
-          >
-            <IconX className="size-5 rounded-full bg-bg p-1 text-ink" />
-          </span>
-        )}
-      </button>
-      <AccountMultiPicker banks={banks} selected={selected} open={open} onOpenChange={setOpen} onApply={onChange} />
-    </>
+      <AccountMultiPicker
+        banks={banks}
+        selected={selectedAccounts}
+        open={acctOpen}
+        onOpenChange={setAcctOpen}
+        onApply={(ids) => update({ acct: ids })}
+        trigger={
+          <button type="button" className={pill(acctCount > 0)}>
+            <IconBuildingBank aria-hidden stroke={1.9} />
+            <span className={label}>{acctCount > 0 ? t("accountsCount", { count: acctCount }) : t("accounts")}</span>
+            <IconChevronDown aria-hidden stroke={2.2} className={chevron} />
+          </button>
+        }
+      />
+      {(catCount > 0 || acctCount > 0) && (
+        <button
+          type="button"
+          onClick={() => update({ cat: [], acct: [] })}
+          className="h-11 shrink-0 cursor-pointer whitespace-nowrap px-2 text-sm font-bold text-clear-ember-text hover:underline max-lg:hidden"
+        >
+          {t("clear")}
+        </button>
+      )}
+    </div>
   );
 }

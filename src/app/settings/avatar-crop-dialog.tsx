@@ -1,44 +1,71 @@
 "use client";
 
-import { useRef, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { IconMinus, IconPlus } from "@tabler/icons-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { clearButtonVariants } from "@/components/clear/button-variants";
 import { cn } from "@/lib/utils";
 
-const VIEWPORT = 280;
+/** Diameter of the round crop area — the exact region that is cut out. */
+const VIEWPORT = 232;
+/** The image keeps showing (dimmed) this far around the crop circle. */
+const MARGIN = 34;
+const FRAME = VIEWPORT + MARGIN * 2;
 const OUTPUT = 256;
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 0.1;
+/** Where the avatar shows up, at its real size there. */
+const PREVIEWS = [
+  { key: "topBar", size: 40 },
+  { key: "settings", size: 64 },
+  { key: "profile", size: 96 },
+] as const;
 
 interface Props {
   imageUrl: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCropped: (blob: Blob) => void;
-  /** Restyles the dialog chrome (sheet background, title/description color, viewport
-   *  placeholder) for a forced-dark surface — the onboarding wizard's auth-gradient
-   *  background, where the default theme-token styling would go invisible in light mode. */
+  /** The Clear dark palette, for the onboarding wizard's fixed-dark scene, where the
+   *  light dialog would sit oddly against the gradient. */
   dark?: boolean;
 }
 
-// Crops by letting the user drag/zoom the source image inside a fixed circular
-// viewport, then reads back exactly the pixels visible in that viewport — no
-// cropping library needed for a simple pan + zoom avatar crop.
+// Crops by letting the user drag/zoom the source image behind a fixed circular crop
+// area, then reads back exactly the pixels inside it — no cropping library needed
+// for a simple pan + zoom avatar crop.
 export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark }: Props) {
+  const t = useTranslations("avatarCrop");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        hideHeaderRow
+        title={t("title")}
+        className="gap-4 pt-6 font-clear text-clear-ink"
+        // .dark on the sheet switches every clear-* token inside it to the dark palette.
+        sheetClassName={cn("lg:max-w-[520px]", dark && "dark bg-clear-card")}
+      >
+        <CropBody imageUrl={imageUrl} onClose={() => onOpenChange(false)} onCropped={onCropped} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CropBody({ imageUrl, onClose, onCropped }: { imageUrl: string | null; onClose: () => void; onCropped: (blob: Blob) => void }) {
+  const t = useTranslations("avatarCrop");
+  const zoomId = useId();
   const imgRef = useRef<HTMLImageElement>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const [zoom, setZoom] = useState(1);
+  // Offset of the image's top-left corner from the crop circle's bounding box.
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
 
   // Reset crop state during render when a new image comes in, rather than in an
-  // effect — avoids an extra cascading render and matches this app's existing pattern
-  // for resyncing local state from a changed prop.
+  // effect — avoids an extra cascading render.
   const [prevImageUrl, setPrevImageUrl] = useState(imageUrl);
   if (imageUrl !== prevImageUrl) {
     setPrevImageUrl(imageUrl);
@@ -51,14 +78,11 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark
     return Math.max(VIEWPORT / w, VIEWPORT / h);
   }
 
+  // The image always covers the whole crop circle.
   function clampOffset(x: number, y: number, scale: number, w: number, h: number) {
-    const dw = w * scale;
-    const dh = h * scale;
-    const minX = VIEWPORT - dw;
-    const minY = VIEWPORT - dh;
     return {
-      x: Math.min(0, Math.max(minX, x)),
-      y: Math.min(0, Math.max(minY, y)),
+      x: Math.min(0, Math.max(VIEWPORT - w * scale, x)),
+      y: Math.min(0, Math.max(VIEWPORT - h * scale, y)),
     };
   }
 
@@ -72,11 +96,15 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark
     setOffset({ x: (VIEWPORT - w * scale) / 2, y: (VIEWPORT - h * scale) / 2 });
   }
 
+  // Zooms around the centre of the crop circle, so what you're looking at stays put.
   function handleZoomChange(value: number) {
     if (!natural) return;
-    const scale = baseScale(natural.w, natural.h) * value;
-    setZoom(value);
-    setOffset((prev) => clampOffset(prev.x, prev.y, scale, natural.w, natural.h));
+    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100));
+    const base = baseScale(natural.w, natural.h);
+    const ratio = next / zoom;
+    const c = VIEWPORT / 2;
+    setZoom(next);
+    setOffset((prev) => clampOffset(c - (c - prev.x) * ratio, c - (c - prev.y) * ratio, base * next, natural.w, natural.h));
   }
 
   function handlePointerDown(e: React.PointerEvent) {
@@ -116,23 +144,30 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark
   }
 
   const displayScale = natural ? baseScale(natural.w, natural.h) * zoom : 0;
+  const percent = Math.round(zoom * 100);
+
+  /** The image placed for a circle of `size` px showing exactly the crop area. */
+  function imageStyle(size: number, inset = 0): React.CSSProperties | undefined {
+    if (!natural) return undefined;
+    const k = size / VIEWPORT;
+    return {
+      width: natural.w * displayScale * k,
+      height: natural.h * displayScale * k,
+      transform: `translate(${inset + offset.x * k}px, ${inset + offset.y * k}px)`,
+    };
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        sheetClassName={dark ? "bg-[#0f1533] border border-white/10 text-white" : undefined}
-      >
-        <DialogHeader>
-          <DialogTitle className={dark ? "text-white" : undefined}>Foto bijsnijden</DialogTitle>
-          <DialogDescription className={dark ? "text-white/60" : undefined}>
-            Sleep om te verplaatsen en gebruik de schuif om in/uit te zoomen.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <ClearDialogHeader title={t("title")} subtitle={t("subtitle")} onClose={onClose} closeLabel={t("close")} />
 
-        {imageUrl && (
+      {imageUrl && (
+        <div className="flex justify-center">
           <div
-            className={cn("relative mx-auto overflow-hidden rounded-full cursor-move touch-none select-none", dark ? "bg-white/10" : "bg-foreground/5")}
-            style={{ width: VIEWPORT, height: VIEWPORT }}
+            role="img"
+            aria-label={t("cropArea")}
+            className="relative cursor-move touch-none overflow-hidden rounded-[20px] bg-clear-sky select-none"
+            style={{ width: FRAME, height: FRAME }}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -145,45 +180,103 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark
               alt=""
               onLoad={handleImageLoad}
               draggable={false}
-              className="absolute top-0 left-0 max-w-none pointer-events-none"
-              style={
-                natural
-                  ? {
-                      width: natural.w * displayScale,
-                      height: natural.h * displayScale,
-                      transform: `translate(${offset.x}px, ${offset.y}px)`,
-                    }
-                  : undefined
-              }
+              className="pointer-events-none absolute top-0 left-0 max-w-none"
+              style={imageStyle(VIEWPORT, MARGIN)}
             />
+            {/* Everything outside the circle is dimmed (a huge spread shadow), with a
+                dashed outline and four handles on the circle itself. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute rounded-full border-2 border-dashed border-white"
+              style={{ left: MARGIN, top: MARGIN, width: VIEWPORT, height: VIEWPORT, boxShadow: "0 0 0 999px rgba(17, 17, 19, 0.55)" }}
+            />
+            {[
+              { left: FRAME / 2, top: MARGIN },
+              { left: MARGIN + VIEWPORT, top: FRAME / 2 },
+              { left: FRAME / 2, top: MARGIN + VIEWPORT },
+              { left: MARGIN, top: FRAME / 2 },
+            ].map((p, i) => (
+              <span
+                key={i}
+                aria-hidden
+                className="pointer-events-none absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-black bg-white"
+                style={p}
+              />
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
+      <div className="flex items-center gap-3">
+        <label htmlFor={zoomId} className="w-12 shrink-0 text-[13px] font-bold text-clear-ink-2">
+          {t("zoom")}
+        </label>
+        <button
+          type="button"
+          onClick={() => handleZoomChange(zoom - ZOOM_STEP)}
+          disabled={!natural || zoom <= MIN_ZOOM}
+          aria-label={t("zoomOut")}
+          className={clearButtonVariants({ variant: "secondary", size: "icon" })}
+        >
+          <IconMinus aria-hidden stroke={2} />
+        </button>
         <input
+          id={zoomId}
           type="range"
-          min={1}
-          max={3}
+          min={MIN_ZOOM}
+          max={MAX_ZOOM}
           step={0.01}
           value={zoom}
           onChange={(e) => handleZoomChange(Number(e.target.value))}
-          className="w-full"
+          aria-valuetext={t("zoomValue", { percent })}
           disabled={!natural}
+          className="h-11 min-w-0 flex-1 cursor-pointer accent-clear-ink"
         />
+        <button
+          type="button"
+          onClick={() => handleZoomChange(zoom + ZOOM_STEP)}
+          disabled={!natural || zoom >= MAX_ZOOM}
+          aria-label={t("zoomIn")}
+          className={clearButtonVariants({ variant: "secondary", size: "icon" })}
+        >
+          <IconPlus aria-hidden stroke={2} />
+        </button>
+        <span className="w-12 shrink-0 text-right text-sm font-extrabold tabular-nums">{percent}%</span>
+      </div>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className={dark ? "bg-white/10 text-white border-white/20 hover:bg-white/15" : undefined}
-          >
-            Cancel
-          </Button>
-          <Button type="button" onClick={handleConfirm} disabled={!natural} className={dark ? "bg-white text-[#0a1a5c]" : undefined}>
-            Toepassen
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <div className="flex flex-wrap items-end justify-between gap-4 rounded-clear-tile bg-clear-tile px-[18px] py-2.5">
+        <div className="flex flex-col gap-0.5 self-center">
+          <span className="text-[15px] font-bold">{t("preview")}</span>
+          <span className="text-[13px] text-clear-muted">{t("previewHint")}</span>
+        </div>
+        <div className="flex items-end gap-[18px]">
+          {PREVIEWS.map((p) => (
+            <div key={p.key} className="flex flex-col items-center gap-1.5">
+              <span
+                className="relative block overflow-hidden rounded-full bg-clear-sky ring-2 ring-clear-card"
+                style={{ width: p.size, height: p.size }}
+              >
+                {imageUrl && natural && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl} alt="" draggable={false} className="pointer-events-none absolute top-0 left-0 max-w-none" style={imageStyle(p.size)} />
+                )}
+              </span>
+              <span className="text-xs font-semibold text-clear-muted">{t(`places.${p.key}`)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t border-clear-ground pt-[18px] pb-1">
+        <ClearDialogFooter>
+          <button type="button" onClick={onClose} className={clearButtonVariants({ variant: "secondary" })}>
+            {t("cancel")}
+          </button>
+          <button type="button" onClick={handleConfirm} disabled={!natural} className={clearButtonVariants()}>
+            {t("save")}
+          </button>
+        </ClearDialogFooter>
+      </div>
+    </>
   );
 }

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { IconCurrencyEuro, IconFileUpload, IconLogout, IconPlus, IconSettings } from "@tabler/icons-react";
+import { IconCurrencyEuro, IconFileUpload, IconLogout, IconPlus, IconSearch, IconSettings } from "@tabler/icons-react";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { Segmented } from "@/components/clear/segmented";
 import { logoutAction } from "@/app/actions/auth";
@@ -11,7 +12,10 @@ import { useNavHidden } from "@/lib/nav-visibility";
 import { useTheme, type ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, PLAN_ITEMS, activeNavKey, activePlanKey, isChromeless, type NavItem } from "@/components/shell/nav-config";
-import { SearchProvider } from "@/components/shell/search-context";
+import { SearchProvider, useGlobalSearch } from "@/components/shell/search-context";
+import { ConfirmProvider } from "@/components/clear/confirm-dialog";
+import { INSIGHTS_TABS, INSIGHTS_TAB_LABEL_KEY } from "@/app/reports/reports-tabs";
+import { useIsDesktop } from "@/lib/use-is-desktop";
 
 export interface ShellUser {
   name: string;
@@ -22,11 +26,15 @@ export interface ShellUser {
 // The Clear app shell — one responsive implementation, no separate mobile files.
 //
 //   Desktop (lg+): a floating white sidebar on the left — the logo, who is signed in,
-//   the four destinations (Plan opens its Budget · Debts · Goals sub-menu while one of
-//   them is showing, Activity carries the needs-a-category count), then Import CSV,
+//   "Search everything" (the global search, also Ctrl/Cmd+K), the four destinations
+//   (Plan opens its Budget · Debts · Goals sub-menu while one of them is showing,
+//   Insights its five tabs while it is open, Activity carries the needs-a-category
+//   count), then Import CSV,
 //   Settings, the theme and Sign out. Pages sit to its right (MainContent).
-//   Phones (< lg): a floating black tab bar with the four destinations and the ember
-//   add button in the middle.
+//   Phones (< lg): a floating black tab bar with the four destinations, the ember
+//   add button in the middle and, set apart at the end, the global search button.
+//   Search lives in the shell rather than in page headers so it never reads as
+//   "search this page".
 //
 // Page layout rules are in AGENTS.md ("Clear design system").
 export function AppShell({
@@ -41,21 +49,27 @@ export function AppShell({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const navHidden = useNavHidden();
+  const isDesktop = useIsDesktop();
 
   const chromeless = isChromeless(pathname) || searchParams.get("embed") === "1" || user == null;
 
   return (
     <SearchProvider enabled={!chromeless}>
-      {children}
-      {!chromeless && (
-        <>
-          <DesktopSidebar pathname={pathname} user={user!} needsReviewCount={needsReviewCount} />
-          {!navHidden && <PhoneTabBar pathname={pathname} />}
-          {/* The navigation changed; it announces itself once, even to someone who
-              turned tips off (see IGNORES_DISABLED). */}
-          <AnchoredTip id="clearNavigation" anchor="mainNav" active={!navHidden} />
-        </>
-      )}
+      {/* The one confirm dialog behind useConfirm() (components/clear/confirm-dialog). */}
+      <ConfirmProvider>
+        {children}
+        {!chromeless && (
+          <>
+            <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} user={user!} needsReviewCount={needsReviewCount} />
+            {!navHidden && <PhoneTabBar pathname={pathname} />}
+            {/* The navigation changed; it announces itself once, even to someone who
+                turned tips off (see IGNORES_DISABLED). */}
+            <AnchoredTip id="clearNavigation" anchor="mainNav" active={!navHidden} />
+            {/* Search moved out of the page headers into the shell. */}
+            <AnchoredTip id="globalSearch" anchor={isDesktop ? "globalSearch" : "globalSearchPhone"} active={!navHidden} />
+          </>
+        )}
+      </ConfirmProvider>
     </SearchProvider>
   );
 }
@@ -72,8 +86,20 @@ export function Wordmark({ className }: { className?: string }) {
   );
 }
 
-function DesktopSidebar({ pathname, user, needsReviewCount }: { pathname: string; user: ShellUser; needsReviewCount: number }) {
+function DesktopSidebar({
+  pathname,
+  insightsTab,
+  user,
+  needsReviewCount,
+}: {
+  pathname: string;
+  /** The open Insights tab (?tab=), for its sub-menu. */
+  insightsTab: string;
+  user: ShellUser;
+  needsReviewCount: number;
+}) {
   const t = useTranslations("nav");
+  const tInsights = useTranslations("insights.tabs");
   const active = activeNavKey(pathname);
   const activePlan = activePlanKey(pathname);
   const { mode, setMode } = useTheme();
@@ -92,6 +118,8 @@ function DesktopSidebar({ pathname, user, needsReviewCount }: { pathname: string
           <span className="truncate text-[13px] text-clear-muted">{user.email}</span>
         </span>
       </Link>
+
+      <SidebarSearch />
 
       <span aria-hidden className="h-px bg-clear-line" />
 
@@ -117,19 +145,28 @@ function DesktopSidebar({ pathname, user, needsReviewCount }: { pathname: string
                   </span>
                 )}
               </Link>
-              {item.key === "plan" && isActive && (
+              {/* Plan shows its three pages and Insights its five tabs while open. */}
+              {isActive && (item.key === "plan" || item.key === "insights") && (
                 <div className="flex flex-col gap-0.5 pb-1 pl-[46px]">
-                  {PLAN_ITEMS.map((sub) => (
+                  {(item.key === "plan"
+                    ? PLAN_ITEMS.map((sub) => ({ key: sub.key, href: sub.href, label: t(`planItems.${sub.key}`), current: sub.key === activePlan }))
+                    : INSIGHTS_TABS.map((id) => ({
+                        key: id,
+                        href: `/reports?tab=${id}`,
+                        label: tInsights(INSIGHTS_TAB_LABEL_KEY[id]),
+                        current: pathname.startsWith("/reports") && id === insightsTab,
+                      }))
+                  ).map((sub) => (
                     <Link
                       key={sub.key}
                       href={sub.href}
-                      aria-current={sub.key === activePlan ? "page" : undefined}
+                      aria-current={sub.current ? "page" : undefined}
                       className={cn(
                         "flex h-10 items-center rounded-clear-row px-3 text-sm no-underline transition-colors",
-                        sub.key === activePlan ? "bg-clear-tile font-bold text-clear-ink" : "font-semibold text-clear-muted hover:text-clear-ink",
+                        sub.current ? "bg-clear-tile font-bold text-clear-ink" : "font-semibold text-clear-muted hover:text-clear-ink",
                       )}
                     >
-                      {t(`planItems.${sub.key}`)}
+                      {sub.label}
                     </Link>
                   ))}
                 </div>
@@ -187,7 +224,7 @@ function PhoneTabBar({ pathname }: { pathname: string }) {
     <nav
       aria-label={t("main")}
       data-tip-anchor="mainNav"
-      className="fixed inset-x-4 z-[60] flex h-[68px] items-center justify-between rounded-full bg-clear-primary px-2 font-clear shadow-clear-float lg:hidden"
+      className="fixed inset-x-4 z-[60] flex h-[68px] items-center justify-between gap-0.5 rounded-full bg-clear-primary px-2 font-clear shadow-clear-float lg:hidden"
       style={{ bottom: "calc(20px + var(--sab))" }}
     >
       <PhoneTab item={first} active={first.key === active} label={t(first.key)} />
@@ -195,13 +232,15 @@ function PhoneTabBar({ pathname }: { pathname: string }) {
       <Link
         href="/transactions/add"
         aria-label={t("addTransaction")}
-        className="inline-flex size-[54px] items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink transition-transform active:scale-95"
+        className="inline-flex size-[54px] shrink-0 items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink transition-transform active:scale-95"
       >
         <IconPlus size={24} stroke={2.6} />
       </Link>
       {rest.map((item) => (
         <PhoneTab key={item.key} item={item} active={item.key === active} label={t(item.key)} />
       ))}
+      <span aria-hidden className="mx-1 h-8 w-px shrink-0 bg-clear-primary-ink/15" />
+      <PhoneSearch />
     </nav>
   );
 }
@@ -213,13 +252,59 @@ function PhoneTab({ item, active, label }: { item: NavItem; active: boolean; lab
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "inline-flex h-[52px] w-16 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition-colors",
+        "inline-flex h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition-colors",
         active ? "bg-clear-card font-extrabold text-clear-ink" : "font-semibold text-clear-primary-ink/80",
       )}
     >
       <Icon size={20} stroke={2} />
       {label}
     </Link>
+  );
+}
+
+// "⌘K" on Apple devices, "Ctrl K" elsewhere (and on the server, before hydration).
+const subscribeNever = () => () => {};
+function useShortcutLabel() {
+  return useSyncExternalStore(
+    subscribeNever,
+    () => (/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"),
+    () => "Ctrl K",
+  );
+}
+
+/** The sidebar's global search: looks like a field, opens the search overlay. */
+function SidebarSearch() {
+  const t = useTranslations("nav");
+  const { openSearch } = useGlobalSearch();
+  const shortcut = useShortcutLabel();
+  return (
+    <button
+      type="button"
+      onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
+      data-tip-anchor="globalSearch"
+      className="flex h-11 w-full shrink-0 cursor-pointer items-center gap-2.5 rounded-full bg-clear-tile pl-4 pr-2 text-left text-sm font-semibold text-clear-muted transition-colors hover:bg-clear-line hover:text-clear-ink"
+    >
+      <IconSearch size={18} stroke={2} aria-hidden />
+      <span className="min-w-0 flex-1 truncate">{t("searchEverything")}</span>
+      <kbd className="rounded-md bg-clear-card px-1.5 py-0.5 font-clear text-xs font-bold text-clear-muted">{shortcut}</kbd>
+    </button>
+  );
+}
+
+/** The phone tab bar's global search button, set apart at the end of the bar. */
+function PhoneSearch() {
+  const t = useTranslations("nav");
+  const { openSearch } = useGlobalSearch();
+  return (
+    <button
+      type="button"
+      onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
+      aria-label={t("searchEverything")}
+      data-tip-anchor="globalSearchPhone"
+      className="inline-flex size-[52px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-primary-ink/12 text-clear-primary-ink transition-transform active:scale-95"
+    >
+      <IconSearch size={22} stroke={2.2} />
+    </button>
   );
 }
 
