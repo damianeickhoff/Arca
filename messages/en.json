@@ -1998,16 +1998,7 @@
     },
     "makeItYours": {
       "title": "Make it yours",
-      "subtitle": "Pick a background for your sign-in screen and a look for the app.",
-      "background": "Background",
-      "default": "Default",
-      "backgrounds": {
-        "midnight": "Midnight",
-        "sunset": "Sunset",
-        "violet": "Violet dusk",
-        "emerald": "Emerald night",
-        "rose": "Rose quartz"
-      },
+      "subtitle": "Pick how the app looks. You can change it any time in Settings.",
       "appearance": "Appearance",
       "themes": {
         "light": "Light",
@@ -3062,7 +3053,7 @@
       "afternoon": "Good afternoon",
       "evening": "Good evening"
     },
-    "subtitle": "{date} · payday in {count, plural, one {# day} other {# days}}",
+    "subtitle": "{date} · payday {count, plural, =0 {today} one {tomorrow} other {in # days}}",
     "review": "Review",
     "hero": {
       "title": "Safe to spend",
@@ -3159,14 +3150,15 @@
           "body": "Then Home shows what you can spend each day."
         },
         "bills": {
-          "title": "Add your recurring bills",
-          "body": "Rent, subscriptions, insurance — so they're never a surprise."
+          "title": "Add at least one recurring bill",
+          "body": "Start with your rent or a subscription; add the rest whenever you like."
         },
         "goal": {
           "title": "Create a savings goal",
           "body": "See when you'll get there at your own pace."
         }
-      }
+      },
+      "skip": "Skip"
     },
     "needsReview": "{count, plural, one {# transaction needs a category} other {# transactions need a category}}",
     "flow": {
@@ -3177,7 +3169,8 @@
       "net": "Net",
       "empty": "No money has moved this period yet.",
       "description": "Line chart of money in and money out this period, added up per day. So far {in} in and {out} out, a net of {net}."
-    }
+    },
+    "setSalary": "Set your salary"
   },
   "bills": {
     "markPaid": "Mark as paid",

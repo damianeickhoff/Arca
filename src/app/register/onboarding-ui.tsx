@@ -150,7 +150,9 @@ export function StepFooter({
 }) {
   const t = useTranslations("onboarding");
   return (
-    <div className="flex flex-col-reverse gap-2.5 pt-1 sm:flex-row sm:items-center">
+    // Sticks to the bottom of the scrolling card; the negative margins and matching
+    // padding cover the card padding (p-6 / sm:p-9) so content scrolls under it cleanly.
+    <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-auto flex flex-col-reverse gap-2.5 bg-clear-card px-6 pt-3 pb-6 sm:-mx-9 sm:-mb-9 sm:flex-row sm:items-center sm:px-9 sm:pb-9">
       {onBack && (
         <ClearButton variant="secondary" size="lg" onClick={onBack}>
           {t("back")}

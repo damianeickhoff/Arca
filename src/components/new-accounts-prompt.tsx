@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState } from "react";
-import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { IconBuildingBank, IconInfoCircle } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -20,14 +19,9 @@ import type { Bank } from "@/db/schema";
  * brand-new bank accounts. Lets the user name each and backfill a starting balance and
  * date — added to the account's displayed balance but never to reports, since import
  * history rarely reaches back to when the account was opened.
- *
- * `dark` renders it in the Clear dark palette for the onboarding wizard's fixed-dark
- * scene; left out, it follows the onboarding route (/register) on its own.
  */
-export function NewAccountsPrompt({ accounts, onDone, dark }: { accounts: Bank[]; onDone: () => void; dark?: boolean }) {
+export function NewAccountsPrompt({ accounts, onDone }: { accounts: Bank[]; onDone: () => void }) {
   const t = useTranslations("newAccounts");
-  const pathname = usePathname();
-  const isDark = dark ?? pathname.startsWith("/register");
   const title = t("title", { count: accounts.length });
 
   return (
@@ -36,16 +30,15 @@ export function NewAccountsPrompt({ accounts, onDone, dark }: { accounts: Bank[]
         hideHeaderRow
         title={title}
         className="gap-5 pt-6 font-clear text-clear-ink"
-        // .dark on the sheet switches every clear-* token inside it to the dark palette.
-        sheetClassName={cn("lg:max-w-[560px]", isDark && "dark bg-clear-card")}
+        sheetClassName="lg:max-w-[560px]"
       >
-        <PromptBody accounts={accounts} title={title} dark={isDark} onDone={onDone} />
+        <PromptBody accounts={accounts} title={title} onDone={onDone} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function PromptBody({ accounts, title, dark, onDone }: { accounts: Bank[]; title: string; dark: boolean; onDone: () => void }) {
+function PromptBody({ accounts, title, onDone }: { accounts: Bank[]; title: string; onDone: () => void }) {
   const t = useTranslations("newAccounts");
   const labels = useAccountTypeLabels();
   const ids = useId();
@@ -141,7 +134,6 @@ function PromptBody({ accounts, title, dark, onDone }: { accounts: Bank[]; title
                     onChange={(v) => setField(a, "date", v)}
                     label={f.date === today ? t("today") : dateFmt.format(new Date(`${f.date}T12:00:00`))}
                     triggerClassName={cn(DATE_TRIGGER, "bg-clear-card")}
-                    dark={dark}
                   />
                 </div>
               </div>

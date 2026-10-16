@@ -4,6 +4,7 @@ import { IconCheck, IconChevronRight } from "@tabler/icons-react";
 import { ClearCard, ClearCardHeader } from "@/components/clear/card";
 import { ClearProgress } from "@/components/clear/progress";
 import { cn } from "@/lib/utils";
+import { GetStartedSkip } from "./get-started-skip";
 
 const STEPS = [
   { key: "imported", href: "/import" },
@@ -17,7 +18,7 @@ type StepKey = (typeof STEPS)[number]["key"];
 /**
  * Home before anything is imported: four steps to a working household, each a link
  * to where it's done. Steps already done (a budget made during onboarding, say) show
- * checked, and the first open step is marked as the place to start.
+ * checked, and the first open step is marked as the place to start. Skip hides it.
  */
 export async function GetStartedCard({ steps }: { steps: Record<StepKey, boolean> }) {
   const t = await getTranslations("home.getStarted");
@@ -26,7 +27,11 @@ export async function GetStartedCard({ steps }: { steps: Record<StepKey, boolean
 
   return (
     <ClearCard aria-labelledby="home-get-started-title">
-      <ClearCardHeader title={<span id="home-get-started-title">{t("title")}</span>} subtitle={t("progress", { done, total: STEPS.length })} />
+      <ClearCardHeader
+        title={<span id="home-get-started-title">{t("title")}</span>}
+        subtitle={t("progress", { done, total: STEPS.length })}
+        action={<GetStartedSkip label={t("skip")} />}
+      />
       <ClearProgress value={done / STEPS.length} size="sm" />
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
         {STEPS.map((s) => {

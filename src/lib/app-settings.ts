@@ -96,6 +96,12 @@ export interface AppLockConfig {
   pinLength: number | null;
 }
 
+/** Whether the user skipped Home's "Get started" card (set from the card's Skip button). */
+export async function getHomeGetStartedDismissed(): Promise<boolean> {
+  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, "home_get_started_dismissed")).limit(1);
+  return row?.value === "1";
+}
+
 export async function getAppLockConfig(): Promise<AppLockConfig> {
   const [enabledRow, webAuthnRow, pinLengthRow] = await Promise.all([
     db.select().from(appSettings).where(eq(appSettings.key, "app_lock_enabled")).limit(1),

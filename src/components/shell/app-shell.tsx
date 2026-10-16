@@ -104,17 +104,31 @@ function DesktopSidebar({
   const activePlan = activePlanKey(pathname);
   const { mode, setMode } = useTheme();
 
-  const row = "flex h-12 items-center gap-3 rounded-clear-row px-3.5 text-[15px] no-underline transition-colors";
+  // Rows grow with the window: 40px below 800px of height, 44px from 800px, 48px from 900px.
+  const row =
+    "flex h-10 items-center gap-3 rounded-clear-row px-3.5 text-[15px] no-underline transition-colors [@media(min-height:800px)]:h-11 [@media(min-height:900px)]:h-12";
   const idle = "font-semibold text-clear-ink-2 hover:bg-clear-tile hover:text-clear-ink";
 
   return (
-    <aside className="fixed inset-y-4 left-4 z-40 hidden w-[260px] flex-col gap-6 overflow-y-auto rounded-clear-card bg-clear-card px-5 py-7 font-clear text-clear-ink lg:flex">
-      <Wordmark className="px-2" />
+    // Sized by the window's height rather than its width, so it fits a 1536×864 laptop at
+    // 125% (about 730px of page) as well as 1080p, 1440p and 4K: compact below 800px,
+    // roomier from 800px, the full layout with the logo from 900px. Below ~650px a long
+    // menu (Insights open) scrolls inside the sidebar.
+    <aside className="clear-scrollbar fixed inset-y-4 left-4 z-40 hidden w-[260px] flex-col gap-3 overflow-y-auto rounded-clear-card bg-clear-card px-4 py-4 font-clear text-clear-ink lg:flex [@media(min-height:800px)]:gap-4 [@media(min-height:800px)]:py-5 [@media(min-height:900px)]:gap-6 [@media(min-height:900px)]:px-5 [@media(min-height:900px)]:py-7">
+      <Wordmark className="hidden px-2 [@media(min-height:900px)]:inline-flex" />
 
-      <Link href="/settings" className="flex flex-col items-center gap-2 rounded-clear-tile px-2 py-3 text-center text-clear-ink no-underline transition-colors hover:bg-clear-tile">
-        <UserAvatar user={user} size={72} />
-        <span className="flex min-w-0 max-w-full flex-col">
-          <span className="truncate text-[17px] font-extrabold tracking-[-0.01em]">{user.name}</span>
+      <Link
+        href="/settings"
+        className="flex shrink-0 items-center gap-3 rounded-clear-tile px-2 py-2 text-left text-clear-ink no-underline transition-colors hover:bg-clear-tile [@media(min-height:900px)]:flex-col [@media(min-height:900px)]:gap-2 [@media(min-height:900px)]:py-3 [@media(min-height:900px)]:text-center"
+      >
+        <span className="contents [@media(min-height:900px)]:hidden">
+          <UserAvatar user={user} size={40} />
+        </span>
+        <span className="hidden [@media(min-height:900px)]:contents">
+          <UserAvatar user={user} size={72} />
+        </span>
+        <span className="flex min-w-0 max-w-full flex-1 flex-col">
+          <span className="truncate text-[15px] font-extrabold tracking-[-0.01em] [@media(min-height:900px)]:text-[17px]">{user.name}</span>
           <span className="truncate text-[13px] text-clear-muted">{user.email}</span>
         </span>
       </Link>
@@ -162,7 +176,7 @@ function DesktopSidebar({
                       href={sub.href}
                       aria-current={sub.current ? "page" : undefined}
                       className={cn(
-                        "flex h-10 items-center rounded-clear-row px-3 text-sm no-underline transition-colors",
+                        "flex h-9 items-center rounded-clear-row px-3 text-sm no-underline transition-colors [@media(min-height:900px)]:h-10",
                         sub.current ? "bg-clear-tile font-bold text-clear-ink" : "font-semibold text-clear-muted hover:text-clear-ink",
                       )}
                     >
@@ -177,7 +191,7 @@ function DesktopSidebar({
       </nav>
 
       <div className="mt-auto flex flex-col gap-1">
-        <span aria-hidden className="mb-3 h-px bg-clear-line" />
+        <span aria-hidden className="mb-1 h-px bg-clear-line [@media(min-height:900px)]:mb-3" />
         <Link href="/import" className={cn(row, idle)}>
           <IconFileUpload size={20} stroke={1.9} aria-hidden />
           {t("importCsv")}
@@ -186,7 +200,8 @@ function DesktopSidebar({
           <IconSettings size={20} stroke={1.9} aria-hidden />
           {t("settings")}
         </Link>
-        <div className="flex flex-col gap-2 px-3.5 py-2.5">
+        {/* One line on short windows, the label above the switch on tall ones. */}
+        <div className="flex items-center justify-between gap-2 px-3.5 py-1.5 [@media(min-height:900px)]:flex-col [@media(min-height:900px)]:items-stretch [@media(min-height:900px)]:py-2.5">
           <span className="text-[13px] font-bold text-clear-muted">{t("theme.label")}</span>
           <Segmented<ThemeMode>
             label={t("theme.label")}
@@ -282,7 +297,7 @@ function SidebarSearch() {
       type="button"
       onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
       data-tip-anchor="globalSearch"
-      className="flex h-11 w-full shrink-0 cursor-pointer items-center gap-2.5 rounded-full bg-clear-tile pl-4 pr-2 text-left text-sm font-semibold text-clear-muted transition-colors hover:bg-clear-line hover:text-clear-ink"
+      className="flex h-10 w-full shrink-0 cursor-pointer items-center gap-2.5 rounded-full bg-clear-tile pl-4 pr-2 text-left text-sm font-semibold text-clear-muted transition-colors hover:bg-clear-line hover:text-clear-ink [@media(min-height:900px)]:h-11"
     >
       <IconSearch size={18} stroke={2} aria-hidden />
       <span className="min-w-0 flex-1 truncate">{t("searchEverything")}</span>

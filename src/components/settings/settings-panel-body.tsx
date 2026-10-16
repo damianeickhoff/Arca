@@ -9,7 +9,6 @@ import { FinancialMonthForm, MonthOverridesPanel } from "@/app/settings/general-
 import { AppLockSectionContent } from "@/app/settings/profile-client";
 import { BudgetRecurringCard } from "@/components/settings/budget-recurring-card";
 import { SharedCostCard } from "@/components/settings/shared-cost-card";
-import { AuthBackgroundPicker } from "@/components/settings/auth-background-picker";
 import { ProfileForms, SecurityForms } from "@/components/settings/account-forms";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { SELF_CHROMED_PANELS, isHeavyPanel, type SettingsPanelKey } from "@/components/settings/settings-sections";
@@ -71,7 +70,6 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
         <div className="px-4 pt-4 space-y-3">
           <ThemeList />
           <p className="px-2 text-sm text-clear-muted">{t("appearanceHint")}</p>
-          <AuthBackgroundPicker />
         </div>
       );
 

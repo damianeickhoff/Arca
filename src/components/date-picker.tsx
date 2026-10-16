@@ -76,9 +76,6 @@ interface DatePickerProps {
   /** When provided (alongside an empty-able `value`), adds a "Clear" action to the
    *  calendar, resetting the date to "not set". */
   onClear?: () => void;
-  /** Restyles the trigger + calendar for a forced-dark surface — see CalendarContent's
-   *  `dark` prop for why. */
-  dark?: boolean;
 }
 
 /**
@@ -96,7 +93,6 @@ export function CalendarContent({
   setCursor,
   onClose,
   onClear,
-  dark,
   quickPicks = false,
   autoFocusDay = false,
 }: {
@@ -109,10 +105,6 @@ export function CalendarContent({
   /** When provided, a "Clear" action shows in the footer — for optional dates (e.g. a
    *  goal's end date) that need a way back to "not set". */
   onClear?: () => void;
-  /** Swaps the theme tokens for white-on-dark — for callers that render this on a
-   *  forced-dark surface (the onboarding wizard's gradient) where theme tokens would go
-   *  invisible in light mode. */
-  dark?: boolean;
   /** Today · Yesterday · 2 days ago (or This month · Last month) above the calendar. */
   quickPicks?: boolean;
   /** Focus the selected (or today's) day on mount, for keyboard use on desktop. */
@@ -120,29 +112,17 @@ export function CalendarContent({
 }) {
   const t = useTranslations("datePicker");
   const locale = useLocale();
-  const c = dark
-    ? {
-        text: "text-white",
-        muted: "text-white/55",
-        faded: "text-white/30",
-        hoverBg: "hover:bg-white/10",
-        roundBtn: "bg-white/10 text-white hover:bg-white/15",
-        pill: "bg-white/10 text-white hover:bg-white/15",
-        selectedBg: "bg-white text-[#0a1a5c]",
-        todayRing: "ring-2 ring-inset ring-white/60",
-        line: "border-white/15",
-      }
-    : {
-        text: "text-clear-ink",
-        muted: "text-clear-muted",
-        faded: "text-clear-placeholder",
-        hoverBg: "hover:bg-clear-tile",
-        roundBtn: "bg-clear-ground text-clear-ink hover:bg-clear-line",
-        pill: "bg-clear-ground text-clear-ink hover:bg-clear-line",
-        selectedBg: "bg-clear-primary text-clear-primary-ink",
-        todayRing: "ring-2 ring-inset ring-clear-ember",
-        line: "border-clear-ground",
-      };
+  const c = {
+    text: "text-clear-ink",
+    muted: "text-clear-muted",
+    faded: "text-clear-placeholder",
+    hoverBg: "hover:bg-clear-tile",
+    roundBtn: "bg-clear-ground text-clear-ink hover:bg-clear-line",
+    pill: "bg-clear-ground text-clear-ink hover:bg-clear-line",
+    selectedBg: "bg-clear-primary text-clear-primary-ink",
+    todayRing: "ring-2 ring-inset ring-clear-ember",
+    line: "border-clear-ground",
+  };
   const today = new Date();
   const todayStr = toDateStr(today);
   const todayMonthStr = toMonthStr(today);
@@ -417,7 +397,7 @@ export function CalendarContent({
  * sheets) it opens as a small sheet on top instead — a popover portalled out of a
  * Radix-trapped sheet can't take focus or clicks.
  */
-export function DatePicker({ value, onChange, granularity = "day", triggerClassName, label, placeholder, onClear, dark }: DatePickerProps) {
+export function DatePicker({ value, onChange, granularity = "day", triggerClassName, label, placeholder, onClear }: DatePickerProps) {
   const t = useTranslations("datePicker");
   const locale = useLocale();
   const isDesktop = useIsDesktop();
@@ -457,7 +437,6 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
       setCursor={setCursor}
       onClose={() => setOpen(false)}
       onClear={onClear}
-      dark={dark}
       quickPicks
       autoFocusDay={inPopover || isDesktop}
     />
@@ -473,18 +452,15 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
         data-open={open ? "" : undefined}
         onClick={() => (open ? setOpen(false) : openPicker())}
         className={cn(
-          "flex h-12 w-full cursor-pointer items-center gap-2.5 rounded-clear-row border-[1.5px] border-transparent px-3.5 text-left font-clear text-[15px] font-bold outline-none transition-[background-color,border-color,box-shadow]",
-          dark
-            ? "bg-white/7 text-white focus-visible:border-white/40 data-open:border-white/40"
-            : "bg-clear-tile text-clear-ink focus-visible:border-clear-ember focus-visible:bg-clear-card focus-visible:ring-4 focus-visible:ring-clear-ember/20 data-open:border-clear-ember data-open:bg-clear-card data-open:ring-4 data-open:ring-clear-ember/20",
-          !value && placeholder && !label && (dark ? "text-white/50" : "text-clear-muted"),
+          "flex h-12 w-full cursor-pointer items-center gap-2.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-3.5 text-left font-clear text-[15px] font-bold text-clear-ink outline-none transition-[background-color,border-color,box-shadow] focus-visible:border-clear-ember focus-visible:bg-clear-card focus-visible:ring-4 focus-visible:ring-clear-ember/20 data-open:border-clear-ember data-open:bg-clear-card data-open:ring-4 data-open:ring-clear-ember/20",
+          !value && placeholder && !label && "text-clear-muted",
           triggerClassName,
         )}
       >
         <IconCalendar className="size-[18px] shrink-0" stroke={2} />
         <span className="min-w-0 flex-1 truncate leading-none">{triggerLabel}</span>
         {!label && relative && (
-          <span className={cn("inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-xs font-bold", dark ? "bg-white/10 text-white/80" : "bg-clear-ground text-clear-ink-2")}>
+          <span className="inline-flex h-6 shrink-0 items-center rounded-full bg-clear-ground px-2.5 text-xs font-bold text-clear-ink-2">
             {relative}
           </span>
         )}
@@ -511,10 +487,7 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
               aria-label={title}
               initialFocus={() => document.querySelector<HTMLElement>("[data-calendar-popover] [data-calendar-focus]") ?? true}
               data-calendar-popover=""
-              className={cn(
-                "w-[340px] origin-(--transform-origin) rounded-[20px] p-4 shadow-clear-dialog outline-none duration-150 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-                dark ? "border border-white/10 bg-[#0f1533]/95 backdrop-blur-xl" : "bg-clear-card",
-              )}
+              className="w-[340px] origin-(--transform-origin) rounded-[20px] bg-clear-card p-4 shadow-clear-dialog outline-none duration-150 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
             >
               {calendar(true)}
             </Popover.Popup>
@@ -527,7 +500,7 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
         <DialogContent
           hideHeaderRow
           title={title}
-          sheetClassName={cn("lg:max-w-[400px]", dark && "bg-[#0f1533]/95 backdrop-blur-xl text-white border border-white/10")}
+          sheetClassName="lg:max-w-[400px]"
           className="gap-4 pt-6 font-clear"
         >
           <ClearDialogHeader title={title} onClose={() => setOpen(false)} closeLabel={t("close")} />

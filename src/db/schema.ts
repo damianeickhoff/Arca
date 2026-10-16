@@ -513,7 +513,8 @@ export const users = sqliteTable("users", {
   totpSecret: text("totp_secret"),
   totpEnabled: integer("totp_enabled", { mode: "boolean" }).notNull().default(false),
   totpBackupCodes: text("totp_backup_codes"),
-  // Preset id (see src/lib/auth-background.ts) for this user's own dashboard color fade.
+  // Unused since the sign-in background picker was removed; kept so existing databases
+  // need no migration.
   // Null = use the default preset. Per-user rather than app-wide so family members
   // sharing one install can each pick their own.
   authBackground: text("auth_background"),

@@ -468,21 +468,6 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
     );
 }
 
-/* Auth / dashboard background — light vs dark gradient selector.
-   authBackgroundStyle()/authBackgroundPreviewStyle() (theme "adaptive") render server-side
-   where the theme is unknown, so they emit BOTH palettes as inline custom properties
-   (--auth-bg-light / --auth-bg-dark) and leave background-image to this rule. The switch
-   MUST be a real property on the element like this — a `:root { --x: var(--per-el-var) }`
-   indirection fails, because a var() inside a custom property resolves on the element where
-   it's declared (:root, which has no per-element vars), not where it's used.
-   `.dark .auth-bg` outranks `.auth-bg` on specificity, so dark wins when the class is set. */
-.auth-bg {
-  background-image: var(--auth-bg-light);
-}
-.dark .auth-bg {
-  background-image: var(--auth-bg-dark);
-}
-
 /* Privacy mode — html.privacy (set by components/privacy-toggle.tsx and the inline
    script in the root layout) hides every money figure behind dots, the way the concept
    draws it ("€•••,••"). <Amount>, <Money> and <MoneyText> (components/clear/money.tsx)

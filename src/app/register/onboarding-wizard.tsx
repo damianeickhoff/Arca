@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { m, AnimatePresence, spring, easeOutQuart } from "@/lib/motion";
 import { useTheme } from "@/lib/theme";
-import { DEFAULT_AUTH_BACKGROUND_ID } from "@/lib/auth-background";
 import { LOCALE_COOKIE, type Locale } from "@/i18n/config";
 import { useFinishTransition } from "@/lib/finish-transition-state";
 import type { BudgetStrategyDraft } from "@/app/budget/budget-strategy-editor";
@@ -92,7 +91,6 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
   // You
   const [avatarUrl, setAvatarUrl] = useState<string | null>(resumeUser?.avatarUrl ?? null);
   const [locale, setLocale] = useState<Locale>(currentLocale);
-  const [background, setBackground] = useState(DEFAULT_AUTH_BACKGROUND_ID);
 
   // Money and lock
   const [strategy, setStrategy] = useState<BudgetStrategyDraft>({ nodig: 50, willen: 30, sparen: 20 });
@@ -178,15 +176,6 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
     setLocale(next);
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     router.refresh();
-  }
-
-  function chooseBackground(id: string) {
-    setBackground(id);
-    void fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "auth_background", value: id }),
-    });
   }
 
   async function saveStrategy() {
@@ -297,8 +286,6 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
       case "makeItYours":
         return (
           <MakeItYoursStep
-            background={background}
-            onBackground={chooseBackground}
             theme={themeMode}
             onTheme={setThemeMode}
             onBack={onBack}
@@ -367,7 +354,14 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
               {step === "finish" ? (
                 renderStep()
               ) : (
-                <div className={cn("flex flex-col rounded-clear-dialog bg-clear-card p-6", step === "welcome" ? "gap-[30px] sm:p-11" : "gap-6 sm:p-9")}>
+                // Never taller than the window: the card scrolls inside and the step footer sticks
+                // to its bottom (StepFooter), so Continue stays in view when a step grows.
+                <div
+                  className={cn(
+                    "clear-scrollbar flex max-h-[calc(100dvh-7.5rem-var(--sat,0px)-var(--sab,0px))] flex-col overflow-y-auto rounded-clear-dialog bg-clear-card p-6 sm:max-h-[calc(100dvh-8.5rem)] lg:max-h-[calc(100dvh-5rem)]",
+                    step === "welcome" ? "gap-[30px] sm:p-11" : "gap-6 sm:p-9",
+                  )}
+                >
                   <StepProgress current={index + 1} total={STEPS.length} group={t(`groups.${groupOf(step)}`)} />
                   {error && <StepNotice>{error}</StepNotice>}
                   {renderStep()}

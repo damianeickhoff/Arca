@@ -7,7 +7,6 @@ import { ClearButton } from "@/components/clear/button";
 import { Segmented } from "@/components/clear/segmented";
 import { AvatarCropDialog } from "@/app/settings/avatar-crop-dialog";
 import { locales, localeNames, type Locale } from "@/i18n/config";
-import { AUTH_BACKGROUND_PRESETS, authBackgroundPreviewStyle } from "@/lib/auth-background";
 import type { ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { StepFooter, StepHeading, StepNotice, initialsOf } from "../onboarding-ui";
@@ -206,15 +205,11 @@ export function ProfileStep({
 // ── 7 · Make it yours (Onboard-07) ────────────────────────────────────────────
 
 export function MakeItYoursStep({
-  background,
-  onBackground,
   theme,
   onTheme,
   onBack,
   onNext,
 }: {
-  background: string;
-  onBackground: (id: string) => void;
   theme: ThemeMode;
   onTheme: (m: ThemeMode) => void;
   onBack?: () => void;
@@ -228,46 +223,6 @@ export function MakeItYoursStep({
       <StepHeading title={t("title")} subtitle={t("subtitle")} />
 
       <div className="flex flex-col gap-6">
-        <fieldset className="m-0 min-w-0 border-0 p-0">
-          <legend className="mb-3.5 p-0 text-[15px] font-bold">{t("background")}</legend>
-          <div role="radiogroup" aria-label={t("background")} className="grid grid-cols-1 gap-x-3.5 gap-y-4 min-[420px]:grid-cols-2 md:grid-cols-3">
-            {AUTH_BACKGROUND_PRESETS.map((preset, i) => {
-              const on = preset.id === background;
-              const nameKey = `backgrounds.${preset.id}`;
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => onBackground(preset.id)}
-                  className="group flex cursor-pointer items-center gap-3 rounded-clear-tile text-left outline-none"
-                >
-                  <span
-                    className={cn(
-                      "relative h-16 w-24 shrink-0 rounded-clear-tile transition-shadow group-focus-visible:ring-3 group-focus-visible:ring-clear-ember/50",
-                      on && "ring-2 ring-clear-ink ring-offset-2 ring-offset-clear-card",
-                    )}
-                    style={authBackgroundPreviewStyle(preset, { theme: "dark" })}
-                  >
-                    {on && (
-                      <span aria-hidden className="absolute top-1.5 right-1.5 inline-flex size-[22px] items-center justify-center rounded-full bg-clear-card text-clear-ink">
-                        <IconCheck size={13} stroke={3} />
-                      </span>
-                    )}
-                  </span>
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className={cn("text-sm", on ? "font-extrabold" : "font-bold")}>{t.has(nameKey) ? t(nameKey) : preset.label}</span>
-                    {i === 0 && <span className="text-xs text-clear-muted">{t("default")}</span>}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-
-        <div className="h-px bg-clear-line" />
-
         <fieldset className="m-0 min-w-0 border-0 p-0">
           <legend className="mb-3.5 p-0 text-[15px] font-bold">{t("appearance")}</legend>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">

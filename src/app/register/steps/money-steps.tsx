@@ -468,7 +468,7 @@ export function ImportStep({
         primaryDisabled={empty || status === "loading"}
       />
 
-      <NewAccountsPrompt accounts={newAccounts} onDone={() => setNewAccounts([])} dark={false} />
+      <NewAccountsPrompt accounts={newAccounts} onDone={() => setNewAccounts([])} />
       <ImportColumnMapping
         data={mapping}
         onCancel={() => setMapping(null)}

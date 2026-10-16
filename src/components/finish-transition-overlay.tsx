@@ -134,7 +134,9 @@ export function FinishTransitionOverlay() {
           <div className="flex size-[146px] items-center justify-center rounded-full bg-clear-card">
             <m.span
               animate={ready ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-              transition={spring.gentle}
+              // Three keyframes (a pop and back) can't run on a spring — Motion throws and
+              // the overlay never hands off — so the pop is a short timed animation.
+              transition={ready ? { duration: 0.5, ease: "easeInOut", times: [0, 0.4, 1] } : spring.gentle}
               className="inline-flex size-[110px] items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink"
             >
               {ready ? (

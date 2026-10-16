@@ -1998,16 +1998,7 @@
     },
     "makeItYours": {
       "title": "Maak het eigen",
-      "subtitle": "Kies een achtergrond voor je inlogscherm en een uiterlijk voor de app.",
-      "background": "Achtergrond",
-      "default": "Standaard",
-      "backgrounds": {
-        "midnight": "Middernacht",
-        "sunset": "Zonsondergang",
-        "violet": "Paarse schemer",
-        "emerald": "Smaragdnacht",
-        "rose": "Rozenkwarts"
-      },
+      "subtitle": "Kies hoe de app eruitziet. Je kunt het altijd aanpassen in Instellingen.",
       "appearance": "Uiterlijk",
       "themes": {
         "light": "Licht",
@@ -3062,7 +3053,7 @@
       "afternoon": "Goedemiddag",
       "evening": "Goedenavond"
     },
-    "subtitle": "{date} · over {count, plural, one {# dag} other {# dagen}} salaris",
+    "subtitle": "{date} · {count, plural, =0 {vandaag betaaldag} one {morgen betaaldag} other {betaaldag over # dagen}}",
     "review": "Bekijken",
     "hero": {
       "title": "Vrij te besteden",
@@ -3159,14 +3150,15 @@
           "body": "Dan laat Home zien wat je per dag kunt uitgeven."
         },
         "bills": {
-          "title": "Voeg je vaste lasten toe",
-          "body": "Huur, abonnementen, verzekeringen — zodat ze nooit verrassen."
+          "title": "Voeg minstens één vaste last toe",
+          "body": "Begin met je huur of een abonnement; de rest kan later."
         },
         "goal": {
           "title": "Maak een spaardoel",
           "body": "Zie wanneer je het bereikt in je eigen tempo."
         }
-      }
+      },
+      "skip": "Overslaan"
     },
     "needsReview": "{count, plural, one {# transactie heeft een categorie nodig} other {# transacties hebben een categorie nodig}}",
     "flow": {
@@ -3177,7 +3169,8 @@
       "net": "Netto",
       "empty": "Deze periode is er nog geen geld in of uit gegaan.",
       "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}."
-    }
+    },
+    "setSalary": "Stel je salaris in"
   },
   "bills": {
     "markPaid": "Markeer als betaald",

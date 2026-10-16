@@ -6,7 +6,6 @@ import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { clearButtonVariants } from "@/components/clear/button-variants";
-import { cn } from "@/lib/utils";
 
 /** Diameter of the round crop area — the exact region that is cut out. */
 const VIEWPORT = 232;
@@ -29,15 +28,12 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCropped: (blob: Blob) => void;
-  /** The Clear dark palette, for the onboarding wizard's fixed-dark scene, where the
-   *  light dialog would sit oddly against the gradient. */
-  dark?: boolean;
 }
 
 // Crops by letting the user drag/zoom the source image behind a fixed circular crop
 // area, then reads back exactly the pixels inside it — no cropping library needed
 // for a simple pan + zoom avatar crop.
-export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark }: Props) {
+export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped }: Props) {
   const t = useTranslations("avatarCrop");
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -45,8 +41,7 @@ export function AvatarCropDialog({ imageUrl, open, onOpenChange, onCropped, dark
         hideHeaderRow
         title={t("title")}
         className="gap-4 pt-6 font-clear text-clear-ink"
-        // .dark on the sheet switches every clear-* token inside it to the dark palette.
-        sheetClassName={cn("lg:max-w-[520px]", dark && "dark bg-clear-card")}
+        sheetClassName="lg:max-w-[520px]"
       >
         <CropBody imageUrl={imageUrl} onClose={() => onOpenChange(false)} onCropped={onCropped} />
       </DialogContent>

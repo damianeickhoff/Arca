@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
@@ -6,7 +7,7 @@ import { banks, categories, goals, merchants, recurringItems, transactions } fro
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, daysInclusive, shiftDate, todayStr } from "@/lib/date-range";
-import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
+import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode, getHomeGetStartedDismissed } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { budgetSpendByDay, safeToSpend, type SpendEntry } from "@/lib/safe-to-spend";
@@ -219,7 +220,7 @@ export default async function HomePage({
   const billMonth = currentFinancialMonth(financialMonth);
   const currentMonth = financialMonthRange(financialMonth, 0);
 
-  const [sharedCostMode, budgetRecurringMode] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode()]);
+  const [sharedCostMode, budgetRecurringMode, getStartedDismissed] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed()]);
   const [data, billStatuses, needsReview, budgetOverview, bankBalances] = await Promise.all([
     getHomeData(from, to, financialMonth, sharedCostMode === "net"),
     getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
@@ -277,7 +278,15 @@ export default async function HomePage({
   const accountsTotal = accounts.reduce((s, a) => s + a.balance, 0);
 
   const hasTransactions = data.recent.length > 0;
-  const daysToPayday = Math.max(1, daysInclusive(today < currentMonth.from ? currentMonth.from : today, currentMonth.to));
+  // Payday is the next expected salary (an income recurring item still to come); with no
+  // income set up yet the heading asks for it instead of guessing from the month's end.
+  const nextSalary = billStatuses
+    .filter((s) => s.item.type === "income" && s.paid !== true && s.dueDate != null && s.dueDate >= today)
+    .sort((a, z) => a.dueDate!.localeCompare(z.dueDate!))[0];
+  const hasSalary = billStatuses.some((s) => s.item.type === "income");
+  const daysToPayday = nextSalary
+    ? Math.max(0, daysInclusive(today, nextSalary.dueDate!) - 1)
+    : Math.max(1, daysInclusive(today < currentMonth.from ? currentMonth.from : today, currentMonth.to));
   const hour = new Date().getHours();
   const greetingKey = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   const firstName = user.firstName ?? user.name.split(" ")[0];
@@ -310,7 +319,18 @@ export default async function HomePage({
       <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end lg:justify-between">
         <div className="hidden flex-col gap-1.5 lg:flex">
           <h1 className="m-0 text-[40px] font-extrabold tracking-[-0.03em]">{t(`greeting.${greetingKey}`, { name: firstName })}</h1>
-          <span className="text-base text-clear-ink-2">{t("subtitle", { date: longToday, count: daysToPayday })}</span>
+          <span className="text-base text-clear-ink-2">
+            {hasSalary ? (
+              t("subtitle", { date: longToday, count: daysToPayday })
+            ) : (
+              <>
+                {longToday} ·{" "}
+                <Link href="/settings/recurring/add?type=income" className="font-bold text-clear-ember-text no-underline hover:underline">
+                  {t("setSalary")}
+                </Link>
+              </>
+            )}
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-2.5 empty:hidden">
           <ReviewLink count={needsReview.length} />
@@ -360,7 +380,7 @@ export default async function HomePage({
               <HomeRecentActivity recent={data.recent} categories={data.allCategories} savingsGoals={data.savingsGoals} />
             </div>
           </>
-        ) : (
+        ) : getStartedDismissed ? null : (
           <div className="min-w-0 xl:col-span-2 [&>*]:h-full">
             <GetStartedCard
               steps={{

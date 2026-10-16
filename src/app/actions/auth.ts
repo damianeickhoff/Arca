@@ -151,14 +151,6 @@ export async function updateOwnProfileAction(formData: FormData): Promise<{ erro
   return { success: true };
 }
 
-export async function updateOwnAuthBackgroundAction(presetId: string): Promise<{ error?: string; success?: boolean }> {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Not logged in." };
-
-  await db.update(users).set({ authBackground: presetId }).where(eq(users.id, user.id));
-  return { success: true };
-}
-
 export async function updateOwnEmailAction(formData: FormData): Promise<{ error?: string; success?: boolean }> {
   const user = await getCurrentUser();
   if (!user) return { error: "Not logged in." };
