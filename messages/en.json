@@ -1879,11 +1879,7 @@
       "projectionNote": "From recurring income, savings contributions and repayments still due to you. Your own bills are not netted out, so this is where things are headed if that keeps flowing.",
       "ownOwe": "What you own and owe",
       "manage": "Manage",
-      "bankAccounts": "Bank accounts",
       "bankAccount": "Bank account",
-      "bankMeta": "••{suffix}",
-      "assetsSplit": "How your assets are split",
-      "groupShare": "{pct}%",
       "types": {
         "spaarrekening": "Savings account",
         "beleggingen": "Investments",
@@ -1891,11 +1887,6 @@
         "bezitting": "Possessions"
       },
       "other": "Other",
-      "updated": "Updated {date}",
-      "goalsInAssets": "Saved in your goals",
-      "goalsInAssetsMeta": "{count, plural, =0 {No savings yet} one {# goal} other {# goals}} · details below",
-      "owedToYou": "Owed to you",
-      "owedMeta": "Open · counts towards net worth",
       "noAssets": "No assets yet. Add your bank accounts, savings or investments to see them here.",
       "addAccount": "Add an account",
       "openDebts": "Open Debts",
@@ -1931,6 +1922,29 @@
         "chartBody": "One point a day, from the day you start",
         "split": "Assets vs debts appear here",
         "splitBody": "What you own against what you owe"
+      },
+      "assetsList": {
+        "filterLabel": "Show",
+        "all": "All {count}",
+        "cash": "Cash",
+        "investments": "Investments",
+        "things": "Things you own",
+        "sortedBy": "Sorted by value",
+        "share": "Share of your assets",
+        "value": "Value",
+        "listLabel": "Assets, largest first",
+        "updateValue": "Update value",
+        "showAll": "Show all {count}",
+        "showLess": "Show less",
+        "compareNote": "Bars compare each item with your largest one.",
+        "chipSynced": "{count} synced from imports",
+        "chipEntered": "{count} you entered",
+        "chipPlan": "{count} from Plan",
+        "metaBank": "Synced from imports · ••{suffix}",
+        "metaBankNoNumber": "Synced from imports",
+        "metaEntered": "{type} · you entered it on {date}",
+        "metaGoal": "Savings goal · from Plan",
+        "metaOwed": "Owed to you · from Debts"
       }
     },
     "health": {

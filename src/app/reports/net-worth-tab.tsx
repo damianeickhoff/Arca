@@ -25,7 +25,6 @@ import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader, ClearCardLink, ClearTile } from "@/components/clear/card";
 import { ClearProgress } from "@/components/clear/progress";
 import { IconTile } from "@/components/clear/icon-tile";
-import { ListRow } from "@/components/clear/list-row";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import type { ClearTone } from "@/components/clear/tones";
 import { Icon } from "@/components/icon";
@@ -34,6 +33,7 @@ import { debtEffectivePaid, debtEffectiveTotal, debtPaidPct } from "@/app/debts/
 import { DebtIcon } from "@/app/debts/debt-ui";
 import { GoalIcon } from "@/app/goals/goal-visuals";
 import { addMonths, goalColor, goalProgressPct, monthsLeft } from "@/app/goals/goal-shared";
+import { AssetsList, type AssetItem } from "./assets-list";
 import { NetWorthHero, type TrendPoint } from "./net-worth-trend-chart";
 import { MoneyText } from "@/components/clear/money";
 
@@ -96,25 +96,8 @@ function AssetIcon({ icon, color, tone, Glyph, initial }: { icon: string | null;
   );
 }
 
-// The colour of each group in the split bar, its legend and its section heading. Each
-// group gets its own so neighbouring segments never blend; rows keep their own icons.
-const GROUP_COLOR = {
-  banks: "bg-clear-sky-ink",
-  spaarrekening: "bg-clear-mint-ink",
-  beleggingen: "bg-clear-lilac-ink",
-  betaalrekening: "bg-clear-peach-ink",
-  bezitting: "bg-clear-butter-ink",
-  other: "bg-clear-placeholder",
-  goals: "bg-clear-rose-ink",
-  owed: "bg-clear-ink-2",
-} as const;
-
-interface AssetGroup {
-  key: keyof typeof GROUP_COLOR;
-  label: string;
-  total: number;
-  rows: { key: string; icon: React.ReactNode; title: string; meta?: string; value: number; href?: string; positive?: boolean }[];
-}
+/** The tracked-account types with their own label (insights.netWorth.types.*). */
+const KNOWN_TYPES = new Set<string>(ACCOUNT_TYPES.map((k) => k.value));
 
 /** Today in the snapshots' own date format (net-worth-snapshots.ts todayISO). */
 function todayISO() {
@@ -164,80 +147,60 @@ export async function VermogenTab() {
     return <NetWorthEmpty />;
   }
 
-  // ── What you own, grouped as on the mockup: bank accounts, each kind of tracked
-  //    account, the money in savings goals and money owed to you. The groups add up to
-  //    exactly totalAssets (see getNetWorthData).
-  const groups: AssetGroup[] = [];
-  if (netWorthBanks.length > 0) {
-    groups.push({
-      key: "banks",
-      label: t("bankAccounts"),
-      total: netWorthBanks.reduce((s, b) => s + b.balance, 0),
-      rows: netWorthBanks.map((b) => ({
-        key: `bank-${b.id}`,
-        icon: <AssetIcon icon={b.icon} color={b.color} tone="sky" Glyph={IconBuildingBank} />,
-        title: b.displayName ?? b.accountNumber ?? t("bankAccount"),
-        meta: b.accountNumber ? t("bankMeta", { suffix: b.accountNumber.slice(-4) }) : undefined,
-        value: b.balance,
-      })),
-    });
-  }
-  const known = new Set<string>(ACCOUNT_TYPES.map((k) => k.value));
-  for (const kind of [...ACCOUNT_TYPES, { value: "other" as const, tone: "stone" as ClearTone, Glyph: IconDiamond }]) {
-    const items = kind.value === "other" ? accounts.filter((a) => !known.has(a.type)) : accounts.filter((a) => a.type === kind.value);
-    if (items.length === 0) continue;
-    const label = kind.value === "other" ? t("other") : t(`types.${kind.value}`);
-    groups.push({
-      key: kind.value,
-      label,
-      total: items.reduce((s, a) => s + a.value, 0),
-      rows: items.map((a) => ({
+  // ── What you own, as one list (concept A): every bank account, tracked account,
+  //    savings goal and money owed to you, with where its figure comes from. The rows add
+  //    up to exactly totalAssets (see getNetWorthData).
+  const staleBefore = isoDaysAgo(60);
+  const kindOf = (type: string): AssetItem["kind"] => (type === "beleggingen" ? "investments" : type === "bezitting" || !KNOWN_TYPES.has(type) ? "things" : "cash");
+  const items: AssetItem[] = [
+    ...netWorthBanks.map((b) => ({
+      key: `bank-${b.id}`,
+      icon: <AssetIcon icon={b.icon} color={b.color} tone="sky" Glyph={IconBuildingBank} />,
+      name: b.displayName ?? b.accountNumber ?? t("bankAccount"),
+      meta: b.accountNumber ? t("assetsList.metaBank", { suffix: b.accountNumber.slice(-4) }) : t("assetsList.metaBankNoNumber"),
+      value: b.balance,
+      kind: "cash" as const,
+      source: "synced" as const,
+    })),
+    ...accounts.map((a) => {
+      const kind = ACCOUNT_TYPES.find((k) => k.value === a.type) ?? { tone: "stone" as ClearTone, Glyph: IconDiamond };
+      return {
         key: `account-${a.id}`,
         icon: <AssetIcon icon={a.icon} color={a.color} tone={kind.tone} Glyph={kind.Glyph} />,
-        title: a.name,
-        meta: a.lastUpdated ? t("updated", { date: dayMonth.format(asDate(a.lastUpdated)) }) : undefined,
+        name: a.name,
+        meta: a.lastUpdated
+          ? t("assetsList.metaEntered", { type: KNOWN_TYPES.has(a.type) ? t(`types.${a.type}`) : t("other"), date: dayMonth.format(asDate(a.lastUpdated)) })
+          : KNOWN_TYPES.has(a.type) ? t(`types.${a.type}`) : t("other"),
         value: a.value,
+        kind: kindOf(a.type),
+        source: "entered" as const,
+        stale: !!a.lastUpdated && a.lastUpdated < staleBefore,
+      };
+    }),
+    ...goals
+      .filter((g) => g.currentAmount > 0)
+      .map((g) => ({
+        key: `goal-${g.id}`,
+        icon: <AssetIcon icon={g.icon ?? null} color={g.color} tone="rose" Glyph={IconTarget} />,
+        name: g.name,
+        meta: t("assetsList.metaGoal"),
+        value: g.currentAmount,
+        kind: "cash" as const,
+        source: "plan" as const,
+        href: "/goals",
       })),
-    });
-  }
-  if (totalSavings > 0) {
-    groups.push({
-      key: "goals",
-      label: t("savingsGoals"),
-      total: totalSavings,
-      rows: [
-        {
-          key: "goals",
-          icon: <AssetIcon icon={null} color={null} tone="mint" Glyph={IconTarget} />,
-          title: t("goalsInAssets"),
-          meta: t("goalsInAssetsMeta", { count: goals.filter((g) => g.currentAmount > 0).length }),
-          value: totalSavings,
-          href: "/goals",
-        },
-      ],
-    });
-  }
-  if (owed.length > 0) {
-    groups.push({
-      key: "owed",
-      label: t("owedToYou"),
-      total: owed.reduce((s, c) => s + c.currentBalance, 0),
-      rows: owed.map((c) => ({
-        key: `owed-${c.debt.id}`,
-        icon: <AssetIcon icon={c.debt.icon} color={c.debt.color} tone="sky" initial={c.debt.name.trim().charAt(0).toUpperCase() || "?"} />,
-        title: c.debt.name,
-        meta: t("owedMeta"),
-        value: c.currentBalance,
-        href: "/debts",
-        positive: true,
-      })),
-    });
-  }
-
-  // The split bar: only groups with money in them (a bank account can be overdrawn),
-  // and only when there is more than one, else the bar would just say 100%.
-  const splitGroups = groups.filter((g) => g.total > 0);
-  const splitBase = splitGroups.reduce((s, g) => s + g.total, 0);
+    ...owed.map((c) => ({
+      key: `owed-${c.debt.id}`,
+      icon: <AssetIcon icon={c.debt.icon} color={c.debt.color} tone="sky" initial={c.debt.name.trim().charAt(0).toUpperCase() || "?"} />,
+      name: c.debt.name,
+      meta: t("assetsList.metaOwed"),
+      value: c.currentBalance,
+      kind: "cash" as const,
+      source: "debts" as const,
+      href: "/debts",
+      positive: true,
+    })),
+  ];
 
   const shareBase = totalAssets + totalDebt;
   const assetsPct = shareBase > 0 ? Math.round((totalAssets / shareBase) * 100) : 0;
@@ -329,7 +292,7 @@ export async function VermogenTab() {
           }
           action={<ClearCardLink href="/settings?panel=accounts">{t("manage")}</ClearCardLink>}
         />
-        {groups.length === 0 ? (
+        {items.length === 0 ? (
           <div className="flex flex-col items-start gap-3">
             <p className="m-0 text-[15px] text-clear-ink-2">{t("noAssets")}</p>
             <Link href="/settings?panel=accounts" className={clearButtonVariants({ variant: "secondary", size: "sm" })}>
@@ -338,57 +301,7 @@ export async function VermogenTab() {
             </Link>
           </div>
         ) : (
-          <>
-            {/* One bar split by group, so the mix reads at a glance; the legend gives each share. */}
-            {splitGroups.length > 1 && (
-              <div className="flex flex-col gap-2.5">
-                <div aria-hidden className="flex h-3.5 gap-[3px]">
-                  {splitGroups.map((g) => (
-                    <span key={g.key} className={cn("min-w-1.5 rounded-full", GROUP_COLOR[g.key])} style={{ flex: `${g.total} 1 0%` }} />
-                  ))}
-                </div>
-                <ul aria-label={t("assetsSplit")} className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1.5 p-0 text-[13px] font-semibold text-clear-ink-2">
-                  {splitGroups.map((g) => (
-                    <li key={g.key} className="inline-flex items-center gap-1.5">
-                      <span aria-hidden className={cn("size-2.5 rounded-[3px]", GROUP_COLOR[g.key])} />
-                      {g.label}
-                      <b className="tabular-nums text-clear-ink"><MoneyText>{t("groupShare", { pct: Math.round((g.total / splitBase) * 100) })}</MoneyText></b>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Each group: its name and subtotal on one line, then its rows. */}
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,280px),1fr))] items-start gap-x-7 gap-y-5">
-              {groups.map((g) => (
-                <section key={g.key} aria-labelledby={`networth-group-${g.key}`} className="flex min-w-0 flex-col">
-                  <h4 id={`networth-group-${g.key}`} className="m-0 flex items-center gap-2 px-2 pb-1 text-sm font-bold">
-                    <span aria-hidden className={cn("size-2.5 shrink-0 rounded-[3px]", GROUP_COLOR[g.key])} />
-                    <span className="min-w-0 flex-1 truncate">{g.label}</span>
-                    <span className="tabular-nums text-clear-ink-2"><MoneyText>{formatEur(g.total)}</MoneyText></span>
-                  </h4>
-                  {g.rows.map((r) => (
-                    <ListRow
-                      key={r.key}
-                      href={r.href}
-                      icon={r.icon}
-                      title={r.title}
-                      meta={r.meta}
-                      trailing={
-                        <Amount
-                          value={r.value}
-                          sign={r.positive ? "always" : "auto"}
-                          splitCents={false}
-                          className={cn("text-[15px] tracking-normal", r.positive && "text-clear-positive", r.value < 0 && "text-clear-negative")}
-                        />
-                      }
-                    />
-                  ))}
-                </section>
-              ))}
-            </div>
-          </>
+          <AssetsList items={items} total={totalAssets} />
         )}
       </ClearCard>
 

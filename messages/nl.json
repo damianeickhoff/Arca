@@ -1879,11 +1879,7 @@
       "projectionNote": "Op basis van vast inkomen, spaarbijdragen en terugbetalingen die je nog tegoed hebt. Je eigen vaste lasten zijn niet afgetrokken, dus dit is waar het naartoe gaat als dat blijft binnenkomen.",
       "ownOwe": "Wat je bezit en schuldig bent",
       "manage": "Beheren",
-      "bankAccounts": "Bankrekeningen",
       "bankAccount": "Bankrekening",
-      "bankMeta": "••{suffix}",
-      "assetsSplit": "Zo zijn je bezittingen verdeeld",
-      "groupShare": "{pct}%",
       "types": {
         "spaarrekening": "Spaarrekening",
         "beleggingen": "Beleggingen",
@@ -1891,11 +1887,6 @@
         "bezitting": "Bezittingen"
       },
       "other": "Overig",
-      "updated": "Bijgewerkt {date}",
-      "goalsInAssets": "Gespaard in je doelen",
-      "goalsInAssetsMeta": "{count, plural, =0 {Nog niets gespaard} one {# doel} other {# doelen}} · details hieronder",
-      "owedToYou": "Te ontvangen",
-      "owedMeta": "Open · telt mee voor je vermogen",
       "noAssets": "Nog geen bezittingen. Voeg je bankrekeningen, spaargeld of beleggingen toe om ze hier te zien.",
       "addAccount": "Rekening toevoegen",
       "openDebts": "Naar Schulden",
@@ -1931,6 +1922,29 @@
         "chartBody": "Eén punt per dag, vanaf de dag dat je begint",
         "split": "Bezittingen tegenover schulden verschijnen hier",
         "splitBody": "Wat je bezit tegenover wat je schuldig bent"
+      },
+      "assetsList": {
+        "filterLabel": "Toon",
+        "all": "Alle {count}",
+        "cash": "Geld",
+        "investments": "Beleggingen",
+        "things": "Bezittingen",
+        "sortedBy": "Gesorteerd op waarde",
+        "share": "Aandeel in je bezit",
+        "value": "Waarde",
+        "listLabel": "Bezittingen, grootste eerst",
+        "updateValue": "Waarde bijwerken",
+        "showAll": "Alle {count} tonen",
+        "showLess": "Minder tonen",
+        "compareNote": "De balken vergelijken elk onderdeel met je grootste.",
+        "chipSynced": "{count} uit imports",
+        "chipEntered": "{count} zelf ingevuld",
+        "chipPlan": "{count} uit Plan",
+        "metaBank": "Uit imports · ••{suffix}",
+        "metaBankNoNumber": "Uit imports",
+        "metaEntered": "{type} · door jou ingevuld op {date}",
+        "metaGoal": "Spaardoel · uit Plan",
+        "metaOwed": "Tegoed · uit Schulden"
       }
     },
     "health": {
