@@ -6,11 +6,12 @@ import { runConfigSync, applyDefaultCategoryRulesSync } from "@/lib/config-sync"
 import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
 import { detectBrandIcon } from "@/lib/brand-detect";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
+import { createSchema } from "./create-schema";
 
-// NOTE: this runtime auto-migrate block is separate from src/db/migrate.ts (used by
-// `npm run db:init` for fresh databases). Any new column MUST be added in BOTH places —
-// this file so existing deployed databases pick it up on next boot, migrate.ts so a
-// brand-new database is created with the column from the start.
+// NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
+// full schema for fresh databases — run on first start and by `npm run db:init`). Any
+// new column MUST be added in BOTH places — this file so existing deployed databases pick
+// it up on next boot, create-schema.ts so a brand-new database has it from the start.
 const DB_PATH =
   process.env.DB_PATH || path.join(process.cwd(), "finance.db");
 
@@ -25,6 +26,12 @@ function initDb(): BetterSQLite3Database<typeof schema> {
   // Enable WAL mode for better performance
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
+
+// A brand-new database (first run, or DB_PATH pointing at a file that doesn't exist yet)
+// has no tables: create the full schema and default rows first, so `npm run db:init` is
+// optional. Existing databases skip this and only get the patches below.
+const hasTables = sqlite.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'transactions'").get();
+if (!hasTables) createSchema(sqlite);
 
 // Adds a column only if it doesn't already exist, by checking the table's actual schema
 // instead of firing the ALTER and swallowing the "duplicate column" error — so a real

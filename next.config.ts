@@ -2,7 +2,9 @@ import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["192.168.2.25"],
+  // Other devices on the network may open the dev server (hot reload included):
+  // this PC's LAN address and the phone's.
+  allowedDevOrigins: ["192.168.2.35", "192.168.2.25"],
   // Old Dutch route names — permanent redirects so bookmarks and the installed
   // PWA keep working after the rename to English routes.
   async redirects() {
