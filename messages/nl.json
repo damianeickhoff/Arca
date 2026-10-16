@@ -2154,19 +2154,12 @@
       "opening": "Openen…"
     },
     "finishing": {
-      "phrases": {
-        "calculator": "De rekenmachine warmt op…",
-        "coins": "Je muntjes worden geteld…",
-        "piggyBank": "Het spaarvarken wordt opgehaald…",
-        "untangle": "Je transacties worden ontward…",
-        "behave": "De cijfers leren zich te gedragen…",
-        "polish": "Je dashboard wordt opgepoetst…"
-      },
-      "ready": "Alles staat klaar, {name}!",
-      "readyNoName": "Alles staat klaar!",
-      "withImport": "Je huishouden wordt ingericht… je {count, plural, one {# transactie wordt} other {# transacties worden}} toegevoegd aan Inzichten",
-      "withoutImport": "Je huishouden wordt ingericht…",
-      "progressLabel": "Je huishouden wordt ingericht"
+      "welcome": "Welkom bij {app}, {name}",
+      "welcomeNoName": "Welkom bij {app}",
+      "ready": "Je huishouden staat klaar.",
+      "transactions": "{count, plural, one {# transactie} other {# transacties}} gesorteerd",
+      "plan": "Plan {needs} / {wants} / {savings} staat klaar",
+      "bills": "{count, plural, one {# rekening} other {# rekeningen}} in Binnenkort"
     }
   },
   "newAccounts": {

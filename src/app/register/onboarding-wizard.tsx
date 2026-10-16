@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { m, AnimatePresence, spring, easeOutQuart } from "@/lib/motion";
 import { useTheme } from "@/lib/theme";
 import { LOCALE_COOKIE, type Locale } from "@/i18n/config";
-import { useFinishTransition } from "@/lib/finish-transition-state";
+import { useFinishTransition, type FinishTransitionOptions } from "@/lib/finish-transition-state";
 import type { BudgetStrategyDraft } from "@/app/budget/budget-strategy-editor";
 import { cn } from "@/lib/utils";
-import { OnboardingBrand, OnboardingStepper, StepNotice, StepProgress, type StepperGroup } from "./onboarding-ui";
+import { OnboardingBrand, OnboardingStepper, StepFooterSlot, StepNotice, StepProgress, type StepperGroup } from "./onboarding-ui";
 import { AboutYouStep, PasswordStep, WelcomeStep, aboutYouValid, passwordValid, type AboutYou } from "./steps/account-steps";
 import { BackupCodesStep, TwoFactorStep } from "./steps/security-steps";
 import { MakeItYoursStep, ProfileStep } from "./steps/you-steps";
@@ -97,6 +97,25 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
   const [billsSaved, setBillsSaved] = useState(0);
   const [imports, setImports] = useState<ImportedFile[]>([]);
   const [appLockOn, setAppLockOn] = useState(false);
+
+  // The step card's scrolling body and the footer strip under it. A hairline tops the
+  // footer while there is more of the step below, so it reads as scrollable.
+  const [cardBody, setCardBody] = useState<HTMLDivElement | null>(null);
+  const [footerSlot, setFooterSlot] = useState<HTMLDivElement | null>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+  useEffect(() => {
+    if (!cardBody) return;
+    const update = () => setMoreBelow(cardBody.scrollHeight - cardBody.scrollTop - cardBody.clientHeight > 1);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(cardBody);
+    if (cardBody.firstElementChild) ro.observe(cardBody.firstElementChild);
+    cardBody.addEventListener("scroll", update, { passive: true });
+    return () => {
+      ro.disconnect();
+      cardBody.removeEventListener("scroll", update);
+    };
+  }, [cardBody]);
 
   const step = STEPS[index];
   const minIndex = accountCreated ? at(RESUME_STEP) : 0;
@@ -198,12 +217,16 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
   // Marks onboarding complete (the account row exists since the password step, so
   // /register needs this separate signal), then hands off to the overlay in the root
   // layout, which survives the navigation — see finish-transition-state.tsx.
-  async function finish() {
+  async function finish(origin: FinishTransitionOptions["origin"]) {
     await fetch("/api/onboarding/finish", { method: "POST" }).catch(() => {});
-    const imported = imports.reduce((n, f) => n + f.imported, 0);
     startFinishTransition({
       name: about.firstName,
-      importResult: imports.length ? { imported, autoCategorised: imports.reduce((n, f) => n + f.autoCategorised, 0) } : null,
+      origin,
+      summary: {
+        imported: imports.reduce((n, f) => n + f.imported, 0),
+        bills: billsSaved,
+        strategy: { needs: strategy.nodig, wants: strategy.willen, savings: strategy.sparen },
+      },
     });
   }
 
@@ -354,17 +377,26 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
               {step === "finish" ? (
                 renderStep()
               ) : (
-                // Never taller than the window: the card scrolls inside and the step footer sticks
-                // to its bottom (StepFooter), so Continue stays in view when a step grows.
-                <div
-                  className={cn(
-                    "clear-scrollbar flex max-h-[calc(100dvh-7.5rem-var(--sat,0px)-var(--sab,0px))] flex-col overflow-y-auto rounded-clear-dialog bg-clear-card p-6 sm:max-h-[calc(100dvh-8.5rem)] lg:max-h-[calc(100dvh-5rem)]",
-                    step === "welcome" ? "gap-[30px] sm:p-11" : "gap-6 sm:p-9",
-                  )}
-                >
-                  <StepProgress current={index + 1} total={STEPS.length} group={t(`groups.${groupOf(step)}`)} />
-                  {error && <StepNotice>{error}</StepNotice>}
-                  {renderStep()}
+                // Never taller than the window: the body scrolls inside and the step's footer
+                // (StepFooter, portalled into the strip below it) stays in view underneath,
+                // never on top of the last field.
+                <div className="flex max-h-[calc(100dvh-7.5rem-var(--sat,0px)-var(--sab,0px))] flex-col overflow-hidden rounded-clear-dialog bg-clear-card sm:max-h-[calc(100dvh-8.5rem)] lg:max-h-[calc(100dvh-5rem)]">
+                  <div ref={setCardBody} className="clear-scrollbar min-h-0 overflow-y-auto">
+                    <div
+                      className={cn(
+                        "flex flex-col p-6",
+                        step === "welcome" ? "gap-[30px] sm:p-11" : "gap-6 pb-5 sm:p-9 sm:pb-5",
+                      )}
+                    >
+                      <StepProgress current={index + 1} total={STEPS.length} group={t(`groups.${groupOf(step)}`)} />
+                      {error && <StepNotice>{error}</StepNotice>}
+                      <StepFooterSlot value={footerSlot}>{renderStep()}</StepFooterSlot>
+                    </div>
+                  </div>
+                  <div
+                    ref={setFooterSlot}
+                    className={cn("shrink-0 border-t transition-colors empty:hidden", moreBelow ? "border-clear-line" : "border-transparent")}
+                  />
                 </div>
               )}
             </m.div>

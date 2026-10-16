@@ -1,10 +1,17 @@
 "use client";
 
-import { createContext, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 
 export interface FinishTransitionOptions {
   name: string;
-  importResult: { imported: number; autoCategorised: number } | null;
+  /** Where the ember bloom starts: the finish step's check circle (viewport px). */
+  origin: { x: number; y: number; r: number } | null;
+  /** What the welcome screen ticks off. */
+  summary: {
+    imported: number;
+    bills: number;
+    strategy: { needs: number; wants: number; savings: number };
+  };
 }
 
 interface Ctx {
@@ -21,35 +28,36 @@ interface Ctx {
 
 const FinishTransitionContext = createContext<Ctx | null>(null);
 
-// Lets the onboarding wizard hand its "getting things ready" loading screen off to a
-// component mounted in the persistent root layout (FinishTransitionOverlay), instead of
-// rendering it itself. The wizard lives inside /register's page tree, which gets torn
-// down the instant a client-side navigation completes — so a fade-out timed to happen
-// *inside* the wizard can never actually reveal the destination page, only an abrupt cut.
+// Lets the onboarding wizard hand its "welcome to Arca" transition off to a component
+// mounted in the persistent root layout (FinishTransitionOverlay), instead of rendering
+// it itself. The wizard lives inside /register's page tree, which gets torn down the
+// instant a client-side navigation completes — so a reveal timed to happen *inside* the
+// wizard could never actually show the destination page, only an abrupt cut.
 // This provider (mounted in layout.tsx, alongside the overlay) is a sibling of the page
 // content, not a descendant of it, so it survives the /register → "/" navigation.
 //
 // The overlay doesn't guess how long the dashboard takes to fetch/render — it waits for
 // the dashboard itself to report that it actually mounted (via notifyRouteReady, called
-// from DashboardReadySignal at the top of src/app/page.tsx) before starting its fade.
+// from DashboardReadySignal at the top of src/app/page.tsx) before it reveals Home.
 export function FinishTransitionProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState(false);
   const [options, setOptions] = useState<FinishTransitionOptions | null>(null);
   const [routeReadyTick, setRouteReadyTick] = useState(0);
   const tickRef = useRef(0);
 
-  function start(opts: FinishTransitionOptions) {
+  // Stable, so the overlay's effects don't restart when the provider re-renders.
+  const start = useCallback((opts: FinishTransitionOptions) => {
     setOptions(opts);
     setActive(true);
-  }
-  function stop() {
+  }, []);
+  const stop = useCallback(() => {
     setActive(false);
     setOptions(null);
-  }
-  function notifyRouteReady() {
+  }, []);
+  const notifyRouteReady = useCallback(() => {
     tickRef.current += 1;
     setRouteReadyTick(tickRef.current);
-  }
+  }, []);
 
   return (
     <FinishTransitionContext.Provider value={{ active, options, routeReadyTick, start, stop, notifyRouteReady }}>

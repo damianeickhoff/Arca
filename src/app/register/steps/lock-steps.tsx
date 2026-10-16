@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { m } from "@/lib/motion";
 import { IconBackspace, IconCalendarRepeat, IconCheck, IconChartPie, IconFileSpreadsheet, IconLock } from "@tabler/icons-react";
 import { ClearButton } from "@/components/clear/button";
 import { ClearChip } from "@/components/clear/chip";
@@ -165,11 +166,13 @@ export function FinishStep({
   strategy: BudgetStrategyDraft;
   appLock: boolean;
   finishing: boolean;
-  onFinish: () => void;
+  /** Gets the check circle's centre and radius (viewport px), where the bloom starts. */
+  onFinish: (origin: { x: number; y: number; r: number } | null) => void;
 }) {
   const t = useTranslations("onboarding.finish");
   const tApp = useTranslations("onboarding");
   const app = tApp("appName");
+  const checkRef = useRef<HTMLSpanElement>(null);
 
   const tiles: { key: string; tone: ClearTone; icon: React.ReactNode; title: string; hint: string }[] = [
     {
@@ -202,24 +205,38 @@ export function FinishStep({
     },
   ];
 
+  // Everything but the check fades while it pulses; the ember bloom
+  // (FinishTransitionOverlay) then grows out of the check itself.
+  const fade = cn("transition-opacity duration-300", finishing && "pointer-events-none opacity-0");
+
+  function finish() {
+    const rect = checkRef.current?.getBoundingClientRect();
+    onFinish(rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, r: rect.width / 2 } : null);
+  }
+
   return (
     <div className="flex flex-col items-center gap-7 text-center">
-      <div aria-hidden className="flex size-[200px] items-center justify-center rounded-full bg-clear-card/55 sm:size-[260px]">
+      <m.div
+        aria-hidden
+        animate={finishing ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+        transition={{ duration: 0.35, ease: "easeInOut", times: [0, 0.5, 1] }}
+        className="flex size-[200px] items-center justify-center rounded-full bg-clear-card/55 sm:size-[260px]"
+      >
         <div className="flex size-[164px] items-center justify-center rounded-full bg-clear-card sm:size-[212px]">
-          <span className="inline-flex size-[124px] items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink sm:size-40">
+          <span ref={checkRef} className="inline-flex size-[124px] items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink sm:size-40">
             <IconCheck size={64} stroke={2.6} />
           </span>
         </div>
-      </div>
+      </m.div>
 
-      <div className="flex flex-col items-center gap-3">
+      <div className={cn("flex flex-col items-center gap-3", fade)}>
         <h1 className="m-0 text-[30px] leading-[1.1] font-extrabold tracking-[-0.03em] sm:text-[40px]">
           {firstName ? t("title", { name: firstName }) : t("titleNoName")}
         </h1>
         <p className="m-0 text-base leading-normal text-clear-ink-2">{t("subtitle", { app })}</p>
       </div>
 
-      <ul aria-label={t("summaryLabel")} className="m-0 grid w-full max-w-[820px] list-none grid-cols-1 gap-3 p-0 text-left min-[420px]:grid-cols-2 xl:grid-cols-4">
+      <ul aria-label={t("summaryLabel")} className={cn("m-0 grid w-full max-w-[820px] list-none grid-cols-1 gap-3 p-0 text-left min-[420px]:grid-cols-2 xl:grid-cols-4", fade)}>
         {tiles.map((tile) => (
           <li key={tile.key} className="flex flex-col gap-2.5 rounded-clear-tile bg-clear-card p-3.5">
             <IconTile tone={tile.tone} size="sm">
@@ -233,7 +250,7 @@ export function FinishStep({
         ))}
       </ul>
 
-      <ClearButton size="lg" onClick={onFinish} disabled={finishing} className="mt-2 h-13 px-[30px] text-base">
+      <ClearButton size="lg" onClick={finish} disabled={finishing} className={cn("mt-2 h-13 px-[30px] text-base", fade)}>
         {finishing ? t("opening") : t("open", { app })}
       </ClearButton>
     </div>

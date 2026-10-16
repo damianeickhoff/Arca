@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { createContext, useContext, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { IconCheck, IconChevronRight } from "@tabler/icons-react";
 import { BrandMark } from "@/components/clear/brand-mark";
@@ -27,7 +28,11 @@ export interface StepperGroup {
   steps: { key: string; label: string }[];
 }
 
-/** The black panel on the left (lg+): logo, the five groups with their steps, sign-in link. */
+/**
+ * The black panel on the left (lg+): logo, the five groups with their steps, sign-in link.
+ * In dark mode the hero tokens would turn it light; there it takes the app sidebar's
+ * look instead (dark card, hairline on the right) by pointing them at the card tokens.
+ */
 export function OnboardingStepper({
   groups,
   currentKey,
@@ -43,7 +48,7 @@ export function OnboardingStepper({
   let n = 0;
 
   return (
-    <aside className="sticky top-0 hidden h-dvh w-[440px] shrink-0 flex-col gap-10 overflow-y-auto bg-clear-hero px-11 py-10 text-clear-hero-ink lg:flex">
+    <aside className="sticky top-0 hidden h-dvh w-[440px] shrink-0 flex-col gap-10 overflow-y-auto bg-clear-hero px-11 py-10 text-clear-hero-ink lg:flex dark:border-r dark:border-clear-line dark:[--clr-hero-ink-2:var(--clr-ink-2)] dark:[--clr-hero-ink:var(--clr-ink)] dark:[--clr-hero:var(--clr-card)]">
       <OnboardingBrand />
       <ol aria-label={t("stepsLabel")} className="m-0 flex list-none flex-col gap-[22px] p-0">
         {groups.map((g) => (
@@ -129,8 +134,15 @@ export function StepHeading({ title, subtitle, large = false }: { title: React.R
 }
 
 /**
+ * Where the step card wants its footer: a strip under the card's scrolling body, so the
+ * buttons stay in view without ever covering the last field (see onboarding-wizard.tsx).
+ */
+export const StepFooterSlot = createContext<HTMLElement | null>(null);
+
+/**
  * Back on the left, then an optional "Skip for now" and the primary action. On phones
- * the buttons stack full width with the primary one on top.
+ * the buttons stack full width with the primary one on top. Rendered into the card's
+ * footer strip (StepFooterSlot), outside the part that scrolls.
  */
 export function StepFooter({
   onBack,
@@ -148,10 +160,10 @@ export function StepFooter({
   primaryArrow?: boolean;
 }) {
   const t = useTranslations("onboarding");
-  return (
-    // Sticks to the bottom of the scrolling card; the negative margins and matching
-    // padding cover the card padding (p-6 / sm:p-9) so content scrolls under it cleanly.
-    <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-auto flex flex-col-reverse gap-2.5 bg-clear-card px-6 pt-3 pb-6 sm:-mx-9 sm:-mb-9 sm:flex-row sm:items-center sm:px-9 sm:pb-9">
+  const slot = useContext(StepFooterSlot);
+  if (!slot) return null;
+  return createPortal(
+    <div className="flex flex-col-reverse gap-2.5 px-6 pt-4 pb-6 sm:flex-row sm:items-center sm:px-9 sm:pb-9">
       {onBack && (
         <ClearButton variant="secondary" size="lg" onClick={onBack}>
           {t("back")}
@@ -167,7 +179,8 @@ export function StepFooter({
         {primaryLabel}
         {primaryArrow && <IconChevronRight stroke={2.2} aria-hidden className="size-4" />}
       </ClearButton>
-    </div>
+    </div>,
+    slot,
   );
 }
 

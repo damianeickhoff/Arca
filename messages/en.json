@@ -2154,19 +2154,12 @@
       "opening": "Opening…"
     },
     "finishing": {
-      "phrases": {
-        "calculator": "Warming up the calculator…",
-        "coins": "Counting your coins…",
-        "piggyBank": "Fetching the piggy bank…",
-        "untangle": "Untangling your transactions…",
-        "behave": "Teaching the numbers to behave…",
-        "polish": "Polishing your dashboard…"
-      },
-      "ready": "Everything is ready, {name}!",
-      "readyNoName": "Everything is ready!",
-      "withImport": "Setting up your household… adding your {count, plural, one {# transaction} other {# transactions}} to Insights",
-      "withoutImport": "Setting up your household…",
-      "progressLabel": "Setting up your household"
+      "welcome": "Welcome to {app}, {name}",
+      "welcomeNoName": "Welcome to {app}",
+      "ready": "Your household is ready.",
+      "transactions": "{count, plural, one {# transaction} other {# transactions}} sorted",
+      "plan": "{needs} / {wants} / {savings} plan ready",
+      "bills": "{count, plural, one {# bill} other {# bills}} on Upcoming"
     }
   },
   "newAccounts": {

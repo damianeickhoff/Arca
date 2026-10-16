@@ -4,180 +4,170 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { IconCheck } from "@tabler/icons-react";
-import { m, AnimatePresence, spring } from "@/lib/motion";
+import { m, animate, easeOutQuart, useReducedMotion } from "@/lib/motion";
 import { useFinishTransition } from "@/lib/finish-transition-state";
-import { cn } from "@/lib/utils";
 
-// A handful of phrases, shown slower than a typical loading spinner — this is meant to
-// be read, not just glanced at.
-const PHRASES = ["calculator", "coins", "piggyBank", "untangle", "behave", "polish"] as const;
+const BLOOM_DELAY_S = 0.3; // lets the finish step fade and its check pulse first
+const BLOOM_S = 0.85;
+const NAVIGATE_MS = 1200; // the screen is fully ember by now, so Home can load underneath
+const MIN_HOLD_MS = 3000; // the welcome stays at least this long — it's meant to be read
+const REVEAL_BUFFER_MS = 120; // after Home signals it mounted, for paint to settle
+const REVEAL_FALLBACK_MS = 4000; // reveal anyway if Home never signals (defensive)
+const REVEAL_S = 0.85;
+const EASE_BLOOM = [0.7, 0, 0.2, 1] as const;
+const EASE_REVEAL = [0.65, 0, 0.2, 1] as const;
 
-const PHRASE_MS = 1800;
-const HOLD_MS = 7000; // how long the loading phrases run before "ready"
-const READY_HOLD_MS = 1100; // how long "Everything is ready!" shows before navigating
-const REVEAL_BUFFER_MS = 120; // tiny buffer after the dashboard signals ready, for paint to settle
-const REVEAL_FALLBACK_MS = 4000; // reveal anyway if the dashboard never signals (defensive)
-const FADE_MS = 500;
-
-const CONFETTI = ["bg-clear-ember", "bg-clear-info-fill", "bg-clear-positive-fill", "bg-clear-warning-fill", "bg-clear-rose-ink", "bg-clear-lilac-ink"];
-
-/** A fixed scatter (0–1) per piece and property — the same burst every time, no Math.random in render. */
-function scatter(i: number, k: number) {
-  const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
-  return x - Math.floor(x);
+/** Distance from (x, y) to the farthest viewport corner: a circle that big covers the screen. */
+function coverRadius(x: number, y: number) {
+  return Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
 }
 
-const PIECES = Array.from({ length: 32 }, (_, i) => ({
-  id: i,
-  left: scatter(i, 1) * 100,
-  color: CONFETTI[i % CONFETTI.length],
-  delay: scatter(i, 2) * 0.3,
-  duration: 1.6 + scatter(i, 3) * 0.9,
-  rotate: scatter(i, 4) * 360,
-  drift: (scatter(i, 5) - 0.5) * 180,
-}));
-
-function ConfettiBurst() {
+function Rise({ delay, className, children }: { delay: number; className?: string; children: React.ReactNode }) {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      {PIECES.map((p) => (
-        <m.span
-          key={p.id}
-          initial={{ top: "-5%", left: `${p.left}%`, opacity: 1, rotate: 0 }}
-          animate={{ top: "105%", opacity: [1, 1, 0], rotate: p.rotate, x: p.drift }}
-          transition={{ duration: p.duration, delay: p.delay, ease: "easeIn" }}
-          className={cn("absolute size-2.5 rounded-[2px]", p.color)}
-        />
-      ))}
-    </div>
+    <m.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay, ease: easeOutQuart }}
+      className={className}
+    >
+      {children}
+    </m.div>
   );
 }
 
-// Mounted once in the root layout (see FinishTransitionProvider for why). Runs the whole
-// "setting up your household" sequence itself — cycling phrases with a progress bar,
-// showing "ready", navigating, and only *then* fading out. The fade is triggered by the
-// dashboard page itself reporting that it actually mounted (via routeReadyTick, see
-// DashboardReadySignal) rather than a fixed delay, so it never reveals Next's in-between
-// blank state instead of real content.
+// Mounted once in the root layout (see FinishTransitionProvider for why). The finish
+// step's ember check blooms over the whole screen and says welcome, Home loads
+// underneath, and once it has mounted (DashboardReadySignal) it opens through a growing
+// circle in the middle of the ember.
 export function FinishTransitionOverlay() {
   const t = useTranslations("onboarding.finishing");
+  const tApp = useTranslations("onboarding");
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const { active, options, routeReadyTick, stop } = useFinishTransition();
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [ready, setReady] = useState(false);
-  const [revealing, setRevealing] = useState(false);
-  const [waitingForRoute, setWaitingForRoute] = useState(false);
+  const [navigated, setNavigated] = useState(false);
+  const [minHeld, setMinHeld] = useState(false);
+  const [routeReady, setRouteReady] = useState(false);
+  const revealing = minHeld && routeReady;
+  const layerRef = useRef<HTMLDivElement>(null);
 
-  // The routeReadyTick value at the moment we start waiting — only a *later* tick than
-  // this (i.e. the dashboard actually mounting after we navigated) should trigger the
-  // reveal, not one left over from whatever was already true before we got here.
+  // The routeReadyTick value at the moment we navigate — only a *later* tick (Home
+  // actually mounting after we navigated) counts, not one left over from before.
   const baselineTickRef = useRef(0);
 
-  // Main sequence: phrases → "ready" → navigate → start waiting for the dashboard's signal.
+  // Main sequence: bloom → navigate (Home renders underneath) → hold the welcome.
   useEffect(() => {
     if (!active) return;
-    setReady(false);
-    setRevealing(false);
-    setWaitingForRoute(false);
-    setPhraseIndex(0);
+    setNavigated(false);
+    setMinHeld(false);
+    setRouteReady(false);
 
-    const cycle = setInterval(() => setPhraseIndex((i) => (i + 1) % PHRASES.length), PHRASE_MS);
-    const readyTimer = setTimeout(() => setReady(true), HOLD_MS);
     const navigateTimer = setTimeout(() => {
       baselineTickRef.current = routeReadyTick;
       router.push("/");
       router.refresh();
-      setWaitingForRoute(true);
-    }, HOLD_MS + READY_HOLD_MS);
+      setNavigated(true);
+    }, NAVIGATE_MS);
+    const holdTimer = setTimeout(() => setMinHeld(true), MIN_HOLD_MS);
 
     return () => {
-      clearInterval(cycle);
-      clearTimeout(readyTimer);
       clearTimeout(navigateTimer);
+      clearTimeout(holdTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, router]);
 
-  // Once navigated, reveal as soon as the dashboard reports it mounted (plus a tiny paint
-  // buffer) — or after a generous fallback if that signal never arrives for some reason.
+  // Ready as soon as Home reports it mounted (plus a tiny paint buffer), or after a
+  // generous fallback if that signal never arrives.
   useEffect(() => {
-    if (!waitingForRoute) return;
-    if (routeReadyTick <= baselineTickRef.current) {
-      const fallback = setTimeout(() => setRevealing(true), REVEAL_FALLBACK_MS);
-      return () => clearTimeout(fallback);
-    }
-    const buffered = setTimeout(() => setRevealing(true), REVEAL_BUFFER_MS);
-    return () => clearTimeout(buffered);
-  }, [waitingForRoute, routeReadyTick]);
+    if (!navigated) return;
+    const signalled = routeReadyTick > baselineTickRef.current;
+    const timer = setTimeout(() => setRouteReady(true), signalled ? REVEAL_BUFFER_MS : REVEAL_FALLBACK_MS);
+    return () => clearTimeout(timer);
+  }, [navigated, routeReadyTick]);
 
-  // Once the fade starts, fully unmount after it completes.
+  // The reveal: a hole grows from the middle of the screen until Home shows through
+  // everywhere, then the overlay unmounts. With reduced motion the layer just fades.
   useEffect(() => {
     if (!revealing) return;
-    const timer = setTimeout(stop, FADE_MS);
-    return () => clearTimeout(timer);
-  }, [revealing, stop]);
+    const el = layerRef.current;
+    if (!el || reduceMotion) {
+      const timer = setTimeout(stop, 400);
+      return () => clearTimeout(timer);
+    }
+    const x = window.innerWidth / 2;
+    const y = window.innerHeight / 2;
+    const controls = animate(0, coverRadius(x, y), {
+      duration: REVEAL_S,
+      delay: 0.1,
+      ease: EASE_REVEAL,
+      onUpdate: (r) => {
+        const mask = `radial-gradient(circle at ${x}px ${y}px, transparent ${r}px, #000 ${r + 1}px)`;
+        el.style.maskImage = mask;
+        el.style.webkitMaskImage = mask;
+      },
+      onComplete: stop,
+    });
+    return () => controls.stop();
+  }, [revealing, reduceMotion, stop]);
 
-  if (!active) return null;
+  if (!active || !options) return null;
 
-  const name = options?.name;
-  const imported = options?.importResult?.imported ?? 0;
+  const app = tApp("appName");
+  const { name, summary } = options;
+  const x = options.origin?.x ?? window.innerWidth / 2;
+  const y = options.origin?.y ?? window.innerHeight / 2;
+  const r = options.origin?.r ?? 0;
+  const items = [
+    summary.imported > 0 ? t("transactions", { count: summary.imported }) : null,
+    t("plan", summary.strategy),
+    summary.bills > 0 ? t("bills", { count: summary.bills }) : null,
+  ].filter((item): item is string => item !== null);
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-clear-ground px-6 font-clear text-clear-ink transition-opacity"
-      style={{ opacity: revealing ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
+    <m.div
+      ref={layerRef}
+      role="status"
+      className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-clear-ember px-6 font-clear text-clear-ember-ink"
+      initial={reduceMotion ? { opacity: 0 } : { clipPath: `circle(${r}px at ${x}px ${y}px)` }}
+      animate={reduceMotion ? { opacity: revealing ? 0 : 1 } : { clipPath: `circle(${coverRadius(x, y)}px at ${x}px ${y}px)` }}
+      transition={reduceMotion ? { duration: 0.4 } : { duration: BLOOM_S, delay: BLOOM_DELAY_S, ease: EASE_BLOOM }}
     >
-      {ready && !revealing && <ConfettiBurst />}
-
-      <div className="relative z-10 flex w-full max-w-[420px] flex-col items-center gap-7 text-center">
-        <div aria-hidden className="flex size-[180px] items-center justify-center rounded-full bg-clear-card/55">
-          <div className="flex size-[146px] items-center justify-center rounded-full bg-clear-card">
-            <m.span
-              animate={ready ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-              // Three keyframes (a pop and back) can't run on a spring — Motion throws and
-              // the overlay never hands off — so the pop is a short timed animation.
-              transition={ready ? { duration: 0.5, ease: "easeInOut", times: [0, 0.4, 1] } : spring.gentle}
-              className="inline-flex size-[110px] items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink"
-            >
-              {ready ? (
-                <IconCheck size={52} stroke={2.6} />
-              ) : (
-                <span className="size-12 animate-spin rounded-full border-[3px] border-clear-ember-ink/25 border-t-clear-ember-ink" />
-              )}
-            </m.span>
-          </div>
-        </div>
-
-        <div className="flex min-h-[96px] flex-col items-center gap-3">
-          <AnimatePresence mode="wait">
-            <m.h2
-              key={ready ? "ready" : phraseIndex}
-              initial={{ opacity: 0, y: 12 }}
+      <m.div
+        className="flex flex-col items-center text-center"
+        animate={{ opacity: revealing ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Rise delay={0.55}>
+          <span aria-hidden className="inline-flex size-[72px] items-center justify-center rounded-full border-[3px] border-clear-ember-ink sm:size-[88px]">
+            <IconCheck size={40} stroke={2.6} />
+          </span>
+        </Rise>
+        <Rise delay={0.7}>
+          <h2 className="m-0 mt-7 text-[40px] leading-none font-extrabold tracking-[-0.04em] sm:text-[56px] lg:text-[72px]">
+            {name ? t("welcome", { app, name }) : t("welcomeNoName", { app })}
+          </h2>
+        </Rise>
+        <Rise delay={0.85}>
+          <p className="m-0 mt-4 text-base font-semibold sm:text-lg">{t("ready")}</p>
+        </Rise>
+        <ul className="m-0 mt-10 flex list-none flex-col items-start gap-3 p-0 sm:flex-row sm:items-center sm:gap-7">
+          {items.map((item, i) => (
+            <m.li
+              key={item}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={spring.gentle}
-              className="m-0 text-[28px] leading-[1.1] font-extrabold tracking-[-0.03em] sm:text-[34px]"
+              transition={{ duration: 0.45, delay: 1.05 + i * 0.25, ease: easeOutQuart }}
+              className="inline-flex items-center gap-2.5 text-[15px] font-bold"
             >
-              {ready ? (name ? t("ready", { name }) : t("readyNoName")) : t(`phrases.${PHRASES[phraseIndex]}`)}
-            </m.h2>
-          </AnimatePresence>
-          <p role="status" className="m-0 text-base leading-normal text-clear-ink-2">
-            {imported > 0 ? t("withImport", { count: imported }) : t("withoutImport")}
-          </p>
-        </div>
-
-        <div className="flex w-full items-center gap-3">
-          <div aria-hidden className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-clear-line">
-            <m.span
-              className="absolute inset-y-0 left-0 rounded-full bg-clear-ember"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: HOLD_MS / 1000, ease: "easeInOut" }}
-            />
-          </div>
-          <span className="sr-only">{t("progressLabel")}</span>
-        </div>
-      </div>
-    </div>
+              <span aria-hidden className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-full bg-clear-ember-ink text-clear-ember">
+                <IconCheck size={14} stroke={3} />
+              </span>
+              {item}
+            </m.li>
+          ))}
+        </ul>
+      </m.div>
+    </m.div>
   );
 }
