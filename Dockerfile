@@ -4,6 +4,10 @@ WORKDIR /app
 
 COPY package*.json ./
 
+# The lock file is written by npm 11; npm 10 (bundled with Node 22) reads its optional
+# peer entries differently and refuses npm ci. Install with the same npm as development.
+RUN npm install -g npm@11
+
 RUN npm ci
 
 COPY . .
@@ -31,7 +35,7 @@ COPY --from=builder /app/public ./public
 # Needed at runtime by db:init (src/db/migrate.ts + the src/config it imports).
 COPY --from=builder /app/src ./src
 
-RUN npm ci --omit=dev && du -sh node_modules
+RUN npm install -g npm@11 && npm ci --omit=dev && du -sh node_modules
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
