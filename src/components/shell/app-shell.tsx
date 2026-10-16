@@ -116,7 +116,8 @@ function DesktopSidebar({
     // roomier from 800px, the full layout with the logo from 900px. Below ~650px a long
     // menu (Insights open) scrolls inside the sidebar.
     <aside className="clear-scrollbar fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col gap-3 overflow-y-auto border-r border-clear-line bg-clear-card px-4 py-4 font-clear text-clear-ink lg:flex [@media(min-height:800px)]:gap-4 [@media(min-height:800px)]:py-5 [@media(min-height:900px)]:gap-6 [@media(min-height:900px)]:px-5 [@media(min-height:900px)]:py-7">
-      <Wordmark className="hidden px-2 [@media(min-height:900px)]:inline-flex" />
+      {/* Centred over the profile, which stacks centred from 900px too. */}
+      <Wordmark className="hidden self-center [@media(min-height:900px)]:inline-flex" />
 
       <Link
         href="/settings"
