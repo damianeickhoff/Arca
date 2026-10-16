@@ -3,6 +3,7 @@ import { drizzle, type BetterSQLite3Database } from "drizzle-orm/better-sqlite3"
 import * as schema from "./schema";
 import path from "path";
 import { runConfigSync, applyDefaultCategoryRulesSync } from "@/lib/config-sync";
+import { migrateCategoryGroups } from "@/lib/category-groups-migration";
 import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
 import { detectBrandIcon } from "@/lib/brand-detect";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
@@ -288,6 +289,9 @@ addColumnIfMissing("categories", "parent_category_id", "INTEGER REFERENCES categ
 // Auto-migrate: hide a category from the dashboard's "Spending by category" row
 addColumnIfMissing("categories", "exclude_from_spending_row", "INTEGER NOT NULL DEFAULT 0");
 
+// Auto-migrate: category groups (see src/lib/category-groups-migration.ts)
+addColumnIfMissing("categories", "is_group", "INTEGER NOT NULL DEFAULT 0");
+
 // Auto-migrate: per-transaction budget type override
 addColumnIfMissing("transactions", "budget_type_override", "TEXT");
 
@@ -571,6 +575,10 @@ addColumnIfMissing("transactions", "shared_with_count", "INTEGER");
   sqlite.exec(`UPDATE transactions      SET budget_type_override = 'nodig'  WHERE lower(budget_type_override) IN ('needs','need')`);
   sqlite.exec(`UPDATE transactions      SET budget_type_override = 'willen' WHERE lower(budget_type_override) IN ('wants','want')`);
   sqlite.exec(`UPDATE transactions      SET budget_type_override = 'sparen' WHERE lower(budget_type_override) IN ('savings','saving')`);
+
+  // Two levels: every top-level category becomes a group, every other category sits in
+  // one. Runs after the config sync so the seeded "Other" group exists.
+  migrateCategoryGroups(sqlite);
 
   return drizzle(sqlite, { schema });
 }

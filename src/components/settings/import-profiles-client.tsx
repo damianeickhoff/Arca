@@ -84,7 +84,7 @@ export function ImportProfilesClient({ profiles }: { profiles: ImportProfileList
   return (
     <>
       <PanelHeader title={tPanels("importProfiles.title")} />
-      <div className="flex flex-col gap-5 px-4 pt-1 pb-8 font-clear text-clear-ink">
+      <div className="flex flex-col gap-5 px-4 pt-1 font-clear text-clear-ink">
         <p className="m-0 text-sm text-clear-ink-2">{t("description")}</p>
 
         {error && <SettingsNotice>{error}</SettingsNotice>}

@@ -14,7 +14,8 @@ import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import type { CategorySuggestions } from "@/lib/category-suggestions";
 import { cn } from "@/lib/utils";
-import { normalizeBudgetType } from "@/lib/format";
+import { groupCategories } from "@/lib/category-tree";
+import { formatEur } from "@/lib/format";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 
@@ -72,35 +73,20 @@ function useKeyboardSafePicker(open: boolean) {
   }, [open]);
 }
 
-/** Budget-type groups, in the order the list shows them. "" = no budget type. */
-const GROUPS = [
-  { key: "nodig", dot: "bg-clear-ink" },
-  { key: "willen", dot: "bg-clear-ember" },
-  { key: "sparen", dot: "bg-clear-info-fill" },
-  { key: "", dot: "bg-clear-placeholder" },
-] as const;
-
-type GroupKey = (typeof GROUPS)[number]["key"];
-
-function groupOf(cat: Category): GroupKey {
-  const type = normalizeBudgetType(cat.budgetType);
-  return type === "nodig" || type === "willen" || type === "sparen" ? type : "";
-}
-
 /** One selectable entry in visual order — what the arrow keys walk through. */
 interface PickOption {
   value: string;
   label: string;
   iconKey?: string | null;
   color?: string | null;
-  child?: boolean;
 }
 
 /**
- * The category list: a search field, then every category grouped under Needs · Wants ·
- * Savings · Other, children indented under their parent. Arrow keys move through the
- * list, Enter selects (and, when `onConfirm` is set, Enter on the selected one confirms
- * it). Two columns from lg, like the Clear mockup.
+ * The category list: a search field, then every category under its group's heading, in
+ * the same order as Settings › Categories. Groups are only headings; searching matches a
+ * group's name too (showing all its categories). Arrow keys move through the list, Enter
+ * selects (and, when `onConfirm` is set, Enter on the selected one confirms it). Two
+ * columns from lg.
  */
 function CategoryGrid({
   categories,
@@ -132,33 +118,18 @@ function CategoryGrid({
 
   const query = search.trim().toLowerCase();
 
-  // Groups of [parent, ...children] blocks, plus the flat option order the keys use.
+  // Groups with their (matching) categories, plus the flat option order the keys use.
   const { special, groups, options } = useMemo(() => {
-    const matches = (c: Category) => !query || c.name.toLowerCase().includes(query);
-    const idsPresent = new Set(categories.filter(matches).map((c) => c.id));
-    const topLevel: Category[] = [];
-    const childrenByParentId = new Map<number, Category[]>();
-
-    for (const cat of categories) {
-      if (!matches(cat)) continue;
-      // Top-level here = no parent, or its parent got filtered out — orphaned matches
-      // are promoted so they're never lost.
-      const isTop = cat.parentCategoryId === null || !idsPresent.has(cat.parentCategoryId);
-      if (isTop) topLevel.push(cat);
-      else {
-        const siblings = childrenByParentId.get(cat.parentCategoryId!);
-        if (siblings) siblings.push(cat);
-        else childrenByParentId.set(cat.parentCategoryId!, [cat]);
-      }
-    }
-
-    const toOption = (c: Category, child = false): PickOption => ({ value: String(c.id), label: c.name, iconKey: c.icon, color: c.color, child });
+    const toOption = (c: Category, color: string | null): PickOption => ({ value: String(c.id), label: c.name, iconKey: c.icon, color });
     const special: PickOption[] = query ? [] : [{ value: "none", label: t("uncategorized"), iconKey: UNCATEGORIZED_ICON, color: UNCATEGORIZED_COLOR }];
-    const groups = GROUPS.map((g) => ({
-      ...g,
-      blocks: topLevel.filter((c) => groupOf(c) === g.key).map((c) => [toOption(c), ...(childrenByParentId.get(c.id) ?? []).map((ch) => toOption(ch, true))]),
-    })).filter((g) => g.blocks.length > 0);
-    const options = [...special, ...groups.flatMap((g) => g.blocks.flat())];
+    const groups = groupCategories(categories)
+      .map(({ group, categories: cats }) => {
+        const all = query && group.name.toLowerCase().includes(query);
+        const shown = all ? cats : cats.filter((c) => !query || c.name.toLowerCase().includes(query));
+        return { key: group.id, label: group.name, color: group.color, options: shown.map((c) => toOption(c, group.color)) };
+      })
+      .filter((g) => g.options.length > 0);
+    const options = [...special, ...groups.flatMap((g) => g.options)];
     return { special, groups, options };
   }, [categories, query, t]);
 
@@ -218,22 +189,14 @@ function CategoryGrid({
         onClick={() => onSelect(o.value)}
         onMouseMove={() => !isActive && setActiveValue(o.value)}
         className={cn(
-          "flex w-full cursor-pointer items-center gap-2.5 pr-2 pl-1 text-left outline-none transition-colors",
-          o.child ? "h-9 rounded-[10px] lg:h-[30px]" : "h-10 rounded-clear-icon lg:h-[34px]",
+          "flex h-10 w-full cursor-pointer items-center gap-2.5 rounded-clear-icon pr-2 pl-1 text-left outline-none transition-colors lg:h-[34px]",
           selected ? "bg-clear-tile ring-2 ring-clear-ink ring-inset" : isActive ? "bg-clear-tile" : "hover:bg-clear-tile",
         )}
       >
-        <span aria-hidden className={cn("inline-flex shrink-0", o.child ? "[&>*]:size-[22px]! [&>*]:rounded-[7px]!" : "[&>*]:size-[26px]! [&>*]:rounded-lg!")}>
-          <Icon iconKey={o.iconKey ?? null} color={o.color ?? null} soft size="xs" glyphSize={o.child ? 13 : 15} />
+        <span aria-hidden className="inline-flex shrink-0 [&>*]:size-[26px]! [&>*]:rounded-[8px]!">
+          <Icon iconKey={o.iconKey ?? null} color={o.color ?? null} soft size="xs" glyphSize={15} />
         </span>
-        <span
-          className={cn(
-            "min-w-0 flex-1 truncate",
-            o.child ? "text-[13px] font-semibold text-clear-ink-2" : "text-sm",
-            !o.child && (selected ? "font-extrabold" : "font-bold"),
-            o.child && selected && "font-bold text-clear-ink",
-          )}
-        >
+        <span className={cn("min-w-0 flex-1 truncate text-sm", selected ? "font-extrabold" : "font-bold")}>
           {o.label}
         </span>
         {selected && (
@@ -296,16 +259,9 @@ function CategoryGrid({
           <div className="lg:columns-2 lg:gap-4">
             {special.length > 0 && <div className="mb-3 flex break-inside-avoid flex-col gap-0.5">{special.map(renderOption)}</div>}
             {groups.map((g) => (
-              <div key={g.key} role="group" aria-label={t(`groups.${g.key || "other"}`)} className="mb-3 flex flex-col">
-                <GroupHeading dot={g.dot} label={t(`groups.${g.key || "other"}`)} />
-                {g.blocks.map(([parent, ...children]) => (
-                  <div key={parent.value} className="flex break-inside-avoid flex-col">
-                    {renderOption(parent)}
-                    {children.length > 0 && (
-                      <div className="mt-0.5 mb-1 ml-4 flex flex-col border-l-2 border-clear-stone pl-2.5">{children.map(renderOption)}</div>
-                    )}
-                  </div>
-                ))}
+              <div key={g.key} role="group" aria-label={g.label} className="mb-3 flex break-inside-avoid flex-col gap-0.5">
+                <GroupHeading color={g.color} label={g.label} />
+                {g.options.map(renderOption)}
               </div>
             ))}
           </div>
@@ -315,10 +271,12 @@ function CategoryGrid({
   );
 }
 
-function GroupHeading({ dot, label }: { dot: string; label: string }) {
+/** A group's heading in the list: its colour as a dot (the group's own colour, chosen by
+ *  the user — a data value, not a theme colour) and its name. */
+function GroupHeading({ color, label }: { color: string | null; label: string }) {
   return (
     <div className="flex h-[26px] break-after-avoid items-center gap-2 px-1.5 text-[13px] font-bold text-clear-ink-2">
-      <span aria-hidden className={cn("size-2 shrink-0 rounded-full", dot)} />
+      <span aria-hidden className={cn("size-2 shrink-0 rounded-full", !color && "bg-clear-placeholder")} style={color ? { backgroundColor: color } : undefined} />
       {label}
     </div>
   );
@@ -469,7 +427,9 @@ export function CategoryPickerSheet(props: SheetProps) {
   let subtitle: string | undefined;
   if (apply) {
     const names = data?.names.length ? data.names : (apply.names ?? []);
-    if (apply.ids.length === 1) subtitle = names[0] ? t("subtitleOne", { name: names[0] }) : undefined;
+    // One transaction: its name and amount, the amount once the suggestions arrive.
+    const amount = data ? `${data.total < 0 ? "−" : "+"}${formatEur(Math.abs(data.total))}` : null;
+    if (apply.ids.length === 1) subtitle = names[0] ? (amount ? t("subtitleOneAmount", { name: names[0], amount }) : t("subtitleOne", { name: names[0] })) : undefined;
     else {
       const shown = names.slice(0, 2).join(", ") + (names.length > 2 ? ` ${t("moreNames", { count: names.length - 2 })}` : "");
       subtitle = [t("subtitleMany", { count: apply.ids.length }), shown].filter(Boolean).join(" · ");
@@ -521,7 +481,7 @@ export function CategoryPickerSheet(props: SheetProps) {
         <ClearDialogHeader title={title} subtitle={subtitle} onClose={() => change(false)} closeLabel={t("close")} />
         {/* Apply mode is new (suggestions, the rule switch); the pick mode explains the
             grouped, keyboard-driven list. */}
-        <ContextualTip id={apply ? "categoryPickerSuggestions" : "categoryPickerGroups"} active={open} />
+        <ContextualTip id={apply ? "categoryPickerSuggestions" : "categoryPickerByGroup"} active={open} />
         <CategoryGrid
           categories={categories}
           current={apply ? staged : current}

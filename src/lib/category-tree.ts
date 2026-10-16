@@ -1,31 +1,44 @@
 import type { Category } from "@/db/schema";
 
-export interface CategoryTree {
-  topLevel: Category[];
-  childrenByParentId: Map<number, Category[]>;
+// Two levels (src/lib/category-groups-migration.ts): groups hold categories. Groups
+// are only headings and totals; only categories are ever assigned to anything.
+
+export interface CategoryGroupBlock {
+  group: Category;
+  categories: Category[];
 }
 
-/** Groups categories into top-level entries and their children, keeping input order. */
-export function groupCategoriesByParent(categories: Category[]): CategoryTree {
-  const topLevel: Category[] = [];
-  const childrenByParentId = new Map<number, Category[]>();
+/** How a group sorts: spending first, then savings, then income; "Other" last of the
+ *  spending groups; alphabetical otherwise. */
+function groupRank(group: Category) {
+  const kind = group.group === "income" ? 2 : group.group === "savings" ? 1 : 0;
+  const other = group.configKey === "Other" ? 1 : 0;
+  return [kind, other] as const;
+}
 
+export function compareGroups(a: Category, b: Category) {
+  const [ka, oa] = groupRank(a);
+  const [kb, ob] = groupRank(b);
+  return ka - kb || oa - ob || a.name.localeCompare(b.name);
+}
+
+/** Every group with its categories (alphabetical), in the order the app lists them.
+ *  A category whose group is missing from `categories` is left out. */
+export function groupCategories(categories: Category[]): CategoryGroupBlock[] {
+  const groups = categories.filter((c) => c.isGroup).sort(compareGroups);
+  const byGroup = new Map<number, Category[]>(groups.map((g) => [g.id, []]));
   for (const cat of categories) {
-    if (cat.parentCategoryId === null) {
-      topLevel.push(cat);
-    } else {
-      const siblings = childrenByParentId.get(cat.parentCategoryId);
-      if (siblings) siblings.push(cat);
-      else childrenByParentId.set(cat.parentCategoryId, [cat]);
-    }
+    if (cat.isGroup || cat.parentCategoryId == null) continue;
+    byGroup.get(cat.parentCategoryId)?.push(cat);
   }
-
-  return { topLevel, childrenByParentId };
+  return groups.map((group) => ({
+    group,
+    categories: (byGroup.get(group.id) ?? []).sort((a, b) => a.name.localeCompare(b.name)),
+  }));
 }
 
-/** A sub-category's displayed colour always follows its parent's *current* colour,
- * not whatever was last baked into its own `color` column — otherwise editing the
- * parent's colour leaves every child showing its stale, previously-saved value. */
+/** A category's displayed colour always follows its group's *current* colour, not
+ *  whatever was last baked into its own `color` column. */
 export function resolveCategoryColor(cat: Category, categories: Category[]): string | null {
   if (cat.parentCategoryId == null) return cat.color;
   const parent = categories.find((c) => c.id === cat.parentCategoryId);

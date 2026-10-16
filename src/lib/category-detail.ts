@@ -85,6 +85,8 @@ export interface CategoryDetail {
   popularDay: { weekday: number; amounts: number[] } | null; // weekday: 0=Mon..6=Sun, amounts = total spend per weekday
   biggestSpent: number | null;
   excludeFromSpendingRow: boolean;
+  /** A group: the totals cover every category in it. */
+  isGroup: boolean;
   /** The category's own budget type ("nodig" / "willen" / "sparen", or legacy English). */
   budgetType: string | null;
   /** The stored, period-agnostic budget target (one budget period's worth), unscaled. */
@@ -274,6 +276,7 @@ export async function getCategoryDetail(categoryId: number, from: string, to: st
   return {
     categoryId: category.id,
     categoryName: category.name,
+    isGroup: category.isGroup,
     color: category.color,
     icon: category.icon,
     from,

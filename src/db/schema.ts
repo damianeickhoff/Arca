@@ -12,7 +12,8 @@ import {
 export const categories = sqliteTable("categories", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  // bill | debt | subscription | variable | income | savings | "" (ungrouped)
+  // What the money counts as: "income", "savings" or "" (spending). A group's kind is
+  // the default for its categories. (Older rows may hold bill/debt/… — read as spending.)
   group: text("group").notNull().default(""),
   // nodig (need) | willen (want) | sparen (save) — not income; that's `group` instead
   budgetType: text("budget_type"),
@@ -24,8 +25,10 @@ export const categories = sqliteTable("categories", {
   // field), so config renames update the row instead of creating a duplicate.
   // Null for user-created categories.
   configKey: text("config_key"),
-  // Head category this one belongs to, if any. Max 2 levels: a category that itself
-  // has a parentCategoryId can never be chosen as someone else's parent.
+  // A group (Housing, Transport…) holds categories and adds them up; it is never
+  // assigned to a transaction, rule or recurring item itself. Groups are top level.
+  isGroup: integer("is_group", { mode: "boolean" }).notNull().default(false),
+  // The group this category belongs to. Every category that isn't a group has one.
   parentCategoryId: integer("parent_category_id").references((): AnySQLiteColumn => categories.id, { onDelete: "set null" }),
   // Hides this category from the dashboard's "Spending by category" row (e.g. rent,
   // which would otherwise always dominate it) — still shown, and re-includable, from

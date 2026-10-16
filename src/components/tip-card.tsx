@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
+  IconFolders,
   IconAdjustments,
   IconBrandGoogle,
   IconBuildingBank,
@@ -112,7 +113,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   insightsComingUp: IconCalendarDue,
   insightsForecastRange: IconCalendarStats,
   insightsNetWorthRange: IconChartLine,
-  categoryPickerGroups: IconTag,
+  categoryPickerByGroup: IconTag,
   categoryPickerSuggestions: IconFilter2,
   dateQuickPicks: IconCalendarCheck,
   searchActions: IconKeyboard,
@@ -133,6 +134,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   needsReviewBulk: IconChecklist,
   financialMonthDays: IconCalendarStats,
   merchantsWithoutIcon: IconBuildingStore,
+  categoryGroups: IconFolders,
+  insightsGroupSwitch: IconFolders,
 };
 
 /**

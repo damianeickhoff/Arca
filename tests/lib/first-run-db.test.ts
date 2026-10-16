@@ -27,5 +27,11 @@ describe("first run without db:init", () => {
     expect(categories.length).toBeGreaterThan(0);
     const transactions = await db.select().from(schema.transactions);
     expect(transactions).toEqual([]);
+    // Two levels: every category sits in a group, and the income group counts as income.
+    const groupIds = new Set(categories.filter((c) => c.isGroup).map((c) => c.id));
+    expect(groupIds.size).toBeGreaterThan(0);
+    expect(categories.filter((c) => !c.isGroup && (c.parentCategoryId == null || !groupIds.has(c.parentCategoryId)))).toEqual([]);
+    const salary = categories.find((c) => c.configKey === "Salary");
+    expect(salary?.group).toBe("income");
   });
 });

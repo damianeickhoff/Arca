@@ -26,10 +26,14 @@
 // needed, e.g. "IconBriefcase" or the solid variant "IconBriefcaseFilled".
 // Browse names at https://tabler.io/icons (PascalCase with "Icon" prefix).
 //
-// `parentKey` makes this entry a sub-category of the entry whose `key` it names —
-// any entry can be a parent, it doesn't need to be declared specially. Nesting is
-// capped at 2 levels: a `parentKey` that points at an entry which itself has a
-// `parentKey` is ignored by the sync (logged, not applied).
+// Categories come in two levels: groups and the categories inside them. An entry
+// without `parentKey` is a group (Housing, Transportation…): it can't be picked on a
+// transaction, it adds up everything inside it. An entry with `parentKey` is a
+// category in the group whose `key` it names. A `parentKey` that points at an entry
+// which itself has a `parentKey` is ignored by the sync (logged, not applied).
+//
+// `kind` marks what the money is: "income" or "savings" (spending when left out). A
+// category without its own `kind` takes its group's.
 export type MatchType = "contains" | "word" | "exact";
 export type MatchDirection = "income" | "expense";
 
@@ -69,6 +73,14 @@ export interface DefaultCategory {
   icon: string | null;
   matchingPatterns?: MatchingPattern[];
   parentKey?: string;
+  kind?: "income" | "savings";
+}
+
+/** What a default entry's money counts as: its own kind, else its group's. */
+export function defaultCategoryKind(def: DefaultCategory, all: DefaultCategory[] = DEFAULT_CATEGORIES): string {
+  if (def.kind) return def.kind;
+  const group = def.parentKey ? all.find((d) => d.key === def.parentKey) : undefined;
+  return group?.kind ?? "";
 }
 
 export const DEFAULT_CATEGORIES: DefaultCategory[] = [
@@ -79,6 +91,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   budgetType: "Needs", 
   color: "#de3535", 
   icon: "IconSchoolFilled",
+  parentKey: "Other",
   matchingPatterns: [
     "DUO",
     "Studielink",
@@ -350,6 +363,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   budgetType: "Needs", 
   color: "#deb435", 
   icon: "IconHomeFilled",
+  parentKey: "Other",
   matchingPatterns: [
     "Kinderopvang",
     "KDV",
@@ -375,6 +389,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   color: "#15c556", 
   icon: "IconPigFilled", 
   parentKey: "Finance",
+  kind: "savings",
   matchingPatterns: [
     "ING Bank",
     "ABN AMRO",
@@ -525,6 +540,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   budgetType: "Wants", 
   color: "#4ade35", 
   icon: "IconGiftFilled",
+  parentKey: "Other",
   matchingPatterns: [
     "Greetz",
     "Hallmark",
@@ -712,7 +728,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 // Income
-{ key: "Income", name: "Income", budgetType: "Needs", color: "#15cf85", icon: "IconCoinFilled" },
+{ key: "Income", name: "Income", budgetType: "Needs", color: "#15cf85", icon: "IconCoinFilled", kind: "income" },
 
 { 
   key: "Benefits", 
@@ -803,6 +819,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   budgetType: "Needs", 
   color: "#359fde", 
   icon: "IconReportMoneyFilled",
+  parentKey: "Finance",
   matchingPatterns: [
     "DUO",
     "Klarna",
@@ -1059,4 +1076,6 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 
+  // The group for categories that fit nowhere else.
+  { key: "Other", name: "Other", budgetType: "Wants", color: "#8a8a96", icon: "IconCategoryFilled" },
 ];

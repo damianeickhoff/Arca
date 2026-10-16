@@ -107,6 +107,9 @@ export type TipAnchor =
   // All / Without icon switch
   | "financialMonthDays"
   | "merchantsWithoutIcon"
+  // Settings › Categories: the grouped list; Insights: the Groups / Categories switch
+  | "categoryGroups"
+  | "insightsGroupSwitch"
   // Transaction popups: Add transaction's "Save and add another", the Correct amount
   // budget preview and the receipt viewer's zoom bar
   | "addTransactionAnother"

@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import type { Database } from "better-sqlite3";
-import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
+import { DEFAULT_CATEGORIES, defaultCategoryKind, normalizeMatchingPattern } from "@/config/categories";
 import { DEFAULT_BRAND_ICONS } from "@/config/brandIcons";
 import { matchRules } from "@/lib/apply-rules";
 import { matchBrandRules } from "@/lib/apply-brand-rules";
@@ -61,16 +61,16 @@ function syncDefaultCategories(sqlite: Database) {
       // over from an earlier config revision under a different config_key — doesn't crash
       // the whole sync on the UNIQUE(name, "group") constraint.
       const res = sqlite.prepare(`
-        INSERT OR IGNORE INTO categories (name, "group", budget_type, color, icon, is_default, config_key)
-        VALUES (?, '', ?, ?, ?, 1, ?)
-      `).run(def.name, def.budgetType, def.color, def.icon, def.key);
+        INSERT OR IGNORE INTO categories (name, "group", budget_type, color, icon, is_default, config_key, is_group)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+      `).run(def.name, defaultCategoryKind(def), def.budgetType, def.color, def.icon, def.key, def.parentKey ? 0 : 1);
       if (res.changes > 0) {
         categoryId = Number(res.lastInsertRowid);
         newlyCreated.add(categoryId);
       } else {
         // Collision: adopt the existing category for this config entry (claim its
         // config_key) instead of inserting a duplicate.
-        const row = sqlite.prepare(`SELECT id FROM categories WHERE name = ? AND "group" = ''`).get(def.name) as { id: number };
+        const row = sqlite.prepare(`SELECT id FROM categories WHERE name = ? AND "group" = ?`).get(def.name, defaultCategoryKind(def)) as { id: number };
         categoryId = row.id;
         sqlite.prepare(`UPDATE categories SET config_key = ?, is_default = 1 WHERE id = ?`).run(def.key, categoryId);
       }

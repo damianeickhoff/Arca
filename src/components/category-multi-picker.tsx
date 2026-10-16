@@ -63,8 +63,23 @@ export function CategoryMultiPicker({
     return { topLevel, childrenByParentId };
   }, [categories, query]);
 
+  // A group stands for all of its categories: ticking it ticks them all, and it shows
+  // as ticked exactly when every one of them is.
   function toggle(id: string) {
-    setStaged((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+    setStaged((prev) => {
+      const cat = categories.find((c) => String(c.id) === id);
+      if (cat?.isGroup) {
+        const members = [id, ...categories.filter((c) => c.parentCategoryId === cat.id).map((c) => String(c.id))];
+        const on = members.every((m) => prev.includes(m));
+        return on ? prev.filter((v) => !members.includes(v)) : [...new Set([...prev, ...members])];
+      }
+      const next = prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id];
+      const group = cat?.parentCategoryId != null ? categories.find((c) => c.id === cat.parentCategoryId && c.isGroup) : undefined;
+      if (!group) return next;
+      const gid = String(group.id);
+      const complete = categories.filter((c) => c.parentCategoryId === group.id).every((c) => next.includes(String(c.id)));
+      return complete ? [...new Set([...next, gid])] : next.filter((v) => v !== gid);
+    });
   }
 
   const allIds = categories.map((c) => String(c.id));

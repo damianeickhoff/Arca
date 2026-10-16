@@ -2,14 +2,16 @@
 
 import { useTranslations } from "next-intl";
 import { IconFilter, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
-import type { Bank, CategoryRule } from "@/db/schema";
+import type { Bank, Category, CategoryRule } from "@/db/schema";
 import { Segmented } from "@/components/clear/segmented";
 import { ClearButton } from "@/components/clear/button";
 import { IconTile } from "@/components/clear/icon-tile";
 import { MoneyText } from "@/components/clear/money";
 import { FIELD_LABEL } from "@/app/settings/account-edit-dialogs";
 import { RowIconButton, SettingsEmpty } from "@/components/settings/settings-ui";
-import { ruleAmountLabel } from "@/lib/format";
+import { normalizeBudgetType, ruleAmountLabel } from "@/lib/format";
+import { compareGroups } from "@/lib/category-tree";
+import { ClearSelect } from "@/components/settings/accounts/clear-select";
 
 // Pieces shared by the new-category dialog (category-client.tsx) and the category
 // editor (category-settings-client.tsx).
@@ -19,6 +21,30 @@ export const DEFAULT_CATEGORY_COLOR = "#22c55e";
 
 export const BUDGET_TYPES = ["nodig", "willen", "sparen"] as const;
 export type BudgetTypeKey = (typeof BUDGET_TYPES)[number];
+
+/** The group a category belongs to (required), as a select of every group. */
+export function GroupField({ id, categories, value, onChange }: { id: string; categories: Category[]; value: number | null; onChange: (groupId: number) => void }) {
+  const t = useTranslations("settings.categories");
+  const groups = categories.filter((c) => c.isGroup).sort(compareGroups);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span id={id} className={FIELD_LABEL}>{t("group")}</span>
+      <ClearSelect
+        ariaLabelledBy={id}
+        value={value}
+        placeholder={t("groupPlaceholder")}
+        onChange={(v) => { if (v != null) onChange(v); }}
+        options={groups.map((g) => ({ value: g.id as number | null, label: g.name }))}
+      />
+    </div>
+  );
+}
+
+/** The budget type a new category in `group` starts with: the group's own. */
+export function groupDefaultBudgetType(group: Category | undefined): BudgetTypeKey {
+  const type = normalizeBudgetType(group?.budgetType ?? null);
+  return (BUDGET_TYPES as readonly string[]).includes(type) ? (type as BudgetTypeKey) : "willen";
+}
 
 /** Needs / Wants / Savings as a segmented control, with what the chosen one means. */
 export function BudgetTypeField({ value, onChange }: { value: string; onChange: (v: BudgetTypeKey) => void }) {

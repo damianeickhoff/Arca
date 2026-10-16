@@ -31,11 +31,13 @@ const SLICES = 7;
 const PHONE_ROWS = 4;
 
 type Mode = "expense" | "income";
+type View = "group" | "category";
 
 /**
- * Insights · Overview "Spending by category": a donut of the biggest categories plus
- * "Other", with a legend of amounts and shares. A switch flips it to income by category.
- * A legend row opens that category's detail; Details (and "Other") opens the full list.
+ * Insights · Overview "Spending by group / category": a donut of the biggest groups (or
+ * categories) plus "Other", with a legend of amounts and shares. One switch flips it to
+ * income, another between groups and categories. A legend row opens that group's or
+ * category's detail; Details (and "Other") opens the full list.
  */
 export function CategoryBreakdownCard({
   spendingVisible,
@@ -43,6 +45,7 @@ export function CategoryBreakdownCard({
   spendingTotal,
   incomeAll,
   incomeTotal,
+  groups,
   ongoing,
   financialMonth,
   budgetPeriod,
@@ -55,6 +58,8 @@ export function CategoryBreakdownCard({
   spendingTotal: number;
   incomeAll: CategorySpendCard[];
   incomeTotal: number;
+  /** The same lists added up per group. */
+  groups: { spendingVisible: CategorySpendCard[]; spendingAll: CategorySpendCard[]; incomeAll: CategorySpendCard[] };
   /** The period includes today, so the total is "so far". */
   ongoing: boolean;
   financialMonth: FinancialMonthConfig;
@@ -63,15 +68,17 @@ export function CategoryBreakdownCard({
 }) {
   const t = useTranslations("insights.overview");
   const [mode, setMode] = useState<Mode>("expense");
+  const [view, setView] = useState<View>("group");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
 
   const isIncome = mode === "income";
-  const visible = isIncome ? incomeAll : spendingVisible;
-  const all = isIncome ? incomeAll : spendingAll;
+  const byGroup = view === "group";
+  const visible = isIncome ? (byGroup ? groups.incomeAll : incomeAll) : byGroup ? groups.spendingVisible : spendingVisible;
+  const all = isIncome ? (byGroup ? groups.incomeAll : incomeAll) : byGroup ? groups.spendingAll : spendingAll;
   const total = isIncome ? incomeTotal : spendingTotal;
   const selected = all.find((r) => r.categoryId === selectedId) ?? null;
-  const title = isIncome ? t("incomeByCategory") : t("byCategory");
+  const title = isIncome ? (byGroup ? t("incomeByGroup") : t("incomeByCategory")) : byGroup ? t("byGroup") : t("byCategory");
 
   const top = visible.slice(0, SLICES);
   const other = Math.max(0, total - top.reduce((s, r) => s + r.spent, 0));
@@ -100,21 +107,39 @@ export function CategoryBreakdownCard({
           ) : undefined
         }
       />
-      <div data-tip-anchor="insightsCategorySwitch" className="self-start">
-        <Segmented
-          label={t("categorySwitch")}
-          surface="tile"
-          size="sm"
-          value={mode}
-          onChange={(v) => {
-            setMode(v);
-            setShowAll(false);
-          }}
-          items={[
-            { value: "expense", label: t("spending") },
-            { value: "income", label: t("incomeShort") },
-          ]}
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div data-tip-anchor="insightsCategorySwitch">
+          <Segmented
+            label={t("categorySwitch")}
+            surface="tile"
+            size="sm"
+            value={mode}
+            onChange={(v) => {
+              setMode(v);
+              setShowAll(false);
+            }}
+            items={[
+              { value: "expense", label: t("spending") },
+              { value: "income", label: t("incomeShort") },
+            ]}
+          />
+        </div>
+        <div data-tip-anchor="insightsGroupSwitch">
+          <Segmented
+            label={t("groupSwitch")}
+            surface="tile"
+            size="sm"
+            value={view}
+            onChange={(v) => {
+              setView(v);
+              setShowAll(false);
+            }}
+            items={[
+              { value: "group", label: t("groups") },
+              { value: "category", label: t("categories") },
+            ]}
+          />
+        </div>
       </div>
 
       {rows.length === 0 ? (

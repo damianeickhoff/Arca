@@ -5,6 +5,7 @@ import { categories, categoryRules, banks, recurringItems, vermogenAccounts, use
 import type { CategoryRule } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { CategoriesClient } from "@/components/settings/categories/categories-client";
+import { getCategoryMonthTotals } from "@/lib/category-month-totals";
 import { RecurringMenuClient } from "@/components/settings/recurring/recurring-menu-client";
 import { AccountsOverviewClient } from "@/components/settings/accounts/accounts-overview-client";
 import { MerchantsClient } from "@/components/settings/merchants-client";
@@ -38,15 +39,16 @@ function PanelSkeleton() {
 }
 
 async function CategoriesPanel() {
-  const [cats, rules, allBanks] = await Promise.all([
+  const [cats, rules, allBanks, { totals, budgets }] = await Promise.all([
     db.select().from(categories).orderBy(asc(categories.name)),
     db.select().from(categoryRules),
     db.select().from(banks).orderBy(asc(banks.displayName)),
+    getCategoryMonthTotals(),
   ]);
   const rulesByCat: Record<number, CategoryRule[]> = {};
   for (const rule of rules) (rulesByCat[rule.categoryId] ??= []).push(rule);
 
-  return <CategoriesClient categories={cats} rulesByCat={rulesByCat} banks={allBanks} />;
+  return <CategoriesClient categories={cats} rulesByCat={rulesByCat} banks={allBanks} totals={totals} budgets={budgets} />;
 }
 
 async function RecurringPanel() {

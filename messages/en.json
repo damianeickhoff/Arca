@@ -270,22 +270,16 @@
       "deleteRuleConfirm": "Delete rule"
     },
     "categories": {
-      "listTitle": "Categories",
-      "breadcrumb": "Where you are",
-      "back": "Back to categories",
       "new": "New category",
       "newTitle": "New category",
       "newSubtitle": "Its icon, colour and budget type decide where it shows up.",
-      "edit": "Edit",
-      "done": "Done",
+      "editTitle": "Edit category",
       "reset": "Reset to defaults",
       "resetting": "Resetting…",
       "resetError": "The categories could not be reset. Try again.",
       "search": "Search categories",
       "noMatch": "No categories match that search.",
-      "empty": "No categories yet. Add one to start sorting your spending.",
-      "subcategoryCount": "{count, plural, one {# subcategory} other {# subcategories}}",
-      "addSubcategory": "Add a subcategory to {parent}",
+      "empty": "No groups yet. Add a group, then the categories inside it.",
       "rulesSummary": "{count, plural, =0 {No rules sort new imports yet} one {# rule sorts new imports into these categories} other {# rules sort new imports into these categories}}",
       "rulesSummaryHint": "Anything a rule doesn't catch lands in Needs review. Open a category to manage its rules.",
       "budgetType": "Budget type",
@@ -299,18 +293,10 @@
         "willen": "Wants count towards the wants part of your budget plan.",
         "sparen": "Savings count towards what you put aside each month."
       },
-      "appearance": "Appearance",
-      "appearanceHint": "Shown on every transaction, budget and report in this category.",
-      "budget": "Budget",
-      "budgetHint": "Decides which part of your plan this category counts towards.",
       "name": "Name",
       "namePlaceholder": "e.g. Groceries",
-      "parent": "Parent category",
-      "noParent": "None (top level)",
       "icon": "Icon",
       "color": "Colour",
-      "changeIcon": "Change icon",
-      "colorFromParent": "A subcategory uses its parent's colour.",
       "ruleCount": "{count, plural, =0 {No rules} one {# rule} other {# rules}}",
       "rulesTitle": "Rules",
       "rulesHint": "New imports that match one of these go straight to {name}.",
@@ -338,7 +324,50 @@
       "resetConfirm": "Reset categories",
       "deleteTitle": "Delete the category “{name}”?",
       "deleteBody": "Its transactions, recurring items, budget and rules are deleted too. This can't be undone.",
-      "deleteConfirm": "Delete category"
+      "deleteConfirm": "Delete category",
+      "newGroup": "New group",
+      "summary": "{groups, plural, one {# group} other {# groups}} · {categories, plural, one {# category} other {# categories}}",
+      "colCategory": "Category",
+      "colBudgetType": "Budget type",
+      "colRules": "Rules",
+      "colThisMonth": "This month",
+      "categoryCount": "{count, plural, =0 {No categories} one {# category} other {# categories}}",
+      "ofBudget": "of {amount} budget",
+      "editGroup": "Edit {name}",
+      "kindIncome": "Income",
+      "noRulesShort": "None",
+      "addCategoryTo": "Add a category to {group}",
+      "group": "Group",
+      "groupPlaceholder": "Pick a group",
+      "colorFromGroup": "The colour comes from {group}.",
+      "groupDialog": {
+        "newTitle": "New group",
+        "editTitle": "Edit group",
+        "newSubtitle": "A group adds up the categories inside it, like everything for the house.",
+        "editSubtitle": "{count, plural, =0 {No categories yet} one {# category} other {# categories}}",
+        "namePlaceholder": "e.g. Housing",
+        "colorHint": "Every category in this group uses this colour.",
+        "kind": "Counts as",
+        "kinds": {
+          "spending": "Spending",
+          "savings": "Savings",
+          "income": "Income"
+        },
+        "kindHints": {
+          "spending": "Money going out. It counts towards your spending and budget.",
+          "savings": "Money you put aside. It's left out of your spending.",
+          "income": "Money coming in, like your salary."
+        },
+        "budgetTypeHint": "New categories in this group start with this budget type.",
+        "deleteBlocked": "{count, plural, one {Move or delete its category to delete this group.} other {Move or delete its # categories to delete this group.}}",
+        "delete": "Delete group",
+        "deleteTitle": "Delete the group “{name}”?",
+        "deleteBody": "It's empty, so nothing else changes.",
+        "deleteConfirm": "Delete group",
+        "create": "Create group",
+        "saveError": "The group could not be saved. Try again.",
+        "deleteError": "The group could not be deleted. Try again."
+      }
     },
     "merchants": {
       "count": "{count, plural, one {# merchant} other {# merchants}}",
@@ -351,7 +380,6 @@
       "noMatch": "No merchants match that search.",
       "allHaveIcons": "Every merchant has an icon.",
       "empty": "No merchants yet. They appear as you import transactions.",
-      "back": "Back",
       "editTitle": "Edit merchant",
       "deleteLabel": "Delete merchant",
       "name": "Name",
@@ -364,6 +392,7 @@
       "lastVisit": "Last visit",
       "viewProfile": "View spending profile",
       "cancel": "Cancel",
+      "close": "Close",
       "save": "Save",
       "saving": "Saving…",
       "saveError": "This merchant could not be saved. Try again.",
@@ -986,10 +1015,6 @@
       "title": "Suggested categories and rules",
       "body": "The categories this transaction most likely belongs to are at the top. Pick one, then apply it — switch on the rule and similar transactions get it too, now and from now on."
     },
-    "categoryPickerGroups": {
-      "title": "Categories, grouped",
-      "body": "Categories are now grouped into needs, wants and savings. Type to narrow the list, use the arrow keys to move and Enter to pick."
-    },
     "dateQuickPicks": {
       "title": "Quick dates",
       "body": "Today, yesterday and two days ago are one tap away above the calendar. On a keyboard, the arrow keys move between days and Enter picks one."
@@ -1413,10 +1438,22 @@
     "globalSearch": {
       "title": "Search moved",
       "body": "Search finds anything across the app — transactions, merchants, categories, settings. It now lives in the sidebar (and at the end of the bar on phones), so it is clear it searches everywhere, not just this page. Ctrl/Cmd+K still works."
+    },
+    "categoryPickerByGroup": {
+      "title": "Categories, by group",
+      "body": "Every category sits under its group, like Housing or Transport. Type a group's name to see all of its categories, use the arrow keys to move and Enter to pick."
+    },
+    "categoryGroups": {
+      "title": "Groups add up",
+      "body": "Categories now sit in groups like Housing, which add up everything inside them. Tap a group to fold it, or its pencil to rename it or change its colour."
+    },
+    "insightsGroupSwitch": {
+      "title": "Spending by group",
+      "body": "See what a whole group cost, like everything for the house, or switch to Categories for the details."
     }
   },
   "categoryPicker": {
-    "title": "Category",
+    "title": "Pick a category",
     "close": "Close",
     "placeholder": "Category",
     "search": "Search categories",
@@ -1424,14 +1461,9 @@
     "list": "Categories",
     "uncategorized": "Uncategorized",
     "empty": "No categories found",
-    "groups": {
-      "nodig": "Needs",
-      "willen": "Wants",
-      "sparen": "Savings",
-      "other": "Other"
-    },
-    "setTitle": "Set category",
+    "setTitle": "Pick a category",
     "subtitleOne": "For {name}",
+    "subtitleOneAmount": "For {name} · {amount}",
     "subtitleMany": "For {count, plural, one {# selected transaction} other {# selected transactions}}",
     "moreNames": "+{count} more",
     "suggested": "Suggested",
@@ -2295,7 +2327,8 @@
       "to": "To",
       "rangeInvalid": "The end date is before the start date.",
       "apply": "Apply"
-    }
+    },
+    "editGroup": "Edit group"
   },
   "recurringDetail": {
     "title": "Recurring item",
@@ -2587,7 +2620,12 @@
         "categoriesBody": "Where your money goes, per category",
         "merchantsTitle": "Top merchants appear here",
         "merchantsBody": "The places you spend most, and how often"
-      }
+      },
+      "byGroup": "Spending by group",
+      "incomeByGroup": "Income by group",
+      "groupSwitch": "Show groups or categories",
+      "groups": "Groups",
+      "categories": "Categories"
     },
     "trends": {
       "avgIncome": "Avg. income",

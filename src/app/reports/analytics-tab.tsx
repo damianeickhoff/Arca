@@ -246,6 +246,26 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     excluded: false,
   }));
 
+  // The same, added up per group (Housing = Rent + Energy + …) — the card's Groups view.
+  const categoryById = new Map(allCategories.map((c) => [c.id, c]));
+  function byGroup(rows: CategorySpendCard[], withBudget: boolean): CategorySpendCard[] {
+    const map = new Map<number, CategorySpendCard>();
+    for (const r of rows) {
+      const cat = categoryById.get(r.categoryId);
+      const group = cat?.parentCategoryId != null ? categoryById.get(cat.parentCategoryId) : cat;
+      if (!group) continue;
+      const entry = map.get(group.id) ?? { categoryId: group.id, categoryName: group.name, color: group.color, icon: group.icon, spent: 0, budget: null, pct: null, excluded: false };
+      entry.spent += r.spent;
+      map.set(group.id, entry);
+    }
+    return [...map.values()]
+      .map((g) => {
+        const budget = withBudget ? budgetByCategoryId.get(g.categoryId) ?? null : null;
+        return { ...g, budget, pct: budget != null && budget > 0 ? g.spent / budget : null };
+      })
+      .sort((a, b) => b.spent - a.spent);
+  }
+
   // Largest single expense, with where and when.
   const rowById = new Map(current.rows.map((r) => [r.id, r]));
   const expenseRows = relevant.filter((r) => r.direction === "expense");
@@ -332,6 +352,9 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     spendingAll,
     spendingVisible: spendingAll.filter((c) => !c.excluded),
     incomeAll,
+    groupSpendingAll: byGroup(spendingAll, true),
+    groupSpendingVisible: byGroup(spendingAll.filter((c) => !c.excluded), true),
+    groupIncomeAll: byGroup(incomeAll, false),
     budgetPeriod: budgetOverview ? { from: budgetOverview.from, to: budgetOverview.to } : { from, to },
     topMerchants,
     accountsSpend,
@@ -492,6 +515,7 @@ export async function AnalyticsTab({
         spendingTotal={data.expense}
         incomeAll={data.incomeAll}
         incomeTotal={data.income}
+        groups={{ spendingVisible: data.groupSpendingVisible, spendingAll: data.groupSpendingAll, incomeAll: data.groupIncomeAll }}
         ongoing={data.ongoing}
         financialMonth={financialMonth}
         budgetPeriod={data.budgetPeriod}
@@ -503,6 +527,7 @@ export async function AnalyticsTab({
 
       <AnchoredTip id="insightsMerchants" anchor="insightsMerchants" active={data.topMerchants.length > 0} />
       <AnchoredTip id="insightsCategorySwitch" anchor="insightsCategorySwitch" active={data.incomeAll.length > 0} />
+      <AnchoredTip id="insightsGroupSwitch" anchor="insightsGroupSwitch" active={data.groupSpendingAll.length > 0} />
     </div>
   );
 }

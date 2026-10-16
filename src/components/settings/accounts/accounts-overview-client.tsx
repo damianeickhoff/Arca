@@ -104,7 +104,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
   return (
     <>
       <PanelHeader title={tSettings("panels.accounts.title")} />
-      <div className="flex flex-col gap-7 px-4 pt-1 pb-8 font-clear text-clear-ink">
+      <div className="flex flex-col gap-7 px-4 pt-1 font-clear text-clear-ink">
         {/* ── Total + delta ── */}
         <div className="flex flex-col gap-1.5">
           <span className="text-[13px] font-bold text-clear-ink-2">

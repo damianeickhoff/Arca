@@ -5,24 +5,21 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { Category, CategoryRule, Bank } from "@/db/schema";
-import { ColorPicker } from "@/components/color-picker";
 import { IconPicker } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
-import { Icon, isBrandIcon } from "@/components/icon";
+import { Icon } from "@/components/icon";
 import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
-import { ClearSelect } from "@/components/settings/accounts/clear-select";
-import { FIELD_LABEL } from "@/app/settings/account-edit-dialogs";
 import { SettingsNotice } from "@/components/settings/settings-ui";
-import { BudgetTypeField, CategoryRuleList, DEFAULT_CATEGORY_COLOR } from "@/components/settings/categories/category-form-parts";
+import { BudgetTypeField, CategoryRuleList, GroupField, groupDefaultBudgetType } from "@/components/settings/categories/category-form-parts";
 import { RuleDialog, emptyRuleDraft, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
 
 /**
  * A button (its look comes from `className` / `children`) that opens the New category
- * dialog: name, budget type, parent, icon and colour, and rules — staged here and
- * created once the category itself is saved. `defaultParentId` pre-picks the parent
- * ("Add subcategory").
+ * dialog: name, group, budget type, icon, and rules — staged here and created once the
+ * category itself is saved. `defaultParentId` pre-picks the group ("Add a category to
+ * Housing"). The colour is always the group's.
  */
 export function NewCategoryButton({
   categories,
@@ -87,20 +84,22 @@ function NewCategoryForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // A category can only become a parent if it doesn't itself have one (max 2 levels).
-  const parentOptions = categories.filter((c) => c.parentCategoryId === null);
-  const parentColorFor = (pid: number | null) => (pid != null ? categories.find((c) => c.id === pid)?.color ?? null : null);
+  const groupById = (id: number | null) => (id != null ? categories.find((c) => c.id === id && c.isGroup) : undefined);
 
   const [name, setName] = useState("");
-  const [budgetType, setBudgetType] = useState<string>("willen");
-  const [parentId, setParentId] = useState<number | null>(defaultParentId);
+  const [groupId, setGroupId] = useState<number | null>(groupById(defaultParentId)?.id ?? null);
+  const group = groupById(groupId);
+  // Starts at the group's budget type and follows the group until picked by hand.
+  const [budgetType, setBudgetType] = useState<string>(groupDefaultBudgetType(group));
+  const [typeTouched, setTypeTouched] = useState(false);
   const [icon, setIcon] = useState<string | null>(null);
-  const [color, setColor] = useState(parentColorFor(defaultParentId) ?? DEFAULT_CATEGORY_COLOR);
+  const effectiveColor = group?.color ?? null;
+  const isIncome = group?.group === "income";
 
-  // A sub-category takes its colour from its parent — the colour picker is hidden and
-  // the parent's colour is what gets saved, so all children read as one visual family.
-  const isSubcategory = parentId != null;
-  const effectiveColor = isSubcategory ? parentColorFor(parentId) ?? color : color;
+  function pickGroup(id: number) {
+    setGroupId(id);
+    if (!typeTouched) setBudgetType(groupDefaultBudgetType(groupById(id)));
+  }
 
   // Rules are staged here with a negative temp id and created once the category exists.
   const [rules, setRules] = useState<CategoryRule[]>([]);
@@ -124,14 +123,14 @@ function NewCategoryForm({
   }
 
   async function save() {
-    if (!name.trim()) return;
+    if (!name.trim() || groupId == null) return;
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), budgetType, color: effectiveColor || null, icon, parentCategoryId: parentId }),
+        body: JSON.stringify({ name: name.trim(), budgetType, icon, parentCategoryId: groupId }),
       });
       if (!res.ok) throw new Error(String(res.status));
       if (rules.length > 0) {
@@ -178,23 +177,9 @@ function NewCategoryForm({
         <ClearInput id={`${ids}-name`} autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} autoComplete="off" />
       </ClearField>
 
-      <BudgetTypeField value={budgetType} onChange={setBudgetType} />
+      <GroupField id={`${ids}-group`} categories={categories} value={groupId} onChange={pickGroup} />
 
-      {parentOptions.length > 0 && (
-        <div className="flex flex-col gap-1.5">
-          <span id={`${ids}-parent`} className={FIELD_LABEL}>{t("parent")}</span>
-          <ClearSelect
-            ariaLabelledBy={`${ids}-parent`}
-            value={parentId}
-            onChange={(pid) => {
-              setParentId(pid);
-              // Adopt the new parent's colour immediately so the icon preview matches.
-              if (pid != null) setColor(parentColorFor(pid) ?? color);
-            }}
-            options={[{ value: null, label: t("noParent") }, ...parentOptions.map((c) => ({ value: c.id as number | null, label: c.name }))]}
-          />
-        </div>
-      )}
+      {!isIncome && <BudgetTypeField value={budgetType} onChange={(v) => { setBudgetType(v); setTypeTouched(true); }} />}
 
       <div className="flex flex-col gap-2.5">
         <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
@@ -202,14 +187,7 @@ function NewCategoryForm({
             <IconPicker value={icon} onChange={setIcon} previewColor={effectiveColor} hideBrandTab />
           </PickerField>
         </div>
-        {!isSubcategory && !(icon && isBrandIcon(icon)) && (
-          <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
-            <PickerField label={t("color")}>
-              <ColorPicker value={color} onChange={setColor} previewIcon={icon} />
-            </PickerField>
-          </div>
-        )}
-        {isSubcategory && <p className="m-0 text-[13px] text-clear-muted">{t("colorFromParent")}</p>}
+        {group && <p className="m-0 text-[13px] text-clear-muted">{t("colorFromGroup", { group: group.name })}</p>}
       </div>
 
       <section aria-labelledby={`${ids}-rules`} className="flex flex-col gap-2">
@@ -229,7 +207,7 @@ function NewCategoryForm({
       <div className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter>
           <ClearButton variant="secondary" onClick={onClose}>{t("cancel")}</ClearButton>
-          <ClearButton onClick={save} disabled={busy || !name.trim()}>
+          <ClearButton onClick={save} disabled={busy || !name.trim() || groupId == null}>
             {busy ? t("saving") : t("create")}
           </ClearButton>
         </ClearDialogFooter>

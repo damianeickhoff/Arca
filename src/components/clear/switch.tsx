@@ -33,7 +33,8 @@ export function ClearSwitch({
       onClick={() => onCheckedChange(!checked)}
       className={cn(
         "relative inline-flex h-[26px] w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50 disabled:opacity-45",
-        checked ? "bg-clear-primary" : "bg-clear-line",
+        // Off is a mid grey, so the track still shows on a grey tile as well as on a card.
+        checked ? "bg-clear-primary" : "bg-clear-placeholder/60",
         className,
       )}
     >

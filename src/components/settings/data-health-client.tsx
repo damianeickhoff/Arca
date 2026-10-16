@@ -102,7 +102,7 @@ export function DataHealthClient({ rows }: { rows: BrokenDateRow[] }) {
   return (
     <>
       <PanelHeader title={tPanels("dataHealth.title")} />
-      <div className="flex flex-col gap-5 px-4 pt-1 pb-8 font-clear text-clear-ink">
+      <div className="flex flex-col gap-5 px-4 pt-1 font-clear text-clear-ink">
         {/* Status */}
         <div className="flex items-start gap-3.5 rounded-clear-tile bg-clear-tile p-4">
           <IconTile tone={rows.length === 0 ? "mint" : "peach"} size="md">

@@ -11,7 +11,7 @@ import { AnchoredTip } from "@/components/anchored-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { SettingsEmpty, SettingsSearch } from "@/components/settings/settings-ui";
 import { MerchantDetailPortal, merchantIcon, type MerchantRef } from "@/components/merchant-detail-portal";
-import { MerchantSettingsClient, MerchantSettingsOverlay } from "@/components/settings/merchant-settings-client";
+import { EditMerchantDialog, MerchantSettingsClient } from "@/components/settings/merchant-settings-client";
 import { formatEur } from "@/lib/format";
 import type { MerchantListItem } from "@/lib/merchants";
 
@@ -36,14 +36,13 @@ export function MerchantsClient({ initialMerchants }: { initialMerchants: Mercha
   const [filter, setFilter] = useState<Filter>("all");
   const [openProfile, setOpenProfile] = useState<MerchantRef | null>(null);
 
-  // `editingId` keeps the editor mounted; `editVisible` drives its slide animation, so
-  // the layer survives long enough to animate back out instead of vanishing.
+  // `editingId` stays set while the dialog animates closed, so its content doesn't
+  // vanish mid-animation; `editOpen` opens and closes it.
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editVisible, setEditVisible] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   function closeEdit() {
-    setEditVisible(false);
-    setTimeout(() => setEditingId(null), 320);
+    setEditOpen(false);
   }
 
   const withIcon = merchants.filter((m) => merchantIcon(m).iconKey != null).length;
@@ -93,7 +92,7 @@ export function MerchantsClient({ initialMerchants }: { initialMerchants: Mercha
               return (
                 <ListRow
                   key={m.id}
-                  onClick={() => { setEditingId(m.id); setEditVisible(true); }}
+                  onClick={() => { setEditingId(m.id); setEditOpen(true); }}
                   icon={<Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} soft size="md" />}
                   title={m.name}
                   meta={`${t("transactionCount", { count: m.transactionCount })} · ${formatEur(m.totalSpent)}`}
@@ -112,11 +111,8 @@ export function MerchantsClient({ initialMerchants }: { initialMerchants: Mercha
       {/* The Without icon switch is new — point it out once. */}
       {merchants.length > 0 && <AnchoredTip id="merchantsWithoutIcon" anchor="merchantsWithoutIcon" />}
 
-      {/* Edit merchant — a full-screen slide-over above the settings panel.
-          z-[52] sits above the settings dialog (z-50) and below BrandIconPicker's own
-          dialog (overlay z-85 / content z-90), so the icon picker still opens on top. */}
-      {editing && (
-        <MerchantSettingsOverlay open={editVisible} zIndex={52}>
+      <EditMerchantDialog open={editOpen} onClose={closeEdit}>
+        {editing && (
           <MerchantSettingsClient
             key={editing.id}
             merchant={editing}
@@ -126,8 +122,8 @@ export function MerchantsClient({ initialMerchants }: { initialMerchants: Mercha
             // incoming profile, which reads as the editor falling away.
             onViewProfile={() => setOpenProfile({ id: editing.id, name: editing.name })}
           />
-        </MerchantSettingsOverlay>
-      )}
+        )}
+      </EditMerchantDialog>
 
       <MerchantDetailPortal merchant={openProfile} onClose={() => setOpenProfile(null)} allowEdit={false} />
     </>

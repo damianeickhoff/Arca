@@ -19,7 +19,8 @@ import { Icon } from "@/components/icon";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { TransactionDetailByIdDialog } from "@/components/transaction-detail-by-id-dialog";
 import { CategoryPeriodPicker, resolveCategoryPeriod, type CategoryPeriod } from "@/components/category-period-picker";
-import { CategorySettingsClient } from "@/components/settings/categories/category-settings-client";
+import { EditCategoryDialog as EditCategoryShell, EditCategoryForm } from "@/components/settings/categories/category-settings-client";
+import { GroupDialog } from "@/components/settings/categories/group-dialog";
 import { bucketUnitFor, type BucketUnit } from "@/lib/category-period-bucket";
 import { currencySymbol, formatEur, formatEurWhole, normalizeBudgetType } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -178,7 +179,7 @@ export function CategoryDetailPortal({
                   destructive={
                     <button type="button" onClick={() => setEditCategoryOpen(true)} className={clearButtonVariants({ variant: "ghost" })}>
                       <IconTag aria-hidden />
-                      {t("editCategory")}
+                      {detail?.isGroup ? t("editGroup") : t("editCategory")}
                     </button>
                   }
                 >
@@ -870,23 +871,13 @@ function BudgetForm({ name, current, weekly, onSave, onClose }: { name: string; 
   );
 }
 
-/** The category editor (name, icon, rules…) in its embedded mode, stacked on top. */
+/** Edit category (or, for a group, Edit group) stacked on top, loading its data first. */
 function EditCategoryDialog({ open, categoryId, onClose }: { open: boolean; categoryId: number; onClose: () => void }) {
-  const t = useTranslations("categoryDetail");
-  return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent hideHeaderRow fullHeight title={t("editCategory")} className="px-0">
-        <EditCategoryBody categoryId={categoryId} onClose={onClose} />
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditCategoryBody({ categoryId, onClose }: { categoryId: number; onClose: () => void }) {
   const t = useTranslations("categoryDetail");
   const [data, setData] = useState<{ category: Category; rules: CategoryRule[]; banks: Bank[]; categories: Category[] } | null>(null);
 
   useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     Promise.all([
       fetch("/api/categories").then((r) => r.json() as Promise<Category[]>),
@@ -899,10 +890,20 @@ function EditCategoryBody({ categoryId, onClose }: { categoryId: number; onClose
       })
       .catch(() => { /* stays on the loading line */ });
     return () => { cancelled = true; };
-  }, [categoryId]);
+  }, [open, categoryId]);
 
-  if (!data) {
-    return <p role="status" className="m-0 py-16 text-center text-[15px] text-clear-muted">{t("loading")}</p>;
+  const loaded = data && data.category.id === categoryId ? data : null;
+  if (loaded?.category.isGroup) {
+    const count = loaded.categories.filter((c) => c.parentCategoryId === loaded.category.id).length;
+    return <GroupDialog open={open} onClose={onClose} group={loaded.category} categoryCount={count} />;
   }
-  return <CategorySettingsClient category={data.category} rules={data.rules} banks={data.banks} categories={data.categories} onClose={onClose} />;
+  return (
+    <EditCategoryShell open={open} onClose={onClose}>
+      {loaded ? (
+        <EditCategoryForm category={loaded.category} rules={loaded.rules} banks={loaded.banks} categories={loaded.categories} onClose={onClose} />
+      ) : (
+        <p role="status" className="m-0 py-16 text-center text-[15px] text-clear-muted">{t("loading")}</p>
+      )}
+    </EditCategoryShell>
+  );
 }

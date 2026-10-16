@@ -270,22 +270,16 @@
       "deleteRuleConfirm": "Regel verwijderen"
     },
     "categories": {
-      "listTitle": "Categorieën",
-      "breadcrumb": "Waar je bent",
-      "back": "Terug naar categorieën",
       "new": "Nieuwe categorie",
       "newTitle": "Nieuwe categorie",
       "newSubtitle": "Het icoon, de kleur en het budgettype bepalen waar hij verschijnt.",
-      "edit": "Bewerken",
-      "done": "Klaar",
+      "editTitle": "Categorie bewerken",
       "reset": "Standaard terugzetten",
       "resetting": "Terugzetten…",
       "resetError": "De categorieën konden niet worden teruggezet. Probeer het opnieuw.",
       "search": "Categorieën zoeken",
       "noMatch": "Geen categorieën gevonden voor deze zoekopdracht.",
-      "empty": "Nog geen categorieën. Voeg er een toe om je uitgaven te sorteren.",
-      "subcategoryCount": "{count, plural, one {# subcategorie} other {# subcategorieën}}",
-      "addSubcategory": "Subcategorie toevoegen aan {parent}",
+      "empty": "Nog geen groepen. Voeg een groep toe en daarna de categorieën erin.",
       "rulesSummary": "{count, plural, =0 {Nog geen regels die nieuwe imports sorteren} one {# regel sorteert nieuwe imports in deze categorieën} other {# regels sorteren nieuwe imports in deze categorieën}}",
       "rulesSummaryHint": "Wat een regel niet vangt, komt bij Te beoordelen. Open een categorie om de regels ervan te beheren.",
       "budgetType": "Budgettype",
@@ -299,18 +293,10 @@
         "willen": "Telt mee voor het deel 'willen' van je budgetplan.",
         "sparen": "Telt mee voor wat je elke maand opzijzet."
       },
-      "appearance": "Uiterlijk",
-      "appearanceHint": "Te zien bij elke transactie, elk budget en elk rapport in deze categorie.",
-      "budget": "Budget",
-      "budgetHint": "Bepaalt voor welk deel van je plan deze categorie meetelt.",
       "name": "Naam",
       "namePlaceholder": "bijv. Boodschappen",
-      "parent": "Hoofdcategorie",
-      "noParent": "Geen (bovenste niveau)",
       "icon": "Icoon",
       "color": "Kleur",
-      "changeIcon": "Icoon wijzigen",
-      "colorFromParent": "Een subcategorie gebruikt de kleur van de hoofdcategorie.",
       "ruleCount": "{count, plural, =0 {Geen regels} one {# regel} other {# regels}}",
       "rulesTitle": "Regels",
       "rulesHint": "Nieuwe imports die bij een van deze regels passen, gaan direct naar {name}.",
@@ -338,7 +324,50 @@
       "resetConfirm": "Categorieën terugzetten",
       "deleteTitle": "De categorie “{name}” verwijderen?",
       "deleteBody": "De transacties, vaste lasten, het budget en de regels ervan worden ook verwijderd. Dit kan niet ongedaan worden gemaakt.",
-      "deleteConfirm": "Categorie verwijderen"
+      "deleteConfirm": "Categorie verwijderen",
+      "newGroup": "Nieuwe groep",
+      "summary": "{groups, plural, one {# groep} other {# groepen}} · {categories, plural, one {# categorie} other {# categorieën}}",
+      "colCategory": "Categorie",
+      "colBudgetType": "Budgettype",
+      "colRules": "Regels",
+      "colThisMonth": "Deze maand",
+      "categoryCount": "{count, plural, =0 {Geen categorieën} one {# categorie} other {# categorieën}}",
+      "ofBudget": "van {amount} budget",
+      "editGroup": "{name} bewerken",
+      "kindIncome": "Inkomen",
+      "noRulesShort": "Geen",
+      "addCategoryTo": "Categorie toevoegen aan {group}",
+      "group": "Groep",
+      "groupPlaceholder": "Kies een groep",
+      "colorFromGroup": "De kleur komt van {group}.",
+      "groupDialog": {
+        "newTitle": "Nieuwe groep",
+        "editTitle": "Groep bewerken",
+        "newSubtitle": "Een groep telt de categorieën erin bij elkaar op, zoals alles voor het huis.",
+        "editSubtitle": "{count, plural, =0 {Nog geen categorieën} one {# categorie} other {# categorieën}}",
+        "namePlaceholder": "bijv. Wonen",
+        "colorHint": "Elke categorie in deze groep krijgt deze kleur.",
+        "kind": "Telt als",
+        "kinds": {
+          "spending": "Uitgaven",
+          "savings": "Sparen",
+          "income": "Inkomen"
+        },
+        "kindHints": {
+          "spending": "Geld dat uitgaat. Het telt mee in je uitgaven en budget.",
+          "savings": "Geld dat je opzij zet. Het telt niet mee in je uitgaven.",
+          "income": "Geld dat binnenkomt, zoals je salaris."
+        },
+        "budgetTypeHint": "Nieuwe categorieën in deze groep krijgen dit budgettype.",
+        "deleteBlocked": "{count, plural, one {Verplaats of verwijder eerst de categorie om deze groep te verwijderen.} other {Verplaats of verwijder eerst de # categorieën om deze groep te verwijderen.}}",
+        "delete": "Groep verwijderen",
+        "deleteTitle": "De groep “{name}” verwijderen?",
+        "deleteBody": "Hij is leeg, dus verder verandert er niets.",
+        "deleteConfirm": "Groep verwijderen",
+        "create": "Groep aanmaken",
+        "saveError": "De groep kon niet worden opgeslagen. Probeer het opnieuw.",
+        "deleteError": "De groep kon niet worden verwijderd. Probeer het opnieuw."
+      }
     },
     "merchants": {
       "count": "{count, plural, one {# winkel} other {# winkels}}",
@@ -351,7 +380,6 @@
       "noMatch": "Geen winkels gevonden voor deze zoekopdracht.",
       "allHaveIcons": "Elke winkel heeft een icoon.",
       "empty": "Nog geen winkels. Ze verschijnen zodra je transacties importeert.",
-      "back": "Terug",
       "editTitle": "Winkel bewerken",
       "deleteLabel": "Winkel verwijderen",
       "name": "Naam",
@@ -364,6 +392,7 @@
       "lastVisit": "Laatste bezoek",
       "viewProfile": "Uitgavenprofiel bekijken",
       "cancel": "Annuleren",
+      "close": "Sluiten",
       "save": "Opslaan",
       "saving": "Opslaan…",
       "saveError": "Deze winkel kon niet worden opgeslagen. Probeer het opnieuw.",
@@ -986,10 +1015,6 @@
       "title": "Voorgestelde categorieën en regels",
       "body": "De categorieën waar deze transactie waarschijnlijk bij hoort staan bovenaan. Kies er een en pas hem toe — zet de regel aan en vergelijkbare transacties krijgen hem ook, nu en voortaan."
     },
-    "categoryPickerGroups": {
-      "title": "Categorieën, gegroepeerd",
-      "body": "Categorieën staan nu gegroepeerd onder nodig, willen en sparen. Typ om de lijst te verkleinen, gebruik de pijltjestoetsen om te bewegen en Enter om te kiezen."
-    },
     "dateQuickPicks": {
       "title": "Snel een datum",
       "body": "Vandaag, gisteren en eergisteren kies je met één tik boven de kalender. Met een toetsenbord ga je met de pijltjestoetsen van dag naar dag en kies je met Enter."
@@ -1413,10 +1438,22 @@
     "globalSearch": {
       "title": "Zoeken is verhuisd",
       "body": "Zoeken vindt alles in de app — transacties, winkels, categorieën, instellingen. Het staat nu in de zijbalk (en op telefoons aan het eind van de balk), zodat duidelijk is dat het overal zoekt, niet alleen op deze pagina. Ctrl/Cmd+K werkt nog steeds."
+    },
+    "categoryPickerByGroup": {
+      "title": "Categorieën per groep",
+      "body": "Elke categorie staat onder zijn groep, zoals Wonen of Vervoer. Typ de naam van een groep om al zijn categorieën te zien, gebruik de pijltjestoetsen om te bewegen en Enter om te kiezen."
+    },
+    "categoryGroups": {
+      "title": "Groepen tellen op",
+      "body": "Categorieën staan nu in groepen zoals Wonen, die alles erin bij elkaar optellen. Tik op een groep om hem in te klappen, of op het potlood om hem te hernoemen of een andere kleur te geven."
+    },
+    "insightsGroupSwitch": {
+      "title": "Uitgaven per groep",
+      "body": "Zie wat een hele groep kostte, zoals alles voor het huis, of schakel naar Categorieën voor de details."
     }
   },
   "categoryPicker": {
-    "title": "Categorie",
+    "title": "Kies een categorie",
     "close": "Sluiten",
     "placeholder": "Categorie",
     "search": "Zoek categorieën",
@@ -1424,14 +1461,9 @@
     "list": "Categorieën",
     "uncategorized": "Zonder categorie",
     "empty": "Geen categorieën gevonden",
-    "groups": {
-      "nodig": "Nodig",
-      "willen": "Willen",
-      "sparen": "Sparen",
-      "other": "Overig"
-    },
-    "setTitle": "Categorie instellen",
+    "setTitle": "Kies een categorie",
     "subtitleOne": "Voor {name}",
+    "subtitleOneAmount": "Voor {name} · {amount}",
     "subtitleMany": "Voor {count, plural, one {# geselecteerde transactie} other {# geselecteerde transacties}}",
     "moreNames": "+{count} meer",
     "suggested": "Voorgesteld",
@@ -2295,7 +2327,8 @@
       "to": "Tot",
       "rangeInvalid": "De einddatum ligt voor de begindatum.",
       "apply": "Toepassen"
-    }
+    },
+    "editGroup": "Groep bewerken"
   },
   "recurringDetail": {
     "title": "Vaste last",
@@ -2587,7 +2620,12 @@
         "categoriesBody": "Waar je geld naartoe gaat, per categorie",
         "merchantsTitle": "Topwinkels verschijnen hier",
         "merchantsBody": "Waar je het meest uitgeeft, en hoe vaak"
-      }
+      },
+      "byGroup": "Uitgaven per groep",
+      "incomeByGroup": "Inkomen per groep",
+      "groupSwitch": "Groepen of categorieën tonen",
+      "groups": "Groepen",
+      "categories": "Categorieën"
     },
     "trends": {
       "avgIncome": "Gem. inkomen",

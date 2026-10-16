@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { IconChevronLeft, IconChevronRight, IconHelpCircle, IconLogout } from "@tabler/icons-react";
@@ -13,6 +14,38 @@ import { SettingsPanelBody, type SettingsPanelSettings } from "@/components/sett
 import { settingsSections, type SettingsPanelKey } from "@/components/settings/settings-sections";
 
 const noop = () => {};
+
+/** Whether a scroll box has more content above and below what it shows, kept up to
+ *  date as it scrolls or resizes — drives the navigation's fade-out edges. */
+function useScrollEdges() {
+  const ref = useRef<HTMLElement>(null);
+  const [edges, setEdges] = useState({ above: false, below: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const above = el.scrollTop > 1;
+      const below = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+      setEdges((e) => (e.above === above && e.below === below ? e : { above, below }));
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, []);
+  return [ref, edges] as const;
+}
+
+/** A 40px fade at each edge that has more items beyond it. */
+function fadeMask({ above, below }: { above: boolean; below: boolean }) {
+  if (!above && !below) return undefined;
+  const mask = `linear-gradient(to bottom, ${above ? "transparent 0, black 40px" : "black 0"}, ${below ? "black calc(100% - 40px), transparent 100%" : "black 100%"})`;
+  return { maskImage: mask, WebkitMaskImage: mask };
+}
 
 /**
  * The Settings page (Clear): every settings section in a navigation card on the left,
@@ -39,9 +72,10 @@ export function SettingsView({
   const t = useTranslations("settings");
   const sections = settingsSections({ isAdmin: user.isAdmin, withAccount: true });
   const title = t(`panels.${active}.title`);
+  const [navRef, navEdges] = useScrollEdges();
 
   return (
-    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
+    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-3">
       {/* Heading */}
       <div className="flex flex-wrap items-center justify-between gap-3 lg:items-end lg:gap-4">
         <div className="flex min-w-0 flex-col gap-1.5">
@@ -69,18 +103,22 @@ export function SettingsView({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(260px,1fr)_minmax(0,2.4fr)] lg:items-start">
-        {/* Navigation */}
+        {/* Navigation. On desktop it stays in view while the page scrolls; when the
+            window is too short for every row it scrolls on its own, and fades out at
+            the edge that has more rows beyond it. */}
         <nav
+          ref={navRef}
           aria-label={t("navLabel")}
           data-tip-anchor="settingsNav"
+          style={fadeMask(navEdges)}
           className={cn(
-            "flex min-w-0 flex-col gap-0.5 rounded-clear-card bg-clear-card p-4 lg:sticky lg:top-7 lg:max-h-[calc(100dvh-56px)] lg:overflow-y-auto",
+            "clear-scrollbar flex min-w-0 flex-col gap-0.5 rounded-clear-card bg-clear-card p-4 lg:sticky lg:top-7 lg:max-h-[calc(100dvh-40px)] lg:overflow-y-auto lg:py-2",
             explicit && "hidden lg:flex",
           )}
         >
           {sections.map((section) => (
             <div key={section.key} className="flex flex-col gap-0.5">
-              <span className="px-3 pt-4 pb-2 text-[13px] font-bold text-clear-muted">{t(`sections.${section.key}`)}</span>
+              <span className="px-3 pt-4 pb-2 text-[13px] font-bold text-clear-muted lg:pt-3 lg:pb-1">{t(`sections.${section.key}`)}</span>
               {section.rows.map(({ key, icon: Icon }) => {
                 const isActive = key === active;
                 return (
@@ -89,7 +127,7 @@ export function SettingsView({
                     href={`/settings?panel=${key}`}
                     aria-current={isActive && explicit ? "page" : undefined}
                     className={cn(
-                      "group flex h-12 shrink-0 items-center gap-3 rounded-clear-row px-3 text-[15px] no-underline transition-colors",
+                      "group flex h-12 shrink-0 items-center gap-3 lg:h-10 rounded-clear-row px-3 text-[15px] no-underline transition-colors",
                       !isActive && "font-semibold text-clear-ink hover:bg-clear-tile",
                       // The default panel only shows as selected where it is on screen
                       // (desktop); on phones the list comes first.
@@ -114,30 +152,28 @@ export function SettingsView({
             </div>
           ))}
 
-          <span aria-hidden className="mx-3 my-2.5 h-px shrink-0 bg-clear-line" />
+          <span aria-hidden className="mx-3 my-2.5 h-px shrink-0 bg-clear-line lg:my-1.5" />
           <button
             type="button"
             onClick={() => logoutAction()}
-            className="flex h-12 shrink-0 cursor-pointer items-center gap-3 rounded-clear-row px-3 text-left text-[15px] font-bold text-clear-negative transition-colors hover:bg-clear-tile"
+            className="flex h-12 shrink-0 lg:h-10 cursor-pointer items-center gap-3 rounded-clear-row px-3 text-left text-[15px] font-bold text-clear-negative transition-colors hover:bg-clear-tile"
           >
             <IconLogout size={20} stroke={1.9} aria-hidden />
             <span className="flex-1">{t("signOut")}</span>
           </button>
         </nav>
 
-        {/* The open panel. On desktop the card keeps to the window height and scrolls
-            inside, and translateZ(0) makes it the containing block for the panels'
-            `fixed inset-0` overlays (category detail, merchant settings), so those
-            cover the card instead of the whole window. Panels pad their own content
-            by 16px; the card adds --panel-gutter, which PanelHeader bleeds over. */}
+        {/* The open panel: as tall as its content, scrolling with the page (one scroll,
+            no inner scrollbar). Panels pad their own content by 16px; the card adds
+            --panel-gutter, which PanelHeader bleeds over. */}
         <section
           aria-label={title}
           className={cn(
-            "flex min-w-0 flex-col overflow-clip rounded-clear-card bg-clear-card text-clear-ink lg:sticky lg:top-7 lg:max-h-[calc(100dvh-56px)] lg:[transform:translateZ(0)]",
+            "flex min-w-0 flex-col overflow-clip rounded-clear-card bg-clear-card text-clear-ink",
             !explicit && "hidden lg:flex",
           )}
         >
-          <div className="min-h-0 flex-1 px-[var(--panel-gutter)] pb-6 [--panel-gutter:0.5rem] lg:overflow-y-auto lg:[--panel-gutter:0.75rem]">
+          <div className="px-[var(--panel-gutter)] pb-6 [--panel-gutter:0.5rem] lg:[--panel-gutter:0.75rem]">
             <PanelChromeContext.Provider value={{ closePanel: noop, variant: "page", title, subtitle: t(`panels.${active}.subtitle`) }}>
               <SettingsPanelBody key={active} panelKey={active} heavy={heavy} user={user} settings={settings} />
             </PanelChromeContext.Provider>

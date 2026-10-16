@@ -8,7 +8,7 @@
  * existing deployed databases on boot. Any new column MUST be added in BOTH files.
  */
 import type Database from "better-sqlite3";
-import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "../config/categories.ts";
+import { DEFAULT_CATEGORIES, defaultCategoryKind, normalizeMatchingPattern } from "../config/categories.ts";
 
 export function createSchema(sqlite: Database.Database): void {
   sqlite.exec(`
@@ -203,6 +203,9 @@ export function createSchema(sqlite: Database.Database): void {
     sqlite.exec(`ALTER TABLE categories ADD COLUMN exclude_from_spending_row INTEGER NOT NULL DEFAULT 0`);
   } catch { /* column already exists */ }
   try {
+    sqlite.exec(`ALTER TABLE categories ADD COLUMN is_group INTEGER NOT NULL DEFAULT 0`);
+  } catch { /* column already exists */ }
+  try {
     // Balance the bank reported after this transaction, when the import mapped such a
     // column. Nullable — pre-existing rows keep no reported balance.
     sqlite.exec(`ALTER TABLE transactions ADD COLUMN reported_balance REAL`);
@@ -273,8 +276,8 @@ export function createSchema(sqlite: Database.Database): void {
   // them in sync (renames, matching-pattern edits, removals) on every later boot —
   // this block only needs to get a brand-new database off the ground.
   const insertCategory = sqlite.prepare(`
-    INSERT OR IGNORE INTO categories (name, "group", budget_type, color, icon, is_default, config_key)
-    VALUES (@name, '', @budgetType, @color, @icon, 1, @key)
+    INSERT OR IGNORE INTO categories (name, "group", budget_type, color, icon, is_default, config_key, is_group)
+    VALUES (@name, @kind, @budgetType, @color, @icon, 1, @key, @isGroup)
   `);
 
   // Seed the default categories, plus their matchingPatterns as real category_rules
@@ -287,7 +290,8 @@ export function createSchema(sqlite: Database.Database): void {
   `);
   const seedMany = sqlite.transaction((rows: typeof DEFAULT_CATEGORIES) => {
     for (const row of rows) {
-      const res = insertCategory.run(row);
+      // An entry without a parentKey is a group.
+      const res = insertCategory.run({ ...row, kind: defaultCategoryKind(row), isGroup: row.parentKey ? 0 : 1 });
       if (res.changes === 0 || !row.matchingPatterns?.length) continue;
       const categoryId = Number(res.lastInsertRowid);
       for (const raw of row.matchingPatterns) {

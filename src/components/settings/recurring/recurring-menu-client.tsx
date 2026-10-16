@@ -93,7 +93,7 @@ export function RecurringMenuClient({ items, categories }: Props) {
       <ContextualTip id="recurring" />
       <PanelHeader title={tPanels("recurring.title")} action={<RecurringClient action="add" variant="default" />} />
 
-      <div className="flex flex-col gap-4 px-4 pt-1 pb-8 font-clear text-clear-ink">
+      <div className="flex flex-col gap-4 px-4 pt-1 font-clear text-clear-ink">
         {/* Summary */}
         <div className="flex flex-col gap-1">
           <span className="text-[13px] font-bold text-clear-ink-2">

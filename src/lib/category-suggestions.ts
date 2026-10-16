@@ -17,6 +17,8 @@ export interface CategorySuggestions {
   suggested: number[];
   /** Display names of the picked transactions, each once. */
   names: string[];
+  /** Their amounts added up, signed: spending negative, income positive. */
+  total: number;
   /** One name pattern per distinct merchant — what the rule matches on ("contains"). */
   patterns: string[];
   /** The direction every picked transaction shares, or null when they're mixed. */
@@ -58,7 +60,7 @@ export function rulePatternOf(description: string): string | null {
 }
 
 export async function getCategorySuggestions(ids: number[]): Promise<CategorySuggestions> {
-  const empty: CategorySuggestions = { suggested: [], names: [], patterns: [], direction: null, similarIds: [] };
+  const empty: CategorySuggestions = { suggested: [], names: [], total: 0, patterns: [], direction: null, similarIds: [] };
   if (ids.length === 0) return empty;
 
   const picked = await db
@@ -81,9 +83,10 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
   const [rules, allBanks, allCategories] = await Promise.all([
     db.select().from(categoryRules),
     db.select().from(banks),
-    db.select({ id: categories.id }).from(categories),
+    db.select({ id: categories.id, isGroup: categories.isGroup }).from(categories),
   ]);
-  const validIds = new Set(allCategories.map((c) => c.id));
+  // Groups are never suggested: only a category goes on a transaction.
+  const validIds = new Set(allCategories.filter((c) => !c.isGroup).map((c) => c.id));
   const banksByAccountNumber = new Map<string, Bank>();
   for (const bank of allBanks) if (bank.accountNumber) banksByAccountNumber.set(bank.accountNumber, bank);
 
@@ -147,6 +150,7 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
   return {
     suggested: rankCategorySuggestions(votes, validIds),
     names,
+    total: picked.reduce((sum, r) => sum + (r.direction === "expense" ? -r.amount : r.amount), 0),
     patterns,
     direction,
     similarIds: similar.filter((r) => !splitIds.has(r.id)).map((r) => r.id),
