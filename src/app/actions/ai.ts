@@ -43,7 +43,7 @@ export async function listAiModelsAction(apiKey?: string): Promise<{ models: str
 }
 
 /** One tiny request with the typed (or saved) key and model, to prove they work. */
-export async function testAiConnectionAction(input: { apiKey?: string; model: string | null }): Promise<{ ok: true } | Failure> {
+export async function testAiConnectionAction(input: { apiKey?: string; model: string | null }): Promise<{ ok: true; model: string | null } | Failure> {
   if (!(await getCurrentUser())) return { error: "signedOut" };
   const apiKey = input.apiKey?.trim() || (await getAiConfig()).apiKey;
   if (!apiKey) return { error: "notConfigured" };
@@ -52,7 +52,7 @@ export async function testAiConnectionAction(input: { apiKey?: string; model: st
     { type: "OBJECT", properties: { ok: { type: "BOOLEAN" } }, required: ["ok"] },
     { apiKey, model: input.model },
   );
-  return result.ok ? { ok: true } : { error: result.error };
+  return result.ok ? { ok: true, model: result.model ?? null } : { error: result.error };
 }
 
 export async function suggestCategoriesAction(ids: number[]): Promise<{ suggestions: Record<number, number> } | Failure> {

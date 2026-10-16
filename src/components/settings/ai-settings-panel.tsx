@@ -84,7 +84,8 @@ export function AiSettingsPanel() {
     setStatus(null);
     const result = await testAiConnectionAction({ apiKey: typedKey || undefined, model: model || null }).catch(() => ({ error: "unavailable" as const }));
     setBusy(null);
-    setStatus("ok" in result ? { tone: "success", text: t("testOk") } : { tone: "error", text: errorText(result.error) });
+    // Automatic mode may have skipped models without free quota: say which one answered.
+    setStatus("ok" in result ? { tone: "success", text: result.model ? t("testOkModel", { model: result.model }) : t("testOk") } : { tone: "error", text: errorText(result.error) });
   }
 
   if (!saved) return <p role="status" className="px-4 pt-4 font-clear text-sm text-clear-muted">{t("loading")}</p>;

@@ -3134,9 +3134,12 @@
         "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw.",
         "notConfigured": "AI staat uit. Zet het aan bij Instellingen › AI.",
         "invalidKey": "Google accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
-        "rateLimited": "De gratis limiet is voorlopig bereikt. Probeer het over een minuut opnieuw.",
+        "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
         "unavailable": "Gemini is niet bereikbaar. Probeer het later opnieuw.",
-        "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw."
+        "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw.",
+        "dailyLimit": "De gratis daglimiet is op. Morgen kan het weer.",
+        "noFreeTier": "Het gekozen model valt niet onder de gratis versie. Kies een ander bij Instellingen › AI.",
+        "modelUnavailable": "Het gekozen model is niet beschikbaar. Kies een ander bij Instellingen › AI."
       }
     }
   },
@@ -4133,9 +4136,12 @@
         "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw.",
         "notConfigured": "AI staat uit. Zet het aan bij Instellingen › AI.",
         "invalidKey": "Google accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
-        "rateLimited": "De gratis limiet is voorlopig bereikt. Probeer het over een minuut opnieuw.",
+        "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
         "unavailable": "Gemini is niet bereikbaar. Probeer het later opnieuw.",
-        "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw."
+        "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw.",
+        "dailyLimit": "De gratis daglimiet is op. Morgen kan het weer.",
+        "noFreeTier": "Het gekozen model valt niet onder de gratis versie. Kies een ander bij Instellingen › AI.",
+        "modelUnavailable": "Het gekozen model is niet beschikbaar. Kies een ander bij Instellingen › AI."
       }
     }
   },
@@ -4175,9 +4181,13 @@
       "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw.",
       "notConfigured": "Voeg eerst een API-sleutel toe.",
       "invalidKey": "Google accepteerde deze sleutel of dit model niet. Controleer de sleutel in Google AI Studio.",
-      "rateLimited": "De gratis limiet is voorlopig bereikt. Probeer het over een minuut opnieuw.",
+      "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
       "unavailable": "Gemini is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
-      "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw."
-    }
+      "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw.",
+      "dailyLimit": "De gratis daglimiet voor dit model is op. Morgen kan het weer, of kies een ander model.",
+      "noFreeTier": "Dit model valt voor jouw sleutel niet onder de gratis versie. Kies Automatisch of een ander Flash-model.",
+      "modelUnavailable": "Dit model is niet beschikbaar voor jouw sleutel. Kies Automatisch of een ander model."
+    },
+    "testOkModel": "Verbonden. {model} gaf antwoord."
   }
 }
