@@ -1,6 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { IconPlus } from "@tabler/icons-react";
-import Link from "next/link";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader, ClearCardLink, ClearTile } from "@/components/clear/card";
 import { ClearChip } from "@/components/clear/chip";
@@ -11,6 +10,7 @@ import { cn } from "@/lib/utils";
 import type { ForecastData } from "./load-forecast";
 import { MonthStepper } from "./month-stepper";
 import { MoneyText } from "@/components/clear/money";
+import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 
 const KIND_FILL = { needs: "bg-clear-primary", wants: "bg-clear-ember", savings: "bg-clear-info-fill" } as const;
 
@@ -60,10 +60,10 @@ export async function PlanCard({ data }: { data: ForecastData }) {
         <div aria-hidden className="h-7 rounded-full border-2 border-dashed border-clear-line" />
         <div className="flex flex-col items-start gap-3">
           <p className="m-0 text-[15px] text-clear-ink-2">{t("emptyBody")}</p>
-          <Link href="/settings/recurring/add" className={cn(clearButtonVariants(), "no-underline")}>
+          <AddRecurringButton className={cn(clearButtonVariants(), "no-underline")}>
             <IconPlus aria-hidden />
             {t("emptyAction")}
-          </Link>
+          </AddRecurringButton>
         </div>
       </ClearCard>
     );

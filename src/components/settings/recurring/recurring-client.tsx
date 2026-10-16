@@ -47,6 +47,8 @@ interface AddProps {
   action: "add";
   variant?: "default" | "icon" | "fab";
   prefill?: RecurringPrefill;
+  /** Already translated; overrides "New recurring item" / "Make recurring" (Home's "Set your salary"). */
+  title?: string;
   /** Controlled open, for callers with their own trigger (the transaction detail
    *  panel's "Make recurring"). When set, no built-in trigger button is rendered. */
   open?: boolean;
@@ -160,7 +162,7 @@ export function RecurringClient(props: Props) {
 
   const isEdit = props.action === "edit";
   const editTrigger = props.action === "edit" ? props.trigger : undefined;
-  const title = isEdit ? t("editTitle") : props.prefill ? t("makeRecurring") : t("newTitle");
+  const title = isEdit ? t("editTitle") : props.title ?? (props.prefill ? t("makeRecurring") : t("newTitle"));
 
   return (
     <>

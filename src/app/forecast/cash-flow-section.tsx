@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import {
   IconAlertTriangle,
@@ -25,6 +24,7 @@ import { cn } from "@/lib/utils";
 import type { CashFlowForecast, ForecastStatus } from "@/lib/cash-flow-forecast-shared";
 import { CashFlowChart } from "./cash-flow-chart";
 import { MoneyText } from "@/components/clear/money";
+import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 
 type Range = "d30" | "d90";
 const RANGE_DAYS: Record<Range, number> = { d30: 30, d90: 90 };
@@ -179,13 +179,12 @@ export function CashFlowSection({ cashFlow, today }: { cashFlow: CashFlowForecas
             <>
               <span className="text-[22px] leading-tight font-extrabold tracking-[-0.02em]">{t("status.emptyTitle")}</span>
               <span className="text-[15px] leading-normal text-clear-hero-ink-2">{t("status.emptyBody")}</span>
-              <Link
-                href="/settings/recurring/add"
+              <AddRecurringButton
                 className={cn(clearButtonVariants(), "mt-auto self-start bg-clear-hero-ink text-clear-hero no-underline hover:opacity-90")}
               >
                 <IconPlus aria-hidden />
                 {t("status.emptyAction")}
-              </Link>
+              </AddRecurringButton>
             </>
           ) : (
             <>

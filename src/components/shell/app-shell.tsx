@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { IconCurrencyEuro, IconFileUpload, IconLogout, IconPlus, IconSearch, IconSettings } from "@tabler/icons-react";
+import { IconCurrencyEuro, IconDeviceDesktop, IconFileUpload, IconLogout, IconMoon, IconPlus, IconSearch, IconSettings, IconSun } from "@tabler/icons-react";
 import { AnchoredTip } from "@/components/anchored-tip";
-import { Segmented } from "@/components/clear/segmented";
 import { logoutAction } from "@/app/actions/auth";
 import { useNavHidden } from "@/lib/nav-visibility";
 import { useTheme, type ThemeMode } from "@/lib/theme";
@@ -86,6 +85,8 @@ export function Wordmark({ className }: { className?: string }) {
   );
 }
 
+const NEXT_THEME: Record<ThemeMode, ThemeMode> = { light: "dark", dark: "system", system: "light" };
+
 function DesktopSidebar({
   pathname,
   insightsTab,
@@ -110,11 +111,12 @@ function DesktopSidebar({
   const idle = "font-semibold text-clear-ink-2 hover:bg-clear-tile hover:text-clear-ink";
 
   return (
+    // A full-height panel flush with the window's left edge, a hairline on its right.
     // Sized by the window's height rather than its width, so it fits a 1536×864 laptop at
     // 125% (about 730px of page) as well as 1080p, 1440p and 4K: compact below 800px,
     // roomier from 800px, the full layout with the logo from 900px. Below ~650px a long
     // menu (Insights open) scrolls inside the sidebar.
-    <aside className="clear-scrollbar fixed inset-y-4 left-4 z-40 hidden w-[260px] flex-col gap-3 overflow-y-auto rounded-clear-card bg-clear-card px-4 py-4 font-clear text-clear-ink lg:flex [@media(min-height:800px)]:gap-4 [@media(min-height:800px)]:py-5 [@media(min-height:900px)]:gap-6 [@media(min-height:900px)]:px-5 [@media(min-height:900px)]:py-7">
+    <aside className="clear-scrollbar fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col gap-3 overflow-y-auto border-r border-clear-line bg-clear-card px-4 py-4 font-clear text-clear-ink lg:flex [@media(min-height:800px)]:gap-4 [@media(min-height:800px)]:py-5 [@media(min-height:900px)]:gap-6 [@media(min-height:900px)]:px-5 [@media(min-height:900px)]:py-7">
       <Wordmark className="hidden px-2 [@media(min-height:900px)]:inline-flex" />
 
       <Link
@@ -200,22 +202,17 @@ function DesktopSidebar({
           <IconSettings size={20} stroke={1.9} aria-hidden />
           {t("settings")}
         </Link>
-        {/* One line on short windows, the label above the switch on tall ones. */}
-        <div className="flex items-center justify-between gap-2 px-3.5 py-1.5 [@media(min-height:900px)]:flex-col [@media(min-height:900px)]:items-stretch [@media(min-height:900px)]:py-2.5">
-          <span className="text-[13px] font-bold text-clear-muted">{t("theme.label")}</span>
-          <Segmented<ThemeMode>
-            label={t("theme.label")}
-            surface="tile"
-            size="sm"
-            value={mode}
-            onChange={setMode}
-            items={[
-              { value: "light", label: t("theme.light") },
-              { value: "system", label: t("theme.system") },
-              { value: "dark", label: t("theme.dark") },
-            ]}
-          />
-        </div>
+        {/* One button: each tap moves light → dark → system; the row says which is on. */}
+        <button
+          type="button"
+          onClick={() => setMode(NEXT_THEME[mode])}
+          aria-label={t("theme.cycle", { mode: t(`theme.${mode}`) })}
+          className={cn(row, idle, "w-full cursor-pointer")}
+        >
+          {mode === "light" ? <IconSun size={20} stroke={1.9} aria-hidden /> : mode === "dark" ? <IconMoon size={20} stroke={1.9} aria-hidden /> : <IconDeviceDesktop size={20} stroke={1.9} aria-hidden />}
+          <span className="flex-1 text-left">{t("theme.label")}</span>
+          <span className="text-[13px] font-bold text-clear-muted">{t(`theme.${mode}`)}</span>
+        </button>
         <button
           type="button"
           onClick={() => logoutAction()}

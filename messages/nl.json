@@ -2448,7 +2448,8 @@
       "label": "Thema",
       "light": "Licht",
       "system": "Auto",
-      "dark": "Donker"
+      "dark": "Donker",
+      "cycle": "Thema: {mode}. Tik om te wisselen"
     },
     "searchEverything": "Alles doorzoeken"
   },
@@ -3170,7 +3171,8 @@
       "empty": "Deze periode is er nog geen geld in of uit gegaan.",
       "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}."
     },
-    "setSalary": "Stel je salaris in"
+    "setSalary": "Stel je salaris in",
+    "salaryName": "Salaris"
   },
   "bills": {
     "markPaid": "Markeer als betaald",

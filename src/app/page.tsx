@@ -36,6 +36,7 @@ import {
 } from "@/app/_home/home-sections";
 import { HomeRecentActivity } from "@/app/_home/home-recent-activity";
 import { GetStartedCard } from "@/app/_home/get-started";
+import { SetSalaryButton } from "@/app/_home/set-salary-button";
 import { HomeTips } from "@/app/_home/home-tips";
 import { cn } from "@/lib/utils";
 
@@ -325,9 +326,7 @@ export default async function HomePage({
             ) : (
               <>
                 {longToday} ·{" "}
-                <Link href="/settings/recurring/add?type=income" className="font-bold text-clear-ember-text no-underline hover:underline">
-                  {t("setSalary")}
-                </Link>
+                <SetSalaryButton label={t("setSalary")} salaryName={t("salaryName")} />
               </>
             )}
           </span>

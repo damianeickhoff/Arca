@@ -15,5 +15,5 @@ export function MainContent({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const chromeless = isChromeless(pathname) || searchParams.get("embed") === "1";
 
-  return <main className={cn("min-w-0", !chromeless && "pb-[var(--nav-clearance)] lg:pl-[276px]")}>{children}</main>;
+  return <main className={cn("min-w-0", !chromeless && "pb-[var(--nav-clearance)] lg:pl-[260px]")}>{children}</main>;
 }

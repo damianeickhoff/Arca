@@ -1,30 +1,8 @@
-import { db } from "@/db";
-import { categories } from "@/db/schema";
-import { asc } from "drizzle-orm";
-import { RecurringAddClient, type RecurringAddPrefill } from "./recurring-add-client";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-const PREFILL_KEYS = ["name", "type", "amount", "budgetType", "dueDay", "matchPattern", "matchAmount", "categoryId"] as const;
-
-export default async function AddRecurringPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const [cats, params] = await Promise.all([
-    db.select().from(categories).orderBy(asc(categories.name)),
-    searchParams,
-  ]);
-
-  // "Make recurring" on a transaction links here with the fields it can derive (see
-  // buildRecurringPrefill in lib/recurring-prefill.ts). Only known keys are read,
-  // and only as single strings — a repeated param would otherwise arrive as an array.
-  const prefill: RecurringAddPrefill = {};
-  for (const key of PREFILL_KEYS) {
-    const value = params[key];
-    if (typeof value === "string" && value) prefill[key] = value;
-  }
-
-  return <RecurringAddClient categories={cats} prefill={Object.keys(prefill).length > 0 ? prefill : undefined} />;
+// The old full-page "add recurring item" form. Every button now opens the Clear form in
+// place (components/settings/recurring/add-recurring-button.tsx); old links and bookmarks
+// land on Settings › Recurring, which has its own Add button.
+export default function AddRecurringPage() {
+  redirect("/settings?panel=recurring");
 }

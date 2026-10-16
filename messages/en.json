@@ -2448,7 +2448,8 @@
       "label": "Theme",
       "light": "Light",
       "system": "Auto",
-      "dark": "Dark"
+      "dark": "Dark",
+      "cycle": "Theme: {mode}. Tap to switch"
     },
     "searchEverything": "Search everything"
   },
@@ -3170,7 +3171,8 @@
       "empty": "No money has moved this period yet.",
       "description": "Line chart of money in and money out this period, added up per day. So far {in} in and {out} out, a net of {net}."
     },
-    "setSalary": "Set your salary"
+    "setSalary": "Set your salary",
+    "salaryName": "Salary"
   },
   "bills": {
     "markPaid": "Mark as paid",

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { SubpageHeading } from "../subpage-heading";
 import { BillsCalendar } from "./bills-calendar";
 import { BillRow, daysUntil } from "./bill-row";
+import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 
 export interface UpcomingBill {
   id: number;
@@ -94,13 +95,13 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
               <IconRepeat aria-hidden />
               {t("recurringItems")}
             </Link>
-            <Link href="/settings/recurring/add?type=bill" aria-label={t("addBill")} className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}>
+            <AddRecurringButton type="bill" ariaLabel={t("addBill")} className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}>
               <IconPlus aria-hidden />
-            </Link>
-            <Link href="/settings/recurring/add?type=bill" className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
+            </AddRecurringButton>
+            <AddRecurringButton type="bill" className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
               <IconPlus aria-hidden />
               {t("addBill")}
-            </Link>
+            </AddRecurringButton>
           </>
         }
       />
@@ -257,10 +258,10 @@ function EmptyCard() {
         <h2 id="upcoming-empty-title" className="m-0 text-2xl font-extrabold tracking-[-0.02em]">{t("title")}</h2>
         <p className="m-0 max-w-[480px] text-base leading-normal text-clear-ink-2">{t("body")}</p>
       </div>
-      <Link href="/settings/recurring/add?type=bill" className={clearButtonVariants({ size: "lg" })}>
+      <AddRecurringButton type="bill" className={clearButtonVariants({ size: "lg" })}>
         <IconPlus aria-hidden />
         {t("add")}
-      </Link>
+      </AddRecurringButton>
     </ClearCard>
   );
 }

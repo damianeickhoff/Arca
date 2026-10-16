@@ -79,11 +79,13 @@ contain user-facing text themselves.
 
 ## Layout
 
-- Desktop (`lg`+): a floating white sidebar (260px, 16px from the window edges, card
-  radius) with the logo, the signed-in user, the "Search everything" field (the global
+- Desktop (`lg`+): a full-height white sidebar (260px, flush with the left edge, a
+  hairline on its right, sized by window height: compact below 800px, the full layout
+  with the logo from 900px) with the logo, the signed-in user, the "Search everything" field (the global
   search, also Ctrl/Cmd+K), the navigation (Home · Activity · Plan ·
   Insights, active row black; Plan shows Budget · Debts · Goals under it while one is
-  open, Insights its five tabs while it is open) and Import CSV, Settings, the theme and Sign out at the bottom. Pages start 276px
+  open, Insights its five tabs while it is open) and Import CSV, Settings, a theme button (each tap: light → dark → system) and Sign out at
+  the bottom. Pages start 260px
   from the left (MainContent) with `28px 32px 48px` padding: a heading row (40px title,
   subtitle, actions), then the cards, 20px apart. Pages never add their own global search
   button — search lives in the shell so it never reads as "search this page" (a page

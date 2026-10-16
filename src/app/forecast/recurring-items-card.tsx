@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { IconCalendar, IconInfoCircle, IconPlus } from "@tabler/icons-react";
 import { Amount } from "@/components/clear/amount";
@@ -15,6 +14,7 @@ import type { ItemType, PlanItem, PlanMonth } from "./load-forecast";
 import { OverrideDialog } from "./override-dialog";
 import { amountFor, usualFor } from "./plan-amounts";
 import { MoneyText } from "@/components/clear/money";
+import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 
 const GROUPS: ItemType[] = ["income", "bill", "subscription", "debt", "savings", "budget"];
 
@@ -43,10 +43,10 @@ export function RecurringItemsCard({
       title={<span id="forecast-items-title">{t("title")}</span>}
       subtitle={t("subtitle")}
       action={
-        <Link href="/settings/recurring/add" className={cn(clearButtonVariants({ variant: "secondary", size: "sm" }), "h-10 px-4 text-sm no-underline")}>
+        <AddRecurringButton className={cn(clearButtonVariants({ variant: "secondary", size: "sm" }), "h-10 px-4 text-sm no-underline")}>
           <IconPlus aria-hidden />
           {t("add")}
-        </Link>
+        </AddRecurringButton>
       }
     />
   );
@@ -62,10 +62,10 @@ export function RecurringItemsCard({
             <span className="h-6 w-5 rounded-md bg-clear-sky" />
           </span>
           <p className="m-0 max-w-md text-[15px] text-clear-ink-2">{t("empty")}</p>
-          <Link href="/settings/recurring/add" className={cn(clearButtonVariants(), "no-underline")}>
+          <AddRecurringButton className={cn(clearButtonVariants(), "no-underline")}>
             <IconPlus aria-hidden />
             {t("add")}
-          </Link>
+          </AddRecurringButton>
         </div>
       </ClearCard>
     );
