@@ -289,9 +289,17 @@ export function SettingsDialog({
                 // column cap itself to stay aligned with that sheet on desktop.
                 SHEET_COLUMN,
                 "fixed inset-0 z-[60] flex flex-col overflow-hidden rounded-t-clear-card bg-clear-card lg:rounded-clear-dialog",
-                !dragging && "transition-transform duration-300 ease-out",
+                // Phones: slides in from the right (and follows the edge swipe). From lg
+                // the sheet is a centred modal, so the panel crossfades in place on the
+                // dialog's Settle timing instead of travelling sideways.
+                "max-lg:[transform:translateX(var(--panel-x))]",
+                !dragging && "max-lg:transition-transform max-lg:duration-300 max-lg:ease-out",
+                "lg:transition-opacity",
+                visible
+                  ? "lg:opacity-100 lg:duration-[260ms] lg:ease-[cubic-bezier(0.22,1,0.36,1)]"
+                  : "lg:opacity-0 lg:duration-[160ms] lg:ease-[cubic-bezier(0.4,0,1,1)]",
               )}
-              style={{ transform: visible ? `translateX(${dragX}px)` : "translateX(100%)" }}
+              style={{ "--panel-x": visible ? `${dragX}px` : "100%" } as React.CSSProperties}
               onTouchStart={onPanelTouchStart}
               onTouchMove={onPanelTouchMove}
               onTouchEnd={onPanelTouchEnd}

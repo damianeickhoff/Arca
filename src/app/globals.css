@@ -627,8 +627,11 @@ button, a, [role="button"] {
 /* Desktop dialog motion ("Settle"). Every dialog is a vaul drawer; from lg it is a
    centred modal, so vaul's 500ms slide from the bottom edge reads as a phone sheet.
    From lg the panel fades in with a slight lift and scale and leaves faster.
-   Unlayered for the same reason as page-fade-in, and prefixed with :root so it
-   outranks vaul's runtime-injected rules (same specificity, injected later).
+   Unlayered for the same reason as page-fade-in, and prefixed with :root:root so
+   it outranks vaul's runtime-injected rules: vaul's open rule has four attribute
+   selectors (0,4,0) and its <style> is injected after this sheet, so a tie (a single
+   :root plus three attributes) lost the animation name and top-level dialogs still
+   slid up from the bottom (only nested ones, one attribute more, settled).
    Radix Presence unmounts on the element's own animationend, so the 160ms close
    really ends at 160ms; vaul's 500ms timers only fire onAnimationEnd callbacks and
    the background-scale cleanup, neither of which keeps the panel on screen.
@@ -658,34 +661,34 @@ button, a, [role="button"] {
   to { opacity: 0; }
 }
 @media (min-width: 1024px) {
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="open"] {
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="open"] {
     animation: clear-dialog-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="closed"] {
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="closed"] {
     animation: clear-dialog-out 160ms cubic-bezier(0.4, 0, 1, 1) both;
   }
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="open"] {
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="open"] {
     animation-name: clear-dialog-nested-in;
   }
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="closed"] {
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="closed"] {
     animation-name: clear-dialog-nested-out;
   }
-  :root [data-vaul-overlay][data-state="open"] {
+  :root:root [data-vaul-overlay][data-state="open"] {
     animation-duration: 220ms;
     animation-timing-function: ease-out;
   }
-  :root [data-vaul-overlay][data-state="closed"] {
+  :root:root [data-vaul-overlay][data-state="closed"] {
     animation-duration: 160ms;
     animation-timing-function: ease-in;
   }
 }
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="open"],
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="open"] {
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="open"],
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="open"] {
     animation-name: clear-dialog-fade-in;
   }
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="closed"],
-  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="closed"] {
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="closed"],
+  :root:root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="closed"] {
     animation-name: clear-dialog-fade-out;
   }
 }
