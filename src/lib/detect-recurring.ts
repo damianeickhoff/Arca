@@ -3,6 +3,8 @@ import { recurringItems, transactions, transactionSplits } from "@/db/schema";
 import { RECURRING_MERCHANTS } from "@/config/recurring-merchants";
 import { resolveFriendlyName } from "@/lib/friendly-names";
 import { matchRecurringItem, type RecurringMatcher } from "@/lib/recurring-match";
+import { recordActivity } from "@/lib/activity-log";
+import { recurringDetectedEntry } from "@/lib/activity-log-entries";
 
 // Minimum number of distinct calendar months an unknown transaction group must span before the
 // frequency heuristic treats it as recurring. Known merchants (RECURRING_MERCHANTS) bypass this.
@@ -175,6 +177,9 @@ export async function detectRecurringTransactions(): Promise<number> {
   }
 
   const items = [...toCreate.values()];
-  if (items.length) await db.insert(recurringItems).values(items);
-  return items.length;
+  if (items.length === 0) return 0;
+  const created = await db.insert(recurringItems).values(items).returning({ id: recurringItems.id, name: recurringItems.name });
+  // Auto-accepted items go in the change log; undoing them dismisses them.
+  await recordActivity(recurringDetectedEntry(created));
+  return created.length;
 }

@@ -101,6 +101,8 @@ export interface RulePassChange {
   description: string;
   fromCategoryId: number | null;
   patch: { categoryId?: number | null; recurringItemId?: number | null; isReimbursement?: boolean };
+  /** The values the patched fields had — what the change log's undo puts back. */
+  before: { categoryId: number | null; recurringItemId: number | null; isReimbursement: boolean };
 }
 
 /**
@@ -187,7 +189,14 @@ export async function planRulePass(opts: { since?: string } = {}): Promise<RuleP
     }
 
     if (Object.keys(patch).length > 0) {
-      changes.push({ id: row.id, date: row.date, description: row.description, fromCategoryId: row.categoryId, patch });
+      changes.push({
+        id: row.id,
+        date: row.date,
+        description: row.description,
+        fromCategoryId: row.categoryId,
+        patch,
+        before: { categoryId: row.categoryId, recurringItemId: row.recurringItemId, isReimbursement: row.isReimbursement },
+      });
     }
   }
   return changes;

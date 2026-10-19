@@ -1492,6 +1492,10 @@
     "automations": {
       "title": "All your rules in one list",
       "body": "See what each merchant and rule decides, spot rules that fight, and Test a change on the last 90 days before it is applied."
+    },
+    "recentChanges": {
+      "title": "Undo a bulk change",
+      "body": "Every import, rule run, bulk move and delete is listed here. Undo puts it back, as long as nothing later changed the same rows."
     }
   },
   "categoryPicker": {
@@ -1948,7 +1952,40 @@
     "deleteAll": "Delete all ({count})",
     "confirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?",
     "confirmDeleteBody": "This can't be undone. Anything {count, plural, one {it} other {they}} added to a savings goal comes off that goal again.",
-    "confirmDeleteLabel": "Delete {count, plural, one {transaction} other {# transactions}}"
+    "confirmDeleteLabel": "Delete {count, plural, one {transaction} other {# transactions}}",
+    "recentChanges": {
+      "title": "Recent changes",
+      "body": "Imports, rule runs, bulk moves and deletes, newest first. Undo puts things back as they were.",
+      "empty": "Nothing has changed in bulk yet. Imports, rule runs and deletes show up here.",
+      "undo": "Undo",
+      "undone": "Undone",
+      "undoNamed": "Undo: {summary}",
+      "rows": "{count, plural, one {# row} other {# rows}}",
+      "byUser": "by {name}",
+      "showAll": "Show all {count}",
+      "showFewer": "Show fewer",
+      "confirmTitle": "Undo this change?",
+      "confirmBody": "{summary}. Rows that changed again since are left as they are.",
+      "confirmLabel": "Undo",
+      "result": "{restored, plural, =0 {Nothing needed putting back} one {# row put back} other {# rows put back}}{kept, plural, =0 {} one {, # kept because it changed since} other {, # kept because they changed since}}.",
+      "conflict": "A later change touched the same rows: “{change}”. Undo that one first.",
+      "alreadyUndone": "This change was already undone.",
+      "error": "Couldn't undo this change. Nothing was changed.",
+      "noCategory": "no category",
+      "someRule": "a rule",
+      "kinds": {
+        "csvImport": "Imported {count, plural, one {# transaction} other {# transactions}}",
+        "bankSync": "Bank sync added {count, plural, one {# transaction} other {# transactions}}",
+        "rulesApplied": "Rules updated {count, plural, one {# transaction} other {# transactions}}",
+        "bulkCategoryMove": "Moved {count, plural, one {# transaction} other {# transactions}} to {category}",
+        "ruleCreated": "Added the rule “{pattern}” → {category}",
+        "ruleDeleted": "Deleted the rule “{pattern}” → {category}",
+        "merchantDeleted": "Deleted the merchant {name}",
+        "categoryDeleted": "Deleted the category {name}{transactions, plural, =0 {} one { and # transaction} other { and # transactions}}",
+        "recurringDetected": "Found {count, plural, one {a recurring payment: {name}} other {# recurring payments}}",
+        "unknown": "A change"
+      }
+    }
   },
   "importProfiles": {
     "description": "A saved profile remembers which column is which for a bank export, and is reapplied automatically to every file with the same columns. Delete one to be asked again next time.",

@@ -10,6 +10,23 @@
 import type Database from "better-sqlite3";
 import { DEFAULT_CATEGORIES, defaultCategoryKind, normalizeMatchingPattern } from "../config/categories.ts";
 
+/** The change log (Settings › Data health › Recent changes). Also run on boot by
+ * src/db/index.ts so existing databases get it. */
+export const ACTIVITY_LOG_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    at             TEXT    NOT NULL DEFAULT (datetime('now')),
+    user_id        INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    kind           TEXT    NOT NULL,
+    summary        TEXT    NOT NULL,
+    params         TEXT,
+    affected_count INTEGER NOT NULL DEFAULT 0,
+    refs           TEXT,
+    undo_data      TEXT,
+    undone_at      TEXT
+  );
+`;
+
 export function createSchema(sqlite: Database.Database): void {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS categories (
@@ -552,4 +569,5 @@ export function createSchema(sqlite: Database.Database): void {
     sqlite.exec(`ALTER TABLE merchants ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`);
   } catch { /* column already exists */ }
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions(merchant_id)`);
+  sqlite.exec(ACTIVITY_LOG_TABLE_SQL);
 }

@@ -9,7 +9,7 @@ import { detectBrandIcon } from "@/lib/brand-detect";
 import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
-import { createSchema } from "./create-schema";
+import { ACTIVITY_LOG_TABLE_SQL, createSchema } from "./create-schema";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
 // full schema for fresh databases — run on first start and by `npm run db:init`). Any
@@ -603,6 +603,9 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
   // Two levels: every top-level category becomes a group, every other category sits in
   // one. Runs after the config sync so the seeded "Other" group exists.
   migrateCategoryGroups(sqlite);
+
+  // Auto-migrate: the change log (Settings › Data health › Recent changes).
+  sqlite.exec(ACTIVITY_LOG_TABLE_SQL);
 
   return drizzle(sqlite, { schema });
 }

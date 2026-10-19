@@ -3,6 +3,18 @@ import { db } from "@/db";
 import { budgetTargets, categories, categoryRules, recurringItems, transactions, transactionSplits } from "@/db/schema";
 import { asc, eq, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
+import { recordActivity, snapshotDelete, type ReferencingEdge } from "@/lib/activity-log";
+import { categoryDeletedEntry } from "@/lib/activity-log-entries";
+
+// What DELETE removes or clears by hand (older databases may lack the cascading keys),
+// so the change log's snapshot matches it whatever the database's foreign keys say.
+const CATEGORY_DELETE_EDGES: ReferencingEdge[] = [
+  { table: "category_rules", column: "category_id", onDelete: "CASCADE" },
+  { table: "budget_targets", column: "category_id", onDelete: "CASCADE" },
+  { table: "recurring_items", column: "category_id", onDelete: "CASCADE" },
+  { table: "transactions", column: "category_id", onDelete: "CASCADE" },
+  { table: "transaction_splits", column: "category_id", onDelete: "SET NULL" },
+];
 
 export async function GET() {
   const denied = await requireAuth();
@@ -123,14 +135,18 @@ export async function DELETE(req: NextRequest) {
 
   // Existing databases may not have cascading foreign keys on every
   // category reference yet, so remove dependent rows explicitly first.
-  db.transaction((tx) => {
+  // Everything the delete removes or clears, so the change log can put it back.
+  const snapshot = db.transaction((tx) => {
+    const taken = snapshotDelete("categories", [id], CATEGORY_DELETE_EDGES);
     tx.delete(categoryRules).where(eq(categoryRules.categoryId, id)).run();
     tx.delete(budgetTargets).where(eq(budgetTargets.categoryId, id)).run();
     tx.delete(recurringItems).where(eq(recurringItems.categoryId, id)).run();
     tx.update(transactionSplits).set({ categoryId: null }).where(eq(transactionSplits.categoryId, id)).run();
     tx.delete(transactions).where(eq(transactions.categoryId, id)).run();
     tx.delete(categories).where(eq(categories.id, id)).run();
+    return taken;
   });
+  await recordActivity(categoryDeletedEntry(snapshot));
 
   return NextResponse.json({ ok: true });
 }

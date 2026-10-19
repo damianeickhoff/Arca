@@ -15,6 +15,8 @@ import { DATE_TRIGGER } from "@/app/settings/account-edit-dialogs";
 import { isValidISODate } from "@/lib/date-valid";
 import { cn } from "@/lib/utils";
 import type { BrokenDateRow } from "@/lib/data-health";
+import type { ActivityItem } from "@/lib/activity-log";
+import { RecentChanges } from "@/components/settings/recent-changes";
 
 /**
  * Repairs transactions whose stored date isn't a real date — the wreckage of a CSV
@@ -22,9 +24,10 @@ import type { BrokenDateRow } from "@/lib/data-health";
  *
  * These rows can't be reached from the transactions list: it filters on a TEXT date
  * column, so a value like "Albert Heijn" falls outside every range. This panel is the
- * only place they can be seen, corrected or removed.
+ * only place they can be seen, corrected or removed. Below that: Recent changes, the
+ * change log with undo.
  */
-export function DataHealthClient({ rows }: { rows: BrokenDateRow[] }) {
+export function DataHealthClient({ rows, changes }: { rows: BrokenDateRow[]; changes: ActivityItem[] }) {
   const t = useTranslations("dataHealth");
   const tPanels = useTranslations("settings.panels");
   const locale = useLocale();
@@ -194,6 +197,8 @@ export function DataHealthClient({ rows }: { rows: BrokenDateRow[] }) {
             </div>
           </>
         )}
+
+        <RecentChanges changes={changes} />
       </div>
     </>
   );

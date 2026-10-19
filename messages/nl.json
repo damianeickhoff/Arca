@@ -1492,6 +1492,10 @@
     "automations": {
       "title": "Al je regels in één lijst",
       "body": "Zie wat elke winkel en regel bepaalt, vind regels die botsen en test een wijziging op de laatste 90 dagen voordat hij wordt toegepast."
+    },
+    "recentChanges": {
+      "title": "Een bulkwijziging terugdraaien",
+      "body": "Elke import, regelronde, bulkverplaatsing en verwijdering staat hier. Ongedaan maken zet het terug, zolang niets daarna dezelfde rijen heeft gewijzigd."
     }
   },
   "categoryPicker": {
@@ -1948,7 +1952,40 @@
     "deleteAll": "Verwijder alles ({count})",
     "confirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?",
     "confirmDeleteBody": "Dit kan niet ongedaan worden gemaakt. Wat {count, plural, one {deze transactie} other {deze transacties}} aan een spaardoel {count, plural, one {heeft} other {hebben}} toegevoegd, gaat er weer af.",
-    "confirmDeleteLabel": "{count, plural, one {Transactie} other {# transacties}} verwijderen"
+    "confirmDeleteLabel": "{count, plural, one {Transactie} other {# transacties}} verwijderen",
+    "recentChanges": {
+      "title": "Recente wijzigingen",
+      "body": "Imports, regelrondes, bulkverplaatsingen en verwijderingen, nieuwste eerst. Ongedaan maken zet alles terug zoals het was.",
+      "empty": "Er is nog niets in bulk gewijzigd. Imports, regelrondes en verwijderingen verschijnen hier.",
+      "undo": "Ongedaan maken",
+      "undone": "Ongedaan gemaakt",
+      "undoNamed": "Ongedaan maken: {summary}",
+      "rows": "{count, plural, one {# rij} other {# rijen}}",
+      "byUser": "door {name}",
+      "showAll": "Alle {count} tonen",
+      "showFewer": "Minder tonen",
+      "confirmTitle": "Deze wijziging ongedaan maken?",
+      "confirmBody": "{summary}. Rijen die sindsdien opnieuw zijn gewijzigd, blijven zoals ze zijn.",
+      "confirmLabel": "Ongedaan maken",
+      "result": "{restored, plural, =0 {Er hoefde niets terug} one {# rij teruggezet} other {# rijen teruggezet}}{kept, plural, =0 {} one {, # behouden omdat die sindsdien is gewijzigd} other {, # behouden omdat die sindsdien zijn gewijzigd}}.",
+      "conflict": "Een latere wijziging raakte dezelfde rijen: “{change}”. Maak die eerst ongedaan.",
+      "alreadyUndone": "Deze wijziging is al ongedaan gemaakt.",
+      "error": "Deze wijziging kon niet ongedaan worden gemaakt. Er is niets veranderd.",
+      "noCategory": "geen categorie",
+      "someRule": "een regel",
+      "kinds": {
+        "csvImport": "{count, plural, one {# transactie} other {# transacties}} geïmporteerd",
+        "bankSync": "Banksynchronisatie voegde {count, plural, one {# transactie} other {# transacties}} toe",
+        "rulesApplied": "Regels pasten {count, plural, one {# transactie} other {# transacties}} aan",
+        "bulkCategoryMove": "{count, plural, one {# transactie} other {# transacties}} verplaatst naar {category}",
+        "ruleCreated": "Regel “{pattern}” → {category} toegevoegd",
+        "ruleDeleted": "Regel “{pattern}” → {category} verwijderd",
+        "merchantDeleted": "Winkel {name} verwijderd",
+        "categoryDeleted": "Categorie {name} verwijderd{transactions, plural, =0 {} one { met # transactie} other { met # transacties}}",
+        "recurringDetected": "{count, plural, one {Vaste betaling gevonden: {name}} other {# vaste betalingen gevonden}}",
+        "unknown": "Een wijziging"
+      }
+    }
   },
   "importProfiles": {
     "description": "Een opgeslagen profiel onthoudt welke kolom wat is voor een bankexport, en wordt automatisch toegepast op elk bestand met dezelfde kolommen. Verwijder er een om het opnieuw gevraagd te krijgen.",

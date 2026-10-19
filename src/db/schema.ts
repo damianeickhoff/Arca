@@ -573,6 +573,27 @@ export const mfaChallenges = sqliteTable("mfa_challenges", {
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
+// ─── Activity log ───────────────────────────────────────────────────────────
+// Settings › Data health's "Recent changes": one row per bulk or destructive change
+// (an import, a rule pass, a bulk move, a delete…), recorded server-side by the code
+// path itself. `summary` is the kind's translation key; the text is built at render
+// time from `kind` + `params`. `refs` lists the rows the change touched
+// ({ table: ids[] }) so an undo can refuse while a later change touched the same rows;
+// `undoData` says how to reverse it (null = not reversible). See src/lib/activity-log.ts.
+export const activityLog = sqliteTable("activity_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  at: text("at").notNull().default(sql`(datetime('now'))`),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  kind: text("kind").notNull(),
+  summary: text("summary").notNull(),
+  params: text("params"),
+  affectedCount: integer("affected_count").notNull().default(0),
+  refs: text("refs"),
+  undoData: text("undo_data"),
+  undoneAt: text("undone_at"),
+});
+export type ActivityLogRow = typeof activityLog.$inferSelect;
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
