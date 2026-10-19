@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { banks, transactions } from "@/db/schema";
 import { BANK_PARSERS } from "@/lib/bank-parsers";
 import { listImportProfiles } from "@/lib/import-profiles";
-import { maskAccountNumber } from "@/lib/import-preview";
+import { maskAccountNumber } from "@/lib/format";
 import { ImportView, type ImportViewData } from "./import-view";
 
 /** How many earlier imports the side card lists. */

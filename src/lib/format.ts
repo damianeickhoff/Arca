@@ -178,3 +178,8 @@ export function formatCompactEur(n: number): string {
   const formatted = new Intl.NumberFormat("en-GB", { notation: "compact", maximumFractionDigits: 1 }).format(Math.abs(n));
   return `${n < 0 ? "-" : ""}${currencySymbol()}${formatted}`;
 }
+
+/** "NL91INGB0001234821" → "••4821". */
+export function maskAccountNumber(accountNumber: string): string {
+  return `••${accountNumber.slice(-4)}`;
+}

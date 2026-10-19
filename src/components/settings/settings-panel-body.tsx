@@ -18,6 +18,7 @@ import { LanguageList } from "@/components/language-switcher";
 import { CurrencyList } from "@/components/currency-switcher";
 import { PrivacyToggle } from "@/components/privacy-toggle";
 import { AiSettingsPanel } from "@/components/settings/ai-settings-panel";
+import { BankConnectionSection } from "@/components/settings/bank-connection-section";
 
 export interface SettingsPanelSettings {
   financialMonth: FinancialMonthConfig;
@@ -64,7 +65,12 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
       return <div className="px-4 pt-4 pb-6"><SecurityForms /></div>;
 
     case "import":
-      return <div className="px-4 pt-4"><ImportCsvCard /></div>;
+      return (
+        <div className="flex flex-col gap-4 px-4 pt-4">
+          <ImportCsvCard />
+          <BankConnectionSection />
+        </div>
+      );
 
     case "appearance":
       return (

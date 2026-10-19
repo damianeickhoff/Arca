@@ -7,6 +7,7 @@ import { findMatchingProfile, parseWithMapping, type ColumnMapping } from "@/lib
 import { cacheRawImport } from "@/lib/import-raw-cache";
 import { normalizeAccountNumber } from "@/lib/internal-transfers";
 import { isValidISODate } from "@/lib/date-valid";
+import { maskAccountNumber } from "@/lib/format";
 
 // One place that decides what an uploaded CSV is — a built-in bank export, a file a
 // saved import profile recognises, or something the user has to map — shared by the
@@ -99,10 +100,6 @@ export interface ImportPreview {
   rows: PreviewRow[];
 }
 
-/** "NL91INGB0001234821" → "••4821". */
-export function maskAccountNumber(accountNumber: string): string {
-  return `••${accountNumber.slice(-4)}`;
-}
 
 /**
  * What importing these rows would do, without writing anything: which rows are new,
