@@ -11,10 +11,10 @@ import { ListRow } from "@/components/clear/list-row";
 import { ClearButton } from "@/components/clear/button";
 import { ClearChip } from "@/components/clear/chip";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
-import { useConfirm } from "@/components/clear/confirm-dialog";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { CategoryPickerSheet } from "@/components/category-picker";
 import { RuleDialog, ruleDraftFromRule, type RuleFields } from "@/components/rule-dialog";
+import { useDeleteRule, useSaveRule } from "@/components/rule-actions";
 import { TeachRuleStrip, type TeachMoment } from "@/components/teach-rule-strip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { SettingsEmpty, SettingsNotice } from "@/components/settings/settings-ui";
@@ -44,7 +44,8 @@ export function AutomationsClient({ overview, categories, banks }: { overview: A
   const t = useTranslations("settings.automations");
   const tPanels = useTranslations("settings.panels");
   const router = useRouter();
-  const confirm = useConfirm();
+  const sendRule = useSaveRule();
+  const removeRule = useDeleteRule();
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
   const [ruleOpen, setRuleOpen] = useState(false);
   const [editingMerchant, setEditingMerchant] = useState<MerchantListItem | null>(null);
@@ -81,7 +82,10 @@ export function AutomationsClient({ overview, categories, banks }: { overview: A
   async function saveRule(fields: RuleFields, categoryId: number | null) {
     if (!editingRule) return;
     try {
-      await send("/api/category-rules", "PATCH", { id: editingRule.rule.id, ...fields, categoryId: categoryId ?? editingRule.rule.categoryId });
+      const saved = await sendRule("PATCH", { id: editingRule.rule.id, ...fields, categoryId: categoryId ?? editingRule.rule.categoryId });
+      // The move wasn't confirmed: the rule dialog stays open to change it.
+      if (saved === "cancelled") return;
+      if (saved === "failed") throw new Error("rule failed");
       await send("/api/apply-rules", "POST", {});
       setRuleOpen(false);
       router.refresh();
@@ -91,14 +95,10 @@ export function AutomationsClient({ overview, categories, banks }: { overview: A
   }
 
   async function deleteRule(r: AutomationRule) {
-    const ok = await confirm({ title: t("deleteTitle", { name: ruleTitle(r) }), body: t("deleteBody"), confirmLabel: t("deleteConfirm"), destructive: true });
-    if (!ok) return;
-    try {
-      await send("/api/category-rules", "DELETE", { id: r.rule.id });
-      router.refresh();
-    } catch {
-      setError(t("saveError"));
-    }
+    // Asks keep or send back when the rule still files transactions; Cancel deletes nothing.
+    const result = await removeRule(r.rule, catById.get(r.rule.categoryId)?.name ?? t("unknownCategory"));
+    if (result === "failed") setError(t("saveError"));
+    else if (result === "deleted") router.refresh();
   }
 
   const ruleRow = (r: AutomationRule, nested = false) => {

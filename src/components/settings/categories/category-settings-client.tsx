@@ -8,11 +8,12 @@ import type { Category, CategoryRule, Bank } from "@/db/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
-import { RuleDialog, emptyRuleDraft, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { RuleDialog, emptyRuleDraft, moveRuleMatches, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { useDeleteRule, useSaveRule } from "@/components/rule-actions";
 import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { ClearButton } from "@/components/clear/button";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { SettingsNotice } from "@/components/settings/settings-ui";
 import { BudgetTypeField, CategoryRuleList, GroupField } from "@/components/settings/categories/category-form-parts";
@@ -120,40 +121,36 @@ export function EditCategoryForm({
     setRuleDialogOpen(true);
   }
 
+  const sendRule = useSaveRule();
+  const removeRule = useDeleteRule();
+
   async function saveRule(fields: RuleFields) {
     const id = ruleEditor?.id ?? null;
     setError(null);
-    const res = await fetch("/api/category-rules", {
-      method: id == null ? "POST" : "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(id == null ? { categoryId: category.id, ...fields } : { id, ...fields }),
-    }).catch(() => null);
-    if (!res?.ok) {
+    const saved = await sendRule(id == null ? "POST" : "PATCH", id == null ? { categoryId: category.id, ...fields } : { id, ...fields });
+    // The move to this category wasn't confirmed: the rule dialog stays open to change it.
+    if (saved === "cancelled") return;
+    if (saved === "failed") {
       setError(t("ruleSaveError"));
       setRuleDialogOpen(false);
       return;
     }
-    const saved: CategoryRule = await res.json();
     setRules((r) => (id == null ? [...r, saved] : r.map((x) => (x.id === id ? saved : x))));
     setRuleDialogOpen(false);
+    await moveRuleMatches(fields, category.id);
     await fetch("/api/apply-rules", { method: "POST" });
     router.refresh();
   }
 
   async function deleteRule(rule: CategoryRule) {
-    const previous = rules;
-    setRules((r) => r.filter((x) => x.id !== rule.id));
     setError(null);
-    const res = await fetch("/api/category-rules", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: rule.id }),
-    }).catch(() => null);
-    if (!res?.ok) {
-      setRules(previous);
+    const result = await removeRule(rule, category.name);
+    if (result === "cancelled") return;
+    if (result === "failed") {
       setError(t("ruleDeleteError"));
       return;
     }
+    setRules((r) => r.filter((x) => x.id !== rule.id));
     router.refresh();
   }
 
@@ -164,7 +161,7 @@ export function EditCategoryForm({
       <ClearDialogHeader
         title={shownName}
         subtitle={[group?.name, isIncome ? t("kindIncome") : t(`budgetTypes.${(["nodig", "willen", "sparen"].includes(budgetType) ? budgetType : "willen") as "willen"}`), t("ruleCount", { count: rules.length })].filter(Boolean).join(" · ")}
-        icon={<Icon iconKey={icon} color={effectiveColor} soft size="md" />}
+        icon={<Icon iconKey={icon} color={effectiveColor} soft size="xl" />}
         onClose={onClose}
         closeLabel={t("close")}
       />
@@ -196,7 +193,7 @@ export function EditCategoryForm({
 
       {error && <SettingsNotice>{error}</SettingsNotice>}
 
-      <div className="border-t border-clear-ground pt-[18px] pb-1">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter
           destructive={
             <ClearButton variant="danger" onClick={remove} disabled={loading}>
@@ -210,7 +207,7 @@ export function EditCategoryForm({
             {loading ? t("saving") : t("save")}
           </ClearButton>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
 
       {/* Inside the content so it stacks as a nested sheet over this one. */}
       <RuleDialog
@@ -221,6 +218,7 @@ export function EditCategoryForm({
         category={{ name: shownName, icon, color: effectiveColor }}
         banks={banks}
         submitLabel={tRule("save")}
+        moveAll
         onSubmit={saveRule}
       />
     </>

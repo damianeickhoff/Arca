@@ -45,7 +45,8 @@ import { ClearChip } from "@/components/clear/chip";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { IconTile } from "@/components/clear/icon-tile";
-import { RuleDialog, emptyRuleDraft, fetchRuleMatches, toRuleAmountInput, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { RuleDialog, emptyRuleDraft, moveRuleMatches, toRuleAmountInput, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { useSaveRule } from "@/components/rule-actions";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -2021,12 +2022,15 @@ function TransactionRuleDialog({ draft, categories, onClose }: { draft: RuleDraf
   const [last, setLast] = useState(draft);
   if (draft && draft !== last) setLast(draft);
 
+  const sendRule = useSaveRule();
+
   async function save(fields: RuleFields, categoryId: number | null) {
     if (categoryId == null) return;
-    const json = (method: string, body: unknown) => ({ method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    await fetch("/api/category-rules", json("POST", { categoryId, ...fields }));
-    const { ids = [] } = await fetchRuleMatches(fields, { ids: true }).catch(() => ({ ids: [] as number[] }));
-    if (ids.length > 0) await fetch("/api/transactions", json("PATCH", { ids, categoryId }));
+    // The same rule files elsewhere and the move wasn't confirmed (or the save failed):
+    // nothing moves and the dialog stays.
+    const saved = await sendRule("POST", { categoryId, ...fields });
+    if (saved === "cancelled" || saved === "failed") return;
+    await moveRuleMatches(fields, categoryId);
     await fetch("/api/apply-rules", { method: "POST" });
     onClose();
   }

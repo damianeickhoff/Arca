@@ -104,10 +104,12 @@ export async function PATCH(req: NextRequest) {
 
   // Bulk update by ids array: { ids: number[], ...data }
   if (Array.isArray(body.ids)) {
-    const { ids, ...data } = body;
+    const { ids, byRule, ...data } = body;
     if (ids.length === 0) return NextResponse.json({ updated: 0 });
     if (data.categoryId !== undefined) {
-      data.manuallyCategorized = true;
+      // A category set by hand is manual; one a rule just filed (byRule) is not, so the
+      // rules pass may move it again and deleting the rule can offer to revert it.
+      data.manuallyCategorized = byRule !== true;
       await db.delete(transactionSplits).where(inArray(transactionSplits.transactionId, ids));
     }
     const result = await db

@@ -6,10 +6,11 @@ import { IconCheck, IconChevronDown, IconInfoCircle, IconTag } from "@tabler/ico
 import { AnchoredTip } from "@/components/anchored-tip";
 import { Amount } from "@/components/clear/amount";
 import { clearButtonVariants } from "@/components/clear/button-variants";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { Segmented } from "@/components/clear/segmented";
 import { CategoryPickerSheet } from "@/components/category-picker";
+import { previewQuery } from "@/components/rule-actions";
 import { Icon } from "@/components/icon";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { Bank, Category, CategoryRule } from "@/db/schema";
@@ -95,24 +96,28 @@ export function ruleFieldsFromDraft(d: RuleDraft): RuleFields {
   };
 }
 
-function previewQuery(f: RuleFields): string {
-  const q = new URLSearchParams();
-  if (f.namePattern) q.set("pattern", f.namePattern);
-  q.set("match", f.nameWholeWord ? "word" : f.nameWildcard ? "contains" : "exact");
-  if (f.amount != null) q.set("amount", String(f.amount));
-  if (f.amountMin != null) q.set("amountMin", String(f.amountMin));
-  if (f.amountMax != null) q.set("amountMax", String(f.amountMax));
-  if (f.direction) q.set("direction", f.direction);
-  if (f.bankId != null) q.set("bankId", String(f.bankId));
-  return q.toString();
-}
-
 /** What a rule matches among the transactions already there — the same matching the
  *  apply-rules pass does. `ids` also returns every matched id (for moving them). */
 export async function fetchRuleMatches(fields: RuleFields, opts: { ids?: boolean } = {}): Promise<RuleMatches> {
   const res = await fetch(`/api/category-rules/preview?${previewQuery(fields)}${opts.ids ? "&ids=1" : ""}`);
   if (!res.ok) throw new Error("preview failed");
   return res.json();
+}
+
+/** Moves every transaction a rule matches now to its category — hand-categorised ones
+ *  too, as the dialog's "All N move" line promises (`moveAll`). Without this, rows a
+ *  rule moved earlier stay pinned to the old category: a move marks them as set by hand,
+ *  and the apply-rules pass never touches those. */
+export async function moveRuleMatches(fields: RuleFields, categoryId: number): Promise<void> {
+  const { ids = [] } = await fetchRuleMatches(fields, { ids: true }).catch(() => ({ ids: [] as number[] }));
+  if (ids.length === 0) return;
+  await fetch("/api/transactions", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    // Filed by the rule, not by hand: the rules pass may move them again and deleting
+    // the rule can offer to send them back to Needs review.
+    body: JSON.stringify({ ids, categoryId, byRule: true }),
+  });
 }
 
 /** The matched part of a description, highlighted. */
@@ -442,14 +447,16 @@ function RuleBody({
       </section>
       <AnchoredTip id="rulePreview" anchor="rulePreview" active={open && !!matches && matches.count > 0} />
 
-      <ClearDialogFooter>
-        <button type="button" onClick={onCancel} className={clearButtonVariants({ variant: "secondary" })}>
-          {cancelLabel ?? t("cancel")}
-        </button>
-        <button type="submit" disabled={!canSave} className={clearButtonVariants()}>
-          {saving ? t("saving") : submitLabel ?? t("apply")}
-        </button>
-      </ClearDialogFooter>
+      <ClearDialogFooterDock>
+        <ClearDialogFooter>
+          <button type="button" onClick={onCancel} className={clearButtonVariants({ variant: "secondary" })}>
+            {cancelLabel ?? t("cancel")}
+          </button>
+          <button type="submit" disabled={!canSave} className={clearButtonVariants()}>
+            {saving ? t("saving") : submitLabel ?? t("apply")}
+          </button>
+        </ClearDialogFooter>
+      </ClearDialogFooterDock>
 
       {categories && (
         <CategoryPickerSheet

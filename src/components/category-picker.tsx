@@ -13,6 +13,7 @@ import { ContextualTip } from "@/components/contextual-tip";
 import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import type { CategorySuggestions } from "@/lib/category-suggestions";
+import { useSaveRule } from "@/components/rule-actions";
 import { cn } from "@/lib/utils";
 import { groupCategories } from "@/lib/category-tree";
 import { formatEur } from "@/lib/format";
@@ -392,6 +393,8 @@ export function CategoryPickerSheet(props: SheetProps) {
   const applyIds = apply ? (withRule && data ? [...new Set([...apply.ids, ...data.similarIds])] : apply.ids) : [];
   const listFormat = new Intl.ListFormat(locale, { style: "long", type: "conjunction" });
 
+  const sendRule = useSaveRule();
+
   async function applyStaged() {
     if (!apply || busy || staged === undefined) return;
     // Nothing changes: the same category and no rule.
@@ -399,10 +402,16 @@ export function CategoryPickerSheet(props: SheetProps) {
     setBusy(true);
     setFailed(false);
     try {
-      await postJson("/api/transactions", "PATCH", { ids: applyIds, categoryId: stagedId });
+      // The picked rows are set by hand; the similar ones the rule brings along are
+      // filed by the rule, so deleting it later can offer to send them back.
+      await postJson("/api/transactions", "PATCH", { ids: apply.ids, categoryId: stagedId });
+      const byRule = applyIds.filter((id) => !apply.ids.includes(id));
+      if (byRule.length > 0) await postJson("/api/transactions", "PATCH", { ids: byRule, categoryId: stagedId, byRule: true });
       if (withRule && data) {
+        // One that already files elsewhere asks before it moves; a Cancel leaves it out.
+        let savedAny = false;
         for (const pattern of data.patterns) {
-          await postJson("/api/category-rules", "POST", {
+          const saved = await sendRule("POST", {
             categoryId: stagedId,
             namePattern: pattern,
             nameWildcard: true,
@@ -413,8 +422,10 @@ export function CategoryPickerSheet(props: SheetProps) {
             amountMin: null,
             amountMax: null,
           });
+          if (saved === "failed") throw new Error("rule failed");
+          if (saved !== "cancelled") savedAny = true;
         }
-        await postJson("/api/apply-rules", "POST", {});
+        if (savedAny) await postJson("/api/apply-rules", "POST", {});
       }
       apply.onApplied(stagedId, applyIds, withRule);
       change(false);

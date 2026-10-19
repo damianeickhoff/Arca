@@ -34,6 +34,8 @@ export function ConfirmDialog({
   cancelLabel,
   destructive = false,
   onConfirm,
+  altLabel,
+  onAlt,
 }: {
   open: boolean;
   /** Called with false for Cancel, Escape and a tap outside. */
@@ -44,13 +46,17 @@ export function ConfirmDialog({
   cancelLabel: string;
   destructive?: boolean;
   onConfirm: () => void;
+  /** A second answer besides Cancel and the confirm button (see useChoice). */
+  altLabel?: string;
+  onAlt?: () => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         hideHeaderRow
         title={title}
-        sheetClassName="z-[100] lg:max-w-[400px]"
+        // Three answers need the room on desktop; a plain confirm stays compact.
+        sheetClassName={cn("z-[100]", altLabel ? "lg:max-w-[560px]" : "lg:max-w-[400px]")}
         overlayClassName="z-[100]"
         className="pt-6 font-clear text-clear-ink lg:pb-6"
       >
@@ -68,10 +74,17 @@ export function ConfirmDialog({
               <MoneyText>{body}</MoneyText>
             </DialogDescription>
           )}
-          <div className="flex gap-2.5 pt-1.5 lg:justify-end">
+          {/* Three answers stack on phones, the confirm button on top; on desktop they
+              sit in a row that wraps when the labels are long. */}
+          <div className={cn("flex gap-2.5 pt-1.5 lg:flex-row lg:flex-wrap lg:justify-end", altLabel && "flex-col-reverse")}>
             <ClearButton variant="secondary" className="flex-1 lg:flex-none" onClick={() => onOpenChange(false)}>
               {cancelLabel}
             </ClearButton>
+            {altLabel && (
+              <ClearButton variant="outline" className="flex-1 lg:flex-none" onClick={onAlt}>
+                {altLabel}
+              </ClearButton>
+            )}
             <ClearButton
               variant="primary"
               className={cn("flex-1 lg:flex-none", destructive && "bg-clear-negative text-clear-card")}
@@ -100,29 +113,40 @@ export interface ConfirmOptions {
   destructive?: boolean;
 }
 
-type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
+export interface ChoiceOptions extends ConfirmOptions {
+  /** Already translated: the second answer, between Cancel and the confirm button. */
+  altLabel: string;
+}
 
-const ConfirmContext = createContext<ConfirmFn | null>(null);
+/** The answer to a choice: the confirm button, the second answer, or null for Cancel. */
+export type Choice = "confirm" | "alt" | null;
+
+type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
+type ChooseFn = (options: ChoiceOptions) => Promise<Choice>;
+type AskFn = (options: ConfirmOptions & { altLabel?: string }) => Promise<Choice>;
+
+const ConfirmContext = createContext<AskFn | null>(null);
 
 /** The one confirm dialog, mounted once by the app shell (inside SearchProvider). */
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const t = useTranslations("confirmDialog");
-  const [request, setRequest] = useState<{ options: ConfirmOptions; open: boolean } | null>(null);
-  const resolveRef = useRef<((confirmed: boolean) => void) | null>(null);
+  const [request, setRequest] = useState<{ options: ConfirmOptions & { altLabel?: string }; open: boolean } | null>(null);
+  const resolveRef = useRef<((choice: Choice) => void) | null>(null);
 
-  const confirm = useCallback<ConfirmFn>(
+  // useConfirm asks through this too, without a second answer.
+  const ask = useCallback<AskFn>(
     (options) =>
-      new Promise<boolean>((resolve) => {
+      new Promise<Choice>((resolve) => {
         // A second request while one is still open answers the first with "no".
-        resolveRef.current?.(false);
+        resolveRef.current?.(null);
         resolveRef.current = resolve;
         setRequest({ options, open: true });
       }),
     [],
   );
 
-  function settle(confirmed: boolean) {
-    resolveRef.current?.(confirmed);
+  function settle(choice: Choice) {
+    resolveRef.current?.(choice);
     resolveRef.current = null;
     // Keep the options while the dialog animates closed.
     setRequest((current) => (current ? { ...current, open: false } : current));
@@ -131,20 +155,22 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const options = request?.options;
 
   return (
-    <ConfirmContext.Provider value={confirm}>
+    <ConfirmContext.Provider value={ask}>
       {children}
       {options && (
         <ConfirmDialog
           open={request.open}
           onOpenChange={(open) => {
-            if (!open) settle(false);
+            if (!open) settle(null);
           }}
           title={options.title}
           body={options.body}
           destructive={options.destructive}
           confirmLabel={options.confirmLabel ?? (options.destructive ? t("delete") : t("confirm"))}
           cancelLabel={options.cancelLabel ?? t("cancel")}
-          onConfirm={() => settle(true)}
+          onConfirm={() => settle("confirm")}
+          altLabel={options.altLabel}
+          onAlt={() => settle("alt")}
         />
       )}
     </ConfirmContext.Provider>
@@ -167,6 +193,28 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
  * browser's own confirm, so callers never need a guard.
  */
 export function useConfirm(): ConfirmFn {
-  const confirm = useContext(ConfirmContext);
-  return useMemo(() => confirm ?? ((options: ConfirmOptions) => Promise.resolve(window.confirm(options.title))), [confirm]);
+  const ask = useContext(ConfirmContext);
+  return useMemo(
+    () =>
+      ask
+        ? (options: ConfirmOptions) => ask(options).then((choice) => choice === "confirm")
+        : (options: ConfirmOptions) => Promise.resolve(window.confirm(options.title)),
+    [ask],
+  );
+}
+
+/**
+ * Ask with two answers besides Cancel: resolves "confirm" for the confirm button (the
+ * default, drawn black), "alt" for `altLabel` and null for Cancel, Escape or a tap
+ * outside.
+ *
+ *   const choose = useChoice();
+ *   const choice = await choose({ title, body, confirmLabel: t("keep"), altLabel: t("revert") });
+ *   if (choice == null) return;
+ *
+ * Outside the app shell it falls back to the browser's confirm: OK is "confirm".
+ */
+export function useChoice(): ChooseFn {
+  const ask = useContext(ConfirmContext);
+  return useMemo(() => ask ?? ((options: ChoiceOptions) => Promise.resolve<Choice>(window.confirm(options.title) ? "confirm" : null)), [ask]);
 }

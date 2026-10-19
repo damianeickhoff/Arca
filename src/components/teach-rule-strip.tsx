@@ -7,6 +7,7 @@ import type { Category } from "@/db/schema";
 import { ClearButton } from "@/components/clear/button";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { RuleDialog, emptyRuleDraft, fetchRuleMatches, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { useSaveRule } from "@/components/rule-actions";
 import type { CategorySuggestions } from "@/lib/category-suggestions";
 
 /** What was just filed: one transaction, into one category. */
@@ -64,6 +65,7 @@ export function TeachRuleStrip({
   const [data, setData] = useState<{ key: string; patterns: string[]; direction: "income" | "expense" | null; count: number; waiting: number; merchant: string | null } | null>(null);
   const [state, setState] = useState<"ask" | "saving" | "done" | "failed">("ask");
   const [editOpen, setEditOpen] = useState(false);
+  const sendRule = useSaveRule();
   const key = `${teach.transactionId}:${teach.categoryId}`;
 
   useEffect(() => {
@@ -111,11 +113,18 @@ export function TeachRuleStrip({
     if (!current || state === "saving") return;
     setState("saving");
     try {
+      // One that already files elsewhere asks before it moves; a Cancel leaves it out.
+      let savedAny = false;
       for (const p of current.patterns) {
         const fields = fieldsFor(p, current.direction);
-        await send("/api/category-rules", "POST", { categoryId: teach.categoryId, ...fields });
+        const saved = await sendRule("POST", { categoryId: teach.categoryId, ...fields });
+        if (saved === "failed") throw new Error("rule failed");
+        if (saved === "cancelled") continue;
+        savedAny = true;
         await moveMatches(fields, teach.categoryId);
       }
+      // Every move was cancelled: no rule, the question stays.
+      if (!savedAny) return setState("ask");
       await send("/api/apply-rules", "POST", {});
       setState("done");
       onRuleCreated?.();
@@ -126,7 +135,14 @@ export function TeachRuleStrip({
 
   async function saveEdited(fields: RuleFields, categoryId: number | null) {
     const target = categoryId ?? teach.categoryId;
-    await send("/api/category-rules", "POST", { categoryId: target, ...fields });
+    const saved = await sendRule("POST", { categoryId: target, ...fields });
+    // The move wasn't confirmed: the rule dialog stays open to change it.
+    if (saved === "cancelled") return;
+    if (saved === "failed") {
+      setEditOpen(false);
+      setState("failed");
+      return;
+    }
     await moveMatches(fields, target);
     await send("/api/apply-rules", "POST", {});
     setEditOpen(false);

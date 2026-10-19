@@ -16,6 +16,7 @@ import { IconTile } from "@/components/clear/icon-tile";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { MoneyText } from "@/components/clear/money";
 import { CategoryPickerSheet } from "@/components/category-picker";
+import { useSaveRule } from "@/components/rule-actions";
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { TeachRuleStrip, type TeachMoment } from "@/components/teach-rule-strip";
@@ -183,6 +184,8 @@ export function NeedsReviewView({
     setFailed(false);
   }
 
+  const sendRule = useSaveRule();
+
   async function save() {
     if (!current || stagedId == null || busy) return;
     const ids = withRule && data ? [...new Set([current.id, ...data.similarIds])] : [current.id];
@@ -191,9 +194,11 @@ export function NeedsReviewView({
     try {
       await send("/api/transactions", "PATCH", { ids, categoryId: stagedId });
       if (withRule && data) {
-        // The same rule the category picker's switch creates.
+        // The same rule the category picker's switch creates. One that already files
+        // elsewhere asks before it moves; a Cancel leaves that rule out.
+        let savedAny = false;
         for (const pattern of data.patterns) {
-          await send("/api/category-rules", "POST", {
+          const saved = await sendRule("POST", {
             categoryId: stagedId,
             namePattern: pattern,
             nameWildcard: true,
@@ -204,8 +209,10 @@ export function NeedsReviewView({
             amountMin: null,
             amountMax: null,
           });
+          if (saved === "failed") throw new Error("rule failed");
+          if (saved !== "cancelled") savedAny = true;
         }
-        await send("/api/apply-rules", "POST", {});
+        if (savedAny) await send("/api/apply-rules", "POST", {});
       }
       setTeach(withRule || current.recurringItemId != null ? null : { transactionId: current.id, categoryId: stagedId });
       markSorted(ids);

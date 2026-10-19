@@ -9,11 +9,12 @@ import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { Icon } from "@/components/icon";
 import { ClearButton } from "@/components/clear/button";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { SettingsNotice } from "@/components/settings/settings-ui";
 import { BudgetTypeField, CategoryRuleList, GroupField, groupDefaultBudgetType } from "@/components/settings/categories/category-form-parts";
-import { RuleDialog, emptyRuleDraft, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { RuleDialog, emptyRuleDraft, moveRuleMatches, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import { useSaveRule } from "@/components/rule-actions";
 
 /**
  * A button (its look comes from `className` / `children`) that opens the New category
@@ -122,6 +123,8 @@ function NewCategoryForm({
     setRuleDialogOpen(false);
   }
 
+  const sendRule = useSaveRule();
+
   async function save() {
     if (!name.trim() || groupId == null) return;
     setBusy(true);
@@ -135,22 +138,23 @@ function NewCategoryForm({
       if (!res.ok) throw new Error(String(res.status));
       if (rules.length > 0) {
         const created = await res.json();
+        // One that already files elsewhere asks before it moves; a Cancel leaves it out.
         for (const rule of rules) {
-          await fetch("/api/category-rules", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              categoryId: created.id,
-              namePattern: rule.namePattern,
-              nameWildcard: rule.nameWildcard,
-              nameWholeWord: rule.nameWholeWord,
-              amount: rule.amount,
-              amountMin: rule.amountMin,
-              amountMax: rule.amountMax,
-              direction: rule.direction,
-              bankId: rule.bankId,
-            }),
+          const saved = await sendRule("POST", {
+            categoryId: created.id,
+            namePattern: rule.namePattern,
+            nameWildcard: rule.nameWildcard,
+            nameWholeWord: rule.nameWholeWord,
+            amount: rule.amount,
+            amountMin: rule.amountMin,
+            amountMax: rule.amountMax,
+            direction: rule.direction,
+            bankId: rule.bankId,
           });
+          if (saved === "cancelled") continue;
+          if (saved === "failed") throw new Error("rule failed");
+          // Staged from the rule dialog, so the direction is one of RuleFields' values.
+          await moveRuleMatches({ ...rule, direction: rule.direction as RuleFields["direction"] }, created.id);
         }
         await fetch("/api/apply-rules", { method: "POST" });
       }
@@ -168,7 +172,7 @@ function NewCategoryForm({
       <ClearDialogHeader
         title={t("newTitle")}
         subtitle={t("newSubtitle")}
-        icon={<Icon iconKey={icon} color={effectiveColor} soft size="md" />}
+        icon={<Icon iconKey={icon} color={effectiveColor} soft size="xl" />}
         onClose={onClose}
         closeLabel={t("close")}
       />
@@ -204,14 +208,14 @@ function NewCategoryForm({
 
       {error && <SettingsNotice>{error}</SettingsNotice>}
 
-      <div className="border-t border-clear-ground pt-[18px] pb-1">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter>
           <ClearButton variant="secondary" onClick={onClose}>{t("cancel")}</ClearButton>
           <ClearButton onClick={save} disabled={busy || !name.trim() || groupId == null}>
             {busy ? t("saving") : t("create")}
           </ClearButton>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
 
       {/* Inside the content so it stacks as a nested sheet over this one. */}
       <RuleDialog
@@ -222,6 +226,7 @@ function NewCategoryForm({
         category={{ name, icon, color: effectiveColor }}
         banks={banks}
         submitLabel={tRule("save")}
+        moveAll
         onSubmit={saveRule}
       />
     </>

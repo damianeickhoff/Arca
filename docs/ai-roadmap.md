@@ -17,15 +17,25 @@ Planned AI features for Centje, in build order. One feature per session/commit.
 
 ## Ground rules for every AI feature
 
-- Only show it when `isAiReady()`; hide it otherwise (no dead buttons).
+- **Opt-in, per feature.** AI as a whole is off until the user adds a key and switches it on. On
+  top of that, Settings › AI lists every AI feature with its own switch (stored as
+  `ai_feature_<key>` in `app_settings`, default on once AI is on), so someone can keep category
+  suggestions but refuse, say, the payday check-in. Every surface checks `isAiFeatureOn(key)`,
+  not just `isAiReady()`.
+- Only show a feature when it is on; hide it otherwise (no dead buttons).
 - Send the minimum: merchant text through `redactForAi`, amounts, dates, category names. Never
   account numbers, never whole histories when an aggregate will do.
 - One request per user action, batched (free-tier limits). Cache results the user may reopen.
 - AI proposes, the user confirms. Nothing is written without a tap.
+- **AI explains, the app computes.** Every number on screen comes from our own code (forecast,
+  budgets, totals). The model writes sentences and picks from lists; it never produces an amount
+  or a date that is shown as fact.
 - Handle every `AiError` with its own translated message (`errors.*` keys exist per surface).
 - Clear design, translation function for all text (en + nl), and a tip (`src/lib/tips.ts`, add to
   `IGNORES_DISABLED`) for each new feature, per CLAUDE.md.
 - Pure helpers get a test in `tests/lib/`.
+- The `@anthropic-ai/sdk` dependency is unused; remove it (or wire it as a second provider behind
+  the same `generateJson` interface) rather than leaving it in `package.json`.
 
 ---
 
@@ -50,17 +60,33 @@ Planned AI features for Centje, in build order. One feature per session/commit.
 - Show the pick per merchant with a sparkle and an "also make a rule" switch (default on).
 - Reuse `suggestCategories` but key the prompt by merchant name instead of transaction id.
 
-## 6. Readable names for cryptic descriptions
+## 3. Merchant cleanup on first sight
 
-**Why:** "BEA NR:XYZ 23.11 CCV*SHOP 1234" → "Shop name"; Activity becomes readable.
+**Why:** the long tail of merchants gets a readable name, match patterns, a likely category and
+icon keywords in one call, instead of the static `friendlyNames.ts` / `brandIcons.ts` lists and
+the regex extractor.
 
-- Target: transactions with no merchant or a merchant whose name equals the raw description
-  (`src/lib/merchants.ts`, `merchant-name.ts`, `friendly-names.ts`).
-- Batch distinct raw descriptions (redacted) → `{ raw, name }`. Write to the merchant's display
-  name / friendly name only after the user accepts a list (Settings › Merchants or Data health).
-- Never touch `description` itself (matching and rules depend on it).
+- Trigger: a new merchant row (`getOrCreateMerchantId`) whose derived name equals, or barely
+  shortens, the raw description. Batched per import, cached per `normalized_key`.
+- Input: the redacted raw descriptions of that merchant (3–5 samples). Output per merchant:
+  `{ name, patterns: string[], categoryId?, iconKeywords: string[] }`.
+- The proposals land in a review list (Settings › Merchants or Data health); accepting writes
+  the merchant's display name, its "recognised by" patterns and its default category. Nothing
+  auto-applies. `description` itself is never changed (rules match on it).
+- Icon keywords feed the icon picker's "Suggested for …" group.
+- Replaces the older "Readable names for cryptic descriptions" item.
 
-## 3. Find recurring bills and payment plans
+## 4. Rule authoring from examples
+
+**Why:** "these five are all Groceries" is easier than typing a pattern.
+
+- From a multi-select in Activity or Needs review: send the redacted descriptions, get back the
+  smallest set of patterns (`contains` / `word`) that covers them. Show them in the "Always file
+  … as …?" strip with the live match count from `/api/category-rules/preview`; the user edits or
+  accepts.
+- Deterministic fallback when AI is off: the shared prefix / merchant name, as today.
+
+## 5. Find recurring bills and payment plans
 
 **Why:** the detector (`src/lib/detect-recurring.ts`) misses changing amounts and names.
 
@@ -70,7 +96,7 @@ Planned AI features for Centje, in build order. One feature per session/commit.
   (`RecurringClient` with `prefill`, type `plan` supported).
 - Skip merchants that already have a recurring item (`findRecurringItemByName`, signatures).
 
-## 4. Explain an odd month
+## 6. Explain an odd month
 
 **Why:** sharper than the general summary: "why is this month different?"
 
@@ -80,7 +106,37 @@ Planned AI features for Centje, in build order. One feature per session/commit.
   the real numbers from our data, AI only writes the reason sentence.
 - Cache like `ai_summaries` (same key shape, separate setting key).
 
-## 7. Payday check-in
+## 7. Forecast: explained and challenged, not computed
+
+**Why:** the forecast status (`judgeForecast`: healthy / warning / critical and its reason) must
+stay deterministic — it decides whether someone sees an ember warning about their overdraft, and
+it has to work offline and on the free tier. What AI can add sits around it:
+
+- **Plain-language verdict.** Turn the status, reason, low point, its date and the three
+  events before it (`ForecastEvent`) into two sentences: "You dip to −€120 on the 27th because
+  the car insurance and the gym land before payday. Moving €150 from Holiday savings covers
+  it." Numbers are interpolated from our data, never generated. Cached per forecast input hash.
+- **Missing-event check.** Give the model the recurring items it knows and the last 3 months
+  of merchants; ask which regular payments seem absent from the forecast (a yearly premium that
+  last hit in October, a quarterly water bill). Each answer becomes a "Add to forecast?"
+  proposal that opens the recurring editor, same as item 5.
+- **Override suggestions.** The forecast already has manual overrides (`prognose_overrides`).
+  When a variable category has run far above its average for two months, suggest the override
+  with the number from our data; AI only words why.
+- Not planned: letting the model produce the forecast line, pick the safety threshold or the
+  overdraft mode.
+
+## 8. Receipt line items
+
+**Why:** a receipt photo becomes the split, instead of typing amounts.
+
+- Receipts already attach to a transaction (`/api/receipts`). Add "Read receipt": the image goes
+  to Gemini (multimodal) and comes back as `{ merchant, date, total, lines: [{ text, amount,
+  categoryId? }] }`, validated against the transaction total.
+- Show the lines as a proposed split in the existing split dialog; the user adjusts and saves.
+- Image stays local except for that one call; no OCR text is stored unless the split is saved.
+
+## 9. Payday check-in
 
 **Why:** a short "what's ahead this month" right when the salary lands.
 
@@ -89,8 +145,17 @@ Planned AI features for Centje, in build order. One feature per session/commit.
 - Input: bills and plan parts still due (`getBillStatuses`), forecast verdict and low point
   (`getCashFlowForecast`, `judgeForecast` — includes overdraft), budget left.
 - Output: 2–3 sentences + one suggestion. Dismissible card; cache per month.
+- Pairs with the notification system once it exists (push the first sentence).
 
-## 5. Ask Centje (question → filter)
+## 10. Import column mapping
+
+**Why:** an unknown CSV layout today means mapping columns by hand.
+
+- When no import profile matches (`src/lib/import-profiles.ts`), send the header row and three
+  redacted sample rows; get back `{ date, amount, description, account?, direction? }` column
+  guesses plus the date and decimal format. Prefill `import-column-mapping.tsx`; the user confirms.
+
+## 11. Ask Centje (question → filter)
 
 **Why:** "How much did I spend on takeaway since summer?" — answered exactly and privately.
 
@@ -108,3 +173,5 @@ Planned AI features for Centje, in build order. One feature per session/commit.
 
 - A free-form chat with access to all transactions (privacy, free-tier quota).
 - AI-made budgets or investment advice (wrong answers cost real money).
+- AI-computed forecasts, balances or totals (see item 7).
+- Rule matching itself: rules stay deterministic so they run on import, offline and for free.
