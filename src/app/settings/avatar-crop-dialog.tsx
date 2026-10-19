@@ -4,7 +4,7 @@ import { useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 
 /** Diameter of the round crop area — the exact region that is cut out. */
@@ -262,7 +262,7 @@ function CropBody({ imageUrl, onClose, onCropped }: { imageUrl: string | null; o
         </div>
       </div>
 
-      <div className="border-t border-clear-ground pt-[18px] pb-1">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter>
           <button type="button" onClick={onClose} className={clearButtonVariants({ variant: "secondary" })}>
             {t("cancel")}
@@ -271,7 +271,7 @@ function CropBody({ imageUrl, onClose, onCropped }: { imageUrl: string | null; o
             {t("save")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </>
   );
 }

@@ -15,7 +15,7 @@ import {
 import { currencySymbol, formatEur, formatEurWhole } from "@/lib/format";
 import { evaluateExpression } from "@/lib/amount-expression";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { ClearSwitch } from "@/components/clear/switch";
 import { Segmented } from "@/components/clear/segmented";
@@ -553,7 +553,7 @@ function DebtFormBody({
         </ClearField>
       </div>
 
-      <div className="pb-1">
+      <ClearDialogFooterDock className="pb-1">
         <ClearDialogFooter
           destructive={
             <>
@@ -583,7 +583,7 @@ function DebtFormBody({
             {busy ? t("saving") : t("save")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
 
       <RecurringMultiPicker bills={bills} selected={recurringIds} open={recurringOpen} onOpenChange={setRecurringOpen} onApply={applyRecurringIds} />
 

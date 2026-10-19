@@ -106,6 +106,8 @@ export type TipAnchor =
   // Settings › Financial month: the start-day grid; Settings › Merchants: the
   // All / Without icon switch
   | "financialMonthDays"
+  // Settings › Financial month: the per-month exceptions (once Month overrides)
+  | "financialMonthExceptions"
   | "merchantsWithoutIcon"
   // Settings › Categories: the grouped list; Insights: the Groups / Categories switch
   | "categoryGroups"
@@ -148,6 +150,9 @@ export const GAP = 12;
 /** Minimum distance from the card to the edge of the screen. */
 export const GUTTER = 12;
 export const ARROW = 12;
+/** Room a pointer card needs on one side of its control — about the height of a
+ *  compact card with two lines of copy and its buttons. */
+export const MIN_ROOM = 200;
 /** How long to keep looking for the anchor before giving up — it may be below the
  *  fold, still streaming in, or simply not on this screen. */
 export const ANCHOR_TIMEOUT_MS = 4000;
@@ -162,6 +167,11 @@ export interface Placement {
   bottom?: number;
   width: number;
   below: boolean;
+  /** Tallest the card may get before it scrolls, so it never runs off the screen. */
+  maxHeight: number;
+  /** False when the control fills so much of the screen that neither side has room:
+   *  the card then sits over it, pinned to the bottom edge, without an arrow. */
+  arrow: boolean;
   /** Arrow offset from the card's left edge, clamped so it stays on the card. */
   arrowX: number;
 }
@@ -202,15 +212,29 @@ export function measure(el: Element): Placement | null {
   // the card: the card's height depends on how the copy wraps, so measuring it means
   // rendering first and moving afterwards — a visible jump. Anchoring the far edge
   // (bottom, for a card above) lets it grow in the safe direction instead.
-  const below = r.top + r.height / 2 < vh / 2;
+  // A tall control (a whole card, a long list) or one half scrolled out of view can
+  // leave too little room on that side, though, and the card would run off the
+  // screen: then try the other side, and if neither fits, lay it over the control.
+  const roomBelow = vh - Math.max(r.bottom, 0) - GAP - GUTTER;
+  const roomAbove = Math.min(r.top, vh) - GAP - GUTTER;
+  const prefersBelow = r.top + r.height / 2 < vh / 2;
+  const side: "below" | "above" | "over" =
+    (prefersBelow ? roomBelow : roomAbove) >= MIN_ROOM
+      ? prefersBelow ? "below" : "above"
+      : roomBelow >= MIN_ROOM ? "below"
+      : roomAbove >= MIN_ROOM ? "above"
+      : "over";
+  const below = side === "below";
 
   return {
     anchor: { top: r.top, left: r.left, width: r.width, height: r.height, radius: getComputedStyle(el).borderRadius },
     left,
-    top: below ? r.bottom + GAP : undefined,
-    bottom: below ? undefined : vh - r.top + GAP,
+    top: below ? Math.max(r.bottom, 0) + GAP : undefined,
+    bottom: side === "above" ? vh - r.top + GAP : side === "over" ? GUTTER : undefined,
     width,
     below,
+    maxHeight: side === "below" ? roomBelow : side === "above" ? roomAbove : vh - GUTTER * 2,
+    arrow: side !== "over",
     arrowX: Math.min(Math.max(centre - left, 24), width - 24),
   };
 }
@@ -221,6 +245,7 @@ export function samePlacement(a: Placement | null, b: Placement | null) {
   return (
     a.left === b.left && a.top === b.top && a.bottom === b.bottom &&
     a.width === b.width && a.arrowX === b.arrowX && a.below === b.below &&
+    a.maxHeight === b.maxHeight && a.arrow === b.arrow &&
     a.anchor.top === b.anchor.top && a.anchor.left === b.anchor.left &&
     a.anchor.width === b.anchor.width && a.anchor.height === b.anchor.height
   );

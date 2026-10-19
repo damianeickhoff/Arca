@@ -282,9 +282,8 @@ export function createSchema(sqlite: Database.Database): void {
 
   // ─── Seed categories ──────────────────────────────────────────────────────
   // Sourced from src/config/categories.ts, flagged is_default so the UI treats
-  // them as read-only, keyed by config_key so src/lib/config-sync.ts can keep
-  // them in sync (renames, matching-pattern edits, removals) on every later boot —
-  // this block only needs to get a brand-new database off the ground.
+  // them as defaults, keyed by config_key. Seeded once, for a brand-new database: after
+  // that they're the user's, and src/lib/config-sync.ts never adds or restores any.
   const insertCategory = sqlite.prepare(`
     INSERT OR IGNORE INTO categories (name, "group", budget_type, color, icon, is_default, config_key, is_group)
     VALUES (@name, @kind, @budgetType, @color, @icon, 1, @key, @isGroup)
@@ -293,7 +292,7 @@ export function createSchema(sqlite: Database.Database): void {
   // Seed the default categories, plus their matchingPatterns as real category_rules
   // rows (same shape a user-created rule would have) — this only runs once, for a
   // brand-new database, so later edits to matchingPatterns don't retroactively touch
-  // already-seeded rules (that's config-sync.ts's job on subsequent boots).
+  // already-seeded rules.
   const insertRule = sqlite.prepare(`
     INSERT INTO category_rules (category_id, name_pattern, name_wildcard, name_whole_word, direction)
     VALUES (?, ?, ?, ?, ?)
@@ -311,9 +310,11 @@ export function createSchema(sqlite: Database.Database): void {
     }
   });
 
-  // Only seed when the database is brand new (no categories at all).
+  // Only seed when the database is brand new (no categories at all), and record that the
+  // first-run seed happened: config-sync never seeds defaults again after this.
   const catCount = (sqlite.prepare(`SELECT COUNT(*) as c FROM categories`).get() as { c: number }).c;
   if (catCount === 0) seedMany(DEFAULT_CATEGORIES);
+  sqlite.prepare(`INSERT OR IGNORE INTO app_settings (key, value) VALUES ('default_categories_seeded', '1')`).run();
 
   // Backfill is_default on pre-existing databases that already had these categories
   // seeded before is_default existed, so they retroactively become read-only too.

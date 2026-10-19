@@ -7,7 +7,7 @@ import { IconCalendarCheck, IconChevronRight, IconNote, IconPencil, IconTrash } 
 import { cn } from "@/lib/utils";
 import { formatEur } from "@/lib/format";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearChip } from "@/components/clear/chip";
 import { ClearProgress } from "@/components/clear/progress";
 import { Amount } from "@/components/clear/amount";
@@ -81,7 +81,7 @@ export function DebtDetailDialog({
         {shown && (
           <>
             <DetailBody computed={shown} onClose={onClose} />
-            <div className="pb-1">
+            <ClearDialogFooterDock className="pb-1">
               <ClearDialogFooter
                 destructive={
                   <button type="button" onClick={remove} disabled={busy} className={clearButtonVariants({ variant: "danger" })}>
@@ -95,7 +95,7 @@ export function DebtDetailDialog({
                   {t("edit")}
                 </button>
               </ClearDialogFooter>
-            </div>
+            </ClearDialogFooterDock>
 
             {/* Stacked inside this sheet, so closing the form comes back here. */}
             <DebtFormDialog

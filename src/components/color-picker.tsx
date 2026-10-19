@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   IconRotate2 as RotateCcw
 } from "@tabler/icons-react";
@@ -73,6 +74,7 @@ interface ColorPickerProps {
 }
 
 export function ColorPicker({ value, onChange, previewIcon, previewAsBackground = false, inline = false }: ColorPickerProps) {
+  const t = useTranslations("colorPicker");
   const [open, setOpen] = useState(false);
   // Whether the current value counts as "custom" (not one of the presets) — drives
   // which swatch reads as selected. Independent of whether the hue/brightness
@@ -275,23 +277,19 @@ export function ColorPicker({ value, onChange, previewIcon, previewAsBackground 
             {customControls}
 
             {previewIcon && (
-              <div className="flex items-center gap-2.5 rounded-lg bg-foreground/5 px-3 py-2">
-                <div
-                  className={previewAsBackground ? "size-14 rounded-full shrink-0 flex items-center justify-center" : "size-9 rounded-full shrink-0 flex items-center justify-center"}
-                  style={previewAsBackground
-                    ? { backgroundColor: value || "#ffffff" }
-                    : previewIsBrand
-                    ? { backgroundColor: "white" }
-                    : value
-                    ? { backgroundColor: value }
-                    : undefined}
-                >
-                  <Icon iconKey={previewIcon} color={previewAsBackground || previewIsBrand ? null : (value ? contrastIconColor(value) : null)} background="transparent" size={previewAsBackground ? "xxl" : "sm"} />
-                </div>
-                <p className="text-xs text-muted-foreground">
+              // The same soft tile the icon gets everywhere else in the app.
+              <div className="flex items-center gap-3 rounded-clear-tile bg-clear-tile px-3 py-2.5 font-clear">
+                <Icon
+                  iconKey={previewIcon}
+                  soft
+                  size={previewAsBackground ? "xxl" : "xl"}
+                  color={previewAsBackground || previewIsBrand ? null : value || null}
+                  background={previewAsBackground ? value || null : null}
+                />
+                <p className="m-0 text-[13px] text-clear-ink-2">
                   {previewAsBackground
-                    ? (value ? "Preview with this background color" : "Standaard (witte) achtergrond")
-                    : previewIsBrand ? "Merk-iconen houden hun eigen kleur" : value ? "Preview with this icon" : "Default color (no color set)"}
+                    ? (value ? t("previewBackground") : t("defaultBackground"))
+                    : previewIsBrand ? t("brandKeepsColor") : value ? t("previewIcon") : t("defaultColor")}
                 </p>
               </div>
             )}

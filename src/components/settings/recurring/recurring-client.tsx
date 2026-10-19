@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { IconChevronDown, IconDotsVertical, IconPlus, IconRepeat, IconSearch, IconTrash } from "@tabler/icons-react";
 import type { RecurringItem, Category } from "@/db/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { ClearSwitch } from "@/components/clear/switch";
 import { Segmented } from "@/components/clear/segmented";
@@ -643,7 +643,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
       </div>
 
       {/* The last 12 charges — of what the rule as typed would match, live while you edit. */}
-      {charges && <RecurringCharges txs={charges} tipAnchor={ruleChanged ? "recurringMatchPreview" : "recurringCharges"} />}
+      {charges && <RecurringCharges txs={charges} tipAnchor={ruleChanged ? "recurringMatchPreview" : "recurringCharges"} income={isIncome} />}
 
       <div className="flex flex-col gap-3 rounded-clear-tile border border-clear-line px-4 py-3">
         <div className="flex items-center justify-between gap-4">
@@ -700,7 +700,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
         <ClearSwitch checked={form.active} onCheckedChange={(v) => set("active", v)} labelledBy="rec-active-label" />
       </div>
 
-      <div className="border-t border-clear-ground pt-4 pb-1">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-4 pb-1">
         <ClearDialogFooter
           destructive={
             isEdit ? (
@@ -718,7 +718,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
             {loading ? t("saving") : t("save")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
 
       {/* The app's one category picker, stacked on this sheet. */}
       <CategoryPickerSheet

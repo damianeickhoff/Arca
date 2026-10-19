@@ -12,7 +12,7 @@ import { ColorPicker } from "@/components/color-picker";
 import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { ClearButton } from "@/components/clear/button";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { Segmented } from "@/components/clear/segmented";
 import { FIELD_LABEL } from "@/app/settings/account-edit-dialogs";
@@ -111,7 +111,7 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
       <ClearDialogHeader
         title={group ? name.trim() || group.name : t("newTitle")}
         subtitle={group ? t("editSubtitle", { count: categoryCount }) : t("newSubtitle")}
-        icon={<Icon iconKey={icon} color={color} soft size="md" />}
+        icon={<Icon iconKey={icon} color={color} soft size="xl" />}
         onClose={onClose}
         closeLabel={tCat("close")}
       />
@@ -165,7 +165,7 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
       {group && categoryCount > 0 && <p className="m-0 text-[13px] text-clear-muted">{t("deleteBlocked", { count: categoryCount })}</p>}
       {error && <SettingsNotice>{error}</SettingsNotice>}
 
-      <div className="border-t border-clear-ground pt-[18px] pb-1">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter
           destructive={
             group && (
@@ -181,7 +181,7 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
             {busy ? tCat("saving") : group ? tCat("save") : t("create")}
           </ClearButton>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </>
   );
 }

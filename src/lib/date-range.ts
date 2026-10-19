@@ -88,6 +88,10 @@ export function financialMonthRangeByMonth(month: string, config: number | Finan
 
 export function financialMonthForDate(date: string, config: number | FinancialMonthConfig = 1) {
   const month = date.slice(0, 7);
+  // With weekend rollback the next month can already start late in this calendar
+  // month (1 March on a Sunday starts March on Friday 27 February).
+  const nextMonth = offsetFinancialMonth(month, 1);
+  if (date >= financialMonthRangeByMonth(nextMonth, config).from) return nextMonth;
   const monthStart = financialMonthRangeByMonth(month, config).from;
   return date >= monthStart ? month : offsetFinancialMonth(month, -1);
 }

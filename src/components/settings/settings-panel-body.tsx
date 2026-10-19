@@ -5,7 +5,7 @@ import { IconChevronRight, IconHelpCircle } from "@tabler/icons-react";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
-import { FinancialMonthForm, MonthOverridesPanel } from "@/app/settings/general-client";
+import { FinancialMonthForm } from "@/app/settings/general-client";
 import { AppLockSectionContent } from "@/app/settings/profile-client";
 import { BudgetRecurringCard } from "@/components/settings/budget-recurring-card";
 import { SharedCostCard } from "@/components/settings/shared-cost-card";
@@ -129,13 +129,6 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
           <SharedCostCard initialMode={settings.sharedCostMode} />
         </div>
       );
-
-    case "monthOverrides": {
-      const initialOverrides = Object.entries(financialMonth.overrides ?? {}).map(
-        ([month, startDay]) => ({ month, startDay: startDay as number }),
-      );
-      return <MonthOverridesPanel currentStartDay={financialMonth.defaultStartDay} initialOverrides={initialOverrides} />;
-    }
 
     case "help":
       return (

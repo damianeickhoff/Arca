@@ -188,21 +188,24 @@ export function TipWalkthrough({
             className="fixed"
             style={{ left: placement.left, top: placement.top, bottom: placement.bottom, width: placement.width }}
           >
-            <div
-              aria-hidden
-              className="absolute bg-clear-card border border-clear-line rotate-45 rounded-[3px]"
-              style={{
-                width: ARROW,
-                height: ARROW,
-                left: placement.arrowX - ARROW / 2,
-                top: placement.below ? -ARROW / 2 + 2 : undefined,
-                bottom: placement.below ? undefined : -ARROW / 2 + 2,
-              }}
-            />
+            {placement.arrow && (
+              <div
+                aria-hidden
+                className="absolute bg-clear-card border border-clear-line rotate-45 rounded-[3px]"
+                style={{
+                  width: ARROW,
+                  height: ARROW,
+                  left: placement.arrowX - ARROW / 2,
+                  top: placement.below ? -ARROW / 2 + 2 : undefined,
+                  bottom: placement.below ? undefined : -ARROW / 2 + 2,
+                }}
+              />
+            )}
             <div className="relative">
               <TipCard
                 id={id}
                 compact
+                maxHeight={placement.maxHeight}
                 title={t(`${id}.steps.${anchor}.title`)}
                 body={t(`${id}.steps.${anchor}.body`)}
                 onDismiss={stop}

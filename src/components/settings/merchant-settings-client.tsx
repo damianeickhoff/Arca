@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Icon } from "@/components/icon";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { ClearButton } from "@/components/clear/button";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { Amount } from "@/components/clear/amount";
 import { ClearChip } from "@/components/clear/chip";
@@ -155,7 +155,7 @@ export function MerchantSettingsClient({ merchant, categories, onClose, onViewPr
       <ClearDialogHeader
         title={name || t("namePlaceholder")}
         subtitle={t("editTitle")}
-        icon={<Icon iconKey={icon} color={icon ? color : null} background={icon ? MERCHANT_ICON_BACKGROUND : null} soft size="md" />}
+        icon={<Icon iconKey={icon} color={icon ? color : null} background={icon ? MERCHANT_ICON_BACKGROUND : null} soft size="xl" />}
         onClose={onClose}
         closeLabel={t("close")}
       />
@@ -250,7 +250,7 @@ export function MerchantSettingsClient({ merchant, categories, onClose, onViewPr
 
       {error && <SettingsNotice>{error}</SettingsNotice>}
 
-      <div className="border-t border-clear-ground pt-[18px] pb-1">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter
           destructive={
             <ClearButton variant="danger" onClick={remove} disabled={loading}>
@@ -264,7 +264,7 @@ export function MerchantSettingsClient({ merchant, categories, onClose, onViewPr
             {loading ? t("saving") : t("save")}
           </ClearButton>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </>
   );
 }

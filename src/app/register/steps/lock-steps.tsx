@@ -11,6 +11,7 @@ import type { ClearTone } from "@/components/clear/tones";
 import { setPinAction, setAppLockEnabledAction } from "@/app/actions/app-lock";
 import type { BudgetStrategyDraft } from "@/app/budget/budget-strategy-editor";
 import { cn } from "@/lib/utils";
+import { useKeypadKeyboard } from "@/lib/use-keypad-keyboard";
 import { CodeBoxes, StepFooter, StepHeading } from "../onboarding-ui";
 
 const MIN_PIN = 4;
@@ -79,6 +80,17 @@ export function AppLockStep({
     onLocked();
   }
 
+  // Typing digits works even after a keypad button took focus from the code boxes.
+  const keypadRef = useKeypadKeyboard({
+    onKey: (k) => {
+      if (k === "back") setValue(value.slice(0, -1));
+      else if (/^\d$/.test(k) && value.length < length) setValue(value + k);
+    },
+    onEnter: () => {
+      if (!saving) primary();
+    },
+  });
+
   const keyClass =
     "h-14 cursor-pointer rounded-clear-tile border-0 text-[22px] font-bold tabular-nums outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50";
 
@@ -113,7 +125,7 @@ export function AppLockStep({
           stage === "choose" && <span className="text-[13px] text-clear-muted">{t("lengthHint")}</span>
         )}
 
-        <div role="group" aria-label={t("keypad")} className="mt-1 grid grid-cols-[repeat(3,minmax(0,96px))] gap-2">
+        <div ref={keypadRef} role="group" aria-label={t("keypad")} className="mt-1 grid grid-cols-[repeat(3,minmax(0,96px))] gap-2">
           {KEYS.map((k) => (
             <button key={k} type="button" onClick={() => value.length < length && setValue(value + k)} className={cn(keyClass, "bg-clear-tile text-clear-ink hover:bg-clear-line")}>
               {k}

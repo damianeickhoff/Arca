@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { IconBookmark, IconBuildingBank, IconCalendarEvent, IconCoinEuro, IconFileImport } from "@tabler/icons-react";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { ClearChip } from "@/components/clear/chip";
 import { IconTile } from "@/components/clear/icon-tile";
@@ -480,7 +480,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
 
       {error && <p role="alert" className="m-0 text-sm font-semibold text-clear-negative">{error}</p>}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-1">
+      <ClearDialogFooterDock className="flex flex-wrap items-center justify-between gap-3 pb-1">
         <span className="inline-flex items-center gap-2 text-[13px] text-clear-muted">
           <IconBookmark aria-hidden size={16} stroke={2} className="shrink-0" />
           {label.trim() ? t("savedAsProfile", { label: label.trim() }) : t("savedAsProfileUnnamed")}
@@ -494,7 +494,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
             {submitting ? t("importing") : t("import")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
 
       {/* Points out the balance column while this dialog is the thing on screen. */}
       <ContextualTip id="importBalance" active />

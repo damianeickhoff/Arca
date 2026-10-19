@@ -6,7 +6,7 @@ import { IconCheck, IconChevronRight, IconInfoCircle, IconPlus, IconSearch, Icon
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 
 type MerchantOption = { id: number; name: string; icon: string | null; color: string | null; transactionCount: number };
@@ -234,7 +234,7 @@ function MerchantPickerBody({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3.5 border-t border-clear-line pt-4">
+      <ClearDialogFooterDock className="flex flex-col gap-3.5 border-t border-clear-line pt-4">
         <span className="flex items-start gap-2 text-[13px] leading-snug font-medium text-clear-ink-2">
           <IconInfoCircle className="mt-px size-4 shrink-0" stroke={2} aria-hidden />
           {t("footerHint")}
@@ -247,7 +247,7 @@ function MerchantPickerBody({
             {t("save")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </form>
   );
 }

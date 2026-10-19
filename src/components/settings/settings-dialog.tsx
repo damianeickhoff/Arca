@@ -32,7 +32,6 @@ const ROW_TONES: Record<SettingsPanelKey, ClearTone> = {
   merchants: "lilac",
   automations: "mint",
   financialMonth: "peach",
-  monthOverrides: "peach",
   budgetRecurring: "peach",
   import: "sky",
   importProfiles: "sky",

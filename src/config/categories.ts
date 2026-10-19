@@ -1,14 +1,12 @@
-// Default categories seeded from this file. On the first run that sees a given entry
-// (matched by its stable `key`), it is inserted into the database (see
-// src/lib/config-sync.ts, run synchronously from src/db/index.ts). After that the
-// category is user-owned: it can be freely edited or deleted from the UI, and those
-// changes are never overwritten by this file. Adding a new entry here still seeds it
-// on the next boot; editing or removing an already-seeded entry here does NOT push
-// the change to (or remove) the existing category.
+// Default categories seeded from this file on the FIRST RUN only (a brand-new database,
+// see src/lib/config-sync.ts and src/db/create-schema.ts) and by Settings › Categories ›
+// reset to defaults. After that the categories are user-owned: they can be freely edited
+// or deleted from the UI, and nothing here is ever re-added — an entry added to this
+// file in a later release only reaches new installs (and resets), and a default the
+// user deleted stays deleted across updates and restarts.
 //
-// `key` is the stable identity of an entry — never change it once set, or the sync
-// will treat the entry as deleted + newly added. Everything else (including `name`)
-// can be edited freely.
+// `key` is the stable identity of an entry (stored as categories.config_key) — never
+// change it once set. Everything else (including `name`) can be edited freely.
 //
 // `matchingPatterns` auto-categorizes transactions whose description matches any of
 // the listed patterns (case-insensitive), the same way a user-created category rule

@@ -158,10 +158,6 @@
         "title": "Financial month",
         "subtitle": "The day your month starts, usually payday."
       },
-      "monthOverrides": {
-        "title": "Month overrides",
-        "subtitle": "A different start day for a single month."
-      },
       "budgetRecurring": {
         "title": "Budget & bills",
         "subtitle": "What counts as spending in your budget and reports."
@@ -431,6 +427,7 @@
       "weekendHint": "For a salary that arrives before the weekend."
     },
     "monthOverrides": {
+      "title": "Exceptions",
       "intro": "When a payday moves (holidays, weekends), shift just that month.",
       "add": "Add an override",
       "empty": "No overrides yet. Add one when a payday moves for a single month.",
@@ -616,9 +613,6 @@
       "conditionAccount": "one account only",
       "editRule": "Edit rule",
       "deleteRule": "Delete {name}",
-      "deleteTitle": "Delete the rule {name}?",
-      "deleteBody": "Transactions it filed keep their category; new ones are no longer filed by it.",
-      "deleteConfirm": "Delete rule",
       "saveError": "That did not work. Try again.",
       "empty": "Nothing is automated yet. Pick a category for a transaction and choose Always, or give a merchant its own category.",
       "testTitle": "Test the rules",
@@ -1405,6 +1399,10 @@
       "title": "Tap a day to set your start",
       "body": "Your month now starts on the day you tap, and it saves straight away. The bar below shows where today sits in the period."
     },
+    "financialMonthExceptions": {
+      "title": "Month overrides moved here",
+      "body": "A different start day for a single month now lives right here, under your usual start day."
+    },
     "merchantsWithoutIcon": {
       "title": "Find merchants without a logo",
       "body": "Switch to Without icon to see only the merchants that still have no logo, then open one to give it one."
@@ -1732,6 +1730,13 @@
     "failed": "The rule could not be saved. Try again.",
     "done": "Done: {merchant} now always goes to {category}.",
     "close": "Close"
+  },
+  "colorPicker": {
+    "previewIcon": "Preview with this icon",
+    "previewBackground": "Preview with this background colour",
+    "defaultBackground": "Default (white) background",
+    "defaultColor": "Default colour (no colour set)",
+    "brandKeepsColor": "Brand icons keep their own colours"
   },
   "globalSearch": {
     "title": "Search",
@@ -3712,7 +3717,14 @@
         "moveAuto": "Those you didn't categorise by hand move to {category}{review, plural, =0 {.} one {, including one waiting in Needs review.} other {, including # waiting in Needs review.}}",
         "pickCategory": "Choose a category to move them to.",
         "more": "and {count} more"
-      }
+      },
+      "moveTitle": "Move this rule?",
+      "moveBody": "This rule already files under {from}. Move it to {to}?",
+      "moveConfirm": "Move",
+      "deleteTitle": "Delete this rule?",
+      "deleteBody": "{count, plural, one {One transaction} other {# transactions}} this rule filed under {category} still {count, plural, one {has} other {have}} that category. Transactions you categorised by hand stay as they are.",
+      "deleteKeep": "Keep them as they are",
+      "deleteRevert": "{count, plural, one {Send it back to Needs review} other {Send # back to Needs review}}"
     },
     "searchPlaceholder": "Search transactions",
     "tiles": {

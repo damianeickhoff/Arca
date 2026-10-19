@@ -7,7 +7,7 @@ import { IconCalendarEvent, IconCalendarWeek, IconInfoCircle, IconPencil, IconPl
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/date-picker";
 import { ClearButton } from "@/components/clear/button";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { ClearProgress } from "@/components/clear/progress";
 import { IconTile } from "@/components/clear/icon-tile";
@@ -73,16 +73,18 @@ async function saveSetting(key: string, value: string | number) {
 
 /**
  * The Financial month panel: the day the month starts (a grid of 1–28 that saves on
- * tap), where today sits in the current period, and the weekend rollback switch.
+ * tap), where today sits in the current period, the weekend rollback switch and the
+ * exceptions — a different start day for a single month. One panel, because both
+ * decide when a month starts: an exception wins for its month, then the rollback.
  */
 export function FinancialMonthForm({
   currentStartDay,
   currentWeekendRollback,
-  overrides = {},
+  overrides: initialOverrides = {},
 }: {
   currentStartDay: number;
   currentWeekendRollback: boolean;
-  /** The saved month overrides, so the current period shown is the real one. */
+  /** The saved month exceptions. */
   overrides?: Record<string, number>;
 }) {
   const t = useTranslations("settings.financialMonth");
@@ -91,12 +93,19 @@ export function FinancialMonthForm({
   const titleId = useId();
   const [startDay, setStartDay] = useState(currentStartDay);
   const [weekendRollback, setWeekendRollback] = useState(currentWeekendRollback);
+  const [overrides, setOverrides] = useState(() =>
+    sortOverrides(Object.entries(initialOverrides).map(([month, day]) => ({ month, startDay: day }))),
+  );
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [savingRollback, setSavingRollback] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const config: FinancialMonthConfig = { defaultStartDay: startDay, overrides, weekendRollback };
+  const config: FinancialMonthConfig = {
+    defaultStartDay: startDay,
+    overrides: Object.fromEntries(overrides.map((row) => [row.month, row.startDay])),
+    weekendRollback,
+  };
   const range = financialMonthRangeByMonth(currentFinancialMonth(config), config);
   const today = todayStr();
   const total = Math.max(1, daysInclusive(range.from, range.to));
@@ -226,41 +235,45 @@ export function FinancialMonthForm({
         disabled={savingRollback}
       />
 
+      <MonthExceptions config={config} overrides={overrides} onChange={setOverrides} />
+
       {/* The start day used to be a number field with a Save button; it is now a
           tap-to-save grid — say so once. */}
       <AnchoredTip id="financialMonthDays" anchor="financialMonthDays" />
+      {/* The exceptions used to be a Settings page of their own ("Month overrides"). */}
+      <AnchoredTip id="financialMonthExceptions" anchor="financialMonthExceptions" />
     </div>
   );
 }
 
-// ── Month overrides ──────────────────────────────────────────────────────────
+// ── Exceptions (per-month start days) ───────────────────────────────────────
 
-/** The Month overrides panel: one start day for a single month, e.g. when payday
- *  moves for a holiday. Add, edit and delete each open a dialog. */
-export function MonthOverridesPanel({
-  currentStartDay,
-  initialOverrides,
+/** One start day for a single month, e.g. when payday moves for a holiday. Add, edit
+ *  and delete each open a dialog. Ranges are worked out with the real settings (the
+ *  usual day, the weekend rollback and the other exceptions), so they match the app. */
+function MonthExceptions({
+  config,
+  overrides,
+  onChange,
 }: {
-  currentStartDay: number;
-  initialOverrides: MonthOverride[];
+  config: FinancialMonthConfig;
+  overrides: MonthOverride[];
+  onChange: (update: (rows: MonthOverride[]) => MonthOverride[]) => void;
 }) {
   const router = useRouter();
   const t = useTranslations("settings.monthOverrides");
   const fmt = useDateFormats();
   const confirm = useConfirm();
-  const [overrides, setOverrides] = useState(sortOverrides(initialOverrides));
+  const titleId = useId();
+  const currentStartDay = config.defaultStartDay;
   const [error, setError] = useState<string | null>(null);
   // The override being added (month null) or edited; kept while the dialog animates out.
   const [editor, setEditor] = useState<{ month: string | null; startDay: number } | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   // Bumped per opening so every opening starts from the override as saved.
   const [session, setSession] = useState(0);
-
-  const previewConfig: FinancialMonthConfig = {
-    defaultStartDay: currentStartDay,
-    overrides: Object.fromEntries(overrides.map((row) => [row.month, row.startDay])),
-    weekendRollback: false,
-  };
+  // The usual start of a month: the same settings without any exception.
+  const usualConfig: FinancialMonthConfig = { ...config, overrides: {} };
 
   function openEditor(row: MonthOverride | null) {
     setEditor(row ? { month: row.month, startDay: row.startDay } : { month: null, startDay: currentStartDay });
@@ -275,7 +288,7 @@ export function MonthOverridesPanel({
       body: JSON.stringify({ month, startDay }),
     }).catch(() => null);
     if (!res?.ok) return t("saveError", { month: fmt.month(month) });
-    setOverrides((cur) => sortOverrides([...cur.filter((r) => r.month !== month), { month, startDay }]));
+    onChange((cur) => sortOverrides([...cur.filter((r) => r.month !== month), { month, startDay }]));
     setError(null);
     router.refresh();
     return null;
@@ -295,19 +308,24 @@ export function MonthOverridesPanel({
       setError(t("deleteError", { month: fmt.month(month) }));
       return false;
     }
-    setOverrides((cur) => cur.filter((r) => r.month !== month));
+    onChange((cur) => cur.filter((r) => r.month !== month));
     router.refresh();
     return true;
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 pt-2 font-clear text-clear-ink">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="m-0 min-w-0 flex-1 text-sm text-clear-ink-2">{t("intro")}</p>
-        <ClearButton size="sm" onClick={() => openEditor(null)}>
-          <IconPlus aria-hidden stroke={2.2} />
-          {t("add")}
-        </ClearButton>
+    <section aria-labelledby={titleId} data-tip-anchor="financialMonthExceptions" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h3 id={titleId} className="m-0 text-lg font-bold">{t("title")}</h3>
+          <span className="text-sm text-clear-muted">{t("intro")}</span>
+        </div>
+        {overrides.length > 0 && (
+          <ClearButton size="sm" onClick={() => openEditor(null)}>
+            <IconPlus aria-hidden stroke={2.2} />
+            {t("add")}
+          </ClearButton>
+        )}
       </div>
 
       {error && <SettingsNotice>{error}</SettingsNotice>}
@@ -327,8 +345,8 @@ export function MonthOverridesPanel({
       ) : (
         <ul className="m-0 flex list-none flex-col p-0">
           {overrides.map((row) => {
-            const usual = `${row.month}-${String(currentStartDay).padStart(2, "0")}`;
-            const range = financialMonthRangeByMonth(row.month, previewConfig);
+            const usual = financialMonthRangeByMonth(row.month, usualConfig).from;
+            const range = financialMonthRangeByMonth(row.month, config);
             const label = fmt.month(row.month);
             return (
               <li key={row.month} className="flex min-h-[72px] items-center gap-3.5 border-b border-clear-ground py-2 pr-1 pl-2 last:border-b-0">
@@ -367,7 +385,7 @@ export function MonthOverridesPanel({
               key={session}
               month={editor.month}
               startDay={editor.startDay}
-              currentStartDay={currentStartDay}
+              config={config}
               existing={overrides.map((o) => o.month)}
               onClose={() => setEditorOpen(false)}
               onSave={save}
@@ -378,14 +396,14 @@ export function MonthOverridesPanel({
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   );
 }
 
 function OverrideForm({
   month: editingMonth,
   startDay: initialStartDay,
-  currentStartDay,
+  config,
   existing,
   onClose,
   onSave,
@@ -394,7 +412,8 @@ function OverrideForm({
   /** null when adding. */
   month: string | null;
   startDay: number;
-  currentStartDay: number;
+  /** The saved settings, so the preview matches the range the app will use. */
+  config: FinancialMonthConfig;
   existing: string[];
   onClose: () => void;
   onSave: (month: string, startDay: number) => Promise<string | null>;
@@ -414,8 +433,9 @@ function OverrideForm({
 
   const dayOk = isValidStartDay(startDay);
   const valid = isValidMonth(month) && dayOk;
+  const currentStartDay = config.defaultStartDay;
   const preview = valid
-    ? financialMonthRangeByMonth(month, { defaultStartDay: currentStartDay, overrides: { [month]: parseInt(startDay, 10) }, weekendRollback: false })
+    ? financialMonthRangeByMonth(month, { ...config, overrides: { ...config.overrides, [month]: parseInt(startDay, 10) } })
     : null;
   const replaces = !editingMonth && existing.includes(month);
 
@@ -477,7 +497,7 @@ function OverrideForm({
       {replaces && <SettingsNotice tone="warning">{t("replaces", { month: fmt.month(month) })}</SettingsNotice>}
       {error && <SettingsNotice>{error}</SettingsNotice>}
 
-      <div className="border-t border-clear-ground pt-[18px] pb-1">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter
           destructive={
             editingMonth && (
@@ -493,7 +513,7 @@ function OverrideForm({
             {busy ? t("saving") : editingMonth ? t("save") : t("addConfirm")}
           </ClearButton>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </>
   );
 }

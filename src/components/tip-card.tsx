@@ -15,6 +15,7 @@ import {
   IconChecklist,
   IconCompass,
   IconCalendarDue,
+  IconCalendarEvent,
   IconCalendarStats,
   IconCalculator,
   IconEyeOff,
@@ -138,6 +139,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   needsReviewTriage: IconTag,
   needsReviewBulk: IconChecklist,
   financialMonthDays: IconCalendarStats,
+  financialMonthExceptions: IconCalendarEvent,
   merchantsWithoutIcon: IconBuildingStore,
   categoryGroups: IconFolders,
   insightsGroupSwitch: IconFolders,
@@ -171,6 +173,7 @@ export function TipCard({
   title,
   body,
   footer,
+  maxHeight,
 }: {
   id: TipId;
   onDismiss: () => void;
@@ -186,12 +189,17 @@ export function TipCard({
   /** Replaces the "Don't show again" / "Got it" pair — a walkthrough steers with
    *  Back/Next instead. */
   footer?: React.ReactNode;
+  /** Pointer tips pass the room left on screen; beyond it the card scrolls. */
+  maxHeight?: number;
 }) {
   const t = useTranslations("tips");
   const Icon = TIP_ICONS[id];
 
   return (
-    <div className="pointer-events-auto rounded-clear-tile border border-clear-line bg-clear-card shadow-clear-float p-4">
+    <div
+      className="pointer-events-auto overflow-y-auto overscroll-contain rounded-clear-tile border border-clear-line bg-clear-card shadow-clear-float p-4"
+      style={maxHeight != null ? { maxHeight } : undefined}
+    >
       <div className="flex gap-3">
         {!compact && (
           <div className="size-10 shrink-0 rounded-full bg-clear-ember flex items-center justify-center">

@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { IconPencil, IconSwitchHorizontal } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { Amount } from "@/components/clear/amount";
 import { ListRow } from "@/components/clear/list-row";
@@ -133,13 +133,13 @@ export function MerchantDetailPortal({
                 onClose={onClose}
               />
 
-              <div className="pb-1">
+              <ClearDialogFooterDock className="pb-1">
                 <ClearDialogFooter>
                   <button type="button" onClick={onClose} className={clearButtonVariants()}>
                     {t("done")}
                   </button>
                 </ClearDialogFooter>
-              </div>
+              </ClearDialogFooterDock>
 
               <RenameDialog
                 open={renameOpen}
@@ -553,7 +553,7 @@ function RenameForm({
       <ClearField label={t("renameLabel")} htmlFor="merchant-rename" hint={t("renameHint")} error={error}>
         <ClearInput id="merchant-rename" value={value} onChange={(e) => setValue(e.target.value)} autoFocus aria-invalid={error ? true : undefined} className="font-bold" />
       </ClearField>
-      <div className="pb-1">
+      <ClearDialogFooterDock className="pb-1">
         <ClearDialogFooter>
           <button type="button" onClick={onClose} className={clearButtonVariants({ variant: "secondary" })}>
             {t("cancel")}
@@ -562,7 +562,7 @@ function RenameForm({
             {saving ? t("saving") : t("save")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </form>
   );
 }

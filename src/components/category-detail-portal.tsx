@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { IconAlertTriangle, IconArrowRight, IconCircleCheck, IconPencil, IconTag } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField } from "@/components/clear/field";
 import { ClearChip } from "@/components/clear/chip";
 import { ClearProgress } from "@/components/clear/progress";
@@ -174,7 +174,7 @@ export function CategoryDetailPortal({
                 onClose={onClose}
               />
 
-              <div className="pb-1">
+              <ClearDialogFooterDock className="pb-1">
                 <ClearDialogFooter
                   destructive={
                     <button type="button" onClick={() => setEditCategoryOpen(true)} className={clearButtonVariants({ variant: "ghost" })}>
@@ -194,7 +194,7 @@ export function CategoryDetailPortal({
                     <IconArrowRight aria-hidden />
                   </Link>
                 </ClearDialogFooter>
-              </div>
+              </ClearDialogFooterDock>
 
               <BudgetDialog
                 open={budgetOpen}
@@ -849,7 +849,7 @@ function BudgetForm({ name, current, weekly, onSave, onClose }: { name: string; 
           />
         </div>
       </ClearField>
-      <div className="pb-1">
+      <ClearDialogFooterDock className="pb-1">
         <ClearDialogFooter
           destructive={
             current && current > 0 ? (
@@ -866,7 +866,7 @@ function BudgetForm({ name, current, weekly, onSave, onClose }: { name: string; 
             {busy ? t("saving") : t("save")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </form>
   );
 }

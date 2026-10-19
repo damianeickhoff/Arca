@@ -163,19 +163,21 @@ export function AnchoredTip({
           >
             {/* Arrow — a rotated square peeking out from behind the card, so it picks
                 up the card's own background in either theme. */}
-            <div
-              aria-hidden
-              className="absolute bg-clear-card border border-clear-line rotate-45 rounded-[3px]"
-              style={{
-                width: ARROW,
-                height: ARROW,
-                left: placement.arrowX - ARROW / 2,
-                top: placement.below ? -ARROW / 2 + 2 : undefined,
-                bottom: placement.below ? undefined : -ARROW / 2 + 2,
-              }}
-            />
+            {placement.arrow && (
+              <div
+                aria-hidden
+                className="absolute bg-clear-card border border-clear-line rotate-45 rounded-[3px]"
+                style={{
+                  width: ARROW,
+                  height: ARROW,
+                  left: placement.arrowX - ARROW / 2,
+                  top: placement.below ? -ARROW / 2 + 2 : undefined,
+                  bottom: placement.below ? undefined : -ARROW / 2 + 2,
+                }}
+              />
+            )}
             <div className="relative">
-              <TipCard id={id} onDismiss={dismiss} onDismissAll={dismissAll} compact />
+              <TipCard id={id} onDismiss={dismiss} onDismissAll={dismissAll} compact maxHeight={placement.maxHeight} />
             </div>
           </m.div>
         </m.div>

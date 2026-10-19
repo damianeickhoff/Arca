@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { IconPencil, IconPlayerPause, IconPlayerPlay, IconTrash } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearChip } from "@/components/clear/chip";
 import { Amount } from "@/components/clear/amount";
 import { ListRow } from "@/components/clear/list-row";
@@ -259,7 +259,7 @@ function DetailBody({
         </div>
       )}
 
-      {txs && <RecurringCharges txs={txs} />}
+      {txs && <RecurringCharges txs={txs} income={isIncome} />}
 
       <dl className="m-0 flex flex-col overflow-hidden rounded-clear-tile border border-clear-line">
         {details.map((d, i) => (
@@ -293,7 +293,7 @@ function DetailBody({
         )}
       </section>
 
-      <div className="pb-1">
+      <ClearDialogFooterDock className="pb-1">
         <ClearDialogFooter
           destructive={
             <button type="button" onClick={remove} disabled={busy} className={clearButtonVariants({ variant: "danger" })}>
@@ -311,7 +311,7 @@ function DetailBody({
             {t("edit")}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
 
       {/* Rendered inside this dialog's content so it's a nested sheet: closing it
           returns here instead of tearing down the detail dialog too. */}

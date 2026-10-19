@@ -18,7 +18,7 @@ import {
   IconWallet,
 } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { ClearSwitch } from "@/components/clear/switch";
 import { Segmented } from "@/components/clear/segmented";
@@ -322,7 +322,7 @@ function FormFooter({
 }) {
   const t = useTranslations("accountForms");
   return (
-    <div className="border-t border-clear-ground pt-[18px] pb-1">
+    <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
       <ClearDialogFooter
         destructive={
           onDelete && (
@@ -340,7 +340,7 @@ function FormFooter({
           {busy ? t("saving") : primaryLabel}
         </button>
       </ClearDialogFooter>
-    </div>
+    </ClearDialogFooterDock>
   );
 }
 

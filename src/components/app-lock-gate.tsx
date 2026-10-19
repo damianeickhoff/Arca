@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { IconFingerprint, IconBackspace } from "@tabler/icons-react";
 import { verifyPinAction, getWebAuthnChallengeAction, verifyWebAuthnAssertionAction } from "@/app/actions/app-lock";
 import { BrandMark } from "@/components/clear/brand-mark";
 import { cn } from "@/lib/utils";
+import { useKeypadKeyboard } from "@/lib/use-keypad-keyboard";
 
 const UNLOCK_KEY = "app_lock_unlocked_v1";
 
@@ -86,7 +87,14 @@ function LockScreen({
   onUnlock: () => void;
 }) {
   const t = useTranslations("appLock");
-  const [pin, setPin] = useState("");
+  const [pin, setPinState] = useState("");
+  // Mirrors `pin` so fast hardware typing (several keydowns before a re-render)
+  // never builds on a stale value.
+  const pinRef = useRef("");
+  const setPin = (next: string) => {
+    pinRef.current = next;
+    setPinState(next);
+  };
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
@@ -117,7 +125,7 @@ function LockScreen({
 
   function pressDigit(d: string) {
     if (verifying) return;
-    const next = (pin + d).slice(0, MAX_DIGITS);
+    const next = (pinRef.current + d).slice(0, MAX_DIGITS);
     setPin(next);
     setError(null);
     // Only auto-submit when we know exactly how long the code is; otherwise the
@@ -129,9 +137,20 @@ function LockScreen({
   }
 
   function pressDelete() {
-    setPin((p) => p.slice(0, -1));
+    setPin(pinRef.current.slice(0, -1));
     setError(null);
   }
+
+  // Top-row digits, the numpad, Backspace and Enter work as well as the buttons.
+  const keypadRef = useKeypadKeyboard({
+    onKey: (k) => {
+      if (k === "back") pressDelete();
+      else if (/^\d$/.test(k)) pressDigit(k);
+    },
+    onEnter: () => {
+      if (!verifying && pinRef.current.length >= MIN_DIGITS) submitPin(pinRef.current);
+    },
+  });
 
   async function tryBiometric() {
     if (!hasWebAuthn || !webAuthnCredentialId) return;
@@ -219,7 +238,7 @@ function LockScreen({
           {error && <p className="m-0 rounded-full bg-clear-ember px-3.5 py-1.5 text-sm font-bold text-clear-ember-ink">{error}</p>}
         </div>
 
-        <div role="group" aria-label={t("keypad")} className="grid grid-cols-[repeat(3,76px)] gap-x-7 gap-y-4">
+        <div ref={keypadRef} role="group" aria-label={t("keypad")} className="grid grid-cols-[repeat(3,76px)] gap-x-7 gap-y-4">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
             <button key={d} type="button" onClick={() => pressDigit(d)} disabled={verifying} className={cn(key, "bg-current/8")}>
               {d}

@@ -20,7 +20,7 @@ import {
 } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ClearButton } from "@/components/clear/button";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { Segmented } from "@/components/clear/segmented";
 import { Amount } from "@/components/clear/amount";
 import { useConfirm } from "@/components/clear/confirm-dialog";
@@ -717,7 +717,7 @@ function PickerBody({
       )}
 
       {/* Pinned to the bottom of the scrolling dialog so Use icon stays in reach. */}
-      <div className="sticky bottom-0 z-20 -mx-6 border-t border-clear-ground bg-clear-card px-6 pt-4 pb-1 lg:-mx-7 lg:px-7">
+      <ClearDialogFooterDock className="border-t border-clear-ground pt-4 pb-1">
         <ClearDialogFooter
           destructive={
             <ClearButton variant="ghost" onClick={() => setDraft(null)} disabled={draft == null}>
@@ -742,7 +742,7 @@ function PickerBody({
             {saving ? t("saving") : t("use")}
           </ClearButton>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
 
       <AnchoredTip id="iconPicker" anchor="iconPickerTabs" />
 

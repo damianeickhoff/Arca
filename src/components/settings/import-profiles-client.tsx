@@ -117,7 +117,7 @@ export function ImportProfilesClient({ profiles }: { profiles: ImportProfileList
                     : FORMAT_LABELS[profile.mapping.dateFormat];
                 return (
                   <li key={profile.id} className="flex flex-col gap-4 rounded-clear-tile bg-clear-tile p-4">
-                    <div className="flex items-start gap-3.5">
+                    <div className="flex items-center gap-3.5">
                       <IconTile tone="sky" size="md"><IconTableOptions stroke={1.9} /></IconTile>
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <h4 className="m-0 truncate text-[15px] font-bold">{profile.label}</h4>

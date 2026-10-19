@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { IconBuildingBank, IconInfoCircle } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
+import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { ClearChip } from "@/components/clear/chip";
 import { IconTile } from "@/components/clear/icon-tile";
@@ -147,7 +147,7 @@ function PromptBody({ accounts, title, onDone }: { accounts: Bank[]; title: stri
         <span>{t("hint")}</span>
       </p>
 
-      <div className="pb-1">
+      <ClearDialogFooterDock className="pb-1">
         <ClearDialogFooter>
           <button type="button" onClick={onDone} disabled={saving} className={clearButtonVariants({ variant: "secondary" })}>
             {t("later")}
@@ -156,7 +156,7 @@ function PromptBody({ accounts, title, onDone }: { accounts: Bank[]; title: stri
             {saving ? t("saving") : t("save", { count: accounts.length })}
           </button>
         </ClearDialogFooter>
-      </div>
+      </ClearDialogFooterDock>
     </>
   );
 }

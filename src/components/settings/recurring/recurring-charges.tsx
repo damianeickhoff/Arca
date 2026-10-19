@@ -92,7 +92,9 @@ export function useMatchPreview(criteria: MatchCriteria | null) {
  * the total and average, and — when the price changed — the change called out with
  * the bars since then in ember and the latest one in ink.
  */
-export function RecurringCharges({ txs, tipAnchor = "recurringCharges" }: { txs: Charge[]; tipAnchor?: TipAnchor }) {
+/** `income`: the payments come in (a salary), so a rise is good news — green, and
+ *  worded as income instead of a price. */
+export function RecurringCharges({ txs, tipAnchor = "recurringCharges", income = false }: { txs: Charge[]; tipAnchor?: TipAnchor; income?: boolean }) {
   const t = useTranslations("recurringDetail.charges");
   const locale = useLocale();
   const charges = txs
@@ -128,7 +130,9 @@ export function RecurringCharges({ txs, tipAnchor = "recurringCharges" }: { txs:
   const bw = Math.min(22, slot * 0.55);
   const h = (v: number) => Math.max(6, ((v - lo) / (max - lo || 1)) * (base - top));
   const up = change ? change.to > change.from : false;
-  const changedFill = up ? "var(--clr-ember)" : "var(--clr-positive-fill)";
+  // Paying more is the warning; earning more is the good news.
+  const good = up === income;
+  const changedFill = good ? "var(--clr-positive-fill)" : "var(--clr-ember)";
   // Labels for every bar when they fit (monthly), else only the ends and the change.
   const showLabel = (i: number) => monthly || i === 0 || i === charges.length - 1 || i === change?.index;
 
@@ -137,7 +141,7 @@ export function RecurringCharges({ txs, tipAnchor = "recurringCharges" }: { txs:
   return (
     <div data-tip-anchor={tipAnchor} className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile px-4 py-4 sm:px-[18px]">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <span className="text-[15px] font-bold">{t("title", { count: charges.length })}</span>
+        <span className="text-[15px] font-bold">{t(income ? "incomeTitle" : "title", { count: charges.length })}</span>
         <span className="text-[13px] font-semibold text-clear-ink-2">
           <MoneyText>{t.rich("summary", {
             total: formatEur(total),
@@ -146,7 +150,7 @@ export function RecurringCharges({ txs, tipAnchor = "recurringCharges" }: { txs:
           })}</MoneyText>
         </span>
       </div>
-      <svg viewBox={`0 0 ${w} 112`} role="img" aria-label={t("aria", { list: spoken })} className="block h-auto w-full">
+      <svg viewBox={`0 0 ${w} 112`} role="img" aria-label={t(income ? "incomeAria" : "aria", { list: spoken })} className="block h-auto w-full">
         <line x1={0} y1={base} x2={w} y2={base} stroke="var(--clr-line)" />
         {charges.map((c, i) => {
           const x = i * slot + (slot - bw) / 2;
@@ -172,18 +176,18 @@ export function RecurringCharges({ txs, tipAnchor = "recurringCharges" }: { txs:
           );
         })}
         {change && (
-          <text x={Math.min(w - 60, change.index * slot + (slot - bw) / 2)} y={Math.max(14, base - h(change.to) - 8)} fontSize={12} fontWeight={700} fill={up ? "var(--clr-ember-text)" : "var(--clr-positive)"}>
+          <text x={Math.min(w - 60, change.index * slot + (slot - bw) / 2)} y={Math.max(14, base - h(change.to) - 8)} fontSize={12} fontWeight={700} fill={good ? "var(--clr-positive)" : "var(--clr-ember-text)"}>
             <SvgMoneyText>{formatEur(change.to)}</SvgMoneyText>
           </text>
         )}
       </svg>
       {change && (
-        <div className={cn("flex flex-wrap items-center gap-2.5 rounded-clear-icon px-3 py-2.5", up ? "bg-clear-peach" : "bg-clear-mint")}>
-          <span aria-hidden className={cn("inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-clear-card", up ? "text-clear-ember-text" : "text-clear-positive")}>
+        <div className={cn("flex flex-wrap items-center gap-2.5 rounded-clear-icon px-3 py-2.5", good ? "bg-clear-mint" : "bg-clear-peach")}>
+          <span aria-hidden className={cn("inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-clear-card", good ? "text-clear-positive" : "text-clear-ember-text")}>
             {up ? <IconTrendingUp size={16} stroke={2.2} /> : <IconTrendingDown size={16} stroke={2.2} />}
           </span>
           <span className="text-sm font-bold">
-            <MoneyText>{t(up ? "priceUp" : "priceDown", { amount: formatEur(Math.abs(change.to - change.from)), month: monthLong.format(new Date(`${change.date}T12:00:00`)) })}</MoneyText>
+            <MoneyText>{t(income ? (up ? "incomeUp" : "incomeDown") : up ? "priceUp" : "priceDown", { amount: formatEur(Math.abs(change.to - change.from)), month: monthLong.format(new Date(`${change.date}T12:00:00`)) })}</MoneyText>
           </span>
           <span className="ml-auto text-[13px] font-semibold tabular-nums text-clear-ink-2">
             <MoneyText>{formatEur(change.from)}</MoneyText> → <MoneyText>{formatEur(change.to)}</MoneyText>

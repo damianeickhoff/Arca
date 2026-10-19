@@ -15,6 +15,9 @@ function hashOf(value: unknown): string {
   return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
+/** Set once the default categories have been seeded (first run); they never are again. */
+const SEEDED_KEY = "default_categories_seeded";
+
 function getSetting(sqlite: Database, key: string): string | null {
   const row = sqlite.prepare("SELECT value FROM app_settings WHERE key = ?").get(key) as { value: string | null } | undefined;
   return row?.value ?? null;
@@ -25,22 +28,13 @@ function setSetting(sqlite: Database, key: string, value: string) {
 }
 
 /**
- * Seeds src/config/categories.ts as a *first-run* set: each entry is inserted by its
- * stable `key` (stored in categories.config_key) only if no row with that key exists
- * yet. Existing default categories are left untouched — they're user-owned once seeded,
- * fully editable and deletable through the UI. Consequently:
- *   - editing config for an already-seeded entry no longer pushes changes to the DB;
- *   - a brand-new entry added to config still appears on the next boot;
- *   - removing an entry from config does NOT delete the (now user-owned) category.
- * Rules and parent links are likewise seeded only for freshly-created rows, so manual
- * edits survive.
+ * Seeds src/config/categories.ts: each entry is inserted by its stable `key` (stored in
+ * categories.config_key) only if no row with that key exists yet, with its
+ * matchingPatterns as rules. Called only for the first-run seed (see runConfigSync) and
+ * the explicit "reset to defaults" — never on a later boot, so a default category the
+ * user deleted stays deleted and a new entry in a later release isn't added either.
  */
 function syncDefaultCategories(sqlite: Database) {
-  // Repair: drop rules whose category no longer exists (deletes done while foreign
-  // keys were off left dangling rows — they're invisible in the UI and made every
-  // rule application fail with an FK error).
-  sqlite.prepare("DELETE FROM category_rules WHERE category_id NOT IN (SELECT id FROM categories)").run();
-
   const idsByKey = new Map<string, number>();
   const newlyCreated = new Set<number>();
 
@@ -75,8 +69,10 @@ function syncDefaultCategories(sqlite: Database) {
       // Seed this freshly-created category's matchingPatterns as real category_rules
       // rows, same shape a user-created rule would have — only runs once, on the boot
       // that first inserts the category, so later edits to matchingPatterns here don't
-      // retroactively touch already-seeded rules.
-      if (def.matchingPatterns?.length) {
+      // retroactively touch already-seeded rules. Never for an adopted category: it
+      // already has its rules (seeded under its old key, or the user's own), and
+      // seeding again would copy every one of them.
+      if (newlyCreated.has(categoryId) && def.matchingPatterns?.length) {
         const insertRule = sqlite.prepare(`
           INSERT INTO category_rules (category_id, name_pattern, name_wildcard, name_whole_word, direction)
           VALUES (?, ?, ?, ?, ?)
@@ -140,12 +136,7 @@ export function resetDefaultCategories(sqlite: Database) {
 
     syncDefaultCategories(sqlite);
     backfillDefaultParents(sqlite);
-    // Keep the config hash in step so the next boot doesn't consider this a change.
-    setSetting(
-      sqlite,
-      "default_categories_config_hash",
-      hashOf([DEFAULT_CATEGORIES, DEFAULT_CATEGORIES.map((d) => (d.matchingPatterns ?? []).map(normalizeMatchingPattern))]),
-    );
+    setSetting(sqlite, SEEDED_KEY, "1");
   });
   run();
 }
@@ -215,30 +206,36 @@ export function applyDefaultCategoryRulesSync(sqlite: Database) {
 }
 
 /**
- * Detects an edit to src/config/categories.ts (via a content hash stored in app_settings)
- * and re-applies it — otherwise a config change only takes effect for brand-new data,
- * leaving already-imported transactions stuck with whatever was computed last time.
- * Each section fails independently and loudly (logged, hash not advanced) so one bad
- * section can't silently disable the other.
+ * Seeds the default categories on the first run (only then) and repairs rules and
+ * parent links on every boot. Each section fails independently and loudly (logged,
+ * flag not advanced) so one bad section can't silently disable the other.
  */
 export function runConfigSync(sqlite: Database) {
   sqlite.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)");
 
+  // Repair, every boot: drop rules whose category no longer exists (deletes done while
+  // foreign keys were off left dangling rows — they're invisible in the UI and made
+  // every rule application fail with an FK error).
   try {
-    // Hash the *normalized* patterns alongside the raw config: how a bare pattern string
-    // is interpreted (contains vs whole-word) lives in normalizeMatchingPattern, so a
-    // change there alters behaviour without touching DEFAULT_CATEGORIES — and would
-    // otherwise slip past this gate and never be applied.
-    const categoriesHash = hashOf([
-      DEFAULT_CATEGORIES,
-      DEFAULT_CATEGORIES.map((d) => (d.matchingPatterns ?? []).map(normalizeMatchingPattern)),
-    ]);
-    if (getSetting(sqlite, "default_categories_config_hash") !== categoriesHash) {
-      syncDefaultCategories(sqlite);
-      setSetting(sqlite, "default_categories_config_hash", categoriesHash);
+    sqlite.prepare("DELETE FROM category_rules WHERE category_id NOT IN (SELECT id FROM categories)").run();
+  } catch (err) {
+    console.error("[config-sync] dangling rule cleanup failed:", err);
+  }
+
+  // Default categories are seeded on the first run only. An existing database (it has
+  // categories, or ran the old hash-gated sync) is marked as seeded without adding
+  // anything, so updating the app never brings back a default the user deleted.
+  try {
+    if (getSetting(sqlite, SEEDED_KEY) === null) {
+      const { c } = sqlite.prepare("SELECT COUNT(*) AS c FROM categories").get() as { c: number };
+      const existing = c > 0 || getSetting(sqlite, "default_categories_config_hash") !== null;
+      sqlite.transaction(() => {
+        if (!existing) syncDefaultCategories(sqlite);
+        setSetting(sqlite, SEEDED_KEY, "1");
+      })();
     }
   } catch (err) {
-    console.error("[config-sync] default categories sync failed:", err);
+    console.error("[config-sync] default categories seed failed:", err);
   }
 
   // Runs on EVERY boot, outside the hash gate above, so a database seeded flat by an

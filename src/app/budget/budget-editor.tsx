@@ -718,7 +718,7 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
               titleId="budget-category-title"
               title={editingCat.categoryName}
               subtitle={<MoneyText>{t("categorySpent", { amount: formatEurWhole(editingCat.spent) })}</MoneyText>}
-              icon={<Icon iconKey={editingCat.icon} color={editingCat.color} size="md" soft />}
+              icon={<Icon iconKey={editingCat.icon} color={editingCat.color} size="xl" soft />}
               onClose={() => setCatOpen(false)}
               closeLabel={t("close")}
             />

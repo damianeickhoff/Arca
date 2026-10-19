@@ -2,7 +2,6 @@ import type { ComponentType } from "react";
 import {
   IconBuildingStore,
   IconCalendar,
-  IconCalendarEvent,
   IconCoin,
   IconCreditCard,
   IconFileUpload,
@@ -30,7 +29,7 @@ import {
 export type SettingsPanelKey =
   | "profile" | "security"
   | "accounts" | "categories" | "recurring" | "merchants" | "automations"
-  | "financialMonth" | "monthOverrides" | "budgetRecurring"
+  | "financialMonth" | "budgetRecurring"
   | "import" | "importProfiles" | "dataHealth"
   | "appearance" | "privacy" | "appLock" | "language" | "currency" | "ai"
   | "help" | "users";
@@ -57,7 +56,6 @@ const SECTIONS: SettingsSection[] = [
       { key: "merchants", icon: IconBuildingStore },
       { key: "automations", icon: IconWand },
       { key: "financialMonth", icon: IconCalendar },
-      { key: "monthOverrides", icon: IconCalendarEvent },
       { key: "budgetRecurring", icon: IconWallet },
     ],
   },
@@ -141,8 +139,14 @@ export function legacyTabPanel(tab: string | undefined): SettingsPanelKey | null
 }
 
 /** The `?panel=` value when it names a row this user can see, else null. */
+/** Panels that were folded into another one, so their old links still land. */
+const MERGED_PANELS: Record<string, SettingsPanelKey> = {
+  monthOverrides: "financialMonth",
+};
+
 export function parseSettingsPanel(value: string | undefined, isAdmin: boolean): SettingsPanelKey | null {
   if (!value) return null;
+  if (MERGED_PANELS[value]) return MERGED_PANELS[value];
   for (const section of settingsSections({ isAdmin, withAccount: true })) {
     const row = section.rows.find((r) => r.key === value);
     if (row) return row.key;

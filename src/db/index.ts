@@ -573,7 +573,7 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
     }
   }
 
-  // Sync src/config/categories.ts into the database.
+  // Seed src/config/categories.ts (first run only) and repair rules and parents.
   // Runs synchronously as part of db init so it's guaranteed to complete before any
   // query in the app — see src/lib/config-sync.ts for why (layout/page render in
   // parallel in Next, so an awaited-in-layout sync still races the page's own queries

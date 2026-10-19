@@ -158,10 +158,6 @@
         "title": "Financiële maand",
         "subtitle": "De dag waarop je maand begint, meestal je betaaldag."
       },
-      "monthOverrides": {
-        "title": "Maanduitzonderingen",
-        "subtitle": "Een andere startdag voor één maand."
-      },
       "budgetRecurring": {
         "title": "Budget & rekeningen",
         "subtitle": "Wat als uitgave telt in je budget en rapporten."
@@ -431,6 +427,7 @@
       "weekendHint": "Voor een salaris dat vóór het weekend binnenkomt."
     },
     "monthOverrides": {
+      "title": "Uitzonderingen",
       "intro": "Verschuift je betaaldag (feestdagen, weekenden)? Pas dan alleen die maand aan.",
       "add": "Uitzondering toevoegen",
       "empty": "Nog geen uitzonderingen. Voeg er een toe als je betaaldag één maand verschuift.",
@@ -616,9 +613,6 @@
       "conditionAccount": "één rekening",
       "editRule": "Regel bewerken",
       "deleteRule": "{name} verwijderen",
-      "deleteTitle": "De regel {name} verwijderen?",
-      "deleteBody": "Transacties die hij indeelde houden hun categorie; nieuwe worden er niet meer door ingedeeld.",
-      "deleteConfirm": "Regel verwijderen",
       "saveError": "Dat lukte niet. Probeer het opnieuw.",
       "empty": "Er is nog niets geautomatiseerd. Kies een categorie voor een transactie en tik op Altijd, of geef een winkel een eigen categorie.",
       "testTitle": "Regels testen",
@@ -1405,6 +1399,10 @@
       "title": "Tik op een dag om je start te kiezen",
       "body": "Je maand begint nu op de dag waarop je tikt, en dat wordt direct opgeslagen. De balk eronder laat zien waar vandaag in de periode valt."
     },
+    "financialMonthExceptions": {
+      "title": "Maanduitzonderingen staan nu hier",
+      "body": "Een andere startdag voor één maand regel je nu hier, onder je gewone startdag."
+    },
     "merchantsWithoutIcon": {
       "title": "Winkels zonder logo vinden",
       "body": "Kies Zonder icoon om alleen de winkels te zien die nog geen logo hebben, en open er een om het een logo te geven."
@@ -1732,6 +1730,13 @@
     "failed": "De regel kon niet worden opgeslagen. Probeer het opnieuw.",
     "done": "Klaar: {merchant} gaat voortaan altijd naar {category}.",
     "close": "Sluiten"
+  },
+  "colorPicker": {
+    "previewIcon": "Voorbeeld met dit icoon",
+    "previewBackground": "Voorbeeld met deze achtergrondkleur",
+    "defaultBackground": "Standaard (witte) achtergrond",
+    "defaultColor": "Standaardkleur (geen kleur ingesteld)",
+    "brandKeepsColor": "Merkiconen houden hun eigen kleuren"
   },
   "globalSearch": {
     "title": "Zoeken",
@@ -3712,7 +3717,14 @@
         "moveAuto": "Die je niet zelf een categorie gaf, gaan naar {category}{review, plural, =0 {.} one {, waaronder één nog zonder categorie.} other {, waaronder # nog zonder categorie.}}",
         "pickCategory": "Kies een categorie om ze naartoe te verplaatsen.",
         "more": "en nog {count}"
-      }
+      },
+      "moveTitle": "Deze regel verplaatsen?",
+      "moveBody": "Deze regel zet transacties al onder {from}. Verplaatsen naar {to}?",
+      "moveConfirm": "Verplaatsen",
+      "deleteTitle": "Deze regel verwijderen?",
+      "deleteBody": "{count, plural, one {Eén transactie} other {# transacties}} die deze regel onder {category} zette, {count, plural, one {staat} other {staan}} daar nog. Transacties die je zelf hebt ingedeeld blijven zoals ze zijn.",
+      "deleteKeep": "Laat ze zoals ze zijn",
+      "deleteRevert": "{count, plural, one {Terug naar Te beoordelen} other {# terug naar Te beoordelen}}"
     },
     "searchPlaceholder": "Zoek transacties",
     "tiles": {
