@@ -31,10 +31,11 @@ export function createSchema(sqlite: Database.Database): void {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS categories (
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
-      name        TEXT    NOT NULL UNIQUE,
+      name        TEXT    NOT NULL,
       "group"     TEXT    NOT NULL,
       budget_type TEXT,
-      color       TEXT
+      color       TEXT,
+      UNIQUE(name, "group")
     );
 
     CREATE TABLE IF NOT EXISTS merchants (
