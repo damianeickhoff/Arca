@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
   IconListNumbers,
+  IconBook2,
   IconSparkles,
   IconFolders,
   IconAdjustments,
@@ -159,6 +160,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   bankConnection: IconBuildingBank,
   quickAdd: IconCirclePlus,
   importBankFirst: IconBuildingBank,
+  helpGuide: IconBook2,
 };
 
 /**

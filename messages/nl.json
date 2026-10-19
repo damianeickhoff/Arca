@@ -215,9 +215,11 @@
       "hideAmounts": "Bedragen verbergen",
       "languageHint": "Kies de taal van de app.",
       "currencyHint": "Valutasymbool dat bij bedragen staat.",
-      "helpTitle": "Vragen of problemen?",
-      "helpBody": "Mail de support en we reageren zo snel mogelijk.",
-      "contactSupport": "Contact opnemen"
+      "helpTitle": "De handleiding staat online",
+      "helpBody": "Stap-voor-stap hulp voor elk onderdeel van Arca: installeren, je bank koppelen, budgetten, de prognose en meer.",
+      "openGuide": "Open de handleiding",
+      "reportProblem": "Meld een probleem of idee",
+      "reportProblemMeta": "Op GitHub, waar Arca wordt ontwikkeld"
     },
     "account": {
       "photo": "Profielfoto",
@@ -1512,6 +1514,10 @@
     "importBankFirst": {
       "title": "Je bank staat voorop",
       "body": "Importeren begint nu met je bankkoppeling en laat zien wanneer die voor het laatst synchroniseerde. Een CSV-bestand kan nog steeds: upload het hieronder."
+    },
+    "helpGuide": {
+      "title": "Hulp is één tik verwijderd",
+      "body": "De Arca-handleiding legt elke pagina stap voor stap uit. Open Help om hem te vinden, of om een probleem of idee te melden."
     }
   },
   "categoryPicker": {

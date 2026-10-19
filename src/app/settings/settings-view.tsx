@@ -126,7 +126,7 @@ export function SettingsView({
                     key={key}
                     href={`/settings?panel=${key}`}
                     aria-current={isActive && explicit ? "page" : undefined}
-                    data-tip-anchor={key === "ai" ? "settingsAi" : undefined}
+                    data-tip-anchor={key === "ai" ? "settingsAi" : key === "help" ? "settingsHelp" : undefined}
                     className={cn(
                       "group flex h-12 shrink-0 items-center gap-3 lg:h-10 rounded-clear-row px-3 text-[15px] no-underline transition-colors",
                       !isActive && "font-semibold text-clear-ink hover:bg-clear-tile",
@@ -186,6 +186,7 @@ export function SettingsView({
           even to someone who turned tips off (see IGNORES_DISABLED). */}
       <AnchoredTip id="settingsNav" anchor="settingsNav" />
       <AnchoredTip id="aiSettings" anchor="settingsAi" />
+      <AnchoredTip id="helpGuide" anchor="settingsHelp" />
     </div>
   );
 }

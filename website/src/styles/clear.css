@@ -1,0 +1,847 @@
+/*
+ * The Arca guide in the app's "Clear" design.
+ *
+ * The --clr-* tokens are copied from the app (src/app/globals.css): light values under
+ * [data-theme="light"], dark values on :root (Starlight's default theme is dark and it
+ * sets data-theme on <html>). Everything below is built from these tokens only, so a
+ * colour change is one edit and both themes follow.
+ *
+ * Starlight's own styles live in cascade layers; these rules are unlayered, so they win.
+ */
+
+/* ---------- Tokens ---------- */
+
+:root,
+:root[data-theme="dark"] {
+  --clr-ground: #0b0b0d;
+  --clr-card: #17171a;
+  --clr-tile: #202024;
+  --clr-line: #2a2a30;
+  --clr-ink: #f4f4f5;
+  --clr-ink-2: #c4c4cc;
+  --clr-muted: #9a9aa5;
+  --clr-placeholder: #7a7a85;
+  --clr-hero: #f4f4f5;
+  --clr-hero-ink: #111113;
+  --clr-hero-ink-2: rgba(17, 17, 19, 0.65);
+  --clr-primary: #f4f4f5;
+  --clr-primary-ink: #111113;
+  --clr-ember: #ff5b2e;
+  --clr-ember-ink: #111113;
+  --clr-ember-text: #ff9f80;
+  --clr-mint: #12301f;
+  --clr-mint-ink: #6ee7a0;
+  --clr-peach: #3a1c12;
+  --clr-peach-ink: #ff9f80;
+  --clr-sky: #172445;
+  --clr-sky-ink: #9db7ff;
+  --clr-lilac: #2a1e44;
+  --clr-lilac-ink: #c3a8ff;
+  --clr-butter: #3a300e;
+  --clr-butter-ink: #f5d46b;
+  --clr-rose: #3d1426;
+  --clr-rose-ink: #ff8fbf;
+  --clr-stone: #26262b;
+  --clr-stone-ink: #d4d4da;
+  --clr-shadow-dialog: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-theme="light"] {
+  --clr-ground: #f1f1f3;
+  --clr-card: #ffffff;
+  --clr-tile: #f6f6f8;
+  --clr-line: #e8e8ec;
+  --clr-ink: #111113;
+  --clr-ink-2: #52525b;
+  --clr-muted: #6b6b76;
+  --clr-placeholder: #8a8a96;
+  --clr-hero: #111113;
+  --clr-hero-ink: #ffffff;
+  --clr-hero-ink-2: rgba(255, 255, 255, 0.72);
+  --clr-primary: #111113;
+  --clr-primary-ink: #ffffff;
+  --clr-ember: #ff5b2e;
+  --clr-ember-ink: #111113;
+  --clr-ember-text: #c2410c;
+  --clr-mint: #ddf4e4;
+  --clr-mint-ink: #0e7a3d;
+  --clr-peach: #ffe4d9;
+  --clr-peach-ink: #b4361a;
+  --clr-sky: #e2eafd;
+  --clr-sky-ink: #2a4fb8;
+  --clr-lilac: #ece5fb;
+  --clr-lilac-ink: #6a3db8;
+  --clr-butter: #fff2c2;
+  --clr-butter-ink: #8a6100;
+  --clr-rose: #fce3ee;
+  --clr-rose-ink: #b0245e;
+  --clr-stone: #ececef;
+  --clr-stone-ink: #3f3f46;
+  --clr-shadow-dialog: 0 30px 80px rgba(17, 17, 19, 0.3);
+}
+
+/* Starlight's variables, pointed at the Clear tokens. In Starlight "white" is the
+   strongest text colour and "black" the surface, in both themes. */
+:root,
+:root[data-theme="light"],
+:root[data-theme="dark"] {
+  --sl-font: "Plus Jakarta Sans Variable", "Plus Jakarta Sans";
+  --sl-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --sl-color-white: var(--clr-ink);
+  --sl-color-gray-1: var(--clr-ink);
+  --sl-color-gray-2: var(--clr-ink-2);
+  --sl-color-gray-3: var(--clr-muted);
+  --sl-color-gray-4: var(--clr-placeholder);
+  --sl-color-gray-5: var(--clr-line);
+  --sl-color-gray-6: var(--clr-tile);
+  --sl-color-gray-7: var(--clr-ground);
+  --sl-color-black: var(--clr-card);
+
+  --sl-color-accent-low: var(--clr-peach);
+  --sl-color-accent: var(--clr-ember);
+  --sl-color-accent-high: var(--clr-ink);
+
+  --sl-color-text: var(--clr-ink);
+  --sl-color-text-accent: var(--clr-ink);
+  --sl-color-text-invert: var(--clr-primary-ink);
+  --sl-color-bg: var(--clr-ground);
+  --sl-color-bg-nav: var(--clr-card);
+  --sl-color-bg-sidebar: var(--clr-card);
+  --sl-color-bg-inline-code: var(--clr-tile);
+  --sl-color-bg-accent: var(--clr-primary);
+  --sl-color-hairline-light: var(--clr-line);
+  --sl-color-hairline: var(--clr-line);
+  --sl-color-hairline-shade: var(--clr-line);
+  --sl-color-backdrop-overlay: rgba(17, 17, 19, 0.45);
+
+  --sl-shadow-sm: none;
+  --sl-shadow-md: none;
+  --sl-shadow-lg: var(--clr-shadow-dialog);
+
+  /* Body 15px; the smallest text anywhere is 12px. */
+  --sl-text-body: 0.9375rem;
+  --sl-text-body-sm: 0.8125rem;
+  --sl-text-h1: 1.625rem;
+  --sl-text-h2: 1.375rem;
+  --sl-text-h3: 1.125rem;
+  --sl-text-h4: 1rem;
+  --sl-text-h5: 0.9375rem;
+  --sl-line-height: 1.65;
+  --sl-line-height-headings: 1.2;
+
+  /* The app's sidebar is 260px. */
+  --sl-sidebar-width: 16.25rem;
+  --sl-content-width: 48rem;
+}
+
+@media (min-width: 50em) {
+  :root,
+  :root[data-theme="light"],
+  :root[data-theme="dark"] {
+    --sl-text-h1: 2.5rem; /* page title 40px */
+  }
+}
+
+/* ---------- Page ---------- */
+
+html,
+body {
+  background-color: var(--clr-ground);
+}
+
+body {
+  font-family: var(--__sl-font);
+  font-size: var(--sl-text-body);
+  color: var(--clr-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--clr-peach);
+  color: var(--clr-ink);
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--clr-ember) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* Header: a white bar with a hairline, like the app's sidebar surface. */
+.header {
+  background-color: var(--clr-card);
+  border-bottom: 1px solid var(--clr-line);
+}
+
+.site-title img {
+  height: 2rem;
+  width: auto;
+}
+
+/* Search: a quiet tile pill, like the app's "Search everything" field. */
+button[data-open-modal] {
+  border-radius: 999px;
+  font-family: var(--__sl-font);
+  font-weight: 600;
+}
+@media (min-width: 50rem) {
+  button[data-open-modal] {
+    border: 0;
+    background-color: var(--clr-tile);
+    color: var(--clr-muted);
+    height: 2.5rem;
+    padding-inline: 1rem 0.5rem;
+  }
+  button[data-open-modal]:hover {
+    background-color: var(--clr-line);
+    color: var(--clr-ink);
+  }
+}
+button[data-open-modal] > kbd {
+  background-color: var(--clr-card);
+  color: var(--clr-muted);
+  border-radius: 999px;
+}
+
+site-search dialog {
+  background-color: var(--clr-card);
+  border: 0;
+  box-shadow: var(--clr-shadow-dialog);
+}
+@media (min-width: 50em) {
+  site-search dialog {
+    border-radius: 28px;
+  }
+}
+
+/* Theme and language selects: pill-shaped. */
+starlight-theme-select select,
+starlight-lang-select select {
+  font-family: var(--__sl-font);
+  font-weight: 600;
+}
+
+/* Sidebar: full height, white, a hairline on its right; rows with a 14px highlight,
+   the current page as a black row. */
+.sidebar-pane {
+  background-color: var(--clr-card);
+  border-inline-end: 1px solid var(--clr-line);
+}
+
+.sidebar-content {
+  padding-top: 1.25rem;
+}
+
+.sidebar-content ul ul li {
+  border-inline-start: 0;
+  margin-inline-start: 0;
+  padding-inline-start: 0;
+}
+
+.sidebar-content .top-level > li + li {
+  margin-top: 1rem;
+}
+
+.sidebar-content summary {
+  padding: 0.25rem 0.75rem 0.375rem;
+}
+
+.sidebar-content .group-label .large {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--clr-muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sidebar-content a {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 14px;
+  color: var(--clr-ink);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: background-color 120ms ease;
+}
+
+.sidebar-content a:hover,
+.sidebar-content a:focus-visible {
+  background-color: var(--clr-tile);
+  color: var(--clr-ink);
+}
+
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover,
+.sidebar-content a[aria-current="page"]:focus {
+  background-color: var(--clr-primary);
+  color: var(--clr-primary-ink);
+  font-weight: 700;
+}
+
+/* Main column. */
+.main-frame {
+  background-color: var(--clr-ground);
+}
+
+main {
+  padding-bottom: 3rem;
+}
+
+/* Page title on the grey ground: 40px / 800 (26px on phones). */
+h1#_top {
+  font-size: var(--sl-text-h1);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--clr-ink);
+}
+
+/* The page's first paragraph after the title reads as its subtitle. */
+.content-panel:first-of-type {
+  padding-bottom: 0.5rem;
+}
+
+.content-panel + .content-panel {
+  border-top: 0;
+}
+
+/* Page body: one borderless white card, 24px radius, no shadow. */
+html:not([data-has-hero]) .sl-markdown-content {
+  background-color: var(--clr-card);
+  border-radius: 24px;
+  padding: 1.5rem 1.25rem;
+}
+@media (min-width: 50em) {
+  html:not([data-has-hero]) .sl-markdown-content {
+    padding: 2rem 2.25rem;
+  }
+}
+
+/* ---------- Markdown ---------- */
+
+.sl-markdown-content {
+  color: var(--clr-ink);
+  font-size: var(--sl-text-body);
+}
+
+.sl-markdown-content :is(h2, h3, h4, h5, h6) {
+  color: var(--clr-ink);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sl-markdown-content h2 {
+  font-size: var(--sl-text-h2);
+  margin-top: 2.25rem;
+}
+
+.sl-markdown-content h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-top: 1.75rem;
+}
+
+.sl-markdown-content :is(h2, h3):first-child {
+  margin-top: 0;
+}
+
+.sl-markdown-content p,
+.sl-markdown-content li {
+  color: var(--clr-ink);
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--clr-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--clr-ink) 30%, transparent);
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1.5px;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-color: var(--clr-ember);
+}
+
+.sl-markdown-content strong {
+  font-weight: 700;
+  color: var(--clr-ink);
+}
+
+.sl-markdown-content code:not(:where(.not-content *, pre *)) {
+  background-color: var(--clr-tile);
+  color: var(--clr-ink);
+  border-radius: 6px;
+  padding: 0.125em 0.375em;
+  font-size: 0.875em;
+}
+
+.sl-markdown-content kbd {
+  display: inline-block;
+  min-width: 1.75em;
+  padding: 0.05em 0.5em;
+  border-radius: 8px;
+  background-color: var(--clr-tile);
+  border: 1px solid var(--clr-line);
+  font-family: var(--__sl-font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sl-markdown-content hr {
+  border-color: var(--clr-line);
+}
+
+.sl-markdown-content img {
+  border-radius: 16px;
+}
+
+.sl-markdown-content blockquote {
+  border-inline-start: 0;
+  background-color: var(--clr-tile);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  color: var(--clr-ink-2);
+}
+
+/* Tables: a tile-grey header row with 14px corners, hairlines between rows. */
+.sl-markdown-content table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+.sl-markdown-content :is(th, td) {
+  border: 0;
+  border-bottom: 1px solid var(--clr-line);
+  padding: 0.625rem 0.875rem;
+  color: var(--clr-ink);
+}
+.sl-markdown-content th {
+  background-color: var(--clr-tile);
+  font-weight: 700;
+  border-bottom: 0;
+}
+.sl-markdown-content th:first-child {
+  border-start-start-radius: 14px;
+  border-end-start-radius: 14px;
+}
+.sl-markdown-content th:last-child {
+  border-start-end-radius: 14px;
+  border-end-end-radius: 14px;
+}
+.sl-markdown-content tr:last-child td {
+  border-bottom: 0;
+}
+
+
+/* ---------- Asides as pastel tiles ---------- */
+
+.starlight-aside {
+  border: 0;
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  color: var(--clr-ink);
+}
+
+.starlight-aside__title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.starlight-aside__icon {
+  font-size: 1.125em;
+}
+
+.starlight-aside--note {
+  background-color: var(--clr-sky);
+  --sl-color-asides-text-accent: var(--clr-sky-ink);
+}
+.starlight-aside--tip {
+  background-color: var(--clr-mint);
+  --sl-color-asides-text-accent: var(--clr-mint-ink);
+}
+.starlight-aside--caution {
+  background-color: var(--clr-butter);
+  --sl-color-asides-text-accent: var(--clr-butter-ink);
+}
+.starlight-aside--danger {
+  background-color: var(--clr-peach);
+  --sl-color-asides-text-accent: var(--clr-peach-ink);
+}
+
+.starlight-aside__content,
+.starlight-aside__content p,
+.starlight-aside__content li {
+  color: var(--clr-ink);
+}
+
+.starlight-aside__content a {
+  color: var(--clr-ink) !important;
+}
+
+/* ---------- The hero card (one per page, for the answer) ---------- */
+
+.hero-card {
+  background-color: var(--clr-hero);
+  color: var(--clr-hero-ink);
+  border-radius: 24px;
+  padding: 1.5rem 1.5rem 1.625rem;
+}
+
+.sl-markdown-content .hero-card :is(p, li, strong, h2, h3) {
+  color: var(--clr-hero-ink);
+}
+
+.sl-markdown-content .hero-card a {
+  color: var(--clr-hero-ink);
+  text-decoration-color: color-mix(in srgb, var(--clr-hero-ink) 45%, transparent);
+}
+
+.hero-card > :first-child {
+  margin-top: 0;
+}
+
+.hero-card .hero-card__label {
+  color: var(--clr-hero-ink-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.hero-card .hero-card__value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin-top: 0.25rem;
+}
+
+/* Hatched "still available / projected" fill, used sparingly. */
+.clear-hatch {
+  background-image: repeating-linear-gradient(-45deg, var(--clr-peach) 0 3px, transparent 3px 7px);
+}
+
+/* ---------- Buttons ---------- */
+
+.sl-link-button,
+.arca-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  font-family: var(--__sl-font);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none !important;
+  white-space: nowrap;
+  transition: opacity 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.sl-link-button:active,
+.arca-pill:active {
+  transform: scale(0.97);
+}
+
+.sl-link-button.primary {
+  background-color: var(--clr-primary);
+  color: var(--clr-primary-ink) !important;
+  border-color: transparent;
+}
+.sl-link-button.primary:hover {
+  opacity: 0.9;
+}
+.sl-link-button.secondary {
+  background-color: var(--clr-tile);
+  color: var(--clr-ink) !important;
+  border-color: transparent;
+}
+.sl-link-button.secondary:hover {
+  background-color: var(--clr-line);
+}
+.sl-link-button.minimal {
+  background-color: transparent;
+  color: var(--clr-ink) !important;
+}
+
+/* ---------- Cards (Starlight <Card>, <LinkCard>) ---------- */
+
+.card,
+.sl-link-card {
+  border: 0 !important;
+  border-radius: 16px !important;
+  background-color: var(--clr-tile) !important;
+  box-shadow: none !important;
+}
+
+.card .title {
+  font-weight: 700;
+  font-size: 1.0625rem;
+}
+
+.card .icon {
+  border: 0;
+  border-radius: 12px;
+  background-color: var(--clr-card);
+  color: var(--clr-ink);
+}
+
+.sl-link-card:hover {
+  background-color: var(--clr-line) !important;
+}
+
+.sl-link-card .title {
+  font-weight: 700;
+  color: var(--clr-ink);
+}
+
+.sl-link-card .description {
+  color: var(--clr-ink-2);
+}
+
+/* ---------- Right-hand "On this page" ---------- */
+
+.right-sidebar {
+  border-inline-start: 0;
+  background-color: var(--clr-ground);
+}
+
+.right-sidebar-panel h2 {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--clr-muted);
+}
+
+.right-sidebar-panel a {
+  color: var(--clr-ink-2);
+  font-size: 0.875rem;
+}
+
+.right-sidebar-panel a[aria-current="true"] {
+  color: var(--clr-ink);
+  font-weight: 700;
+}
+
+mobile-starlight-toc nav {
+  background-color: var(--clr-card);
+  border-bottom: 1px solid var(--clr-line);
+}
+
+/* ---------- Footer: previous / next as white cards ---------- */
+
+.pagination-links a {
+  border: 0;
+  border-radius: 24px;
+  background-color: var(--clr-card);
+  box-shadow: none;
+  color: var(--clr-muted);
+  font-size: 0.8125rem;
+}
+
+.pagination-links a:hover {
+  background-color: var(--clr-tile);
+}
+
+.pagination-links .link-title {
+  color: var(--clr-ink);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+footer .meta a,
+footer .kudos {
+  color: var(--clr-muted);
+}
+
+/* ---------- Landing page ---------- */
+
+[data-has-hero] .content-panel {
+  padding-top: 1.5rem;
+}
+
+.arca-hero {
+  display: grid;
+  gap: 1.5rem;
+  background-color: var(--clr-hero);
+  color: var(--clr-hero-ink);
+  border-radius: 24px;
+  padding: 1.75rem 1.5rem;
+  overflow: hidden;
+}
+
+.arca-hero__eyebrow {
+  margin: 0;
+  color: var(--clr-hero-ink-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.arca-hero h1#_top {
+  margin: 0.5rem 0 0;
+  color: var(--clr-hero-ink);
+  font-size: clamp(2rem, 1.2rem + 3.6vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.arca-hero__tagline {
+  margin: 1rem 0 0;
+  max-width: 34rem;
+  color: var(--clr-hero-ink-2);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+
+.arca-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.arca-pill--hero {
+  background-color: var(--clr-hero-ink);
+  color: var(--clr-hero) !important;
+}
+.arca-pill--hero:hover {
+  opacity: 0.9;
+}
+
+.arca-pill--outline {
+  background-color: transparent;
+  color: var(--clr-hero-ink) !important;
+  border-color: color-mix(in srgb, var(--clr-hero-ink) 40%, transparent);
+}
+.arca-pill--outline:hover {
+  border-color: color-mix(in srgb, var(--clr-hero-ink) 70%, transparent);
+}
+
+.arca-hero__shot {
+  align-self: end;
+  min-width: 0;
+}
+
+.arca-hero__shot .arca-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
+
+/* One screenshot per theme. This rule is unlayered, so it has to hide the other one
+   itself: Starlight's dark:sl-hidden / light:sl-hidden utilities sit in a lower layer. */
+[data-theme="dark"] .arca-hero__shot .arca-shot.dark\:sl-hidden,
+[data-theme="light"] .arca-hero__shot .arca-shot.light\:sl-hidden {
+  display: none;
+}
+
+@media (min-width: 64rem) {
+  .arca-hero {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    align-items: center;
+    gap: 2.5rem;
+    padding: 2.75rem 0 2.75rem 2.75rem;
+  }
+  .arca-hero__shot .arca-shot {
+    border-radius: 16px 0 0 16px;
+  }
+}
+
+/* The landing page's sections sit straight on the ground as white cards. */
+[data-has-hero] .sl-markdown-content {
+  margin-top: 1.25rem;
+}
+
+[data-has-hero] .sl-markdown-content h2 {
+  margin-top: 2.5rem;
+}
+
+[data-has-hero] .card,
+[data-has-hero] .sl-link-card {
+  background-color: var(--clr-card) !important;
+  border-radius: 24px !important;
+}
+
+[data-has-hero] .sl-link-card:hover {
+  background-color: var(--clr-tile) !important;
+}
+
+/* Pastel tiles for the landing page's feature list. */
+.tile-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  margin-top: 1.25rem;
+}
+
+.tile-grid > .tile {
+  margin: 0;
+  background-color: var(--clr-card);
+  border-radius: 24px;
+  padding: 1.25rem 1.375rem 1.375rem;
+}
+
+.tile-grid .tile__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.tile__chip--mint { background-color: var(--clr-mint); color: var(--clr-mint-ink); }
+.tile__chip--sky { background-color: var(--clr-sky); color: var(--clr-sky-ink); }
+.tile__chip--lilac { background-color: var(--clr-lilac); color: var(--clr-lilac-ink); }
+.tile__chip--butter { background-color: var(--clr-butter); color: var(--clr-butter-ink); }
+.tile__chip--peach { background-color: var(--clr-peach); color: var(--clr-peach-ink); }
+.tile__chip--rose { background-color: var(--clr-rose); color: var(--clr-rose-ink); }
+
+.sl-markdown-content .tile-grid .tile h3 {
+  margin-top: 0.75rem;
+  font-size: 1.125rem;
+}
+
+.sl-markdown-content .tile-grid .tile p {
+  margin-top: 0.375rem;
+  color: var(--clr-ink-2);
+}
+
+/* Status chips on the roadmap ("In progress", "Planned", …). */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.625rem;
+  padding: 0 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.status-chip--progress { background-color: var(--clr-ember); color: var(--clr-ember-ink); }
+.status-chip--planned { background-color: var(--clr-sky); color: var(--clr-sky-ink); }
+.status-chip--idea { background-color: var(--clr-lilac); color: var(--clr-lilac-ink); }
+.status-chip--no { background-color: var(--clr-stone); color: var(--clr-stone-ink); }
+
+/* Screenshots side by side (phone light and dark). */
+.shot-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  max-width: 34rem;
+}
+.shot-pair img {
+  width: 100%;
+  height: auto;
+}

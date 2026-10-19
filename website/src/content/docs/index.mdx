@@ -1,0 +1,65 @@
+---
+title: Arca
+description: A calm, self-hosted personal finance app. Know what's safe to spend, what's coming up and where your money went, with your data on your own server.
+template: splash
+hero:
+  title: Know what's safe to spend.
+  tagline: Arca is a calm personal finance app you run at home. One clear number for today, the bills still to come, and where your money went, all on your own server.
+  image:
+    light: ../../assets/screenshots/home.png
+    dark: ../../assets/screenshots/home-dark.png
+    alt: Arca's Home page, with what's safe to spend, this month's money in and out, and the budget at a glance
+  actions:
+    - text: Get started
+      link: /getting-started/what-is-arca/
+      variant: primary
+    - text: Install with Docker
+      link: /getting-started/install/
+      variant: secondary
+---
+
+## What Arca does for you
+
+<div class="tile-grid">
+  <div class="tile">
+    <span class="tile__chip tile__chip--mint">See where you stand</span>
+    <h3>One calm number</h3>
+    <p>Safe to spend is your budget minus what you've spent and the bills still to come. Home shows it first, with the sum underneath.</p>
+  </div>
+  <div class="tile">
+    <span class="tile__chip tile__chip--sky">No busywork</span>
+    <h3>Transactions come in by themselves</h3>
+    <p>Connect your bank, or drop in a CSV export. Rules and merchants file most transactions for you, and Arca remembers what you teach it.</p>
+  </div>
+  <div class="tile">
+    <span class="tile__chip tile__chip--lilac">Plan ahead</span>
+    <h3>Budget, bills, debts and goals</h3>
+    <p>Split your income into needs, wants and savings, see every bill before it lands, and watch debts shrink and goals fill up.</p>
+  </div>
+  <div class="tile">
+    <span class="tile__chip tile__chip--butter">Look ahead</span>
+    <h3>A forecast that warns you</h3>
+    <p>See where your balance goes over the next 30 days or 3 months, and get a heads-up before you run short.</p>
+  </div>
+  <div class="tile">
+    <span class="tile__chip tile__chip--peach">Yours</span>
+    <h3>On your own server</h3>
+    <p>One small database in one folder. No cloud account, no tracking. Several people in a household, two-factor sign-in and an app lock.</p>
+  </div>
+  <div class="tile">
+    <span class="tile__chip tile__chip--rose">Everywhere</span>
+    <h3>Desktop and phone</h3>
+    <p>Light and dark, English and Dutch. Add it to your phone's home screen and it opens like an app.</p>
+  </div>
+</div>
+
+## Start here
+
+import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+
+<CardGrid>
+  <LinkCard title="Install Arca" description="Docker, Docker Compose or Unraid, in a few minutes." href="/Arca/getting-started/install/" />
+  <LinkCard title="Your first run" description="What the setup asks, and what you can skip." href="/Arca/getting-started/first-run/" />
+  <LinkCard title="Connect your bank" description="Let transactions come in by themselves every day." href="/Arca/transactions/bank-connection/" />
+  <LinkCard title="Questions and fixes" description="Wrong amounts, duplicates, a forgotten PIN and more." href="/Arca/help/faq/" />
+</CardGrid>

@@ -149,7 +149,9 @@ export type TipAnchor =
   // Merchant-first rules: Needs a category's Worth teaching strip
   | "reviewTeach"
   // Import: the Bank connection card at the top of the page
-  | "importBank";
+  | "importBank"
+  // The Settings page: the Help row (the online guide)
+  | "settingsHelp";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

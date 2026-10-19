@@ -13,7 +13,10 @@
 <p align="center">
   <a href="https://github.com/damianeickhoff/Arca/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/damianeickhoff/Arca"></a>
   <a href="https://hub.docker.com/r/damianeickhoff/arca"><img alt="Docker pulls" src="https://img.shields.io/docker/pulls/damianeickhoff/arca"></a>
+  <a href="https://damianeickhoff.github.io/Arca/"><img alt="Documentation" src="https://img.shields.io/badge/docs-user%20guide-111113"></a>
 </p>
+
+<p align="center">📖 <b><a href="https://damianeickhoff.github.io/Arca/">Documentation</a></b>: install, first run, bank connection, budgets and more, in plain language.</p>
 
 > **Work in progress.** Arca is actively developed and may get frequent updates and the occasional breaking change. Back up your `/data` folder before updating.
 
@@ -135,6 +138,8 @@ docker pull damianeickhoff/arca:latest
 Then recreate the container, keeping `/data`. New database columns are added automatically on start. On Unraid, **Check for updates** in the Docker tab picks up a new `latest`.
 
 ## 🆘 Support
+
+Start with the [user guide](https://damianeickhoff.github.io/Arca/): it covers installing and updating, every page of the app, and [common questions](https://damianeickhoff.github.io/Arca/help/faq/). See the [roadmap](https://damianeickhoff.github.io/Arca/roadmap/) for what's coming.
 
 Issues and feature requests: <https://github.com/damianeickhoff/Arca/issues>
 

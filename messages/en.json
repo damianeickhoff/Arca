@@ -215,9 +215,11 @@
       "hideAmounts": "Hide amounts",
       "languageHint": "Choose the language for the interface.",
       "currencyHint": "Currency symbol shown on amounts.",
-      "helpTitle": "Questions or problems?",
-      "helpBody": "Email support and we'll get back to you as soon as possible.",
-      "contactSupport": "Contact support"
+      "helpTitle": "The guide lives online",
+      "helpBody": "Step-by-step help for every part of Arca: installing, connecting your bank, budgets, the forecast and more.",
+      "openGuide": "Open the guide",
+      "reportProblem": "Report a problem or idea",
+      "reportProblemMeta": "On GitHub, where Arca is developed"
     },
     "account": {
       "photo": "Profile photo",
@@ -1512,6 +1514,10 @@
     "importBankFirst": {
       "title": "Your bank comes first",
       "body": "Import now starts with your bank connection and shows when it last synced. A CSV file still works: upload it below."
+    },
+    "helpGuide": {
+      "title": "Help is one tap away",
+      "body": "The Arca guide explains every page step by step. Open Help any time to find it, or to report a problem or idea."
     }
   },
   "categoryPicker": {

@@ -1,0 +1,68 @@
+---
+// The landing page hero, drawn like the app's black "hero" card (Safe to spend):
+// one promise, one short line, a primary pill and a secondary outline pill.
+// Content comes from the `hero` frontmatter of src/content/docs/index.mdx.
+import { Image } from "astro:assets";
+
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline, image, actions = [] } = data.hero || {};
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const withBase = (href: string) =>
+  href.startsWith("/") && !href.startsWith(base + "/") ? base + href : href;
+
+let light: ImageMetadata | undefined;
+let dark: ImageMetadata | undefined;
+if (image && "dark" in image) {
+  light = image.light;
+  dark = image.dark;
+} else if (image && "file" in image) {
+  light = image.file;
+}
+---
+
+<section class="arca-hero">
+  <div class="arca-hero__copy">
+    <p class="arca-hero__eyebrow">Arca · self-hosted personal finance</p>
+    <h1 id="_top" data-page-title set:html={title} />
+    {tagline && <p class="arca-hero__tagline" set:html={tagline} />}
+    {
+      actions.length > 0 && (
+        <div class="arca-hero__actions">
+          {actions.map(({ link, text, variant }) => (
+            <a
+              class:list={["arca-pill", variant === "primary" ? "arca-pill--hero" : "arca-pill--outline"]}
+              href={withBase(link)}
+            >
+              {text}
+            </a>
+          ))}
+        </div>
+      )
+    }
+  </div>
+  {
+    light && (
+      <div class="arca-hero__shot">
+        <Image
+          src={light}
+          alt={image?.alt ?? ""}
+          widths={[640, 960, 1280]}
+          sizes="(min-width: 72rem) 640px, 100vw"
+          loading="eager"
+          class:list={{ "arca-shot": true, "dark:sl-hidden": Boolean(dark) }}
+        />
+        {dark && (
+          <Image
+            src={dark}
+            alt={image?.alt ?? ""}
+            widths={[640, 960, 1280]}
+            sizes="(min-width: 72rem) 640px, 100vw"
+            loading="eager"
+            class="arca-shot light:sl-hidden"
+          />
+        )}
+      </div>
+    )
+  }
+</section>

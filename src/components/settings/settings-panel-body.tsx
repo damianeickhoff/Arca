@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { IconChevronRight, IconHelpCircle } from "@tabler/icons-react";
+import { IconBook2, IconBug, IconExternalLink } from "@tabler/icons-react";
 import type { User } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
@@ -19,6 +19,10 @@ import { CurrencyList } from "@/components/currency-switcher";
 import { PrivacyToggle } from "@/components/privacy-toggle";
 import { AiSettingsPanel } from "@/components/settings/ai-settings-panel";
 import { BankConnectionSection } from "@/components/settings/bank-connection-section";
+import { clearButtonVariants } from "@/components/clear/button-variants";
+import { IconTile } from "@/components/clear/icon-tile";
+import { ListRow } from "@/components/clear/list-row";
+import { DOCS_URL, ISSUES_URL } from "@/lib/links";
 
 export interface SettingsPanelSettings {
   financialMonth: FinancialMonthConfig;
@@ -131,20 +135,32 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
       );
 
     case "help":
+      // The guide lives online (the docs site); problems and ideas go to GitHub.
       return (
         <div className="px-4 pt-4 space-y-3">
-          <div className="rounded-clear-tile bg-clear-tile p-5">
-            <p className="mb-1 text-sm font-bold text-clear-ink">{t("helpTitle")}</p>
-            <p className="text-sm text-clear-ink-2">{t("helpBody")}</p>
+          <div className="flex flex-col items-start gap-4 rounded-clear-tile bg-clear-tile p-5">
+            <div>
+              <p className="mb-1 text-[15px] font-bold text-clear-ink">{t("helpTitle")}</p>
+              <p className="text-sm text-clear-ink-2">{t("helpBody")}</p>
+            </div>
+            <a
+              href={DOCS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className={clearButtonVariants({ variant: "primary", size: "md", className: "no-underline" })}
+            >
+              <IconBook2 aria-hidden />
+              {t("openGuide")}
+            </a>
           </div>
-          <a
-            href="mailto:support@arca.app"
-            className="flex items-center gap-3.5 rounded-clear-tile bg-clear-tile px-4 py-3.5 no-underline transition-colors hover:opacity-90"
-          >
-            <IconHelpCircle className="size-5 shrink-0 text-clear-ink" />
-            <span className="flex-1 text-sm font-bold text-clear-ink">{t("contactSupport")}</span>
-            <IconChevronRight className="size-4 text-clear-muted" />
-          </a>
+          <ListRow
+            href={ISSUES_URL}
+            external
+            icon={<IconTile tone="peach" size="sm"><IconBug stroke={1.9} /></IconTile>}
+            title={t("reportProblem")}
+            meta={t("reportProblemMeta")}
+            trailing={<IconExternalLink size={18} stroke={2} aria-hidden className="text-clear-placeholder" />}
+          />
         </div>
       );
 

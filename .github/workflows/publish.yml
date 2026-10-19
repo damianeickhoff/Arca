@@ -13,7 +13,7 @@ on:
   push:
     branches: ["**"]
     tags: ["v*"]
-    paths-ignore: ["**.md", "unraid/**", "docs/**"]
+    paths-ignore: ["**.md", "unraid/**", "docs/**", "website/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 concurrency:

@@ -14,6 +14,7 @@ export function ListRow({
   meta,
   trailing,
   href,
+  external = false,
   onClick,
   selected = false,
   className,
@@ -23,6 +24,8 @@ export function ListRow({
   meta?: React.ReactNode;
   trailing?: React.ReactNode;
   href?: string;
+  /** With `href`: a page outside the app, opened in a new tab. */
+  external?: boolean;
   onClick?: () => void;
   selected?: boolean;
   className?: string;
@@ -44,6 +47,13 @@ export function ListRow({
     className,
   );
 
+  if (href && external) {
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className={cls}>
+        {body}
+      </a>
+    );
+  }
   if (href) {
     return (
       <Link href={href} className={cls} aria-current={selected ? "true" : undefined}>
