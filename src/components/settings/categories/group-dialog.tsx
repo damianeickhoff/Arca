@@ -17,7 +17,8 @@ import { ClearField, ClearInput } from "@/components/clear/field";
 import { Segmented } from "@/components/clear/segmented";
 import { FIELD_LABEL } from "@/app/settings/account-edit-dialogs";
 import { SettingsNotice } from "@/components/settings/settings-ui";
-import { BudgetTypeField, DEFAULT_CATEGORY_COLOR } from "@/components/settings/categories/category-form-parts";
+import { BudgetTypeField, DEFAULT_CATEGORY_COLOR, nameConflictFrom, useNameConflictMessage } from "@/components/settings/categories/category-form-parts";
+import { findNameConflict, type NameConflict } from "@/lib/category-name-conflict";
 import { normalizeBudgetType } from "@/lib/format";
 
 const KINDS = ["", "savings", "income"] as const;
@@ -32,25 +33,28 @@ export function GroupDialog({
   open,
   onClose,
   group,
+  categories,
   categoryCount = 0,
 }: {
   open: boolean;
   onClose: () => void;
   /** The group being edited; null for a new group. */
   group: Category | null;
+  /** Every group and category, to flag a name that's already taken while typing. */
+  categories: Category[];
   categoryCount?: number;
 }) {
   const t = useTranslations("settings.categories.groupDialog");
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent hideHeaderRow title={group ? t("editTitle") : t("newTitle")} className="gap-[18px] pt-6 font-clear text-clear-ink" sheetClassName="lg:max-w-[600px]">
-        <GroupForm key={group?.id ?? "new"} group={group} categoryCount={categoryCount} onClose={onClose} />
+        <GroupForm key={group?.id ?? "new"} group={group} categories={categories} categoryCount={categoryCount} onClose={onClose} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function GroupForm({ group, categoryCount, onClose }: { group: Category | null; categoryCount: number; onClose: () => void }) {
+function GroupForm({ group, categories, categoryCount, onClose }: { group: Category | null; categories: Category[]; categoryCount: number; onClose: () => void }) {
   const t = useTranslations("settings.categories.groupDialog");
   const tCat = useTranslations("settings.categories");
   const router = useRouter();
@@ -65,8 +69,16 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
   const [kind, setKind] = useState<Kind>((KINDS as readonly string[]).includes(group?.group ?? "") ? (group?.group as Kind) ?? "" : "");
   const [budgetType, setBudgetType] = useState<string>(normalizeBudgetType(group?.budgetType ?? null) || "willen");
 
+  // A name already used in the chosen kind is flagged while typing (the group's own
+  // categories move along, so they don't count); the API's 409 is the fallback and
+  // also catches one of its categories clashing when the kind changes.
+  const describeConflict = useNameConflictMessage();
+  const [serverConflict, setServerConflict] = useState<NameConflict | null>(null);
+  const others = group ? categories.filter((c) => c.id !== group.id && c.parentCategoryId !== group.id) : categories;
+  const nameError = describeConflict(findNameConflict(others, { name, kind }) ?? serverConflict);
+
   async function save() {
-    if (!name.trim()) return;
+    if (!name.trim() || nameError) return;
     setBusy(true);
     setError(null);
     const body = { name: name.trim(), icon, color, group: kind, budgetType };
@@ -77,7 +89,9 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
     }).catch(() => null);
     setBusy(false);
     if (!res?.ok) {
-      setError(t("saveError"));
+      const conflict = await nameConflictFrom(res);
+      if (conflict) setServerConflict(conflict);
+      else setError(t("saveError"));
       return;
     }
     router.refresh();
@@ -116,8 +130,8 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
         closeLabel={tCat("close")}
       />
 
-      <ClearField label={tCat("name")} htmlFor={`${ids}-name`}>
-        <ClearInput id={`${ids}-name`} autoFocus={!group} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} autoComplete="off" />
+      <ClearField label={tCat("name")} htmlFor={`${ids}-name`} error={nameError}>
+        <ClearInput id={`${ids}-name`} autoFocus={!group} value={name} onChange={(e) => { setName(e.target.value); setServerConflict(null); }} placeholder={t("namePlaceholder")} autoComplete="off" aria-invalid={nameError ? true : undefined} />
       </ClearField>
 
       <div className="flex flex-col gap-2.5">
@@ -148,7 +162,7 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
           surface="tile"
           size="sm"
           value={kindKey}
-          onChange={(v) => setKind(v === "spending" ? "" : v)}
+          onChange={(v) => { setKind(v === "spending" ? "" : v); setServerConflict(null); }}
           className="w-full [&>button]:flex-1"
           items={(["spending", "savings", "income"] as const).map((k) => ({ value: k, label: t(`kinds.${k}`) }))}
         />
@@ -177,7 +191,7 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
           }
         >
           <ClearButton variant="secondary" onClick={onClose}>{tCat("cancel")}</ClearButton>
-          <ClearButton onClick={save} disabled={busy || !name.trim()}>
+          <ClearButton onClick={save} disabled={busy || !name.trim() || !!nameError}>
             {busy ? tCat("saving") : group ? tCat("save") : t("create")}
           </ClearButton>
         </ClearDialogFooter>

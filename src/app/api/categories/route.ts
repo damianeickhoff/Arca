@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { budgetTargets, categories, categoryRules, recurringItems, transactions, transactionSplits } from "@/db/schema";
 import { asc, eq, inArray } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
+import { findNameConflict, type NameConflict, type NameConflictResponse } from "@/lib/category-name-conflict";
 
 export async function GET() {
   const denied = await requireAuth();
@@ -22,6 +23,19 @@ async function findGroup(groupId: unknown) {
   if (typeof groupId !== "number") return null;
   const [group] = await db.select().from(categories).where(eq(categories.id, groupId));
   return group?.isGroup ? group : null;
+}
+
+/** A 409 when a name is already taken in that kind (see findNameConflict), checked
+ *  before the insert/update so the unique index never turns it into a 500. */
+async function nameTaken(name: string, kind: string, excludeIds: number[] = []): Promise<NextResponse | null> {
+  const rows = (await db.select().from(categories)).filter((r) => !excludeIds.includes(r.id));
+  return conflictResponse(findNameConflict(rows, { name, kind }));
+}
+
+function conflictResponse(conflict: NameConflict | null) {
+  if (!conflict) return null;
+  const body: NameConflictResponse = { error: "exists", ...conflict };
+  return NextResponse.json(body, { status: 409 });
 }
 
 /** Only the fields a caller may set; isDefault and isGroup are never taken from a body. */
@@ -46,6 +60,8 @@ export async function POST(req: NextRequest) {
 
   // A new group.
   if (body.isGroup === true) {
+    const taken = await nameTaken(data.name, data.group ?? "");
+    if (taken) return taken;
     const [row] = await db.insert(categories).values({ ...data, name: data.name, group: data.group ?? "", isGroup: true, parentCategoryId: null, isDefault: false }).returning();
     return NextResponse.json(row, { status: 201 });
   }
@@ -54,6 +70,8 @@ export async function POST(req: NextRequest) {
   // given one, its kind.
   const group = await findGroup(body.parentCategoryId);
   if (!group) return NextResponse.json({ error: "Pick the group this category belongs to" }, { status: 400 });
+  const taken = await nameTaken(data.name, data.group ?? group.group);
+  if (taken) return taken;
   const [row] = await db
     .insert(categories)
     .values({ ...data, name: data.name, group: data.group ?? group.group, color: group.color, parentCategoryId: group.id, isGroup: false, isDefault: false })
@@ -80,7 +98,22 @@ export async function PATCH(req: NextRequest) {
   if (!current) return NextResponse.json({ error: "Category not found" }, { status: 404 });
   const data = editable(body);
 
+  if (data.name === "") return NextResponse.json({ error: "A name is required" }, { status: 400 });
+
   if (current.isGroup) {
+    // The group's name, and its categories' names when its kind changes, must be free
+    // in the (new) kind.
+    const kind = data.group ?? current.group;
+    if (data.name !== undefined || kind !== current.group) {
+      const all = await db.select().from(categories);
+      const children = all.filter((r) => r.parentCategoryId === current.id);
+      const others = all.filter((r) => r.id !== current.id && r.parentCategoryId !== current.id);
+      const conflict =
+        findNameConflict(others, { name: data.name ?? current.name, kind }) ??
+        (kind !== current.group ? children.map((c) => findNameConflict(others, { name: c.name, kind })).find(Boolean) ?? null : null);
+      const taken = conflictResponse(conflict);
+      if (taken) return taken;
+    }
     // A group's colour and kind are its categories' too.
     const row = db.transaction((tx) => {
       const [updated] = tx.update(categories).set(data).where(eq(categories.id, current.id)).returning().all();
@@ -99,6 +132,11 @@ export async function PATCH(req: NextRequest) {
   const group = await findGroup(groupId);
   if (!group) return NextResponse.json({ error: "Pick the group this category belongs to" }, { status: 400 });
   const moved = group.id !== current.parentCategoryId;
+  const kind = data.group ?? (moved ? group.group : current.group);
+  if (data.name !== undefined || kind !== current.group) {
+    const taken = await nameTaken(data.name ?? current.name, kind, [current.id]);
+    if (taken) return taken;
+  }
   const [row] = await db
     .update(categories)
     .set({ ...data, parentCategoryId: group.id, color: group.color, ...(moved && !("group" in data) ? { group: group.group } : {}) })

@@ -12,7 +12,8 @@ import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { SettingsNotice } from "@/components/settings/settings-ui";
-import { BudgetTypeField, CategoryRuleList, GroupField, groupDefaultBudgetType } from "@/components/settings/categories/category-form-parts";
+import { BudgetTypeField, CategoryRuleList, GroupField, groupDefaultBudgetType, nameConflictFrom, useNameConflictMessage } from "@/components/settings/categories/category-form-parts";
+import { findNameConflict, type NameConflict } from "@/lib/category-name-conflict";
 import { RuleDialog, emptyRuleDraft, moveRuleMatches, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
 import { useSaveRule } from "@/components/rule-actions";
 
@@ -97,7 +98,15 @@ function NewCategoryForm({
   const effectiveColor = group?.color ?? null;
   const isIncome = group?.group === "income";
 
+  // A name already used in this kind is flagged while typing; the API's 409 is the
+  // fallback for a clash this list didn't know about yet.
+  const describeConflict = useNameConflictMessage();
+  const [serverConflict, setServerConflict] = useState<NameConflict | null>(null);
+  const localConflict = group ? findNameConflict(categories, { name, kind: group.group }) : null;
+  const nameError = describeConflict(localConflict ?? serverConflict);
+
   function pickGroup(id: number) {
+    setServerConflict(null);
     setGroupId(id);
     if (!typeTouched) setBudgetType(groupDefaultBudgetType(groupById(id)));
   }
@@ -126,7 +135,7 @@ function NewCategoryForm({
   const sendRule = useSaveRule();
 
   async function save() {
-    if (!name.trim() || groupId == null) return;
+    if (!name.trim() || groupId == null || nameError) return;
     setBusy(true);
     setError(null);
     try {
@@ -135,7 +144,14 @@ function NewCategoryForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim(), budgetType, icon, parentCategoryId: groupId }),
       });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        const conflict = await nameConflictFrom(res);
+        if (conflict) {
+          setServerConflict(conflict);
+          return;
+        }
+        throw new Error(String(res.status));
+      }
       if (rules.length > 0) {
         const created = await res.json();
         // One that already files elsewhere asks before it moves; a Cancel leaves it out.
@@ -177,8 +193,8 @@ function NewCategoryForm({
         closeLabel={t("close")}
       />
 
-      <ClearField label={t("name")} htmlFor={`${ids}-name`}>
-        <ClearInput id={`${ids}-name`} autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} autoComplete="off" />
+      <ClearField label={t("name")} htmlFor={`${ids}-name`} error={nameError}>
+        <ClearInput id={`${ids}-name`} autoFocus value={name} onChange={(e) => { setName(e.target.value); setServerConflict(null); }} placeholder={t("namePlaceholder")} autoComplete="off" aria-invalid={nameError ? true : undefined} />
       </ClearField>
 
       <GroupField id={`${ids}-group`} categories={categories} value={groupId} onChange={pickGroup} />
@@ -211,7 +227,7 @@ function NewCategoryForm({
       <ClearDialogFooterDock className="border-t border-clear-ground pt-[18px] pb-1">
         <ClearDialogFooter>
           <ClearButton variant="secondary" onClick={onClose}>{t("cancel")}</ClearButton>
-          <ClearButton onClick={save} disabled={busy || !name.trim() || groupId == null}>
+          <ClearButton onClick={save} disabled={busy || !name.trim() || groupId == null || !!nameError}>
             {busy ? t("saving") : t("create")}
           </ClearButton>
         </ClearDialogFooter>

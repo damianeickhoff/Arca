@@ -12,6 +12,7 @@ import { RowIconButton, SettingsEmpty } from "@/components/settings/settings-ui"
 import { normalizeBudgetType, ruleAmountLabel } from "@/lib/format";
 import { compareGroups } from "@/lib/category-tree";
 import { ClearSelect } from "@/components/settings/accounts/clear-select";
+import { isNameConflictResponse, type NameConflict } from "@/lib/category-name-conflict";
 
 // Pieces shared by the new-category dialog (category-client.tsx) and the category
 // editor (category-settings-client.tsx).
@@ -136,4 +137,22 @@ export function CategoryRuleList({
       </ClearButton>
     </div>
   );
+}
+
+/** "A category named X already exists in Y" / "A group named X already exists" for a
+ *  name clash (findNameConflict, or the API's 409); null when there is none. */
+export function useNameConflictMessage() {
+  const t = useTranslations("settings.categories");
+  return (conflict: NameConflict | null) => {
+    if (!conflict) return null;
+    if (conflict.isGroup) return t("existsGroup", { name: conflict.name });
+    return conflict.where ? t("existsCategory", { name: conflict.name, where: conflict.where }) : t("existsCategoryNoGroup", { name: conflict.name });
+  };
+}
+
+/** The clash a failed save answered with (409), or null for any other failure. */
+export async function nameConflictFrom(res: Response | null): Promise<NameConflict | null> {
+  if (res?.status !== 409) return null;
+  const body: unknown = await res.json().catch(() => null);
+  return isNameConflictResponse(body) ? { name: body.name, isGroup: body.isGroup, where: body.where } : null;
 }
