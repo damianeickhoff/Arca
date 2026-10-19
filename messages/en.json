@@ -1492,6 +1492,10 @@
     "automations": {
       "title": "All your rules in one list",
       "body": "See what each merchant and rule decides, spot rules that fight, and Test a change on the last 90 days before it is applied."
+    },
+    "quickAdd": {
+      "title": "Add from anywhere",
+      "body": "The + next to search (the orange button on phones) adds a transaction, recurring bill, debt, goal or category without leaving the page you are on. Ctrl/Cmd+N opens it too."
     }
   },
   "categoryPicker": {
@@ -2680,7 +2684,6 @@
       "goals": "Goals"
     },
     "insights": "Insights",
-    "addTransaction": "Add transaction",
     "search": "Search",
     "searchShortcut": "⌘K",
     "needsReviewBadge": "{count, plural, one {# transaction needs a category} other {# transactions need a category}}",
@@ -2694,7 +2697,31 @@
       "dark": "Dark",
       "cycle": "Theme: {mode}. Tap to switch"
     },
-    "searchEverything": "Search everything"
+    "searchEverything": "Search everything",
+    "quickAdd": {
+      "title": "Add",
+      "buttonLabel": "Add something ({shortcut})",
+      "transaction": {
+        "title": "Transaction",
+        "meta": "An expense, income or transfer"
+      },
+      "recurring": {
+        "title": "Recurring bill",
+        "meta": "A bill, subscription or income that repeats"
+      },
+      "debt": {
+        "title": "Debt",
+        "meta": "Money you owe or are owed"
+      },
+      "goal": {
+        "title": "Goal",
+        "meta": "Save towards something or cap a category"
+      },
+      "category": {
+        "title": "Category",
+        "meta": "A new category in one of your groups"
+      }
+    }
   },
   "insights": {
     "title": "Insights",

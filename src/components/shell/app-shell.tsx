@@ -12,6 +12,7 @@ import { useTheme, type ThemeMode } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS, PLAN_ITEMS, activeNavKey, activePlanKey, isChromeless, type NavItem } from "@/components/shell/nav-config";
 import { SearchProvider, useGlobalSearch } from "@/components/shell/search-context";
+import { QuickAddMenu, QuickAddProvider } from "@/components/shell/quick-add";
 import { BrandMark } from "@/components/clear/brand-mark";
 import { ConfirmProvider } from "@/components/clear/confirm-dialog";
 import { INSIGHTS_TABS, INSIGHTS_TAB_LABEL_KEY } from "@/app/reports/reports-tabs";
@@ -26,13 +27,14 @@ export interface ShellUser {
 // The Clear app shell — one responsive implementation, no separate mobile files.
 //
 //   Desktop (lg+): a floating white sidebar on the left — the logo, who is signed in,
-//   "Search everything" (the global search, also Ctrl/Cmd+K), the four destinations
+//   "Search everything" (the global search, also Ctrl/Cmd+K) with the "+" beside it
+//   (the add menu, also Ctrl/Cmd+N — see quick-add.tsx), the four destinations
 //   (Plan opens its Budget · Debts · Goals sub-menu while one of them is showing,
 //   Insights its five tabs while it is open, Activity carries the needs-a-category
 //   count), then Import CSV,
 //   Settings, the theme and Sign out. Pages sit to its right (MainContent).
 //   Phones (< lg): a floating black tab bar with the four destinations, the ember
-//   add button in the middle and, set apart at the end, the global search button.
+//   add button (the same add menu) in the middle and, set apart at the end, the global search button.
 //   Search lives in the shell rather than in page headers so it never reads as
 //   "search this page".
 //
@@ -57,18 +59,23 @@ export function AppShell({
     <SearchProvider enabled={!chromeless}>
       {/* The one confirm dialog behind useConfirm() (components/clear/confirm-dialog). */}
       <ConfirmProvider>
-        {children}
-        {!chromeless && (
-          <>
-            <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} user={user!} needsReviewCount={needsReviewCount} />
-            {!navHidden && <PhoneTabBar pathname={pathname} />}
-            {/* The navigation changed; it announces itself once, even to someone who
-                turned tips off (see IGNORES_DISABLED). */}
-            <AnchoredTip id="clearNavigation" anchor="mainNav" active={!navHidden} />
-            {/* Search moved out of the page headers into the shell. */}
-            <AnchoredTip id="globalSearch" anchor={isDesktop ? "globalSearch" : "globalSearchPhone"} active={!navHidden} />
-          </>
-        )}
+        {/* The global "+" — its menu and the create dialogs it opens (shell/quick-add). */}
+        <QuickAddProvider enabled={!chromeless}>
+          {children}
+          {!chromeless && (
+            <>
+              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} user={user!} needsReviewCount={needsReviewCount} />
+              {!navHidden && <PhoneTabBar pathname={pathname} />}
+              {/* The navigation changed; it announces itself once, even to someone who
+                  turned tips off (see IGNORES_DISABLED). */}
+              <AnchoredTip id="clearNavigation" anchor="mainNav" active={!navHidden} />
+              {/* Search moved out of the page headers into the shell. */}
+              <AnchoredTip id="globalSearch" anchor={isDesktop ? "globalSearch" : "globalSearchPhone"} active={!navHidden} />
+              {/* Adding moved into the shell too. */}
+              <AnchoredTip id="quickAdd" anchor={isDesktop ? "quickAdd" : "quickAddPhone"} active={!navHidden} />
+            </>
+          )}
+        </QuickAddProvider>
       </ConfirmProvider>
     </SearchProvider>
   );
@@ -135,7 +142,10 @@ function DesktopSidebar({
         </span>
       </Link>
 
-      <SidebarSearch />
+      <div className="flex shrink-0 items-center gap-2">
+        <SidebarSearch />
+        <SidebarAdd />
+      </div>
 
       <span aria-hidden className="h-px bg-clear-line" />
 
@@ -241,13 +251,19 @@ function PhoneTabBar({ pathname }: { pathname: string }) {
     >
       <PhoneTab item={first} active={first.key === active} label={t(first.key)} />
       <PhoneTab item={second} active={second.key === active} label={t(second.key)} />
-      <Link
-        href="/transactions/add"
-        aria-label={t("addTransaction")}
-        className="inline-flex size-[54px] shrink-0 items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink transition-transform active:scale-95"
-      >
-        <IconPlus size={24} stroke={2.6} />
-      </Link>
+      <QuickAddMenu
+        placement="phone"
+        trigger={
+          <button
+            type="button"
+            aria-label={t("quickAdd.title")}
+            data-tip-anchor="quickAddPhone"
+            className="inline-flex size-[54px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink transition-transform active:scale-95"
+          >
+            <IconPlus size={24} stroke={2.6} />
+          </button>
+        }
+      />
       {rest.map((item) => (
         <PhoneTab key={item.key} item={item} active={item.key === active} label={t(item.key)} />
       ))}
@@ -276,11 +292,11 @@ function PhoneTab({ item, active, label }: { item: NavItem; active: boolean; lab
 
 // "⌘K" on Apple devices, "Ctrl K" elsewhere (and on the server, before hydration).
 const subscribeNever = () => () => {};
-function useShortcutLabel() {
+function useShortcutLabel(key: string) {
   return useSyncExternalStore(
     subscribeNever,
-    () => (/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl K"),
-    () => "Ctrl K",
+    () => (/Mac|iPhone|iPad/.test(navigator.platform) ? `⌘${key}` : `Ctrl ${key}`),
+    () => `Ctrl ${key}`,
   );
 }
 
@@ -288,18 +304,41 @@ function useShortcutLabel() {
 function SidebarSearch() {
   const t = useTranslations("nav");
   const { openSearch } = useGlobalSearch();
-  const shortcut = useShortcutLabel();
+  const shortcut = useShortcutLabel("K");
   return (
     <button
       type="button"
       onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
       data-tip-anchor="globalSearch"
-      className="flex h-10 w-full shrink-0 cursor-pointer items-center gap-2.5 rounded-full bg-clear-tile pl-4 pr-2 text-left text-sm font-semibold text-clear-muted transition-colors hover:bg-clear-line hover:text-clear-ink [@media(min-height:900px)]:h-11"
+      className="flex h-10 min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-full bg-clear-tile pl-4 pr-2 text-left text-sm font-semibold text-clear-muted transition-colors hover:bg-clear-line hover:text-clear-ink [@media(min-height:900px)]:h-11"
     >
       <IconSearch size={18} stroke={2} aria-hidden />
       <span className="min-w-0 flex-1 truncate">{t("searchEverything")}</span>
       <kbd className="rounded-md bg-clear-card px-1.5 py-0.5 font-clear text-xs font-bold text-clear-muted">{shortcut}</kbd>
     </button>
+  );
+}
+
+/** The sidebar's global "+", beside search: opens the add menu (also Ctrl/Cmd+N). */
+function SidebarAdd() {
+  const t = useTranslations("nav.quickAdd");
+  const shortcut = useShortcutLabel("N");
+  return (
+    <QuickAddMenu
+      placement="desktop"
+      trigger={
+        <button
+          type="button"
+          aria-label={t("buttonLabel", { shortcut })}
+          title={t("buttonLabel", { shortcut })}
+          aria-keyshortcuts="Control+N Meta+N"
+          data-tip-anchor="quickAdd"
+          className="inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink transition-transform active:scale-95 [@media(min-height:900px)]:size-11"
+        >
+          <IconPlus size={20} stroke={2.4} aria-hidden />
+        </button>
+      }
+    />
   );
 }
 

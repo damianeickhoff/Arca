@@ -36,33 +36,53 @@ export function NewCategoryButton({
   ariaLabel?: string;
   children: React.ReactNode;
 }) {
-  const t = useTranslations("settings.categories");
   const [open, setOpen] = useState(false);
-  // Bumped per opening, so every opening starts from a blank form.
-  const [session, setSession] = useState(0);
 
   return (
     <>
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        onClick={() => { setSession((n) => n + 1); setOpen(true); }}
-        className={className}
-      >
+      <button type="button" aria-label={ariaLabel} onClick={() => setOpen(true)} className={className}>
         {children}
       </button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent hideHeaderRow title={t("newTitle")} className="gap-[18px] pt-6 font-clear text-clear-ink" sheetClassName="lg:max-w-[600px]">
-          <NewCategoryForm
-            key={session}
-            categories={categories}
-            banks={banks}
-            defaultParentId={defaultParentId}
-            onClose={() => setOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <NewCategoryDialog open={open} onOpenChange={setOpen} categories={categories} banks={banks} defaultParentId={defaultParentId} />
     </>
+  );
+}
+
+/** The New category dialog itself — opened by NewCategoryButton and the shell's add menu. */
+export function NewCategoryDialog({
+  open,
+  onOpenChange,
+  categories,
+  banks,
+  defaultParentId = null,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  categories: Category[];
+  banks: Bank[];
+  defaultParentId?: number | null;
+}) {
+  const t = useTranslations("settings.categories");
+  // Bumped per opening, so every opening starts from a blank form.
+  const [session, setSession] = useState(0);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setSession((n) => n + 1);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent hideHeaderRow title={t("newTitle")} className="gap-[18px] pt-6 font-clear text-clear-ink" sheetClassName="lg:max-w-[600px]">
+        <NewCategoryForm
+          key={session}
+          categories={categories}
+          banks={banks}
+          defaultParentId={defaultParentId}
+          onClose={() => onOpenChange(false)}
+        />
+      </DialogContent>
+    </Dialog>
   );
 }
 
