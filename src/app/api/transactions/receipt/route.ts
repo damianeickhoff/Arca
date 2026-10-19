@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink, mkdir } from "fs/promises";
+import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import { db } from "@/db";
 import { transactions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
+import { getReceiptsDir, migrateLegacyReceipts, receiptFilenameFromUrl } from "@/lib/data-dir";
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "receipts");
+// Receipt photos live in the persisted data dir (see src/lib/data-dir.ts) and are served
+// behind authentication by src/app/uploads/receipts/[filename]/route.ts at the same
+// /uploads/receipts/<file> URL that transactions.receipt_url has always stored.
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+// The extension comes from the validated MIME type, never from the client's filename.
+const EXTENSION_FOR_TYPE: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
 
 export async function POST(req: NextRequest) {
   const denied = await requireAuth();
@@ -32,20 +37,19 @@ export async function POST(req: NextRequest) {
   const [existing] = await db.select({ receiptUrl: transactions.receiptUrl }).from(transactions).where(eq(transactions.id, transactionId));
   if (!existing) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
+  migrateLegacyReceipts();
+  const receiptsDir = getReceiptsDir();
 
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+  const ext = EXTENSION_FOR_TYPE[file.type] ?? "jpg";
   const filename = `${Date.now()}-${transactionId}.${ext}`;
-  const filepath = path.join(UPLOAD_DIR, filename);
+  const filepath = path.join(receiptsDir, filename);
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(filepath, buffer);
 
   // Replace: remove the old file once the new one is safely written.
-  if (existing.receiptUrl) {
-    const oldFilename = existing.receiptUrl.split("/").pop();
-    if (oldFilename) {
-      try { await unlink(path.join(UPLOAD_DIR, oldFilename)); } catch { /* already gone */ }
-    }
+  const oldFilename = receiptFilenameFromUrl(existing.receiptUrl);
+  if (oldFilename && oldFilename !== filename) {
+    try { await unlink(path.join(receiptsDir, oldFilename)); } catch { /* already gone */ }
   }
 
   const receiptUrl = `/uploads/receipts/${filename}`;
@@ -66,11 +70,10 @@ export async function DELETE(req: NextRequest) {
   const [existing] = await db.select({ receiptUrl: transactions.receiptUrl }).from(transactions).where(eq(transactions.id, transactionId));
   if (!existing) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
 
-  if (existing.receiptUrl) {
-    const filename = existing.receiptUrl.split("/").pop();
-    if (filename) {
-      try { await unlink(path.join(UPLOAD_DIR, filename)); } catch { /* already gone */ }
-    }
+  migrateLegacyReceipts();
+  const filename = receiptFilenameFromUrl(existing.receiptUrl);
+  if (filename) {
+    try { await unlink(path.join(getReceiptsDir(), filename)); } catch { /* already gone */ }
   }
 
   await db.update(transactions).set({ receiptUrl: null }).where(eq(transactions.id, transactionId));

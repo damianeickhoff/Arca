@@ -59,11 +59,7 @@ On Unraid, the **Appdata Backup** plugin can do this on a schedule for you.
 docker exec arca node -e "require('better-sqlite3')('/data/finance.db').backup('/data/finance-backup.db').then(() => console.log('Backup written'))"
 ```
 
-This writes `finance-backup.db` next to the database. Copy it off the server along with `brand-icons/` and `avatars/`.
-
-:::caution[Receipt photos]
-Receipt photos you attach to transactions are currently stored inside the container, not in `/data`. They are not part of your backup and are lost when the container is recreated during an update. Keep your own copy of receipts you need.
-:::
+This writes `finance-backup.db` next to the database. Copy it off the server along with `brand-icons/`, `avatars/` and `receipts/`.
 
 ## Restore a backup
 

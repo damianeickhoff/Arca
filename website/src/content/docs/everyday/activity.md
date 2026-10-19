@@ -80,11 +80,7 @@ Moving money from your checking account to savings isn't spending. Arca recognis
 
 ## Receipts
 
-Use **Add receipt** in a transaction's details to attach a photo of the receipt. Open it again to zoom in or download it.
-
-:::caution
-Receipt photos are currently not part of your `/data` backup. See [Updating and backups](/Arca/getting-started/updating-and-backups/#back-up-your-data).
-:::
+Use **Add receipt** in a transaction's details to attach a photo of the receipt. Open it again to zoom in or download it. Receipt photos live in `/data` with everything else, so they survive updates and are part of your [backup](/Arca/getting-started/updating-and-backups/#back-up-your-data).
 
 **Scan receipt** (on Home and in Activity) works the other way round: take a photo first and Arca fills in the merchant, amount, date and a matching category for a new transaction. You check the details before saving. Scanning needs a local AI model (Ollama) that whoever runs your server [sets up](/Arca/getting-started/install/#settings-you-can-change); without it, just type the details.
 

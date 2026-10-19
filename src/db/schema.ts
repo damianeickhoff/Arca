@@ -124,7 +124,9 @@ export const transactions = sqliteTable("transactions", {
   // the others' part, which reports subtract in net shared-cost mode before anything
   // is linked (see reimbursedAmountExpr). NULL = not a shared cost.
   sharedWithCount: integer("shared_with_count"),
-  // Path under /uploads/receipts/ for a photographed receipt/invoice, if attached.
+  // "/uploads/receipts/<file>" for a photographed receipt/invoice, if attached. The file
+  // itself lives in the data dir (src/lib/data-dir.ts getReceiptsDir()) and is served by
+  // src/app/uploads/receipts/[filename]/route.ts.
   receiptUrl: text("receipt_url"),
   // Links this transaction to a savings goal (see `goals` below, goalType = "savings").
   // The transaction's amount is added to or removed from that goal's currentAmount —

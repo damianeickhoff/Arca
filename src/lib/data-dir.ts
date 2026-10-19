@@ -24,6 +24,27 @@ export function getAvatarsDir(): string {
   return dir;
 }
 
+export function getReceiptsDir(): string {
+  const dir = path.join(getDataDir(), "receipts");
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+// Receipt photos are stored in the database as "/uploads/receipts/<file>" (the URL the
+// serving route answers on). This turns that URL back into the bare filename on disk, or
+// null when it isn't a plain filename — so a stored value can never reach outside the
+// receipts dir when the file is deleted or replaced.
+export function receiptFilenameFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const filename = url.split("/").pop() ?? "";
+  return isSafeUploadFilename(filename) ? filename : null;
+}
+
+// Only a bare filename is valid for anything under the data dir — no separators, no "..".
+export function isSafeUploadFilename(filename: string): boolean {
+  return /^[a-z0-9._-]+$/i.test(filename) && filename !== "." && filename !== "..";
+}
+
 // One-time migration: brand icons used to live under public/uploads/icons, which is
 // baked into the Docker image at build time and lost on every rebuild. Move anything
 // still sitting there into the persisted brand-icons dir. Safe to call on every boot —
@@ -45,7 +66,24 @@ export function migrateLegacyAvatars() {
   migrateLegacyDir(path.join(process.cwd(), "public", "uploads", "avatars"), getAvatarsDir());
 }
 
-function migrateLegacyDir(legacyDir: string, targetDir: string) {
+// And again for receipt photos: src/app/api/transactions/receipt/route.ts used to write into
+// public/uploads/receipts, so every receipt vanished when the container was recreated.
+let receiptsMigrated = false;
+export function migrateLegacyReceipts() {
+  if (receiptsMigrated) return;
+  receiptsMigrated = true;
+  migrateLegacyDir(path.join(process.cwd(), "public", "uploads", "receipts"), getReceiptsDir());
+}
+
+// Runs every legacy migration once at server start (see src/instrumentation.ts), so files
+// are moved into the data dir before the first request rather than on first use.
+export function migrateLegacyUploads() {
+  migrateLegacyBrandIcons();
+  migrateLegacyAvatars();
+  migrateLegacyReceipts();
+}
+
+export function migrateLegacyDir(legacyDir: string, targetDir: string) {
   let files: string[];
   try {
     files = fs.readdirSync(legacyDir);
