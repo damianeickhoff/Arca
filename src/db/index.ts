@@ -9,7 +9,7 @@ import { detectBrandIcon } from "@/lib/brand-detect";
 import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
-import { createSchema } from "./create-schema";
+import { BANK_CONNECTION_TABLES_SQL, createSchema } from "./create-schema";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
 // full schema for fresh databases — run on first start and by `npm run db:init`). Any
@@ -579,6 +579,9 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
   // parallel in Next, so an awaited-in-layout sync still races the page's own queries
   // and the first render shows stale data).
   runConfigSync(sqlite);
+
+  // Auto-migrate: the bank connection tables (Enable Banking).
+  sqlite.exec(BANK_CONNECTION_TABLES_SQL);
 
   // Brand icon rules become merchant patterns, logos and colours (one time).
   migrateBrandRulesToMerchants(sqlite);

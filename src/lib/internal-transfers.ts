@@ -46,7 +46,7 @@ const normalizedBankName = sql<string>`lower(replace(coalesce(${banks.displayNam
 export const isInternalTransferExpr = sql<boolean>`(
   ${transactions.isManualTransfer} = 1
   or (
-    ${transactions.source} = 'csv_import'
+    ${transactions.source} in ('csv_import', 'bank')
     and exists (
       select 1
       from ${banks}

@@ -7,11 +7,13 @@
 // are fetched by the browser/OS itself (SW registration, "Add to Home Screen") without a
 // session cookie, and so are /icon and /apple-icon (the manifest's icons, and the tab icon
 // on the sign-in page). /api/onboarding is the first-run account-creation endpoint, called
-// from the public /register page before any session exists.
+// from the public /register page before any session exists. /api/bank/cron is the
+// external bank-sync trigger; it checks its own BANK_SYNC_TOKEN instead of a session.
 export const PUBLIC_PATHS = [
   "/login",
   "/register",
   "/api/onboarding",
+  "/api/bank/cron",
   "/uploads",
   "/offline",
   "/sw.js",

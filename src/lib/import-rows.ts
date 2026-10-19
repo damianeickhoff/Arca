@@ -9,6 +9,7 @@ import { deriveMerchantName } from "@/lib/merchant-name";
 import { and, isNotNull, isNull, sql, eq, inArray } from "drizzle-orm";
 import type { ParsedRow } from "@/lib/bank-parsers";
 import { isValidISODate } from "@/lib/date-valid";
+import { withImportLock } from "@/lib/import-lock";
 
 export interface ImportResult {
   imported: number;
@@ -22,12 +23,22 @@ export interface ImportResult {
   newAccounts: Bank[];
 }
 
+export interface ImportOptions {
+  /** transactions.source for the new rows: "csv_import" (default) or "bank" for a bank sync. */
+  source?: "csv_import" | "bank";
+}
+
 /**
  * Inserts already-parsed rows (from any bank parser, auto-detected or manually
- * mapped) into the database — categorisation, dedup, recurring/brand-rule matching,
- * and new-account discovery are identical regardless of where the rows came from.
+ * mapped, or a bank sync) into the database — categorisation, dedup, recurring/brand-rule
+ * matching, and new-account discovery are identical regardless of where the rows came from.
  */
-export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult> {
+export function importParsedRows(rows: ParsedRow[], options: ImportOptions = {}): Promise<ImportResult> {
+  // Marked as running for the whole pass, so the bank sync waits its turn.
+  return withImportLock(() => insertRows(rows, options.source ?? "csv_import"));
+}
+
+async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Promise<ImportResult> {
   // 1. Load all category rules (highest priority).
   const rules = await db.select().from(categoryRules);
   const recurringMatchers = await loadRecurringMatchers();
@@ -140,7 +151,7 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
         merchantId,
         recurringItemId: isInternalTransfer ? null : (recurringMatch?.id ?? null),
         isReimbursement,
-        source: "csv_import",
+        source,
         importHash: row.hash,
         account: normalizeAccountNumber(row.account),
         counterAccount: normalizeAccountNumber(row.counterAccount),

@@ -135,4 +135,20 @@ describe("importParsedRows", () => {
     const [row] = await db.select().from(transactions).where(eq(transactions.importHash, first.hash));
     expect(row.reportedBalance).toBe(1000);
   });
+
+  it("stores a bank sync's rows with source bank and marks the import as running meanwhile", async () => {
+    const { importParsedRows } = await import("@/lib/import-rows");
+    const { isImportRunning } = await import("@/lib/import-lock");
+    const [first] = detectAndParse(BUNQ)!.rows;
+    const pending = importParsedRows([{ ...first, hash: "bank-sync-test" }], { source: "bank" });
+    expect(isImportRunning()).toBe(true);
+    expect(await pending).toMatchObject({ imported: 1, skipped: 0 });
+    expect(isImportRunning()).toBe(false);
+
+    const { db } = await import("@/db");
+    const { transactions } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db.select().from(transactions).where(eq(transactions.importHash, "bank-sync-test"));
+    expect(row.source).toBe("bank");
+  });
 });

@@ -97,7 +97,7 @@ export const transactions = sqliteTable("transactions", {
   merchantId: integer("merchant_id").references(() => merchants.id, { onDelete: "set null" }),
   // true = user assigned by hand; auto-rules will never overwrite
   manuallyCategorized: integer("manually_categorized", { mode: "boolean" }).notNull().default(false),
-  // manual | csv_import
+  // manual | csv_import | bank (Enable Banking sync)
   source: text("source").notNull().default("manual"),
   importHash: text("import_hash").unique(), // dedup CSV imports
   account: text("account"), // "Rekening" column from CSV; null for manual entries
@@ -425,6 +425,42 @@ export const banks = sqliteTable("banks", {
 
 export type Bank = typeof banks.$inferSelect;
 export type NewBank = typeof banks.$inferInsert;
+
+// ─── Bank connections (Enable Banking) ──────────────────────────────────────
+// One consent at one bank (an Enable Banking session), valid until `validUntil` (at
+// most 180 days). Its accounts are linked to rows in `banks`; a sync pulls their
+// transactions through the CSV import path — see src/lib/bank-sync.ts.
+export const bankConnections = sqliteTable("bank_connections", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  aspspName: text("aspsp_name").notNull(),
+  aspspCountry: text("aspsp_country").notNull(),
+  sessionId: text("session_id").notNull().unique(),
+  validUntil: text("valid_until").notNull(), // ISO timestamp from the API
+  // active | expired (the bank said the consent is gone; reconnect to renew)
+  status: text("status").notNull().default("active"),
+  lastSyncedAt: text("last_synced_at"), // ISO timestamp of the last finished sync
+  lastResult: text("last_result"), // JSON BankSyncSummary of the last sync
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export const bankConnectionAccounts = sqliteTable("bank_connection_accounts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  connectionId: integer("connection_id").notNull().references(() => bankConnections.id, { onDelete: "cascade" }),
+  accountUid: text("account_uid").notNull(), // Enable Banking's per-session account id
+  iban: text("iban"),
+  name: text("name"),
+  currency: text("currency"),
+  // The account in Centje its transactions are filed under; null = not synced.
+  bankId: integer("bank_id").references(() => banks.id, { onDelete: "set null" }),
+  // true once the user confirmed the mapping (bankId null then means "skip it").
+  mapped: integer("mapped", { mode: "boolean" }).notNull().default(false),
+  lastSyncedDate: text("last_synced_date"), // YYYY-MM-DD of the newest row seen
+}, (t) => [
+  uniqueIndex("bank_connection_accounts_uid").on(t.connectionId, t.accountUid),
+]);
+
+export type BankConnection = typeof bankConnections.$inferSelect;
+export type BankConnectionAccount = typeof bankConnectionAccounts.$inferSelect;
 
 // ─── Import profiles ──────────────────────────────────────────────────────────
 // A saved column mapping for a CSV header shape that none of the built-in bank

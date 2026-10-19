@@ -552,4 +552,34 @@ export function createSchema(sqlite: Database.Database): void {
     sqlite.exec(`ALTER TABLE merchants ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`);
   } catch { /* column already exists */ }
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions(merchant_id)`);
+
+  sqlite.exec(BANK_CONNECTION_TABLES_SQL);
 }
+
+// Bank connection (Enable Banking): one row per bank consent, one per account it gave
+// access to. Shared with the runtime auto-migrate in src/db/index.ts.
+export const BANK_CONNECTION_TABLES_SQL = `
+  CREATE TABLE IF NOT EXISTS bank_connections (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    aspsp_name     TEXT    NOT NULL,
+    aspsp_country  TEXT    NOT NULL,
+    session_id     TEXT    NOT NULL UNIQUE,
+    valid_until    TEXT    NOT NULL,
+    status         TEXT    NOT NULL DEFAULT 'active',
+    last_synced_at TEXT,
+    last_result    TEXT,
+    created_at     TEXT    DEFAULT (datetime('now'))
+  );
+  CREATE TABLE IF NOT EXISTS bank_connection_accounts (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    connection_id    INTEGER NOT NULL REFERENCES bank_connections(id) ON DELETE CASCADE,
+    account_uid      TEXT    NOT NULL,
+    iban             TEXT,
+    name             TEXT,
+    currency         TEXT,
+    bank_id          INTEGER REFERENCES banks(id) ON DELETE SET NULL,
+    mapped           INTEGER NOT NULL DEFAULT 0,
+    last_synced_date TEXT,
+    UNIQUE(connection_id, account_uid)
+  );
+`;
