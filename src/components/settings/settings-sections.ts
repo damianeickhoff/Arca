@@ -28,7 +28,7 @@ import {
 export type SettingsPanelKey =
   | "profile" | "security"
   | "accounts" | "categories" | "recurring" | "merchants"
-  | "financialMonth" | "monthOverrides" | "budgetRecurring"
+  | "financialMonth" | "budgetRecurring"
   | "import" | "importProfiles" | "dataHealth"
   | "appearance" | "privacy" | "appLock" | "language" | "currency" | "ai"
   | "help" | "users";
@@ -139,7 +139,6 @@ export function legacyTabPanel(tab: string | undefined): SettingsPanelKey | null
 /** The `?panel=` value when it names a row this user can see, else null. */
 /** Panels that were folded into another one, so their old links still land. */
 const MERGED_PANELS: Record<string, SettingsPanelKey> = {
-  monthOverrides: "financialMonth",
 };
 
 export function parseSettingsPanel(value: string | undefined, isAdmin: boolean): SettingsPanelKey | null {
