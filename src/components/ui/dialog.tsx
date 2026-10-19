@@ -11,10 +11,10 @@ import { useKeyboardHeight } from "@/lib/use-keyboard-height"
 import { useContainerScrolled } from "@/lib/use-scroll-elevation"
 import { SHEET_COLUMN } from "@/components/page-container"
 
-// Every dialog in the app is a bottom sheet, at every viewport width — there is no
-// centered-modal variant and no viewport branch. On desktop the sheet is capped to
-// a readable centred column (SHEET_COLUMN) so it rises inside the app
-// instead of spanning the whole monitor.
+// Every dialog in the app is a vaul drawer: a bottom sheet on phones and, from lg, a
+// centred modal sized to its content. The desktop open/close motion ("Settle") is
+// CSS only, in globals.css; nested panels carry data-dialog-nested so they skip the
+// lift there.
 
 // Mask for the sticky top scroll-blur (see DialogContent's scrollBlur prop): opaque
 // at the top so the blur is strongest against the header, fading to transparent below.
@@ -191,6 +191,9 @@ function DialogContent({
   // Only ever adds padding, never repositions anything — see the hook and the
   // focusin handler in <Dialog> above for why that asymmetry matters here.
   const keyboardHeight = useKeyboardHeight(true);
+  // A dialog opened from inside another one (see NestedDialogContext) animates
+  // without the lift on desktop, so stacked panels do not form a staircase.
+  const isNested = React.useContext(NestedDialogContext);
   // Drives the header row's transparent-until-scrolled backdrop below — the header
   // sits as a sibling of the scrollable content div (not nested inside it), so its
   // scroll state has to be tracked off this ref rather than auto-detected.
@@ -225,6 +228,7 @@ function DialogContent({
         // pointer-down and the focus that follows would otherwise read as "outside".
         onPointerDownOutside={keepOpenOnOutside}
         onFocusOutside={keepOpenOnOutside}
+        data-dialog-nested={isNested ? "" : undefined}
         className={cn(
           "fixed bottom-0 left-0 right-0 z-50 flex flex-col outline-none overflow-hidden will-change-transform",
           "rounded-t-clear-card bg-[var(--dialog-background)]",

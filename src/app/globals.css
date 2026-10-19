@@ -624,6 +624,72 @@ button, a, [role="button"] {
   .page-fade-in { animation: none; }
 }
 
+/* Desktop dialog motion ("Settle"). Every dialog is a vaul drawer; from lg it is a
+   centred modal, so vaul's 500ms slide from the bottom edge reads as a phone sheet.
+   From lg the panel fades in with a slight lift and scale and leaves faster.
+   Unlayered for the same reason as page-fade-in, and prefixed with :root so it
+   outranks vaul's runtime-injected rules (same specificity, injected later).
+   Radix Presence unmounts on the element's own animationend, so the 160ms close
+   really ends at 160ms; vaul's 500ms timers only fire onAnimationEnd callbacks and
+   the background-scale cleanup, neither of which keeps the panel on screen.
+   fill-mode both holds transform:none after opening, which also keeps vaul's
+   nested-dialog push-back (an inline scale + 16px lift on the parent) off the
+   parent panel on desktop, so stacked dialogs do not form a staircase. Nested
+   panels (data-dialog-nested, set in components/ui/dialog.tsx) skip the lift. */
+@keyframes clear-dialog-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes clear-dialog-out {
+  to { opacity: 0; transform: translateY(6px) scale(0.98); }
+}
+@keyframes clear-dialog-nested-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes clear-dialog-nested-out {
+  to { opacity: 0; transform: scale(0.98); }
+}
+@keyframes clear-dialog-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes clear-dialog-fade-out {
+  to { opacity: 0; }
+}
+@media (min-width: 1024px) {
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="open"] {
+    animation: clear-dialog-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="closed"] {
+    animation: clear-dialog-out 160ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="open"] {
+    animation-name: clear-dialog-nested-in;
+  }
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="closed"] {
+    animation-name: clear-dialog-nested-out;
+  }
+  :root [data-vaul-overlay][data-state="open"] {
+    animation-duration: 220ms;
+    animation-timing-function: ease-out;
+  }
+  :root [data-vaul-overlay][data-state="closed"] {
+    animation-duration: 160ms;
+    animation-timing-function: ease-in;
+  }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="open"],
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="open"] {
+    animation-name: clear-dialog-fade-in;
+  }
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-state="closed"],
+  :root [data-vaul-drawer][data-vaul-drawer-direction="bottom"][data-dialog-nested][data-state="closed"] {
+    animation-name: clear-dialog-fade-out;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
