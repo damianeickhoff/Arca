@@ -22,7 +22,7 @@ import {
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { formatCompactEur, formatEur, formatEurWhole } from "@/lib/format";
-import { simulatePayoff } from "@/lib/debt-simulate";
+import { payoffMonthsById, simulatePayoff } from "@/lib/debt-simulate";
 import type { OpenAdvance } from "@/lib/open-advances";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader } from "@/components/clear/card";
@@ -148,6 +148,9 @@ export function DebtsView({
   const order = useMemo(() => active.map((c) => c.debt.id), [active]);
   const base = useMemo(() => simulatePayoff(simDebts, 0, 600, order), [simDebts, order]);
   const sim = useMemo(() => simulatePayoff(simDebts, extra, 600, order), [simDebts, extra, order]);
+  // Each debt card's "Free in …" line: the month it reaches zero with the extra (the
+  // simulator's order), next to the month it would at the minimums.
+  const payoff = useMemo(() => ({ now: payoffMonthsById(sim), base: payoffMonthsById(base) }), [sim, base]);
   const hasRight = active.length > 0 || hasOwed;
 
   return (
@@ -175,6 +178,7 @@ export function DebtsView({
             <div className={cn("flex min-w-0 flex-col gap-5 lg:col-span-2", !hasRight && "xl:col-span-3")}>
               <YourDebtsCard
                 computed={sorted}
+                payoff={payoff}
                 sort={sort}
                 onSort={chooseSort}
                 onOpen={setSheetId}
@@ -228,6 +232,7 @@ export function DebtsView({
       <AnchoredTip id="debtsSimulator" anchor="debtsSimulator" active={active.length > 0} />
       <AnchoredTip id="debtsSortAndImpact" anchor="debtsSortAndImpact" active={active.length > 0} />
       <AnchoredTip id="debtsOwed" anchor="debtsOwed" active={hasOwed} />
+      <AnchoredTip id="debtsPayoffDates" anchor="debtsPayoffDates" active={active.length > 0} />
     </div>
   );
 }
@@ -411,8 +416,11 @@ function DebtSortMenu({ sort, onSort }: { sort: DebtSort; onSort: (sort: DebtSor
   );
 }
 
+type PayoffMonths = { now: Map<number, number | null>; base: Map<number, number | null> };
+
 function YourDebtsCard({
   computed,
+  payoff,
   sort,
   onSort,
   onOpen,
@@ -420,6 +428,7 @@ function YourDebtsCard({
   onAdd,
 }: {
   computed: ComputedDebt[];
+  payoff: PayoffMonths;
   sort: DebtSort;
   onSort: (sort: DebtSort) => void;
   onOpen: (id: number) => void;
@@ -427,6 +436,8 @@ function YourDebtsCard({
   onAdd: () => void;
 }) {
   const t = useTranslations("plan.debts");
+  // The tip points at the first open debt's "Free in …" line.
+  const firstOpen = computed.find((c) => payoff.now.has(c.debt.id))?.debt.id;
   const sortable = computed.length > 1;
   return (
     <ClearCard aria-labelledby="debts-yours-title">
@@ -452,7 +463,16 @@ function YourDebtsCard({
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {computed.map((c, i) => (
-            <DebtTile key={c.debt.id} c={c} anchor={i === 0} onOpen={() => onOpen(c.debt.id)} onEdit={() => onEdit(c.debt.id)} />
+            <DebtTile
+              key={c.debt.id}
+              c={c}
+              anchor={i === 0}
+              payoffAnchor={c.debt.id === firstOpen}
+              months={payoff.now.get(c.debt.id)}
+              baseMonths={payoff.base.get(c.debt.id)}
+              onOpen={() => onOpen(c.debt.id)}
+              onEdit={() => onEdit(c.debt.id)}
+            />
           ))}
         </div>
       )}
@@ -460,7 +480,25 @@ function YourDebtsCard({
   );
 }
 
-function DebtTile({ c, anchor, onOpen, onEdit }: { c: ComputedDebt; anchor: boolean; onOpen: () => void; onEdit: () => void }) {
+function DebtTile({
+  c,
+  anchor,
+  payoffAnchor,
+  months,
+  baseMonths,
+  onOpen,
+  onEdit,
+}: {
+  c: ComputedDebt;
+  anchor: boolean;
+  payoffAnchor: boolean;
+  /** The month this debt reaches zero with the simulator's extra; null never, undefined not simulated (paid off). */
+  months: number | null | undefined;
+  /** The same at the minimums, for "N months sooner". */
+  baseMonths: number | null | undefined;
+  onOpen: () => void;
+  onEdit: () => void;
+}) {
   const t = useTranslations("plan.debts.tile");
   const locale = useLocale();
   const monthYear = useMonthYear();
@@ -521,6 +559,7 @@ function DebtTile({ c, anchor, onOpen, onEdit }: { c: ComputedDebt; anchor: bool
         <ClearChip tone={status.tone} icon={done ? <IconCheck stroke={3} aria-hidden /> : undefined}>
           {status.text}
         </ClearChip>
+        {months !== undefined && <PayoffLine months={months} baseMonths={baseMonths} anchor={payoffAnchor} />}
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -546,6 +585,28 @@ function DebtTile({ c, anchor, onOpen, onEdit }: { c: ComputedDebt; anchor: bool
 
       <PaymentNotice variant="line" notice={notice({ balance: currentBalance, payment: debt.minimumPayment, rate: debt.interestRate, owed: false })} />
     </article>
+  );
+}
+
+/**
+ * "Free in Mar 2028" under a debt's balance: when it reaches zero with the simulator's
+ * extra (the minimums when the extra is 0), and how many months sooner that is.
+ */
+function PayoffLine({ months, baseMonths, anchor }: { months: number | null; baseMonths: number | null | undefined; anchor: boolean }) {
+  const t = useTranslations("plan.debts.tile");
+  const monthYear = useMonthYear();
+  const sooner = months != null && baseMonths != null ? baseMonths - months : 0;
+  return (
+    <span data-tip-anchor={anchor ? "debtsPayoffDates" : undefined} className="basis-full text-[13px] text-clear-ink-2">
+      {months == null ? (
+        <span className="text-clear-muted">{t("payoffNever")}</span>
+      ) : (
+        <>
+          {t("payoffIn", { date: monthYear(monthsFromNow(months)) })}
+          {sooner > 0 && <span className="font-semibold text-clear-positive"> · {t("payoffSooner", { count: sooner })}</span>}
+        </>
+      )}
+    </span>
   );
 }
 

@@ -108,6 +108,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   debtsSimulator: IconTrendingUp,
   debtsSortAndImpact: IconArrowsSort,
   debtsOwed: IconUsers,
+  debtsPayoffDates: IconCalendarCheck,
   goalsContributions: IconChartBar,
   goalsDetail: IconChartLine,
   goalsSuggestions: IconTarget,

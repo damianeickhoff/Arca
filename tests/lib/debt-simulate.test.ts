@@ -1,7 +1,7 @@
 // The Debts page's payoff timeline and "What if I pay extra?" simulator.
 import { describe, expect, it } from "vitest";
 import { payoffMonths, monthlyRate, totalInterest } from "@/lib/debt-interest";
-import { payoffOrder, simulatePayoff } from "@/lib/debt-simulate";
+import { payoffMonthsById, payoffOrder, simulatePayoff } from "@/lib/debt-simulate";
 
 const duo = { id: 1, balance: 6900, payment: 212, annualRate: 0.46 };
 const car = { id: 2, balance: 1520, payment: 160, annualRate: 5.9 };
@@ -64,5 +64,35 @@ describe("debt-simulate: simulatePayoff", () => {
   it("ignores debts already paid off", () => {
     const sim = simulatePayoff([{ id: 1, balance: 0, payment: 50, annualRate: null }]);
     expect(sim).toMatchObject({ months: 0, totals: [0], order: [] });
+  });
+});
+
+describe("debt-simulate: payoffMonthsById", () => {
+  it("at no extra, each debt's month matches its own payoffMonths", () => {
+    const months = payoffMonthsById(simulatePayoff([duo, car]));
+    expect(months.get(1)).toBe(payoffMonths(duo.balance, duo.payment, monthlyRate(duo.annualRate)));
+    expect(months.get(2)).toBe(payoffMonths(car.balance, car.payment, monthlyRate(car.annualRate)));
+  });
+
+  it("moves the debt first in the order forward most, and never later", () => {
+    const base = payoffMonthsById(simulatePayoff([duo, car]));
+    // Avalanche: the car (5.9%) gets the extra first.
+    const avalanche = payoffMonthsById(simulatePayoff([duo, car], 100));
+    expect(avalanche.get(2)!).toBeLessThan(base.get(2)!);
+    expect(avalanche.get(1)!).toBeLessThan(base.get(1)!);
+    // The duo first instead: the car only gets the extra once the duo is cleared.
+    const duoFirst = payoffMonthsById(simulatePayoff([duo, car], 100, 600, [1, 2]));
+    expect(duoFirst.get(1)!).toBeLessThan(avalanche.get(1)!);
+    expect(duoFirst.get(2)!).toBeGreaterThan(avalanche.get(2)!);
+    expect(duoFirst.get(2)!).toBeLessThanOrEqual(base.get(2)!);
+  });
+
+  it("is null for a debt that never reaches zero, even when the others do", () => {
+    const stuck = { id: 3, balance: 10000, payment: 10, annualRate: 12 };
+    const months = payoffMonthsById(simulatePayoff([car, stuck], 0, 120));
+    expect(months.get(2)).toBe(payoffMonths(car.balance, car.payment, monthlyRate(car.annualRate)));
+    expect(months.get(3)).toBeNull();
+    // An extra large enough rescues it once it reaches the stuck debt.
+    expect(payoffMonthsById(simulatePayoff([car, stuck], 500, 120)).get(3)).not.toBeNull();
   });
 });

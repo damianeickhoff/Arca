@@ -82,6 +82,7 @@ export type TipId =
   | "debtsSimulator"
   | "debtsSortAndImpact"
   | "debtsOwed"
+  | "debtsPayoffDates"
   // redesign (Clear): Goals
   | "goalsContributions"
   | "goalsDetail"
@@ -159,7 +160,11 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
+<<<<<<< HEAD
 const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "budgetBills", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsCategorySwitch", "insightsNeedsWants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","insightsNetWorthRange", "categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "financialMonthExceptions", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "aiSummary", "iconPicker", "ruleTeach", "merchantPatterns", "automations", "bankConnection"];
+=======
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activityBulkSelect", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "budgetBills", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "debtsPayoffDates", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsCategorySwitch", "insightsNeedsWants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","insightsNetWorthRange", "categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "aiSummary", "iconPicker", "ruleTeach", "merchantPatterns", "automations"];
+>>>>>>> claude/debt-payoff-dates-90698f
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;

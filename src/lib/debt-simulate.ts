@@ -100,3 +100,13 @@ export function simulatePayoff(
   });
   return { months: done ? month : null, totals, interest, order, byDebt };
 }
+
+/**
+ * The month each debt in a simulation reaches zero, by debt id — the debt cards' "Free
+ * in …" line. null when it never does within the simulation's cap (the payment does not
+ * cover the interest, or the cap ran out first). Debts that were not in the simulation
+ * are simply absent.
+ */
+export function payoffMonthsById(sim: PayoffSimulation): Map<number, number | null> {
+  return new Map(sim.byDebt.map((d) => [d.id, d.months]));
+}
