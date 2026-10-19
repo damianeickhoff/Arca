@@ -142,10 +142,10 @@ export type TipAnchor =
   | "ruleTeach"
   // Merchant-first rules: the merchant card's Recognised by patterns
   | "merchantPatterns"
-  // Merchant-first rules: Settings › Automations and its Test
-  | "automationsTest"
   // Bank connection: Settings › Import › Connect a bank
-  | "bankConnect";
+  | "bankConnect"
+  // Merchant-first rules: Needs a category's Worth teaching strip
+  | "reviewTeach";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

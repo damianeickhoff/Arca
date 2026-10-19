@@ -205,10 +205,6 @@
       "ai": {
         "title": "AI",
         "subtitle": "Gemini suggestions and summaries."
-      },
-      "automations": {
-        "title": "Automations",
-        "subtitle": "Every merchant and rule that files transactions, and what each decides."
       }
     },
     "inline": {
@@ -341,7 +337,10 @@
         "create": "Create group",
         "saveError": "The group could not be saved. Try again.",
         "deleteError": "The group could not be deleted. Try again."
-      }
+      },
+      "ruleDecides": "{count, plural, =0 {Files nothing yet} one {Files # transaction} other {Files # transactions}}",
+      "ruleConflictWins": "{pattern} ({category}) matches the same recent transactions; this rule comes first{count, plural, =0 {} other { · # more}}",
+      "ruleConflictLoses": "{pattern} ({category}) comes first and files the same recent transactions there{count, plural, =0 {} other { · # more}}"
     },
     "merchants": {
       "count": "{count, plural, one {# merchant} other {# merchants}}",
@@ -1380,7 +1379,7 @@
     },
     "rulePreview": {
       "title": "Check the rule before you save",
-      "body": "While you edit the description, match or amount, this shows which earlier transactions the rule picks up."
+      "body": "While you edit the description, match or amount, this shows which earlier transactions the rule picks up. Test shows what saving would change on the last 90 days."
     },
     "splitSharedCost": {
       "title": "Paid for others too?",
@@ -1504,6 +1503,9 @@
     "quickAdd": {
       "title": "Add from anywhere",
       "body": "The + next to search (the orange button on phones) adds a transaction, recurring bill, debt, goal or category without leaving the page you are on. Ctrl/Cmd+N opens it too."
+    "reviewTeach": {
+      "title": "Teach the busy ones",
+      "body": "Merchants with a pile of transactions waiting show up here. File one, tap Always, and the rest are sorted at once."
     }
   },
   "categoryPicker": {
@@ -3787,6 +3789,18 @@
       "deleteBody": "{count, plural, one {One transaction} other {# transactions}} this rule filed under {category} still {count, plural, one {has} other {have}} that category. Transactions you categorised by hand stay as they are.",
       "deleteKeep": "Keep them as they are",
       "deleteRevert": "{count, plural, one {Send it back to Needs review} other {Send # back to Needs review}}"
+      "test": {
+        "run": "Test on the last {days} days",
+        "again": "Test again",
+        "running": "Testing…",
+        "nothing": "Nothing would change in the last {days} days.",
+        "summary": "{count, plural, one {# transaction} other {# transactions}} would change in the last {days} days",
+        "failed": "The test could not run. Try again.",
+        "noCategory": "No category",
+        "becomes": "becomes",
+        "save": "Saving the rule applies these.",
+        "moreAndSave": "And {count} more. Saving the rule applies them all."
+      }
     },
     "searchPlaceholder": "Search transactions",
     "tiles": {
@@ -4389,6 +4403,14 @@
         "noFreeTier": "The chosen model isn't on the free tier. Pick another one in Settings › AI.",
         "modelUnavailable": "The chosen model isn't available. Pick another one in Settings › AI."
       }
+    },
+    "teach": {
+      "title": "Worth teaching",
+      "body": "These merchants have {min} or more transactions waiting. File one and choose Always to sort the rest.",
+      "waiting": "{count} waiting",
+      "file": "File",
+      "fileLabel": "File a transaction from {name}",
+      "pickTitle": "Category for {name}"
     }
   },
   "categoryList": {

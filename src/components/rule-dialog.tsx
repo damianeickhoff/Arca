@@ -12,6 +12,7 @@ import { Segmented } from "@/components/clear/segmented";
 import { CategoryPickerSheet } from "@/components/category-picker";
 import { previewQuery } from "@/components/rule-actions";
 import { Icon } from "@/components/icon";
+import { RuleTest } from "@/components/rule-test";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import type { Bank, Category, CategoryRule } from "@/db/schema";
 import { currencySymbol } from "@/lib/format";
@@ -150,6 +151,8 @@ interface RuleDialogProps {
   /** True when saving moves every match (also hand-categorised ones) — only changes
    *  how the preview words it. */
   moveAll?: boolean;
+  /** The saved rule being edited, so Test replays the edit in its place. */
+  ruleId?: number | null;
   cancelLabel?: string;
   submitLabel?: string;
   onSubmit: (fields: RuleFields, categoryId: number | null) => Promise<void> | void;
@@ -196,6 +199,7 @@ function RuleBody({
   category: locked,
   banks,
   moveAll = false,
+  ruleId,
   cancelLabel,
   submitLabel,
   onSubmit,
@@ -446,6 +450,8 @@ function RuleBody({
         )}
       </section>
       <AnchoredTip id="rulePreview" anchor="rulePreview" active={open && !!matches && matches.count > 0} />
+
+      {hasCondition && d.categoryId != null && <RuleTest fields={fields} categoryId={d.categoryId} ruleId={ruleId} />}
 
       <ClearDialogFooterDock>
         <ClearDialogFooter>

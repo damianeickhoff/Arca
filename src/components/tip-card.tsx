@@ -49,7 +49,6 @@ import {
   IconIcons,
   IconWand,
   IconFingerprint,
-  IconFlask,
 } from "@tabler/icons-react";
 
 import type { TipId } from "@/lib/tips";
@@ -151,7 +150,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   aiCategories: IconSparkles,
   insightsSummary: IconListNumbers,
   iconPicker: IconIcons,
-  automations: IconFlask,
+  reviewTeach: IconWand,
   merchantPatterns: IconFingerprint,
   ruleTeach: IconWand,
   bankConnection: IconBuildingBank,

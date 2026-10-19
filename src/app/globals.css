@@ -728,6 +728,19 @@ button, a, [role="button"] {
     overflow-y: hidden !important;
   }
 
+  /* The other half of that lock. Every vaul drawer is a Radix Dialog, whose overlay
+     wraps itself in react-remove-scroll: it injects `body[data-scroll-locked] {
+     overflow: hidden !important }` at runtime. With <html> non-visible (clip above,
+     hidden while a sheet is open) body's overflow no longer propagates to the
+     viewport, so body becomes its own scroll container at scrollTop 0 and every
+     sticky element on a scrolled page (the Settings navigation, a panel's header)
+     snaps back to its static spot — off the top of the screen — as soon as a dialog
+     opens. Keep body a plain box; the html lock already stops the page scrolling.
+     Layered !important beats the unlayered runtime style. */
+  body[data-scroll-locked] {
+    overflow: visible !important;
+  }
+
   body {
     @apply text-foreground;
     font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;

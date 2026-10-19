@@ -126,6 +126,12 @@ function Dialog({
       // vanishes. Disable it and rely on the sticky-safe html-level lock in
       // globals.css (html:has([data-vaul-drawer])) instead.
       disablePreventScroll
+      // Separately, on Safari vaul pins <body> with `position: fixed; top: -scrollY`
+      // (usePositionFixed, which disablePreventScroll does not turn off). That resets
+      // the document scroll to 0, so sticky elements on a scrolled page land at their
+      // shifted static spot — the Settings navigation and panel header jump up — and
+      // the page jumps back on close. The html lock already holds the page still.
+      noBodyStyles
       // Vaul's own keyboard-avoidance (on by default) imperatively rewrites the
       // sheet's `style.height`/`style.bottom` on every VisualViewport resize
       // event, using its own "is this drawer tall enough" heuristic. In an iOS
