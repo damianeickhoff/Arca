@@ -35,6 +35,9 @@ import { SubpageHeading } from "../subpage-heading";
 // indexed) query — so the queue shows rows in batches instead of paging the data,
 // which the sidebar's "N need a category" badge also relies on for an exact count.
 const PAGE_SIZE = 60;
+/** A merchant with at least this many transactions waiting gets a "Worth teaching" row. */
+const TEACH_MIN = 5;
+const TEACH_ROWS = 3;
 
 /** Money out negative, money in positive; a reimbursement counts at its full amount. */
 function signedValue(row: TransactionDetail) {
@@ -102,6 +105,10 @@ export function NeedsReviewView({
   const [pickerOpen, setPickerOpen] = useState(false);
   // The row just filed without a rule: offer to file its merchant that way always.
   const [teach, setTeach] = useState<TeachMoment | null>(null);
+  // The newest transaction of a "Worth teaching" merchant whose category is picked;
+  // kept after closing for the exit animation.
+  const [teachRow, setTeachRow] = useState<TransactionDetail | null>(null);
+  const [teachPickerOpen, setTeachPickerOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selected, setSelected] = useState<Set<number> | null>(null);
@@ -255,6 +262,15 @@ export function NeedsReviewView({
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // Busy merchants in the queue: no rule files them yet (else they would not be
+  // waiting), so filing one and choosing Always in the teach strip sorts the rest.
+  const byMerchant = new Map<number, TransactionDetail[]>();
+  for (const r of queue) if (r.merchantId != null) byMerchant.set(r.merchantId, [...(byMerchant.get(r.merchantId) ?? []), r]);
+  const worthTeaching = [...byMerchant.values()]
+    .filter((rs) => rs.length >= TEACH_MIN)
+    .sort((a, b) => b.length - a.length)
+    .slice(0, TEACH_ROWS);
+
   const visible = queue.slice(0, visibleCount);
   const hasMore = queue.length > visible.length;
   const out = queue.filter((r) => signedValue(r) < 0).reduce((s, r) => s - signedValue(r), 0);
@@ -297,6 +313,42 @@ export function NeedsReviewView({
       />
 
       {teach && <TeachRuleStrip teach={teach} categories={categories} onClose={() => setTeach(null)} onRuleCreated={() => void refresh()} />}
+
+      {!teach && !selectMode && worthTeaching.length > 0 && (
+        <section data-tip-anchor="reviewTeach" aria-labelledby="review-teach-title" className="flex flex-col gap-3.5 rounded-clear-card bg-clear-card p-5 lg:px-6">
+          <div className="flex flex-col gap-1">
+            <h2 id="review-teach-title" className="m-0 text-base font-bold">{t("teach.title")}</h2>
+            <p className="m-0 text-[13px] text-clear-muted">{t("teach.body", { min: TEACH_MIN })}</p>
+          </div>
+          <ul className="m-0 grid list-none gap-2.5 p-0 sm:grid-cols-2 xl:grid-cols-3">
+            {worthTeaching.map((rs) => {
+              const first = rs[0];
+              const name = first.merchantName ?? resolveDisplayName(first);
+              return (
+                <li key={first.merchantId} className="flex min-w-0 items-center gap-3 rounded-clear-tile bg-clear-tile py-2.5 pr-2.5 pl-3">
+                  <Icon iconKey={first.merchantIcon ?? null} color={first.merchantColor ?? null} soft size="md" />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[15px] font-bold">{name}</span>
+                    <span className="truncate text-[13px] text-clear-muted">{t("teach.waiting", { count: rs.length })}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTeachRow(first);
+                      setTeachPickerOpen(true);
+                    }}
+                    aria-haspopup="dialog"
+                    aria-label={t("teach.fileLabel", { name })}
+                    className={clearButtonVariants({ size: "sm" })}
+                  >
+                    {t("teach.file")}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {!current ? (
@@ -576,6 +628,29 @@ export function NeedsReviewView({
         </>
       )}
 
+      {/* "Worth teaching": files the merchant's newest transaction, then the teach strip
+          offers Always for the rest. */}
+      {teachRow && (
+        <CategoryPickerSheet
+          categories={categories}
+          open={teachPickerOpen}
+          onOpenChange={setTeachPickerOpen}
+          title={t("teach.pickTitle", { name: teachRow.merchantName ?? resolveDisplayName(teachRow) })}
+          apply={{
+            ids: [teachRow.id],
+            names: [resolveDisplayName(teachRow)],
+            onApplied: (categoryId, ids, ruleCreated) => {
+              if (categoryId != null) {
+                setTeach(ruleCreated ? null : { transactionId: teachRow.id, categoryId, merchantName: teachRow.merchantName });
+                markSorted(ids);
+              }
+              setTeachPickerOpen(false);
+              void refresh();
+            },
+          }}
+        />
+      )}
+
       {selectMode && selected.size > 0 && (
         <TransactionBulkBar
           selectedIds={[...selected]}
@@ -592,6 +667,7 @@ export function NeedsReviewView({
       <ContextualTip id="needsReviewTriage" active={current != null} />
       <AnchoredTip id="needsReviewBulk" anchor="needsReviewSelect" active={!selectMode && queue.length > 1} />
       <AnchoredTip id="aiCategories" anchor="aiCategories" active={aiReady && current != null} />
+      <AnchoredTip id="reviewTeach" anchor="reviewTeach" active={!teach && !selectMode && worthTeaching.length > 0} />
     </div>
   );
 }

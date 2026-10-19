@@ -20,7 +20,6 @@ import {
   IconUser,
   IconUsers,
   IconWallet,
-  IconWand,
 } from "@tabler/icons-react";
 
 // The one list of settings sections, shared by the phone SettingsDialog and the
@@ -29,7 +28,7 @@ import {
 
 export type SettingsPanelKey =
   | "profile" | "security"
-  | "accounts" | "categories" | "recurring" | "merchants" | "automations"
+  | "accounts" | "categories" | "recurring" | "merchants"
   | "financialMonth" | "monthOverrides" | "budgetRecurring"
   | "import" | "importProfiles" | "dataHealth"
   | "appearance" | "privacy" | "appLock" | "language" | "currency" | "ai"
@@ -55,7 +54,6 @@ const SECTIONS: SettingsSection[] = [
       { key: "categories", icon: IconTag },
       { key: "recurring", icon: IconReload },
       { key: "merchants", icon: IconBuildingStore },
-      { key: "automations", icon: IconWand },
       { key: "financialMonth", icon: IconCalendar },
       { key: "monthOverrides", icon: IconCalendarEvent },
       { key: "budgetRecurring", icon: IconWallet },
@@ -111,7 +109,7 @@ export function settingsSections({ isAdmin, withAccount }: { isAdmin: boolean; w
 
 /** Panels whose content is server-rendered (settings-panel-content.tsx) and passed in
  *  as nodes; the rest are client-only and built by SettingsPanelBody. */
-export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "automations", "users", "dataHealth", "importProfiles"] as const;
+export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles"] as const;
 export type HeavyPanelKey = (typeof HEAVY_PANELS)[number];
 
 export function isHeavyPanel(key: SettingsPanelKey): key is HeavyPanelKey {

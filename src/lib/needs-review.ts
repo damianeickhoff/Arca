@@ -41,6 +41,8 @@ export async function getNeedsReviewTransactions() {
       recurringFriendlyName: recurringItems.friendlyName,
       merchantIcon: merchants.icon,
       merchantColor: merchants.color,
+      merchantId: merchants.id,
+      merchantName: merchants.name,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))

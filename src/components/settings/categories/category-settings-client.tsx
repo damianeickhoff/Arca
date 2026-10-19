@@ -15,7 +15,7 @@ import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { SettingsNotice } from "@/components/settings/settings-ui";
-import { BudgetTypeField, CategoryRuleList, GroupField } from "@/components/settings/categories/category-form-parts";
+import { BudgetTypeField, CategoryRuleList, GroupField, useRuleStats } from "@/components/settings/categories/category-form-parts";
 import { normalizeBudgetType } from "@/lib/format";
 
 /**
@@ -67,6 +67,7 @@ export function EditCategoryForm({
   const isIncome = (group ? group.group : category.group) === "income";
 
   const [rules, setRules] = useState<CategoryRule[]>(initialRules);
+  const ruleStats = useRuleStats(category.id, rules);
 
   async function save() {
     if (!name.trim() || groupId == null) return;
@@ -191,7 +192,8 @@ export function EditCategoryForm({
           <h3 id={`${ids}-rules`} className="m-0 text-[15px] font-bold">{t("rulesTitle")}</h3>
           <p className="m-0 text-[13px] text-clear-muted">{t("rulesHint", { name: shownName })}</p>
         </div>
-        <CategoryRuleList rules={rules} banks={banks} onAdd={() => openRule(null)} onEdit={openRule} onDelete={deleteRule} />
+        <CategoryRuleList rules={rules} banks={banks} onAdd={() => openRule(null)} onEdit={openRule} onDelete={deleteRule}
+          stats={ruleStats} categories={categories} />
       </section>
 
       {error && <SettingsNotice>{error}</SettingsNotice>}
@@ -217,6 +219,7 @@ export function EditCategoryForm({
         open={ruleDialogOpen}
         onOpenChange={setRuleDialogOpen}
         initial={ruleEditor?.draft ?? null}
+        ruleId={ruleEditor?.id}
         title={ruleEditor?.id == null ? tRule("titleNew") : tRule("titleEdit")}
         category={{ name: shownName, icon, color: effectiveColor }}
         banks={banks}

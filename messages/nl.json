@@ -209,10 +209,6 @@
       "ai": {
         "title": "AI",
         "subtitle": "Suggesties en samenvattingen van Gemini."
-      },
-      "automations": {
-        "title": "Automatisering",
-        "subtitle": "Elke winkel en regel die transacties indeelt, en wat ze bepalen."
       }
     },
     "inline": {
@@ -342,7 +338,10 @@
         "create": "Groep aanmaken",
         "saveError": "De groep kon niet worden opgeslagen. Probeer het opnieuw.",
         "deleteError": "De groep kon niet worden verwijderd. Probeer het opnieuw."
-      }
+      },
+      "ruleDecides": "{count, plural, =0 {Deelt nog niets in} one {Deelt # transactie in} other {Deelt # transacties in}}",
+      "ruleConflictWins": "{pattern} ({category}) past op dezelfde recente transacties; deze regel gaat voor{count, plural, =0 {} other { · nog #}}",
+      "ruleConflictLoses": "{pattern} ({category}) gaat voor en deelt dezelfde recente transacties daar in{count, plural, =0 {} other { · nog #}}"
     },
     "merchants": {
       "count": "{count, plural, one {# winkel} other {# winkels}}",
@@ -590,46 +589,6 @@
     "dialog": {
       "profile": "Je profiel",
       "version": "Arca {version}"
-    },
-    "automations": {
-      "summary": "<b>{merchants, plural, one {# winkel} other {# winkels}}</b> en <b>{rules, plural, one {# regel} other {# regels}}</b> bepalen de categorie van <b>{total, plural, one {# transactie} other {# transacties}}</b>.",
-      "test": "Testen",
-      "listTitle": "Winkels en regels",
-      "looseRules": "Regels zonder winkel",
-      "suggestionsTitle": "Het leren waard",
-      "suggestionMeta": "Nog geen regel · {count, plural, one {# transactie} other {# transacties}} zonder categorie",
-      "suggest": "Voorstel",
-      "suggestTitle": "Categorie voor {name}",
-      "decides": "{count, plural, one {# transactie} other {# transacties}}",
-      "conflicts": "{count, plural, one {Botst met # regel} other {Botst met # regels}}",
-      "ruleTitle": "“{pattern}”",
-      "ruleNoPattern": "Elke omschrijving",
-      "patternCount": "{count, plural, one {# patroon} other {# patronen}}",
-      "ruleCount": "{count, plural, one {# regel} other {# regels}}",
-      "merchantNoCategory": "Herkend, geen eigen categorie",
-      "unknownCategory": "Verwijderde categorie",
-      "noCategory": "Geen categorie",
-      "conditionAmount": "precies {amount}",
-      "conditionRange": "{min} tot {max}",
-      "conditionIncome": "alleen geld erin",
-      "conditionExpense": "alleen geld eruit",
-      "conditionAccount": "één rekening",
-      "editRule": "Regel bewerken",
-      "deleteRule": "{name} verwijderen",
-      "deleteTitle": "De regel {name} verwijderen?",
-      "deleteBody": "Transacties die hij indeelde houden hun categorie; nieuwe worden er niet meer door ingedeeld.",
-      "deleteConfirm": "Regel verwijderen",
-      "saveError": "Dat lukte niet. Probeer het opnieuw.",
-      "empty": "Er is nog niets geautomatiseerd. Kies een categorie voor een transactie en tik op Altijd, of geef een winkel een eigen categorie.",
-      "testTitle": "Regels testen",
-      "testRunning": "Alle regels worden opnieuw toegepast op recente transacties…",
-      "testSubtitle": "{count, plural, =0 {Er verandert niets} one {# transactie verandert} other {# transacties veranderen}} in de laatste {days} dagen",
-      "testNothing": "Elke transactie van de laatste 90 dagen heeft al de categorie die de regels geven.",
-      "testFailed": "De test kon niet draaien. Probeer het opnieuw.",
-      "becomes": "wordt",
-      "apply": "{count, plural, one {# wijziging toepassen} other {# wijzigingen toepassen}}",
-      "applying": "Toepassen…",
-      "close": "Sluiten"
     }
   },
   "budget": {
@@ -1379,7 +1338,7 @@
     },
     "rulePreview": {
       "title": "Controleer de regel voor je opslaat",
-      "body": "Terwijl je de omschrijving, overeenkomst of het bedrag aanpast, zie je hier welke eerdere transacties de regel oppikt."
+      "body": "Terwijl je de omschrijving, overeenkomst of het bedrag aanpast, zie je hier welke eerdere transacties de regel oppikt. Met Test zie je wat opslaan zou veranderen in de laatste 90 dagen."
     },
     "splitSharedCost": {
       "title": "Ook voor anderen betaald?",
@@ -1489,9 +1448,9 @@
       "title": "Eén plek per winkel",
       "body": "Voeg de omschrijvingen toe die je bank voor deze winkel gebruikt en geef hem een categorie: logo, naam en categorie volgen dan elke transactie."
     },
-    "automations": {
-      "title": "Al je regels in één lijst",
-      "body": "Zie wat elke winkel en regel bepaalt, vind regels die botsen en test een wijziging op de laatste 90 dagen voordat hij wordt toegepast."
+    "reviewTeach": {
+      "title": "Leer de drukke eerst",
+      "body": "Winkels met een stapel wachtende transacties staan hier. Deel er één in, tik op Altijd en de rest is in één keer gesorteerd."
     }
   },
   "categoryPicker": {
@@ -3708,6 +3667,18 @@
         "moveAuto": "Die je niet zelf een categorie gaf, gaan naar {category}{review, plural, =0 {.} one {, waaronder één nog zonder categorie.} other {, waaronder # nog zonder categorie.}}",
         "pickCategory": "Kies een categorie om ze naartoe te verplaatsen.",
         "more": "en nog {count}"
+      },
+      "test": {
+        "run": "Test op de laatste {days} dagen",
+        "again": "Opnieuw testen",
+        "running": "Testen…",
+        "nothing": "Er zou niets veranderen in de laatste {days} dagen.",
+        "summary": "{count, plural, one {# transactie zou} other {# transacties zouden}} veranderen in de laatste {days} dagen",
+        "failed": "De test kon niet worden uitgevoerd. Probeer het opnieuw.",
+        "noCategory": "Geen categorie",
+        "becomes": "wordt",
+        "save": "Opslaan voert deze wijzigingen door.",
+        "moreAndSave": "En nog {count}. Opslaan voert ze allemaal door."
       }
     },
     "searchPlaceholder": "Zoek transacties",
@@ -4308,6 +4279,14 @@
         "noFreeTier": "Het gekozen model valt niet onder de gratis versie. Kies een ander bij Instellingen › AI.",
         "modelUnavailable": "Het gekozen model is niet beschikbaar. Kies een ander bij Instellingen › AI."
       }
+    },
+    "teach": {
+      "title": "Het leren waard",
+      "body": "Bij deze winkels wachten {min} of meer transacties. Deel er één in en kies Altijd om de rest te sorteren.",
+      "waiting": "{count} wachten",
+      "file": "Indelen",
+      "fileLabel": "Een transactie van {name} indelen",
+      "pickTitle": "Categorie voor {name}"
     }
   },
   "categoryList": {

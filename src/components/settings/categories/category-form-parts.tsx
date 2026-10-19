@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { IconFilter, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconAlertTriangle, IconFilter, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 import type { Bank, Category, CategoryRule } from "@/db/schema";
+import type { RuleStat } from "@/lib/rule-stats";
 import { Segmented } from "@/components/clear/segmented";
 import { ClearButton } from "@/components/clear/button";
 import { IconTile } from "@/components/clear/icon-tile";
@@ -67,8 +69,31 @@ export function BudgetTypeField({ value, onChange }: { value: string; onChange: 
   );
 }
 
+/**
+ * Per rule of a saved category: how many transactions it decides and the rules of other
+ * categories it fights with over recent ones. Fetched once when the editor opens and
+ * again whenever its rule list changes (a save or delete); null until it arrives.
+ */
+export function useRuleStats(categoryId: number, rules: CategoryRule[]): Map<number, RuleStat> | null {
+  const [stats, setStats] = useState<{ rules: CategoryRule[]; byRule: Map<number, RuleStat> } | null>(null);
+  useEffect(() => {
+    if (rules.length === 0) return;
+    let live = true;
+    fetch(`/api/category-rules/stats?categoryId=${categoryId}`)
+      .then((r) => (r.ok ? (r.json() as Promise<{ stats: RuleStat[] }>) : Promise.reject()))
+      .then(({ stats }) => live && setStats({ rules, byRule: new Map(stats.map((s) => [s.ruleId, s])) }))
+      .catch(() => { /* the list still works without counts */ });
+    return () => {
+      live = false;
+    };
+  }, [categoryId, rules]);
+  return stats?.rules === rules ? stats.byRule : null;
+}
+
 /** The automatic rules of one category: a row per rule (what it matches, edit, delete)
- *  and an Add rule button. `note` sits above the list (e.g. "created when you save"). */
+ *  and an Add rule button. `note` sits above the list (e.g. "created when you save").
+ *  With `stats` each row also says how many transactions the rule decides and warns
+ *  when another category's rule matches the same recent transactions. */
 export function CategoryRuleList({
   rules,
   banks,
@@ -76,6 +101,8 @@ export function CategoryRuleList({
   onEdit,
   onDelete,
   note,
+  stats,
+  categories,
 }: {
   rules: CategoryRule[];
   banks: Bank[];
@@ -83,9 +110,23 @@ export function CategoryRuleList({
   onEdit: (rule: CategoryRule) => void;
   onDelete: (rule: CategoryRule) => void;
   note?: string;
+  stats?: Map<number, RuleStat> | null;
+  /** Names the category of a conflicting rule. */
+  categories?: Category[];
 }) {
   const t = useTranslations("settings.categories");
   const tRule = useTranslations("activity.rule");
+
+  function conflictLine(stat: RuleStat | undefined) {
+    const first = stat?.conflicts[0];
+    if (!first) return null;
+    const values = {
+      pattern: first.pattern ? `“${first.pattern}”` : t("ruleAnyName"),
+      category: categories?.find((c) => c.id === first.categoryId)?.name ?? "",
+      count: stat.conflicts.length - 1,
+    };
+    return first.wins ? t("ruleConflictWins", values) : t("ruleConflictLoses", values);
+  }
 
   function describe(rule: CategoryRule) {
     const match = rule.nameWholeWord ? "word" : rule.nameWildcard ? "contains" : "exact";
@@ -112,12 +153,22 @@ export function CategoryRuleList({
         <ul className="m-0 flex list-none flex-col p-0">
           {rules.map((rule) => {
             const { title, meta } = describe(rule);
+            const stat = stats?.get(rule.id);
+            const conflict = conflictLine(stat);
             return (
               <li key={rule.id} className="flex min-h-16 items-center gap-3 border-b border-clear-ground py-2 pl-1 last:border-b-0">
                 <IconTile size="sm"><IconFilter stroke={1.9} /></IconTile>
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[15px] font-bold">{title}</span>
-                  <span className="truncate text-[13px] text-clear-muted"><MoneyText>{meta}</MoneyText></span>
+                  <span className="truncate text-[13px] text-clear-muted">
+                    <MoneyText>{stat ? `${meta} · ${t("ruleDecides", { count: stat.decides })}` : meta}</MoneyText>
+                  </span>
+                  {conflict && (
+                    <span className="flex items-start gap-1.5 text-[13px] font-semibold text-clear-ember-text">
+                      <IconAlertTriangle size={15} stroke={2.2} aria-hidden className="mt-px shrink-0" />
+                      <span className="min-w-0">{conflict}</span>
+                    </span>
+                  )}
                 </span>
                 <RowIconButton label={t("editRule")} onClick={() => onEdit(rule)}>
                   <IconPencil stroke={2} />

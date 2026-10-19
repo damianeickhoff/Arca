@@ -9,8 +9,6 @@ import { getCategoryMonthTotals } from "@/lib/category-month-totals";
 import { RecurringMenuClient } from "@/components/settings/recurring/recurring-menu-client";
 import { AccountsOverviewClient } from "@/components/settings/accounts/accounts-overview-client";
 import { MerchantsClient } from "@/components/settings/merchants-client";
-import { AutomationsClient } from "@/components/settings/automations-client";
-import { getAutomationsOverview } from "@/lib/automations";
 import { DataHealthClient } from "@/components/settings/data-health-client";
 import { ImportProfilesClient } from "@/components/settings/import-profiles-client";
 import { findBrokenDateTransactions } from "@/lib/data-health";
@@ -92,16 +90,6 @@ async function MerchantsPanel() {
   return <MerchantsClient initialMerchants={merchants} categories={allCategories} />;
 }
 
-/** Merchants and category rules in one list, with what each decides. */
-async function AutomationsPanel() {
-  const [overview, allCategories, allBanks] = await Promise.all([
-    getAutomationsOverview(),
-    db.select().from(categories).orderBy(asc(categories.name)),
-    db.select().from(banks),
-  ]);
-  return <AutomationsClient overview={overview} categories={allCategories} banks={allBanks} />;
-}
-
 async function DataHealthPanel() {
   return <DataHealthClient rows={await findBrokenDateTransactions()} />;
 }
@@ -128,8 +116,6 @@ export function getSettingsPanel(key: HeavyPanelKey, currentUser: { id: number; 
       return <Suspense key="recurring" fallback={<PanelSkeleton />}><RecurringPanel /></Suspense>;
     case "merchants":
       return <Suspense key="merchants" fallback={<PanelSkeleton />}><MerchantsPanel /></Suspense>;
-    case "automations":
-      return <Suspense key="automations" fallback={<PanelSkeleton />}><AutomationsPanel /></Suspense>;
     case "dataHealth":
       return <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel /></Suspense>;
     case "importProfiles":

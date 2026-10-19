@@ -209,10 +209,6 @@
       "ai": {
         "title": "AI",
         "subtitle": "Gemini suggestions and summaries."
-      },
-      "automations": {
-        "title": "Automations",
-        "subtitle": "Every merchant and rule that files transactions, and what each decides."
       }
     },
     "inline": {
@@ -342,7 +338,10 @@
         "create": "Create group",
         "saveError": "The group could not be saved. Try again.",
         "deleteError": "The group could not be deleted. Try again."
-      }
+      },
+      "ruleDecides": "{count, plural, =0 {Files nothing yet} one {Files # transaction} other {Files # transactions}}",
+      "ruleConflictWins": "{pattern} ({category}) matches the same recent transactions; this rule comes first{count, plural, =0 {} other { · # more}}",
+      "ruleConflictLoses": "{pattern} ({category}) comes first and files the same recent transactions there{count, plural, =0 {} other { · # more}}"
     },
     "merchants": {
       "count": "{count, plural, one {# merchant} other {# merchants}}",
@@ -590,46 +589,6 @@
     "dialog": {
       "profile": "Your profile",
       "version": "Arca {version}"
-    },
-    "automations": {
-      "summary": "<b>{merchants, plural, one {# merchant} other {# merchants}}</b> and <b>{rules, plural, one {# rule} other {# rules}}</b> decide the category of <b>{total, plural, one {# transaction} other {# transactions}}</b>.",
-      "test": "Test",
-      "listTitle": "Merchants and rules",
-      "looseRules": "Rules without a merchant",
-      "suggestionsTitle": "Worth teaching",
-      "suggestionMeta": "No rule yet · {count, plural, one {# transaction} other {# transactions}} without a category",
-      "suggest": "Suggest",
-      "suggestTitle": "Category for {name}",
-      "decides": "{count, plural, one {# transaction} other {# transactions}}",
-      "conflicts": "{count, plural, one {Conflicts with # rule} other {Conflicts with # rules}}",
-      "ruleTitle": "“{pattern}”",
-      "ruleNoPattern": "Any description",
-      "patternCount": "{count, plural, one {# pattern} other {# patterns}}",
-      "ruleCount": "{count, plural, one {# rule} other {# rules}}",
-      "merchantNoCategory": "Recognised, no category of its own",
-      "unknownCategory": "Deleted category",
-      "noCategory": "No category",
-      "conditionAmount": "exactly {amount}",
-      "conditionRange": "{min} to {max}",
-      "conditionIncome": "money in only",
-      "conditionExpense": "money out only",
-      "conditionAccount": "one account only",
-      "editRule": "Edit rule",
-      "deleteRule": "Delete {name}",
-      "deleteTitle": "Delete the rule {name}?",
-      "deleteBody": "Transactions it filed keep their category; new ones are no longer filed by it.",
-      "deleteConfirm": "Delete rule",
-      "saveError": "That did not work. Try again.",
-      "empty": "Nothing is automated yet. Pick a category for a transaction and choose Always, or give a merchant its own category.",
-      "testTitle": "Test the rules",
-      "testRunning": "Replaying every rule on recent transactions…",
-      "testSubtitle": "{count, plural, =0 {Nothing would change} one {# transaction would change} other {# transactions would change}} in the last {days} days",
-      "testNothing": "Every transaction of the last 90 days already has the category the rules give it.",
-      "testFailed": "The test could not run. Try again.",
-      "becomes": "becomes",
-      "apply": "{count, plural, one {Apply # change} other {Apply # changes}}",
-      "applying": "Applying…",
-      "close": "Close"
     }
   },
   "budget": {
@@ -1379,7 +1338,7 @@
     },
     "rulePreview": {
       "title": "Check the rule before you save",
-      "body": "While you edit the description, match or amount, this shows which earlier transactions the rule picks up."
+      "body": "While you edit the description, match or amount, this shows which earlier transactions the rule picks up. Test shows what saving would change on the last 90 days."
     },
     "splitSharedCost": {
       "title": "Paid for others too?",
@@ -1489,9 +1448,9 @@
       "title": "One place per merchant",
       "body": "Add the descriptions your bank uses for this merchant and give it a category: its logo, name and category then follow every transaction."
     },
-    "automations": {
-      "title": "All your rules in one list",
-      "body": "See what each merchant and rule decides, spot rules that fight, and Test a change on the last 90 days before it is applied."
+    "reviewTeach": {
+      "title": "Teach the busy ones",
+      "body": "Merchants with a pile of transactions waiting show up here. File one, tap Always, and the rest are sorted at once."
     }
   },
   "categoryPicker": {
@@ -3708,6 +3667,18 @@
         "moveAuto": "Those you didn't categorise by hand move to {category}{review, plural, =0 {.} one {, including one waiting in Needs review.} other {, including # waiting in Needs review.}}",
         "pickCategory": "Choose a category to move them to.",
         "more": "and {count} more"
+      },
+      "test": {
+        "run": "Test on the last {days} days",
+        "again": "Test again",
+        "running": "Testing…",
+        "nothing": "Nothing would change in the last {days} days.",
+        "summary": "{count, plural, one {# transaction} other {# transactions}} would change in the last {days} days",
+        "failed": "The test could not run. Try again.",
+        "noCategory": "No category",
+        "becomes": "becomes",
+        "save": "Saving the rule applies these.",
+        "moreAndSave": "And {count} more. Saving the rule applies them all."
       }
     },
     "searchPlaceholder": "Search transactions",
@@ -4308,6 +4279,14 @@
         "noFreeTier": "The chosen model isn't on the free tier. Pick another one in Settings › AI.",
         "modelUnavailable": "The chosen model isn't available. Pick another one in Settings › AI."
       }
+    },
+    "teach": {
+      "title": "Worth teaching",
+      "body": "These merchants have {min} or more transactions waiting. File one and choose Always to sort the rest.",
+      "waiting": "{count} waiting",
+      "file": "File",
+      "fileLabel": "File a transaction from {name}",
+      "pickTitle": "Category for {name}"
     }
   },
   "categoryList": {

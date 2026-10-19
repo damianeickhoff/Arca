@@ -70,6 +70,9 @@ export type TransactionDetail = {
   brandIconBgColor?: string | null;
   merchantIcon?: string | null;
   merchantColor?: string | null;
+  /** The linked merchant profile (Needs review groups its suggestions by it). */
+  merchantId?: number | null;
+  merchantName?: string | null;
   bankName?: string | null;
   notes?: string | null;
   isReimbursement?: boolean | number;
