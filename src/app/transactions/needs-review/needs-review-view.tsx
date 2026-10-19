@@ -18,6 +18,7 @@ import { MoneyText } from "@/components/clear/money";
 import { CategoryPickerSheet } from "@/components/category-picker";
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { TeachRuleStrip, type TeachMoment } from "@/components/teach-rule-strip";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { suggestCategoriesAction } from "@/app/actions/ai";
 import { AI_CATEGORY_BATCH } from "@/lib/ai-shared";
@@ -99,6 +100,8 @@ export function NeedsReviewView({
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // The row just filed without a rule: offer to file its merchant that way always.
+  const [teach, setTeach] = useState<TeachMoment | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selected, setSelected] = useState<Set<number> | null>(null);
@@ -204,6 +207,7 @@ export function NeedsReviewView({
         }
         await send("/api/apply-rules", "POST", {});
       }
+      setTeach(withRule || current.recurringItemId != null ? null : { transactionId: current.id, categoryId: stagedId });
       markSorted(ids);
       await refresh();
     } catch {
@@ -291,6 +295,8 @@ export function NeedsReviewView({
           )
         }
       />
+
+      {teach && <TeachRuleStrip teach={teach} categories={categories} onClose={() => setTeach(null)} onRuleCreated={() => void refresh()} />}
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {!current ? (
@@ -544,8 +550,11 @@ export function NeedsReviewView({
             apply={{
               ids: [current.id],
               names: [resolveDisplayName(current)],
-              onApplied: (categoryId, ids) => {
-                if (categoryId != null) markSorted(ids);
+              onApplied: (categoryId, ids, ruleCreated) => {
+                if (categoryId != null) {
+                  setTeach(ruleCreated || current.recurringItemId != null ? null : { transactionId: current.id, categoryId });
+                  markSorted(ids);
+                }
                 void refresh();
               },
             }}

@@ -4,7 +4,6 @@ import { matchRules, applyAllRules } from "@/lib/apply-rules";
 import { detectRecurringTransactions } from "@/lib/detect-recurring";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
 import { isOwnAccountTransfer, normalizeAccountNumber } from "@/lib/internal-transfers";
-import { applyAllBrandRules } from "@/lib/apply-brand-rules";
 import { assignMissingMerchants, getOrCreateMerchantId } from "@/lib/merchants";
 import { deriveMerchantName } from "@/lib/merchant-name";
 import { and, isNotNull, isNull, sql, eq, inArray } from "drizzle-orm";
@@ -190,8 +189,6 @@ export async function importParsedRows(rows: ParsedRow[]): Promise<ImportResult>
   const newAccounts = newAccountNumbers.length > 0
     ? await db.select().from(banks).where(inArray(banks.accountNumber, newAccountNumbers))
     : [];
-
-  await applyAllBrandRules();
 
   // Safety net for rows that slipped through without a merchant (e.g. duplicates whose
   // bank metadata was backfilled above). No-op when everything already has one.

@@ -151,8 +151,8 @@
         "subtitle": "Income and bills that come back on a schedule."
       },
       "merchants": {
-        "title": "Merchants & brand icons",
-        "subtitle": "The places you pay, and the logos they show with."
+        "title": "Merchants",
+        "subtitle": "The places you pay: their logos, how they are recognised and their category."
       },
       "financialMonth": {
         "title": "Financial month",
@@ -209,6 +209,10 @@
       "ai": {
         "title": "AI",
         "subtitle": "Gemini suggestions and summaries."
+      },
+      "automations": {
+        "title": "Automations",
+        "subtitle": "Every merchant and rule that files transactions, and what each decides."
       }
     },
     "inline": {
@@ -239,39 +243,6 @@
       "nameUpdated": "Name updated.",
       "emailUpdated": "Email updated.",
       "passwordUpdated": "Password updated."
-    },
-    "brandIcons": {
-      "title": "Brand icons",
-      "subtitle": "Transactions whose name matches a rule get that logo.",
-      "empty": "No rules yet. Add one to give matching transactions a logo.",
-      "addRule": "Add rule",
-      "editRule": "Edit the rule for {name}",
-      "newTitle": "New brand icon rule",
-      "editTitle": "Edit brand icon rule",
-      "dialogSubtitle": "Transactions whose name matches get this logo.",
-      "close": "Close",
-      "pattern": "Name",
-      "patternPlaceholder": "e.g. KFC",
-      "matchLabel": "Match",
-      "matchHint": {
-        "contains": "The name contains the text, also inside a word.",
-        "word": "The name contains it as a whole word, so MCD doesn't match McDonalds.",
-        "exact": "The name is exactly this text."
-      },
-      "icon": "Icon",
-      "background": "Background",
-      "delete": "Delete",
-      "cancel": "Cancel",
-      "save": "Save",
-      "saving": "Saving…",
-      "saveError": "The rule could not be saved. Try again.",
-      "deleteError": "The rule could not be deleted. Try again.",
-      "matchWord": "Whole word",
-      "matchContains": "Contains",
-      "matchExact": "Exact",
-      "deleteRuleTitle": "Delete this rule?",
-      "deleteRuleBody": "Transactions that only matched this rule go back to their usual icon.",
-      "deleteRuleConfirm": "Delete rule"
     },
     "categories": {
       "new": "New category",
@@ -403,7 +374,23 @@
       "deleteError": "This merchant could not be deleted. Try again.",
       "deleteTitle": "Delete the merchant “{name}”?",
       "deleteBody": "{count, plural, =0 {No transactions use it.} one {Its # transaction stays, but loses its merchant.} other {Its # transactions stay, but lose their merchant.}}",
-      "deleteConfirm": "Delete merchant"
+      "deleteConfirm": "Delete merchant",
+      "patternsLabel": "Recognised by",
+      "patternsHint": "Transactions whose description contains one of these belong to {name}, whatever the bank calls it.",
+      "patternPlaceholder": "Add a description, e.g. AH TO GO",
+      "patternAdd": "Add",
+      "patternRemove": "Remove {pattern}",
+      "matchLabel": "How it matches",
+      "match": {
+        "contains": "Contains",
+        "word": "Whole word",
+        "exact": "Exact"
+      },
+      "category": "Category",
+      "categoryNone": "No category of its own",
+      "categoryAlways": "Always",
+      "categoryClear": "Remove the category",
+      "categoryHint": "Transactions from {name} go here when no rule says otherwise."
     },
     "users": {
       "intro": "{count, plural, one {# person signs in} other {# people sign in}} to this household and share its accounts, budgets and goals.",
@@ -603,6 +590,46 @@
     "dialog": {
       "profile": "Your profile",
       "version": "Arca {version}"
+    },
+    "automations": {
+      "summary": "<b>{merchants, plural, one {# merchant} other {# merchants}}</b> and <b>{rules, plural, one {# rule} other {# rules}}</b> decide the category of <b>{total, plural, one {# transaction} other {# transactions}}</b>.",
+      "test": "Test",
+      "listTitle": "Merchants and rules",
+      "looseRules": "Rules without a merchant",
+      "suggestionsTitle": "Worth teaching",
+      "suggestionMeta": "No rule yet · {count, plural, one {# transaction} other {# transactions}} without a category",
+      "suggest": "Suggest",
+      "suggestTitle": "Category for {name}",
+      "decides": "{count, plural, one {# transaction} other {# transactions}}",
+      "conflicts": "{count, plural, one {Conflicts with # rule} other {Conflicts with # rules}}",
+      "ruleTitle": "“{pattern}”",
+      "ruleNoPattern": "Any description",
+      "patternCount": "{count, plural, one {# pattern} other {# patterns}}",
+      "ruleCount": "{count, plural, one {# rule} other {# rules}}",
+      "merchantNoCategory": "Recognised, no category of its own",
+      "unknownCategory": "Deleted category",
+      "noCategory": "No category",
+      "conditionAmount": "exactly {amount}",
+      "conditionRange": "{min} to {max}",
+      "conditionIncome": "money in only",
+      "conditionExpense": "money out only",
+      "conditionAccount": "one account only",
+      "editRule": "Edit rule",
+      "deleteRule": "Delete {name}",
+      "deleteTitle": "Delete the rule {name}?",
+      "deleteBody": "Transactions it filed keep their category; new ones are no longer filed by it.",
+      "deleteConfirm": "Delete rule",
+      "saveError": "That did not work. Try again.",
+      "empty": "Nothing is automated yet. Pick a category for a transaction and choose Always, or give a merchant its own category.",
+      "testTitle": "Test the rules",
+      "testRunning": "Replaying every rule on recent transactions…",
+      "testSubtitle": "{count, plural, =0 {Nothing would change} one {# transaction would change} other {# transactions would change}} in the last {days} days",
+      "testNothing": "Every transaction of the last 90 days already has the category the rules give it.",
+      "testFailed": "The test could not run. Try again.",
+      "becomes": "becomes",
+      "apply": "{count, plural, one {Apply # change} other {Apply # changes}}",
+      "applying": "Applying…",
+      "close": "Close"
     }
   },
   "budget": {
@@ -1453,6 +1480,18 @@
     "iconPicker": {
       "title": "One picker for icons, logos and colour",
       "body": "Search finds icons and brand logos at once, and the colour row recolours every tile, so you see the result before you choose."
+    },
+    "ruleTeach": {
+      "title": "Teach it once",
+      "body": "Picked a category? Tap Always and every transaction from this merchant is filed the same way, now and on every import."
+    },
+    "merchantPatterns": {
+      "title": "One place per merchant",
+      "body": "Add the descriptions your bank uses for this merchant and give it a category: its logo, name and category then follow every transaction."
+    },
+    "automations": {
+      "title": "All your rules in one list",
+      "body": "See what each merchant and rule decides, spot rules that fight, and Test a change on the last 90 days before it is applied."
     }
   },
   "categoryPicker": {
@@ -1676,6 +1715,19 @@
       "IconTag": "Label",
       "IconSparkles": "Other"
     }
+  },
+  "teachRule": {
+    "label": "Teach a rule",
+    "title": "Always file {merchant} as {category}?",
+    "body": "Recognised by <b>{patterns}</b>. {count, plural, =0 {No earlier transactions match yet} one {# earlier transaction moves too} other {# earlier transactions move too}}{waiting, plural, =0 {} one {, # of them still without a category} other {, # of them still without a category}}.",
+    "always": "Always",
+    "justThisOne": "Just this one",
+    "editMatch": "Edit match",
+    "editTitle": "Rule for {merchant}",
+    "saving": "Saving…",
+    "failed": "The rule could not be saved. Try again.",
+    "done": "Done: {merchant} now always goes to {category}.",
+    "close": "Close"
   },
   "globalSearch": {
     "title": "Search",

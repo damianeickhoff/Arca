@@ -6,6 +6,8 @@ import { runConfigSync, applyDefaultCategoryRulesSync } from "@/lib/config-sync"
 import { migrateCategoryGroups } from "@/lib/category-groups-migration";
 import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
 import { detectBrandIcon } from "@/lib/brand-detect";
+import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
+import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
 import { createSchema } from "./create-schema";
 
@@ -43,24 +45,11 @@ function addColumnIfMissing(table: string, column: string, definition: string) {
   sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
-// Auto-migrate: brand icon rules table
-sqlite.exec(`
-  CREATE TABLE IF NOT EXISTS brand_icon_rules (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    name_pattern    TEXT    NOT NULL,
-    name_wildcard   INTEGER NOT NULL DEFAULT 1,
-    name_whole_word INTEGER NOT NULL DEFAULT 0,
-    brand_icon      TEXT    NOT NULL
-  )
-`);
-
-// Auto-migrate: brandIcon + brandIconColor columns on transactions
+// Auto-migrate: brandIcon + brandIconColor columns on transactions (a per-transaction
+// icon set by hand; brand icon rules, which also wrote here, became merchant patterns —
+// see src/lib/brand-rules-migration.ts)
 addColumnIfMissing("transactions", "brand_icon", "TEXT");
 addColumnIfMissing("transactions", "brand_icon_color", "TEXT");
-
-// Auto-migrate: iconColor + iconBgColor on brand_icon_rules
-addColumnIfMissing("brand_icon_rules", "icon_color", "TEXT");
-addColumnIfMissing("brand_icon_rules", "icon_bg_color", "TEXT");
 
 // Auto-migrate: brandIconBgColor on transactions
 addColumnIfMissing("transactions", "brand_icon_bg_color", "TEXT");
@@ -459,6 +448,20 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
   addColumnIfMissing("transactions", "merchant_id", "INTEGER REFERENCES merchants(id) ON DELETE SET NULL");
   sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_transactions_merchant ON transactions(merchant_id)`);
 
+  // Auto-migrate: merchant-first rules — a merchant's default category and the
+  // "Recognised by" patterns that link descriptions to it.
+  addColumnIfMissing("merchants", "default_category_id", "INTEGER REFERENCES categories(id) ON DELETE SET NULL");
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS merchant_patterns (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      merchant_id INTEGER NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+      pattern     TEXT    NOT NULL,
+      match_type  TEXT    NOT NULL DEFAULT 'contains',
+      created_at  TEXT    DEFAULT (datetime('now'))
+    )
+  `);
+  sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS merchant_patterns_unique ON merchant_patterns(merchant_id, pattern)`);
+
   // Backfill: derive a merchant for every transaction that doesn't have one yet.
   // Runs on every boot but only ever looks at merchant_id IS NULL rows, so after the
   // first pass it's a single indexed query returning nothing. Manual transfers are
@@ -474,9 +477,20 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
       const insertMerchant = sqlite.prepare(`INSERT INTO merchants (name, normalized_key, icon, color) VALUES (?, ?, ?, ?)`);
       const linkTransaction = sqlite.prepare(`UPDATE transactions SET merchant_id = ? WHERE id = ?`);
       const idByKey = new Map<string, number>();
+      // A merchant's "Recognised by" patterns come before the name heuristic.
+      const patterns = sortPatterns(
+        sqlite
+          .prepare(`SELECT p.merchant_id AS merchantId, p.pattern, p.match_type AS matchType FROM merchant_patterns p JOIN merchants m ON m.id = p.merchant_id WHERE m.deleted = 0`)
+          .all() as { merchantId: number; pattern: string; matchType: string }[],
+      );
 
       const run = sqlite.transaction(() => {
         for (const row of pending) {
+          const byPattern = matchMerchantPattern({ description: row.description, rawDescription: row.raw_description }, patterns);
+          if (byPattern != null) {
+            linkTransaction.run(byPattern, row.id);
+            continue;
+          }
           const name = deriveMerchantName({ description: row.description, rawDescription: row.raw_description });
           if (!name) continue;
           const key = normalizeMerchantKey(name);
@@ -559,12 +573,15 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
     }
   }
 
-  // Sync src/config/categories.ts + src/config/brandIcons.ts into the database.
+  // Sync src/config/categories.ts into the database.
   // Runs synchronously as part of db init so it's guaranteed to complete before any
   // query in the app — see src/lib/config-sync.ts for why (layout/page render in
   // parallel in Next, so an awaited-in-layout sync still races the page's own queries
   // and the first render shows stale data).
   runConfigSync(sqlite);
+
+  // Brand icon rules become merchant patterns, logos and colours (one time).
+  migrateBrandRulesToMerchants(sqlite);
 
   // Backfill: normalize budget types to their canonical Dutch keys (nodig/willen/sparen).
   // The category seed (src/config/categories.ts) stores English labels ("Needs"/"Wants"/

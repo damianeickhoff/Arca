@@ -55,10 +55,28 @@ export const merchants = sqliteTable("merchants", {
   // (which runs on every import and on boot for unlinked rows) doesn't immediately
   // recreate a merchant the user just deleted. Deleting also unlinks its transactions.
   deleted: integer("deleted", { mode: "boolean" }).notNull().default(false),
+  // The merchant's own category: apply-rules files its transactions here when no
+  // category rule matches them (a rule with only a name condition, checked last).
+  defaultCategoryId: integer("default_category_id").references(() => categories.id, { onDelete: "set null" }),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 }, (t) => [
   uniqueIndex("merchants_normalized_key_unique").on(t.normalizedKey),
 ]);
+
+// "Recognised by": descriptions that belong to a merchant, checked before the name
+// heuristic when a transaction gets its merchant (see src/lib/merchant-patterns.ts).
+// match_type: contains | word | exact, as on a category rule.
+export const merchantPatterns = sqliteTable("merchant_patterns", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  merchantId: integer("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  pattern: text("pattern").notNull(),
+  matchType: text("match_type").notNull().default("contains"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+}, (t) => [
+  uniqueIndex("merchant_patterns_unique").on(t.merchantId, t.pattern),
+]);
+
+export type MerchantPattern = typeof merchantPatterns.$inferSelect;
 
 // ─── Transactions ──────────────────────────────────────────────────────────
 export const transactions = sqliteTable("transactions", {
@@ -348,20 +366,6 @@ export const financialMonthOverrides = sqliteTable("financial_month_overrides", 
   startDay: integer("start_day").notNull(), // 1-28
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
-
-// ─── Brand icon rules ────────────────────────────────────────────────────────
-export const brandIconRules = sqliteTable("brand_icon_rules", {
-  id:           integer("id").primaryKey({ autoIncrement: true }),
-  namePattern:  text("name_pattern").notNull(),
-  nameWildcard: integer("name_wildcard", { mode: "boolean" }).notNull().default(true),
-  nameWholeWord: integer("name_whole_word", { mode: "boolean" }).notNull().default(false),
-  brandIcon:    text("brand_icon").notNull(),
-  iconColor:    text("icon_color"),
-  iconBgColor:  text("icon_bg_color"),
-});
-
-export type BrandIconRule = typeof brandIconRules.$inferSelect;
-export type NewBrandIconRule = typeof brandIconRules.$inferInsert;
 
 // ─── Savings month overrides ──────────────────────────────────────────────────
 // Per-goal, per-month contribution override. Does not touch monthlyContribution.

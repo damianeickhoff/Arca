@@ -1,10 +1,8 @@
 import crypto from "crypto";
 import type { Database } from "better-sqlite3";
 import { DEFAULT_CATEGORIES, defaultCategoryKind, normalizeMatchingPattern } from "@/config/categories";
-import { DEFAULT_BRAND_ICONS } from "@/config/brandIcons";
 import { matchRules } from "@/lib/apply-rules";
-import { matchBrandRules } from "@/lib/apply-brand-rules";
-import type { CategoryRule, BrandIconRule, Bank } from "@/db/schema";
+import type { CategoryRule, Bank } from "@/db/schema";
 
 // Runs synchronously (raw better-sqlite3, no drizzle) from src/db/index.ts module
 // init, so it's guaranteed to finish before ANY query in the app — layouts and pages
@@ -216,35 +214,12 @@ export function applyDefaultCategoryRulesSync(sqlite: Database) {
   }
 }
 
-/** Synchronous equivalent of applyAllBrandRules() (src/lib/apply-brand-rules.ts), sharing its matchBrandRules(). */
-function applyBrandRulesSync(sqlite: Database) {
-  const rules = sqlite.prepare(`
-    SELECT id, name_pattern AS namePattern, name_wildcard AS nameWildcard, name_whole_word AS nameWholeWord,
-           brand_icon AS brandIcon, icon_color AS iconColor, icon_bg_color AS iconBgColor
-    FROM brand_icon_rules
-  `).all() as BrandIconRule[];
-
-  const rows = sqlite.prepare("SELECT id, description, brand_icon, brand_icon_color, brand_icon_bg_color FROM transactions").all() as
-    { id: number; description: string; brand_icon: string | null; brand_icon_color: string | null; brand_icon_bg_color: string | null }[];
-
-  const update = sqlite.prepare("UPDATE transactions SET brand_icon = ?, brand_icon_color = ?, brand_icon_bg_color = ? WHERE id = ?");
-  for (const row of rows) {
-    const match = matchBrandRules(row.description, rules);
-    const newIcon = match?.brandIcon ?? null;
-    const newColor = match?.iconColor ?? null;
-    const newBg = match?.iconBgColor ?? null;
-    if (newIcon !== row.brand_icon || newColor !== row.brand_icon_color || newBg !== row.brand_icon_bg_color) {
-      update.run(newIcon, newColor, newBg, row.id);
-    }
-  }
-}
-
 /**
- * Detects an edit to src/config/categories.ts or src/config/brandIcons.ts (via a
- * content hash stored in app_settings) and re-applies it — otherwise a config change
- * only takes effect for brand-new data, leaving already-imported transactions stuck
- * with whatever was computed last time. Each section fails independently and loudly
- * (logged, hash not advanced) so one bad section can't silently disable the other.
+ * Detects an edit to src/config/categories.ts (via a content hash stored in app_settings)
+ * and re-applies it — otherwise a config change only takes effect for brand-new data,
+ * leaving already-imported transactions stuck with whatever was computed last time.
+ * Each section fails independently and loudly (logged, hash not advanced) so one bad
+ * section can't silently disable the other.
  */
 export function runConfigSync(sqlite: Database) {
   sqlite.exec("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT)");
@@ -273,15 +248,5 @@ export function runConfigSync(sqlite: Database) {
     backfillDefaultParents(sqlite);
   } catch (err) {
     console.error("[config-sync] default parent backfill failed:", err);
-  }
-
-  try {
-    const brandIconsHash = hashOf(DEFAULT_BRAND_ICONS);
-    if (getSetting(sqlite, "brand_icons_config_hash") !== brandIconsHash) {
-      applyBrandRulesSync(sqlite);
-      setSetting(sqlite, "brand_icons_config_hash", brandIconsHash);
-    }
-  } catch (err) {
-    console.error("[config-sync] brand icons sync failed:", err);
   }
 }

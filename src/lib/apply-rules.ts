@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { categories, categoryRules, transactions, transactionSplits, banks } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { categories, categoryRules, merchants, transactions, transactionSplits, banks } from "@/db/schema";
+import { eq, gte } from "drizzle-orm";
 import type { CategoryRule, Bank } from "@/db/schema";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
 
@@ -68,11 +68,47 @@ export function matchRules(
   return null;
 }
 
+/** Merchant id → its default category, for merchants that have a live one. */
+export async function loadMerchantDefaults(categoryIds: Set<number>): Promise<Map<number, number>> {
+  const rows = await db
+    .select({ id: merchants.id, defaultCategoryId: merchants.defaultCategoryId })
+    .from(merchants)
+    .where(eq(merchants.deleted, false));
+  const map = new Map<number, number>();
+  for (const r of rows) if (r.defaultCategoryId != null && categoryIds.has(r.defaultCategoryId)) map.set(r.id, r.defaultCategoryId);
+  return map;
+}
+
 /**
- * Apply all rules to transactions that are not manually categorized.
- * Returns the number of transactions updated.
+ * The category the rules give a transaction: the first matching category rule, else
+ * its merchant's default category (a rule with only a name condition, checked last).
  */
-export async function applyAllRules(): Promise<number> {
+export function categoryFor(
+  row: { description: string; amount: number; direction: string; account: string | null; merchantId: number | null },
+  rules: CategoryRule[],
+  banksByAccountNumber: Map<string, Bank>,
+  merchantDefaults: Map<number, number>,
+): number | null {
+  const ruled = rules.length ? matchRules(row.description, row.amount, row.direction, row.account, rules, banksByAccountNumber) : null;
+  if (ruled != null) return ruled;
+  return row.merchantId != null ? merchantDefaults.get(row.merchantId) ?? null : null;
+}
+
+/** What the rule pass would change on one transaction. */
+export interface RulePassChange {
+  id: number;
+  date: string;
+  description: string;
+  fromCategoryId: number | null;
+  patch: { categoryId?: number | null; recurringItemId?: number | null; isReimbursement?: boolean };
+}
+
+/**
+ * Works out what applying every rule would change, without writing anything — the
+ * pass applyAllRules runs, and Settings › Automations' "Test" (with `since`, a
+ * YYYY-MM-DD lower bound on the transaction date).
+ */
+export async function planRulePass(opts: { since?: string } = {}): Promise<RulePassChange[]> {
   const [allRules, allBanks, allCategories, recurringMatchers] = await Promise.all([
     db.select().from(categoryRules),
     db.select().from(banks),
@@ -93,6 +129,7 @@ export async function applyAllRules(): Promise<number> {
   for (const bank of allBanks) {
     if (bank.accountNumber) banksByAccountNumber.set(bank.accountNumber, bank);
   }
+  const merchantDefaults = await loadMerchantDefaults(categoryIds);
 
   // All transactions: the recurringItemId link is maintained for every transaction
   // (even manually categorized ones, so the friendly-name override still applies),
@@ -100,27 +137,30 @@ export async function applyAllRules(): Promise<number> {
   const rows = await db
     .select({
       id: transactions.id,
+      date: transactions.date,
       description: transactions.description,
       amount: transactions.amount,
       categoryId: transactions.categoryId,
       direction: transactions.direction,
       account: transactions.account,
+      merchantId: transactions.merchantId,
       manuallyCategorized: transactions.manuallyCategorized,
       recurringItemId: transactions.recurringItemId,
       isReimbursement: transactions.isReimbursement,
     })
-    .from(transactions);
+    .from(transactions)
+    .where(opts.since ? gte(transactions.date, opts.since) : undefined);
   const splitRows = await db.select({ transactionId: transactionSplits.transactionId }).from(transactionSplits);
   const splitTransactionIds = new Set(splitRows.map((row) => row.transactionId));
 
-  let updated = 0;
+  const changes: RulePassChange[] = [];
   for (const row of rows) {
     if (splitTransactionIds.has(row.id)) continue;
 
     const recurringMatch = matchRecurringItem(row.description, row.amount, recurring);
     const newRecurringItemId = recurringMatch?.id ?? null;
 
-    const patch: { categoryId?: number | null; recurringItemId?: number | null; isReimbursement?: boolean } = {};
+    const patch: RulePassChange["patch"] = {};
     if (newRecurringItemId !== row.recurringItemId) patch.recurringItemId = newRecurringItemId;
 
     // Flagging the standing payback of a shared bill, so it stops counting as income.
@@ -141,16 +181,28 @@ export async function applyAllRules(): Promise<number> {
       // stays. Clearing it to null here used to wipe every category the importer had
       // learned from history, matched by keyword or set by the Tikkie rule — this pass
       // runs at the end of every import and after every rule or recurring edit.
-      const ruleCategoryId = rules.length
-        ? matchRules(row.description, row.amount, row.direction, row.account, rules, banksByAccountNumber)
-        : null;
+      // The merchant's default category counts as the last rule.
+      const ruleCategoryId = categoryFor(row, rules, banksByAccountNumber, merchantDefaults);
       if (ruleCategoryId !== null && ruleCategoryId !== row.categoryId) patch.categoryId = ruleCategoryId;
     }
 
     if (Object.keys(patch).length > 0) {
-      await db.update(transactions).set(patch).where(eq(transactions.id, row.id));
-      updated++;
+      changes.push({ id: row.id, date: row.date, description: row.description, fromCategoryId: row.categoryId, patch });
     }
   }
-  return updated;
+  return changes;
+}
+
+/** Writes the changes planRulePass worked out. Returns how many transactions changed. */
+export async function applyRulePass(changes: RulePassChange[]): Promise<number> {
+  for (const c of changes) await db.update(transactions).set(c.patch).where(eq(transactions.id, c.id));
+  return changes.length;
+}
+
+/**
+ * Apply all rules to transactions that are not manually categorized.
+ * Returns the number of transactions updated.
+ */
+export async function applyAllRules(): Promise<number> {
+  return applyRulePass(await planRulePass());
 }

@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CategoryPickerSheet as SharedCategoryPickerSheet } from "@/components/category-picker";
 import { IconPickerDialog } from "@/components/icon-picker";
+import { TeachRuleStrip, type TeachMoment } from "@/components/teach-rule-strip";
 import { MerchantDetailPortal, type MerchantRef } from "@/components/merchant-detail-portal";
 import { RecurringClient } from "@/components/settings/recurring/recurring-client";
 import { formatEur, normalizeBudgetType, currencySymbol } from "@/lib/format";
@@ -165,6 +166,8 @@ export function TransactionDetailPanel({
   const [excluded, setExcluded] = useState(!!row.excludeFromReports);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(row.receiptUrl);
   const [recurringId, setRecurringId] = useState<number | null>(row.recurringItemId ?? null);
+  // Just filed without a rule: the teach strip offers to file the merchant this way always.
+  const [teach, setTeach] = useState<TeachMoment | null>(null);
 
   // ── fetched per transaction
   const [merchant, setMerchant] = useState<Merchant | null>(null);
@@ -343,8 +346,10 @@ export function TransactionDetailPanel({
 
   // The picker saved it (and, with "Also create a rule", the rule and the similar
   // transactions); this only mirrors the result here and in the list.
-  function applyCategory(next: number | null) {
+  function applyCategory(next: number | null, _ids: number[], ruleCreated: boolean) {
     setCategoryId(next);
+    // A recurring item already decides this row's category; no rule to teach then.
+    setTeach(next != null && !ruleCreated && recurringId == null ? { transactionId: row.id, categoryId: next, merchantName: merchant?.name ?? null } : null);
     onCategorized(row.id, next);
     router.refresh();
   }
@@ -712,6 +717,17 @@ export function TransactionDetailPanel({
             </button>
           )}
         </div>
+
+        {teach && (
+          <TeachRuleStrip
+            teach={teach}
+            categories={categories}
+            onClose={() => setTeach(null)}
+            onRuleCreated={() => router.refresh()}
+            sheetClassName="z-[90]"
+            overlayClassName="z-[88] backdrop-blur-lg bg-clear-primary/20"
+          />
+        )}
 
         {showBudget && (
           <div className="flex flex-col gap-2 border-t border-clear-line pt-3.5">

@@ -14,17 +14,18 @@ import { MerchantDetailPortal, merchantIcon, type MerchantRef } from "@/componen
 import { EditMerchantDialog, MerchantSettingsClient } from "@/components/settings/merchant-settings-client";
 import { formatEur } from "@/lib/format";
 import type { MerchantListItem } from "@/lib/merchants";
+import type { Category } from "@/db/schema";
 
 type Filter = "all" | "noIcon";
 
 /** The Merchants settings panel: how many merchants have a logo, a search and an
  *  All / Without icon switch, and the list. A row opens the merchant editor. */
-export function MerchantsClient({ initialMerchants }: { initialMerchants: MerchantListItem[] }) {
+export function MerchantsClient({ initialMerchants, categories }: { initialMerchants: MerchantListItem[]; categories: Category[] }) {
   const t = useTranslations("settings.merchants");
   const tPanels = useTranslations("settings.panels");
   const [merchants, setMerchants] = useState<MerchantListItem[]>(initialMerchants);
 
-  // Same render-time sync as BrandIconsClient: router.refresh() hands down a fresh
+  // Render-time sync: router.refresh() hands down a fresh
   // array, but useState only reads its initial value once.
   const [prevInitial, setPrevInitial] = useState(initialMerchants);
   if (initialMerchants !== prevInitial) {
@@ -116,6 +117,7 @@ export function MerchantsClient({ initialMerchants }: { initialMerchants: Mercha
           <MerchantSettingsClient
             key={editing.id}
             merchant={editing}
+            categories={categories}
             onClose={closeEdit}
             // Opens the profile *on top* of this editor (portal z-70) rather than
             // closing it first — closing would play its exit animation behind the

@@ -295,8 +295,9 @@ export interface CategoryApply {
   names?: string[];
   /** False hides the rule switch — e.g. a recurring item already decides the category. */
   allowRule?: boolean;
-  /** After the save: the category set (null = Uncategorized) and every id it changed. */
-  onApplied: (categoryId: number | null, ids: number[]) => void;
+  /** After the save: the category set (null = Uncategorized), every id it changed and
+   *  whether the rule switch also created a rule (then no teach strip is needed). */
+  onApplied: (categoryId: number | null, ids: number[], ruleCreated: boolean) => void;
 }
 
 type SheetProps = {
@@ -415,7 +416,7 @@ export function CategoryPickerSheet(props: SheetProps) {
         }
         await postJson("/api/apply-rules", "POST", {});
       }
-      apply.onApplied(stagedId, applyIds);
+      apply.onApplied(stagedId, applyIds, withRule);
       change(false);
     } catch {
       setFailed(true);

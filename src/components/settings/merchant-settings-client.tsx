@@ -3,7 +3,8 @@
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconChartLine, IconTrash } from "@tabler/icons-react";
+import { IconChartLine, IconChevronDown, IconPlus, IconTrash, IconX } from "@tabler/icons-react";
+import type { Category } from "@/db/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Icon } from "@/components/icon";
 import { useConfirm } from "@/components/clear/confirm-dialog";
@@ -11,6 +12,11 @@ import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { Amount } from "@/components/clear/amount";
+import { ClearChip } from "@/components/clear/chip";
+import { Segmented } from "@/components/clear/segmented";
+import { AnchoredTip } from "@/components/anchored-tip";
+import { CategoryPickerSheet } from "@/components/category-picker";
+import type { PatternMatchType } from "@/lib/merchant-patterns";
 import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { SettingsNotice } from "@/components/settings/settings-ui";
@@ -27,10 +33,14 @@ export interface EditableMerchant {
   transactionCount: number;
   totalSpent: number;
   lastVisit: string | null;
+  defaultCategoryId: number | null;
+  patterns: { pattern: string; matchType: PatternMatchType }[];
 }
 
 interface Props {
   merchant: EditableMerchant;
+  /** For the merchant's own category. */
+  categories: Category[];
   onClose: () => void;
   /** Opens this merchant's spending profile. Omitted where there's nowhere to open it. */
   onViewProfile?: () => void;
@@ -51,7 +61,7 @@ export function EditMerchantDialog({ open, onClose, children }: { open: boolean;
 
 /** The merchant editor: the logo and name, the icon picker, the merchant's activity,
  *  then Delete, Cancel and Save. */
-export function MerchantSettingsClient({ merchant, onClose, onViewProfile }: Props) {
+export function MerchantSettingsClient({ merchant, categories, onClose, onViewProfile }: Props) {
   const router = useRouter();
   const t = useTranslations("settings.merchants");
   const locale = useLocale();
@@ -66,6 +76,10 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile }: Pro
   const [name, setName] = useState(merchant.name);
   const [icon, setIcon] = useState<string | null>(merchant.icon ?? initialBrand?.iconKey ?? null);
   const [color, setColor] = useState<string | null>(merchant.color ?? initialBrand?.color ?? null);
+  const [patterns, setPatterns] = useState(merchant.patterns);
+  const [defaultCategoryId, setDefaultCategoryId] = useState<number | null>(merchant.defaultCategoryId);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const defaultCategory = categories.find((c) => c.id === defaultCategoryId) ?? null;
 
   /** Typing a name that matches a known brand swaps the logo in as you type. An
    * unrecognised name leaves whatever icon is already set alone, so hand-picking an
@@ -86,7 +100,15 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile }: Pro
     const res = await fetch("/api/merchants", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: merchant.id, name: name.trim(), icon, color }),
+      body: JSON.stringify({
+        id: merchant.id,
+        name: name.trim(),
+        icon,
+        color,
+        // Only sent when changed: either one re-runs the rules over every transaction.
+        ...(defaultCategoryId !== merchant.defaultCategoryId ? { defaultCategoryId } : {}),
+        ...(JSON.stringify(patterns) !== JSON.stringify(merchant.patterns) ? { patterns } : {}),
+      }),
     }).catch(() => null);
     setLoading(false);
     if (!res?.ok) {
@@ -158,6 +180,51 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile }: Pro
         </PickerField>
       </div>
 
+      <PatternsField id={`${ids}-patterns`} merchantName={name.trim() || merchant.name} patterns={patterns} onChange={setPatterns} />
+
+      <div className="flex flex-col gap-1.5">
+        <span id={`${ids}-category`} className="text-[13px] font-bold text-clear-ink-2">{t("category")}</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCategoryOpen(true)}
+            aria-labelledby={`${ids}-category`}
+            className="flex h-12 min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-clear-row bg-clear-tile px-3 text-left outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50"
+          >
+            {defaultCategory && <Icon iconKey={defaultCategory.icon} color={defaultCategory.color} soft size="sm" />}
+            <span className={defaultCategory ? "min-w-0 flex-1 truncate text-[15px] font-bold" : "min-w-0 flex-1 truncate text-[15px] font-semibold text-clear-placeholder"}>
+              {defaultCategory?.name ?? t("categoryNone")}
+            </span>
+            {defaultCategory && <ClearChip tone="mint">{t("categoryAlways")}</ClearChip>}
+            <IconChevronDown aria-hidden size={16} className="shrink-0 text-clear-muted" />
+          </button>
+          {defaultCategory && (
+            <button
+              type="button"
+              onClick={() => setDefaultCategoryId(null)}
+              aria-label={t("categoryClear")}
+              title={t("categoryClear")}
+              className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-tile text-clear-ink-2 hover:bg-clear-line"
+            >
+              <IconX size={18} aria-hidden />
+            </button>
+          )}
+        </div>
+        <span className="text-[13px] text-clear-muted">{t("categoryHint", { name: name.trim() || merchant.name })}</span>
+      </div>
+
+      <CategoryPickerSheet
+        open={categoryOpen}
+        onOpenChange={setCategoryOpen}
+        categories={categories}
+        current={defaultCategoryId != null ? String(defaultCategoryId) : undefined}
+        title={t("category")}
+        onChange={(v) => {
+          setDefaultCategoryId(v && v !== "none" ? Number(v) : null);
+          setCategoryOpen(false);
+        }}
+      />
+
       <section aria-labelledby={`${ids}-activity`} className="flex flex-col gap-3">
         <h3 id={`${ids}-activity`} className="m-0 text-[15px] font-bold">{t("activity")}</h3>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -208,5 +275,94 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
       <span className="text-[13px] font-bold text-clear-ink-2">{label}</span>
       {children}
     </div>
+  );
+}
+
+const MATCH_TYPES: PatternMatchType[] = ["contains", "word", "exact"];
+
+/** "Recognised by": the descriptions that belong to this merchant, as removable chips,
+ *  and a field to add one (contains, whole word or exact). */
+function PatternsField({
+  id,
+  merchantName,
+  patterns,
+  onChange,
+}: {
+  id: string;
+  merchantName: string;
+  patterns: { pattern: string; matchType: PatternMatchType }[];
+  onChange: (next: { pattern: string; matchType: PatternMatchType }[]) => void;
+}) {
+  const t = useTranslations("settings.merchants");
+  const [draft, setDraft] = useState("");
+  const [matchType, setMatchType] = useState<PatternMatchType>("contains");
+  const trimmed = draft.trim();
+  const duplicate = patterns.some((p) => p.pattern.toLowerCase() === trimmed.toLowerCase());
+  const canAdd = trimmed.length >= 2 && !duplicate;
+
+  function add() {
+    if (!canAdd) return;
+    onChange([...patterns, { pattern: trimmed, matchType }]);
+    setDraft("");
+    setMatchType("contains");
+  }
+
+  return (
+    <section aria-labelledby={id} data-tip-anchor="merchantPatterns" className="flex flex-col gap-2">
+      <div className="flex flex-col gap-0.5">
+        <h3 id={id} className="m-0 text-[13px] font-bold text-clear-ink-2">{t("patternsLabel")}</h3>
+        <p className="m-0 text-[13px] text-clear-muted">{t("patternsHint", { name: merchantName })}</p>
+      </div>
+      {patterns.length > 0 && (
+        <ul className="m-0 flex list-none flex-wrap gap-1.5 p-0">
+          {patterns.map((p) => (
+            <li key={p.pattern} className="inline-flex h-8 items-center gap-1 rounded-full bg-clear-tile pr-1 pl-3 text-[13px] font-bold">
+              <span>{p.pattern}</span>
+              {p.matchType !== "contains" && <span className="font-semibold text-clear-muted">· {t(`match.${p.matchType}`)}</span>}
+              <button
+                type="button"
+                onClick={() => onChange(patterns.filter((x) => x.pattern !== p.pattern))}
+                aria-label={t("patternRemove", { pattern: p.pattern })}
+                className="inline-flex size-6 cursor-pointer items-center justify-center rounded-full text-clear-ink-2 hover:bg-clear-line"
+              >
+                <IconX size={14} aria-hidden />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <ClearInput
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={t("patternPlaceholder")}
+          aria-label={t("patternPlaceholder")}
+          autoComplete="off"
+          className="min-w-[160px] flex-1"
+        />
+        <ClearButton variant="secondary" onClick={add} disabled={!canAdd}>
+          <IconPlus aria-hidden />
+          {t("patternAdd")}
+        </ClearButton>
+      </div>
+      {trimmed.length > 0 && (
+        <Segmented
+          label={t("matchLabel")}
+          surface="tile"
+          size="sm"
+          value={matchType}
+          onChange={setMatchType}
+          className="self-start"
+          items={MATCH_TYPES.map((m) => ({ value: m, label: t(`match.${m}`) }))}
+        />
+      )}
+      <AnchoredTip id="merchantPatterns" anchor="merchantPatterns" />
+    </section>
   );
 }

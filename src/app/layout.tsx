@@ -110,7 +110,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // from the client flows, and revalidatePath("/", "layout") in the transaction routes.
   const needsReviewCount = user ? await countNeedsReview() : 0;
 
-  // src/config/categories.ts + src/config/brandIcons.ts sync runs synchronously in
+  // The src/config/categories.ts seed runs synchronously in
   // src/db/index.ts (module init) — see src/lib/config-sync.ts for why it can't be
   // an awaited call here (layout/page render in parallel in Next, so it would still
   // race the page's own queries and the first render would show stale data).

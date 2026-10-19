@@ -1,9 +1,10 @@
 import { db } from "@/db";
-import { merchants, transactions } from "@/db/schema";
+import { merchantPatterns, merchants, transactions } from "@/db/schema";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
 import { detectBrandIcon } from "@/lib/auto-brand";
 import { notInternalTransferCondition } from "@/lib/internal-transfers";
+import { descriptionMatches, matchMerchantPattern, normalizeMatchType, sortPatterns, type PatternMatchType } from "@/lib/merchant-patterns";
 
 /** Looks up a merchant by its normalized key, creating it if it doesn't exist yet.
  * Returns null for names that normalize to nothing (pure punctuation/whitespace), and
@@ -47,22 +48,41 @@ export async function deleteMerchant(id: number): Promise<boolean> {
   return true;
 }
 
+/** Every live merchant's "Recognised by" patterns, most specific first. */
+export async function loadMerchantPatterns() {
+  const rows = await db
+    .select({ merchantId: merchantPatterns.merchantId, pattern: merchantPatterns.pattern, matchType: merchantPatterns.matchType })
+    .from(merchantPatterns)
+    .innerJoin(merchants, eq(merchants.id, merchantPatterns.merchantId))
+    .where(eq(merchants.deleted, false));
+  return sortPatterns(rows);
+}
+
 /** Derives the merchant for a transaction's description and returns its id, creating
- * the profile on first sight. Null when no merchant name could be extracted. */
+ * the profile on first sight. A merchant's "Recognised by" patterns come first, then
+ * the name heuristic. Null when no merchant name could be extracted. */
 export async function resolveMerchantIdFor(row: {
   description: string;
   rawDescription?: string | null;
 }): Promise<number | null> {
+  const byPattern = matchMerchantPattern(row, await loadMerchantPatterns());
+  if (byPattern != null) return byPattern;
   const name = deriveMerchantName(row);
   if (!name) return null;
   return getOrCreateMerchantId(name);
 }
+
+export type MerchantPatternItem = { pattern: string; matchType: PatternMatchType };
 
 export type MerchantListItem = {
   id: number;
   name: string;
   icon: string | null;
   color: string | null;
+  /** Where apply-rules files its transactions when no category rule matches. */
+  defaultCategoryId: number | null;
+  /** "Recognised by". */
+  patterns: MerchantPatternItem[];
   transactionCount: number;
   totalSpent: number;
   lastVisit: string | null;
@@ -71,12 +91,13 @@ export type MerchantListItem = {
 /** Every merchant with its transaction count and total expense spend — powers the
  * merchant picker and the Merchants settings panel. Ordered by name. */
 export async function listMerchants(): Promise<MerchantListItem[]> {
-  return db
+  const rows = await db
     .select({
       id: merchants.id,
       name: merchants.name,
       icon: merchants.icon,
       color: merchants.color,
+      defaultCategoryId: merchants.defaultCategoryId,
       transactionCount: sql<number>`COUNT(${transactions.id})`,
       // Expenses only, mirroring the merchant profile's own scope.
       totalSpent: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.direction} = 'expense' THEN COALESCE(${transactions.correctedAmount}, ${transactions.amount}) ELSE 0 END), 0)`,
@@ -87,6 +108,49 @@ export async function listMerchants(): Promise<MerchantListItem[]> {
     .where(eq(merchants.deleted, false))
     .groupBy(merchants.id)
     .orderBy(asc(merchants.name));
+  const patterns = await db.select().from(merchantPatterns).orderBy(asc(merchantPatterns.id));
+  const byMerchant = new Map<number, MerchantPatternItem[]>();
+  for (const p of patterns) {
+    const list = byMerchant.get(p.merchantId) ?? [];
+    list.push({ pattern: p.pattern, matchType: normalizeMatchType(p.matchType) });
+    byMerchant.set(p.merchantId, list);
+  }
+  return rows.map((r) => ({ ...r, patterns: byMerchant.get(r.id) ?? [] }));
+}
+
+/**
+ * Replaces a merchant's "Recognised by" patterns and links every transaction they
+ * match to it: an explicit "this description is that merchant", so it also moves
+ * transactions the name heuristic had put under another merchant. Internal transfers
+ * keep having no merchant. Returns how many transactions were linked.
+ */
+export async function setMerchantPatterns(merchantId: number, patterns: { pattern: string; matchType?: string }[]): Promise<number> {
+  const kept: MerchantPatternItem[] = [];
+  for (const p of patterns) {
+    const pattern = typeof p.pattern === "string" ? p.pattern.trim() : "";
+    if (pattern.length < 2 || kept.some((k) => k.pattern.toLowerCase() === pattern.toLowerCase())) continue;
+    kept.push({ pattern, matchType: normalizeMatchType(p.matchType) });
+  }
+
+  await db.delete(merchantPatterns).where(eq(merchantPatterns.merchantId, merchantId));
+  if (kept.length === 0) return 0;
+  await db.insert(merchantPatterns).values(kept.map((p) => ({ merchantId, ...p })));
+
+  const rows = await db
+    .select({ id: transactions.id, description: transactions.description, rawDescription: transactions.rawDescription, merchantId: transactions.merchantId })
+    .from(transactions)
+    .where(notInternalTransferCondition);
+  let linked = 0;
+  for (const row of rows) {
+    if (row.merchantId === merchantId) continue;
+    const hit = kept.some(
+      (p) => descriptionMatches(row.description, p.pattern, p.matchType) || (!!row.rawDescription && descriptionMatches(row.rawDescription, p.pattern, p.matchType)),
+    );
+    if (!hit) continue;
+    await db.update(transactions).set({ merchantId }).where(eq(transactions.id, row.id));
+    linked++;
+  }
+  return linked;
 }
 
 /** Assigns merchants to transactions that don't have one yet — the backfill for rows

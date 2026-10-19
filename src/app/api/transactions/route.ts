@@ -4,7 +4,6 @@ import { db } from "@/db";
 import { transactions, categories, transactionSplits } from "@/db/schema";
 import { eq, desc, and, gte, lte, inArray, like } from "drizzle-orm";
 import { amountsMatch, getTransactionSplitTotal, roundToCents } from "@/lib/transaction-splits";
-import { applyAllBrandRules } from "@/lib/apply-brand-rules";
 import { requireAuth } from "@/lib/auth";
 import { adjustGoalAmount, goalDeltaForTransaction } from "@/lib/goal-contributions";
 import { resolveMerchantIdFor } from "@/lib/merchants";
@@ -230,7 +229,6 @@ export async function POST(req: NextRequest) {
   if (row.goalId) {
     await adjustGoalAmount(row.goalId, goalDeltaForTransaction(row.direction, getTransactionSplitTotal(row.amount, row.correctedAmount)));
   }
-  await applyAllBrandRules();
   // The sidebar's account balances (root layout) include this row now.
   revalidatePath("/", "layout");
   return NextResponse.json(row, { status: 201 });

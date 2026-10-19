@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { banks, categories, categoryRules, recurringItems, transactions, transactionSplits } from "@/db/schema";
+import { banks, categories, categoryRules, merchants, recurringItems, transactions, transactionSplits } from "@/db/schema";
 import { eq, inArray, like, or } from "drizzle-orm";
 import type { Bank } from "@/db/schema";
 import { matchRules } from "@/lib/apply-rules";
@@ -25,6 +25,8 @@ export interface CategorySuggestions {
   direction: "income" | "expense" | null;
   /** Other transactions the patterns match today (split ones left out). */
   similarIds: number[];
+  /** The merchant every picked transaction shares, or null (none, or several). */
+  merchantName: string | null;
 }
 
 export const SUGGESTION_LIMIT = 3;
@@ -60,7 +62,7 @@ export function rulePatternOf(description: string): string | null {
 }
 
 export async function getCategorySuggestions(ids: number[]): Promise<CategorySuggestions> {
-  const empty: CategorySuggestions = { suggested: [], names: [], total: 0, patterns: [], direction: null, similarIds: [] };
+  const empty: CategorySuggestions = { suggested: [], names: [], total: 0, patterns: [], direction: null, similarIds: [], merchantName: null };
   if (ids.length === 0) return empty;
 
   const picked = await db
@@ -115,6 +117,8 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
     ...patterns.map((p) => like(transactions.description, `%${p}%`)),
   ];
   const pickedIds = new Set(picked.map((r) => r.id));
+  const sharedMerchantId = merchantIds.length === 1 && picked.every((r) => r.merchantId === merchantIds[0]) ? merchantIds[0] : null;
+  const [sharedMerchant] = sharedMerchantId != null ? await db.select({ name: merchants.name }).from(merchants).where(eq(merchants.id, sharedMerchantId)) : [];
   const others = conditions.length
     ? (
         await db
@@ -154,5 +158,6 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
     patterns,
     direction,
     similarIds: similar.filter((r) => !splitIds.has(r.id)).map((r) => r.id),
+    merchantName: sharedMerchant?.name ?? null,
   };
 }

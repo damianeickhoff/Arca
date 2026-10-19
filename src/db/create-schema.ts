@@ -27,7 +27,17 @@ export function createSchema(sqlite: Database.Database): void {
       icon           TEXT,
       color          TEXT,
       deleted        INTEGER NOT NULL DEFAULT 0,
+      default_category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
       created_at     TEXT    DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS merchant_patterns (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      merchant_id INTEGER NOT NULL REFERENCES merchants(id) ON DELETE CASCADE,
+      pattern     TEXT    NOT NULL,
+      match_type  TEXT    NOT NULL DEFAULT 'contains',
+      created_at  TEXT    DEFAULT (datetime('now')),
+      UNIQUE(merchant_id, pattern)
     );
 
     CREATE TABLE IF NOT EXISTS transactions (

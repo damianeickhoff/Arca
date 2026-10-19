@@ -32,7 +32,7 @@ export async function clearFixtures() {
     "transactions",
     "merchants",
     "category_rules",
-    "brand_icon_rules",
+    "merchant_patterns",
     "budget_targets",
     "budgets",
     "recurring_items",

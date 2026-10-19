@@ -132,7 +132,13 @@ export type TipAnchor =
   | "aiCategories"
   | "aiSummary"
   // The one icon picker: its Icons · Brands tabs
-  | "iconPickerTabs";
+  | "iconPickerTabs"
+  // Merchant-first rules: the teach strip after a category pick
+  | "ruleTeach"
+  // Merchant-first rules: the merchant card's Recognised by patterns
+  | "merchantPatterns"
+  // Merchant-first rules: Settings › Automations and its Test
+  | "automationsTest";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */
