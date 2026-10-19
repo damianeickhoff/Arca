@@ -12,7 +12,6 @@ import {
   IconBuildingBank,
   IconDownload,
   IconInfoCircle,
-  IconTag,
   IconZoomIn,
   IconZoomOut,
   IconArrowsLeftRight,
@@ -57,7 +56,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CategoryPickerSheet as SharedCategoryPickerSheet } from "@/components/category-picker";
-import { BrandIconPicker } from "@/components/brand-icon-picker";
+import { IconPickerDialog } from "@/components/icon-picker";
 import { MerchantDetailPortal, type MerchantRef } from "@/components/merchant-detail-portal";
 import { RecurringClient } from "@/components/settings/recurring/recurring-client";
 import { formatEur, normalizeBudgetType, currencySymbol } from "@/lib/format";
@@ -1037,15 +1036,16 @@ export function TransactionDetailPanel({
         }}
       />
 
-      <BrandIconDialog
+      <IconPickerDialog
         open={iconOpen}
         onOpenChange={setIconOpen}
-        subtitle={txName}
-        initial={row.brandIcon}
-        preview={brandPreview}
-        onSave={async (key) => {
-          await patchTransaction({ id: row.id, brandIcon: key, brandIconColor: null, brandIconBgColor: null });
-          setIconOpen(false);
+        subject={{ kind: "transaction", name: merchant?.name ?? txName }}
+        value={{ icon: row.brandIcon, color: null }}
+        withColor={false}
+        renderPreview={(c) => brandPreview(c.icon)}
+        noneLabel={t("brand.useDefault")}
+        onApply={async (c) => {
+          await patchTransaction({ id: row.id, brandIcon: c.icon, brandIconColor: null, brandIconBgColor: null });
           router.refresh();
         }}
       />
@@ -1862,87 +1862,6 @@ function AmountBody({
         </div>
       )}
     </form>
-  );
-}
-
-function BrandIconDialog({
-  open,
-  onOpenChange,
-  subtitle,
-  initial,
-  preview,
-  onSave,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  subtitle: string;
-  initial: string | null;
-  /** The transaction's row as it would look with this icon. */
-  preview: (key: string | null) => React.ReactNode;
-  onSave: (key: string | null) => Promise<void>;
-}) {
-  const t = useTranslations("activity.detail");
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent {...NESTED} hideHeaderRow title={t("menu.brandIcon")} className="gap-5 pt-7 font-clear text-clear-ink">
-        <ClearDialogHeader title={t("menu.brandIcon")} subtitle={subtitle} onClose={() => onOpenChange(false)} closeLabel={t("close")} />
-        {open && <BrandIconBody initial={initial} preview={preview} onSave={onSave} onCancel={() => onOpenChange(false)} />}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function BrandIconBody({
-  initial,
-  preview,
-  onSave,
-  onCancel,
-}: {
-  initial: string | null;
-  preview: (key: string | null) => React.ReactNode;
-  onSave: (key: string | null) => Promise<void>;
-  onCancel: () => void;
-}) {
-  const t = useTranslations("activity.detail");
-  const [value, setValue] = useState<string | null>(initial);
-  const [saving, setSaving] = useState(false);
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-bold text-clear-ink-2">{t("brand.icon")}</span>
-        <BrandIconPicker value={value} onChange={setValue} />
-      </div>
-      <div className="flex flex-col gap-2">
-        <span className="text-[13px] font-bold text-clear-ink-2">{t("brand.preview")}</span>
-        {preview(value)}
-      </div>
-      <div className="border-t border-clear-line pt-4">
-        <ClearDialogFooter
-          destructive={
-            <button type="button" onClick={() => setValue(null)} disabled={value == null} className={clearButtonVariants({ variant: "secondary" })}>
-              <IconTag aria-hidden />
-              {t("brand.useDefault")}
-            </button>
-          }
-        >
-          <button type="button" onClick={onCancel} className={clearButtonVariants({ variant: "secondary" })}>
-            {t("cancel")}
-          </button>
-          <button
-            type="button"
-            disabled={saving}
-            onClick={async () => {
-              setSaving(true);
-              await onSave(value);
-              setSaving(false);
-            }}
-            className={clearButtonVariants()}
-          >
-            {saving ? t("saving") : t("save")}
-          </button>
-        </ClearDialogFooter>
-      </div>
-    </div>
   );
 }
 

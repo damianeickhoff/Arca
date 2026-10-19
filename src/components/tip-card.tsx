@@ -44,6 +44,7 @@ import {
   IconTarget,
   IconCirclePlus,
   IconZoomIn,
+  IconIcons,
 } from "@tabler/icons-react";
 
 import type { TipId } from "@/lib/tips";
@@ -142,6 +143,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   aiSettings: IconSparkles,
   aiCategories: IconSparkles,
   aiSummary: IconSparkles,
+  iconPicker: IconIcons,
 };
 
 /**

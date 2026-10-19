@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconCalendarEvent, IconCheck, IconHelpCircle, IconPencil, IconTarget } from "@tabler/icons-react";
+import { IconCalendarEvent, IconHelpCircle, IconTarget } from "@tabler/icons-react";
 import type { Category, Goal } from "@/db/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
@@ -14,15 +14,13 @@ import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { DatePicker } from "@/components/date-picker";
 import { CategoryPicker } from "@/components/category-picker";
-import { IconPicker } from "@/components/icon-picker";
-import { ColorPicker } from "@/components/color-picker";
-import { isBrandIcon } from "@/components/icon";
+import { IconChoiceRow } from "@/components/icon-picker";
 import { TipWalkthrough } from "@/components/tip-walkthrough";
 import { evaluateExpression } from "@/lib/amount-expression";
 import { currencySymbol, formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { differenceInCalendarDays, differenceInCalendarMonths } from "date-fns";
-import { GOAL_COLORS, RECURRENCES, addMonths, goalIconBackground, monthsUntil, type GoalType } from "./goal-shared";
+import { GOAL_COLORS, RECURRENCES, addMonths, monthsUntil, type GoalType } from "./goal-shared";
 import { GoalIcon, ProjectionChart } from "./goal-visuals";
 import { MoneyText } from "@/components/clear/money";
 
@@ -358,67 +356,19 @@ export function GoalFormDialog({
           )}
 
           {isSavings && (
-            <div data-tip-anchor="savingIcon" className="flex items-center gap-[18px]">
-              {/* The icon itself opens the icon picker; the pencil shows on hover and focus. */}
-              <button
-                type="button"
-                onClick={() => setIconOpen(true)}
-                aria-label={t("form.changeIcon")}
-                title={t("form.changeIcon")}
-                className="group relative shrink-0 cursor-pointer rounded-clear-tile transition-transform outline-none focus-visible:ring-3 focus-visible:ring-clear-ink/40 focus-visible:ring-offset-2 focus-visible:ring-offset-clear-card active:scale-[0.96]"
-              >
-                <GoalIcon icon={icon} color={color} size="xxl" />
-                <span
-                  aria-hidden
-                  className="absolute -right-1.5 -bottom-1.5 inline-flex size-6 items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink opacity-0 ring-2 ring-clear-card transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
-                >
-                  <IconPencil size={13} stroke={2.2} />
-                </span>
-              </button>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <span id={`${ids}-colour`} className="text-[13px] font-bold text-clear-ink-2">
-                  {t("form.iconColour")}
-                </span>
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Brand logos keep their own colours, so there is nothing to pick for them. */}
-                  {!(icon && isBrandIcon(icon)) && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div role="radiogroup" aria-labelledby={`${ids}-colour`} className="contents">
-                        {GOAL_COLORS.map((c) => {
-                          const on = color.toLowerCase() === c.hex;
-                          return (
-                            <button
-                              key={c.key}
-                              type="button"
-                              role="radio"
-                              aria-checked={on}
-                              aria-label={t(`colors.${c.key}`)}
-                              onClick={() => setColor(c.hex)}
-                              className={cn(
-                                "inline-flex size-[34px] cursor-pointer items-center justify-center rounded-full text-clear-ink",
-                                on ? "ring-2 ring-clear-ink ring-offset-2 ring-offset-clear-card" : "ring-1 ring-clear-ink/8 ring-inset",
-                              )}
-                              style={{ background: goalIconBackground(c.hex) }}
-                            >
-                              {on ? (
-                                <IconCheck size={15} stroke={3} aria-hidden />
-                              ) : (
-                                <span aria-hidden className="size-3 rounded-full" style={{ background: c.hex }} />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {/* Any other colour: the full picker; its swatch shows the current colour. */}
-                      <span className="inline-flex [&>button]:size-[34px]">
-                        <ColorPicker value={color} onChange={setColor} previewIcon={icon} />
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <IconPicker value={icon} onChange={setIcon} previewColor={color} open={iconOpen} onOpenChange={setIconOpen} hideDefaultTrigger />
-            </div>
+            <IconChoiceRow
+              anchor="savingIcon"
+              label={t("form.iconColour")}
+              tile={<GoalIcon icon={icon} color={color} size="xxl" />}
+              subject={{ kind: "goal", name: name.trim() }}
+              value={{ icon, color }}
+              onChange={(c) => {
+                setIcon(c.icon);
+                if (c.color) setColor(c.color);
+              }}
+              open={iconOpen}
+              onOpenChange={setIconOpen}
+            />
           )}
 
           <ClearField label={t("name")} htmlFor={`${ids}-name`}>

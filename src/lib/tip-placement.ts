@@ -130,7 +130,9 @@ export type TipAnchor =
   // Settings: the AI row; Needs review's Ask AI button; the Insights summary card
   | "settingsAi"
   | "aiCategories"
-  | "aiSummary";
+  | "aiSummary"
+  // The one icon picker: its Icons · Brands tabs
+  | "iconPickerTabs";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

@@ -18,7 +18,7 @@ Activity, Plan (Budget, Debts, Goals and their dialogs), Insights (all five tabs
 Settings page and the popups (add transaction, split, link, rule, receipt, pickers, search,
 merchant/category/recurring details, account and import dialogs) are on Clear. Every screen is on Clear now (Upcoming, Needs review, Import, onboarding, sign-in/2FA, app
 lock, error/404/offline pages and all Settings panels included). Some shared helpers
-(icon picker, colour picker, form sub-pages, the recurring add page) still carry mustard
+(colour picker, form sub-pages, the recurring add page) still carry mustard
 classes until they are cleaned up. The shared Dialog
 (`components/ui/dialog.tsx`) is a centred modal from lg and a bottom sheet on phones.
 New UI is Clear only — never build new UI with the mustard tokens

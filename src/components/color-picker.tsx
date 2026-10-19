@@ -6,8 +6,7 @@ import {
 } from "@tabler/icons-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { IconGlyph } from "@/components/icon-picker";
-import { isBrandIcon } from "@/components/icon";
+import { Icon, isBrandIcon } from "@/components/icon";
 import { contrastIconColor, hexToHue, hexToLightness, hueToHex } from "@/lib/color-luminance";
 
 /** Fallback icon/text color used everywhere a category/debt/etc. has no color set. */
@@ -287,7 +286,7 @@ export function ColorPicker({ value, onChange, previewIcon, previewAsBackground 
                     ? { backgroundColor: value }
                     : undefined}
                 >
-                  <IconGlyph iconKey={previewIcon} color={previewAsBackground || previewIsBrand ? undefined : (value ? contrastIconColor(value) : undefined)} size={previewAsBackground ? 35 : 18} />
+                  <Icon iconKey={previewIcon} color={previewAsBackground || previewIsBrand ? null : (value ? contrastIconColor(value) : null)} background="transparent" size={previewAsBackground ? "xxl" : "sm"} />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {previewAsBackground

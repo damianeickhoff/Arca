@@ -28,9 +28,7 @@ import { useConfirm } from "@/components/clear/confirm-dialog";
 import type { ClearTone } from "@/components/clear/tones";
 import { ClearSelect } from "@/components/settings/accounts/clear-select";
 import { DatePicker } from "@/components/date-picker";
-import { IconPicker } from "@/components/icon-picker";
-import { ColorPicker } from "@/components/color-picker";
-import { PickerField } from "@/components/picker-field";
+import { IconPickerDialog } from "@/components/icon-picker";
 import { Icon, softIconColors } from "@/components/icon";
 import { parseAmountInput } from "@/app/debts/debt-form-dialog";
 import { currencySymbol, formatEur } from "@/lib/format";
@@ -275,10 +273,11 @@ function NameField({
   );
 }
 
-/** The nested "Icon & colour" sheet. */
+/** The nested "Icon & colour" picker for an account. */
 function IconColorDialog({
   open,
   onOpenChange,
+  name,
   icon,
   onIconChange,
   color,
@@ -286,32 +285,23 @@ function IconColorDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  name: string;
   icon: string | null;
   onIconChange: (v: string | null) => void;
   color: string;
   onColorChange: (v: string) => void;
 }) {
-  const t = useTranslations("accountForms");
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent title={t("iconColor")} sheetClassName="lg:max-w-[520px]">
-        <div className="flex flex-col gap-3 pb-2 font-clear">
-          <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
-            <PickerField label={t("icon")}>
-              <IconPicker value={icon} onChange={onIconChange} previewColor={color} />
-            </PickerField>
-          </div>
-          <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
-            <PickerField label={t("color")}>
-              <ColorPicker value={color} onChange={onColorChange} previewIcon={icon} />
-            </PickerField>
-          </div>
-          <button type="button" onClick={() => onOpenChange(false)} className={cn(clearButtonVariants({ size: "lg" }), "mt-1 w-full")}>
-            {t("done")}
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <IconPickerDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      subject={{ kind: "account", name: name.trim() }}
+      value={{ icon, color }}
+      onApply={(c) => {
+        onIconChange(c.icon);
+        if (c.color) onColorChange(c.color);
+      }}
+    />
   );
 }
 
@@ -656,7 +646,7 @@ function BankFormBody({
         onDelete={isEdit ? remove : undefined}
       />
 
-      <IconColorDialog open={iconColorOpen} onOpenChange={setIconColorOpen} icon={icon} onIconChange={setIcon} color={color} onColorChange={setColor} />
+      <IconColorDialog open={iconColorOpen} onOpenChange={setIconColorOpen} name={name} icon={icon} onIconChange={setIcon} color={color} onColorChange={setColor} />
     </>
   );
 }
@@ -859,7 +849,7 @@ function AssetFormBody({
         onDelete={isEdit ? remove : undefined}
       />
 
-      <IconColorDialog open={iconColorOpen} onOpenChange={setIconColorOpen} icon={icon} onIconChange={setIcon} color={color} onColorChange={setColor} />
+      <IconColorDialog open={iconColorOpen} onOpenChange={setIconColorOpen} name={name} icon={icon} onIconChange={setIcon} color={color} onColorChange={setColor} />
     </>
   );
 }

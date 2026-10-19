@@ -1,4 +1,4 @@
-/** Label + swatch trigger row — shared layout for ColorPicker/IconPicker/BrandIconPicker
+/** Label + swatch trigger row — shared layout for the colour and icon picker
  * fields, so "Color" and "Icon" always line up the same way across every form. */
 export function PickerField({ label, children }: { label: string; children: React.ReactNode }) {
   return (

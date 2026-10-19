@@ -11,10 +11,10 @@ import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { Amount } from "@/components/clear/amount";
-import { BrandIconPicker } from "@/components/brand-icon-picker";
+import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { SettingsNotice } from "@/components/settings/settings-ui";
-import { brandColorForIconKey, detectBrandIcon } from "@/lib/brand-detect";
+import { detectBrandIcon } from "@/lib/brand-detect";
 import { isValidISODate } from "@/lib/date-valid";
 import { MERCHANT_ICON_BACKGROUND } from "@/components/merchant-detail-portal";
 
@@ -144,13 +144,15 @@ export function MerchantSettingsClient({ merchant, onClose, onViewProfile }: Pro
 
       <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
         <PickerField label={t("icon")}>
-          {/* Picking a logo also adopts that brand's own color, so the saved color
+          {/* "Auto" in the picker adopts a logo's own brand colour, so the saved colour
               never drifts from the icon (it drives the profile's wash and chart). */}
-          <BrandIconPicker
-            value={icon}
-            onChange={(next) => {
-              setIcon(next);
-              setColor(brandColorForIconKey(next) ?? null);
+          <IconPickerField
+            subject={{ kind: "merchant", name: name.trim() || merchant.name, id: merchant.id }}
+            value={{ icon, color }}
+            background={MERCHANT_ICON_BACKGROUND}
+            onChange={(c) => {
+              setIcon(c.icon);
+              setColor(c.color);
             }}
           />
         </PickerField>

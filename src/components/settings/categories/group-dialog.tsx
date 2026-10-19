@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
 import { ColorPicker } from "@/components/color-picker";
-import { IconPicker } from "@/components/icon-picker";
+import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
@@ -123,7 +123,14 @@ function GroupForm({ group, categoryCount, onClose }: { group: Category | null; 
       <div className="flex flex-col gap-2.5">
         <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
           <PickerField label={tCat("icon")}>
-            <IconPicker value={icon} onChange={setIcon} previewColor={color} hideBrandTab />
+            <IconPickerField
+              subject={{ kind: "group", name: name.trim() || group?.name || "" }}
+              value={{ icon, color }}
+              onChange={(c) => {
+                setIcon(c.icon);
+                if (c.color) setColor(c.color);
+              }}
+            />
           </PickerField>
         </div>
         <div className="rounded-clear-tile bg-clear-tile px-4 py-3">

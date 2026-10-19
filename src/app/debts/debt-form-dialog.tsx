@@ -23,7 +23,7 @@ import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { InfoHint } from "@/components/clear/info-hint";
 import { DatePicker } from "@/components/date-picker";
-import { IconColorField } from "@/components/icon-color-field";
+import { IconChoiceRow } from "@/components/icon-picker";
 import { RecurringMultiPicker } from "@/components/recurring-multi-picker";
 import { CategoryPickerSheet } from "@/components/category-picker";
 import { ContextualTip } from "@/components/contextual-tip";
@@ -90,19 +90,8 @@ function sanitizeRate(raw: string): string {
   return cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, "").slice(0, 3);
 }
 
-// The colour swatches beside the icon, as on the savings goal form; any other colour
-// comes from the full picker next to them. Labels at debtForm.colors.<key>.
-const DEBT_COLORS = [
-  { key: "red", hex: "#ef4444" },
-  { key: "orange", hex: "#f97316" },
-  { key: "amber", hex: "#f59e0b" },
-  { key: "green", hex: "#22c55e" },
-  { key: "teal", hex: "#14b8a6" },
-  { key: "blue", hex: "#3b82f6" },
-  { key: "indigo", hex: "#6366f1" },
-  { key: "purple", hex: "#a855f7" },
-  { key: "pink", hex: "#ec4899" },
-] as const;
+// A new debt starts red; the icon picker changes it.
+const DEFAULT_DEBT_COLOR = "#ef4444";
 
 const FIELD_BOX =
   "flex h-12 items-center gap-1.5 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 transition-colors focus-within:border-clear-ink";
@@ -244,7 +233,7 @@ function DebtFormBody({
   const [interestRate, setInterestRate] = useState(debt?.interestRate != null ? String(debt.interestRate) : "");
   const [notes, setNotes] = useState(debt?.notes ?? "");
   const [icon, setIcon] = useState<string | null>(debt?.icon ?? null);
-  const [color, setColor] = useState<string>(debt?.color ?? DEBT_COLORS[0].hex);
+  const [color, setColor] = useState<string>(debt?.color ?? DEFAULT_DEBT_COLOR);
   const [iconOpen, setIconOpen] = useState(false);
   const [recurringIds, setRecurringIds] = useState<number[]>(currentRecurringIds);
   const [recurringOpen, setRecurringOpen] = useState(false);
@@ -377,18 +366,18 @@ function DebtFormBody({
         />
       </div>
 
-      <IconColorField
+      <IconChoiceRow
         anchor="debtIcon"
-        icon={icon}
-        color={color}
-        onIconChange={setIcon}
-        onColorChange={setColor}
-        swatches={DEBT_COLORS.map((c) => ({ hex: c.hex, label: t(`colors.${c.key}`) }))}
-        tile={<DebtIcon icon={icon} color={color} owed={owed} size="xxl" />}
         label={t("iconColor")}
-        changeIconLabel={t("changeIcon")}
-        pickerOpen={iconOpen}
-        onPickerOpenChange={setIconOpen}
+        tile={<DebtIcon icon={icon} color={color} owed={owed} size="xxl" />}
+        subject={{ kind: "debt", name: name.trim() }}
+        value={{ icon, color }}
+        onChange={(c) => {
+          setIcon(c.icon);
+          if (c.color) setColor(c.color);
+        }}
+        open={iconOpen}
+        onOpenChange={setIconOpen}
       />
 
       <ClearField label={t("name")} htmlFor="debt-name">

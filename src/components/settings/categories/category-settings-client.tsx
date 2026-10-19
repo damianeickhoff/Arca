@@ -9,7 +9,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
 import { RuleDialog, emptyRuleDraft, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
-import { IconPicker } from "@/components/icon-picker";
+import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
@@ -180,7 +180,7 @@ export function EditCategoryForm({
       <div className="flex flex-col gap-2.5">
         <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
           <PickerField label={t("icon")}>
-            <IconPicker value={icon} onChange={setIcon} previewColor={effectiveColor} hideBrandTab />
+            <IconPickerField subject={{ kind: "category", name: shownName, id: category.id }} value={{ icon, color: effectiveColor }} withColor={false} onChange={(c) => setIcon(c.icon)} />
           </PickerField>
         </div>
         {group && <p className="m-0 text-[13px] text-clear-muted">{t("colorFromGroup", { group: group.name })}</p>}

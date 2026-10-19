@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { IconPencil, IconPhoto, IconPlus, IconTrash } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ColorPicker } from "@/components/color-picker";
-import { BrandIconPicker } from "@/components/brand-icon-picker";
+import { IconPickerField } from "@/components/icon-picker";
 import { PickerField } from "@/components/picker-field";
 import { Icon } from "@/components/icon";
 import type { BrandIconRule } from "@/db/schema";
@@ -242,7 +242,7 @@ function RuleForm({
       <div className="flex flex-col gap-2.5">
         <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
           <PickerField label={t("icon")}>
-            <BrandIconPicker value={icon} onChange={setIcon} />
+            <IconPickerField subject={{ kind: "merchant", name: pattern.trim() }} value={{ icon, color: null }} withColor={false} onChange={(c) => setIcon(c.icon)} />
           </PickerField>
         </div>
         <div className="rounded-clear-tile bg-clear-tile px-4 py-3">
