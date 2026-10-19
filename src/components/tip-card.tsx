@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
+  IconListNumbers,
   IconSparkles,
   IconFolders,
   IconAdjustments,
@@ -148,7 +149,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   paymentPlan: IconCalendarDue,
   aiSettings: IconSparkles,
   aiCategories: IconSparkles,
-  aiSummary: IconSparkles,
+  insightsSummary: IconListNumbers,
   iconPicker: IconIcons,
   automations: IconFlask,
   merchantPatterns: IconFingerprint,

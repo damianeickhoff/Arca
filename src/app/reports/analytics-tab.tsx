@@ -6,7 +6,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { IconBuildingStore, IconCoins, IconShoppingBag, IconTarget } from "@tabler/icons-react";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
-import { buildSplitAllocations, groupTransactionSplits, roundToCents } from "@/lib/transaction-splits";
+import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBudgetRecurringMode } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
@@ -17,10 +17,11 @@ import { ClearChip } from "@/components/clear/chip";
 import { Icon } from "@/components/icon";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { isAiReady } from "@/lib/gemini";
-import { getCachedSummary, type SummaryFacts } from "@/lib/ai-features";
-import { AiSummaryCard } from "./ai-summary-card";
+import { getCachedSummary } from "@/lib/ai-features";
+import { averagePerDay, buildSummaryFacts } from "@/lib/period-facts";
+import { SummaryCard } from "./summary-card";
 import type { CategorySpendCard } from "@/components/category-spending-row";
-import { CategoryBreakdownCard } from "./spending-donut-card";
+import { CategoryBreakdownCard } from "./category-breakdown-card";
 import { PeriodSelector } from "./period-selector";
 import { AnalyticsFilterBar } from "./analytics-filter-bar";
 import {
@@ -326,6 +327,10 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   }
   const daysElapsed = Math.max(1, daysInclusive(from, today < from ? from : today > to ? to : today));
 
+  // Transactions without a category (Needs review), per direction — what "Other" holds.
+  const uncategorisedIds = { expense: new Set<number>(), income: new Set<number>() };
+  for (const r of relevant) if (r.categoryId == null) uncategorisedIds[r.direction === "income" ? "income" : "expense"].add(r.transactionId);
+
   // Most active weekday, by number of transactions.
   const weekdayCounts = new Array<number>(7).fill(0);
   for (const r of relevant) weekdayCounts[mondayIndex(r.date)]++;
@@ -336,6 +341,9 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     income,
     expense,
     saved,
+    prevExpense,
+    prevDays: days,
+    daysElapsed,
     incomeChange: change(income, prevIncome),
     expenseChange: change(expense, prevExpense),
     largest: largest
@@ -362,7 +370,8 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     topMerchants,
     accountsSpend,
     calendar,
-    avgExpensePerDay: expense / daysElapsed,
+    avgExpensePerDay: averagePerDay(expense, daysElapsed),
+    uncategorised: { expense: uncategorisedIds.expense.size, income: uncategorisedIds.income.size },
     popularDayIdx,
   };
 }
@@ -405,7 +414,8 @@ export async function InsightsFilters({
 /**
  * Insights · Overview: the period's key figures, money in and out week by week, where it
  * went by category, merchant and account, and a calendar of spending per day. One grid:
- * the figures span the full width, the week chart two columns, the rest one each.
+ * the figures span the full width; then from xl the week chart (two columns) beside the
+ * summary, the breakdown (two) beside the merchants, the accounts beside the calendar (two).
  */
 export async function AnalyticsTab({
   from,
@@ -456,25 +466,32 @@ export async function AnalyticsTab({
 
   const vsLast = <span>{tInsights("vsLastPeriod")}</span>;
 
-  // Gemini's summary of this period (Settings › AI), fed only the figures on this page.
+  // The summary: computed facts, which Gemini (Settings › AI) writes up when it is on.
+  // "v2": summaries are structured now; paragraph ones from before are never shown.
   const aiReady = await isAiReady();
   const signedPct = (c: { pct: number; up: boolean } | null) => (c ? (c.up ? c.pct : -c.pct) : null);
-  const summaryKey = [locale, from, to, (categoryIds ?? []).join(","), (accounts ?? []).join(",")].join("|");
-  const summaryFacts: SummaryFacts = {
+  const summaryKey = ["v2", locale, from, to, (categoryIds ?? []).join(","), (accounts ?? []).join(",")].join("|");
+  const summaryFacts = buildSummaryFacts({
     from,
     to,
     ongoing: data.ongoing,
-    income: roundToCents(data.income),
-    expense: roundToCents(data.expense),
-    saved: roundToCents(data.saved),
+    income: data.income,
+    expense: data.expense,
     incomeChangePct: signedPct(data.incomeChange),
     expenseChangePct: signedPct(data.expenseChange),
-    avgPerDay: roundToCents(data.avgExpensePerDay),
-    categories: data.spendingAll.slice(0, 8).map((c) => ({ name: c.categoryName, spent: roundToCents(c.spent), budget: c.budget })),
-    merchants: data.topMerchants.slice(0, 6).map((m) => ({ name: m.name, total: roundToCents(m.total), visits: m.visits })),
-    largest: data.largest ? { name: data.largest.name, amount: roundToCents(data.largest.amount), category: data.largest.categoryName } : null,
-  };
+    daysElapsed: data.daysElapsed,
+    prevExpense: data.prevExpense,
+    prevDays: data.prevDays,
+    left: data.hint,
+    groups: data.groupSpendingVisible.map((g) => ({ name: g.categoryName, spent: g.spent })),
+    categories: data.spendingAll.map((c) => ({ name: c.categoryName, spent: c.spent, budget: c.budget })),
+    merchants: data.topMerchants.map((m) => ({ name: m.name, total: m.total, visits: m.visits })),
+    largest: data.largest ? { name: data.largest.name, amount: data.largest.amount, category: data.largest.categoryName } : null,
+    uncategorised: data.uncategorised.expense,
+  });
   const cachedSummary = aiReady ? await getCachedSummary(summaryKey) : null;
+  const summarySubtitle =
+    data.ongoing && data.hint ? t("rangeDaysLeft", { range: rangeLabel, count: data.hint.daysLeft }) : rangeLabel;
 
   return (
     <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
@@ -530,9 +547,16 @@ export async function AnalyticsTab({
         />
       </div>
 
-      {aiReady && <AiSummaryCard facts={summaryFacts} cacheKey={summaryKey} initial={cachedSummary} className="lg:col-span-2 xl:col-span-3" />}
-
+      {/* Week by week beside the summary from xl; at lg the summary goes under it. */}
       <FlowCard buckets={buckets} grain={data.grain} hint={data.hint} className="lg:col-span-2" />
+      <SummaryCard
+        facts={summaryFacts}
+        aiReady={aiReady}
+        cacheKey={summaryKey}
+        initial={cachedSummary}
+        subtitle={summarySubtitle}
+        className="lg:col-span-2 xl:col-span-1"
+      />
 
       <CategoryBreakdownCard
         spendingVisible={data.spendingVisible}
@@ -541,19 +565,21 @@ export async function AnalyticsTab({
         incomeAll={data.incomeAll}
         incomeTotal={data.income}
         groups={{ spendingVisible: data.groupSpendingVisible, spendingAll: data.groupSpendingAll, incomeAll: data.groupIncomeAll }}
+        uncategorised={data.uncategorised}
         ongoing={data.ongoing}
         financialMonth={financialMonth}
         budgetPeriod={data.budgetPeriod}
+        className="lg:col-span-2"
       />
+      <MerchantsCard merchants={data.topMerchants} spendingTotal={data.expense} allHref={`/transactions?from=${from}&to=${to}&direction=expense`} />
 
-      <MerchantsCard merchants={data.topMerchants} allHref={`/transactions?from=${from}&to=${to}&direction=expense`} />
       <AccountsCard accounts={data.accountsSpend} />
-      <CalendarCard days={data.calendar} rangeLabel={rangeLabel} avgPerDay={data.avgExpensePerDay} popularDay={popularDay} />
+      <CalendarCard days={data.calendar} rangeLabel={rangeLabel} avgPerDay={data.avgExpensePerDay} popularDay={popularDay} className="lg:col-span-2" />
 
       <AnchoredTip id="insightsMerchants" anchor="insightsMerchants" active={data.topMerchants.length > 0} />
       <AnchoredTip id="insightsCategorySwitch" anchor="insightsCategorySwitch" active={data.incomeAll.length > 0} />
       <AnchoredTip id="insightsGroupSwitch" anchor="insightsGroupSwitch" active={data.groupSpendingAll.length > 0} />
-      <AnchoredTip id="aiSummary" anchor="aiSummary" active={aiReady} />
+      <AnchoredTip id="insightsSummary" anchor="insightsSummary" />
     </div>
   );
 }
