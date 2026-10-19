@@ -39,6 +39,8 @@ export default defineConfig({
       ],
       components: {
         Hero: "./src/components/Hero.astro",
+        // Adds the "Roadmap" pill to the header, in front of the GitHub icon.
+        SocialIcons: "./src/components/SocialIcons.astro",
       },
       editLink: {
         baseUrl: "https://github.com/damianeickhoff/Arca/edit/master/website/",
@@ -118,9 +120,9 @@ export default defineConfig({
           items: [
             { label: "Questions and fixes", slug: "help/faq" },
             { label: "Get help", slug: "help/get-help" },
-            { label: "Roadmap", slug: "roadmap" },
           ],
         },
+        { label: "Roadmap", slug: "roadmap" },
       ],
     }),
   ],

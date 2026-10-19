@@ -1,0 +1,131 @@
+---
+// The landing page's "Where Arca is heading" card: one tile per phase with its count and
+// first item, and a pill to the roadmap. Reads the same data as the roadmap page.
+import { phases } from "../data/roadmap";
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const shown = phases.filter((p) => p.id !== "not-planned");
+---
+
+<section class="rm-teaser not-content" aria-labelledby="rm-teaser-title">
+  <div class="rm-teaser__copy">
+    <h2 class="rm-teaser__title" id="rm-teaser-title">Where Arca is heading</h2>
+    <p class="rm-teaser__text">What's being built now, what's next, and the ideas waiting their turn. A direction, not a promise.</p>
+    <a class="rm-teaser__link" href={`${base}/roadmap/`}>See the roadmap</a>
+  </div>
+  <ol class="rm-teaser__phases">
+    {
+      shown.map((phase) => (
+        <li class="rm-teaser__phase" data-tone={phase.tone}>
+          <a href={`${base}/roadmap/#${phase.id}`}>
+            <span class="rm-teaser__chip">{phase.status}</span>
+            <span class="rm-teaser__count">{phase.items.length}</span>
+            <span class="rm-teaser__first">{phase.items[0]?.title}{phase.items.length > 1 ? ` and ${phase.items.length - 1} more` : ""}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<style>
+  .rm-teaser {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.25rem;
+    background-color: var(--clr-card);
+    border-radius: 24px;
+    padding: 1.5rem 1.375rem;
+    color: var(--clr-ink);
+  }
+  @media (min-width: 60rem) {
+    .rm-teaser {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      align-items: center;
+      gap: 2rem;
+      padding: 1.75rem 2rem;
+    }
+  }
+  .rm-teaser :is(h2, p, ol, li) {
+    margin: 0;
+  }
+  .rm-teaser ol {
+    list-style: none;
+    padding: 0;
+  }
+  .rm-teaser__title {
+    font-size: 1.375rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  .rm-teaser__text {
+    margin-top: 0.5rem;
+    color: var(--clr-ink-2);
+  }
+  .rm-teaser__link {
+    display: inline-flex;
+    align-items: center;
+    height: 2.75rem;
+    margin-top: 1.25rem;
+    padding: 0 1.25rem;
+    border-radius: 999px;
+    background-color: var(--clr-primary);
+    color: var(--clr-primary-ink);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 150ms ease, transform 150ms ease;
+  }
+  .rm-teaser__link:hover {
+    opacity: 0.9;
+  }
+  .rm-teaser__link:active {
+    transform: scale(0.97);
+  }
+
+  .rm-teaser__phases {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  }
+  .rm-teaser__phase a {
+    display: grid;
+    gap: 0.25rem;
+    height: 100%;
+    padding: 1rem 1.125rem 1.125rem;
+    border-radius: 16px;
+    background-color: var(--clr-tile);
+    color: var(--clr-ink);
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+  .rm-teaser__phase a:hover {
+    background-color: var(--clr-line);
+  }
+  .rm-teaser__chip {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    height: 1.625rem;
+    padding: 0 0.625rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  [data-tone="ember"] .rm-teaser__chip { background-color: var(--clr-ember); color: var(--clr-ember-ink); }
+  [data-tone="sky"] .rm-teaser__chip { background-color: var(--clr-sky); color: var(--clr-sky-ink); }
+  [data-tone="lilac"] .rm-teaser__chip { background-color: var(--clr-lilac); color: var(--clr-lilac-ink); }
+  .rm-teaser__count {
+    margin-top: 0.5rem;
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .rm-teaser__first {
+    font-size: 0.8125rem;
+    color: var(--clr-muted);
+  }
+</style>

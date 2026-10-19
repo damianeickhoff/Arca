@@ -167,15 +167,46 @@ body {
   outline-offset: 2px;
 }
 
-/* Header: a white bar with a hairline, like the app's sidebar surface. */
+/* Header: a white bar with one hairline under it, like the app's sidebar surface.
+   Starlight draws a second vertical hairline after the social icons and, below 72rem, a
+   mobile "On this page" bar with its own top and bottom lines right under the header;
+   those go, so the header ever only has the one line. */
 .header {
   background-color: var(--clr-card);
   border-bottom: 1px solid var(--clr-line);
 }
 
+.header .social-icons::after {
+  display: none;
+}
+
 .site-title img {
   height: 2rem;
   width: auto;
+}
+
+/* The "Roadmap" pill in the header (src/components/SocialIcons.astro). */
+.arca-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  background-color: var(--clr-tile);
+  color: var(--clr-ink);
+  font-family: var(--__sl-font);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+.arca-nav-pill:hover {
+  background-color: var(--clr-line);
+}
+.arca-nav-pill[aria-current="page"] {
+  background-color: var(--clr-primary);
+  color: var(--clr-primary-ink);
 }
 
 /* Search: a quiet tile pill, like the app's "Search everything" field. */
@@ -631,9 +662,30 @@ html:not([data-has-hero]) .sl-markdown-content {
   font-weight: 700;
 }
 
+/* The mobile "On this page" bar sits directly under the header: no lines of its own,
+   the header's hairline is the only one. Its toggle is a tile pill. */
 mobile-starlight-toc nav {
   background-color: var(--clr-card);
-  border-bottom: 1px solid var(--clr-line);
+  border-top: 0;
+}
+mobile-starlight-toc summary {
+  border-bottom: 0;
+}
+mobile-starlight-toc .toggle {
+  border: 0;
+  border-radius: 999px;
+  background-color: var(--clr-tile);
+  font-family: var(--__sl-font);
+  font-weight: 600;
+}
+mobile-starlight-toc details[open] .toggle,
+mobile-starlight-toc details .toggle:hover {
+  border: 0;
+  background-color: var(--clr-line);
+}
+mobile-starlight-toc .dropdown {
+  border: 0;
+  border-top: 1px solid var(--clr-line);
 }
 
 /* ---------- Footer: previous / next as white cards ---------- */
@@ -817,22 +869,6 @@ footer .kudos {
   margin-top: 0.375rem;
   color: var(--clr-ink-2);
 }
-
-/* Status chips on the roadmap ("In progress", "Planned", …). */
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  height: 1.625rem;
-  padding: 0 0.625rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  vertical-align: middle;
-}
-.status-chip--progress { background-color: var(--clr-ember); color: var(--clr-ember-ink); }
-.status-chip--planned { background-color: var(--clr-sky); color: var(--clr-sky-ink); }
-.status-chip--idea { background-color: var(--clr-lilac); color: var(--clr-lilac-ink); }
-.status-chip--no { background-color: var(--clr-stone); color: var(--clr-stone-ink); }
 
 /* Screenshots side by side (phone light and dark). */
 .shot-pair {

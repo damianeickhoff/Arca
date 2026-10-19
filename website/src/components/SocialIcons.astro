@@ -1,0 +1,13 @@
+---
+// Starlight's header slot for social links, with a "Roadmap" pill in front of the GitHub
+// icon so the roadmap is one tap away from every page. Hidden on phones with the rest of
+// the header's right group; there the sidebar's top-level Roadmap entry takes over.
+import Default from "@astrojs/starlight/components/SocialIcons.astro";
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const current = Astro.url.pathname.replace(/\/$/, "");
+const isRoadmap = current === `${base}/roadmap`;
+---
+
+<a class="arca-nav-pill" href={`${base}/roadmap/`} aria-current={isRoadmap ? "page" : undefined}>Roadmap</a>
+<Default />

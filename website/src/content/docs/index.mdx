@@ -56,6 +56,7 @@ hero:
 ## Start here
 
 import { LinkCard, CardGrid } from "@astrojs/starlight/components";
+import RoadmapTeaser from "../../components/RoadmapTeaser.astro";
 
 <CardGrid>
   <LinkCard title="Install Arca" description="Docker, Docker Compose or Unraid, in a few minutes." href="/Arca/getting-started/install/" />
@@ -63,3 +64,7 @@ import { LinkCard, CardGrid } from "@astrojs/starlight/components";
   <LinkCard title="Connect your bank" description="Let transactions come in by themselves every day." href="/Arca/transactions/bank-connection/" />
   <LinkCard title="Questions and fixes" description="Wrong amounts, duplicates, a forgotten PIN and more." href="/Arca/help/faq/" />
 </CardGrid>
+
+## What comes next
+
+<RoadmapTeaser />
