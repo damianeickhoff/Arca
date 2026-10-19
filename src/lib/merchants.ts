@@ -5,6 +5,8 @@ import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
 import { detectBrandIcon } from "@/lib/auto-brand";
 import { notInternalTransferCondition } from "@/lib/internal-transfers";
 import { descriptionMatches, matchMerchantPattern, normalizeMatchType, sortPatterns, type PatternMatchType } from "@/lib/merchant-patterns";
+import { recordActivity } from "@/lib/activity-log";
+import { merchantDeletedEntry } from "@/lib/activity-log-entries";
 
 /** Looks up a merchant by its normalized key, creating it if it doesn't exist yet.
  * Returns null for names that normalize to nothing (pure punctuation/whitespace), and
@@ -41,10 +43,12 @@ export async function getOrCreateMerchantId(name: string, revive = false): Promi
 /** Soft-deletes a merchant and unlinks its transactions. The row survives as a
  * tombstone so auto-derivation doesn't recreate it (see getOrCreateMerchantId). */
 export async function deleteMerchant(id: number): Promise<boolean> {
-  const [existing] = await db.select({ id: merchants.id }).from(merchants).where(eq(merchants.id, id));
+  const [existing] = await db.select({ id: merchants.id, name: merchants.name, deleted: merchants.deleted }).from(merchants).where(eq(merchants.id, id));
   if (!existing) return false;
-  await db.update(transactions).set({ merchantId: null }).where(eq(transactions.merchantId, id));
+  const unlinked = await db.update(transactions).set({ merchantId: null }).where(eq(transactions.merchantId, id)).returning({ id: transactions.id });
   await db.update(merchants).set({ deleted: true }).where(eq(merchants.id, id));
+  // The change log can bring the profile back and relink its transactions.
+  if (!existing.deleted) await recordActivity(merchantDeletedEntry(existing, unlinked.map((r) => r.id)));
   return true;
 }
 

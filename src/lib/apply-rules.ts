@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { categories, categoryRules, merchants, transactions, transactionSplits, banks } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, gte } from "drizzle-orm";
 import type { CategoryRule, Bank } from "@/db/schema";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
 
@@ -95,16 +95,22 @@ export function categoryFor(
 }
 
 /** What the rule pass would change on one transaction. */
-interface RulePassChange {
+export interface RulePassChange {
   id: number;
+  date: string;
+  description: string;
+  fromCategoryId: number | null;
   patch: { categoryId?: number | null; recurringItemId?: number | null; isReimbursement?: boolean };
+  /** The values the patched fields had — what the change log's undo puts back. */
+  before: { categoryId: number | null; recurringItemId: number | null; isReimbursement: boolean };
 }
 
 /**
  * Works out what applying every rule would change, without writing anything — the
- * first half of applyAllRules.
+ * pass applyAllRules runs, and Settings › Automations' "Test" (with `since`, a
+ * YYYY-MM-DD lower bound on the transaction date).
  */
-async function planRulePass(): Promise<RulePassChange[]> {
+export async function planRulePass(opts: { since?: string } = {}): Promise<RulePassChange[]> {
   const [allRules, allBanks, allCategories, recurringMatchers] = await Promise.all([
     db.select().from(categoryRules),
     db.select().from(banks),
@@ -133,6 +139,7 @@ async function planRulePass(): Promise<RulePassChange[]> {
   const rows = await db
     .select({
       id: transactions.id,
+      date: transactions.date,
       description: transactions.description,
       amount: transactions.amount,
       categoryId: transactions.categoryId,
@@ -143,7 +150,8 @@ async function planRulePass(): Promise<RulePassChange[]> {
       recurringItemId: transactions.recurringItemId,
       isReimbursement: transactions.isReimbursement,
     })
-    .from(transactions);
+    .from(transactions)
+    .where(opts.since ? gte(transactions.date, opts.since) : undefined);
   const splitRows = await db.select({ transactionId: transactionSplits.transactionId }).from(transactionSplits);
   const splitTransactionIds = new Set(splitRows.map((row) => row.transactionId));
 
@@ -181,14 +189,21 @@ async function planRulePass(): Promise<RulePassChange[]> {
     }
 
     if (Object.keys(patch).length > 0) {
-      changes.push({ id: row.id, patch });
+      changes.push({
+        id: row.id,
+        date: row.date,
+        description: row.description,
+        fromCategoryId: row.categoryId,
+        patch,
+        before: { categoryId: row.categoryId, recurringItemId: row.recurringItemId, isReimbursement: row.isReimbursement },
+      });
     }
   }
   return changes;
 }
 
 /** Writes the changes planRulePass worked out. Returns how many transactions changed. */
-async function applyRulePass(changes: RulePassChange[]): Promise<number> {
+export async function applyRulePass(changes: RulePassChange[]): Promise<number> {
   for (const c of changes) await db.update(transactions).set(c.patch).where(eq(transactions.id, c.id));
   return changes.length;
 }

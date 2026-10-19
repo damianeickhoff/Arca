@@ -21,6 +21,8 @@ export interface ImportResult {
   invalidDates: number;
   total: number;
   newAccounts: Bank[];
+  /** The transactions this import inserted — for the change log, not for the client. */
+  insertedIds: number[];
 }
 
 export interface ImportOptions {
@@ -221,5 +223,6 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
     autoCategorised += Number(row?.n ?? 0);
   }
 
-  return { imported, skipped, autoCategorised, invalidDates, total: rows.length, newAccounts };
+  // insertedIds is for the change log (recordImport) — callers strip it from responses.
+  return { imported, skipped, autoCategorised, invalidDates, total: rows.length, newAccounts, insertedIds };
 }

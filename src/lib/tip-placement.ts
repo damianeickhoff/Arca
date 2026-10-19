@@ -21,6 +21,8 @@ export type TipAnchor =
   | "importCheck"
   | "importMapColumns"
   | "dataHealthMenu"
+  // Settings › Data health: the change log
+  | "recentChanges"
   | "transactionListRow"
   // App shell: the phone tab bar / desktop sidebar nav, and the Plan switch
   | "mainNav"

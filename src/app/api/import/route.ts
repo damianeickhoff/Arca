@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { importParsedRows } from "@/lib/import-rows";
+import { recordImport } from "@/lib/activity-log";
 import { mappingRequest, resolveImport } from "@/lib/import-preview";
 import { requireAuth } from "@/lib/auth";
 
@@ -37,7 +38,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(request);
   }
 
-  const result = await importParsedRows(resolved.rows);
+  const { insertedIds, ...result } = await importParsedRows(resolved.rows);
+  await recordImport("csvImport", insertedIds, { skipped: result.skipped });
   // New rows move the sidebar's account balances (root layout).
   revalidatePath("/", "layout");
   return NextResponse.json(result);

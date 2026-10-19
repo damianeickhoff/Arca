@@ -19,6 +19,7 @@ import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balance
 import { getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
 import { getPlanProgress } from "@/lib/payment-plan-progress";
 import { syncRecurringLifecycle } from "@/lib/recurring-period";
+import { listActivity } from "@/lib/activity-log";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
 // Server-rendered content for the data-heavy settings panels. Two hosts:
@@ -91,7 +92,7 @@ async function MerchantsPanel() {
 }
 
 async function DataHealthPanel() {
-  return <DataHealthClient rows={await findBrokenDateTransactions()} />;
+  return <DataHealthClient rows={await findBrokenDateTransactions()} changes={listActivity()} />;
 }
 
 async function ImportProfilesPanel() {

@@ -7,6 +7,8 @@ import { amountsMatch, getTransactionSplitTotal, roundToCents } from "@/lib/tran
 import { requireAuth } from "@/lib/auth";
 import { adjustGoalAmount, goalDeltaForTransaction } from "@/lib/goal-contributions";
 import { resolveMerchantIdFor } from "@/lib/merchants";
+import { recordActivity, selectRowsByIds } from "@/lib/activity-log";
+import { bulkCategoryMoveEntry, type ActivityEntryInput } from "@/lib/activity-log-entries";
 
 function parseSplitPayload(input: unknown, expectedTotal: number) {
   if (!Array.isArray(input)) {
@@ -106,7 +108,14 @@ export async function PATCH(req: NextRequest) {
   if (Array.isArray(body.ids)) {
     const { ids, byRule, ...data } = body;
     if (ids.length === 0) return NextResponse.json({ updated: 0 });
+    // A category move goes in the change log: each row's previous category and manual
+    // flag, and the splits the move removes.
+    let moveEntry: ActivityEntryInput | null = null;
     if (data.categoryId !== undefined) {
+      const before = selectRowsByIds("transactions", ids).map((r) => ({ id: Number(r.id), category_id: r.category_id, manually_categorized: r.manually_categorized }));
+      const splitIds = (await db.select({ id: transactionSplits.id }).from(transactionSplits).where(inArray(transactionSplits.transactionId, ids))).map((s) => s.id);
+      const [category] = typeof data.categoryId === "number" ? await db.select({ name: categories.name }).from(categories).where(eq(categories.id, data.categoryId)) : [];
+      moveEntry = bulkCategoryMoveEntry(before, data.categoryId ?? null, category?.name ?? null, selectRowsByIds("transaction_splits", splitIds));
       // A category set by hand is manual; one a rule just filed (byRule) is not, so the
       // rules pass may move it again and deleting the rule can offer to revert it.
       data.manuallyCategorized = byRule !== true;
@@ -117,7 +126,8 @@ export async function PATCH(req: NextRequest) {
       .set(data)
       .where(inArray(transactions.id, ids))
       .returning({ id: transactions.id });
-    return NextResponse.json({ updated: result.length });
+    const activityId = await recordActivity(moveEntry);
+    return NextResponse.json({ updated: result.length, activityId });
   }
 
   // Bulk update by description: { description, categoryId, matchType? }
