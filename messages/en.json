@@ -1493,16 +1493,14 @@
       "title": "One place per merchant",
       "body": "Add the descriptions your bank uses for this merchant and give it a category: its logo, name and category then follow every transaction."
     },
-    "automations": {
-      "title": "All your rules in one list",
-      "body": "See what each merchant and rule decides, spot rules that fight, and Test a change on the last 90 days before it is applied."
-    },
     "bankConnection": {
       "title": "Connect your bank",
       "body": "Paste your Enable Banking app here and connect a bank: transactions then come in by themselves every day, no CSV needed."
+    },
     "quickAdd": {
       "title": "Add from anywhere",
       "body": "The + next to search (the orange button on phones) adds a transaction, recurring bill, debt, goal or category without leaving the page you are on. Ctrl/Cmd+N opens it too."
+    },
     "reviewTeach": {
       "title": "Teach the busy ones",
       "body": "Merchants with a pile of transactions waiting show up here. File one, tap Always, and the rest are sorted at once."
@@ -3788,7 +3786,7 @@
       "deleteTitle": "Delete this rule?",
       "deleteBody": "{count, plural, one {One transaction} other {# transactions}} this rule filed under {category} still {count, plural, one {has} other {have}} that category. Transactions you categorised by hand stay as they are.",
       "deleteKeep": "Keep them as they are",
-      "deleteRevert": "{count, plural, one {Send it back to Needs review} other {Send # back to Needs review}}"
+      "deleteRevert": "{count, plural, one {Send it back to Needs review} other {Send # back to Needs review}}",
       "test": {
         "run": "Test on the last {days} days",
         "again": "Test again",

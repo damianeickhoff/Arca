@@ -1493,16 +1493,14 @@
       "title": "Eén plek per winkel",
       "body": "Voeg de omschrijvingen toe die je bank voor deze winkel gebruikt en geef hem een categorie: logo, naam en categorie volgen dan elke transactie."
     },
-    "automations": {
-      "title": "Al je regels in één lijst",
-      "body": "Zie wat elke winkel en regel bepaalt, vind regels die botsen en test een wijziging op de laatste 90 dagen voordat hij wordt toegepast."
-    },
     "bankConnection": {
       "title": "Koppel je bank",
       "body": "Plak hier je Enable Banking-app en koppel een bank: transacties komen dan elke dag vanzelf binnen, zonder CSV."
+    },
     "quickAdd": {
       "title": "Overal toevoegen",
       "body": "Met de + naast zoeken (de oranje knop op je telefoon) voeg je een transactie, vaste last, schuld, doel of categorie toe zonder de pagina te verlaten. Ctrl/Cmd+N opent hem ook."
+    },
     "reviewTeach": {
       "title": "Leer de drukke eerst",
       "body": "Winkels met een stapel wachtende transacties staan hier. Deel er één in, tik op Altijd en de rest is in één keer gesorteerd."
@@ -3788,7 +3786,7 @@
       "deleteTitle": "Deze regel verwijderen?",
       "deleteBody": "{count, plural, one {Eén transactie} other {# transacties}} die deze regel onder {category} zette, {count, plural, one {staat} other {staan}} daar nog. Transacties die je zelf hebt ingedeeld blijven zoals ze zijn.",
       "deleteKeep": "Laat ze zoals ze zijn",
-      "deleteRevert": "{count, plural, one {Terug naar Te beoordelen} other {# terug naar Te beoordelen}}"
+      "deleteRevert": "{count, plural, one {Terug naar Te beoordelen} other {# terug naar Te beoordelen}}",
       "test": {
         "run": "Test op de laatste {days} dagen",
         "again": "Opnieuw testen",
