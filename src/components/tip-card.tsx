@@ -155,6 +155,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   merchantPatterns: IconFingerprint,
   ruleTeach: IconWand,
   bankConnection: IconBuildingBank,
+  quickAdd: IconCirclePlus,
 };
 
 /**

@@ -1501,6 +1501,9 @@
     "bankConnection": {
       "title": "Koppel je bank",
       "body": "Plak hier je Enable Banking-app en koppel een bank: transacties komen dan elke dag vanzelf binnen, zonder CSV."
+    "quickAdd": {
+      "title": "Overal toevoegen",
+      "body": "Met de + naast zoeken (de oranje knop op je telefoon) voeg je een transactie, vaste last, schuld, doel of categorie toe zonder de pagina te verlaten. Ctrl/Cmd+N opent hem ook."
     }
   },
   "categoryPicker": {
@@ -2696,7 +2699,6 @@
       "goals": "Doelen"
     },
     "insights": "Inzichten",
-    "addTransaction": "Transactie toevoegen",
     "search": "Zoeken",
     "searchShortcut": "⌘K",
     "needsReviewBadge": "{count, plural, one {# transactie heeft een categorie nodig} other {# transacties hebben een categorie nodig}}",
@@ -2710,7 +2712,31 @@
       "dark": "Donker",
       "cycle": "Thema: {mode}. Tik om te wisselen"
     },
-    "searchEverything": "Alles doorzoeken"
+    "searchEverything": "Alles doorzoeken",
+    "quickAdd": {
+      "title": "Toevoegen",
+      "buttonLabel": "Iets toevoegen ({shortcut})",
+      "transaction": {
+        "title": "Transactie",
+        "meta": "Een uitgave, inkomen of overboeking"
+      },
+      "recurring": {
+        "title": "Vaste last",
+        "meta": "Een rekening, abonnement of inkomen dat terugkomt"
+      },
+      "debt": {
+        "title": "Schuld",
+        "meta": "Geld dat je schuldig bent of tegoed hebt"
+      },
+      "goal": {
+        "title": "Doel",
+        "meta": "Spaar ergens voor of zet een grens op een categorie"
+      },
+      "category": {
+        "title": "Categorie",
+        "meta": "Een nieuwe categorie in een van je groepen"
+      }
+    }
   },
   "insights": {
     "title": "Inzichten",

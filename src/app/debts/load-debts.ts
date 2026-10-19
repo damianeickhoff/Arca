@@ -9,25 +9,33 @@ import { getMonthlyFreeToSpend } from "@/lib/monthly-free-to-spend";
 import { computeDebt } from "./debt-shared";
 import type { ComputedDebt, DebtsFreeToSpend, DebtsPageData } from "./debt-shared";
 
-// Loads + computes everything the Debts page needs: every debt with its payoff
-// figures, split by direction, and the totals the summary tiles show.
-export async function loadDebtsData(): Promise<DebtsPageData> {
-  const [rows, billsRaw, cats, financialMonth] = await Promise.all([
-    db.select().from(debts).orderBy(asc(debts.name)),
+/**
+ * Every recurring item, for the debt form's "Linked recurring bills". Recurring bills
+ * take their icon from their assigned category (brand logos belong to transactions, not
+ * recurring items). Resolved here so the debt page — hero glyph and the linked bills —
+ * always reflects the bill's current category icon instead of a stale stored value.
+ * Also read by the shell's add menu (app/actions/quick-add.ts).
+ */
+export async function loadDebtBills(): Promise<RecurringItem[]> {
+  const [billsRaw, cats] = await Promise.all([
     db.select().from(recurringItems).orderBy(asc(recurringItems.name)),
     db.select({ id: categories.id, icon: categories.icon, color: categories.color }).from(categories),
-    getFinancialMonthConfig(),
   ]);
-
-  // Recurring bills take their icon from their assigned category (brand logos belong to
-  // transactions, not recurring items). Resolve it here so the debt page — hero glyph
-  // and the "Linked recurring bills" list — always reflects the bill's current
-  // category icon instead of a stale value stored on the row.
   const categoriesById = new Map(cats.map((c) => [c.id, { icon: c.icon, color: c.color }]));
-  const bills: RecurringItem[] = billsRaw.map((b) => {
+  return billsRaw.map((b) => {
     const resolved = resolveRecurringIcon(b, categoriesById);
     return { ...b, icon: resolved.iconKey ?? b.icon, iconColor: resolved.color ?? b.iconColor };
   });
+}
+
+// Loads + computes everything the Debts page needs: every debt with its payoff
+// figures, split by direction, and the totals the summary tiles show.
+export async function loadDebtsData(): Promise<DebtsPageData> {
+  const [rows, bills, financialMonth] = await Promise.all([
+    db.select().from(debts).orderBy(asc(debts.name)),
+    loadDebtBills(),
+    getFinancialMonthConfig(),
+  ]);
 
   // Payoff progress comes from the paid-months history of each debt's linked
   // recurring bills (see lib/debt-recurring-paid.ts).

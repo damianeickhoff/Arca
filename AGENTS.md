@@ -82,7 +82,7 @@ contain user-facing text themselves.
 - Desktop (`lg`+): a full-height white sidebar (260px, flush with the left edge, a
   hairline on its right, sized by window height: compact below 800px, the full layout
   with the logo from 900px) with the logo, the signed-in user, the "Search everything" field (the global
-  search, also Ctrl/Cmd+K), the navigation (Home · Activity · Plan ·
+  search, also Ctrl/Cmd+K) with the round black "+" beside it (the add menu, also Ctrl/Cmd+N), the navigation (Home · Activity · Plan ·
   Insights, active row black; Plan shows Budget · Debts · Goals under it while one is
   open, Insights its five tabs while it is open) and Import CSV, Settings, a theme button (each tap: light → dark → system) and Sign out at
   the bottom. Pages start 260px
@@ -91,7 +91,7 @@ contain user-facing text themselves.
   button — search lives in the shell so it never reads as "search this page" (a page
   may have a search that filters its own list, like Activity).
 - Phone: header (avatar/title + round buttons), content in 16px gutters, and the
-  floating black tab bar (Home, Activity, ember add button, Plan, Insights, and the
+  floating black tab bar (Home, Activity, ember add button (the same add menu), Plan, Insights, and the
   global search button set apart at the end). Pages
   reserve space at the bottom so the last row clears the tab bar.
 - Pages fill the available width; content never sets its own max width or centres

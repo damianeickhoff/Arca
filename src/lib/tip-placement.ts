@@ -42,6 +42,8 @@ export type TipAnchor =
   | "activityHistory"
   | "globalSearch"
   | "globalSearchPhone"
+  | "quickAdd"
+  | "quickAddPhone"
   | "activityKeys"
   | "activityDetailTabs"
   // Redesigned Insights
