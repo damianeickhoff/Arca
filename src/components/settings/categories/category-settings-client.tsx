@@ -15,7 +15,8 @@ import { ClearButton } from "@/components/clear/button";
 import { ClearDialogFooter, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearField, ClearInput } from "@/components/clear/field";
 import { SettingsNotice } from "@/components/settings/settings-ui";
-import { BudgetTypeField, CategoryRuleList, GroupField } from "@/components/settings/categories/category-form-parts";
+import { BudgetTypeField, CategoryRuleList, GroupField, nameConflictFrom, useNameConflictMessage } from "@/components/settings/categories/category-form-parts";
+import { findNameConflict, type NameConflict } from "@/lib/category-name-conflict";
 import { normalizeBudgetType } from "@/lib/format";
 
 /**
@@ -68,8 +69,16 @@ export function EditCategoryForm({
 
   const [rules, setRules] = useState<CategoryRule[]>(initialRules);
 
+  // A name already used in this kind (the kind follows the group when it moves) is
+  // flagged while typing; the API's 409 is the fallback.
+  const describeConflict = useNameConflictMessage();
+  const [serverConflict, setServerConflict] = useState<NameConflict | null>(null);
+  const kind = group && group.id !== category.parentCategoryId ? group.group : category.group;
+  const localConflict = findNameConflict(categories, { name, kind, excludeId: category.id });
+  const nameError = describeConflict(localConflict ?? serverConflict);
+
   async function save() {
-    if (!name.trim() || groupId == null) return;
+    if (!name.trim() || groupId == null || nameError) return;
     setLoading(true);
     setError(null);
     const res = await fetch("/api/categories", {
@@ -79,7 +88,9 @@ export function EditCategoryForm({
     }).catch(() => null);
     setLoading(false);
     if (!res?.ok) {
-      setError(t("saveError"));
+      const conflict = await nameConflictFrom(res);
+      if (conflict) setServerConflict(conflict);
+      else setError(t("saveError"));
       return;
     }
     router.refresh();
@@ -169,11 +180,11 @@ export function EditCategoryForm({
         closeLabel={t("close")}
       />
 
-      <ClearField label={t("name")} htmlFor={`${ids}-name`}>
-        <ClearInput id={`${ids}-name`} value={name} onChange={(e) => setName(e.target.value)} placeholder={t("namePlaceholder")} autoComplete="off" />
+      <ClearField label={t("name")} htmlFor={`${ids}-name`} error={nameError}>
+        <ClearInput id={`${ids}-name`} value={name} onChange={(e) => { setName(e.target.value); setServerConflict(null); }} placeholder={t("namePlaceholder")} autoComplete="off" aria-invalid={nameError ? true : undefined} />
       </ClearField>
 
-      <GroupField id={`${ids}-group`} categories={categories} value={groupId} onChange={setGroupId} />
+      <GroupField id={`${ids}-group`} categories={categories} value={groupId} onChange={(id) => { setGroupId(id); setServerConflict(null); }} />
 
       {!isIncome && <BudgetTypeField value={budgetType} onChange={setBudgetType} />}
 
@@ -206,7 +217,7 @@ export function EditCategoryForm({
           }
         >
           <ClearButton variant="secondary" onClick={onClose}>{t("cancel")}</ClearButton>
-          <ClearButton onClick={save} disabled={loading || !name.trim() || groupId == null}>
+          <ClearButton onClick={save} disabled={loading || !name.trim() || groupId == null || !!nameError}>
             {loading ? t("saving") : t("save")}
           </ClearButton>
         </ClearDialogFooter>

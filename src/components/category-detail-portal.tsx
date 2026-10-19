@@ -895,7 +895,7 @@ function EditCategoryDialog({ open, categoryId, onClose }: { open: boolean; cate
   const loaded = data && data.category.id === categoryId ? data : null;
   if (loaded?.category.isGroup) {
     const count = loaded.categories.filter((c) => c.parentCategoryId === loaded.category.id).length;
-    return <GroupDialog open={open} onClose={onClose} group={loaded.category} categoryCount={count} />;
+    return <GroupDialog open={open} onClose={onClose} group={loaded.category} categories={loaded.categories} categoryCount={count} />;
   }
   return (
     <EditCategoryShell open={open} onClose={onClose}>

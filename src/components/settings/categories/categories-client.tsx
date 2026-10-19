@@ -268,7 +268,7 @@ export function CategoriesClient({ categories, rulesByCat, banks, totals, budget
         )}
       </EditCategoryDialog>
 
-      <GroupDialog open={groupOpen} onClose={() => setGroupOpen(false)} group={groupEdit?.group ?? null} categoryCount={groupEdit?.count ?? 0} />
+      <GroupDialog open={groupOpen} onClose={() => setGroupOpen(false)} group={groupEdit?.group ?? null} categories={categories} categoryCount={groupEdit?.count ?? 0} />
     </>
   );
 }
