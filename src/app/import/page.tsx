@@ -4,6 +4,7 @@ import { banks, transactions } from "@/db/schema";
 import { BANK_PARSERS } from "@/lib/bank-parsers";
 import { listImportProfiles } from "@/lib/import-profiles";
 import { maskAccountNumber } from "@/lib/format";
+import { getBankSyncStatus } from "@/lib/bank-sync";
 import { ImportView, type ImportViewData } from "./import-view";
 
 /** How many earlier imports the side card lists. */
@@ -13,7 +14,7 @@ export default async function ImportPage() {
   // An import is the rows of one account written on one day — the import itself isn't
   // recorded anywhere else, and that is close enough for "what did I bring in lately".
   const day = sql<string>`substr(${transactions.createdAt}, 1, 10)`;
-  const [profiles, recentRows, bankRows] = await Promise.all([
+  const [profiles, recentRows, bankRows, bankSync] = await Promise.all([
     listImportProfiles(),
     db
       .select({ day, account: transactions.account, rows: sql<number>`count(*)` })
@@ -23,6 +24,7 @@ export default async function ImportPage() {
       .orderBy(desc(day))
       .limit(RECENT_IMPORTS),
     db.select({ accountNumber: banks.accountNumber, displayName: banks.displayName }).from(banks),
+    getBankSyncStatus(),
   ]);
 
   const names = new Map(bankRows.map((b) => [b.accountNumber, b.displayName?.trim() || null]));
@@ -49,5 +51,7 @@ export default async function ImportPage() {
       })),
   };
 
-  return <ImportView data={data} />;
+  // The phone header repeats the sidebar's "Last synced …" line; `now` keeps server and
+  // browser on the same text.
+  return <ImportView data={data} bankSync={bankSync} bankSyncNow={new Date().toISOString()} />;
 }

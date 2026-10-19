@@ -6,7 +6,7 @@ import { completeBankAuth } from "@/lib/bank-sync";
 /**
  * Where the bank sends the browser back after consent (whitelisted on the Enable
  * Banking app as <origin>/api/bank/callback — see docs/enable-banking-setup.md).
- * Exchanges the code for a session and opens Settings › Import, where the account
+ * Exchanges the code for a session and opens the Import page, where the account
  * mapping dialog takes over (?bank=<connection id>) or the error is explained
  * (?bankError=<code>). Redirects to the origin the consent was started from.
  */
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   // A top-level navigation from the bank carries the (SameSite=Lax) session cookie.
   if (!(await getCurrentUser())) {
-    return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent("/settings?panel=import")}`, fallback));
+    return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent("/import")}`, fallback));
   }
 
   const outcome = await completeBankAuth({
@@ -26,8 +26,8 @@ export async function GET(req: NextRequest) {
   });
   const origin = outcome.origin ?? fallback;
   if (!outcome.ok) {
-    return NextResponse.redirect(new URL(`/settings?panel=import&bankError=${encodeURIComponent(outcome.error)}`, origin));
+    return NextResponse.redirect(new URL(`/import?bankError=${encodeURIComponent(outcome.error)}`, origin));
   }
   revalidatePath("/", "layout");
-  return NextResponse.redirect(new URL(`/settings?panel=import&bank=${outcome.connectionId}`, origin));
+  return NextResponse.redirect(new URL(`/import?bank=${outcome.connectionId}`, origin));
 }

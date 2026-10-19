@@ -163,8 +163,8 @@
         "subtitle": "What counts as spending in your budget and reports."
       },
       "import": {
-        "title": "Import CSV",
-        "subtitle": "Add transactions from your bank's export."
+        "title": "Import",
+        "subtitle": "Sync your bank or add a CSV export from it."
       },
       "importProfiles": {
         "title": "Import profiles",
@@ -1508,6 +1508,10 @@
     "recentChanges": {
       "title": "Undo a bulk change",
       "body": "Every import, rule run, bulk move and delete is listed here. Undo puts it back, as long as nothing later changed the same rows."
+    },
+    "importBankFirst": {
+      "title": "Your bank comes first",
+      "body": "Import now starts with your bank connection and shows when it last synced. A CSV file still works: upload it below."
     }
   },
   "categoryPicker": {
@@ -1803,8 +1807,12 @@
     "delete": "Delete"
   },
   "importPage": {
-    "title": "Import a bank export",
-    "subtitle": "CSV from your bank · duplicates are skipped automatically",
+    "title": "Import",
+    "subtitle": "Sync your bank or upload a CSV · duplicates are skipped automatically",
+    "csv": {
+      "title": "Import a CSV file",
+      "subtitle": "A CSV export from your bank · duplicates are skipped automatically"
+    },
     "steps": {
       "label": "Import steps",
       "upload": "Upload",
@@ -2739,7 +2747,12 @@
     "search": "Search",
     "searchShortcut": "⌘K",
     "needsReviewBadge": "{count, plural, one {# transaction needs a category} other {# transactions need a category}}",
-    "importCsv": "Import CSV",
+    "import": "Import",
+    "bankSync": {
+      "synced": "Last synced {time}",
+      "never": "Never synced",
+      "expired": "Consent expired, reconnect"
+    },
     "settings": "Settings",
     "signOut": "Sign out",
     "theme": {

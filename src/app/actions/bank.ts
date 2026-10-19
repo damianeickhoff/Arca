@@ -28,7 +28,7 @@ import {
   type SyncOutcome,
 } from "@/lib/bank-sync";
 
-// Server actions behind Settings › Import › Bank connection. The private key only ever
+// Server actions behind Bank connection (the Import page and Settings › Import). The private key only ever
 // travels from the browser to here (when pasted), never back.
 
 type Failure = { error: BankApiError | "signedOut" };
@@ -127,6 +127,8 @@ export async function saveAccountLinksAction(connectionId: number, links: { acco
 export async function disconnectBankAction(connectionId: number): Promise<BankPanelData | Failure> {
   if (!(await getCurrentUser())) return { error: "signedOut" };
   await disconnectBank(connectionId);
+  // The sidebar's Import item shows (or drops) the sync line.
+  revalidatePath("/", "layout");
   return panelData();
 }
 
@@ -134,7 +136,8 @@ export async function disconnectBankAction(connectionId: number): Promise<BankPa
 export async function syncBankAction(connectionId?: number): Promise<{ outcome: SyncOutcome; data: BankPanelData } | Failure> {
   if (!(await getCurrentUser())) return { error: "signedOut" };
   const outcome = await syncBankConnections(connectionId);
-  // New rows move balances, Home and Activity.
-  if (outcome.ok && outcome.results.some((r) => r.summary.imported > 0)) revalidatePath("/", "layout");
+  // New rows move balances, Home and Activity; any finished sync moves the
+  // "Last synced" line under Import in the sidebar.
+  if (outcome.ok) revalidatePath("/", "layout");
   return { outcome, data: await panelData() };
 }

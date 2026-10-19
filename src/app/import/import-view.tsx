@@ -12,6 +12,9 @@ import { IconTile } from "@/components/clear/icon-tile";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import type { ClearTone } from "@/components/clear/tones";
 import { cn } from "@/lib/utils";
+import { BankConnectionSection } from "@/components/settings/bank-connection-section";
+import { useBankSyncText } from "@/components/shell/bank-sync-line";
+import type { BankSyncStatus } from "@/lib/bank-sync-status";
 
 export interface ImportViewData {
   /** The banks a built-in parser recognises ("ING", "Rabobank", …). */
@@ -34,37 +37,65 @@ function useShortDate() {
 }
 
 /**
- * Import a bank export: the Upload → Check → Done flow (components/import-csv-card)
+ * Import: the bank connection first (components/settings/bank-connection-section),
+ * then "Import a CSV file" — the Upload → Check → Done flow (components/import-csv-card)
  * in the main column, and beside it the saved import profiles, "Map columns" for a
- * bank that isn't recognised and the most recent imports.
+ * bank that isn't recognised and the most recent imports. On phones the header
+ * repeats the sidebar's "Last synced …" line once a bank is connected.
  */
-export function ImportView({ data }: { data: ImportViewData }) {
+export function ImportView({
+  data,
+  bankSync,
+  bankSyncNow,
+}: {
+  data: ImportViewData;
+  bankSync: BankSyncStatus | null;
+  bankSyncNow: string;
+}) {
   const t = useTranslations("importPage");
   const tCommon = useTranslations("common");
   const importer = useCsvImport();
+  const sync = useBankSyncText(bankSync, bankSyncNow);
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
       <ContextualTip id="csvImport" />
 
-      <div className="flex flex-wrap items-center justify-between gap-3 lg:items-end lg:gap-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <Link
-            href="/"
-            aria-label={tCommon("back")}
-            className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 lg:hidden")}
-          >
-            <IconChevronLeft aria-hidden />
-          </Link>
-          <div className="flex min-w-0 flex-col gap-1.5">
-            <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[40px]">{t("title")}</h1>
-            <span className="hidden text-base text-clear-ink-2 lg:inline">{t("subtitle")}</span>
-          </div>
+      <div className="flex min-w-0 items-center gap-3">
+        <Link
+          href="/"
+          aria-label={tCommon("back")}
+          className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 shrink-0 lg:hidden")}
+        >
+          <IconChevronLeft aria-hidden />
+        </Link>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[40px]">{t("title")}</h1>
+          <span className="hidden text-base text-clear-ink-2 lg:inline">{t("subtitle")}</span>
+          {sync && (
+            <span className={cn("truncate text-[13px] font-semibold lg:hidden", sync.attention ? "text-clear-ember-text" : "text-clear-muted")}>
+              {sync.text}
+            </span>
+          )}
         </div>
-        <ImportSteps step={importer.step} />
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-3">
+        <ClearCard data-tip-anchor="importBank" className="xl:col-span-3">
+          <BankConnectionSection className="" />
+        </ClearCard>
+        <AnchoredTip id="importBankFirst" anchor="importBank" />
+
+        {/* The CSV half: its heading spans the grid so the flow and the side cards
+            under it start on the same line. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 lg:items-end lg:gap-4 xl:col-span-3">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 className="m-0 text-[22px] font-extrabold tracking-[-0.02em]">{t("csv.title")}</h2>
+            <span className="text-sm text-clear-ink-2">{t("csv.subtitle")}</span>
+          </div>
+          <ImportSteps step={importer.step} />
+        </div>
+
         <div className="flex min-w-0 flex-col gap-5 xl:col-span-2">
           <ImportFlow importer={importer} variant="page" />
         </div>

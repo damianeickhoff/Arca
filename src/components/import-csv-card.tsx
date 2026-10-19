@@ -29,6 +29,7 @@ import { TONE_FILL, type ClearTone } from "@/components/clear/tones";
 import type { Bank } from "@/db/schema";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SettingsSection } from "@/components/settings/settings-ui";
 
 // The CSV import flow — Upload → Check → Done. Picking a file only reads it
 // (/api/import/preview): the Check step shows how it was recognised, its first rows
@@ -38,7 +39,7 @@ import { cn } from "@/lib/utils";
 //
 // The state lives in useCsvImport() so the Import page can drive its step indicator
 // and its "Map columns" card from it; <ImportCsvCard> is the self-contained version
-// for the Settings › Import CSV panel.
+// for the Settings › Import panel.
 
 export type ImportStep = "upload" | "check" | "done";
 
@@ -151,12 +152,13 @@ export function useCsvImport() {
 
 export type CsvImporter = ReturnType<typeof useCsvImport>;
 
-/** Settings › Import CSV: the whole flow on its own, inside the settings panel. */
+/** Settings › Import: the CSV flow on its own, inside the settings panel. */
 export function ImportCsvCard() {
   const importer = useCsvImport();
   const t = useTranslations("importPage.unrecognised");
+  const tCsv = useTranslations("importPage.csv");
   return (
-    <div className="flex flex-col gap-4 pb-6 font-clear text-clear-ink">
+    <SettingsSection title={tCsv("title")} subtitle={tCsv("subtitle")} className="pb-6">
       <ImportFlow importer={importer} variant="panel" />
       {importer.step === "upload" && (
         <div className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
@@ -173,7 +175,7 @@ export function ImportCsvCard() {
           <AnchoredTip id="importMapColumns" anchor="importMapColumns" />
         </div>
       )}
-    </div>
+    </SettingsSection>
   );
 }
 

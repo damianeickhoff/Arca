@@ -66,9 +66,9 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
 
     case "import":
       return (
-        <div className="flex flex-col gap-4 px-4 pt-4">
+        <div className="flex flex-col gap-6 px-4 pt-4">
+          <BankConnectionSection className="" />
           <ImportCsvCard />
-          <BankConnectionSection />
         </div>
       );
 

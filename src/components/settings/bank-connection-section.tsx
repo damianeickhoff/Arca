@@ -56,12 +56,12 @@ function useDates() {
 }
 
 /**
- * Settings › Import › Bank connection: the Enable Banking application id and private
+ * Bank connection (the Import page, Settings › Import): the Enable Banking application id and private
  * key (the saved key never comes back to the browser), a Test of both, the connected
  * banks with their consent expiry, Connect a bank, Sync now and the account mapping.
- * The callback lands here with ?bank=<id> (open the mapping) or ?bankError=<code>.
+ * The callback lands on the Import page with ?bank=<id> (open the mapping) or ?bankError=<code>.
  */
-export function BankConnectionSection() {
+export function BankConnectionSection({ className = "pb-6" }: { className?: string }) {
   const t = useTranslations("bankConnection");
   const errorText = useErrorText();
   const [data, setData] = useState<BankPanelData | null>(null);
@@ -130,7 +130,7 @@ export function BankConnectionSection() {
   const mapping = data.connections.find((c) => c.id === mappingId) ?? null;
 
   return (
-    <SettingsSection title={t("title")} subtitle={t("subtitle")} className="pb-6">
+    <SettingsSection title={t("title")} subtitle={t("subtitle")} className={className}>
       <CredentialsForm data={data} onSaved={setData} />
 
       {data.connections.length === 0 ? (

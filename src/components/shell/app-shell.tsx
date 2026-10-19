@@ -17,6 +17,8 @@ import { BrandMark } from "@/components/clear/brand-mark";
 import { ConfirmProvider } from "@/components/clear/confirm-dialog";
 import { INSIGHTS_TABS, INSIGHTS_TAB_LABEL_KEY } from "@/app/reports/reports-tabs";
 import { useIsDesktop } from "@/lib/use-is-desktop";
+import type { BankSyncStatus } from "@/lib/bank-sync-status";
+import { useBankSyncText } from "@/components/shell/bank-sync-line";
 
 export interface ShellUser {
   name: string;
@@ -31,7 +33,7 @@ export interface ShellUser {
 //   (the add menu, also Ctrl/Cmd+N — see quick-add.tsx), the four destinations
 //   (Plan opens its Budget · Debts · Goals sub-menu while one of them is showing,
 //   Insights its five tabs while it is open, Activity carries the needs-a-category
-//   count), then Import CSV,
+//   count), then Import (with "Last synced …" under it once a bank is connected),
 //   Settings, the theme and Sign out. Pages sit to its right (MainContent).
 //   Phones (< lg): a floating black tab bar with the four destinations, the ember
 //   add button (the same add menu) in the middle and, set apart at the end, the global search button.
@@ -43,10 +45,16 @@ export function AppShell({
   children,
   user,
   needsReviewCount,
+  bankSync,
+  bankSyncNow,
 }: {
   children: React.ReactNode;
   user: ShellUser | null;
   needsReviewCount: number;
+  /** The bank sync line under Import; null without a connected bank. */
+  bankSync: BankSyncStatus | null;
+  /** ISO time `bankSync` is relative to (the server render). */
+  bankSyncNow: string;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -64,7 +72,7 @@ export function AppShell({
           {children}
           {!chromeless && (
             <>
-              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} user={user!} needsReviewCount={needsReviewCount} />
+              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} user={user!} needsReviewCount={needsReviewCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
               {!navHidden && <PhoneTabBar pathname={pathname} />}
               {/* The navigation changed; it announces itself once, even to someone who
                   turned tips off (see IGNORES_DISABLED). */}
@@ -98,18 +106,24 @@ function DesktopSidebar({
   insightsTab,
   user,
   needsReviewCount,
+  bankSync,
+  bankSyncNow,
 }: {
   pathname: string;
   /** The open Insights tab (?tab=), for its sub-menu. */
   insightsTab: string;
   user: ShellUser;
   needsReviewCount: number;
+  bankSync: BankSyncStatus | null;
+  bankSyncNow: string;
 }) {
   const t = useTranslations("nav");
   const tInsights = useTranslations("insights.tabs");
   const active = activeNavKey(pathname);
   const activePlan = activePlanKey(pathname);
   const { mode, setMode } = useTheme();
+  const importActive = pathname.startsWith("/import");
+  const sync = useBankSyncText(bankSync, bankSyncNow);
 
   // Rows grow with the window: 40px below 800px of height, 44px from 800px, 48px from 900px.
   const row =
@@ -204,9 +218,31 @@ function DesktopSidebar({
 
       <div className="mt-auto flex flex-col gap-1">
         <span aria-hidden className="mb-1 h-px bg-clear-line [@media(min-height:900px)]:mb-3" />
-        <Link href="/import" className={cn(row, idle)}>
-          <IconFileUpload size={20} stroke={1.9} aria-hidden />
-          {t("importCsv")}
+        {/* Import: bank sync and CSV. Once a bank is connected a second line says when it
+            last synced (or that its consent ran out); the whole row still opens the page. */}
+        <Link
+          href="/import"
+          aria-current={importActive ? "page" : undefined}
+          className={cn(
+            row,
+            importActive ? "bg-clear-primary font-bold text-clear-primary-ink" : idle,
+            sync && "h-auto min-h-12 py-2 [@media(min-height:800px)]:h-auto [@media(min-height:900px)]:h-auto",
+          )}
+        >
+          <IconFileUpload size={20} stroke={1.9} aria-hidden className="shrink-0" />
+          <span className="flex min-w-0 flex-col">
+            {t("import")}
+            {sync && (
+              <span
+                className={cn(
+                  "truncate text-xs font-semibold",
+                  importActive ? "opacity-70" : sync.attention ? "text-clear-ember-text" : "text-clear-muted",
+                )}
+              >
+                {sync.text}
+              </span>
+            )}
+          </span>
         </Link>
         <Link href="/settings" className={cn(row, pathname.startsWith("/settings") ? "bg-clear-primary font-bold text-clear-primary-ink" : idle)}>
           <IconSettings size={20} stroke={1.9} aria-hidden />

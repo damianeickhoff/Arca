@@ -55,7 +55,7 @@ form is one screen; fill it top to bottom and the key is generated when you pres
    The key never leaves your machine and cannot be downloaded again, so keep the file.
    (Alternative: generate an RSA key with OpenSSL beforehand and paste the public key.)
 
-The application ID and the `.pem` file are what Centje needs in Settings › Import › Bank
+The application ID and the `.pem` file are what Centje needs on the Import page › Bank
 connection.
 
 ## 4. Register the production app
@@ -91,7 +91,7 @@ you to renew it.
 
 ## 7. What Centje does with it
 
-1. Settings › Import › Bank connection: paste the application ID and the whole private key
+1. Import › Bank connection (the sidebar's Import page): paste the application ID and the whole private key
    (open the `.pem` in a text editor, copy everything including the `BEGIN`/`END` lines).
    Both stay on the server in `app_settings`, like the Gemini key; the key never goes back
    to the browser. **Test** calls `GET /application` to prove the pair works.

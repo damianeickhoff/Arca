@@ -163,8 +163,8 @@
         "subtitle": "Wat als uitgave telt in je budget en rapporten."
       },
       "import": {
-        "title": "CSV importeren",
-        "subtitle": "Voeg transacties toe uit de export van je bank."
+        "title": "Importeren",
+        "subtitle": "Synchroniseer je bank of voeg een CSV-export ervan toe."
       },
       "importProfiles": {
         "title": "Importprofielen",
@@ -1508,6 +1508,10 @@
     "recentChanges": {
       "title": "Een bulkwijziging terugdraaien",
       "body": "Elke import, regelronde, bulkverplaatsing en verwijdering staat hier. Ongedaan maken zet het terug, zolang niets daarna dezelfde rijen heeft gewijzigd."
+    },
+    "importBankFirst": {
+      "title": "Je bank staat voorop",
+      "body": "Importeren begint nu met je bankkoppeling en laat zien wanneer die voor het laatst synchroniseerde. Een CSV-bestand kan nog steeds: upload het hieronder."
     }
   },
   "categoryPicker": {
@@ -1803,8 +1807,12 @@
     "delete": "Verwijderen"
   },
   "importPage": {
-    "title": "Bankexport importeren",
-    "subtitle": "CSV van je bank · dubbele transacties worden automatisch overgeslagen",
+    "title": "Importeren",
+    "subtitle": "Synchroniseer je bank of upload een CSV · dubbele transacties worden automatisch overgeslagen",
+    "csv": {
+      "title": "Een CSV-bestand importeren",
+      "subtitle": "Een CSV-export van je bank · dubbele transacties worden automatisch overgeslagen"
+    },
     "steps": {
       "label": "Importstappen",
       "upload": "Uploaden",
@@ -2739,7 +2747,12 @@
     "search": "Zoeken",
     "searchShortcut": "⌘K",
     "needsReviewBadge": "{count, plural, one {# transactie heeft een categorie nodig} other {# transacties hebben een categorie nodig}}",
-    "importCsv": "CSV importeren",
+    "import": "Importeren",
+    "bankSync": {
+      "synced": "Laatst gesynchroniseerd {time}",
+      "never": "Nog nooit gesynchroniseerd",
+      "expired": "Toestemming verlopen, koppel opnieuw"
+    },
     "settings": "Instellingen",
     "signOut": "Uitloggen",
     "theme": {

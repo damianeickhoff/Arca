@@ -158,6 +158,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   ruleTeach: IconWand,
   bankConnection: IconBuildingBank,
   quickAdd: IconCirclePlus,
+  importBankFirst: IconBuildingBank,
 };
 
 /**

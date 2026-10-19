@@ -144,10 +144,12 @@ export type TipAnchor =
   | "ruleTeach"
   // Merchant-first rules: the merchant card's Recognised by patterns
   | "merchantPatterns"
-  // Bank connection: Settings › Import › Connect a bank
+  // Bank connection: Import › Connect a bank
   | "bankConnect"
   // Merchant-first rules: Needs a category's Worth teaching strip
-  | "reviewTeach";
+  | "reviewTeach"
+  // Import: the Bank connection card at the top of the page
+  | "importBank";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

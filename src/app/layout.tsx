@@ -15,6 +15,7 @@ import { isPublicPath } from "@/lib/public-paths";
 import { maybeRecordDailyNetWorthSnapshot } from "@/lib/net-worth-snapshots";
 import { maybeRecordMonthlyHealthSnapshot } from "@/lib/health-snapshots";
 import { backfillBankAccountNumbers } from "@/lib/bank-account-numbers";
+import { getBankSyncStatus } from "@/lib/bank-sync";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { RefreshOnReturn } from "@/components/refresh-on-return";
 import { MotionProvider } from "@/components/motion-provider";
@@ -108,7 +109,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // here (the shell is a client component); a soft navigation keeps the layout, so
   // categorising revalidates it — refreshLayoutAction (app/actions/refresh-layout.ts)
   // from the client flows, and revalidatePath("/", "layout") in the transaction routes.
-  const needsReviewCount = user ? await countNeedsReview() : 0;
+  const [needsReviewCount, bankSync] = user ? await Promise.all([countNeedsReview(), getBankSyncStatus()]) : [0, null];
+  // The sidebar's Import item says when the bank last synced (null without a connected
+  // bank); the bank actions revalidate the layout after a sync, connect or disconnect.
+  // `now` is the moment the line is relative to, so server and browser render the same text.
+  const bankSyncNow = new Date().toISOString();
 
   // The src/config/categories.ts seed runs synchronously in
   // src/db/index.ts (module init) — see src/lib/config-sync.ts for why it can't be
@@ -139,6 +144,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               >
                 <AppShell
                   needsReviewCount={needsReviewCount}
+                  bankSync={bankSync}
+                  bankSyncNow={bankSyncNow}
                   user={user ? { name: user.name, email: user.email, avatarUrl: user.avatarUrl } : null}
                 >
                   <MainContent>

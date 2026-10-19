@@ -15,6 +15,7 @@ import type { ParsedRow } from "@/lib/bank-parsers";
 import { importParsedRows } from "@/lib/import-rows";
 import { isImportRunning } from "@/lib/import-lock";
 import { normalizeAccountNumber } from "@/lib/internal-transfers";
+import { summarizeBankSync, type BankSyncStatus } from "@/lib/bank-sync-status";
 
 // The bank connection: connecting a bank (consent → session → accounts), linking its
 // accounts to Centje's, and syncing their transactions through the CSV import path
@@ -263,6 +264,14 @@ export async function listBankConnections(): Promise<BankConnectionView[]> {
         lastSyncedDate: account.lastSyncedDate,
       })),
   }));
+}
+
+/** The shell's "Last synced …" line: one small read of bank_connections, null without any. */
+export async function getBankSyncStatus(): Promise<BankSyncStatus | null> {
+  const rows = await db
+    .select({ status: bankConnections.status, validUntil: bankConnections.validUntil, lastSyncedAt: bankConnections.lastSyncedAt })
+    .from(bankConnections);
+  return summarizeBankSync(rows);
 }
 
 /** One account's link: an existing bank's id, "new" to add one from the account, or null to skip it. */
