@@ -1,21 +1,26 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { IconShieldCheck, IconTrash, IconUser, IconUsers } from "@tabler/icons-react";
+import { useFormatter, useTranslations } from "next-intl";
+import { IconCheck, IconCopy, IconLink, IconShieldCheck, IconTrash, IconUser, IconUserPlus, IconUsers } from "@tabler/icons-react";
 import { useConfirm } from "@/components/clear/confirm-dialog";
+import { ClearButton } from "@/components/clear/button";
 import { ClearChip } from "@/components/clear/chip";
 import { IconTile } from "@/components/clear/icon-tile";
+import { ContextualTip } from "@/components/contextual-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { ClearSelect } from "@/components/settings/accounts/clear-select";
-import { RowIconButton, SettingsEmpty, SettingsNotice } from "@/components/settings/settings-ui";
-import { setUserAdminAction, deleteUserAction } from "@/app/actions/admin";
-import type { User } from "@/db/schema";
+import { RowIconButton, SettingsEmpty, SettingsNotice, SettingsSection } from "@/components/settings/settings-ui";
+import { setUserAdminAction, deleteUserAction, createInviteAction, revokeInviteAction } from "@/app/actions/admin";
+import { invitePath } from "@/lib/invite-rules";
+import type { Invite, User } from "@/db/schema";
 
 interface Props {
   /** Already passed through toClientUser — no hashes or secrets. */
   users: User[];
+  /** Pending invite links: not used and not expired. */
+  invites: Invite[];
   currentUserId: number;
 }
 
@@ -26,7 +31,7 @@ function initials(name: string) {
 
 /** The Users panel (admins only): everyone who can sign in, their role, and removing
  *  them; then what each role may do. */
-export function UsersClient({ users: initialUsers, currentUserId }: Props) {
+export function UsersClient({ users: initialUsers, invites, currentUserId }: Props) {
   const t = useTranslations("settings.users");
   const tPanels = useTranslations("settings.panels");
   const [users, setUsers] = useState<User[]>(initialUsers);
@@ -34,6 +39,7 @@ export function UsersClient({ users: initialUsers, currentUserId }: Props) {
 
   return (
     <>
+      <ContextualTip id="userInvites" />
       <PanelHeader title={tPanels("users.title")} />
       <div className="flex flex-col gap-6 px-4 pt-1 font-clear text-clear-ink">
         <p className="m-0 text-sm text-clear-ink-2">{t("intro", { count: users.length })}</p>
@@ -53,6 +59,8 @@ export function UsersClient({ users: initialUsers, currentUserId }: Props) {
             ))}
           </ul>
         )}
+
+        <InvitesSection invites={invites} />
 
         <section aria-labelledby="users-roles" className="flex flex-col gap-3">
           <h3 id="users-roles" className="m-0 text-lg font-bold">{t("rolesTitle")}</h3>
@@ -75,6 +83,125 @@ export function UsersClient({ users: initialUsers, currentUserId }: Props) {
         </section>
       </div>
     </>
+  );
+}
+
+/**
+ * Invite links. Sign-up is closed once the household has a user, so this is how a new
+ * person gets in: the admin makes a link, sends it along, and the link opens /register
+ * once, until it expires. The list is server-rendered; a fresh link is added locally
+ * so it can be copied right away.
+ */
+function InvitesSection({ invites: initialInvites }: { invites: Invite[] }) {
+  const t = useTranslations("settings.users");
+  const router = useRouter();
+  const [invites, setInvites] = useState<Invite[]>(initialInvites);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function create() {
+    setPending(true);
+    setError(null);
+    const result = await createInviteAction().catch(() => null);
+    setPending(false);
+    const created = result?.invite;
+    if (!created) {
+      setError(t("inviteError"));
+      return;
+    }
+    setInvites((list) => [created, ...list]);
+    router.refresh();
+  }
+
+  async function revoke(id: number) {
+    setError(null);
+    const result = await revokeInviteAction(id).catch(() => ({ error: "failed" as const }));
+    if (result.error) {
+      setError(t("inviteRevokeError"));
+      return;
+    }
+    setInvites((list) => list.filter((i) => i.id !== id));
+    router.refresh();
+  }
+
+  return (
+    <SettingsSection
+      title={t("invitesTitle")}
+      subtitle={t("invitesSubtitle")}
+      action={
+        <ClearButton size="sm" onClick={create} disabled={pending}>
+          <IconUserPlus stroke={2} />
+          {pending ? t("inviteCreating") : t("inviteCreate")}
+        </ClearButton>
+      }
+    >
+      {error && <SettingsNotice>{error}</SettingsNotice>}
+      {invites.length === 0 ? (
+        <SettingsEmpty icon={<IconLink stroke={1.9} />}>{t("invitesEmpty")}</SettingsEmpty>
+      ) : (
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+          {invites.map((invite) => (
+            <InviteRow key={invite.id} invite={invite} onRevoke={() => revoke(invite.id)} />
+          ))}
+        </ul>
+      )}
+    </SettingsSection>
+  );
+}
+
+function InviteRow({ invite, onRevoke }: { invite: Invite; onRevoke: () => void }) {
+  const t = useTranslations("settings.users");
+  const format = useFormatter();
+  const confirm = useConfirm();
+  const [copied, setCopied] = useState(false);
+  // The origin is only known in the browser (it is whatever address the admin uses);
+  // the path is the same for every install, so the server render shows just that.
+  const [origin, setOrigin] = useState("");
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- the origin only exists in the browser; the server render shows the path alone
+  useEffect(() => setOrigin(window.location.origin), []);
+  const link = origin + invitePath(invite.token);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard blocked: the link stays selectable in the row */
+    }
+  }
+
+  async function revoke() {
+    const ok = await confirm({
+      title: t("inviteRevokeTitle"),
+      body: t("inviteRevokeBody"),
+      confirmLabel: t("inviteRevokeConfirm"),
+      destructive: true,
+    });
+    if (ok) onRevoke();
+  }
+
+  return (
+    <li className="flex flex-wrap items-center gap-3 rounded-clear-tile bg-clear-tile px-4 py-3">
+      <IconTile tone="mint" size="sm">
+        <IconLink stroke={1.9} />
+      </IconTile>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-[13px] font-bold select-all">{link}</span>
+        <span className="text-[13px] text-clear-muted">
+          {t("inviteExpires", { date: format.dateTime(new Date(invite.expiresAt), { day: "numeric", month: "long" }) })}
+        </span>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <ClearButton variant="surface" size="sm" onClick={copy} aria-label={t("inviteCopyLabel")}>
+          {copied ? <IconCheck stroke={2.2} /> : <IconCopy stroke={2} />}
+          <span aria-live="polite">{copied ? t("inviteCopied") : t("inviteCopy")}</span>
+        </ClearButton>
+        <RowIconButton label={t("inviteRevokeLabel")} onClick={revoke} danger>
+          <IconTrash stroke={2} />
+        </RowIconButton>
+      </div>
+    </li>
   );
 }
 

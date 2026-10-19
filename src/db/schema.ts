@@ -611,6 +611,24 @@ export const mfaChallenges = sqliteTable("mfa_challenges", {
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
+// ─── Invites ────────────────────────────────────────────────────────────────
+// Sign-up closes once the first user exists; an admin hands out a link carrying one of
+// these tokens (Settings › Users) and /register?invite=TOKEN lets exactly one person
+// in before `expiresAt`. `usedAt` / `usedBy` are set when the account is created, so a
+// link can't be reused. See src/lib/invites.ts.
+export const invites = sqliteTable("invites", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  token: text("token").notNull(),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  expiresAt: text("expires_at").notNull(),
+  usedAt: text("used_at"),
+  usedBy: integer("used_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+}, (t) => [
+  uniqueIndex("invites_token_unique").on(t.token),
+]);
+export type Invite = typeof invites.$inferSelect;
+
 // ─── Activity log ───────────────────────────────────────────────────────────
 // Settings › Data health's "Recent changes": one row per bulk or destructive change
 // (an import, a rule pass, a bulk move, a delete…), recorded server-side by the code

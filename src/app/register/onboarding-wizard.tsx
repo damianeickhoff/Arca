@@ -60,7 +60,7 @@ export interface ResumeUser {
 // run again (re-submitting the same email would 409 as "already registered").
 const RESUME_STEP: StepKey = "mfa";
 
-export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | null }) {
+export function OnboardingWizard({ resumeUser, inviteToken = null }: { resumeUser?: ResumeUser | null; inviteToken?: string | null }) {
   const t = useTranslations("onboarding");
   const router = useRouter();
   const currentLocale = useLocale() as Locale;
@@ -166,12 +166,15 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
       const res = await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...about, password }),
+        body: JSON.stringify({ ...about, password, invite: inviteToken ?? undefined }),
       });
       if (!res.ok) {
         if (res.status === 409) {
           setEmailError(t("about.emailTaken"));
           go("about", -1);
+        } else if (res.status === 403) {
+          // The invite expired or was used while the wizard was open.
+          setError(t("inviteInvalid"));
         } else {
           setError(t("genericError"));
         }
@@ -247,7 +250,7 @@ export function OnboardingWizard({ resumeUser }: { resumeUser?: ResumeUser | nul
   function renderStep() {
     switch (step) {
       case "welcome":
-        return <WelcomeStep onStart={forward} signedIn={accountCreated} />;
+        return <WelcomeStep onStart={forward} signedIn={accountCreated} invited={!!inviteToken} />;
       case "about":
         return (
           <AboutYouStep

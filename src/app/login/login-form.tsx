@@ -20,11 +20,13 @@ const CODE_LENGTH = 6;
 // mockup) and on the white card from lg up.
 const fieldSurface = "bg-clear-card lg:bg-clear-tile";
 
-export function LoginForm() {
+export function LoginForm({ signupOpen = false }: { signupOpen?: boolean }) {
   const t = useTranslations("auth");
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/";
   const justRegistered = searchParams.get("registered") === "1";
+  // /register sends an expired or used invite link here (see register/page.tsx).
+  const inviteInvalid = searchParams.get("invite") === "invalid";
 
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -95,6 +97,7 @@ export function LoginForm() {
       </div>
 
       {justRegistered && <Notice tone="positive">{t("signIn.registered")}</Notice>}
+      {inviteInvalid && <Notice tone="negative">{t("signIn.inviteInvalid")}</Notice>}
       {error && <Notice tone="negative">{error}</Notice>}
 
       <form action={handleSubmit} className="flex flex-col gap-4">
@@ -145,18 +148,22 @@ export function LoginForm() {
         </ClearButton>
       </form>
 
-      <div aria-hidden className="flex items-center gap-3 text-[13px] text-clear-muted">
-        <span className="h-px flex-1 bg-clear-line" />
-        {t("signIn.or")}
-        <span className="h-px flex-1 bg-clear-line" />
-      </div>
+      {signupOpen && (
+        <>
+          <div aria-hidden className="flex items-center gap-3 text-[13px] text-clear-muted">
+            <span className="h-px flex-1 bg-clear-line" />
+            {t("signIn.or")}
+            <span className="h-px flex-1 bg-clear-line" />
+          </div>
 
-      <p className="m-0 text-center text-[15px] text-clear-ink-2">
-        {t("signIn.newHere")}{" "}
-        <Link href="/register" className="font-bold text-clear-ember-text no-underline hover:underline">
-          {t("signIn.createAccount")}
-        </Link>
-      </p>
+          <p className="m-0 text-center text-[15px] text-clear-ink-2">
+            {t("signIn.newHere")}{" "}
+            <Link href="/register" className="font-bold text-clear-ember-text no-underline hover:underline">
+              {t("signIn.createAccount")}
+            </Link>
+          </p>
+        </>
+      )}
 
       <div className="flex justify-center">
         <LanguageSwitch />

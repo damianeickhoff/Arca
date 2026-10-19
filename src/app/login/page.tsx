@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { IconBolt, IconCheck, IconLock, IconTarget } from "@tabler/icons-react";
 import { getCurrentUser } from "@/lib/auth";
 import { isFirstUser } from "@/app/actions/auth";
+import { isOpenSignupAllowed } from "@/lib/invites";
 import { Amount } from "@/components/clear/amount";
 import { BrandMark } from "@/components/clear/brand-mark";
 import { ClearChip } from "@/components/clear/chip";
@@ -33,7 +34,9 @@ export default async function LoginPage() {
       <div className="relative flex min-w-0 flex-1 flex-col items-center px-4 pt-[calc(var(--sat)+16px)] pb-[calc(var(--sab)+16px)] lg:justify-center lg:p-12">
         <div className="flex w-full max-w-[440px] flex-1 flex-col lg:flex-none lg:rounded-clear-dialog lg:bg-clear-card lg:p-9">
           <Suspense>
-            <LoginForm />
+            {/* Sign-up closes after the first user: the link only shows while the
+                ALLOW_OPEN_SIGNUP escape hatch is set; invited people arrive by link. */}
+            <LoginForm signupOpen={isOpenSignupAllowed()} />
           </Suspense>
         </div>
         <p className="m-0 hidden text-center text-xs text-clear-muted lg:absolute lg:inset-x-0 lg:bottom-7 lg:block">

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import {
   IconListNumbers,
   IconBook2,
+  IconUserPlus,
   IconSparkles,
   IconFolders,
   IconAdjustments,
@@ -161,6 +162,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   quickAdd: IconCirclePlus,
   importBankFirst: IconBuildingBank,
   helpGuide: IconBook2,
+  userInvites: IconUserPlus,
 };
 
 /**

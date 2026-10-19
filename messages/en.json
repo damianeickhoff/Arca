@@ -28,6 +28,7 @@
       "newHere": "New here?",
       "createAccount": "Create an account",
       "registered": "Account created. You can now sign in.",
+      "inviteInvalid": "This invite link has expired or was already used. Ask an admin of the household for a new one.",
       "language": "Language"
     },
     "mfa": {
@@ -408,7 +409,22 @@
       "roleMemberBody": "Uses the household day to day: transactions, budgets, goals and settings. Can't manage users.",
       "deleteTitle": "Delete {name}?",
       "deleteBody": "They're signed out and can't sign in any more. This can't be undone.",
-      "deleteConfirm": "Delete user"
+      "deleteConfirm": "Delete user",
+      "invitesTitle": "Invite links",
+      "invitesSubtitle": "New people can only join with a link. Each link works once and expires after 7 days.",
+      "invitesEmpty": "No open invites. Make a link and send it to someone who should join your household.",
+      "inviteCreate": "Make an invite link",
+      "inviteCreating": "Making…",
+      "inviteError": "The invite link could not be made. Try again.",
+      "inviteExpires": "Works until {date}",
+      "inviteCopy": "Copy",
+      "inviteCopied": "Copied",
+      "inviteCopyLabel": "Copy the invite link",
+      "inviteRevokeLabel": "Withdraw this invite link",
+      "inviteRevokeTitle": "Withdraw this invite link?",
+      "inviteRevokeBody": "The link stops working right away. Anyone who already used it keeps their account.",
+      "inviteRevokeConfirm": "Withdraw link",
+      "inviteRevokeError": "The invite link could not be withdrawn. Try again."
     },
     "financialMonth": {
       "title": "Your month starts on",
@@ -1518,6 +1534,10 @@
     "helpGuide": {
       "title": "Help is one tap away",
       "body": "The Arca guide explains every page step by step. Open Help any time to find it, or to report a problem or idea."
+    },
+    "userInvites": {
+      "title": "Invite people with a link",
+      "body": "Sign-up is closed: nobody can create an account on their own any more. Make an invite link here and send it to someone who should join. It works once and expires after a week."
     }
   },
   "categoryPicker": {
@@ -2167,6 +2187,7 @@
     "skip": "Skip for now",
     "saving": "Saving…",
     "genericError": "Something went wrong. Please try again.",
+    "inviteInvalid": "Your invite link has expired or was already used. Ask an admin of the household for a new one.",
     "groups": {
       "account": "Account",
       "security": "Security",
@@ -2202,6 +2223,7 @@
       "planBody": "See what's due, what's left and what you're saving for.",
       "start": "Get started",
       "haveAccount": "I already have an account",
+      "invited": "You've been invited to join this household. Set up your account to get started.",
       "privacy": "Your data stays in your household."
     },
     "about": {

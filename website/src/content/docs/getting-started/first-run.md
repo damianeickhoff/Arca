@@ -30,7 +30,7 @@ The person who goes through the setup first becomes the **admin** of the househo
 
 ## Other people in your household
 
-Everyone else creates their own account from the sign-in page with **New here? Create an account**. They join the same household as a **member**: they see and use the same accounts, budgets and goals, but can't manage users.
+Everyone else joins through an **invite link** that an admin makes in Settings → **Users**: opening the link starts this same setup for them. They join the same household as a **member**: they see and use the same accounts, budgets and goals, but can't manage users. See [Inviting someone](/Arca/settings/security/#inviting-someone).
 
 ## After the setup
 

@@ -28,6 +28,7 @@
       "newHere": "Nieuw hier?",
       "createAccount": "Maak een account",
       "registered": "Account aangemaakt. Je kunt nu inloggen.",
+      "inviteInvalid": "Deze uitnodigingslink is verlopen of al gebruikt. Vraag een beheerder van het huishouden om een nieuwe.",
       "language": "Taal"
     },
     "mfa": {
@@ -408,7 +409,22 @@
       "roleMemberBody": "Gebruikt het huishouden dagelijks: transacties, budgetten, doelen en instellingen. Kan geen gebruikers beheren.",
       "deleteTitle": "{name} verwijderen?",
       "deleteBody": "Deze gebruiker wordt uitgelogd en kan niet meer inloggen. Dit kan niet ongedaan worden gemaakt.",
-      "deleteConfirm": "Gebruiker verwijderen"
+      "deleteConfirm": "Gebruiker verwijderen",
+      "invitesTitle": "Uitnodigingslinks",
+      "invitesSubtitle": "Nieuwe mensen kunnen alleen met een link meedoen. Elke link werkt één keer en verloopt na 7 dagen.",
+      "invitesEmpty": "Geen openstaande uitnodigingen. Maak een link en stuur die naar iemand die bij je huishouden hoort.",
+      "inviteCreate": "Uitnodigingslink maken",
+      "inviteCreating": "Bezig…",
+      "inviteError": "De uitnodigingslink kon niet worden gemaakt. Probeer het opnieuw.",
+      "inviteExpires": "Werkt tot {date}",
+      "inviteCopy": "Kopiëren",
+      "inviteCopied": "Gekopieerd",
+      "inviteCopyLabel": "Uitnodigingslink kopiëren",
+      "inviteRevokeLabel": "Deze uitnodigingslink intrekken",
+      "inviteRevokeTitle": "Deze uitnodigingslink intrekken?",
+      "inviteRevokeBody": "De link werkt meteen niet meer. Wie hem al gebruikt heeft, houdt zijn account.",
+      "inviteRevokeConfirm": "Link intrekken",
+      "inviteRevokeError": "De uitnodigingslink kon niet worden ingetrokken. Probeer het opnieuw."
     },
     "financialMonth": {
       "title": "Je maand begint op",
@@ -1518,6 +1534,10 @@
     "helpGuide": {
       "title": "Hulp is één tik verwijderd",
       "body": "De Arca-handleiding legt elke pagina stap voor stap uit. Open Help om hem te vinden, of om een probleem of idee te melden."
+    },
+    "userInvites": {
+      "title": "Nodig mensen uit met een link",
+      "body": "Registreren is gesloten: niemand kan meer zelf een account aanmaken. Maak hier een uitnodigingslink en stuur die naar iemand die moet meedoen. De link werkt één keer en verloopt na een week."
     }
   },
   "categoryPicker": {
@@ -2167,6 +2187,7 @@
     "skip": "Nu overslaan",
     "saving": "Opslaan…",
     "genericError": "Er ging iets mis. Probeer het opnieuw.",
+    "inviteInvalid": "Je uitnodigingslink is verlopen of al gebruikt. Vraag een beheerder van het huishouden om een nieuwe.",
     "groups": {
       "account": "Account",
       "security": "Beveiliging",
@@ -2202,6 +2223,7 @@
       "planBody": "Zie wat er moet worden betaald, wat er over is en waarvoor je spaart.",
       "start": "Aan de slag",
       "haveAccount": "Ik heb al een account",
+      "invited": "Je bent uitgenodigd voor dit huishouden. Maak je account aan om te beginnen.",
       "privacy": "Je gegevens blijven binnen je huishouden."
     },
     "about": {

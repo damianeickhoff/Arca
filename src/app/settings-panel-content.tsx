@@ -15,6 +15,7 @@ import { findBrokenDateTransactions } from "@/lib/data-health";
 import { listImportProfiles } from "@/lib/import-profiles";
 import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
+import { listPendingInvites } from "@/lib/invites";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
 import { getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
 import { getPlanProgress } from "@/lib/payment-plan-progress";
@@ -100,9 +101,9 @@ async function ImportProfilesPanel() {
 }
 
 async function UsersPanel({ currentUserId }: { currentUserId: number }) {
-  const allUsers = await db.select().from(users).orderBy(users.email);
+  const [allUsers, invites] = await Promise.all([db.select().from(users).orderBy(users.email), listPendingInvites()]);
   // Only profile fields reach the browser; hashes and TOTP secrets stay on the server.
-  return <UsersClient users={allUsers.map(toClientUser)} currentUserId={currentUserId} />;
+  return <UsersClient users={allUsers.map(toClientUser)} invites={invites} currentUserId={currentUserId} />;
 }
 
 /** One heavy panel's server-rendered content — the /settings page renders only the

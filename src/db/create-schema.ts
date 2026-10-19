@@ -574,7 +574,23 @@ export function createSchema(sqlite: Database.Database): void {
 
   sqlite.exec(BANK_CONNECTION_TABLES_SQL);
   sqlite.exec(ACTIVITY_LOG_TABLE_SQL);
+  sqlite.exec(INVITES_TABLE_SQL);
 }
+
+// Invites (Settings › Users): sign-up is closed once the first user exists, so a new
+// person joins through a link carrying one of these tokens (see src/lib/invites.ts).
+// Also run on boot by src/db/index.ts so existing databases get it.
+export const INVITES_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS invites (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    token      TEXT    NOT NULL UNIQUE,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    expires_at TEXT    NOT NULL,
+    used_at    TEXT,
+    used_by    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TEXT    DEFAULT (datetime('now'))
+  );
+`;
 
 // Bank connection (Enable Banking): one row per bank consent, one per account it gave
 // access to. Shared with the runtime auto-migrate in src/db/index.ts.

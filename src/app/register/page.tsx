@@ -1,12 +1,24 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { signupGateFor } from "@/lib/invites";
 import { OnboardingWizard, type ResumeUser } from "./onboarding-wizard";
 
 // Reads the session on every request: a refresh mid-wizard must resume, not start over.
 export const dynamic = "force-dynamic";
 
-export default async function RegisterPage() {
+export default async function RegisterPage({ searchParams }: { searchParams: Promise<{ invite?: string | string[] }> }) {
+  const { invite } = await searchParams;
+  const inviteToken = (Array.isArray(invite) ? invite[0] : invite)?.trim() || null;
   const user = await getCurrentUser();
+
+  // Sign-up is closed once the first user exists: only an invite link (or the
+  // ALLOW_OPEN_SIGNUP escape hatch) opens the wizard. A session mid-wizard is past
+  // account creation and never gated here — /api/onboarding checks the token again.
+  if (!user) {
+    const gate = await signupGateFor(inviteToken);
+    if (gate === "closed") redirect(inviteToken ? "/login?invite=invalid" : "/login");
+  }
+
   // A session already exists once the wizard's password step creates the account
   // (see /api/onboarding), long before the wizard is actually finished — so "a user
   // exists" alone can't gate this redirect, or a refresh/reload anywhere past that
@@ -29,5 +41,5 @@ export default async function RegisterPage() {
       }
     : null;
 
-  return <OnboardingWizard resumeUser={resumeUser} />;
+  return <OnboardingWizard resumeUser={resumeUser} inviteToken={inviteToken} />;
 }

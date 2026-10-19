@@ -84,8 +84,8 @@ COOKIE_SECURE=true
 
 This marks the sign-in cookie as secure. Leave it at `false` (the default) when you open Arca over plain `http://`, otherwise signing in won't stick.
 
-:::danger[Anyone who can open Arca can create an account]
-The sign-in page has a "Create an account" link, and new accounts join your household. Keep Arca on your home network or behind a VPN, or put sign-in protection on your reverse proxy, before you expose it to the internet.
+:::note[Who can create an account]
+Only the very first visitor can create an account by themselves; that account becomes the admin. After that, new people need an [invite link](/Arca/settings/security/#inviting-someone) from an admin. Still, keep Arca behind HTTPS or a VPN before you expose it to the internet.
 :::
 
 ## Settings you can change
@@ -94,6 +94,7 @@ The sign-in page has a "Create an account" link, and new accounts join your hous
 | --- | --- | --- |
 | `COOKIE_SECURE` | `false` | `true` only when a reverse proxy serves Arca over HTTPS. |
 | `DB_PATH` | `/data/finance.db` | Where the database lives. Logos and photos go next to it. |
+| `ALLOW_OPEN_SIGNUP` | not set | Set to `true` to let anyone create an account again, without an [invite link](/Arca/settings/security/#inviting-someone). Only for getting back into a household whose admin is locked out: set it, restart Arca, create a new account on the sign-in page (it becomes an admin) and remove the setting again. |
 | `BANK_SYNC_DISABLED` | not set | Set to `1` to switch off the automatic daily [bank sync](/Arca/transactions/bank-connection/#the-daily-sync). |
 | `BANK_SYNC_TOKEN` | not set | A long random string, only if you want to [start the bank sync from your own scheduler](#start-the-bank-sync-from-your-own-scheduler). |
 | `OLLAMA_HOST` | `http://localhost:11434` | Where Arca finds [Ollama](https://ollama.com) for **Scan receipt**. Inside Docker, point it at your Ollama container or server, for example `http://192.168.1.20:11434`. |

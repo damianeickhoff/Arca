@@ -10,13 +10,13 @@ import { ClearButton } from "@/components/clear/button";
 import { IconTile } from "@/components/clear/icon-tile";
 import { DatePicker } from "@/components/date-picker";
 import { cn } from "@/lib/utils";
-import { StepFooter, StepHeading } from "../onboarding-ui";
+import { StepFooter, StepHeading, StepNotice } from "../onboarding-ui";
 
 export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // ── 1 · Welcome (Onboard-01) ──────────────────────────────────────────────────
 
-export function WelcomeStep({ onStart, signedIn }: { onStart: () => void; signedIn: boolean }) {
+export function WelcomeStep({ onStart, signedIn, invited = false }: { onStart: () => void; signedIn: boolean; invited?: boolean }) {
   const t = useTranslations("onboarding.welcome");
   const tApp = useTranslations("onboarding");
   const app = tApp("appName");
@@ -24,6 +24,8 @@ export function WelcomeStep({ onStart, signedIn }: { onStart: () => void; signed
   return (
     <>
       <StepHeading large title={t("title", { app })} subtitle={t("subtitle")} />
+
+      {invited && !signedIn && <StepNotice tone="success">{t("invited")}</StepNotice>}
 
       <ul aria-label={t("featuresLabel", { app })} className="m-0 grid list-none grid-cols-1 gap-3.5 p-0 md:grid-cols-3">
         <li className="flex min-h-[160px] flex-col md:min-h-[214px] gap-3.5 rounded-clear-card bg-clear-hero p-[22px] text-clear-hero-ink">

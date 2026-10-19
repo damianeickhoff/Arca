@@ -48,8 +48,18 @@ Everyone who signs in to Arca shares the same household: the same accounts, budg
 - **Admin**: manages who can sign in and their roles, and can do everything a member can. The first person to set up Arca is the admin.
 - **Member**: uses the household day to day (transactions, budgets, goals and settings), but can't manage users.
 
-New people create their own account on the sign-in page with **New here? Create an account**. Admins see everyone in Settings → **Users**, where they can change a role or remove someone.
+Admins see everyone in Settings → **Users**, where they can change a role or remove someone.
 
-:::danger
-Anyone who can reach your Arca's address can create an account. Keep Arca on your home network or behind a VPN. See [Opening Arca from outside your home](/Arca/getting-started/install/#opening-arca-from-outside-your-home).
+### Inviting someone
+
+Once the first account exists, nobody can create an account on their own: the sign-in page has no sign-up link, and the setup page only opens with an invite link.
+
+1. Go to Settings → **Users** → **Invite links** and choose **Make an invite link**.
+2. **Copy** the link and send it to the person (a message, an email, however you like).
+3. They open the link, go through the [first-run setup](/Arca/getting-started/first-run/) and join your household as a **member**.
+
+A link works **once** and stops working after **7 days**. Open links are listed under Invite links; use the bin icon to withdraw one before it is used. Someone who already used a link keeps their account.
+
+:::note[Locked out of your only admin account?]
+Whoever runs your server can reopen sign-up temporarily with the `ALLOW_OPEN_SIGNUP` setting: see [Settings you can change](/Arca/getting-started/install/#settings-you-can-change). Create a new account (it becomes an admin), then remove the setting again.
 :::
