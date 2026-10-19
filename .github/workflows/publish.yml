@@ -51,6 +51,8 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=ref,event=tag
+            # Plain version too (1.3.2), the form the Docker Hub tags have always had.
+            type=semver,pattern={{version}}
             type=sha,format=short
       - uses: docker/build-push-action@v6
         with:
