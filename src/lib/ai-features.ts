@@ -4,6 +4,10 @@ import { appSettings, categories, merchants, transactions } from "@/db/schema";
 import { resolveDisplayName } from "@/lib/friendly-names";
 import { generateJson, redactForAi, type AiResult } from "@/lib/gemini";
 import { AI_CATEGORY_BATCH } from "@/lib/ai-shared";
+import { formatEur } from "@/lib/format";
+import { toPeriodSummary, type PeriodSummary, type SummaryFacts } from "@/lib/period-facts";
+
+export type { PeriodSummary, SummaryFacts };
 
 // What the app asks Gemini for. Each feature builds the smallest prompt that does the job
 // out of data that can't identify an account (see redactForAi), and checks the answer
@@ -72,38 +76,23 @@ export async function suggestCategories(ids: number[]): Promise<AiResult<Record<
 
 // ── Period summary ──────────────────────────────────────────────────────────
 
-/** The figures the Insights overview already shows, as the summary's only input. */
-export interface SummaryFacts {
-  from: string;
-  to: string;
-  ongoing: boolean;
-  income: number;
-  expense: number;
-  saved: number;
-  /** Whole-percent change against the previous period of the same length, signed. */
-  incomeChangePct: number | null;
-  expenseChangePct: number | null;
-  avgPerDay: number;
-  categories: { name: string; spent: number; budget: number | null }[];
-  merchants: { name: string; total: number; visits: number }[];
-  largest: { name: string | null; amount: number; category: string | null } | null;
-}
-
-export interface PeriodSummary {
-  text: string;
-  /** ISO timestamp. */
-  createdAt: string;
-}
-
 const SUMMARIES_KEY = "ai_summaries";
 /** Summaries kept: one per period and filter set, newest first. */
 const SUMMARIES_KEPT = 24;
 
+/** Kept summaries that have the structured shape; paragraph summaries from before are
+ *  skipped (and dropped for good on the next write). */
 async function readSummaries(): Promise<Record<string, PeriodSummary>> {
   const [row] = await db.select().from(appSettings).where(eq(appSettings.key, SUMMARIES_KEY)).limit(1);
   try {
     const parsed = row?.value ? JSON.parse(row.value) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    const kept: Record<string, PeriodSummary> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, { createdAt?: unknown } | null>)) {
+      const summary = typeof value?.createdAt === "string" ? toPeriodSummary(value, value.createdAt) : null;
+      if (summary) kept[key] = summary;
+    }
+    return kept;
   } catch {
     return {};
   }
@@ -117,25 +106,62 @@ export async function getCachedSummary(key: string): Promise<PeriodSummary | nul
 /** Writes a fresh summary of `facts` in the user's language and keeps it under `key`. */
 export async function summarizePeriod(key: string, facts: SummaryFacts, locale: string): Promise<AiResult<PeriodSummary>> {
   const language = locale === "nl" ? "Dutch" : "English";
-  const clean: SummaryFacts = {
-    ...facts,
-    merchants: facts.merchants.slice(0, 6).map((m) => ({ ...m, name: redactForAi(m.name) })),
-    categories: facts.categories.slice(0, 8),
-    largest: facts.largest ? { ...facts.largest, name: facts.largest.name ? redactForAi(facts.largest.name) : null } : null,
+  // Amounts go in already formatted, so the facts quote them exactly as the page does.
+  const money = (v: number) => formatEur(v);
+  const input = {
+    period: { from: facts.from, to: facts.to, stillRunning: facts.ongoing },
+    income: money(facts.income),
+    spent: money(facts.expense),
+    saved: money(facts.saved),
+    incomeChangePct: facts.incomeChangePct,
+    spentChangePct: facts.expenseChangePct,
+    spentPerDay: money(facts.avgPerDay),
+    lastPeriodSpentPerDay: facts.prevAvgPerDay != null ? money(facts.prevAvgPerDay) : null,
+    leftToSpend: facts.left
+      ? { afterBillsStillDue: money(facts.left.amount), daysLeft: facts.left.daysLeft, perDay: money(facts.left.perDay) }
+      : null,
+    biggestGroup: facts.biggestGroup ? { name: facts.biggestGroup.name, spent: money(facts.biggestGroup.spent) } : null,
+    topMerchant: facts.topMerchant
+      ? { name: redactForAi(facts.topMerchant.name), spent: money(facts.topMerchant.total), visits: facts.topMerchant.visits }
+      : null,
+    other: { spent: money(facts.other.amount), sharePct: facts.other.sharePct, transactionsWithoutCategory: facts.other.transactions },
+    categories: facts.categories.slice(0, 8).map((c) => ({ name: c.name, spent: money(c.spent), budget: c.budget != null ? money(c.budget) : null })),
+    merchants: facts.merchants.slice(0, 6).map((m) => ({ name: redactForAi(m.name), spent: money(m.total), visits: m.visits })),
+    largestExpense: facts.largest
+      ? { name: facts.largest.name ? redactForAi(facts.largest.name) : null, amount: money(facts.largest.amount), category: facts.largest.category }
+      : null,
   };
 
-  const result = await generateJson<{ summary: string }>(
+  const result = await generateJson<unknown>(
     {
-      system: `You write a short, friendly summary of a household's spending for one period, in ${language}, addressing the reader as "you". Three or four sentences, plain text, no lists or markdown. Mention what stands out (the biggest categories, anything over budget, big changes against the previous period) and end with one practical suggestion. Use only the figures given; amounts are in euros. ${facts.ongoing ? "The period is still running, so totals are not final." : ""}`,
-      user: JSON.stringify(clean),
+      system: [
+        `You sum up one period of a household's spending, in ${language}, addressing the reader as "you". Plain text, no markdown.`,
+        "headline: one sentence of at most 15 words on the main thing that stands out.",
+        "facts: exactly three short sentences, each built on figures from the input: the balance of spending and income, the biggest group or merchant, and what is still in Other (or a big change against last period when Other is small). Quote amounts exactly as they are written in the input.",
+        facts.left
+          ? "tip: one or two sentences of practical budgeting advice built on leftToSpend (what is left after the bills still due, the days left and the amount per day), compared with last period's spending per day."
+          : "tip: one or two sentences of practical budgeting advice for the next period, based on these figures.",
+        "Use only the figures given; never invent or recalculate numbers.",
+        facts.ongoing ? "The period is still running, so totals are not final." : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
+      user: JSON.stringify(input),
     },
-    { type: "OBJECT", properties: { summary: { type: "STRING" } }, required: ["summary"] },
+    {
+      type: "OBJECT",
+      properties: {
+        headline: { type: "STRING" },
+        facts: { type: "ARRAY", items: { type: "STRING" }, minItems: 3, maxItems: 3 },
+        tip: { type: "STRING" },
+      },
+      required: ["headline", "facts", "tip"],
+    },
   );
   if (!result.ok) return result;
-  const text = typeof result.value?.summary === "string" ? result.value.summary.trim() : "";
-  if (!text) return { ok: false, error: "badResponse" };
+  const summary = toPeriodSummary(result.value, new Date().toISOString());
+  if (!summary) return { ok: false, error: "badResponse" };
 
-  const summary: PeriodSummary = { text, createdAt: new Date().toISOString() };
   const all = await readSummaries();
   const kept = Object.entries({ ...all, [key]: summary })
     .sort(([, a], [, z]) => z.createdAt.localeCompare(a.createdAt))

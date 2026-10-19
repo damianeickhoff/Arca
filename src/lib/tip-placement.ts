@@ -130,7 +130,7 @@ export type TipAnchor =
   // Settings: the AI row; Needs review's Ask AI button; the Insights summary card
   | "settingsAi"
   | "aiCategories"
-  | "aiSummary"
+  | "insightsSummary"
   // The one icon picker: its Icons · Brands tabs
   | "iconPickerTabs"
   // Merchant-first rules: the teach strip after a category pick

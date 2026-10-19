@@ -1473,9 +1473,9 @@
       "title": "Laat AI een categorie voorstellen",
       "body": "Vraag AI stelt categorieën voor bij deze transactie en de volgende in de wachtrij. Zijn keuze heeft een sterretje; jij beslist."
     },
-    "aiSummary": {
-      "title": "Je periode in een paar zinnen",
-      "body": "Samenvatting schrijven vraagt Gemini wat opvalt in de cijfers op deze pagina. Hij blijft staan tot je hem opnieuw laat schrijven."
+    "insightsSummary": {
+      "title": "Drie feiten en wat er over is",
+      "body": "Deze kaart vat de periode samen in drie feiten en wat je per dag nog kunt besteden. Met AI aan schrijft Gemini ze uit, met een budgettip."
     },
     "iconPicker": {
       "title": "Eén kiezer voor iconen, logo's en kleur",
@@ -2810,10 +2810,6 @@
       "incomeByCategory": "Inkomen per categorie",
       "categorySwitch": "Uitgaven of inkomen per categorie tonen",
       "details": "Details",
-      "spentSoFar": "tot nu toe",
-      "spentCaption": "uitgegeven",
-      "received": "ontvangen",
-      "donutLabel": "{title}, {total} in totaal: {parts}",
       "other": "Overig",
       "moreCount": "Nog {count}",
       "viewAll": "Alles tonen",
@@ -2835,7 +2831,22 @@
       "incomeByGroup": "Inkomen per groep",
       "groupSwitch": "Groepen of categorieën tonen",
       "groups": "Groepen",
-      "categories": "Categorieën"
+      "categories": "Categorieën",
+      "rangeDaysLeft": "{range} · nog {count, plural, one {# dag} other {# dagen}}",
+      "merchantsNote": "{count, plural, one {Deze winkel is} other {Deze # winkels zijn}} samen {pct}% van je uitgaven deze periode.",
+      "breakdown": {
+        "subtitleSpending": "Waar het geld deze periode naartoe ging",
+        "subtitleIncome": "Waar het geld deze periode vandaan kwam",
+        "spentSoFar": "tot nu toe uitgegeven",
+        "spent": "uitgegeven",
+        "received": "ontvangen",
+        "groups": "{count, plural, =0 {alleen Overig} one {# groep} other {# groepen}}{other, select, yes { en Overig} other {}}",
+        "categories": "{count, plural, =0 {alleen Overig} one {# categorie} other {# categorieën}}{other, select, yes { en Overig} other {}}",
+        "stripLabel": "Aandeel in het totaal: {parts}",
+        "otherCalloutGroup": "Overig is {pct}% van deze periode: {count, plural, one {# transactie} other {# transacties}} zonder groep.",
+        "otherCalloutCategory": "Overig is {pct}% van deze periode: {count, plural, one {# transactie} other {# transacties}} zonder categorie.",
+        "sortThem": "Sorteer ze in Te beoordelen"
+      }
     },
     "trends": {
       "avgIncome": "Gem. inkomen",
@@ -3301,14 +3312,32 @@
         "close": "Sluiten"
       }
     },
-    "aiSummary": {
+    "summary": {
       "title": "Samenvatting",
-      "subtitle": "Een paar zinnen over deze periode, geschreven door Gemini",
+      "titleOngoing": "Deze periode tot nu toe",
+      "titleDone": "Deze periode",
       "written": "Geschreven door Gemini · {date}",
-      "write": "Samenvatting schrijven",
+      "write": "Laat Gemini schrijven",
       "rewrite": "Opnieuw schrijven",
       "writing": "Schrijven…",
-      "empty": "Laat Gemini deze periode samenvatten: wat opvalt en één ding om te proberen. Het ziet alleen de cijfers op deze pagina.",
+      "footAi": "Op basis van de cijfers op deze pagina",
+      "footComputed": "Cijfers van deze pagina, zonder AI",
+      "switchOn": "Zet AI aan voor geschreven advies",
+      "balance": {
+        "ahead": "Je uitgaven liggen <b>{amount}</b> boven je inkomsten.",
+        "kept": "Je hield <b>{amount}</b> van je inkomsten over.",
+        "noIncome": "Je gaf <b>{amount}</b> uit, zonder inkomsten in deze periode tot nu toe."
+      },
+      "biggest": "Grootste groep: {group}, <b>{groupAmount}</b>. Grootste winkel: {merchant}, <b>{merchantAmount}</b>.",
+      "biggestGroup": "Grootste groep: {group}, <b>{amount}</b>.",
+      "topMerchant": "Grootste winkel: {merchant}, <b>{amount}</b>.",
+      "nothingSpent": "Nog geen uitgaven deze periode.",
+      "other": "<b>{amount}</b> staat nog in Overig, {count, plural, one {# transactie} other {# transacties}} zonder categorie.",
+      "otherNone": "Elke transactie in deze periode heeft een categorie.",
+      "left": "Nog te besteden: <b>{amount}</b> na de rekeningen die nog komen, zo'n <b>{perDay} per dag</b> voor {count, plural, one {# dag} other {# dagen}}.",
+      "overBudget": "Je zit <b>{amount}</b> boven je budget, met nog {count, plural, one {# dag} other {# dagen}} te gaan.",
+      "perDay": "Je gaf gemiddeld <b>{amount} per dag</b> uit.",
+      "prevPerDay": "Vorige periode was dat gemiddeld {amount} per dag.",
       "errors": {
         "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw.",
         "notConfigured": "AI staat uit. Zet het aan bij Instellingen › AI.",

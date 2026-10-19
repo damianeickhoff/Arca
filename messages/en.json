@@ -1473,9 +1473,9 @@
       "title": "Let AI suggest a category",
       "body": "Ask AI suggests categories for this transaction and the next ones in the queue. Its pick is marked with a sparkle; you still choose."
     },
-    "aiSummary": {
-      "title": "Your period in a few sentences",
-      "body": "Write summary asks Gemini what stands out in the figures on this page. It's kept until you rewrite it."
+    "insightsSummary": {
+      "title": "Three facts and what's left",
+      "body": "This card sums up the period in three facts and what's left to spend per day. With AI on, Gemini can write them up with a budgeting tip."
     },
     "iconPicker": {
       "title": "One picker for icons, logos and colour",
@@ -2810,10 +2810,6 @@
       "incomeByCategory": "Income by category",
       "categorySwitch": "Show spending or income by category",
       "details": "Details",
-      "spentSoFar": "spent so far",
-      "spentCaption": "spent",
-      "received": "received",
-      "donutLabel": "{title}, {total} in total: {parts}",
       "other": "Other",
       "moreCount": "{count} more",
       "viewAll": "View all",
@@ -2835,7 +2831,22 @@
       "incomeByGroup": "Income by group",
       "groupSwitch": "Show groups or categories",
       "groups": "Groups",
-      "categories": "Categories"
+      "categories": "Categories",
+      "rangeDaysLeft": "{range} · {count, plural, one {# day left} other {# days left}}",
+      "merchantsNote": "{count, plural, one {This merchant makes} other {These # merchants make}} up {pct}% of your spending this period.",
+      "breakdown": {
+        "subtitleSpending": "Where the money went this period",
+        "subtitleIncome": "Where the money came from this period",
+        "spentSoFar": "spent so far",
+        "spent": "spent",
+        "received": "received",
+        "groups": "{count, plural, =0 {only Other} one {# group} other {# groups}}{other, select, yes { and Other} other {}}",
+        "categories": "{count, plural, =0 {only Other} one {# category} other {# categories}}{other, select, yes { and Other} other {}}",
+        "stripLabel": "Share of the total: {parts}",
+        "otherCalloutGroup": "Other is {pct}% of this period: {count, plural, one {# transaction} other {# transactions}} without a group.",
+        "otherCalloutCategory": "Other is {pct}% of this period: {count, plural, one {# transaction} other {# transactions}} without a category.",
+        "sortThem": "Sort them in Needs review"
+      }
     },
     "trends": {
       "avgIncome": "Avg. income",
@@ -3301,14 +3312,32 @@
         "close": "Close"
       }
     },
-    "aiSummary": {
+    "summary": {
       "title": "Summary",
-      "subtitle": "A few sentences about this period, written by Gemini",
+      "titleOngoing": "This period so far",
+      "titleDone": "This period",
       "written": "Written by Gemini · {date}",
-      "write": "Write summary",
+      "write": "Write with Gemini",
       "rewrite": "Rewrite",
       "writing": "Writing…",
-      "empty": "Let Gemini sum up this period: what stands out and one thing to try. It only sees the figures on this page.",
+      "footAi": "Based on the figures on this page",
+      "footComputed": "Figures from this page, no AI needed",
+      "switchOn": "Switch on AI for written advice",
+      "balance": {
+        "ahead": "Spending is <b>{amount}</b> ahead of income.",
+        "kept": "You kept <b>{amount}</b> of your income.",
+        "noIncome": "You spent <b>{amount}</b>, with no income in this period yet."
+      },
+      "biggest": "Biggest group: {group}, <b>{groupAmount}</b>. Top merchant: {merchant}, <b>{merchantAmount}</b>.",
+      "biggestGroup": "Biggest group: {group}, <b>{amount}</b>.",
+      "topMerchant": "Top merchant: {merchant}, <b>{amount}</b>.",
+      "nothingSpent": "No spending in this period yet.",
+      "other": "<b>{amount}</b> is still in Other, {count, plural, one {# transaction} other {# transactions}} without a category.",
+      "otherNone": "Every transaction in this period has a category.",
+      "left": "Left to spend: <b>{amount}</b> after the bills still due, about <b>{perDay} a day</b> for {count, plural, one {# day} other {# days}}.",
+      "overBudget": "You're <b>{amount}</b> over budget with {count, plural, one {# day} other {# days}} to go.",
+      "perDay": "You spent <b>{amount} a day</b> on average.",
+      "prevPerDay": "Last period you averaged {amount} a day.",
       "errors": {
         "signedOut": "You're signed out. Sign in and try again.",
         "notConfigured": "AI is off. Switch it on in Settings › AI.",

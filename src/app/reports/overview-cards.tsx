@@ -24,7 +24,8 @@ import { cn } from "@/lib/utils";
 import { MoneyText } from "@/components/clear/money";
 
 // The cards of Insights · Overview (see analytics-tab.tsx for the data). Server
-// components; the category donut is client-side (spending-donut-card.tsx).
+// components; the category breakdown and the summary are client-side
+// (category-breakdown-card.tsx, summary-card.tsx).
 
 /** Theme colours for series without a colour of their own (accounts, merchants). */
 export const SERIES_COLORS = [
@@ -196,7 +197,7 @@ export async function FlowCard({
   // Values over the bars and the dates under the labels only where there's room.
   const showValues = buckets.length <= 6;
   const showSub = buckets.length <= 7;
-  const plotHeight = "h-[120px] lg:h-[140px]";
+  const plotHeight = "min-h-[120px] lg:min-h-[160px]";
   const bar = "min-h-[3px] w-[26%] min-w-1.5 max-w-7";
 
   const description = t("flowLabel", {
@@ -234,10 +235,13 @@ export async function FlowCard({
       {empty ? (
         <p className="m-0 flex flex-1 items-center justify-center py-10 text-center text-sm text-clear-muted">{t("noActivity")}</p>
       ) : (
-        <div role="img" aria-label={description} className="flex">
+        // The plot grows with the card: beside a taller neighbour the bars get the room
+        // instead of leaving a gap under the chart. Every column (the axis included)
+        // shares one layout — a growing plot over the label lines — so they line up.
+        <div role="img" aria-label={description} className="flex flex-1">
           {/* The y-axis, in the gutter left of the plot. */}
-          <div aria-hidden className="relative w-10 shrink-0">
-            <div className={cn("absolute inset-x-0 top-5", plotHeight)}>
+          <div aria-hidden className="flex w-10 shrink-0 flex-col pb-2">
+            <div className={cn("relative mt-5 flex-1", plotHeight)}>
               {Array.from({ length: steps + 1 }, (_, i) => (
                 <span
                   key={i}
@@ -248,66 +252,64 @@ export async function FlowCard({
                 </span>
               ))}
             </div>
+            <BucketLabels label={" "} sub={showSub && buckets.some((b) => b.sub) ? " " : null} className="invisible" />
           </div>
-          <div aria-hidden className="relative min-w-0 flex-1">
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={cn("absolute inset-x-0 top-5 w-full overflow-visible", plotHeight)}>
-              {Array.from({ length: steps }, (_, i) => (
-                <line
-                  key={i}
-                  x1="0"
-                  x2="100"
-                  y1={100 - pct(step * (i + 1))}
-                  y2={100 - pct(step * (i + 1))}
-                  stroke="var(--clr-line)"
-                  strokeDasharray="3 4"
-                  vectorEffect="non-scaling-stroke"
-                />
-              ))}
-            </svg>
-            <div className="relative flex">
-              <MoneyText>{buckets.map((b) => {
-                const out = b.spent + b.bills;
-                const both = b.income > 0 && out > 0;
-                const outLabel = b.spent > 0 ? formatEurWhole(b.spent) : b.bills > 0 ? formatEurWhole(b.bills) : null;
-                // Side by side, each value grows away from the other bar so they never overlap.
-                const value = (align: "left" | "right" | "center", className: string, text: string) => (
-                  <span
-                    className={cn(
-                      "absolute bottom-full mb-1 hidden text-xs font-bold whitespace-nowrap tabular-nums lg:block",
-                      align === "center" ? "left-1/2 -translate-x-1/2" : align === "right" ? "right-0" : "left-0",
-                      className,
-                    )}
-                  >
-                    {text}
-                  </span>
-                );
-                return (
-                  <div key={b.key} className={cn("flex min-w-0 flex-1 flex-col items-center rounded-clear-tile pb-2", b.current && "bg-clear-tile")}>
-                    <div className={cn("relative mt-5 flex w-full items-end justify-center gap-[5px] border-b border-clear-line", plotHeight)}>
+          <div aria-hidden className="flex min-w-0 flex-1">
+            <MoneyText>{buckets.map((b) => {
+              const out = b.spent + b.bills;
+              const both = b.income > 0 && out > 0;
+              // Side by side, each value grows away from the other bar so they never overlap.
+              const value = (align: "left" | "right" | "center", className: string, text: string) => (
+                <span
+                  className={cn(
+                    "absolute bottom-full mb-1 hidden text-xs font-bold whitespace-nowrap tabular-nums lg:block",
+                    align === "center" ? "left-1/2 -translate-x-1/2" : align === "right" ? "right-0" : "left-0",
+                    className,
+                  )}
+                >
+                  {text}
+                </span>
+              );
+              return (
+                <div key={b.key} className={cn("flex min-w-0 flex-1 flex-col items-center rounded-clear-tile pb-2", b.current && "bg-clear-tile")}>
+                  <div className={cn("relative mt-5 w-full flex-1 border-b border-clear-line", plotHeight)}>
+                    {Array.from({ length: steps }, (_, i) => (
+                      <span
+                        key={i}
+                        className="absolute inset-x-0 border-t border-dashed border-clear-line"
+                        style={{ top: `${100 - pct(step * (i + 1))}%` }}
+                      />
+                    ))}
+                    {/* Positioned, so the bars' percentages resolve however the plot got its height. */}
+                    <div className="absolute inset-0 flex items-end justify-center gap-[5px]">
                       {b.income > 0 && (
                         <div className={cn(bar, "relative rounded-[6px] bg-clear-ink")} style={{ height: `${pct(b.income)}%` }}>
                           <MoneyText>{showValues && value(both ? "right" : "center", "text-clear-ink", formatEurWhole(b.income))}</MoneyText>
                         </div>
                       )}
+                      {/* One bar for the money going out: spent, with the bills still due
+                          hatched on top; a week ahead has only the hatched part. */}
                       {out > 0 && (
                         <div className={cn(bar, "relative flex flex-col")} style={{ height: `${pct(out)}%` }}>
                           {b.bills > 0 && (
                             <div
-                              className="clear-hatch min-h-[3px] shrink-0 rounded-[4px] ring-1 ring-inset ring-[var(--clr-hatch-stripe)]"
+                              className={cn(
+                                "clear-hatch min-h-[3px] shrink-0 ring-1 ring-inset ring-[var(--clr-hatch-stripe)]",
+                                b.spent > 0 ? "rounded-t-[6px] rounded-b-[3px]" : "rounded-[6px]",
+                              )}
                               style={{ height: `${(b.bills / out) * 100}%` }}
                             />
                           )}
-                          {b.spent > 0 && <div className="min-h-[3px] flex-1 rounded-[6px] bg-clear-ember" />}
-                          {showValues && outLabel && value(both ? "left" : "center", b.spent > 0 ? "text-clear-ink" : "text-clear-ember-text", outLabel)}
+                          {b.spent > 0 && <div className={cn("min-h-[3px] flex-1 bg-clear-ember", b.bills > 0 ? "rounded-t-[3px] rounded-b-[6px]" : "rounded-[6px]")} />}
+                          {showValues && value(both ? "left" : "center", b.spent > 0 ? "text-clear-ink" : "text-clear-ember-text", formatEurWhole(out))}
                         </div>
                       )}
                     </div>
-                    <span className={cn("mt-2 max-w-full truncate px-1 text-xs", b.current ? "font-bold text-clear-ink" : "text-clear-muted")}>{b.label}</span>
-                    {showSub && b.sub && <span className="max-w-full truncate px-1 text-xs text-clear-muted max-sm:hidden">{b.sub}</span>}
                   </div>
-                );
-              })}</MoneyText>
-            </div>
+                  <BucketLabels label={b.label} sub={showSub ? b.sub : null} current={b.current} />
+                </div>
+              );
+            })}</MoneyText>
           </div>
         </div>
       )}
@@ -337,6 +339,16 @@ export async function FlowCard({
   );
 }
 
+/** The label under a column, with its dates where there is room. */
+function BucketLabels({ label, sub, current = false, className }: { label: string; sub: string | null; current?: boolean; className?: string }) {
+  return (
+    <>
+      <span className={cn("mt-2 max-w-full truncate px-1 text-xs", current ? "font-bold text-clear-ink" : "text-clear-muted", className)}>{label}</span>
+      {sub && <span className={cn("max-w-full truncate px-1 text-xs text-clear-muted max-sm:hidden", className)}>{sub}</span>}
+    </>
+  );
+}
+
 /* ── Top merchants ────────────────────────────────────────────────────────────── */
 
 export interface MerchantRow {
@@ -347,9 +359,11 @@ export interface MerchantRow {
   color: string | null;
 }
 
-export async function MerchantsCard({ merchants, allHref }: { merchants: MerchantRow[]; allHref: string }) {
+export async function MerchantsCard({ merchants, allHref, spendingTotal }: { merchants: MerchantRow[]; allHref: string; spendingTotal: number }) {
   const t = await getTranslations("insights.overview");
   const max = Math.max(1, ...merchants.map((m) => m.total));
+  const shown = merchants.reduce((s, m) => s + m.total, 0);
+  const sharePct = spendingTotal > 0 ? Math.round((shown / spendingTotal) * 100) : 0;
 
   return (
     <ClearCard data-tip-anchor="insightsMerchants" aria-labelledby="insights-merchants-title" className="gap-3.5">
@@ -377,6 +391,12 @@ export async function MerchantsCard({ merchants, allHref }: { merchants: Merchan
             </li>
           ))}
         </ul>
+      )}
+      {merchants.length > 0 && (
+        <p className="m-0 mt-auto flex items-start gap-2.5 text-[13px] leading-normal text-clear-ink-2">
+          <IconInfoCircle size={18} stroke={1.9} aria-hidden className="mt-px shrink-0" />
+          {t("merchantsNote", { count: merchants.length, pct: sharePct })}
+        </p>
       )}
     </ClearCard>
   );
@@ -502,11 +522,13 @@ export async function CalendarCard({
   rangeLabel,
   avgPerDay,
   popularDay,
+  className,
 }: {
   days: CalendarDay[];
   rangeLabel: string;
   avgPerDay: number;
   popularDay: string | null;
+  className?: string;
 }) {
   const t = await getTranslations("insights.overview");
   const locale = await getLocale();
@@ -526,7 +548,7 @@ export async function CalendarCard({
   });
 
   return (
-    <ClearCard aria-labelledby="insights-calendar-title" className="gap-3.5">
+    <ClearCard aria-labelledby="insights-calendar-title" className={cn("gap-3.5", className)}>
       <ClearCardHeader
         title={<span id="insights-calendar-title">{t("calendar")}</span>}
         action={<span className="text-sm font-semibold text-clear-muted">{rangeLabel}</span>}

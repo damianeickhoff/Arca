@@ -8,16 +8,18 @@ Planned AI features for Centje, in build order. One feature per session/commit.
   `app_settings`), `listModels`, `generateJson(prompt, schema)` with JSON output, automatic model
   fallback past paid-only models, quota-error reading (`readQuotaError`), `redactForAi()` to strip
   IBANs, card numbers and long references. Key never leaves the server.
-- **Features** — `src/lib/ai-features.ts` (`suggestCategories`, `summarizePeriod` + cache in
+- **Features** — `src/lib/ai-features.ts` (`suggestCategories`, `summarizePeriod` — a structured
+  headline, three facts and a tip from the facts built in `src/lib/period-facts.ts` — + cache in
   `app_settings.ai_summaries`), server actions in `src/app/actions/ai.ts`.
 - **UI** — Settings › AI (`src/components/settings/ai-settings-panel.tsx`), Ask AI in Needs a
   category (`src/app/transactions/needs-review/needs-review-view.tsx`), Summary card on Insights ›
-  Overview (`src/app/reports/ai-summary-card.tsx`).
+  Overview (`src/app/reports/summary-card.tsx`; with AI off it shows the computed facts instead).
 - **Diagnostics** — `npm run ai:check` (`scripts/ai-check.ts`).
 
 ## Ground rules for every AI feature
 
-- Only show it when `isAiReady()`; hide it otherwise (no dead buttons).
+- Only show it when `isAiReady()`; hide it otherwise (no dead buttons). The Insights summary is
+  the exception: with AI off it keeps its slot with the computed facts and a link to Settings › AI.
 - Send the minimum: merchant text through `redactForAi`, amounts, dates, category names. Never
   account numbers, never whole histories when an aggregate will do.
 - One request per user action, batched (free-tier limits). Cache results the user may reopen.
