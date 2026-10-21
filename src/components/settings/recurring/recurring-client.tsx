@@ -41,6 +41,10 @@ export interface RecurringPrefill {
   startDate?: string;
   matchPattern?: string;
   matchAmount?: string;
+  /** A "between" match (a variable bill the detector found); wins over matchAmount. */
+  matchAmountMin?: string;
+  matchAmountMax?: string;
+  frequency?: string;
   categoryId?: string;
 }
 
@@ -246,7 +250,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
   const [form, setForm] = useState({
     name: item?.name ?? prefill?.name ?? "",
     type: item?.type ?? prefill?.type ?? "bill",
-    frequency: item?.frequency ?? "monthly",
+    frequency: item?.frequency ?? prefill?.frequency ?? "monthly",
     budgetType: item?.budgetType ?? prefill?.budgetType ?? "nodig",
     active: item?.active ?? true,
     notes: item?.notes ?? "",
@@ -256,9 +260,9 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
     matchPattern: item?.matchPattern ?? prefill?.matchPattern ?? "",
     matchWholeWord: item?.matchWholeWord ?? false,
     matchAmount: item?.matchAmount?.toString() ?? prefill?.matchAmount ?? "",
-    matchMode: (item?.matchAmountMin != null || item?.matchAmountMax != null ? "range" : "exact") as "exact" | "range",
-    matchAmountMin: item?.matchAmountMin?.toString() ?? "",
-    matchAmountMax: item?.matchAmountMax?.toString() ?? "",
+    matchMode: ((item ?? prefill)?.matchAmountMin != null || (item ?? prefill)?.matchAmountMax != null ? "range" : "exact") as "exact" | "range",
+    matchAmountMin: item?.matchAmountMin?.toString() ?? prefill?.matchAmountMin ?? "",
+    matchAmountMax: item?.matchAmountMax?.toString() ?? prefill?.matchAmountMax ?? "",
     categoryId: item?.categoryId != null ? String(item.categoryId) : (prefill?.categoryId ?? ""),
     friendlyName: item?.friendlyName ?? "",
     shared: item?.sharedReimbursedAmount != null,

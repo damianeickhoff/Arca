@@ -9,7 +9,7 @@ import { detectBrandIcon } from "@/lib/brand-detect";
 import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
-import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, INVITES_TABLE_SQL, createSchema } from "./create-schema";
+import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, INVITES_TABLE_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
 // full schema for fresh databases — run on first start and by `npm run db:init`). Any
@@ -612,6 +612,10 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
 
   // Auto-migrate: invite links (Settings › Users), see src/lib/invites.ts.
   sqlite.exec(INVITES_TABLE_SQL);
+
+  // Auto-migrate: recurring suggestions (Upcoming, Settings › Recurring), see
+  // src/lib/recurring-suggestions.ts.
+  sqlite.exec(RECURRING_SUGGESTIONS_TABLE_SQL);
 
   return drizzle(sqlite, { schema });
 }

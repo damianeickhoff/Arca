@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, categories, categoryRules, banks, transactionSplits, type Bank } from "@/db/schema";
 import { matchRules, applyAllRules } from "@/lib/apply-rules";
-import { detectRecurringTransactions } from "@/lib/detect-recurring";
+import { detectRecurringSuggestions } from "@/lib/recurring-suggestions";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
 import { isOwnAccountTransfer, normalizeAccountNumber } from "@/lib/internal-transfers";
 import { assignMissingMerchants, getOrCreateMerchantId } from "@/lib/merchants";
@@ -207,10 +207,10 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
   // bank metadata was backfilled above). No-op when everything already has one.
   await assignMissingMerchants();
 
-  // Now that the new rows are in, detect any newly-recurring transactions (creates recurring
-  // items) and link every transaction to its matching item.
-  await detectRecurringTransactions();
+  // Now that the new rows are in, link every transaction to its matching recurring item,
+  // then look for new regular payments (stored as suggestions for the user to accept).
   await applyAllRules();
+  await detectRecurringSuggestions();
 
   // Counted only over the rows this import inserted (duplicates never count) and only
   // after every pass above has run, so the number matches what the user will see.

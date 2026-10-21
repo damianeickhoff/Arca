@@ -28,16 +28,30 @@ function typicalAmount(amounts: number[]): number {
   return mode(amounts.map(cents)) / 100;
 }
 
+/** A run of payments can change price this often (a yearly rise over a long history)
+ *  and still count as fixed at the latest price. */
+const MAX_PRICE_STEPS = 3;
+
+/** Splits date-ordered amounts into runs that stay fixed. */
+function priceSteps(amounts: number[]): number[][] {
+  const steps: number[][] = [];
+  for (const a of amounts) {
+    const current = steps.at(-1);
+    if (current && isFixed([...current, a])) current.push(a);
+    else steps.push([a]);
+  }
+  return steps;
+}
+
 /** `amounts` in date order (oldest first), any sign. Null when the amounts aren't steady. */
 export function classifyAmount(rawAmounts: number[]): AmountResult | null {
   const amounts = rawAmounts.map((a) => Math.abs(a));
   if (amounts.length === 0) return null;
   if (isFixed(amounts)) return { kind: "fixed", amount: typicalAmount(amounts), priceChanged: false };
 
-  if (amounts.length >= 4) {
-    const latest = amounts.slice(-3);
-    const before = amounts.slice(0, -3);
-    if (isFixed(latest) && isFixed(before)) return { kind: "fixed", amount: typicalAmount(latest), priceChanged: true };
+  const steps = priceSteps(amounts);
+  if (steps.length <= MAX_PRICE_STEPS && steps.at(-1)!.length >= 3) {
+    return { kind: "fixed", amount: typicalAmount(steps.at(-1)!), priceChanged: true };
   }
 
   const m = median(amounts);

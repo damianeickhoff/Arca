@@ -30,11 +30,29 @@ const VARIABLE_FREQUENCIES = new Set(["monthly", "four_weekly", "quarterly", "ye
  *  still counts as paid. */
 const RANGE_MARGIN = 0.1;
 
+/** How far back a series is read: a bit over a year, and two years for yearly ones. */
+const RECENT_DAYS = 400;
+const YEARLY_DAYS = 800;
+
+function shiftDays(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
 function curatedMatch(descriptions: string[], income: boolean, curated: readonly RecurringMerchant[]): RecurringMerchant | null {
   const lowered = descriptions.map((d) => d.toLowerCase());
   return (
     curated.find((m) => (m.type === "income") === income && lowered.every((d) => d.includes(m.pattern.toLowerCase()))) ?? null
   );
+}
+
+/** The first payment's month, on the due day: the editor reads the due day from the
+ *  start date, and quarterly and yearly items count their months from it. */
+function anchorDate(first: string, dueDay: number | null): string {
+  if (dueDay == null) return first;
+  const [year, month] = first.split("-").map(Number);
+  const day = Math.min(dueDay, new Date(Date.UTC(year, month, 0)).getUTCDate());
+  return `${first.slice(0, 7)}-${String(day).padStart(2, "0")}`;
 }
 
 function titleCase(text: string) {
@@ -95,7 +113,7 @@ export function evaluateSeries(input: DetectTransaction[], ctx: SeriesContext): 
     type,
     frequency: rhythm.frequency,
     dueDay: rhythm.dueDay,
-    startDate: txns[0].date,
+    startDate: anchorDate(txns[0].date, rhythm.dueDay),
     amount: amount.amount,
     amountMin: amount.kind === "variable" ? amount.min : null,
     amountMax: amount.kind === "variable" ? amount.max : null,
@@ -126,16 +144,26 @@ export function evaluateSeries(input: DetectTransaction[], ctx: SeriesContext): 
  * Every recurring series in `txns`. Each counterparty is first tested as one series
  * (a subscription, a salary, an energy bill whose amount varies); when that fails, each
  * of its amount bands is tested on its own (the subscription inside a shop's purchases).
+ *
+ * Only recent history counts: the last RECENT_DAYS, so years of price rises or an old
+ * gap don't hide a bill that is steady now, then YEARLY_DAYS for a yearly payment.
  */
 export function detectRecurring(txns: DetectTransaction[], options: DetectOptions): RecurringCandidate[] {
   const out: RecurringCandidate[] = [];
-  for (const [key, group] of groupByCounterparty(txns)) {
-    const merchantId = group[0].merchantId;
+  const recentFrom = shiftDays(options.today, -RECENT_DAYS);
+  const yearlyFrom = shiftDays(options.today, -YEARLY_DAYS);
+  for (const [key, all] of groupByCounterparty(txns)) {
+    const merchantId = all[0].merchantId;
     const hints = merchantId != null ? (options.merchantPatterns?.get(merchantId) ?? []) : [];
-    const base = { today: options.today, hints, curated: options.curated };
+    const base = { today: options.today, hints, curated: options.curated, signature: `r:${key}` };
 
-    const whole = evaluateSeries(group, { ...base, signature: `r:${key}` });
-    if (whole.ok) {
+    const group = all.filter((t) => t.date >= recentFrom);
+    const longer = all.filter((t) => t.date >= yearlyFrom);
+    const whole = [group, longer]
+      .filter((list, i) => list.length > 0 && (i === 0 || list.length > group.length))
+      .map((list) => evaluateSeries(list, base))
+      .find((r) => r.ok);
+    if (whole?.ok) {
       out.push(whole.candidate);
       continue;
     }

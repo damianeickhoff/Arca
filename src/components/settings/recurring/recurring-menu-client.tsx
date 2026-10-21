@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { IconRepeat } from "@tabler/icons-react";
 import { RecurringClient, RecurringRestoreButton } from "@/components/settings/recurring/recurring-client";
 import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
+import { RecurringSuggestions } from "@/components/settings/recurring/recurring-suggestions";
+import type { SuggestionView } from "@/lib/recurring-suggestions";
 import { ContextualTip } from "@/components/contextual-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { SettingsEmpty, SettingsSearch } from "@/components/settings/settings-ui";
@@ -33,11 +35,13 @@ interface Props {
   categories: Category[];
   /** Payment plans only: how far each is paid off, by item id. */
   planProgress: Record<number, PlanProgress>;
+  /** Regular payments the detector found, waiting for Accept / Not a bill. */
+  suggestions: SuggestionView[];
 }
 
 /** The Recurring settings panel: the monthly total, type filters and a search, then
  *  every recurring item (a row opens its detail) and the dismissed ones to restore. */
-export function RecurringMenuClient({ items, categories, planProgress }: Props) {
+export function RecurringMenuClient({ items, categories, planProgress, suggestions }: Props) {
   const t = useTranslations("settings.recurringList");
   const tPanels = useTranslations("settings.panels");
   const tForm = useTranslations("recurringForm");
@@ -107,6 +111,9 @@ export function RecurringMenuClient({ items, categories, planProgress }: Props) 
             <span className="text-sm text-clear-muted">{isIncomeView ? t("perMonthIncome") : t("perMonthExpenses")}</span>
           </span>
         </div>
+
+        {/* What the detector found: reviewed here as well as on Upcoming. */}
+        <RecurringSuggestions suggestions={suggestions} className="bg-clear-tile p-4" />
 
         {/* Filters */}
         <div role="group" aria-label={t("filterLabel")} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">

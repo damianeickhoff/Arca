@@ -20,6 +20,7 @@ import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balance
 import { getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
 import { getPlanProgress } from "@/lib/payment-plan-progress";
 import { syncRecurringLifecycle } from "@/lib/recurring-period";
+import { listPendingSuggestions } from "@/lib/recurring-suggestions";
 import { listActivity } from "@/lib/activity-log";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
@@ -58,9 +59,10 @@ async function RecurringPanel() {
   // Auto-disable items whose period end has passed before loading the list.
   await syncRecurringLifecycle();
 
-  const [recurringAll, cats] = await Promise.all([
+  const [recurringAll, cats, suggestions] = await Promise.all([
     db.select().from(recurringItems).orderBy(recurringItems.type, recurringItems.name),
     db.select().from(categories).orderBy(asc(categories.name)),
+    listPendingSuggestions(),
   ]);
 
   // The "next" date each row shows is derived client-side from the item's own
@@ -68,7 +70,7 @@ async function RecurringPanel() {
   // is the occurrence within the *current* financial month, i.e. already in the past
   // for anything due earlier this month.
   const planProgress = Object.fromEntries(await getPlanProgress(recurringAll, await getFinancialMonthConfig()));
-  return <RecurringMenuClient items={recurringAll} categories={cats} planProgress={planProgress} />;
+  return <RecurringMenuClient items={recurringAll} categories={cats} planProgress={planProgress} suggestions={suggestions} />;
 }
 
 async function AccountsPanel() {

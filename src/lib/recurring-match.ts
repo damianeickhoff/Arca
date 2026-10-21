@@ -15,7 +15,7 @@ export type RecurringMatcher = {
   active: boolean;
   // Payload rather than matching criteria: these ride along on a match but never affect
   // whether one happens, so callers that only ask "does anything already cover this?"
-  // (see detect-recurring.ts) can build a matcher without them.
+  // (see lib/recurring-suggestions.ts) can build a matcher without them.
   /** Incoming money that pays you back rather than real income — matched transactions
    *  get transactions.isReimbursement so income totals ignore them. */
   isReimbursement?: boolean;

@@ -240,6 +240,49 @@ export const recurringItems = sqliteTable("recurring_items", {
   planParts: integer("plan_parts"),
 });
 
+// ─── Recurring suggestions ──────────────────────────────────────────────────
+// What the recurring detector (src/lib/recurring-detect/) found, waiting for the user:
+// Accept turns one into a recurring item, "Not a bill" keeps the row as `rejected` so
+// the same series (same signature) never comes back. See lib/recurring-suggestions.ts.
+export const recurringSuggestions = sqliteTable("recurring_suggestions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  // counterparty + direction (+ amount band): see detectRecurring
+  signature: text("signature").notNull().unique(),
+  // The counterparty and direction alone ("m12:expense"): a run re-tests every
+  // pending suggestion of the groups it looked at.
+  groupKey: text("group_key").notNull(),
+  // pending | accepted | rejected
+  status: text("status").notNull().default("pending"),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  frequency: text("frequency").notNull(),
+  dueDay: integer("due_day"),
+  startDate: text("start_date"),
+  amount: real("amount"),
+  amountMin: real("amount_min"),
+  amountMax: real("amount_max"),
+  matchPattern: text("match_pattern").notNull(),
+  matchAmount: real("match_amount"),
+  matchAmountMin: real("match_amount_min"),
+  matchAmountMax: real("match_amount_max"),
+  budgetType: text("budget_type"),
+  merchantId: integer("merchant_id").references(() => merchants.id, { onDelete: "set null" }),
+  occurrences: integer("occurrences").notNull().default(0),
+  firstDate: text("first_date"),
+  lastDate: text("last_date"),
+  confidence: real("confidence").notNull().default(0),
+  curated: integer("curated", { mode: "boolean" }).notNull().default(false),
+  // JSON array of the transaction ids the series was built from.
+  transactionIds: text("transaction_ids"),
+  // The recurring item it became (accepted), or — for the migration pass — the earlier
+  // auto-detected item it was made from.
+  recurringItemId: integer("recurring_item_id").references(() => recurringItems.id, { onDelete: "set null" }),
+  // true = an earlier auto-detected item that failed the new tests (the migration pass).
+  wasActive: integer("was_active", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`),
+});
+
 // ─── Savings goals ─────────────────────────────────────────────────────────
 export const savingsGoals = sqliteTable("savings_goals", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -670,6 +713,7 @@ export type TransactionSplit = typeof transactionSplits.$inferSelect;
 export type NewTransactionSplit = typeof transactionSplits.$inferInsert;
 export type RecurringItem = typeof recurringItems.$inferSelect;
 export type NewRecurringItem = typeof recurringItems.$inferInsert;
+export type RecurringSuggestion = typeof recurringSuggestions.$inferSelect;
 export type SavingsGoal = typeof savingsGoals.$inferSelect;
 export type NewSavingsGoal = typeof savingsGoals.$inferInsert;
 export type Goal = typeof goals.$inferSelect;

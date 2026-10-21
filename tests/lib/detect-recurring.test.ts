@@ -49,9 +49,9 @@ describe("detectRecurring: the plan's fixtures", () => {
     expect(found.matchAmountMax).toBeGreaterThan(138);
   });
 
-  it("finds water as quarterly, anchored to the first payment", () => {
+  it("finds water as quarterly, anchored to the first payment's month", () => {
     const [found] = detect(water());
-    expect(found).toMatchObject({ frequency: "quarterly", startDate: "2025-11-10", amount: 54.2 });
+    expect(found).toMatchObject({ frequency: "quarterly", startDate: "2025-11-08", firstDate: "2025-11-10", dueDay: 8, amount: 54.2 });
   });
 
   it("finds car insurance as yearly from two payments", () => {
@@ -66,6 +66,19 @@ describe("detectRecurring: the plan's fixtures", () => {
   it("fixes a subscription at its new price after a price rise", () => {
     const [found] = detect(priceRise());
     expect(found).toMatchObject({ frequency: "monthly", amount: 10.99, matchAmount: 10.99, dueDay: 12, amountMin: null });
+  });
+
+  it("reads only recent history, so years of price rises still give a fixed amount", () => {
+    const dates: string[] = [];
+    const amounts: number[] = [];
+    for (let i = 0; i < 36; i++) {
+      const month = new Date(Date.UTC(2023, 10 + i, 7));
+      dates.push(month.toISOString().slice(0, 10));
+      amounts.push(i < 12 ? 7.99 : i < 24 ? 8.99 : 9.99);
+    }
+    const [found] = detect(series({ merchantId: 12, merchantName: "Cloudbox", description: "Cloudbox storage", dates, amounts }));
+    expect(found).toMatchObject({ frequency: "monthly", amount: 9.99, matchAmount: 9.99, dueDay: 7 });
+    expect(found.firstDate > "2025-09-01").toBe(true);
   });
 
   it("does not suggest a gym that stopped five months ago", () => {

@@ -1540,6 +1540,10 @@
     "userInvites": {
       "title": "Invite people with a link",
       "body": "Sign-up is closed: nobody can create an account on their own any more. Make an invite link here and send it to someone who should join. It works once and expires after a week."
+    },
+    "recurringSuggestions": {
+      "title": "Regular payments, found for you",
+      "body": "Arca looks for payments that come back at a steady rhythm and amount. Nothing becomes a bill until you accept it; Not a bill keeps it from coming back."
     }
   },
   "categoryPicker": {
@@ -4615,5 +4619,30 @@
       "denied": "The bank didn't give access. Nothing was connected.",
       "signedOut": "You're signed out. Sign in and try again."
     }
+  },
+  "recurringSuggestions": {
+    "title": "{count, plural, one {Arca found a regular payment} other {Arca found # regular payments}}",
+    "subtitle": "Accept the ones you pay on purpose; Arca then tracks them as bills.",
+    "editTitle": "Review this payment",
+    "line": "{amount} {rhythm}, {count, plural, one {once} other {# times}} since {since}",
+    "lineNoDate": "{amount} {rhythm}, {count, plural, one {once} other {# times}}",
+    "range": "{min}–{max}",
+    "rhythm": {
+      "weekly": "every week",
+      "four_weekly": "every four weeks",
+      "monthly": "every month",
+      "monthlyOn": "every month around the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+      "quarterly": "every quarter",
+      "yearly": "every year"
+    },
+    "confidence": {
+      "high": "Very likely",
+      "medium": "Likely",
+      "low": "Possible"
+    },
+    "accept": "Accept",
+    "edit": "Edit",
+    "reject": "Not a bill",
+    "error": "That didn't save. Try again."
   }
 }

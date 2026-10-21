@@ -164,6 +164,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   importBankFirst: IconBuildingBank,
   helpGuide: IconBook2,
   userInvites: IconUserPlus,
+  recurringSuggestions: IconSparkles,
 };
 
 /**

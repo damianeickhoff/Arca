@@ -1540,6 +1540,10 @@
     "userInvites": {
       "title": "Nodig mensen uit met een link",
       "body": "Registreren is gesloten: niemand kan meer zelf een account aanmaken. Maak hier een uitnodigingslink en stuur die naar iemand die moet meedoen. De link werkt één keer en verloopt na een week."
+    },
+    "recurringSuggestions": {
+      "title": "Vaste betalingen, voor je gevonden",
+      "body": "Arca zoekt naar betalingen die steeds terugkomen, met een vast ritme en bedrag. Niets wordt een vaste last tot je het accepteert; met Geen vaste last komt hij niet meer terug."
     }
   },
   "categoryPicker": {
@@ -4615,5 +4619,30 @@
       "denied": "De bank heeft geen toegang gegeven. Er is niets gekoppeld.",
       "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw."
     }
+  },
+  "recurringSuggestions": {
+    "title": "{count, plural, one {Arca vond een vaste betaling} other {Arca vond # vaste betalingen}}",
+    "subtitle": "Accepteer de betalingen die je bewust doet; Arca houdt ze dan bij als vaste lasten.",
+    "editTitle": "Deze betaling bekijken",
+    "line": "{amount} {rhythm}, {count, plural, one {één keer} other {# keer}} sinds {since}",
+    "lineNoDate": "{amount} {rhythm}, {count, plural, one {één keer} other {# keer}}",
+    "range": "{min}–{max}",
+    "rhythm": {
+      "weekly": "elke week",
+      "four_weekly": "elke vier weken",
+      "monthly": "elke maand",
+      "monthlyOn": "elke maand rond de {day}e",
+      "quarterly": "elk kwartaal",
+      "yearly": "elk jaar"
+    },
+    "confidence": {
+      "high": "Zeer waarschijnlijk",
+      "medium": "Waarschijnlijk",
+      "low": "Mogelijk"
+    },
+    "accept": "Accepteren",
+    "edit": "Aanpassen",
+    "reject": "Geen vaste last",
+    "error": "Dat is niet opgeslagen. Probeer het opnieuw."
   }
 }

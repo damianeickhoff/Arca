@@ -1,7 +1,8 @@
 // Curated list of merchants that are almost always recurring (subscriptions, utilities,
-// insurers, telecom). The recurring detector (src/lib/detect-recurring.ts) creates an
-// auto recurring item the first time it sees a matching transaction — no need to wait for
-// the frequency heuristic to accumulate several months. Same shape/spirit as FRIENDLY_NAMES.
+// insurers, telecom). The recurring detector (src/lib/recurring-detect/) uses it as a
+// confidence boost and a source for the name and type: a series that matches one may show
+// after two payments, and a high-confidence one is accepted without asking. It never
+// creates an item from one transaction. Same shape/spirit as FRIENDLY_NAMES.
 export interface RecurringMerchant {
   /** case-insensitive substring matched against the transaction description */
   pattern: string;

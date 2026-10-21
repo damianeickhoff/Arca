@@ -35,6 +35,7 @@ export async function clearFixtures() {
     "merchant_patterns",
     "budget_targets",
     "budgets",
+    "recurring_suggestions",
     "recurring_items",
     "goals",
     "savings_goals",

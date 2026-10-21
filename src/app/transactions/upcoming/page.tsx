@@ -3,6 +3,7 @@ import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, offsetFinancialMonth, todayStr } from "@/lib/date-range";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { planPartNumber } from "@/lib/payment-plan";
+import { listPendingSuggestions } from "@/lib/recurring-suggestions";
 import { UpcomingView, type UpcomingBill } from "./upcoming-view";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,12 @@ export default async function UpcomingTransactionsPage({ searchParams }: { searc
   const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month) && sp.month >= oldest && sp.month <= newest ? sp.month : current;
   const { from, to } = financialMonthRangeByMonth(month, financialMonth);
 
-  const [statuses, locale, t] = await Promise.all([getBillStatuses(month, financialMonth, UPCOMING_TYPES), getLocale(), getTranslations("upcoming")]);
+  const [statuses, suggestions, locale, t] = await Promise.all([
+    getBillStatuses(month, financialMonth, UPCOMING_TYPES),
+    listPendingSuggestions(),
+    getLocale(),
+    getTranslations("upcoming"),
+  ]);
   // A payment plan's row says which part is due: "Dentist · part 2 of 3".
   const billName = (item: (typeof statuses)[number]["item"], dueDate: string | null) => {
     const name = item.friendlyName ?? item.name;
@@ -72,6 +78,7 @@ export default async function UpcomingTransactionsPage({ searchParams }: { searc
           today: month === current ? null : "/transactions/upcoming",
         },
         bills,
+        suggestions,
       }}
     />
   );

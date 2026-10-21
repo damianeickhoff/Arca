@@ -90,7 +90,8 @@ the regex extractor.
 
 ## 5. Find recurring bills and payment plans
 
-**Why:** the detector (`src/lib/detect-recurring.ts`) misses changing amounts and names.
+**Why:** the deterministic detector (`src/lib/recurring-detect/`) misses changing names and
+payment plans. Proposals go into the same suggestions list (`recurring_suggestions`).
 
 - Input: per merchant, 6–12 months of (date, amount) — aggregated, no account data.
 - Output: proposals `{ merchant, type: bill|subscription|income|plan, amount, frequency,

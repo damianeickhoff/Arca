@@ -6,8 +6,8 @@ import type { RecurringItem } from "@/db/schema";
 // Case/whitespace-insensitive "does a recurring item with this name already exist"
 // check, used to stop both manual creation (api/recurring) and the debt-driven
 // auto-create-a-bill flow (api/debts) from silently creating duplicates. Matches
-// dismissed rows too — same precedent as the auto-detector's signature dedupe in
-// detect-recurring.ts, which never recreates a signature that already exists.
+// dismissed rows too — same precedent as the recurring detector, which never suggests a
+// series a dismissed item already covers (lib/recurring-suggestions.ts).
 export async function findRecurringItemByName(name: string): Promise<RecurringItem | null> {
   const trimmed = name.trim();
   if (!trimmed) return null;

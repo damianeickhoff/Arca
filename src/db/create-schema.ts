@@ -575,7 +575,44 @@ export function createSchema(sqlite: Database.Database): void {
   sqlite.exec(BANK_CONNECTION_TABLES_SQL);
   sqlite.exec(ACTIVITY_LOG_TABLE_SQL);
   sqlite.exec(INVITES_TABLE_SQL);
+  sqlite.exec(RECURRING_SUGGESTIONS_TABLE_SQL);
 }
+
+// What the recurring detector found, waiting for Accept / Not a bill (see
+// src/lib/recurring-suggestions.ts). Also run on boot by src/db/index.ts.
+export const RECURRING_SUGGESTIONS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS recurring_suggestions (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    signature         TEXT    NOT NULL UNIQUE,
+    group_key         TEXT    NOT NULL,
+    status            TEXT    NOT NULL DEFAULT 'pending',
+    name              TEXT    NOT NULL,
+    type              TEXT    NOT NULL,
+    frequency         TEXT    NOT NULL,
+    due_day           INTEGER,
+    start_date        TEXT,
+    amount            REAL,
+    amount_min        REAL,
+    amount_max        REAL,
+    match_pattern     TEXT    NOT NULL,
+    match_amount      REAL,
+    match_amount_min  REAL,
+    match_amount_max  REAL,
+    budget_type       TEXT,
+    merchant_id       INTEGER REFERENCES merchants(id) ON DELETE SET NULL,
+    occurrences       INTEGER NOT NULL DEFAULT 0,
+    first_date        TEXT,
+    last_date         TEXT,
+    confidence        REAL    NOT NULL DEFAULT 0,
+    curated           INTEGER NOT NULL DEFAULT 0,
+    transaction_ids   TEXT,
+    recurring_item_id INTEGER REFERENCES recurring_items(id) ON DELETE SET NULL,
+    was_active        INTEGER NOT NULL DEFAULT 0,
+    created_at        TEXT    DEFAULT (datetime('now')),
+    updated_at        TEXT    DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_recurring_suggestions_status ON recurring_suggestions(status);
+`;
 
 // Invites (Settings › Users): sign-up is closed once the first user exists, so a new
 // person joins through a link carrying one of these tokens (see src/lib/invites.ts).
