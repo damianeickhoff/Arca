@@ -1,22 +1,18 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
-  IconArrowDownRight,
-  IconArrowUpRight,
   IconBulb,
   IconCalendar,
   IconCalendarStats,
   IconCoins,
   IconFileImport,
-  IconInfoCircle,
   IconPlus,
   IconShoppingBag,
   IconTarget,
 } from "@tabler/icons-react";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader, ClearCardLink, ClearTile } from "@/components/clear/card";
-import { DeltaChip } from "@/components/clear/chip";
-import { ClearProgress } from "@/components/clear/progress";
+import { ListRow } from "@/components/clear/list-row";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { Icon } from "@/components/icon";
 import { formatEur, formatEurWhole } from "@/lib/format";
@@ -28,7 +24,7 @@ import { MoneyText } from "@/components/clear/money";
 // (category-breakdown-card.tsx, summary-card.tsx).
 
 /** Theme colours for series without a colour of their own (accounts, merchants). */
-export const SERIES_COLORS = [
+const SERIES_COLORS = [
   "var(--clr-ink)",
   "var(--clr-ember)",
   "var(--clr-info-fill)",
@@ -55,7 +51,7 @@ export function change(current: number, previous: number): Change | null {
  * One key figure: label and icon on top, the amount, and a foot line. `highlight` is
  * the one ember card of the row. Phones show a compact tile without the icon.
  */
-export function KpiCard({
+function KpiCard({
   label,
   icon,
   iconClassName,
@@ -108,25 +104,6 @@ export function KpiCard({
       <div className={cn("min-w-0 truncate text-2xl leading-none lg:text-[40px]", muted && "text-clear-placeholder")}>{value}</div>
       {foot && <div className={cn("flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-semibold lg:text-[13px]", !highlight && "text-clear-ink-2")}>{foot}</div>}
     </section>
-  );
-}
-
-/** "↑ 3%" — on the ember card a translucent chip, elsewhere the mint/peach DeltaChip. */
-export function ChangeChip({ change, goodWhenUp, onEmber = false }: { change: Change; goodWhenUp: boolean; onEmber?: boolean }) {
-  const label = `${change.pct}%`;
-  if (onEmber) {
-    const Arrow = change.up ? IconArrowUpRight : IconArrowDownRight;
-    return (
-      <span className="inline-flex h-6 shrink-0 items-center gap-1 rounded-full bg-white/45 px-2 font-extrabold">
-        <Arrow size={12} stroke={3} aria-hidden />
-        {label}
-      </span>
-    );
-  }
-  return (
-    <DeltaChip direction={change.up ? "up" : "down"} good={change.up === goodWhenUp} className="h-6 px-2 text-xs">
-      {label}
-    </DeltaChip>
   );
 }
 
@@ -198,7 +175,8 @@ export async function FlowCard({
   const showValues = buckets.length <= 6;
   const showSub = buckets.length <= 7;
   const plotHeight = "min-h-[120px] lg:min-h-[160px]";
-  const bar = "min-h-[3px] w-[26%] min-w-1.5 max-w-7";
+  // Two bars fill about 70% of a column, 4px apart.
+  const bar = "min-h-[3px] w-[calc(35%-2px)] min-w-1.5";
 
   const description = t("flowLabel", {
     list: buckets
@@ -281,7 +259,7 @@ export async function FlowCard({
                       />
                     ))}
                     {/* Positioned, so the bars' percentages resolve however the plot got its height. */}
-                    <div className="absolute inset-0 flex items-end justify-center gap-[5px]">
+                    <div className="absolute inset-0 flex items-end justify-center gap-1">
                       {b.income > 0 && (
                         <div className={cn(bar, "relative rounded-[6px] bg-clear-ink")} style={{ height: `${pct(b.income)}%` }}>
                           <MoneyText>{showValues && value(both ? "right" : "center", "text-clear-ink", formatEurWhole(b.income))}</MoneyText>
@@ -349,7 +327,7 @@ function BucketLabels({ label, sub, current = false, className }: { label: strin
   );
 }
 
-/* ── Top merchants ────────────────────────────────────────────────────────────── */
+/* ── Top merchants, with spending by account ──────────────────────────────────── */
 
 export interface MerchantRow {
   name: string;
@@ -359,129 +337,131 @@ export interface MerchantRow {
   color: string | null;
 }
 
-export async function MerchantsCard({ merchants, allHref, spendingTotal }: { merchants: MerchantRow[]; allHref: string; spendingTotal: number }) {
+export interface AccountRow {
+  key: string;
+  name: string | null;
+  color: string | null;
+  total: number;
+}
+
+/** Merchants every layout shows; the rest (up to MERCHANTS) only where the card spans two rows. */
+export const MERCHANTS = 8;
+const MERCHANTS_COMPACT = 5;
+/** Accounts with a legend line of their own; the rest join "Other accounts". */
+const ACCOUNT_LINES = 4;
+
+/**
+ * The biggest merchants of the period (icon, name, visits, amount) and, at the bottom
+ * behind a hairline, spending split by account as a segmented bar with a legend.
+ * From xl the card spans two rows beside the running total and Where it went, so it
+ * lists up to eight merchants there and five elsewhere.
+ */
+export async function MerchantsCard({
+  merchants,
+  accounts,
+  allHref,
+  spendingTotal,
+  className,
+}: {
+  merchants: MerchantRow[];
+  accounts: AccountRow[];
+  allHref: string;
+  spendingTotal: number;
+  className?: string;
+}) {
   const t = await getTranslations("insights.overview");
-  const max = Math.max(1, ...merchants.map((m) => m.total));
-  const shown = merchants.reduce((s, m) => s + m.total, 0);
-  const sharePct = spendingTotal > 0 ? Math.round((shown / spendingTotal) * 100) : 0;
+  const note = (list: MerchantRow[]) => {
+    const shown = list.reduce((s, m) => s + m.total, 0);
+    return t("merchantsNote", { count: list.length, pct: spendingTotal > 0 ? Math.round((shown / spendingTotal) * 100) : 0 });
+  };
+  const compact = merchants.slice(0, MERCHANTS_COMPACT);
+  const hasMore = merchants.length > compact.length;
 
   return (
-    <ClearCard data-tip-anchor="insightsMerchants" aria-labelledby="insights-merchants-title" className="gap-3.5">
+    <ClearCard data-tip-anchor="insightsMerchants" aria-labelledby="insights-merchants-title" className={cn("gap-3.5", className)}>
       <ClearCardHeader
         title={<span id="insights-merchants-title">{t("topMerchants")}</span>}
-        subtitle={merchants.length > 0 ? t("merchantsNote", { count: merchants.length, pct: sharePct }) : undefined}
+        subtitle={
+          merchants.length === 0 ? undefined : hasMore ? (
+            <>
+              <span className="xl:hidden">{note(compact)}</span>
+              <span className="max-xl:hidden">{note(merchants)}</span>
+            </>
+          ) : (
+            note(merchants)
+          )
+        }
       />
       {merchants.length === 0 ? (
         <p className="m-0 flex flex-1 items-center justify-center py-8 text-center text-sm text-clear-muted">{t("noMerchants")}</p>
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {merchants.map((m, i) => (
-            <li key={m.name} className="flex min-h-[62px] items-center gap-3">
-              <Icon iconKey={m.icon} color={m.color ?? SERIES_COLORS[i % SERIES_COLORS.length]} initials={m.name.slice(0, 2).toUpperCase()} size="md" soft />
-              <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-[15px] font-semibold">{m.name}</span>
-                  <span className="shrink-0 text-[15px] font-bold tabular-nums"><MoneyText>{formatEurWhole(m.total)}</MoneyText></span>
-                </span>
-                <span className="flex items-center gap-2.5">
-                  <ClearProgress value={m.total / max} size="sm" className="flex-1" fillColor={m.color ?? undefined} />
-                  <span className="shrink-0 text-[13px] text-clear-muted">{t("visits", { count: m.visits })}</span>
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="m-0 flex list-none flex-col p-0">
+            {merchants.map((m, i) => (
+              <li key={m.name} className={cn("border-b border-clear-ground last:border-b-0", i >= MERCHANTS_COMPACT && "max-xl:hidden", i === MERCHANTS_COMPACT - 1 && "max-xl:border-b-0")}>
+                <ListRow
+                  className="min-h-[60px] border-b-0 px-0"
+                  icon={<Icon iconKey={m.icon} color={m.color ?? SERIES_COLORS[i % SERIES_COLORS.length]} initials={m.name.slice(0, 2).toUpperCase()} size="md" soft />}
+                  title={<span className="font-semibold">{m.name}</span>}
+                  meta={t("visits", { count: m.visits })}
+                  trailing={
+                    <span className="shrink-0 text-[15px] font-bold tabular-nums">
+                      <MoneyText>{formatEurWhole(m.total)}</MoneyText>
+                    </span>
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+          <ClearCardLink href={allHref} className="self-start">
+            {t("allMerchants")}
+          </ClearCardLink>
+        </>
       )}
-      {merchants.length > 0 && (
-        <ClearCardLink href={allHref} className="mt-auto self-start">
-          {t("allMerchants")}
-        </ClearCardLink>
-      )}
+      {accounts.length > 0 && <AccountsLegend accounts={accounts} />}
     </ClearCard>
   );
 }
 
-/* ── By account ───────────────────────────────────────────────────────────────── */
-
-export interface AccountRow {
-  key: string;
-  name: string | null;
-  /** Last four digits of the account number. */
-  suffix: string | null;
-  icon: string | null;
-  color: string | null;
-  total: number;
-  count: number;
-}
-
-const ACCOUNT_TILES = 4;
-
-export async function AccountsCard({ accounts, className }: { accounts: AccountRow[]; className?: string }) {
+/** Spending by account at the foot of the merchants card: a segmented bar and a legend
+ *  line per account. Whole transactions, since an account isn't split-aware. */
+async function AccountsLegend({ accounts }: { accounts: AccountRow[] }) {
   const t = await getTranslations("insights.overview");
   const total = accounts.reduce((s, a) => s + a.total, 0);
-  const colorOf = (a: AccountRow, i: number) => a.color ?? SERIES_COLORS[i % SERIES_COLORS.length];
-  const share = (v: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
-  const shown = accounts.slice(0, ACCOUNT_TILES);
-  const rest = accounts.slice(ACCOUNT_TILES).reduce((s, a) => s + a.total, 0);
+  if (total <= 0) return null;
+  const share = (v: number) => Math.round((v / total) * 100);
+  const shown = accounts.slice(0, ACCOUNT_LINES);
+  const rest = accounts.slice(ACCOUNT_LINES).reduce((s, a) => s + a.total, 0);
   const segments = [
-    ...shown.map((a, i) => ({ key: a.key, name: a.name ?? t("unknownAccount"), value: a.total, color: colorOf(a, i) })),
+    ...shown.map((a, i) => ({ key: a.key, name: a.name ?? t("unknownAccount"), value: a.total, color: a.color ?? SERIES_COLORS[i % SERIES_COLORS.length] })),
     ...(rest > 0 ? [{ key: "rest", name: t("otherAccounts"), value: rest, color: "var(--clr-placeholder)" }] : []),
   ];
 
   return (
-    <ClearCard aria-labelledby="insights-accounts-title" className={className}>
-      <ClearCardHeader
-        title={<span id="insights-accounts-title">{t("byAccount")}</span>}
-        action={total > 0 ? <span className="text-sm font-bold text-clear-muted tabular-nums"><MoneyText>{t("spentTotal", { amount: formatEurWhole(total) })}</MoneyText></span> : undefined}
-      />
-      {accounts.length === 0 ? (
-        <p className="m-0 flex flex-1 items-center justify-center py-8 text-center text-sm text-clear-muted">{t("noSpending")}</p>
-      ) : (
-        <>
-          <div className="flex flex-col gap-2">
-            <div
-              role="img"
-              aria-label={segments.map((s) => `${s.name} ${share(s.value)}%`).join(", ")}
-              className="flex h-3.5 gap-[3px] overflow-hidden rounded-full"
-            >
-              {segments.map((s) => (
-                <span key={s.key} className="min-w-1 rounded-full" style={{ width: `${(s.value / total) * 100}%`, background: s.color }} />
-              ))}
-            </div>
-            <div aria-hidden className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-[13px] font-semibold text-clear-ink-2">
-              {segments.map((s) => (
-                <span key={s.key} className="inline-flex min-w-0 items-center gap-1.5">
-                  <span className="size-2 shrink-0 rounded-full" style={{ background: s.color }} />
-                  <span className="truncate">{s.name}</span>
-                  <span className="tabular-nums">{share(s.value)}%</span>
-                </span>
-              ))}
-            </div>
-          </div>
-          <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
-            {shown.map((a, i) => (
-              <li key={a.key}>
-                <ClearTile className="flex items-center gap-3 px-4 py-3.5">
-                  <Icon iconKey={a.icon} color={colorOf(a, i)} initials={(a.name ?? "?").charAt(0).toUpperCase()} size="md" soft />
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-[15px] font-semibold">{a.name ?? t("unknownAccount")}</span>
-                    <span className="truncate text-[13px] text-clear-muted">
-                      {a.suffix ? `••${a.suffix} · ` : ""}
-                      {t("transactionCount", { count: a.count })}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-[17px] font-bold tabular-nums"><MoneyText>{formatEurWhole(a.total)}</MoneyText></span>
-                </ClearTile>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      <p className="m-0 mt-auto flex items-start gap-2.5 text-[13px] leading-normal text-clear-ink-2">
-        <IconInfoCircle size={18} stroke={1.9} aria-hidden className="mt-px shrink-0" />
-        {t("accountsNote")}
-      </p>
-    </ClearCard>
+    <div className="mt-auto flex flex-col gap-2.5 border-t border-clear-line pt-4">
+      <h3 className="m-0 text-[13px] font-semibold text-clear-ink-2">{t("byAccount")}</h3>
+      <div
+        role="img"
+        aria-label={segments.map((s) => `${s.name} ${share(s.value)}%`).join(", ")}
+        className="flex h-2.5 gap-[3px] overflow-hidden rounded-full"
+      >
+        {segments.map((s) => (
+          <span key={s.key} className="min-w-1 rounded-full" style={{ width: `${(s.value / total) * 100}%`, background: s.color }} />
+        ))}
+      </div>
+      <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px]">
+        {segments.map((s) => (
+          <li key={s.key} className="flex min-w-0 items-center gap-2">
+            <span aria-hidden className="size-2.5 shrink-0 rounded-[3px]" style={{ background: s.color }} />
+            <span className="min-w-0 flex-1 truncate font-semibold">{s.name}</span>
+            <span className="shrink-0 font-bold tabular-nums">
+              <MoneyText>{formatEurWhole(s.value)}</MoneyText>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="m-0 text-xs text-clear-muted">{t("transfersLeftOut")}</p>
+    </div>
   );
 }
 
@@ -552,9 +532,10 @@ export async function CalendarCard({
     `${dayFmt.format(new Date(`${d.date}T00:00:00`))} · ${d.future ? t("stillToCome") : formatEur(d.spent)}`;
   const cellStyle = (d: CalendarDay): React.CSSProperties | undefined => (d.future ? undefined : { background: HEAT[heatLevel(d.spent, avgPerDay)] });
 
-  // Wide from lg: the heatmap on the left, the two tiles on the right at the bottom.
+  // Half the page wide beside Week by week: the heatmap, then the two tiles in a row at
+  // the bottom, so both cards end on the same line when the row stretches them.
   return (
-    <ClearCard aria-labelledby="insights-calendar-title" className={cn("gap-3.5 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-6", className)}>
+    <ClearCard aria-labelledby="insights-calendar-title" className={cn("gap-3.5", className)}>
       <div className="flex min-w-0 flex-col gap-3.5">
         <ClearCardHeader
           title={<span id="insights-calendar-title">{t("calendar")}</span>}
@@ -616,7 +597,7 @@ export async function CalendarCard({
                     key={d.date}
                     title={cellTitle(d)}
                     className={cn(
-                      "flex h-[38px] items-center justify-center rounded-[10px] text-xs font-semibold tabular-nums lg:h-auto lg:aspect-[2.2]",
+                      "flex h-[38px] items-center justify-center rounded-[10px] text-xs font-semibold tabular-nums xl:h-10",
                       d.future ? cn(STILL_TO_COME, "text-clear-muted") : level === 4 ? "text-clear-ember-ink" : "text-clear-ink",
                       d.today && "font-bold ring-2 ring-inset ring-clear-ink",
                     )}
@@ -630,7 +611,7 @@ export async function CalendarCard({
           </div>
         )}
       </div>
-      <div className="grid grid-cols-2 content-end gap-2.5 lg:self-stretch">
+      <div className="mt-auto grid grid-cols-2 gap-2.5">
         <ClearTile className="flex flex-col gap-0.5 px-3.5 py-3">
           <span className="text-[13px] text-clear-ink-2">{t("avgExpense")}</span>
           <Amount value={avgPerDay} className="text-lg font-bold! tabular-nums" />

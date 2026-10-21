@@ -17,15 +17,16 @@ import { getCachedSummary } from "@/lib/ai-features";
 import { averagePerDay, buildSummaryFacts, monthOfPeriod, runningTotals } from "@/lib/period-facts";
 import { SummaryCard } from "./summary-card";
 import { OverviewHero, type PeriodName } from "./overview-hero";
+import { RunningTotalCard } from "./running-total-card";
 import type { CategorySpendCard } from "@/components/category-spending-row";
 import { CategoryBreakdownCard } from "./category-breakdown-card";
 import { PeriodSelector } from "./period-selector";
 import { AnalyticsFilterBar } from "./analytics-filter-bar";
 import {
-  AccountsCard,
   CalendarCard,
   EmptyOverview,
   FlowCard,
+  MERCHANTS,
   MerchantsCard,
   change,
   type AccountRow,
@@ -162,7 +163,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   }
   const prevDailyExpense = new Map<string, number>();
   for (const r of prevRelevant) if (r.direction === "expense") prevDailyExpense.set(r.date, (prevDailyExpense.get(r.date) ?? 0) + r.amount);
-  // The hero's line: this period and the previous one added up day by day.
+  // The running-total card's lines: this period and the previous one added up day by day.
   const totals = runningTotals({ from, to, today, daily: dailyExpense, previousDaily: prevDailyExpense });
 
   // Bills still due, by due date — expenses only, and only when they can belong to the
@@ -195,7 +196,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
 
   // Safe to spend for the rest of the budget period, while the period on screen runs.
   let hint: SafeToSpendHint | null = null;
-  // The budget the hero compares the projection with: only for the budget period
+  // The budget the hero and the running total compare the projection with: only for the budget period
   // itself and the whole of the spending, or the two figures don't measure the same.
   let budgetTarget: number | null = null;
   if (ongoing && budgetOverview) {
@@ -215,11 +216,11 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     }
   }
 
-  // By category — the actual tagged category, no parent/child roll-up.
-  function byCategory(direction: "income" | "expense", list = relevant) {
+  // Spending by category — the actual tagged category, no parent/child roll-up.
+  function byCategory(list = relevant) {
     const map = new Map<number, { categoryId: number; name: string; color: string | null; icon: string | null; total: number }>();
     for (const r of list) {
-      if (r.direction !== direction || r.categoryId == null) continue;
+      if (r.direction !== "expense" || r.categoryId == null) continue;
       const entry = map.get(r.categoryId) ?? { categoryId: r.categoryId, name: r.categoryName ?? "", color: r.categoryColor, icon: r.categoryIcon, total: 0 };
       entry.total += r.amount;
       map.set(r.categoryId, entry);
@@ -229,7 +230,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   // The category cards reuse the dashboard's list and detail portals, so each row gets
   // the same shape, with the category budget merged in from the budget overview.
   const budgetByCategoryId = new Map((budgetOverview?.categories ?? []).map((c) => [c.categoryId, c.budget]));
-  const spendingAll: CategorySpendCard[] = byCategory("expense").map((c) => {
+  const spendingAll: CategorySpendCard[] = byCategory().map((c) => {
     const budget = budgetByCategoryId.get(c.categoryId) ?? null;
     return {
       categoryId: c.categoryId,
@@ -242,16 +243,6 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
       excluded: excludedCategoryIds.has(c.categoryId),
     };
   });
-  const incomeAll: CategorySpendCard[] = byCategory("income").map((c) => ({
-    categoryId: c.categoryId,
-    categoryName: c.name,
-    color: c.color,
-    icon: c.icon,
-    spent: c.total,
-    budget: null,
-    pct: null,
-    excluded: false,
-  }));
 
   // The same, added up per group (Housing = Rent + Energy + …) — the card's Groups view.
   const categoryById = new Map(allCategories.map((c) => [c.id, c]));
@@ -259,7 +250,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     const cat = categoryById.get(categoryId);
     return cat?.parentCategoryId != null ? categoryById.get(cat.parentCategoryId) : cat;
   };
-  function byGroup(rows: CategorySpendCard[], withBudget: boolean): CategorySpendCard[] {
+  function byGroup(rows: CategorySpendCard[]): CategorySpendCard[] {
     const map = new Map<number, CategorySpendCard>();
     for (const r of rows) {
       const group = groupOf(r.categoryId);
@@ -270,7 +261,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     }
     return [...map.values()]
       .map((g) => {
-        const budget = withBudget ? budgetByCategoryId.get(g.categoryId) ?? null : null;
+        const budget = budgetByCategoryId.get(g.categoryId) ?? null;
         return { ...g, budget, pct: budget != null && budget > 0 ? g.spent / budget : null };
       })
       .sort((a, b) => b.spent - a.spent);
@@ -278,10 +269,10 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
 
   // What each group came to in the previous period, for the block map's changes —
   // spending without the categories hidden from spending rows, as on the card.
-  function previousByGroup(direction: "income" | "expense") {
+  function previousByGroup() {
     const out: Record<number, number> = {};
-    for (const c of byCategory(direction, prevRelevant)) {
-      if (direction === "expense" && excludedCategoryIds.has(c.categoryId)) continue;
+    for (const c of byCategory(prevRelevant)) {
+      if (excludedCategoryIds.has(c.categoryId)) continue;
       const group = groupOf(c.categoryId);
       if (group) out[group.id] = (out[group.id] ?? 0) + c.total;
     }
@@ -313,7 +304,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   }
   const topMerchants: MerchantRow[] = [...merchantMap.values()]
     .sort((a, b) => b.total - a.total)
-    .slice(0, 5)
+    .slice(0, MERCHANTS)
     .map((m) => ({ name: m.name, total: m.total, visits: m.visits.size, icon: m.icon, color: m.color }));
 
   // By account — whole transactions, since an account isn't split-aware.
@@ -323,17 +314,8 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     if (row.direction !== "expense" || row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
     const key = row.account ?? "unknown";
     const bank = row.account ? bankByAccount.get(row.account) : undefined;
-    const entry = accountMap.get(key) ?? {
-      key,
-      name: bank?.displayName ?? row.account ?? null,
-      suffix: row.account ? row.account.slice(-4) : null,
-      icon: bank?.icon ?? null,
-      color: bank?.color ?? null,
-      total: 0,
-      count: 0,
-    };
+    const entry = accountMap.get(key) ?? { key, name: bank?.displayName ?? row.account ?? null, color: bank?.color ?? null, total: 0 };
     entry.total += row.correctedAmount ?? row.amount;
-    entry.count += 1;
     accountMap.set(key, entry);
   }
   const accountsSpend = [...accountMap.values()].sort((a, b) => b.total - a.total);
@@ -345,14 +327,13 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   }
   const daysElapsed = Math.max(1, daysInclusive(from, today < from ? from : today > to ? to : today));
 
-  // Transactions without a category (Needs review), per direction, and their total.
-  const uncategorisedIds = { expense: new Set<number>(), income: new Set<number>() };
-  const uncategorisedAmount = { expense: 0, income: 0 };
+  // Spending without a category (Needs review): the transactions and their total.
+  const uncategorisedIds = new Set<number>();
+  let uncategorisedAmount = 0;
   for (const r of relevant) {
-    if (r.categoryId != null) continue;
-    const direction = r.direction === "income" ? "income" : "expense";
-    uncategorisedIds[direction].add(r.transactionId);
-    uncategorisedAmount[direction] += r.amount;
+    if (r.categoryId != null || r.direction === "income") continue;
+    uncategorisedIds.add(r.transactionId);
+    uncategorisedAmount += r.amount;
   }
 
   // Most active weekday, by number of transactions, and what it saw spent on average
@@ -393,21 +374,16 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     hint,
     spendingAll,
     spendingVisible: spendingAll.filter((c) => !c.excluded),
-    incomeAll,
-    groupSpendingAll: byGroup(spendingAll, true),
-    groupSpendingVisible: byGroup(spendingAll.filter((c) => !c.excluded), true),
-    groupIncomeAll: byGroup(incomeAll, false),
-    previousGroups: { expense: previousByGroup("expense"), income: previousByGroup("income") },
+    groupSpendingAll: byGroup(spendingAll),
+    groupSpendingVisible: byGroup(spendingAll.filter((c) => !c.excluded)),
+    previousGroups: previousByGroup(),
     budgetPeriod: budgetOverview ? { from: budgetOverview.from, to: budgetOverview.to } : { from, to },
     topMerchants,
     accountsSpend,
     calendar,
     avgExpensePerDay: averagePerDay(expense, daysElapsed),
     prevAvgExpensePerDay: prevExpense > 0 ? averagePerDay(prevExpense, days) : null,
-    uncategorised: {
-      expense: { count: uncategorisedIds.expense.size, amount: uncategorisedAmount.expense },
-      income: { count: uncategorisedIds.income.size, amount: uncategorisedAmount.income },
-    },
+    uncategorised: { count: uncategorisedIds.size, amount: uncategorisedAmount },
     popularDayIdx,
     popularDayAvg,
   };
@@ -415,7 +391,8 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
 
 // ── Heading filters ──────────────────────────────────────────────────────────
 
-/** The heading pills of Overview and Trends: the period, then the Categories and Accounts filters. */
+/** The heading pills of Overview (the period, then the Categories and Accounts filters)
+ *  and Trends (the filters only; its period sits in the tab row). */
 export async function InsightsFilters({
   from,
   to,
@@ -430,17 +407,19 @@ export async function InsightsFilters({
   const [allCategories, allBanks, budgetOverview] = await Promise.all([
     db.select().from(categories),
     db.select().from(banks),
-    loadBudgetOverview(financialMonth),
+    tab === "rapporten" ? loadBudgetOverview(financialMonth) : null,
   ]);
   return (
     <>
-      <PeriodSelector
-        from={from}
-        to={to}
-        financialMonth={financialMonth}
-        budgetPeriod={budgetOverview?.budget ? { from: budgetOverview.from, to: budgetOverview.to } : null}
-        tab={tab}
-      />
+      {tab === "rapporten" && (
+        <PeriodSelector
+          from={from}
+          to={to}
+          financialMonth={financialMonth}
+          budgetPeriod={budgetOverview?.budget ? { from: budgetOverview.from, to: budgetOverview.to } : null}
+          tab={tab}
+        />
+      )}
       <AnalyticsFilterBar categories={allCategories} banks={allBanks} />
     </>
   );
@@ -450,8 +429,9 @@ export async function InsightsFilters({
 
 /**
  * Insights · Overview: what is spent so far against the previous period and the budget
- * (the hero), a summary, money in and out week by week, where it went by merchant,
- * account and group, and a calendar of spending per day.
+ * (the hero), a summary, the running total against the previous period, where it went
+ * by merchant, account and group, money in and out week by week and a calendar of
+ * spending per day.
  */
 export async function AnalyticsTab({
   from,
@@ -519,9 +499,10 @@ export async function AnalyticsTab({
     left: data.hint,
     groups: data.groupSpendingVisible.map((g) => ({ name: g.categoryName, spent: g.spent })),
     categories: data.spendingAll.map((c) => ({ name: c.categoryName, spent: c.spent, budget: c.budget })),
-    merchants: data.topMerchants.map((m) => ({ name: m.name, total: m.total, visits: m.visits })),
+    // The five the card shows at every width, so the summary doesn't change with the layout.
+    merchants: data.topMerchants.slice(0, 5).map((m) => ({ name: m.name, total: m.total, visits: m.visits })),
     largest: data.largest ? { name: data.largest.name, amount: data.largest.amount, category: data.largest.categoryName } : null,
-    uncategorised: data.uncategorised.expense.count,
+    uncategorised: data.uncategorised.count,
   });
   const cachedSummary = aiReady ? await getCachedSummary(summaryKey) : null;
   const summarySubtitle =
@@ -540,10 +521,11 @@ export async function AnalyticsTab({
   const month = nameOfMonth(from, to);
   const previousMonth = nameOfMonth(data.prevFrom, data.prevTo);
 
-  // One grid, so the columns line up from row to row: the hero (two columns) beside the
-  // summary; the merchants beside week by week (two); the accounts beside where it went
-  // (two); the calendar over the full width. At lg (two columns) the summary and the
-  // merchants pair up and the accounts take a row of their own.
+  // One grid, so the columns line up from row to row (xl, three columns): the hero (two
+  // columns) beside the summary; the running total (two) beside the merchants, which
+  // span two rows; where it went (two) under the running total; then week by week and
+  // the calendar side by side over the full width. At lg (two columns) every card takes
+  // the full width except that last pair, which stays 50/50.
   return (
     <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
       <OverviewHero
@@ -560,23 +542,38 @@ export async function AnalyticsTab({
         left={data.hint}
         avgPerDay={data.avgExpensePerDay}
         largest={data.largest ? { amount: data.largest.amount, name: data.largest.name, date: dayMonth.format(date(data.largest.date)) } : null}
+        className="lg:col-span-2"
+      />
+      <SummaryCard
+        facts={summaryFacts}
+        aiReady={aiReady}
+        cacheKey={summaryKey}
+        initial={cachedSummary}
+        subtitle={summarySubtitle}
+        className="lg:col-span-2 xl:col-span-1"
+      />
+
+      <RunningTotalCard
+        totals={data.totals}
+        budget={data.budgetTarget}
+        ongoing={data.ongoing}
+        monthly={data.ongoing && month != null}
         startLabel={dayMonth.format(date(from))}
         endLabel={dayMonth.format(date(to))}
         className="lg:col-span-2"
       />
-      <SummaryCard facts={summaryFacts} aiReady={aiReady} cacheKey={summaryKey} initial={cachedSummary} subtitle={summarySubtitle} />
-
-      <MerchantsCard merchants={data.topMerchants} spendingTotal={data.expense} allHref={`/transactions?from=${from}&to=${to}&direction=expense`} />
-      <FlowCard buckets={buckets} grain={data.grain} hint={data.hint} className="lg:col-span-2" />
-
-      <AccountsCard accounts={data.accountsSpend} className="lg:col-span-2 xl:col-span-1" />
+      <MerchantsCard
+        merchants={data.topMerchants}
+        accounts={data.accountsSpend}
+        spendingTotal={data.expense}
+        allHref={`/transactions?from=${from}&to=${to}&direction=expense`}
+        className="lg:col-span-2 xl:col-span-1 xl:row-span-2"
+      />
       <CategoryBreakdownCard
         spendingVisible={data.spendingVisible}
         spendingAll={data.spendingAll}
         spendingTotal={data.expense}
-        incomeAll={data.incomeAll}
-        incomeTotal={data.income}
-        groups={{ spendingVisible: data.groupSpendingVisible, spendingAll: data.groupSpendingAll, incomeAll: data.groupIncomeAll }}
+        groups={{ spendingVisible: data.groupSpendingVisible, spendingAll: data.groupSpendingAll }}
         previousGroups={data.previousGroups}
         previousMonth={previousMonth?.short ?? "none"}
         uncategorised={data.uncategorised}
@@ -586,20 +583,21 @@ export async function AnalyticsTab({
         className="lg:col-span-2"
       />
 
-      <CalendarCard
-        days={data.calendar}
-        avgPerDay={data.avgExpensePerDay}
-        prevAvgPerDay={data.prevAvgExpensePerDay}
-        previousMonth={previousMonth?.long ?? "none"}
-        popularDay={popularDay}
-        popularDayAvg={data.popularDayAvg}
-        className="lg:col-span-2 xl:col-span-3"
-      />
+      <div className="grid gap-5 lg:col-span-2 lg:grid-cols-2 xl:col-span-3">
+        <FlowCard buckets={buckets} grain={data.grain} hint={data.hint} />
+        <CalendarCard
+          days={data.calendar}
+          avgPerDay={data.avgExpensePerDay}
+          prevAvgPerDay={data.prevAvgExpensePerDay}
+          previousMonth={previousMonth?.long ?? "none"}
+          popularDay={popularDay}
+          popularDayAvg={data.popularDayAvg}
+        />
+      </div>
 
       <AnchoredTip id="insightsRunningTotal" anchor="insightsRunningTotal" active={data.totals.elapsed > 0} />
       <AnchoredTip id="insightsBlockMap" anchor="insightsBlockMap" active={data.groupSpendingVisible.length > 0} />
       <AnchoredTip id="insightsMerchants" anchor="insightsMerchants" active={data.topMerchants.length > 0} />
-      <AnchoredTip id="insightsCategorySwitch" anchor="insightsCategorySwitch" active={data.incomeAll.length > 0} />
       <AnchoredTip id="insightsGroupSwitch" anchor="insightsGroupSwitch" active={data.groupSpendingAll.length > 0} />
       <AnchoredTip id="insightsSummary" anchor="insightsSummary" />
     </div>

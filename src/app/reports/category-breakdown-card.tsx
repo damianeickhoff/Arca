@@ -34,7 +34,6 @@ const PHONE_ROWS = 6;
 /** Blocks on the map; smaller groups beyond these join Other. */
 const BLOCKS = 7;
 
-type Mode = "expense" | "income";
 type View = "group" | "category";
 
 interface Block {
@@ -51,16 +50,14 @@ interface Block {
 /**
  * Insights · Overview "Where it went": the groups as a block map where area is money
  * (tap a block for that group's categories), or under Categories every category as a
- * share strip and bar rows, biggest first and "Other" last. One switch flips it to
- * income, another between groups and categories; Details (and "Other") opens the full
- * list. Under it, what still has no category, with the way to Needs review.
+ * share strip and bar rows, biggest first and "Other" last, with a switch between
+ * groups and categories; Details (and "Other") opens the full list. Under it, what
+ * still has no category, with the way to Needs review.
  */
 export function CategoryBreakdownCard({
   spendingVisible,
   spendingAll,
   spendingTotal,
-  incomeAll,
-  incomeTotal,
   groups,
   previousGroups,
   previousMonth,
@@ -75,16 +72,14 @@ export function CategoryBreakdownCard({
   /** Every spending category, for the full list. */
   spendingAll: CategorySpendCard[];
   spendingTotal: number;
-  incomeAll: CategorySpendCard[];
-  incomeTotal: number;
   /** The same lists added up per group. */
-  groups: { spendingVisible: CategorySpendCard[]; spendingAll: CategorySpendCard[]; incomeAll: CategorySpendCard[] };
+  groups: { spendingVisible: CategorySpendCard[]; spendingAll: CategorySpendCard[] };
   /** What each group (by id) came to in the previous period. */
-  previousGroups: { expense: Record<number, number>; income: Record<number, number> };
+  previousGroups: Record<number, number>;
   /** The previous period's short month name, or "none" ("last period"). */
   previousMonth: string;
-  /** Transactions in the period without a category, and their total, per direction. */
-  uncategorised: { expense: { count: number; amount: number }; income: { count: number; amount: number } };
+  /** Spending in the period without a category: the transactions and their total. */
+  uncategorised: { count: number; amount: number };
   /** The period includes today, so the total is "so far". */
   ongoing: boolean;
   financialMonth: FinancialMonthConfig;
@@ -92,49 +87,31 @@ export function CategoryBreakdownCard({
   className?: string;
 }) {
   const t = useTranslations("insights.overview");
-  const [mode, setMode] = useState<Mode>("expense");
   const [view, setView] = useState<View>("group");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
 
-  const isIncome = mode === "income";
   const byGroup = view === "group";
-  const visible = isIncome ? (byGroup ? groups.incomeAll : incomeAll) : byGroup ? groups.spendingVisible : spendingVisible;
-  const all = isIncome ? (byGroup ? groups.incomeAll : incomeAll) : byGroup ? groups.spendingAll : spendingAll;
-  const total = isIncome ? incomeTotal : spendingTotal;
+  const visible = byGroup ? groups.spendingVisible : spendingVisible;
+  const all = byGroup ? groups.spendingAll : spendingAll;
+  const total = spendingTotal;
   const selected = all.find((r) => r.categoryId === selectedId) ?? null;
-  const listTitle = isIncome ? (byGroup ? t("incomeByGroup") : t("incomeByCategory")) : byGroup ? t("byGroup") : t("byCategory");
+  const listTitle = byGroup ? t("byGroup") : t("byCategory");
   const share = (v: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
 
   const breakdown = withOther(visible, total);
   const hasOther = breakdown.other > 0.005;
   const empty = breakdown.rows.length === 0 && !hasOther;
-  const missing = isIncome ? uncategorised.income : uncategorised.expense;
+  const missing = uncategorised;
 
   return (
     <ClearCard aria-labelledby="insights-categories-title" className={cn("gap-4", className)}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ClearCardHeader
-          title={<span id="insights-categories-title">{isIncome ? t("breakdown.titleIncome") : t("breakdown.titleSpending")}</span>}
+          title={<span id="insights-categories-title">{t("breakdown.title")}</span>}
           subtitle={byGroup ? t("breakdown.blocksHint") : t("breakdown.rowsHint")}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <div data-tip-anchor="insightsCategorySwitch">
-            <Segmented
-              label={t("categorySwitch")}
-              surface="tile"
-              size="sm"
-              value={mode}
-              onChange={(v) => {
-                setMode(v);
-                setShowAll(false);
-              }}
-              items={[
-                { value: "expense", label: t("spending") },
-                { value: "income", label: t("incomeShort") },
-              ]}
-            />
-          </div>
           <div data-tip-anchor="insightsGroupSwitch">
             <Segmented
               label={t("groupSwitch")}
@@ -160,19 +137,17 @@ export function CategoryBreakdownCard({
       </div>
 
       {empty ? (
-        <p className="m-0 flex flex-1 items-center justify-center py-8 text-center text-sm text-clear-muted">
-          {isIncome ? t("noIncome") : t("noSpending")}
-        </p>
+        <p className="m-0 flex flex-1 items-center justify-center py-8 text-center text-sm text-clear-muted">{t("noSpending")}</p>
       ) : byGroup ? (
         <BlockMap
-          blocks={groupBlocks(breakdown, previousGroups[mode], share, { other: t("other"), same: t("breakdown.sameAs", { period: previousMonth }) })}
+          blocks={groupBlocks(breakdown, previousGroups, share, { other: t("other"), same: t("breakdown.sameAs", { period: previousMonth }) })}
           onOpen={(id) => (id != null ? setSelectedId(id) : setShowAll(true))}
           label={t("breakdown.stripLabel", {
             parts: [...breakdown.rows.map((r) => `${r.categoryName} ${share(r.spent)}%`), ...(hasOther ? [`${t("other")} ${share(breakdown.other)}%`] : [])].join(", "),
           })}
         />
       ) : (
-        <CategoryRows breakdown={breakdown} total={total} isIncome={isIncome} ongoing={ongoing} onOpen={setSelectedId} onShowAll={() => setShowAll(true)} />
+        <CategoryRows breakdown={breakdown} total={total} ongoing={ongoing} onOpen={setSelectedId} onShowAll={() => setShowAll(true)} />
       )}
 
       {missing.count > 0 && (
@@ -186,13 +161,12 @@ export function CategoryBreakdownCard({
         </div>
       )}
 
-      <CategorySpendingListPortal open={showAll} rows={all} onClose={() => setShowAll(false)} onSelect={(id) => setSelectedId(id)} title={listTitle} income={isIncome} />
+      <CategorySpendingListPortal open={showAll} rows={all} onClose={() => setShowAll(false)} onSelect={(id) => setSelectedId(id)} title={listTitle} />
       <CategoryDetailPortal
         category={selected ? { categoryId: selected.categoryId, categoryName: selected.categoryName, color: selected.color, icon: selected.icon } : null}
         financialMonth={financialMonth}
         budgetPeriod={budgetPeriod}
         onClose={() => setSelectedId(null)}
-        direction={mode}
       />
     </ClearCard>
   );
@@ -295,14 +269,12 @@ function BlockTile({ block, lead = false, onOpen, style }: { block: Block; lead?
 function CategoryRows({
   breakdown,
   total,
-  isIncome,
   ongoing,
   onOpen,
   onShowAll,
 }: {
   breakdown: { rows: CategorySpendCard[]; other: number };
   total: number;
-  isIncome: boolean;
   ongoing: boolean;
   onOpen: (id: number) => void;
   onShowAll: () => void;
@@ -323,7 +295,7 @@ function CategoryRows({
   const rows = [...shown, ...(other ? [other] : [])];
   const largest = Math.max(1, ...rows.map((r) => r.value));
   const share = (v: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
-  const totalLine = isIncome ? t("breakdown.received") : ongoing ? t("breakdown.spentSoFar") : t("breakdown.spent");
+  const totalLine = ongoing ? t("breakdown.spentSoFar") : t("breakdown.spent");
   const partsLine = t("breakdown.categories", { count: named.length, other: other ? "yes" : "no" });
 
   return (
