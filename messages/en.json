@@ -1331,7 +1331,11 @@
     },
     "debtsSortAndImpact": {
       "title": "Your order, your month",
-      "body": "Choose which debt gets the extra first: the highest interest saves the most, the smallest is done soonest. Your debts follow the same order. Below it, what the extra leaves you to spend each month."
+      "body": "Choose how the extra is shared out; Your debts follow the same order. Below it, what the extra leaves you to spend each month."
+    },
+    "debtsOrder": {
+      "title": "Three ways to pay off",
+      "body": "Quickest win first pays off the smallest balance first, so a debt is gone as soon as possible. Highest interest first goes after the most expensive debt, which saves the most interest. Spread over all debts splits the extra equally, so every balance goes down each month."
     },
     "debtsOwed": {
       "title": "Money coming back to you",
@@ -1567,7 +1571,7 @@
     },
     "debtsWhereExtraGoes": {
       "title": "Where the extra goes",
-      "body": "One row per debt: its minimum, the extra it gets now and what you pay. When a debt is paid off, its whole payment rolls on to the next one, so the plan reads month by month."
+      "body": "One row per debt: its minimum, the extra it gets now and what you pay. When a debt is paid off, its whole payment moves on to the others, so the plan reads month by month."
     },
     "debtsPaymentsMonth": {
       "title": "This month's payments",
@@ -4258,12 +4262,19 @@
       "yoursExtra": "payoff dates include the {amount} extra",
       "sort": {
         "options": {
+          "quickest": "Quickest win first",
           "interest": "Highest interest first",
-          "smallest": "Smallest first"
+          "spread": "Spread over all debts"
+        },
+        "short": {
+          "quickest": "Quickest win",
+          "interest": "Highest interest",
+          "spread": "Spread"
         },
         "inline": {
+          "quickest": "quickest win first",
           "interest": "highest interest first",
-          "smallest": "smallest first"
+          "spread": "extra spread over all"
         }
       },
       "noneOfYourOwn": "No debts of your own. Add a loan or a credit card to see when it is paid off.",
@@ -4399,7 +4410,13 @@
           "noIncome": "Add your recurring income to see what an extra payment leaves you to spend each month."
         },
         "order": "Order",
-        "orderLabel": "Which debt gets the extra first",
+        "orderLabel": "How the extra is shared out",
+        "orderSentence": {
+          "quickest": "Extra goes to {first} first, then {rest}: the smallest balance first. What a debt doesn't need moves on in the same month.",
+          "interest": "Extra goes to {first} first, then {rest}: the highest interest first. What a debt doesn't need moves on in the same month.",
+          "spread": "Extra is split equally over {all}. What a debt doesn't need goes to the others in the same month."
+        },
+        "compareLine": "{mode}: {value}",
         "plan": {
           "title": "Where the {amount} goes, month by month",
           "titleNone": "Each debt, month by month",
@@ -4417,6 +4434,7 @@
           "rollsOn": "its {amount} rolls to {name}",
           "paidOffRolls": "paid off {date}, rolls to {name}",
           "paidOff": "paid off {date}",
+          "spreadOn": "its share is spread over the debts left",
           "none": "—"
         }
       },

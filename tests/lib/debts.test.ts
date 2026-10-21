@@ -276,11 +276,17 @@ describe("debt-shared: the payoff order", () => {
 
   it("orders by the chosen sort, paid-off debts last", () => {
     expect(ids("interest")).toEqual([2, 5, 1, 3, 4]);
-    expect(ids("smallest")).toEqual([3, 2, 5, 1, 4]);
+    expect(ids("quickest")).toEqual([3, 2, 5, 1, 4]);
+    // Spread over all debts lists them highest interest first.
+    expect(ids("spread")).toEqual(ids("interest"));
   });
 
-  it("reads a stored payoff order safely", () => {
-    expect(parseDebtSort("smallest")).toBe("smallest");
+  it("reads a stored payoff order safely, the old smallest-first as quickest win", () => {
+    expect(parseDebtSort("quickest")).toBe("quickest");
+    expect(parseDebtSort("spread")).toBe("spread");
+    expect(parseDebtSort("interest")).toBe("interest");
+    expect(parseDebtSort("smallest")).toBe("quickest");
+    expect(parseDebtSort("toString")).toBe("interest");
     expect(parseDebtSort("nonsense")).toBe("interest");
     expect(parseDebtSort(null)).toBe("interest");
   });

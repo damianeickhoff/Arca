@@ -155,3 +155,131 @@ describe("debt-simulate: rollover and buildPayoffPlan", () => {
     expect(plan.map((r) => r.pay)).toEqual([120, 142, 50]);
   });
 });
+
+describe("debt-simulate: in-month overflow and the three orders", () => {
+  // The owner's example: A €250, B €1.000, C €5.000 and €500 extra a month. No minimums,
+  // so every euro that moves is the extra; the rates only set the highest-interest order.
+  const A = { id: 1, balance: 250, payment: 0, annualRate: 0 };
+  const B = { id: 2, balance: 1000, payment: 0, annualRate: 5 };
+  const C = { id: 3, balance: 5000, payment: 0, annualRate: 12 };
+  const example = [A, B, C];
+  type Mode = "quickest" | "interest" | "spread";
+  // As the Debts page runs it: the list's order, rollover whenever there is an extra.
+  const orderOf: Record<Mode, number[]> = { quickest: [1, 2, 3], interest: [3, 2, 1], spread: [3, 2, 1] };
+  const run = (debts: typeof example, extra: number, mode: Mode, order = orderOf[mode]) =>
+    simulatePayoff(debts, extra, 600, order, { rollover: extra > 0, spread: mode === "spread" });
+  const of = (sim: ReturnType<typeof run>, id: number) => sim.byDebt.find((d) => d.id === id)!;
+  const paidIn = (sim: ReturnType<typeof run>, m: number) => sim.byDebt.reduce((s, d) => s + (d.payments[m] ?? 0), 0);
+
+  it("quickest win: A is paid off in month 1 and the other €250 goes to B that same month", () => {
+    const sim = run(example, 500, "quickest");
+    expect(of(sim, 1).payments[1]).toBe(250);
+    expect(of(sim, 1).months).toBe(1);
+    expect(of(sim, 2).payments[1]).toBe(250);
+    expect(of(sim, 3).payments[1]).toBe(0);
+    // From month 2 B gets the whole extra.
+    expect(of(sim, 2).payments[2]).toBe(500);
+
+    const [a, b, c] = buildPayoffPlan(example, sim, 500);
+    expect(a).toMatchObject({ id: 1, pay: 250, extraNow: 250, months: 1, step: null, rollsTo: 2, rolls: 500 });
+    expect(b).toMatchObject({ id: 2, pay: 250, extraNow: 250, step: { month: 2, pay: 500 }, rollsTo: 3 });
+    // C gets what B can't absorb in B's last month, and all of it from the month after.
+    const bMonths = of(sim, 2).months!;
+    expect(of(sim, 3).payments[bMonths]).toBeGreaterThan(0);
+    expect(of(sim, 2).payments[bMonths] + of(sim, 3).payments[bMonths]).toBeCloseTo(500, 2);
+    expect(c).toMatchObject({ id: 3, pay: 0, step: { month: bMonths + 1, pay: 500 }, rollsTo: null, months: sim.months });
+  });
+
+  it("highest interest: C gets the whole extra, and its last month's leftover goes to B that month", () => {
+    const sim = run(example, 500, "interest");
+    expect(sim.order).toEqual([3, 2, 1]);
+    expect(of(sim, 3).payments[1]).toBe(500);
+    expect(of(sim, 2).payments[1]).toBe(0);
+    expect(of(sim, 1).payments[1]).toBe(0);
+    const cMonths = of(sim, 3).months!;
+    expect(of(sim, 3).payments[cMonths]).toBeLessThan(500);
+    expect(of(sim, 3).payments[cMonths] + of(sim, 2).payments[cMonths]).toBeCloseTo(500, 2);
+    // Interest is charged on the balance before the month's payment: 1% of €5.000.
+    expect(of(sim, 3).interestByMonth[1]).toBe(50);
+    expect(of(sim, 3).balances[1]).toBe(4550);
+  });
+
+  it("spread: €166,67 each in month 1, A paid in month 2 with its leftover shared by B and C", () => {
+    const sim = run(example, 500, "spread");
+    expect(sim.spread).toBe(true);
+    for (const id of [1, 2, 3]) expect(Math.abs(of(sim, id).payments[1] - 166.67)).toBeLessThanOrEqual(0.01);
+    expect(paidIn(sim, 1)).toBeCloseTo(500, 2);
+    expect(of(sim, 1).months).toBe(2);
+    // A only needs what is left of its €250; the rest goes equally to B and C.
+    const aLast = of(sim, 1).payments[2];
+    expect(aLast).toBeCloseTo(250 - of(sim, 1).payments[1], 2);
+    const leftover = 500 - aLast;
+    expect(of(sim, 2).payments[2]).toBeGreaterThan(166.67);
+    expect(of(sim, 3).payments[2]).toBeGreaterThan(166.66);
+    expect(of(sim, 2).payments[2] + of(sim, 3).payments[2]).toBeCloseTo(leftover, 2);
+    expect(Math.abs(of(sim, 2).payments[2] - of(sim, 3).payments[2])).toBeLessThanOrEqual(0.02);
+    expect(paidIn(sim, 2)).toBeCloseTo(500, 2);
+
+    const plan = buildPayoffPlan(example, sim, 500);
+    expect(plan.map((r) => r.id)).toEqual([3, 2, 1]);
+    expect(plan.every((r) => r.step === null)).toBe(true);
+    expect(plan.find((r) => r.id === 1)).toMatchObject({ months: 2, rollsTo: 3 });
+  });
+
+  it("keeps the month's total the same in every order until the last month, and spends no more than it owes", () => {
+    for (const mode of ["quickest", "interest", "spread"] as const) {
+      const sim = run(example, 500, mode);
+      expect(sim.months).not.toBeNull();
+      for (let m = 1; m < sim.months!; m++) expect(paidIn(sim, m)).toBeCloseTo(500, 2);
+      for (const d of sim.byDebt) expect(Math.min(...d.balances)).toBeGreaterThanOrEqual(0);
+      expect(sim.totals.at(-1)).toBe(0);
+    }
+    // Same total each month, so the interest decides the trade-off: highest interest first
+    // pays the least.
+    const interest = (mode: Mode) => run(example, 500, mode).interest;
+    expect(interest("interest")).toBeLessThan(interest("quickest"));
+    expect(interest("interest")).toBeLessThan(interest("spread"));
+  });
+
+  it("cascades overflow through two debts in one month", () => {
+    const small = { id: 1, balance: 100, payment: 50, annualRate: 0 };
+    const mid = { id: 2, balance: 150, payment: 50, annualRate: 0 };
+    const big = { id: 3, balance: 2000, payment: 50, annualRate: 0 };
+    const debts = [small, mid, big];
+    const sim = run(debts, 300, "quickest", [1, 2, 3]);
+    // Month 1: the minimums leave 50 and 100; the €300 clears both and €150 reaches big.
+    expect(of(sim, 1)).toMatchObject({ months: 1 });
+    expect(of(sim, 2)).toMatchObject({ months: 1 });
+    expect(of(sim, 1).payments[1]).toBe(100);
+    expect(of(sim, 2).payments[1]).toBe(150);
+    expect(of(sim, 3).payments[1]).toBe(200);
+    // Month 2: both freed minimums join the extra — 50 + 300 + 50 + 50.
+    expect(of(sim, 3).payments[2]).toBe(450);
+
+    const [first, second, third] = buildPayoffPlan(debts, sim, 300);
+    expect(first).toMatchObject({ pay: 100, extraNow: 50, months: 1, rollsTo: 3, rolls: 350 });
+    expect(second).toMatchObject({ pay: 150, extraNow: 100, months: 1, rollsTo: 3, rolls: 50 });
+    expect(third).toMatchObject({ pay: 200, extraNow: 150, step: { month: 2, pay: 450 }, rollsTo: null });
+  });
+
+  it("with no extra, every order is exactly the minimums", () => {
+    const debts = [
+      { id: 1, balance: 2140, payment: 120, annualRate: 18.9 },
+      { id: 2, balance: 4780, payment: 142, annualRate: 6.4 },
+      { id: 3, balance: 1500, payment: 50, annualRate: 0 },
+    ];
+    const minimums = simulatePayoff(debts);
+    for (const [mode, order] of [["quickest", [3, 1, 2]], ["interest", [1, 2, 3]], ["spread", [1, 2, 3]]] as const) {
+      const sim = run(debts, 0, mode, [...order]);
+      expect(sim.months).toBe(minimums.months);
+      expect(sim.totals).toEqual(minimums.totals);
+      expect(sim.interest).toBe(minimums.interest);
+      for (const d of debts) {
+        expect(of(sim, d.id).months).toBe(payoffMonths(d.balance, d.payment, monthlyRate(d.annualRate)));
+        expect(of(sim, d.id).payments).toEqual(of(minimums, d.id).payments);
+      }
+      const plan = buildPayoffPlan(debts, sim, 0);
+      expect(plan.every((r) => r.extraNow === 0 && r.step === null && r.rollsTo === null)).toBe(true);
+    }
+  });
+});

@@ -110,11 +110,17 @@ export interface AppLockConfig {
   pinLength: number | null;
 }
 
-/** Plan › Debts' payoff order: which debt the extra goes to first, and how Your debts
- *  is sorted (see DEBT_SORTS). Set from the simulator's Order switch. */
+/** Plan › Debts' payoff order: how the extra is shared out, and how Your debts is
+ *  sorted (see DEBT_SORTS). Set from the simulator's Order switch. A value saved before
+ *  the three-way switch ("smallest") is rewritten to its new name ("quickest") the first
+ *  time it is read. */
 export async function getDebtPayoffOrder(): Promise<DebtSort> {
   const [row] = await db.select().from(appSettings).where(eq(appSettings.key, "debt_payoff_order")).limit(1);
-  return parseDebtSort(row?.value);
+  const order = parseDebtSort(row?.value);
+  if (row && row.value !== order) {
+    await db.update(appSettings).set({ value: order }).where(eq(appSettings.key, "debt_payoff_order"));
+  }
+  return order;
 }
 
 /** Whether the user skipped Home's "Get started" card (set from the card's Skip button). */

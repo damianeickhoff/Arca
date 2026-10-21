@@ -157,11 +157,23 @@ export function DebtsView({
     () => active.map((c) => ({ id: c.debt.id, balance: c.currentBalance, payment: c.debt.minimumPayment, annualRate: c.debt.interestRate })),
     [active],
   );
-  // The extra goes to the debts in the order the list shows them; once one is paid off
-  // its whole payment rolls on to the next. The minimums alone are the comparison.
+  // The minimums alone are the comparison. With the extra, every order is simulated so
+  // the simulator can show the trade-off: in the list's order (what a debt can't absorb
+  // moves on the same month) or spread equally, and once a debt is paid off its whole
+  // payment rolls on.
   const ids = useMemo(() => active.map((c) => c.debt.id), [active]);
   const base = useMemo(() => simulatePayoff(simDebts, 0, 600, ids), [simDebts, ids]);
-  const sim = useMemo(() => simulatePayoff(simDebts, extra, 600, ids, { rollover: extra > 0 }), [simDebts, extra, ids]);
+  const sims = useMemo(
+    () =>
+      new Map(
+        DEBT_SORTS.map((mode) => {
+          const modeIds = mode === order ? ids : sortDebts(active, mode).map((c) => c.debt.id);
+          return [mode, simulatePayoff(simDebts, extra, 600, modeIds, { rollover: extra > 0, spread: mode === "spread" })] as const;
+        }),
+      ),
+    [simDebts, extra, ids, active, order],
+  );
+  const sim = sims.get(order)!;
   const plan = useMemo(() => buildPayoffPlan(simDebts, sim, extra), [simDebts, sim, extra]);
   // Each debt card's "Free in …" line: the month it reaches zero with the extra, next to
   // the month it would at the minimums, and the extra it gets this month.
@@ -211,6 +223,7 @@ export function DebtsView({
                 onOrder={chooseOrder}
                 base={base}
                 sim={sim}
+                sims={sims}
                 plan={plan}
                 extra={extra}
                 max={extraMax}
@@ -268,6 +281,7 @@ export function DebtsView({
       <AnchoredTip id="debtsDetail" anchor="debtsDetail" active={computed.length > 0} />
       <AnchoredTip id="debtsSimulator" anchor="debtsSimulator" active={active.length > 0} />
       <AnchoredTip id="debtsSortAndImpact" anchor="debtsSortAndImpact" active={active.length > 0} />
+      <AnchoredTip id="debtsOrder" anchor="debtsOrder" active={active.length > 1} />
       <AnchoredTip id="debtsWhereExtraGoes" anchor="debtsWhereExtraGoes" active={plan.length > 0} />
       <AnchoredTip id="debtsPaymentsMonth" anchor="debtsPaymentsMonth" active={active.length > 0} />
       <AnchoredTip id="debtsOwed" anchor="debtsOwed" active={hasOwed} />
@@ -841,11 +855,13 @@ function OwedProgress({ pct, back }: { pct: number; back: number }) {
 
 /**
  * "What if I pay extra?", across the full width. On the left the slider, the payoff
- * order (highest interest first · smallest first, which also sorts Your debts) and,
- * pinned to the bottom, what the extra leaves to spend each month. On the right what it
- * does — debt-free, how much sooner, the interest saved — and where the extra goes,
- * month by month: one row per debt, the extra on the first, each paid-off debt's whole
- * payment rolling on to the next.
+ * order (quickest win first · highest interest first · spread over all debts, which also
+ * sorts Your debts) with a sentence saying where the extra goes and, pinned to the
+ * bottom, what the extra leaves to spend each month. On the right what it does —
+ * debt-free, how much sooner, the interest saved, each against the minimums with the
+ * other two orders under it — and where the extra goes, month by month: one row per
+ * debt, the extra on the first (or an equal share on each), what a debt can't absorb
+ * moving on the same month and each paid-off debt's whole payment rolling on.
  */
 function SimulatorCard({
   active,
@@ -853,6 +869,7 @@ function SimulatorCard({
   onOrder,
   base,
   sim,
+  sims,
   plan,
   extra,
   max,
@@ -866,6 +883,8 @@ function SimulatorCard({
   onOrder: (order: DebtSort) => void;
   base: Sim;
   sim: Sim;
+  /** The same extra in every order, for the comparison under the tiles. */
+  sims: ReadonlyMap<DebtSort, Sim>;
   plan: PayoffPlanRow[];
   extra: number;
   max: number;
@@ -876,11 +895,43 @@ function SimulatorCard({
 }) {
   const t = useTranslations("plan.debts.simulator");
   const tSort = useTranslations("plan.debts.sort");
+  const locale = useLocale();
   const monthYear = useMonthYear();
-  const sooner = base.months != null && sim.months != null ? base.months - sim.months : null;
-  const saved = Math.max(0, Math.round((base.interest - sim.interest) * 100) / 100);
+  const list = useMemo(() => new Intl.ListFormat(locale, { type: "conjunction" }), [locale]);
+  // Each tile's figure against the minimums, for any order.
+  const debtFreeOf = (s: Sim) => (s.months != null ? monthYear(monthsFromNow(s.months)) : "—");
+  const soonerOf = (s: Sim) => {
+    const n = base.months != null && s.months != null ? base.months - s.months : null;
+    return n != null && n > 0 ? t("months", { count: n }) : "—";
+  };
+  const savedOf = (s: Sim) => formatEurWhole(Math.max(0, Math.round((base.interest - s.interest) * 100) / 100));
+  // The other two orders under each tile, so the trade-off shows; only when they differ.
+  const others = active.length > 1 && extra > 0 ? DEBT_SORTS.filter((o) => o !== order) : [];
+  const compare = (value: (s: Sim) => string, className: string) =>
+    others.length > 0 && (
+      <span className={cn("flex flex-col text-xs font-medium", className)}>
+        {others.map((o) => (
+          <span key={o} className="truncate">
+            <MoneyText>{t("compareLine", { mode: tSort(`short.${o}`), value: value(sims.get(o)!) })}</MoneyText>
+          </span>
+        ))}
+      </span>
+    );
+  const names = active.map((c) => c.debt.name);
+  const sentence =
+    order === "spread"
+      ? t("orderSentence.spread", { all: list.format(names) })
+      : t(`orderSentence.${order}`, { first: names[0] ?? "", rest: list.format(names.slice(1)) });
   const stat = "flex min-w-0 flex-col gap-1 rounded-clear-tile p-3.5";
   const statValue = "clear-amount truncate text-[22px] font-bold! tracking-[-0.02em]";
+  // Full names when the column is wide enough for them, short ones on a phone and in
+  // the narrow xl column.
+  const orderLabel = (o: DebtSort) => (
+    <>
+      <span className="truncate @[32rem]:hidden">{tSort(`short.${o}`)}</span>
+      <span className="hidden truncate @[32rem]:inline">{tSort(`options.${o}`)}</span>
+    </>
+  );
 
   return (
     <ClearCard data-tip-anchor="debtsSimulator" aria-labelledby="debts-sim-title" className={cn("gap-6 xl:grid xl:grid-cols-[1.1fr_2fr]", className)}>
@@ -903,16 +954,20 @@ function SimulatorCard({
         </div>
 
         {active.length > 1 && (
-          <div data-tip-anchor="debtsSortAndImpact" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div data-tip-anchor="debtsSortAndImpact" className="@container flex flex-col gap-2">
             <span className="text-[13px] font-medium text-clear-muted">{t("order")}</span>
-            <Segmented<DebtSort>
-              label={t("orderLabel")}
-              surface="tile"
-              size="sm"
-              value={order}
-              onChange={onOrder}
-              items={DEBT_SORTS.map((o) => ({ value: o, label: tSort(`options.${o}`) }))}
-            />
+            <div data-tip-anchor="debtsOrder" className="flex min-w-0">
+              <Segmented<DebtSort>
+                label={t("orderLabel")}
+                surface="tile"
+                size="sm"
+                value={order}
+                onChange={onOrder}
+                items={DEBT_SORTS.map((o) => ({ value: o, label: orderLabel(o) }))}
+                className="grid w-full grid-cols-[repeat(3,minmax(0,auto))] [&>button]:min-w-0 [&>button]:px-2.5"
+              />
+            </div>
+            <p className="m-0 text-[13px] leading-[1.45] font-medium text-clear-ink-2">{sentence}</p>
           </div>
         )}
 
@@ -923,19 +978,22 @@ function SimulatorCard({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className={cn(stat, "bg-clear-ember text-clear-ember-ink")}>
             <span className="text-xs font-medium">{t("debtFree")}</span>
-            <span className={statValue}>{sim.months != null ? monthYear(monthsFromNow(sim.months)) : "—"}</span>
+            <span className={statValue}>{debtFreeOf(sim)}</span>
+            {compare(debtFreeOf, "text-clear-ember-ink")}
           </div>
           <div className={cn(stat, "bg-clear-mint text-clear-mint-ink")}>
             <span className="text-xs font-medium">{t("sooner")}</span>
-            <span className={statValue}>{sooner != null && sooner > 0 ? t("months", { count: sooner }) : "—"}</span>
+            <span className={statValue}>{soonerOf(sim)}</span>
+            {compare(soonerOf, "text-clear-mint-ink")}
           </div>
           <div className={cn(stat, "col-span-2 bg-clear-tile sm:col-span-1")}>
             <span className="text-xs font-medium text-clear-muted">{t("saved")}</span>
-            <span className={statValue}><MoneyText>{formatEurWhole(saved)}</MoneyText></span>
+            <span className={statValue}><MoneyText>{savedOf(sim)}</MoneyText></span>
+            {compare(savedOf, "text-clear-muted")}
           </div>
         </div>
 
-        <PlanTile active={active} plan={plan} extra={extra} className="flex-1" />
+        <PlanTile active={active} plan={plan} extra={extra} spread={sim.spread} className="flex-1" />
       </div>
     </ClearCard>
   );
@@ -1008,9 +1066,25 @@ function FreeToSpendTile({
 /**
  * "Where the €200 goes, month by month": the plan as a table, one row per debt in the
  * payoff order — its minimum, the extra it gets now, what you pay, until when, and what
- * happens then. Scrolls sideways inside its tile on a phone.
+ * happens then. In order, "until" is when the payments before it roll on to it and
+ * "then" where its own payment goes; spread over all debts, "until" is its payoff month
+ * and "then" says its share is divided over the debts left. Scrolls sideways inside its
+ * tile on a phone.
  */
-function PlanTile({ active, plan, extra, className }: { active: ComputedDebt[]; plan: PayoffPlanRow[]; extra: number; className?: string }) {
+function PlanTile({
+  active,
+  plan,
+  extra,
+  spread,
+  className,
+}: {
+  active: ComputedDebt[];
+  plan: PayoffPlanRow[];
+  extra: number;
+  /** The extra is divided equally over the open debts (the "Spread over all debts" order). */
+  spread: boolean;
+  className?: string;
+}) {
   const t = useTranslations("plan.debts.simulator.plan");
   const tTile = useTranslations("plan.debts.tile");
   const locale = useLocale();
@@ -1055,13 +1129,17 @@ function PlanTile({ active, plan, extra, className }: { active: ComputedDebt[]; 
               const then =
                 r.months == null
                   ? t("none")
-                  : r.step
+                  : spread
                     ? r.rollsTo != null
-                      ? t("paidOffRolls", { date: date(r.months), name: name(r.rollsTo) })
-                      : t("paidOff", { date: date(r.months) })
-                    : r.rollsTo != null
-                      ? t("rollsOn", { amount: formatEurWhole(r.pay), name: name(r.rollsTo) })
-                      : t("none");
+                      ? t("spreadOn")
+                      : t("none")
+                    : r.step
+                      ? r.rollsTo != null
+                        ? t("paidOffRolls", { date: date(r.months), name: name(r.rollsTo) })
+                        : t("paidOff", { date: date(r.months) })
+                      : r.rollsTo != null
+                        ? t("rollsOn", { amount: formatEurWhole(r.rolls), name: name(r.rollsTo) })
+                        : t("none");
               return (
                 <tr key={r.id}>
                   <th scope="row" className={cn(td, "pr-3 font-medium whitespace-nowrap")}>

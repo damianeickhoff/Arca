@@ -363,25 +363,34 @@ export interface DebtsMonthPayments {
 // ── Order ─────────────────────────────────────────────────────────────────────
 
 /**
- * The payoff order: which debt the simulator's extra goes to first, and the order
- * "Your debts" lists them in. Highest interest first (the "avalanche", which saves the
- * most interest) or the smallest balance first (the "snowball", quick wins). Saved in
- * app settings (debt_payoff_order, see getDebtPayoffOrder).
+ * The payoff order: how the simulator's extra is shared out, and the order "Your
+ * debts" lists them in. "Quickest win first" (the "snowball": the smallest balance
+ * first, so a debt is gone soonest), "Highest interest first" (the "avalanche", which
+ * saves the most interest) or "Spread over all debts" (the extra in equal parts over
+ * every open debt; listed highest interest first). Saved in app settings
+ * (debt_payoff_order, see getDebtPayoffOrder).
  */
-export const DEBT_SORTS = ["interest", "smallest"] as const;
+export const DEBT_SORTS = ["quickest", "interest", "spread"] as const;
 export type DebtSort = (typeof DEBT_SORTS)[number];
 
-/** A stored order; anything unknown is the default, highest interest first. */
+/** Stored values from before the three-way switch, and what they are now. */
+const LEGACY_DEBT_SORTS: Readonly<Record<string, DebtSort>> = { smallest: "quickest" };
+
+/** A stored order; a legacy value reads as its new one, anything unknown is the
+ *  default, highest interest first. */
 export function parseDebtSort(value: string | null | undefined): DebtSort {
+  if (value != null && Object.hasOwn(LEGACY_DEBT_SORTS, value)) return LEGACY_DEBT_SORTS[value];
   return (DEBT_SORTS as readonly string[]).includes(value ?? "") ? (value as DebtSort) : "interest";
 }
 
 /** Debts in the chosen order. Paid-off debts always come last; ties go to the smaller balance. */
 export function sortDebts<T extends Pick<ComputedDebt, "debt" | "currentBalance">>(list: readonly T[], sort: DebtSort): T[] {
   const rate = (c: T) => c.debt.interestRate ?? 0;
+  const byRate = (a: T, b: T) => rate(b) - rate(a);
   const compare: Record<DebtSort, (a: T, b: T) => number> = {
-    interest: (a, b) => rate(b) - rate(a),
-    smallest: (a, b) => a.currentBalance - b.currentBalance,
+    quickest: (a, b) => a.currentBalance - b.currentBalance,
+    interest: byRate,
+    spread: byRate,
   };
   return [...list].sort(
     (a, b) =>

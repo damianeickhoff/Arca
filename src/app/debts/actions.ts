@@ -12,7 +12,7 @@ import { parseDebtSort, type DebtSort } from "./debt-shared";
 // Plan › Debts' writes. Server actions with revalidatePath (not fetch + router.refresh):
 // the balances they change are read server-side by Home, Insights and the forecast too.
 
-/** Saves the simulator's Order switch (highest interest first · smallest first). */
+/** Saves the simulator's Order switch (quickest win first · highest interest first · spread over all debts). */
 export async function setDebtPayoffOrderAction(order: DebtSort): Promise<{ error?: string }> {
   const user = await getCurrentUser();
   if (!user) return { error: "signedOut" };

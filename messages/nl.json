@@ -1331,7 +1331,11 @@
     },
     "debtsSortAndImpact": {
       "title": "Jouw volgorde, jouw maand",
-      "body": "Kies welke schuld het extra bedrag als eerste krijgt: de hoogste rente bespaart het meest, de kleinste is het snelst klaar. Je schulden staan in dezelfde volgorde. Eronder zie je wat je na de extra aflossing per maand vrij te besteden hebt."
+      "body": "Kies hoe het extra bedrag wordt verdeeld; je schulden staan in dezelfde volgorde. Eronder zie je wat je na de extra aflossing per maand vrij te besteden hebt."
+    },
+    "debtsOrder": {
+      "title": "Drie manieren om af te lossen",
+      "body": "Snelste winst eerst lost het kleinste saldo eerst af, zodat een schuld zo snel mogelijk weg is. Hoogste rente eerst pakt de duurste schuld eerst aan en bespaart zo de meeste rente. Verdeeld over alle schulden deelt het extra bedrag gelijk, zodat elk saldo elke maand daalt."
     },
     "debtsOwed": {
       "title": "Geld dat terugkomt",
@@ -1567,7 +1571,7 @@
     },
     "debtsWhereExtraGoes": {
       "title": "Waar het extra bedrag heen gaat",
-      "body": "Eén rij per schuld: het minimum, het extra bedrag dat hij nu krijgt en wat je betaalt. Is een schuld afgelost, dan gaat de hele betaling naar de volgende, zodat je het plan maand voor maand leest."
+      "body": "Eén rij per schuld: het minimum, het extra bedrag dat hij nu krijgt en wat je betaalt. Is een schuld afgelost, dan gaat de hele betaling door naar de andere, zodat je het plan maand voor maand leest."
     },
     "debtsPaymentsMonth": {
       "title": "Betalingen deze maand",
@@ -4258,12 +4262,19 @@
       "yoursExtra": "einddatums inclusief de {amount} extra",
       "sort": {
         "options": {
+          "quickest": "Snelste winst eerst",
           "interest": "Hoogste rente eerst",
-          "smallest": "Kleinste eerst"
+          "spread": "Verdeeld over alle schulden"
+        },
+        "short": {
+          "quickest": "Snelste winst",
+          "interest": "Hoogste rente",
+          "spread": "Verdeeld"
         },
         "inline": {
+          "quickest": "snelste winst eerst",
           "interest": "hoogste rente eerst",
-          "smallest": "kleinste eerst"
+          "spread": "extra verdeeld over alle"
         }
       },
       "noneOfYourOwn": "Geen eigen schulden. Voeg een lening of creditcard toe om te zien wanneer die is afgelost.",
@@ -4399,7 +4410,13 @@
           "noIncome": "Voeg je vaste inkomen toe om te zien wat een extra aflossing overlaat om per maand te besteden."
         },
         "order": "Volgorde",
-        "orderLabel": "Welke schuld het extra bedrag als eerste krijgt",
+        "orderLabel": "Hoe het extra bedrag wordt verdeeld",
+        "orderSentence": {
+          "quickest": "Het extra bedrag gaat eerst naar {first}, daarna naar {rest}: het kleinste saldo eerst. Wat een schuld niet nodig heeft, gaat dezelfde maand door naar de volgende.",
+          "interest": "Het extra bedrag gaat eerst naar {first}, daarna naar {rest}: de hoogste rente eerst. Wat een schuld niet nodig heeft, gaat dezelfde maand door naar de volgende.",
+          "spread": "Het extra bedrag wordt gelijk verdeeld over {all}. Wat een schuld niet nodig heeft, gaat dezelfde maand naar de andere."
+        },
+        "compareLine": "{mode}: {value}",
         "plan": {
           "title": "Waar de {amount} heen gaat, maand voor maand",
           "titleNone": "Elke schuld, maand voor maand",
@@ -4417,6 +4434,7 @@
           "rollsOn": "de {amount} gaat naar {name}",
           "paidOffRolls": "afgelost {date}, gaat naar {name}",
           "paidOff": "afgelost {date}",
+          "spreadOn": "zijn deel wordt verdeeld over de rest",
           "none": "—"
         }
       },

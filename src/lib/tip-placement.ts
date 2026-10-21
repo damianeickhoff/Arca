@@ -66,6 +66,7 @@ export type TipAnchor =
   | "debtsDetail"
   | "debtsSimulator"
   | "debtsSortAndImpact"
+  | "debtsOrder"
   | "debtsOwed"
   | "debtsPayoffDates"
   | "debtsWhereExtraGoes"
