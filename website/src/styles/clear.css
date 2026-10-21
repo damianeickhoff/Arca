@@ -21,7 +21,9 @@
   --clr-ink-2: #c4c4cc;
   --clr-muted: #9a9aa5;
   --clr-placeholder: #7a7a85;
-  --clr-hero: #f4f4f5;
+  /* Softer than the app's #f4f4f5: the guide's hero blocks are far larger than the app's
+     one answer card, and a full-white block glares on the dark ground. */
+  --clr-hero: #dcdce1;
   --clr-hero-ink: #111113;
   --clr-hero-ink-2: rgba(17, 17, 19, 0.65);
   --clr-primary: #f4f4f5;
@@ -171,9 +173,14 @@ body {
    Starlight draws a second vertical hairline after the social icons and, below 72rem, a
    mobile "On this page" bar with its own top and bottom lines right under the header;
    those go, so the header ever only has the one line. */
-.header {
+header.header {
   background-color: var(--clr-card);
   border-bottom: 1px solid var(--clr-line);
+}
+
+/* Starlight's inner layout div carries the same "header" class: no second line there. */
+div.header {
+  border-bottom: 0;
 }
 
 .header .social-icons::after {

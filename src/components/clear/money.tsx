@@ -69,8 +69,14 @@ function splitMoney(node: ReactNode): ReactNode {
   if (typeof node === "string") {
     const parts = node.split(new RegExp(MONEY_PATTERN.source, "g"));
     if (parts.length === 1) return node;
-    return parts.map((part, i) =>
-      i % 2 === 1 ? <Money key={i}>{part}</Money> : part ? <Fragment key={i}>{part}</Fragment> : null,
+    // One span, so a flex parent (a chip, a row) sees one item and the sentence keeps
+    // its normal word spacing instead of a flex gap around every amount.
+    return (
+      <span>
+        {parts.map((part, i) =>
+          i % 2 === 1 ? <Money key={i}>{part}</Money> : part ? <Fragment key={i}>{part}</Fragment> : null,
+        )}
+      </span>
     );
   }
   if (Array.isArray(node)) {
