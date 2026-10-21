@@ -174,7 +174,8 @@ export async function FlowCard({
   // Values over the bars and the dates under the labels only where there's room.
   const showValues = buckets.length <= 6;
   const showSub = buckets.length <= 7;
-  const plotHeight = "min-h-[120px] lg:min-h-[160px]";
+  // About 150px at xl, so the row with the calendar stays low; it still grows to match.
+  const plotHeight = "min-h-[120px] lg:min-h-[140px] xl:min-h-[150px]";
   // Two bars fill about 70% of a column, 4px apart.
   const bar = "min-h-[3px] w-[calc(35%-2px)] min-w-1.5";
 
@@ -532,8 +533,8 @@ export async function CalendarCard({
     `${dayFmt.format(new Date(`${d.date}T00:00:00`))} · ${d.future ? t("stillToCome") : formatEur(d.spent)}`;
   const cellStyle = (d: CalendarDay): React.CSSProperties | undefined => (d.future ? undefined : { background: HEAT[heatLevel(d.spent, avgPerDay)] });
 
-  // Half the page wide beside Week by week: the heatmap, then the two tiles in a row at
-  // the bottom, so both cards end on the same line when the row stretches them.
+  // Half the page wide beside Week by week: the heatmap, then the two compact tiles in a
+  // row at the bottom, so both cards end on the same line when the row stretches them.
   return (
     <ClearCard aria-labelledby="insights-calendar-title" className={cn("gap-3.5", className)}>
       <div className="flex min-w-0 flex-col gap-3.5">
@@ -579,14 +580,14 @@ export async function CalendarCard({
           </div>
         ) : (
           <div className="flex flex-col gap-1.5">
-            <div aria-hidden className="grid grid-cols-7 gap-1.5 text-center text-xs font-medium text-clear-muted">
+            <div aria-hidden className="grid grid-cols-7 gap-[5px] text-center text-xs font-medium text-clear-muted">
               {weekdays.map((w, i) => (
                 <span key={i} className="truncate">
                   {w}
                 </span>
               ))}
             </div>
-            <div role="img" aria-label={t("calendarLabel")} className="grid grid-cols-7 gap-1.5">
+            <div role="img" aria-label={t("calendarLabel")} className="grid grid-cols-7 gap-[5px]">
               {Array.from({ length: lead }).map((_, i) => (
                 <span key={`blank-${i}`} />
               ))}
@@ -597,7 +598,8 @@ export async function CalendarCard({
                     key={d.date}
                     title={cellTitle(d)}
                     className={cn(
-                      "flex h-[38px] items-center justify-center rounded-[10px] text-xs font-semibold tabular-nums xl:h-10",
+                      // About 1.6:1 at half the page wide, never taller than 44px.
+                      "flex aspect-[8/5] max-h-11 items-center justify-center rounded-[10px] text-xs font-semibold tabular-nums",
                       d.future ? cn(STILL_TO_COME, "text-clear-muted") : level === 4 ? "text-clear-ember-ink" : "text-clear-ink",
                       d.today && "font-bold ring-2 ring-inset ring-clear-ink",
                     )}
@@ -611,21 +613,23 @@ export async function CalendarCard({
           </div>
         )}
       </div>
+      {/* Two compact tiles, label and value on one line; the comparison is read out to
+          screen readers only, so the row stays low. */}
       <div className="mt-auto grid grid-cols-2 gap-2.5">
-        <ClearTile className="flex flex-col gap-0.5 px-3.5 py-3">
-          <span className="text-[13px] text-clear-ink-2">{t("avgExpense")}</span>
-          <Amount value={avgPerDay} className="text-lg font-bold! tabular-nums" />
+        <ClearTile className="flex min-w-0 items-baseline justify-between gap-2 px-3.5 py-2.5">
+          <span className="truncate text-[13px] text-clear-ink-2">{t("avgExpense")}</span>
+          <Amount value={avgPerDay} whole className="shrink-0 text-base font-bold! tabular-nums" />
           {prevAvgPerDay != null && (
-            <span className="text-xs text-clear-muted">
+            <span className="sr-only">
               <MoneyText>{t("calendarPrev", { amount: formatEurWhole(prevAvgPerDay), period: previousMonth })}</MoneyText>
             </span>
           )}
         </ClearTile>
-        <ClearTile className="flex flex-col gap-0.5 px-3.5 py-3">
-          <span className="text-[13px] text-clear-ink-2">{t("popularDay")}</span>
-          <span className="truncate text-lg font-bold first-letter:uppercase">{popularDay ?? "—"}</span>
+        <ClearTile className="flex min-w-0 items-baseline justify-between gap-2 px-3.5 py-2.5">
+          <span className="truncate text-[13px] text-clear-ink-2">{t("popularDay")}</span>
+          <span className="min-w-0 truncate text-base font-bold first-letter:uppercase">{popularDay ?? "—"}</span>
           {popularDayAvg != null && (
-            <span className="text-xs text-clear-muted">
+            <span className="sr-only">
               <MoneyText>{t("popularAvg", { amount: formatEurWhole(popularDayAvg) })}</MoneyText>
             </span>
           )}

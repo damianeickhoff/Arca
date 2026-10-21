@@ -3005,7 +3005,9 @@
         "thisPeriod": "Deze periode",
         "previousPeriod": "Vorige periode",
         "budget": "Budget",
+        "budgetAll": "Budget (alle uitgaven)",
         "budgetLine": "Budget {amount}",
+        "budgetLineAll": "Budget (alle uitgaven) {amount}",
         "today": "vandaag",
         "chartLabel": "Uitgaven dag voor dag opgeteld: {spent} tot nu toe{previous, select, none {} other {, tegen {previous} in de vorige periode op dezelfde dag}}{projected, select, none {} other {, op weg naar zo'n {projected}}}."
       },

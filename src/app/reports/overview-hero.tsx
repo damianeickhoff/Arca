@@ -4,7 +4,7 @@ import { ClearCard } from "@/components/clear/card";
 import { ClearChip } from "@/components/clear/chip";
 import { MoneyText } from "@/components/clear/money";
 import { formatEurWhole } from "@/lib/format";
-import type { RunningTotals } from "@/lib/period-facts";
+import { runningTotalPlot, type RunningTotals } from "@/lib/period-facts";
 import { cn } from "@/lib/utils";
 import type { Change, SafeToSpendHint } from "./overview-cards";
 
@@ -20,7 +20,9 @@ export interface PeriodName {
  * how that compares with the previous period by the same day and where the period is
  * heading against the budget. Beside it four tiles: income, saved, left to spend and
  * the largest expense, a 2×2 grid with equal rows that stretch to the card's height.
- * The running total as a line has a card of its own (running-total-card.tsx).
+ * Under the sentence the running total as a line (this period and the previous one,
+ * the ember dot at today), from the same series as the "This month against last"
+ * card below, which carries the budget line and the legend.
  */
 export async function OverviewHero({
   ongoing,
@@ -92,6 +94,12 @@ export async function OverviewHero({
               b: bold,
             });
 
+  const chartLabel = t("runningTotal.chartLabel", {
+    spent: formatEurWhole(totals.current[totals.elapsed - 1] ?? 0),
+    previous: totals.previousAtSameDay != null ? formatEurWhole(totals.previousAtSameDay) : "none",
+    projected: projected != null ? formatEurWhole(projected) : "none",
+  });
+
   const incomeChip = incomeChange
     ? incomeChange.pct === 0
       ? t("hero.incomeSame", { period: previousShort })
@@ -121,6 +129,7 @@ export async function OverviewHero({
               <MoneyText>{pace}</MoneyText>
             </p>
           )}
+          <HeroRunningTotal totals={totals} ongoing={ongoing} label={chartLabel} />
         </div>
 
         <div className="grid grid-cols-2 grid-rows-2 gap-2.5">
@@ -143,6 +152,35 @@ export async function OverviewHero({
         </div>
       </div>
     </ClearCard>
+  );
+}
+
+/**
+ * The running total on the hero: this period in the hero's ink up to today, the
+ * previous period translucent over the whole length, the ember dot at today. The plot
+ * box has its own minimum height (110px) and grows with the hero; the SVG fills that
+ * box absolutely, so it never depends on a flex parent handing it a height.
+ */
+function HeroRunningTotal({ totals, ongoing, label }: { totals: RunningTotals; ongoing: boolean; label: string }) {
+  const W = 320;
+  const H = 100;
+  const plot = runningTotalPlot(totals, { width: W, height: H, top: 6 });
+  if (!plot.current && !plot.previous) return null;
+  const stroke = { fill: "none", strokeLinejoin: "round", strokeLinecap: "round", vectorEffect: "non-scaling-stroke" } as const;
+  return (
+    <div role="img" aria-label={label} className="relative mt-4 min-h-[110px] flex-1">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden className="absolute inset-0 size-full overflow-visible">
+        {plot.previous && <polyline points={plot.previous} stroke="var(--clr-hero-ink)" strokeOpacity="0.35" strokeWidth="2" {...stroke} />}
+        {plot.current && <polyline points={plot.current} stroke="var(--clr-hero-ink)" strokeWidth="2.5" {...stroke} />}
+      </svg>
+      {ongoing && plot.today && (
+        <span
+          aria-hidden
+          className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-clear-ember ring-2 ring-clear-hero"
+          style={{ left: `${plot.today.left}%`, top: `${plot.today.top}%` }}
+        />
+      )}
+    </div>
   );
 }
 

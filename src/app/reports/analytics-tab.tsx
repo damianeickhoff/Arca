@@ -14,7 +14,7 @@ import { currentFinancialMonth, daysInclusive, shiftDate, todayStr, type Financi
 import { AnchoredTip } from "@/components/anchored-tip";
 import { isAiReady } from "@/lib/gemini";
 import { getCachedSummary } from "@/lib/ai-features";
-import { averagePerDay, buildSummaryFacts, monthOfPeriod, runningTotals } from "@/lib/period-facts";
+import { averagePerDay, buildSummaryFacts, monthOfPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
 import { SummaryCard } from "./summary-card";
 import { OverviewHero, type PeriodName } from "./overview-hero";
 import { RunningTotalCard } from "./running-total-card";
@@ -356,6 +356,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     daysElapsed,
     totals,
     budgetTarget,
+    chartBudget: runningTotalBudget({ from, to, today, financialMonth, overview: budgetOverview, filtered: !!categoryIds?.length || !!accounts?.length }),
     incomeChange: change(income, prevIncome),
     expenseChange: change(expense, prevExpense),
     largest: largest
@@ -555,7 +556,7 @@ export async function AnalyticsTab({
 
       <RunningTotalCard
         totals={data.totals}
-        budget={data.budgetTarget}
+        budget={data.chartBudget}
         ongoing={data.ongoing}
         monthly={data.ongoing && month != null}
         startLabel={dayMonth.format(date(from))}

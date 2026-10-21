@@ -3005,7 +3005,9 @@
         "thisPeriod": "This period",
         "previousPeriod": "Previous period",
         "budget": "Budget",
+        "budgetAll": "Budget (all spending)",
         "budgetLine": "Budget {amount}",
+        "budgetLineAll": "Budget (all spending) {amount}",
         "today": "today",
         "chartLabel": "Spending added up day by day: {spent} so far{previous, select, none {} other {, against {previous} in the previous period by the same day}}{projected, select, none {} other {, heading for about {projected}}}."
       },

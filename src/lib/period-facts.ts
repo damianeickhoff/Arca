@@ -3,7 +3,7 @@
 // facts, which the card shows as they are when AI is off and Gemini gets exactly when
 // it is on ("AI explains, the app computes").
 
-import { daysInclusive, shiftDate } from "@/lib/date-range";
+import { daysInclusive, financialMonthForDate, financialMonthRangeByMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
 import { roundToCents } from "@/lib/transaction-splits";
 
 /** The average per day over `days` days (at least one), in cents. */
@@ -88,6 +88,43 @@ export function runningTotals(input: {
   };
 }
 
+/** The running total drawn in a `width` × `height` viewBox, shared by the hero's line and
+ *  the "This month against last" card so the two never disagree. */
+export interface RunningTotalPlot {
+  /** This period's line up to today; null before the period starts. */
+  current: string | null;
+  /** The previous period's line over the whole length; null when it had no spending. */
+  previous: string | null;
+  /** From today to where the period ends at this pace; null unless it is running. */
+  projection: { x1: number; y1: number; x2: number; y2: number } | null;
+  /** The budget's height in viewBox units; null without a budget. */
+  budgetY: number | null;
+  /** Today's point, in percent of the box; null before the period starts. */
+  today: { left: number; top: number } | null;
+}
+
+/**
+ * Lays out the running totals: the scale fits the highest of this period, the previous
+ * one, the projection and the budget, with `top` units kept free above it.
+ */
+export function runningTotalPlot(totals: RunningTotals, opts: { width: number; height: number; top: number; budget?: number | null }): RunningTotalPlot {
+  const { days, elapsed, current, previous, projected } = totals;
+  const { width: W, height: H, top, budget = null } = opts;
+  const spent = current[elapsed - 1] ?? 0;
+  const previousTotal = previous[days - 1] ?? 0;
+  const ceiling = Math.max(1, previousTotal, projected ?? 0, budget ?? 0, spent) * 1.04;
+  const x = (day: number) => (day / days) * W;
+  const y = (v: number) => H - (v / ceiling) * (H - top);
+  const points = (values: number[]) => [`0,${H}`, ...values.map((v, i) => `${x(i + 1)},${y(v)}`)].join(" ");
+  return {
+    current: elapsed > 0 ? points(current) : null,
+    previous: previous.some((v) => v > 0) ? points(previous) : null,
+    projection: projected != null && elapsed > 0 && elapsed < days ? { x1: x(elapsed), y1: y(spent), x2: W, y2: y(projected) } : null,
+    budgetY: budget != null ? y(budget) : null,
+    today: elapsed > 0 ? { left: (x(elapsed) / W) * 100, top: (y(spent) / H) * 100 } : null,
+  };
+}
+
 /**
  * The month a period stands for, as YYYY-MM, when it is about a month long (a calendar
  * month or a budget period from payday to payday): the month its middle day falls in.
@@ -97,6 +134,42 @@ export function monthOfPeriod(from: string, to: string): string | null {
   const days = daysInclusive(from, to);
   if (days < 28 || days > 31) return null;
   return shiftDate(from, Math.floor((days - 1) / 2)).slice(0, 7);
+}
+
+/** Whether [from, to] is exactly one financial month (payday to payday), as the period
+ *  selector's months are. */
+export function isWholeFinancialMonth(from: string, to: string, config: number | FinancialMonthConfig): boolean {
+  const range = financialMonthRangeByMonth(financialMonthForDate(from, config), config);
+  return range.from === from && range.to === to;
+}
+
+/**
+ * The budget the running total draws as a line: the overall budget when one is set,
+ * otherwise the category budgets added up (the target Safe to spend uses). A monthly
+ * budget applies to every whole financial month that has started, the current one or
+ * a past one; a weekly one only to its own week. Null without any budget, for a period
+ * that isn't a budget period and for one still to come. `allSpending` marks a budget
+ * shown beside filtered lines: it covers all spending, not the selection.
+ */
+export function runningTotalBudget(input: {
+  from: string;
+  to: string;
+  today: string;
+  financialMonth: number | FinancialMonthConfig;
+  /** The budget overview's range, its overall budget and the category budgets added up. */
+  overview: { from: string; to: string; budget: { amount: number; period: "weekly" | "monthly" } | null; allocated: number } | null;
+  /** A category or account filter is on. */
+  filtered: boolean;
+}): { amount: number; allSpending: boolean } | null {
+  const { from, to, today, overview } = input;
+  if (!overview || from > today) return null;
+  const amount = (overview.budget?.amount ?? 0) > 0 ? overview.budget!.amount : overview.allocated;
+  if (amount <= 0) return null;
+  const applies =
+    overview.budget?.period === "weekly"
+      ? from === overview.from && to === overview.to
+      : isWholeFinancialMonth(from, to, input.financialMonth);
+  return applies ? { amount: roundToCents(amount), allSpending: input.filtered } : null;
 }
 
 /**
