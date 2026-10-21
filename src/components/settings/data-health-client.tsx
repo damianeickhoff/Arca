@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconAlertTriangle, IconCircleCheck, IconTrash } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCircleCheck, IconRepeat, IconTrash } from "@tabler/icons-react";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { SettingsNotice } from "@/components/settings/settings-ui";
 import { DatePicker } from "@/components/date-picker";
@@ -17,6 +18,8 @@ import { cn } from "@/lib/utils";
 import type { BrokenDateRow } from "@/lib/data-health";
 import type { ActivityItem } from "@/lib/activity-log";
 import { RecentChanges } from "@/components/settings/recent-changes";
+import { AnchoredTip } from "@/components/anchored-tip";
+import { findRegularPaymentsAction } from "@/app/actions/recurring-suggestions";
 
 /**
  * Repairs transactions whose stored date isn't a real date — the wreckage of a CSV
@@ -24,8 +27,9 @@ import { RecentChanges } from "@/components/settings/recent-changes";
  *
  * These rows can't be reached from the transactions list: it filters on a TEXT date
  * column, so a value like "Albert Heijn" falls outside every range. This panel is the
- * only place they can be seen, corrected or removed. Below that: Recent changes, the
- * change log with undo.
+ * only place they can be seen, corrected or removed. Below that: the full pass of the
+ * recurring detector ("Look for regular payments") and Recent changes, the change log
+ * with undo.
  */
 export function DataHealthClient({ rows, changes }: { rows: BrokenDateRow[]; changes: ActivityItem[] }) {
   const t = useTranslations("dataHealth");
@@ -198,8 +202,60 @@ export function DataHealthClient({ rows, changes }: { rows: BrokenDateRow[]; cha
           </>
         )}
 
+        <RegularPaymentsScan />
+
         <RecentChanges changes={changes} />
       </div>
     </>
+  );
+}
+
+/**
+ * "Look for regular payments": runs the recurring detector over the whole history.
+ * Imports and bank syncs only re-test the counterparties they touched; this checks
+ * everything, and points at Upcoming where the suggestions wait.
+ */
+function RegularPaymentsScan() {
+  const t = useTranslations("dataHealth.regularPayments");
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<{ tone: "success" | "info" | "error"; text: string; review: boolean } | null>(null);
+
+  function scan() {
+    setResult(null);
+    startTransition(async () => {
+      const r = await findRegularPaymentsAction();
+      if (r.error) {
+        setResult({ tone: "error", text: r.error === "busy" ? t("busy") : t("error"), review: false });
+        return;
+      }
+      const found = r.suggested ?? 0;
+      const accepted = r.autoAccepted ?? 0;
+      if (found === 0 && accepted === 0) setResult({ tone: "info", text: t("nothingNew"), review: false });
+      else setResult({ tone: "success", text: t("found", { found, accepted }), review: found > 0 });
+    });
+  }
+
+  return (
+    <section aria-labelledby="regular-payments-title" className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
+      <div className="flex items-start gap-3.5">
+        <IconTile tone="lilac" size="md"><IconRepeat stroke={1.9} /></IconTile>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h3 id="regular-payments-title" className="m-0 text-[17px] font-extrabold">{t("title")}</h3>
+          <p className="m-0 text-sm text-clear-ink-2">{t("body")}</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2.5" data-tip-anchor="recurringScan">
+        <ClearButton variant="surface" onClick={scan} disabled={pending}>
+          {pending ? t("running") : t("run")}
+        </ClearButton>
+        {result?.review && (
+          <Link href="/transactions/upcoming" className="text-sm font-bold text-clear-ember-text no-underline hover:underline">
+            {t("review")}
+          </Link>
+        )}
+      </div>
+      {result && <SettingsNotice tone={result.tone}>{result.text}</SettingsNotice>}
+      <AnchoredTip id="recurringScan" anchor="recurringScan" />
+    </section>
   );
 }

@@ -1544,6 +1544,10 @@
     "recurringSuggestions": {
       "title": "Regular payments, found for you",
       "body": "Arca looks for payments that come back at a steady rhythm and amount. Nothing becomes a bill until you accept it; Not a bill keeps it from coming back."
+    },
+    "recurringScan": {
+      "title": "Check your whole history",
+      "body": "Imports only re-check the shops and people they touched. This looks through everything for payments that come back at a steady rhythm."
     }
   },
   "categoryPicker": {
@@ -2045,6 +2049,17 @@
         "unknown": "A change",
         "recurringMigrated": "Re-checked auto-detected bills: {review, plural, =0 {all still regular} one {# looks like ordinary spending} other {# look like ordinary spending}}"
       }
+    },
+    "regularPayments": {
+      "title": "Regular payments",
+      "body": "Arca looks for bills, subscriptions and income that come back at a steady rhythm and amount. It checks what each import touches; run it here to check your whole history.",
+      "run": "Look for regular payments",
+      "running": "Looking…",
+      "found": "{found, plural, =0 {No new suggestions} one {Found # new regular payment} other {Found # new regular payments}}{accepted, plural, =0 {} one {, and added # known subscription} other {, and added # known subscriptions}}.",
+      "nothingNew": "Nothing new found. Everything regular is already a bill or waiting for you on Upcoming.",
+      "review": "Review on Upcoming",
+      "busy": "An import is running. Try again when it's done.",
+      "error": "That didn't work. Try again."
     }
   },
   "importProfiles": {

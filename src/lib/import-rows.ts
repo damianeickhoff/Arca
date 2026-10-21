@@ -208,9 +208,11 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
   await assignMissingMerchants();
 
   // Now that the new rows are in, link every transaction to its matching recurring item,
-  // then look for new regular payments (stored as suggestions for the user to accept).
+  // then look for new regular payments among the counterparties this import touched
+  // (stored as suggestions for the user to accept). A CSV import and a bank sync both
+  // come through here; Settings › Data health runs the full pass.
   await applyAllRules();
-  await detectRecurringSuggestions();
+  await detectRecurringSuggestions(insertedIds);
 
   // Counted only over the rows this import inserted (duplicates never count) and only
   // after every pass above has run, so the number matches what the user will see.

@@ -6,6 +6,7 @@ import {
   IconListNumbers,
   IconBook2,
   IconUserPlus,
+  IconRepeat,
   IconSparkles,
   IconFolders,
   IconAdjustments,
@@ -165,6 +166,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   helpGuide: IconBook2,
   userInvites: IconUserPlus,
   recurringSuggestions: IconSparkles,
+  recurringScan: IconRepeat,
 };
 
 /**

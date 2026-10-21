@@ -151,7 +151,9 @@ export type TipAnchor =
   // Import: the Bank connection card at the top of the page
   | "importBank"
   // The Settings page: the Help row (the online guide)
-  | "settingsHelp";
+  | "settingsHelp"
+  // Settings › Data health: "Look for regular payments"
+  | "recurringScan";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

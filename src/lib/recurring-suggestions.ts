@@ -149,14 +149,15 @@ export async function detectRecurringSuggestions(touchedTransactionIds?: number[
     if (existing) {
       await db.update(recurringSuggestions).set({ ...values, updatedAt: sql`(datetime('now'))` }).where(eq(recurringSuggestions.id, existing.id));
     } else {
-      await db.insert(recurringSuggestions).values(values);
-      suggested++;
+      const inserted = await db.insert(recurringSuggestions).values(values).onConflictDoNothing().returning({ id: recurringSuggestions.id });
+      suggested += inserted.length;
     }
   }
 
   const accepted: { id: number; name: string }[] = [];
   for (const c of autoAccept) {
-    const [row] = await db.insert(recurringSuggestions).values({ ...suggestionValues(c), status: "accepted" }).returning();
+    const [row] = await db.insert(recurringSuggestions).values({ ...suggestionValues(c), status: "accepted" }).onConflictDoNothing().returning();
+    if (!row) continue;
     const item = await createItemFor(row);
     if (item) accepted.push(item);
   }

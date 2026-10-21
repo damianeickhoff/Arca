@@ -1544,6 +1544,10 @@
     "recurringSuggestions": {
       "title": "Vaste betalingen, voor je gevonden",
       "body": "Arca zoekt naar betalingen die steeds terugkomen, met een vast ritme en bedrag. Niets wordt een vaste last tot je het accepteert; met Geen vaste last komt hij niet meer terug."
+    },
+    "recurringScan": {
+      "title": "Controleer je hele geschiedenis",
+      "body": "Een import controleert alleen de winkels en mensen die erin voorkomen. Dit zoekt in alles naar betalingen die met een vast ritme terugkomen."
     }
   },
   "categoryPicker": {
@@ -2045,6 +2049,17 @@
         "unknown": "Een wijziging",
         "recurringMigrated": "Eerder gevonden vaste lasten opnieuw gecontroleerd: {review, plural, =0 {allemaal nog regelmatig} one {# lijkt gewone uitgaven} other {# lijken gewone uitgaven}}"
       }
+    },
+    "regularPayments": {
+      "title": "Vaste betalingen",
+      "body": "Arca zoekt naar vaste lasten, abonnementen en inkomsten die terugkomen met een vast ritme en bedrag. Dat gebeurt bij elke import voor wat die raakt; start het hier om je hele geschiedenis te controleren.",
+      "run": "Zoek naar vaste betalingen",
+      "running": "Bezig met zoeken…",
+      "found": "{found, plural, =0 {Geen nieuwe suggesties} one {# nieuwe vaste betaling gevonden} other {# nieuwe vaste betalingen gevonden}}{accepted, plural, =0 {} one {, en # bekend abonnement toegevoegd} other {, en # bekende abonnementen toegevoegd}}.",
+      "nothingNew": "Niets nieuws gevonden. Alles wat regelmatig is, is al een vaste last of wacht op je bij Binnenkort.",
+      "review": "Bekijken bij Binnenkort",
+      "busy": "Er loopt een import. Probeer het opnieuw als die klaar is.",
+      "error": "Dat lukte niet. Probeer het opnieuw."
     }
   },
   "importProfiles": {
