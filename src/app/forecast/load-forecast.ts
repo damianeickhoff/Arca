@@ -237,6 +237,8 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
     switch (item.frequency) {
       case "monthly":
         return item.dueDay ? t("monthlyOn", { day: item.dueDay }) : t("monthly");
+      case "four_weekly":
+        return t("four_weekly", { amount });
       case "weekly":
         return t("weekly", { amount });
       case "quarterly":

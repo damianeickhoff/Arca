@@ -2710,7 +2710,8 @@
       "weekly": "Weekly",
       "monthly": "Monthly",
       "quarterly": "Quarterly",
-      "yearly": "Yearly"
+      "yearly": "Yearly",
+      "four_weekly": "Every 4 weeks"
     },
     "endDate": "Ends on a date",
     "endHint": "After this date the recurring item switches off by itself.",
@@ -3398,7 +3399,8 @@
           "goal": "{current} of {target}",
           "goalBy": "{current} of {target} · {date}",
           "budget": "Monthly budget",
-          "subOf": "Part of {parent}"
+          "subOf": "Part of {parent}",
+          "four_weekly": "{amount} every four weeks"
         }
       },
       "override": {
@@ -3897,7 +3899,8 @@
       "monthly": "monthly",
       "quarterly": "quarterly",
       "yearly": "yearly",
-      "once": "one-off"
+      "once": "one-off",
+      "four_weekly": "every four weeks"
     },
     "merchantPicker": {
       "title": "Merchant",

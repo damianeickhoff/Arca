@@ -267,7 +267,7 @@ export function TransactionDetailPanel({
   const fmtDay = (date: string, opts: Intl.DateTimeFormatOptions) =>
     isValidISODate(date) ? new Date(`${date}T12:00:00`).toLocaleDateString(locale, opts) : date;
   const dateLabel = fmtDay(row.date, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
-  const frequencyLabel = (f: string) => (["daily", "weekly", "monthly", "quarterly", "yearly", "once"].includes(f) ? tFreq(f) : f);
+  const frequencyLabel = (f: string) => (["daily", "weekly", "four_weekly", "monthly", "quarterly", "yearly", "once"].includes(f) ? tFreq(f) : f);
 
   // ── Budget impact
   const budget = categoryId != null ? context.budgets[categoryId] : undefined;

@@ -181,13 +181,13 @@ export function BillsCalendar({ data }: { data: UpcomingData }) {
                     {/* Phones: one dot per bill. */}
                     <span aria-hidden className="mt-auto flex flex-wrap gap-[3px] sm:hidden">
                       {dayBills.slice(0, 4).map((b) => (
-                        <span key={b.id} className={cn("size-[7px] rounded-full", dotTone(b))} />
+                        <span key={`${b.id}-${b.dueDate}`} className={cn("size-[7px] rounded-full", dotTone(b))} />
                       ))}
                     </span>
                     <span aria-hidden className="mt-auto hidden flex-col items-start gap-1 sm:flex">
                       {shown.map((b) => (
                         <span
-                          key={b.id}
+                          key={`${b.id}-${b.dueDate}`}
                           className={cn(
                             "inline-flex h-[22px] max-w-full items-center gap-1 overflow-hidden whitespace-nowrap rounded-full px-[7px] text-xs font-bold tabular-nums",
                             chipTone(b),
@@ -246,7 +246,7 @@ export function BillsCalendar({ data }: { data: UpcomingData }) {
           />
           <ul className="m-0 flex list-none flex-col p-0">
             {selectedBills.map((b) => (
-              <BillRow key={b.id} bill={b} month={data.month} today={today} />
+              <BillRow key={`${b.id}-${b.dueDate}`} bill={b} month={data.month} today={today} />
             ))}
           </ul>
         </DialogContent>

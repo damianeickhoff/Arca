@@ -199,7 +199,7 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
               ) : (
                 <ul className="m-0 flex list-none flex-col p-0">
                   {due.map((b) => (
-                    <BillRow key={b.id} bill={b} month={data.month} today={data.today} />
+                    <BillRow key={`${b.id}-${b.dueDate}`} bill={b} month={data.month} today={data.today} />
                   ))}
                 </ul>
               )}
@@ -215,7 +215,7 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
               ) : (
                 <ul className="m-0 flex list-none flex-col p-0">
                   {paid.map((b) => (
-                    <BillRow key={b.id} bill={b} month={data.month} today={data.today} />
+                    <BillRow key={`${b.id}-${b.dueDate}`} bill={b} month={data.month} today={data.today} />
                   ))}
                 </ul>
               )}
@@ -226,7 +226,7 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
                 <ClearCardHeader title={<span id="upcoming-income-title">{t("income.title")}</span>} />
                 <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
                   {income.map((b) => (
-                    <BillRow key={b.id} bill={b} month={data.month} today={data.today} className="rounded-clear-tile border-b-0 bg-clear-tile px-3" />
+                    <BillRow key={`${b.id}-${b.dueDate}`} bill={b} month={data.month} today={data.today} className="rounded-clear-tile border-b-0 bg-clear-tile px-3" />
                   ))}
                 </ul>
               </ClearCard>

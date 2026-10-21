@@ -764,7 +764,7 @@ function BillsCard({ data }: { data: BudgetViewData }) {
   function row(b: BudgetBill) {
     const st = status(b);
     return (
-      <li key={b.id} className="flex min-h-[52px] items-center gap-3 border-b border-clear-ground py-1.5 last:border-b-0">
+      <li key={`${b.id}-${b.dueDate}`} className="flex min-h-[52px] items-center gap-3 border-b border-clear-ground py-1.5 last:border-b-0">
         <Icon iconKey={b.icon} color={b.iconColor} size="md" soft />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-sm font-bold">{b.name}</span>

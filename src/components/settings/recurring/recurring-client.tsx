@@ -75,7 +75,7 @@ interface EditProps {
 type Props = AddProps | EditProps;
 
 const TYPES = ["bill", "subscription", "income", "debt", "plan", "savings"] as const;
-const FREQUENCIES = ["daily", "weekly", "monthly", "quarterly", "yearly"] as const;
+const FREQUENCIES = ["daily", "weekly", "four_weekly", "monthly", "quarterly", "yearly"] as const;
 const BUDGET_TYPES = [
   { value: "nodig", key: "needs" },
   { value: "willen", key: "wants" },

@@ -1,13 +1,13 @@
 import { and, eq, gt, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, recurringItems, transactions } from "@/db/schema";
-import type { RecurringItem } from "@/db/schema";
 import { resolveRecurringIcon, resolveTransactionIcon } from "@/lib/auto-brand";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getBankBalances } from "@/lib/account-balances";
 import { getBillStatuses } from "@/lib/bill-status";
 import { getCashFlowWarningThreshold, getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
 import { currentFinancialMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
+import { occurrencesBetween } from "@/lib/recurring-occurrence";
 import {
   FORECAST_HORIZON_DAYS,
   firstShortPoint,
@@ -33,89 +33,6 @@ export * from "@/lib/cash-flow-forecast-shared";
 // once at least one account has a manually-set startingBalance. Without that the
 // projection starts at zero and everything downstream is *cumulative cash flow*, not
 // a balance — `hasStartingBalance` is what every UI surface keys its wording off.
-
-// ── Occurrence generation ────────────────────────────────────────────────────
-
-function daysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate();
-}
-
-function iso(year: number, month: number, day: number) {
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
-/**
- * Every date this recurring item is due within [from, to], respecting its own
- * start/end period. Month-based frequencies clamp their anchor day to the length
- * of each month (a 31st bill falls on the 30th in April).
- */
-function occurrencesFor(item: RecurringItem, from: string, to: string): string[] {
-  const start = item.startDate && item.startDate > from ? item.startDate : from;
-  const end = item.endDate && item.endDate < to ? item.endDate : to;
-  if (start > end) return [];
-
-  const dates: string[] = [];
-  const push = (date: string) => {
-    if (date >= start && date <= end) dates.push(date);
-  };
-
-  const anchorDay = item.dueDay ?? (item.startDate ? Number(item.startDate.slice(8, 10)) : 1);
-
-  switch (item.frequency) {
-    case "once": {
-      if (item.startDate) push(item.startDate);
-      break;
-    }
-    case "daily": {
-      for (let cursor = start; cursor <= end; cursor = shiftDate(cursor, 1)) push(cursor);
-      break;
-    }
-    case "weekly": {
-      // Walk forward from the anchor (the item's own start date when it has one, so
-      // the weekday is preserved) rather than from `start`.
-      let cursor = item.startDate ?? start;
-      while (cursor < start) cursor = shiftDate(cursor, 7);
-      for (; cursor <= end; cursor = shiftDate(cursor, 7)) push(cursor);
-      break;
-    }
-    case "quarterly":
-    case "yearly":
-    case "monthly":
-    default: {
-      const step = item.frequency === "quarterly" ? 3 : item.frequency === "yearly" ? 12 : 1;
-      // For multi-month steps the anchor month matters (a quarterly bill starting in
-      // February is due Feb/May/Aug/Nov); monthly items are due every month regardless.
-      const anchorMonth = item.startDate ? Number(item.startDate.slice(5, 7)) : 1;
-      const anchorYear = item.startDate ? Number(item.startDate.slice(0, 4)) : Number(from.slice(0, 4));
-
-      let year = Number(from.slice(0, 4));
-      let month = Number(from.slice(5, 7));
-      if (step > 1) {
-        // Snap to the first anchor-aligned month at or after `from`.
-        const fromIndex = year * 12 + (month - 1);
-        const anchorIndex = anchorYear * 12 + (anchorMonth - 1);
-        const stepsAhead = Math.max(0, Math.ceil((fromIndex - anchorIndex) / step));
-        const index = anchorIndex + stepsAhead * step;
-        year = Math.floor(index / 12);
-        month = (index % 12) + 1;
-      }
-
-      // +1 month of slack so an occurrence landing right after `to`'s month start
-      // isn't missed when the anchor day is early in the month.
-      while (iso(year, month, 1) <= end) {
-        push(iso(year, month, Math.min(anchorDay, daysInMonth(year, month))));
-        month += step;
-        while (month > 12) {
-          month -= 12;
-          year += 1;
-        }
-      }
-      break;
-    }
-  }
-
-  return dates;
-}
 
 // ── Forecast ─────────────────────────────────────────────────────────────────
 
@@ -205,7 +122,11 @@ export async function getCashFlowForecast(
   // 2. Projected recurring occurrences. Two double-count guards: an item already paid
   //    this financial month (matched or manually marked), and an item that already has
   //    a booked future transaction in the same calendar month.
-  const paidThisMonth = new Set(billStatuses.filter((s) => s.paid === true).map((s) => s.item.id));
+  // Weekly and four-weekly items have a status per due date: a paid date is skipped on
+  // its own, and once every date this month is paid the whole month is.
+  const paidDates = new Set(billStatuses.filter((s) => s.paid === true && s.dueDate).map((s) => `${s.item.id}|${s.dueDate}`));
+  const unpaidItems = new Set(billStatuses.filter((s) => s.paid !== true).map((s) => s.item.id));
+  const paidThisMonth = new Set(billStatuses.filter((s) => s.paid === true && !unpaidItems.has(s.item.id)).map((s) => s.item.id));
   const currentMonthKey = today.slice(0, 7);
 
   for (const item of items) {
@@ -213,8 +134,9 @@ export async function getCashFlowForecast(
     const isIncome = item.type === "income" || (item.categoryId != null && groupById.get(item.categoryId) === "income");
     const resolved = resolveRecurringIcon(item, categoriesById);
 
-    for (const date of occurrencesFor(item, from, to)) {
+    for (const date of occurrencesBetween(item, from, to)) {
       const monthKey = date.slice(0, 7);
+      if (paidDates.has(`${item.id}|${date}`)) continue;
       if (monthKey === currentMonthKey && paidThisMonth.has(item.id)) continue;
       if (bookedRecurringMonths.has(`${item.id}|${monthKey}`)) continue;
       events.push({

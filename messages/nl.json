@@ -2710,7 +2710,8 @@
       "weekly": "Wekelijks",
       "monthly": "Maandelijks",
       "quarterly": "Per kwartaal",
-      "yearly": "Jaarlijks"
+      "yearly": "Jaarlijks",
+      "four_weekly": "Elke 4 weken"
     },
     "endDate": "Stopt op een datum",
     "endHint": "Na deze datum zet de vaste last zichzelf uit.",
@@ -3398,7 +3399,8 @@
           "goal": "{current} van {target}",
           "goalBy": "{current} van {target} · {date}",
           "budget": "Maandbudget",
-          "subOf": "Onderdeel van {parent}"
+          "subOf": "Onderdeel van {parent}",
+          "four_weekly": "{amount} per vier weken"
         }
       },
       "override": {
@@ -3897,7 +3899,8 @@
       "monthly": "maandelijks",
       "quarterly": "per kwartaal",
       "yearly": "jaarlijks",
-      "once": "eenmalig"
+      "once": "eenmalig",
+      "four_weekly": "elke vier weken"
     },
     "merchantPicker": {
       "title": "Winkel",

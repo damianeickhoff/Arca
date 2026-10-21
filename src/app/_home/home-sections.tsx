@@ -304,7 +304,7 @@ export async function ComingUpCard({ bills, totalDue, today }: { bills: ComingUp
       ) : (
         <ul className="m-0 grid flex-1 list-none auto-rows-fr grid-cols-2 gap-2.5 p-0">
           {bills.map((b, i) => (
-            <li key={b.id} className={cn("flex min-w-0 flex-col justify-center gap-1 rounded-clear-tile bg-clear-tile p-3.5", spansRow(i, bills.length) && "col-span-2")}>
+            <li key={`${b.id}-${b.dueDate}`} className={cn("flex min-w-0 flex-col justify-center gap-1 rounded-clear-tile bg-clear-tile p-3.5", spansRow(i, bills.length) && "col-span-2")}>
               <span className="truncate text-[13px] text-clear-ink-2">{b.name}</span>
               <Amount
                 value={b.amount}

@@ -166,6 +166,7 @@ export function toMonthly(amount: number | null, frequency: string): number {
     case "yearly":    return amount / 12;
     case "quarterly": return amount / 3;
     case "weekly":    return amount * (52 / 12);
+    case "four_weekly": return amount * (13 / 12);
     case "daily":     return amount * (365 / 12);
     case "once":      return 0;
     default:       return amount; // monthly
