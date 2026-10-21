@@ -325,7 +325,7 @@ export async function FlowCard({
                 ? t.rich("leftPerDay", {
                     amount: formatEurWhole(hint.perDay),
                     days: hint.daysLeft,
-                    b: (chunks) => <b className="font-extrabold tabular-nums"><MoneyText>{chunks}</MoneyText></b>,
+                    b: (chunks) => <b className="font-bold tabular-nums"><MoneyText>{chunks}</MoneyText></b>,
                   })
                 : t("nothingLeft", { days: hint.daysLeft })}</MoneyText>
             </span>
@@ -369,7 +369,7 @@ export async function MerchantsCard({ merchants, allHref, spendingTotal }: { mer
     <ClearCard data-tip-anchor="insightsMerchants" aria-labelledby="insights-merchants-title" className="gap-3.5">
       <ClearCardHeader
         title={<span id="insights-merchants-title">{t("topMerchants")}</span>}
-        action={merchants.length > 0 ? <ClearCardLink href={allHref}>{t("viewAll")}</ClearCardLink> : undefined}
+        subtitle={merchants.length > 0 ? t("merchantsNote", { count: merchants.length, pct: sharePct }) : undefined}
       />
       {merchants.length === 0 ? (
         <p className="m-0 flex flex-1 items-center justify-center py-8 text-center text-sm text-clear-muted">{t("noMerchants")}</p>
@@ -380,8 +380,8 @@ export async function MerchantsCard({ merchants, allHref, spendingTotal }: { mer
               <Icon iconKey={m.icon} color={m.color ?? SERIES_COLORS[i % SERIES_COLORS.length]} initials={m.name.slice(0, 2).toUpperCase()} size="md" soft />
               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <span className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-[15px] font-bold">{m.name}</span>
-                  <span className="shrink-0 text-[15px] font-extrabold tabular-nums"><MoneyText>{formatEurWhole(m.total)}</MoneyText></span>
+                  <span className="truncate text-[15px] font-semibold">{m.name}</span>
+                  <span className="shrink-0 text-[15px] font-bold tabular-nums"><MoneyText>{formatEurWhole(m.total)}</MoneyText></span>
                 </span>
                 <span className="flex items-center gap-2.5">
                   <ClearProgress value={m.total / max} size="sm" className="flex-1" fillColor={m.color ?? undefined} />
@@ -393,10 +393,9 @@ export async function MerchantsCard({ merchants, allHref, spendingTotal }: { mer
         </ul>
       )}
       {merchants.length > 0 && (
-        <p className="m-0 mt-auto flex items-start gap-2.5 text-[13px] leading-normal text-clear-ink-2">
-          <IconInfoCircle size={18} stroke={1.9} aria-hidden className="mt-px shrink-0" />
-          {t("merchantsNote", { count: merchants.length, pct: sharePct })}
-        </p>
+        <ClearCardLink href={allHref} className="mt-auto self-start">
+          {t("allMerchants")}
+        </ClearCardLink>
       )}
     </ClearCard>
   );
@@ -417,7 +416,7 @@ export interface AccountRow {
 
 const ACCOUNT_TILES = 4;
 
-export async function AccountsCard({ accounts }: { accounts: AccountRow[] }) {
+export async function AccountsCard({ accounts, className }: { accounts: AccountRow[]; className?: string }) {
   const t = await getTranslations("insights.overview");
   const total = accounts.reduce((s, a) => s + a.total, 0);
   const colorOf = (a: AccountRow, i: number) => a.color ?? SERIES_COLORS[i % SERIES_COLORS.length];
@@ -430,7 +429,7 @@ export async function AccountsCard({ accounts }: { accounts: AccountRow[] }) {
   ];
 
   return (
-    <ClearCard aria-labelledby="insights-accounts-title">
+    <ClearCard aria-labelledby="insights-accounts-title" className={className}>
       <ClearCardHeader
         title={<span id="insights-accounts-title">{t("byAccount")}</span>}
         action={total > 0 ? <span className="text-sm font-bold text-clear-muted tabular-nums"><MoneyText>{t("spentTotal", { amount: formatEurWhole(total) })}</MoneyText></span> : undefined}
@@ -465,13 +464,13 @@ export async function AccountsCard({ accounts }: { accounts: AccountRow[] }) {
                 <ClearTile className="flex items-center gap-3 px-4 py-3.5">
                   <Icon iconKey={a.icon} color={colorOf(a, i)} initials={(a.name ?? "?").charAt(0).toUpperCase()} size="md" soft />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="truncate text-[15px] font-bold">{a.name ?? t("unknownAccount")}</span>
+                    <span className="truncate text-[15px] font-semibold">{a.name ?? t("unknownAccount")}</span>
                     <span className="truncate text-[13px] text-clear-muted">
                       {a.suffix ? `••${a.suffix} · ` : ""}
                       {t("transactionCount", { count: a.count })}
                     </span>
                   </span>
-                  <span className="shrink-0 text-[17px] font-extrabold tabular-nums"><MoneyText>{formatEurWhole(a.total)}</MoneyText></span>
+                  <span className="shrink-0 text-[17px] font-bold tabular-nums"><MoneyText>{formatEurWhole(a.total)}</MoneyText></span>
                 </ClearTile>
               </li>
             ))}
@@ -504,7 +503,8 @@ const HEAT = [
   "color-mix(in srgb, var(--clr-ember) 62%, var(--clr-card))",
   "var(--clr-ember)",
 ];
-const STILL_TO_COME = "repeating-linear-gradient(135deg, var(--clr-line) 0 3px, var(--clr-card) 3px 7px)";
+/** A day still to come: an empty cell with a dashed outline. */
+const STILL_TO_COME = "border-[1.5px] border-dashed border-clear-line bg-clear-card";
 /** Longer periods switch to a compact grid: weeks as columns, weekdays as rows. */
 const FULL_CALENDAR_DAYS = 42;
 
@@ -519,15 +519,22 @@ function heatLevel(spent: number, average: number) {
 
 export async function CalendarCard({
   days,
-  rangeLabel,
   avgPerDay,
+  prevAvgPerDay,
+  previousMonth,
   popularDay,
+  popularDayAvg,
   className,
 }: {
   days: CalendarDay[];
-  rangeLabel: string;
   avgPerDay: number;
+  /** Last period's spending per day; null when it had none. */
+  prevAvgPerDay: number | null;
+  /** The previous period's month name, or "none" ("last period"). */
+  previousMonth: string;
   popularDay: string | null;
+  /** What that weekday saw spent on average. */
+  popularDayAvg: number | null;
   className?: string;
 }) {
   const t = await getTranslations("insights.overview");
@@ -543,91 +550,104 @@ export async function CalendarCard({
 
   const cellTitle = (d: CalendarDay) =>
     `${dayFmt.format(new Date(`${d.date}T00:00:00`))} · ${d.future ? t("stillToCome") : formatEur(d.spent)}`;
-  const cellStyle = (d: CalendarDay): React.CSSProperties => ({
-    background: d.future ? STILL_TO_COME : HEAT[heatLevel(d.spent, avgPerDay)],
-  });
+  const cellStyle = (d: CalendarDay): React.CSSProperties | undefined => (d.future ? undefined : { background: HEAT[heatLevel(d.spent, avgPerDay)] });
 
+  // Wide from lg: the heatmap on the left, the two tiles on the right at the bottom.
   return (
-    <ClearCard aria-labelledby="insights-calendar-title" className={cn("gap-3.5", className)}>
-      <ClearCardHeader
-        title={<span id="insights-calendar-title">{t("calendar")}</span>}
-        action={<span className="text-sm font-semibold text-clear-muted">{rangeLabel}</span>}
-      />
-      {compact ? (
-        <div
-          role="img"
-          aria-label={t("calendarLabel")}
-          className="grid grid-flow-col grid-rows-7 gap-[3px]"
-          style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}
-        >
-          {Array.from({ length: lead }).map((_, i) => (
-            <span key={`blank-${i}`} />
-          ))}
-          {days.map((d) => (
-            <span
-              key={d.date}
-              title={cellTitle(d)}
-              className={cn("aspect-square rounded-[3px]", d.today && "ring-2 ring-inset ring-clear-ink")}
-              style={cellStyle(d)}
-            />
-          ))}
-        </div>
-      ) : (
-        <>
-          <div aria-hidden className="grid grid-cols-7 gap-1.5 text-center text-xs font-bold text-clear-muted">
-            {weekdays.map((w, i) => (
-              <span key={i} className="truncate">
-                {w}
+    <ClearCard aria-labelledby="insights-calendar-title" className={cn("gap-3.5 lg:grid lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-6", className)}>
+      <div className="flex min-w-0 flex-col gap-3.5">
+        <ClearCardHeader
+          title={<span id="insights-calendar-title">{t("calendar")}</span>}
+          subtitle={t("calendarHint")}
+          action={
+            <span aria-hidden className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-medium text-clear-muted">
+              <span className="inline-flex items-center gap-1">
+                {t("heatLess")}
+                {HEAT.map((bg) => (
+                  <span key={bg} className="size-3 rounded-[4px]" style={{ background: bg }} />
+                ))}
+                {t("heatMore")}
               </span>
-            ))}
-          </div>
-          <div role="img" aria-label={t("calendarLabel")} className="grid grid-cols-7 gap-1.5">
+              {hasFuture && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={cn("size-3 rounded-[4px]", STILL_TO_COME)} />
+                  {t("stillToCome")}
+                </span>
+              )}
+            </span>
+          }
+        />
+        {compact ? (
+          <div
+            role="img"
+            aria-label={t("calendarLabel")}
+            className="grid grid-flow-col grid-rows-7 gap-[3px]"
+            style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}
+          >
             {Array.from({ length: lead }).map((_, i) => (
               <span key={`blank-${i}`} />
             ))}
-            {days.map((d) => {
-              const level = d.future ? 0 : heatLevel(d.spent, avgPerDay);
-              return (
-                <span
-                  key={d.date}
-                  title={cellTitle(d)}
-                  className={cn(
-                    "flex h-[38px] items-center justify-center rounded-[10px] text-xs tabular-nums",
-                    d.future ? "font-semibold text-clear-muted" : level === 4 ? "font-semibold text-clear-ember-ink" : "font-semibold text-clear-ink",
-                    d.today && "font-extrabold ring-2 ring-inset ring-clear-ink",
-                  )}
-                  style={cellStyle(d)}
-                >
-                  {d.day}
-                </span>
-              );
-            })}
+            {days.map((d) => (
+              <span
+                key={d.date}
+                title={cellTitle(d)}
+                className={cn("aspect-square rounded-[3px]", d.future && STILL_TO_COME, d.today && "ring-2 ring-inset ring-clear-ink")}
+                style={cellStyle(d)}
+              />
+            ))}
           </div>
-        </>
-      )}
-      <div aria-hidden className="flex flex-wrap items-center justify-between gap-2.5 text-xs font-semibold text-clear-muted">
-        <span className="inline-flex items-center gap-1">
-          {t("heatLess")}
-          {HEAT.map((bg) => (
-            <span key={bg} className="size-3.5 rounded" style={{ background: bg }} />
-          ))}
-          {t("heatMore")}
-        </span>
-        {hasFuture && (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-3.5 rounded ring-1 ring-inset ring-clear-line" style={{ background: STILL_TO_COME }} />
-            {t("stillToCome")}
-          </span>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <div aria-hidden className="grid grid-cols-7 gap-1.5 text-center text-xs font-medium text-clear-muted">
+              {weekdays.map((w, i) => (
+                <span key={i} className="truncate">
+                  {w}
+                </span>
+              ))}
+            </div>
+            <div role="img" aria-label={t("calendarLabel")} className="grid grid-cols-7 gap-1.5">
+              {Array.from({ length: lead }).map((_, i) => (
+                <span key={`blank-${i}`} />
+              ))}
+              {days.map((d) => {
+                const level = d.future ? 0 : heatLevel(d.spent, avgPerDay);
+                return (
+                  <span
+                    key={d.date}
+                    title={cellTitle(d)}
+                    className={cn(
+                      "flex h-[38px] items-center justify-center rounded-[10px] text-xs font-semibold tabular-nums lg:h-auto lg:aspect-[2.2]",
+                      d.future ? cn(STILL_TO_COME, "text-clear-muted") : level === 4 ? "text-clear-ember-ink" : "text-clear-ink",
+                      d.today && "font-bold ring-2 ring-inset ring-clear-ink",
+                    )}
+                    style={cellStyle(d)}
+                  >
+                    {d.day}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
-      <div className="mt-auto grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 content-end gap-2.5 lg:self-stretch">
         <ClearTile className="flex flex-col gap-0.5 px-3.5 py-3">
           <span className="text-[13px] text-clear-ink-2">{t("avgExpense")}</span>
-          <Amount value={avgPerDay} className="text-lg tabular-nums" />
+          <Amount value={avgPerDay} className="text-lg font-bold! tabular-nums" />
+          {prevAvgPerDay != null && (
+            <span className="text-xs text-clear-muted">
+              <MoneyText>{t("calendarPrev", { amount: formatEurWhole(prevAvgPerDay), period: previousMonth })}</MoneyText>
+            </span>
+          )}
         </ClearTile>
         <ClearTile className="flex flex-col gap-0.5 px-3.5 py-3">
           <span className="text-[13px] text-clear-ink-2">{t("popularDay")}</span>
-          <span className="text-lg font-extrabold first-letter:uppercase">{popularDay ?? "—"}</span>
+          <span className="truncate text-lg font-bold first-letter:uppercase">{popularDay ?? "—"}</span>
+          {popularDayAvg != null && (
+            <span className="text-xs text-clear-muted">
+              <MoneyText>{t("popularAvg", { amount: formatEurWhole(popularDayAvg) })}</MoneyText>
+            </span>
+          )}
         </ClearTile>
       </div>
     </ClearCard>

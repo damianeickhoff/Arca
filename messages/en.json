@@ -1359,7 +1359,7 @@
     },
     "insightsMerchants": {
       "title": "Where the money went",
-      "body": "Your biggest merchants this period, with how many visits made up each total. The spending by account sits next to it."
+      "body": "Your biggest merchants this period, with how many visits made up each total."
     },
     "insightsNeedsWants": {
       "title": "Needs and wants, month by month",
@@ -1488,6 +1488,14 @@
     "insightsGroupSwitch": {
       "title": "Spending by group",
       "body": "See what a whole group cost, like everything for the house, or switch to Categories for the details."
+    },
+    "insightsRunningTotal": {
+      "title": "Your month as a line",
+      "body": "The white line is what you spent so far, day by day. The faded one is last period, the dotted one where this pace ends, and the orange line is your budget."
+    },
+    "insightsBlockMap": {
+      "title": "Area is money",
+      "body": "The bigger the block, the more that group cost, with the change since last period. Tap a block for the categories in it."
     },
     "accountsOverdraft": {
       "title": "Accounts that may go into the red",
@@ -2856,7 +2864,6 @@
       "forecast": "Forecast",
       "health": "Health"
     },
-    "vsLastPeriod": "vs last period",
     "forecastPoint": "forecast",
     "subtitle": {
       "overview": "Overview · {period}",
@@ -2904,9 +2911,8 @@
       "income": "Income",
       "expenses": "Expenses",
       "saved": "Saved",
-      "ofIncome": "of income",
       "largest": "Largest expense",
-      "largestWhere": "{name}, {date}",
+      "largestWhere": "{name} · {date}",
       "avgPerDay": "Average per day",
       "spending": "Spending",
       "incomeShort": "Income",
@@ -2953,6 +2959,9 @@
       "popularDay": "Popular day",
       "calendar": "Calendar",
       "calendarLabel": "Spending per day in this period, darker on busier days",
+      "calendarHint": "Spending per day · darker is more",
+      "calendarPrev": "{amount} {period, select, none {last period} other {in {period}}}",
+      "popularAvg": "{amount} on average",
       "stillToCome": "Still to come",
       "heatLess": "Less",
       "heatMore": "More",
@@ -2963,7 +2972,7 @@
       "details": "Details",
       "other": "Other",
       "moreCount": "{count} more",
-      "viewAll": "View all",
+      "allMerchants": "All merchants",
       "empty": {
         "title": "Insights need a little history",
         "body": "Once a month of transactions is in, you'll see where your money goes, your trends and a forecast of the weeks ahead.",
@@ -2985,18 +2994,44 @@
       "categories": "Categories",
       "rangeDaysLeft": "{range} · {count, plural, one {# day left} other {# days left}}",
       "merchantsNote": "{count, plural, one {This merchant makes} other {These # merchants make}} up {pct}% of your spending this period.",
+      "hero": {
+        "soFarMonth": "So far this month",
+        "soFarPeriod": "So far this period",
+        "thisPeriod": "This period",
+        "spent": "spent",
+        "lessSoFar": "{amount} less than {period, select, none {last period} other {{period}}} at this point",
+        "moreSoFar": "{amount} more than {period, select, none {last period} other {{period}}} at this point",
+        "sameSoFar": "Same as {period, select, none {last period} other {{period}}} at this point",
+        "less": "{amount} less than {period, select, none {last period} other {{period}}}",
+        "more": "{amount} more than {period, select, none {last period} other {{period}}}",
+        "same": "Same as {period, select, none {last period} other {{period}}}",
+        "pace": "At this pace {period, select, none {the period} other {{period}}} ends around <b>{amount}</b>.",
+        "paceInside": "At this pace {period, select, none {the period} other {{period}}} ends around <b>{amount}</b>, inside the {budget} budget.",
+        "paceOver": "At this pace {period, select, none {the period} other {{period}}} ends around <b>{amount}</b>, {over} over the {budget} budget.",
+        "today": "today",
+        "budgetLine": "{date} · budget line",
+        "chartLabel": "Spending added up day by day: {spent} so far{previous, select, none {} other {, against {previous} in the previous period by the same day}}{projected, select, none {} other {, heading for about {projected}}}.",
+        "incomeVs": "{change} vs {period, select, none {last period} other {{period}}}",
+        "incomeSame": "same as {period, select, none {last period} other {{period}}}",
+        "savedShare": "{pct}% of income",
+        "leftToSpend": "Left to spend",
+        "perDayDays": "{amount} a day · {count, plural, one {# day} other {# days}}",
+        "daysToGo": "{count, plural, one {# day} other {# days}} to go",
+        "overDays": "over {count, plural, one {# day} other {# days}}"
+      },
       "breakdown": {
-        "subtitleSpending": "Where the money went this period",
-        "subtitleIncome": "Where the money came from this period",
+        "titleSpending": "Where it went",
+        "titleIncome": "Where it came from",
+        "blocksHint": "Area is money · tap a block for its categories",
+        "rowsHint": "Biggest first · tap a row for its details",
+        "sameAs": "same as {period, select, none {last period} other {{period}}}",
+        "noCategory": "{amount} still has no category",
+        "sortCount": "Sort {count, plural, one {# transaction} other {# transactions}}",
         "spentSoFar": "spent so far",
         "spent": "spent",
         "received": "received",
-        "groups": "{count, plural, =0 {only Other} one {# group} other {# groups}}{other, select, yes { and Other} other {}}",
         "categories": "{count, plural, =0 {only Other} one {# category} other {# categories}}{other, select, yes { and Other} other {}}",
-        "stripLabel": "Share of the total: {parts}",
-        "otherCalloutGroup": "Other is {pct}% of this period: {count, plural, one {# transaction} other {# transactions}} without a group.",
-        "otherCalloutCategory": "Other is {pct}% of this period: {count, plural, one {# transaction} other {# transactions}} without a category.",
-        "sortThem": "Sort them in Needs review"
+        "stripLabel": "Share of the total: {parts}"
       }
     },
     "trends": {
@@ -3466,9 +3501,8 @@
     },
     "summary": {
       "title": "Summary",
-      "titleOngoing": "This period so far",
-      "titleDone": "This period",
-      "written": "Written by Gemini · {date}",
+      "aiChip": "AI",
+      "written": "Written {time}",
       "write": "Write with Gemini",
       "rewrite": "Rewrite",
       "writing": "Writing…",

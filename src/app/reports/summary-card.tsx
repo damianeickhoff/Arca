@@ -3,23 +3,33 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { IconActivity, IconRefresh, IconSparkles } from "@tabler/icons-react";
-import { ClearCard } from "@/components/clear/card";
-import { IconTile } from "@/components/clear/icon-tile";
-import { clearButtonVariants } from "@/components/clear/button-variants";
+import { ClearCard, ClearCardHeader } from "@/components/clear/card";
+import { ClearChip } from "@/components/clear/chip";
 import { MoneyText } from "@/components/clear/money";
 import { summarizePeriodAction } from "@/app/actions/ai";
 import { balanceOf, type PeriodSummary, type SummaryFacts } from "@/lib/period-facts";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const strong = (chunks: React.ReactNode) => <b className="font-extrabold">{chunks}</b>;
+const strong = (chunks: React.ReactNode) => <b className="font-bold">{chunks}</b>;
+
+/** "2 hours ago": how long ago a summary was written, in the reader's language. */
+function writtenAgo(createdAt: string, locale: string): string {
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  const minutes = Math.max(1, Math.round((Date.now() - new Date(createdAt).getTime()) / 60_000));
+  if (minutes < 60) return rtf.format(-minutes, "minute");
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return rtf.format(-hours, "hour");
+  return rtf.format(-Math.round(hours / 24), "day");
+}
 
 /**
  * Insights › Overview's summary: a headline, three facts and a budgeting tip. With AI on
  * Gemini writes them (only when asked, free-tier quota, kept until rewritten) from the
  * figures this page shows (`facts`); before that, and with AI off, the card shows the
- * same facts as the app computes them, without any prose.
+ * same facts as the app computes them, without any prose. Either way the card has one
+ * shape that fills its height: the facts take the free space, the tip and the footer
+ * line ("Written 2 hours ago · Rewrite", or the way to Settings › AI) sit at the bottom.
  */
 export function SummaryCard({
   facts,
@@ -62,31 +72,23 @@ export function SummaryCard({
   }
 
   const written = aiReady && summary ? summary : null;
-  const writtenAt = written
-    ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(written.createdAt))
-    : null;
+  const action = "cursor-pointer text-[13px] font-semibold text-clear-ember-text no-underline hover:underline disabled:cursor-default disabled:opacity-60";
 
   return (
     <ClearCard aria-labelledby="summary-title" data-tip-anchor="insightsSummary" className={cn("gap-3.5", className)}>
-      <div className="flex items-center gap-2.5">
-        <IconTile tone={aiReady ? "lilac" : "stone"} size="sm">
-          {aiReady ? <IconSparkles stroke={2} /> : <IconActivity stroke={2} />}
-        </IconTile>
-        <div className="flex min-w-0 flex-col">
-          <h2 id="summary-title" className="m-0 text-lg font-bold">
-            {aiReady ? t("title") : facts.ongoing ? t("titleOngoing") : t("titleDone")}
-          </h2>
-          <span className="text-xs text-clear-muted">{writtenAt ? t("written", { date: writtenAt }) : subtitle}</span>
-        </div>
-      </div>
+      <ClearCardHeader
+        title={<span id="summary-title">{t("title")}</span>}
+        subtitle={subtitle}
+        action={aiReady ? <ClearChip tone="lilac" className="h-6 px-2.5 text-xs font-semibold">{t("aiChip")}</ClearChip> : undefined}
+      />
 
       {written ? (
         <>
-          <p className="m-0 text-base leading-snug font-bold text-pretty">
+          <p className="m-0 text-base leading-snug font-semibold text-pretty">
             <MoneyText>{written.headline}</MoneyText>
           </p>
           <FactList items={written.facts.map((f) => <MoneyText key={f}>{f}</MoneyText>)} />
-          <p className="m-0 rounded-clear-tile bg-clear-butter px-3.5 py-3 text-sm leading-snug font-semibold text-clear-butter-ink">
+          <p className="m-0 rounded-clear-tile bg-clear-butter px-3.5 py-3 text-sm leading-snug font-medium text-clear-butter-ink">
             <MoneyText>{written.tip}</MoneyText>
           </p>
         </>
@@ -96,15 +98,14 @@ export function SummaryCard({
 
       {error && <p role="alert" className="m-0 text-[13px] font-semibold text-clear-negative">{error}</p>}
 
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-clear-muted">
-        <span>{aiReady ? t("footAi") : t("footComputed")}</span>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-clear-muted">
+        <span suppressHydrationWarning>{written ? t("written", { time: writtenAgo(written.createdAt, locale) }) : aiReady ? t("footAi") : t("footComputed")}</span>
         {aiReady ? (
-          <button type="button" onClick={write} disabled={busy} className={clearButtonVariants({ variant: written ? "secondary" : "primary", size: "sm" })}>
-            {written ? <IconRefresh aria-hidden /> : <IconSparkles aria-hidden />}
+          <button type="button" onClick={write} disabled={busy} className={action}>
             {busy ? t("writing") : written ? t("rewrite") : t("write")}
           </button>
         ) : (
-          <Link href="/settings?panel=ai" className="font-bold text-clear-ember-text no-underline hover:underline">
+          <Link href="/settings?panel=ai" className={action}>
             {t("switchOn")}
           </Link>
         )}
@@ -116,9 +117,9 @@ export function SummaryCard({
 /** Three numbered rows; amounts in them stand out in bold ink. */
 function FactList({ items }: { items: React.ReactNode[] }) {
   return (
-    <ol className="m-0 flex list-none flex-col gap-2 p-0">
+    <ol className="m-0 flex flex-1 list-none flex-col gap-2 p-0">
       {items.map((item, i) => (
-        <li key={i} className="flex gap-2.5 text-sm leading-snug text-clear-ink-2 [&_.money-swap]:font-extrabold [&_.money-swap]:whitespace-nowrap [&_.money-swap]:text-clear-ink [&_b]:text-clear-ink">
+        <li key={i} className="flex gap-2.5 text-sm leading-snug text-clear-ink-2 [&_.money-swap]:font-bold [&_.money-swap]:whitespace-nowrap [&_.money-swap]:text-clear-ink [&_b]:text-clear-ink">
           <span aria-hidden className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-clear-tile text-xs font-bold text-clear-ink">
             {i + 1}
           </span>
@@ -161,7 +162,7 @@ function ComputedFacts({ facts }: { facts: SummaryFacts }) {
   return (
     <>
       <FactList items={items} />
-      <p className="m-0 rounded-clear-tile bg-clear-mint px-3.5 py-3 text-sm leading-snug font-semibold text-clear-mint-ink">
+      <p className="m-0 rounded-clear-tile bg-clear-mint px-3.5 py-3 text-sm leading-snug font-medium text-clear-mint-ink">
         <MoneyText>
           {left
             ? left.amount > 0

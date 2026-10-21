@@ -1359,7 +1359,7 @@
     },
     "insightsMerchants": {
       "title": "Waar het geld naartoe ging",
-      "body": "Je grootste winkels deze periode, met hoeveel bezoeken elk totaal vormden. Daarnaast staan je uitgaven per rekening."
+      "body": "Je grootste winkels deze periode, met hoeveel bezoeken elk totaal vormden."
     },
     "insightsNeedsWants": {
       "title": "Nodig en willen, per maand",
@@ -1488,6 +1488,14 @@
     "insightsGroupSwitch": {
       "title": "Uitgaven per groep",
       "body": "Zie wat een hele groep kostte, zoals alles voor het huis, of schakel naar Categorieën voor de details."
+    },
+    "insightsRunningTotal": {
+      "title": "Je maand als lijn",
+      "body": "De witte lijn is wat je tot nu toe uitgaf, dag voor dag. De vage lijn is vorige periode, de stippellijn waar dit tempo eindigt en de oranje lijn je budget."
+    },
+    "insightsBlockMap": {
+      "title": "Oppervlak is geld",
+      "body": "Hoe groter het blok, hoe meer die groep kostte, met het verschil met vorige periode. Tik op een blok voor de categorieën erin."
     },
     "accountsOverdraft": {
       "title": "Rekeningen die rood mogen staan",
@@ -2856,7 +2864,6 @@
       "forecast": "Prognose",
       "health": "Gezondheid"
     },
-    "vsLastPeriod": "t.o.v. vorige periode",
     "forecastPoint": "prognose",
     "subtitle": {
       "overview": "Overzicht · {period}",
@@ -2904,9 +2911,8 @@
       "income": "Inkomen",
       "expenses": "Uitgaven",
       "saved": "Gespaard",
-      "ofIncome": "van je inkomen",
       "largest": "Grootste uitgave",
-      "largestWhere": "{name}, {date}",
+      "largestWhere": "{name} · {date}",
       "avgPerDay": "Gemiddeld per dag",
       "spending": "Uitgaven",
       "incomeShort": "Inkomen",
@@ -2953,6 +2959,9 @@
       "popularDay": "Populaire dag",
       "calendar": "Kalender",
       "calendarLabel": "Uitgaven per dag in deze periode, donkerder op drukkere dagen",
+      "calendarHint": "Uitgaven per dag · donkerder is meer",
+      "calendarPrev": "{amount} {period, select, none {vorige periode} other {in {period}}}",
+      "popularAvg": "gemiddeld {amount}",
       "stillToCome": "Nog te gaan",
       "heatLess": "Minder",
       "heatMore": "Meer",
@@ -2963,7 +2972,7 @@
       "details": "Details",
       "other": "Overig",
       "moreCount": "Nog {count}",
-      "viewAll": "Alles tonen",
+      "allMerchants": "Alle winkels",
       "empty": {
         "title": "Inzichten hebben wat geschiedenis nodig",
         "body": "Zodra er een maand aan transacties in staat, zie je waar je geld naartoe gaat, je trends en een prognose van de komende weken.",
@@ -2985,18 +2994,44 @@
       "categories": "Categorieën",
       "rangeDaysLeft": "{range} · nog {count, plural, one {# dag} other {# dagen}}",
       "merchantsNote": "{count, plural, one {Deze winkel is} other {Deze # winkels zijn}} samen {pct}% van je uitgaven deze periode.",
+      "hero": {
+        "soFarMonth": "Deze maand tot nu toe",
+        "soFarPeriod": "Deze periode tot nu toe",
+        "thisPeriod": "Deze periode",
+        "spent": "uitgegeven",
+        "lessSoFar": "{amount} minder dan {period, select, none {vorige periode} other {in {period}}} rond deze tijd",
+        "moreSoFar": "{amount} meer dan {period, select, none {vorige periode} other {in {period}}} rond deze tijd",
+        "sameSoFar": "Net zoveel als {period, select, none {vorige periode} other {in {period}}} rond deze tijd",
+        "less": "{amount} minder dan {period, select, none {vorige periode} other {in {period}}}",
+        "more": "{amount} meer dan {period, select, none {vorige periode} other {in {period}}}",
+        "same": "Net zoveel als {period, select, none {vorige periode} other {in {period}}}",
+        "pace": "In dit tempo eindigt {period, select, none {de periode} other {{period}}} rond <b>{amount}</b>.",
+        "paceInside": "In dit tempo eindigt {period, select, none {de periode} other {{period}}} rond <b>{amount}</b>, binnen het budget van {budget}.",
+        "paceOver": "In dit tempo eindigt {period, select, none {de periode} other {{period}}} rond <b>{amount}</b>, {over} boven het budget van {budget}.",
+        "today": "vandaag",
+        "budgetLine": "{date} · budgetlijn",
+        "chartLabel": "Uitgaven dag voor dag opgeteld: {spent} tot nu toe{previous, select, none {} other {, tegen {previous} in de vorige periode op dezelfde dag}}{projected, select, none {} other {, op weg naar zo'n {projected}}}.",
+        "incomeVs": "{change} t.o.v. {period, select, none {vorige periode} other {{period}}}",
+        "incomeSame": "gelijk aan {period, select, none {vorige periode} other {{period}}}",
+        "savedShare": "{pct}% van je inkomen",
+        "leftToSpend": "Nog te besteden",
+        "perDayDays": "{amount} per dag · {count, plural, one {# dag} other {# dagen}}",
+        "daysToGo": "nog {count, plural, one {# dag} other {# dagen}}",
+        "overDays": "over {count, plural, one {# dag} other {# dagen}}"
+      },
       "breakdown": {
-        "subtitleSpending": "Waar het geld deze periode naartoe ging",
-        "subtitleIncome": "Waar het geld deze periode vandaan kwam",
+        "titleSpending": "Waar het naartoe ging",
+        "titleIncome": "Waar het vandaan kwam",
+        "blocksHint": "Oppervlak is geld · tik op een blok voor de categorieën",
+        "rowsHint": "Grootste eerst · tik op een rij voor de details",
+        "sameAs": "gelijk aan {period, select, none {vorige periode} other {{period}}}",
+        "noCategory": "{amount} heeft nog geen categorie",
+        "sortCount": "Sorteer {count, plural, one {# transactie} other {# transacties}}",
         "spentSoFar": "tot nu toe uitgegeven",
         "spent": "uitgegeven",
         "received": "ontvangen",
-        "groups": "{count, plural, =0 {alleen Overig} one {# groep} other {# groepen}}{other, select, yes { en Overig} other {}}",
         "categories": "{count, plural, =0 {alleen Overig} one {# categorie} other {# categorieën}}{other, select, yes { en Overig} other {}}",
-        "stripLabel": "Aandeel in het totaal: {parts}",
-        "otherCalloutGroup": "Overig is {pct}% van deze periode: {count, plural, one {# transactie} other {# transacties}} zonder groep.",
-        "otherCalloutCategory": "Overig is {pct}% van deze periode: {count, plural, one {# transactie} other {# transacties}} zonder categorie.",
-        "sortThem": "Sorteer ze in Te beoordelen"
+        "stripLabel": "Aandeel in het totaal: {parts}"
       }
     },
     "trends": {
@@ -3466,9 +3501,8 @@
     },
     "summary": {
       "title": "Samenvatting",
-      "titleOngoing": "Deze periode tot nu toe",
-      "titleDone": "Deze periode",
-      "written": "Geschreven door Gemini · {date}",
+      "aiChip": "AI",
+      "written": "Geschreven {time}",
       "write": "Laat Gemini schrijven",
       "rewrite": "Opnieuw schrijven",
       "writing": "Schrijven…",

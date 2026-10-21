@@ -57,6 +57,7 @@ import {
   IconFingerprint,
   IconFlask,
   IconHistory,
+  IconLayoutGrid,
 } from "@tabler/icons-react";
 
 import type { TipId } from "@/lib/tips";
@@ -171,6 +172,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   userInvites: IconUserPlus,
   recurringSuggestions: IconSparkles,
   recurringScan: IconRepeat,
+  insightsRunningTotal: IconChartLine,
+  insightsBlockMap: IconLayoutGrid,
 };
 
 /**

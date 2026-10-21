@@ -1,11 +1,10 @@
-// The figures behind Insights › Overview's summary card — pure, so they can be tested
-// and shared: the card shows them as they are when AI is off, and Gemini gets exactly
-// these when it is on ("AI explains, the app computes").
+// The figures behind Insights › Overview — pure, so they can be tested and shared: the
+// hero's running totals and projection, the block map's layout, and the summary card's
+// facts, which the card shows as they are when AI is off and Gemini gets exactly when
+// it is on ("AI explains, the app computes").
 
+import { daysInclusive, shiftDate } from "@/lib/date-range";
 import { roundToCents } from "@/lib/transaction-splits";
-
-/** Above this share of the total, "Other" gets its own callout. */
-export const OTHER_CALLOUT_SHARE = 0.3;
 
 /** The average per day over `days` days (at least one), in cents. */
 export function averagePerDay(total: number, days: number): number {
@@ -23,9 +22,101 @@ export function withOther<T extends { spent: number }>(rows: T[], total: number)
   return { rows: sorted, other, otherShare: total > 0 ? other / total : 0 };
 }
 
-/** Whether Other is big enough to point at Needs review. */
-export function showOtherCallout(otherShare: number, uncategorised: number): boolean {
-  return otherShare > OTHER_CALLOUT_SHARE && uncategorised > 0;
+/** Spending day by day as a running total, this period against the one before it. */
+export interface RunningTotals {
+  /** Days in the period. */
+  days: number;
+  /** Days of the period up to and including today; every day once it is over, none
+   *  before it starts. */
+  elapsed: number;
+  /** This period's running total at the end of each day so far (`elapsed` entries). */
+  current: number[];
+  /** The previous period's running total, aligned by day index (`days` entries). */
+  previous: number[];
+  /** Where the period ends at the daily average so far; null unless it is running. */
+  projected: number | null;
+  /** The previous period's total by the same day; null when it had no spending or
+   *  this period has no days yet. */
+  previousAtSameDay: number | null;
+  /** This period minus the previous one by the same day; null without a previous. */
+  difference: number | null;
+}
+
+/**
+ * Running totals for the hero's line chart. The previous period is the one of the
+ * same length right before `from`, so day 1 is compared with day 1. The projection is
+ * linear: the average per day so far, carried on to the last day.
+ */
+export function runningTotals(input: {
+  from: string;
+  to: string;
+  today: string;
+  /** Spending per date in this period. */
+  daily: ReadonlyMap<string, number>;
+  /** Spending per date in the previous period. */
+  previousDaily: ReadonlyMap<string, number>;
+}): RunningTotals {
+  const { from, to, today } = input;
+  const days = Math.max(1, daysInclusive(from, to));
+  const elapsed = today < from ? 0 : today > to ? days : daysInclusive(from, today);
+  const prevFrom = shiftDate(from, -days);
+
+  const accumulate = (start: string, count: number, map: ReadonlyMap<string, number>) => {
+    const out: number[] = [];
+    let total = 0;
+    for (let i = 0; i < count; i++) {
+      total += map.get(shiftDate(start, i)) ?? 0;
+      out.push(roundToCents(total));
+    }
+    return out;
+  };
+  const current = accumulate(from, elapsed, input.daily);
+  const previous = accumulate(prevFrom, days, input.previousDaily);
+
+  const spent = current[elapsed - 1] ?? 0;
+  const running = from <= today && today <= to;
+  const projected = running ? roundToCents((spent / elapsed) * days) : null;
+  const previousAtSameDay = elapsed > 0 && previous[days - 1] > 0 ? previous[elapsed - 1] : null;
+  return {
+    days,
+    elapsed,
+    current,
+    previous,
+    projected,
+    previousAtSameDay,
+    difference: previousAtSameDay != null ? roundToCents(spent - previousAtSameDay) : null,
+  };
+}
+
+/**
+ * The month a period stands for, as YYYY-MM, when it is about a month long (a calendar
+ * month or a budget period from payday to payday): the month its middle day falls in.
+ * Null for weeks, quarters and other ranges, which are called "the period" instead.
+ */
+export function monthOfPeriod(from: string, to: string): string | null {
+  const days = daysInclusive(from, to);
+  if (days < 28 || days > 31) return null;
+  return shiftDate(from, Math.floor((days - 1) / 2)).slice(0, 7);
+}
+
+/**
+ * The block map's layout ("area is money"): the largest block is a column of its own
+ * over the full height; the others share the rest in two rows, each block going to the
+ * row with the smaller total so far, which keeps the two rows about equally tall.
+ * Blocks without money are left out; a single block left over gets the whole height.
+ */
+export function blockMapLayout<T extends { value: number }>(blocks: readonly T[]): { lead: T | null; rows: T[][] } {
+  const [lead, ...rest] = blocks.filter((b) => b.value > 0).sort((a, b) => b.value - a.value);
+  if (!lead) return { lead: null, rows: [] };
+  if (rest.length <= 1) return { lead, rows: rest.length ? [rest] : [] };
+  const rows: T[][] = [[], []];
+  const sums = [0, 0];
+  for (const b of rest) {
+    const i = sums[0] <= sums[1] ? 0 : 1;
+    rows[i].push(b);
+    sums[i] += b.value;
+  }
+  return { lead, rows };
 }
 
 /** Spending against income: ahead of it, within it, or no income at all yet. */

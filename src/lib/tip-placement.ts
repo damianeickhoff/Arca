@@ -57,6 +57,8 @@ export type TipAnchor =
   | "insightsComingUp"
   | "insightsForecastRange"
   | "insightsNetWorthRange"
+  | "insightsRunningTotal"
+  | "insightsBlockMap"
   // Redesigned Goals
   | "goalsContributions"
   | "goalsDetail"

@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   averagePerDay,
   balanceOf,
+  blockMapLayout,
   buildSummaryFacts,
-  showOtherCallout,
+  monthOfPeriod,
+  runningTotals,
   toPeriodSummary,
   withOther,
   type SummaryInput,
@@ -44,11 +46,100 @@ describe("withOther", () => {
   });
 });
 
-describe("showOtherCallout", () => {
-  it("only shows above 30% and with transactions to sort", () => {
-    expect(showOtherCallout(0.52, 38)).toBe(true);
-    expect(showOtherCallout(0.3, 38)).toBe(false);
-    expect(showOtherCallout(0.52, 0)).toBe(false);
+describe("runningTotals", () => {
+  // October (31 days) on the 20th; the previous period is 31 days before it, 31 Aug – 30 Sep.
+  const daily = new Map([
+    ["2026-10-01", 100],
+    ["2026-10-05", 50.5],
+    ["2026-10-20", 49.5],
+    ["2026-10-25", 999], // after today: never part of "so far"
+  ]);
+  const previousDaily = new Map([
+    ["2026-08-31", 80], // day 1 of the previous period
+    ["2026-09-10", 170], // day 11
+    ["2026-09-25", 300], // day 26
+  ]);
+  const base = { from: "2026-10-01", to: "2026-10-31", today: "2026-10-20", daily, previousDaily };
+
+  it("adds up this period day by day up to today", () => {
+    const r = runningTotals(base);
+    expect(r.days).toBe(31);
+    expect(r.elapsed).toBe(20);
+    expect(r.current).toHaveLength(20);
+    expect(r.current[0]).toBe(100);
+    expect(r.current[4]).toBe(150.5);
+    expect(r.current[19]).toBe(200);
+  });
+
+  it("aligns the previous period by day index", () => {
+    const r = runningTotals(base);
+    expect(r.previous).toHaveLength(31);
+    expect(r.previous[0]).toBe(80);
+    expect(r.previous[10]).toBe(250);
+    expect(r.previous[30]).toBe(550);
+  });
+
+  it("compares with the previous period by the same day", () => {
+    const r = runningTotals(base);
+    expect(r.previousAtSameDay).toBe(250);
+    expect(r.difference).toBe(-50);
+  });
+
+  it("projects the daily average so far to the last day", () => {
+    expect(runningTotals(base).projected).toBe(310);
+  });
+
+  it("has no projection once the period is over, and compares whole periods", () => {
+    const r = runningTotals({ ...base, today: "2026-11-03" });
+    expect(r.elapsed).toBe(31);
+    expect(r.projected).toBeNull();
+    expect(r.current[30]).toBe(1199);
+    expect(r.previousAtSameDay).toBe(550);
+    expect(r.difference).toBe(649);
+  });
+
+  it("has nothing to compare with before the period starts or without previous spending", () => {
+    const before = runningTotals({ ...base, today: "2026-09-15" });
+    expect(before.elapsed).toBe(0);
+    expect(before.current).toEqual([]);
+    expect(before.projected).toBeNull();
+    expect(before.previousAtSameDay).toBeNull();
+    const noPrevious = runningTotals({ ...base, previousDaily: new Map() });
+    expect(noPrevious.previousAtSameDay).toBeNull();
+    expect(noPrevious.difference).toBeNull();
+  });
+});
+
+describe("monthOfPeriod", () => {
+  it("names calendar months and budget periods by their middle day", () => {
+    expect(monthOfPeriod("2026-10-01", "2026-10-31")).toBe("2026-10");
+    expect(monthOfPeriod("2026-02-01", "2026-02-28")).toBe("2026-02");
+    expect(monthOfPeriod("2026-09-23", "2026-10-22")).toBe("2026-10");
+    expect(monthOfPeriod("2026-09-08", "2026-10-07")).toBe("2026-09");
+  });
+
+  it("has no month for weeks, quarters or other ranges", () => {
+    expect(monthOfPeriod("2026-10-01", "2026-10-07")).toBeNull();
+    expect(monthOfPeriod("2026-07-01", "2026-09-30")).toBeNull();
+  });
+});
+
+describe("blockMapLayout", () => {
+  const b = (name: string, value: number) => ({ name, value });
+
+  it("puts the largest block in its own column and balances the rest over two rows", () => {
+    const { lead, rows } = blockMapLayout([b("Transport", 167), b("Housing", 501), b("Shopping", 237), b("Food", 306), b("Subscriptions", 111)]);
+    expect(lead?.name).toBe("Housing");
+    expect(rows.map((r) => r.map((x) => x.name))).toEqual([
+      ["Food", "Subscriptions"],
+      ["Shopping", "Transport"],
+    ]);
+  });
+
+  it("gives a single remaining block the full height and leaves out empty ones", () => {
+    expect(blockMapLayout([b("A", 10), b("B", 4), b("C", 0)])).toEqual({ lead: b("A", 10), rows: [[b("B", 4)]] });
+    expect(blockMapLayout([b("A", 10)])).toEqual({ lead: b("A", 10), rows: [] });
+    expect(blockMapLayout([b("A", 0)])).toEqual({ lead: null, rows: [] });
   });
 });
 

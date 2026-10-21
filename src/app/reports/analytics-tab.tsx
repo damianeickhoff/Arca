@@ -3,7 +3,6 @@ import { db } from "@/db";
 import { transactions, categories, banks, merchants } from "@/db/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { getLocale, getTranslations } from "next-intl/server";
-import { IconBuildingStore, IconCoins, IconShoppingBag, IconTarget } from "@tabler/icons-react";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
@@ -12,14 +11,12 @@ import { getBudgetRecurringMode } from "@/lib/app-settings";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { safeToSpend } from "@/lib/safe-to-spend";
 import { currentFinancialMonth, daysInclusive, shiftDate, todayStr, type FinancialMonthConfig } from "@/lib/date-range";
-import { Amount } from "@/components/clear/amount";
-import { ClearChip } from "@/components/clear/chip";
-import { Icon } from "@/components/icon";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { isAiReady } from "@/lib/gemini";
 import { getCachedSummary } from "@/lib/ai-features";
-import { averagePerDay, buildSummaryFacts } from "@/lib/period-facts";
+import { averagePerDay, buildSummaryFacts, monthOfPeriod, runningTotals } from "@/lib/period-facts";
 import { SummaryCard } from "./summary-card";
+import { OverviewHero, type PeriodName } from "./overview-hero";
 import type { CategorySpendCard } from "@/components/category-spending-row";
 import { CategoryBreakdownCard } from "./category-breakdown-card";
 import { PeriodSelector } from "./period-selector";
@@ -27,10 +24,8 @@ import { AnalyticsFilterBar } from "./analytics-filter-bar";
 import {
   AccountsCard,
   CalendarCard,
-  ChangeChip,
   EmptyOverview,
   FlowCard,
-  KpiCard,
   MerchantsCard,
   change,
   type AccountRow,
@@ -165,6 +160,10 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     const map = r.direction === "expense" ? dailyExpense : dailyIncome;
     map.set(r.date, (map.get(r.date) ?? 0) + r.amount);
   }
+  const prevDailyExpense = new Map<string, number>();
+  for (const r of prevRelevant) if (r.direction === "expense") prevDailyExpense.set(r.date, (prevDailyExpense.get(r.date) ?? 0) + r.amount);
+  // The hero's line: this period and the previous one added up day by day.
+  const totals = runningTotals({ from, to, today, daily: dailyExpense, previousDaily: prevDailyExpense });
 
   // Bills still due, by due date — expenses only, and only when they can belong to the
   // selection (no account is known for a bill, so an account filter leaves them out).
@@ -196,6 +195,9 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
 
   // Safe to spend for the rest of the budget period, while the period on screen runs.
   let hint: SafeToSpendHint | null = null;
+  // The budget the hero compares the projection with: only for the budget period
+  // itself and the whole of the spending, or the two figures don't measure the same.
+  let budgetTarget: number | null = null;
   if (ongoing && budgetOverview) {
     const figures = safeToSpend(
       budgetOverview,
@@ -204,6 +206,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
       today,
     );
     if (figures) {
+      if (from === budgetOverview.from && to === budgetOverview.to && !categoryIds?.length && !accounts?.length) budgetTarget = figures.target;
       hint = {
         perDay: figures.perDay,
         amount: figures.amount,
@@ -213,9 +216,9 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   }
 
   // By category — the actual tagged category, no parent/child roll-up.
-  function byCategory(direction: "income" | "expense") {
+  function byCategory(direction: "income" | "expense", list = relevant) {
     const map = new Map<number, { categoryId: number; name: string; color: string | null; icon: string | null; total: number }>();
-    for (const r of relevant) {
+    for (const r of list) {
       if (r.direction !== direction || r.categoryId == null) continue;
       const entry = map.get(r.categoryId) ?? { categoryId: r.categoryId, name: r.categoryName ?? "", color: r.categoryColor, icon: r.categoryIcon, total: 0 };
       entry.total += r.amount;
@@ -252,11 +255,14 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
 
   // The same, added up per group (Housing = Rent + Energy + …) — the card's Groups view.
   const categoryById = new Map(allCategories.map((c) => [c.id, c]));
+  const groupOf = (categoryId: number) => {
+    const cat = categoryById.get(categoryId);
+    return cat?.parentCategoryId != null ? categoryById.get(cat.parentCategoryId) : cat;
+  };
   function byGroup(rows: CategorySpendCard[], withBudget: boolean): CategorySpendCard[] {
     const map = new Map<number, CategorySpendCard>();
     for (const r of rows) {
-      const cat = categoryById.get(r.categoryId);
-      const group = cat?.parentCategoryId != null ? categoryById.get(cat.parentCategoryId) : cat;
+      const group = groupOf(r.categoryId);
       if (!group) continue;
       const entry = map.get(group.id) ?? { categoryId: group.id, categoryName: group.name, color: group.color, icon: group.icon, spent: 0, budget: null, pct: null, excluded: false };
       entry.spent += r.spent;
@@ -268,6 +274,18 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
         return { ...g, budget, pct: budget != null && budget > 0 ? g.spent / budget : null };
       })
       .sort((a, b) => b.spent - a.spent);
+  }
+
+  // What each group came to in the previous period, for the block map's changes —
+  // spending without the categories hidden from spending rows, as on the card.
+  function previousByGroup(direction: "income" | "expense") {
+    const out: Record<number, number> = {};
+    for (const c of byCategory(direction, prevRelevant)) {
+      if (direction === "expense" && excludedCategoryIds.has(c.categoryId)) continue;
+      const group = groupOf(c.categoryId);
+      if (group) out[group.id] = (out[group.id] ?? 0) + c.total;
+    }
+    return out;
   }
 
   // Largest single expense, with where and when.
@@ -327,14 +345,23 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   }
   const daysElapsed = Math.max(1, daysInclusive(from, today < from ? from : today > to ? to : today));
 
-  // Transactions without a category (Needs review), per direction — what "Other" holds.
+  // Transactions without a category (Needs review), per direction, and their total.
   const uncategorisedIds = { expense: new Set<number>(), income: new Set<number>() };
-  for (const r of relevant) if (r.categoryId == null) uncategorisedIds[r.direction === "income" ? "income" : "expense"].add(r.transactionId);
+  const uncategorisedAmount = { expense: 0, income: 0 };
+  for (const r of relevant) {
+    if (r.categoryId != null) continue;
+    const direction = r.direction === "income" ? "income" : "expense";
+    uncategorisedIds[direction].add(r.transactionId);
+    uncategorisedAmount[direction] += r.amount;
+  }
 
-  // Most active weekday, by number of transactions.
+  // Most active weekday, by number of transactions, and what it saw spent on average
+  // over its days so far in the period.
   const weekdayCounts = new Array<number>(7).fill(0);
   for (const r of relevant) weekdayCounts[mondayIndex(r.date)]++;
   const popularDayIdx = relevant.length > 0 ? weekdayCounts.reduce((best, v, i) => (v > weekdayCounts[best] ? i : best), 0) : null;
+  const popularDays = popularDayIdx != null ? calendar.filter((d) => !d.future && mondayIndex(d.date) === popularDayIdx) : [];
+  const popularDayAvg = popularDays.length > 0 ? averagePerDay(popularDays.reduce((sum, d) => sum + d.spent, 0), popularDays.length) : null;
 
   return {
     ongoing,
@@ -343,7 +370,11 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     saved,
     prevExpense,
     prevDays: days,
+    prevFrom,
+    prevTo,
     daysElapsed,
+    totals,
+    budgetTarget,
     incomeChange: change(income, prevIncome),
     expenseChange: change(expense, prevExpense),
     largest: largest
@@ -366,13 +397,19 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     groupSpendingAll: byGroup(spendingAll, true),
     groupSpendingVisible: byGroup(spendingAll.filter((c) => !c.excluded), true),
     groupIncomeAll: byGroup(incomeAll, false),
+    previousGroups: { expense: previousByGroup("expense"), income: previousByGroup("income") },
     budgetPeriod: budgetOverview ? { from: budgetOverview.from, to: budgetOverview.to } : { from, to },
     topMerchants,
     accountsSpend,
     calendar,
     avgExpensePerDay: averagePerDay(expense, daysElapsed),
-    uncategorised: { expense: uncategorisedIds.expense.size, income: uncategorisedIds.income.size },
+    prevAvgExpensePerDay: prevExpense > 0 ? averagePerDay(prevExpense, days) : null,
+    uncategorised: {
+      expense: { count: uncategorisedIds.expense.size, amount: uncategorisedAmount.expense },
+      income: { count: uncategorisedIds.income.size, amount: uncategorisedAmount.income },
+    },
     popularDayIdx,
+    popularDayAvg,
   };
 }
 
@@ -412,10 +449,9 @@ export async function InsightsFilters({
 // ── Tab ───────────────────────────────────────────────────────────────────────
 
 /**
- * Insights · Overview: the period's key figures, money in and out week by week, where it
- * went by category, merchant and account, and a calendar of spending per day. One grid:
- * the figures span the full width; then from xl the week chart (two columns) beside the
- * summary, the breakdown (two) beside the merchants, the accounts beside the calendar (two).
+ * Insights · Overview: what is spent so far against the previous period and the budget
+ * (the hero), a summary, money in and out week by week, where it went by merchant,
+ * account and group, and a calendar of spending per day.
  */
 export async function AnalyticsTab({
   from,
@@ -435,7 +471,6 @@ export async function AnalyticsTab({
 
   const data = await getOverviewData(from, to, financialMonth, categoryIds, accounts);
   const t = await getTranslations("insights.overview");
-  const tInsights = await getTranslations("insights");
   const locale = await getLocale();
   const dayMonth = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
   const date = (d: string) => new Date(`${d}T00:00:00`);
@@ -464,7 +499,6 @@ export async function AnalyticsTab({
     return { key: b.from, label, sub, income: b.income, spent: b.spent, bills: b.bills, current: b.current, future: b.future };
   });
 
-  const vsLast = <span>{tInsights("vsLastPeriod")}</span>;
 
   // The summary: computed facts, which Gemini (Settings › AI) writes up when it is on.
   // "v2": summaries are structured now; paragraph ones from before are never shown.
@@ -487,77 +521,55 @@ export async function AnalyticsTab({
     categories: data.spendingAll.map((c) => ({ name: c.categoryName, spent: c.spent, budget: c.budget })),
     merchants: data.topMerchants.map((m) => ({ name: m.name, total: m.total, visits: m.visits })),
     largest: data.largest ? { name: data.largest.name, amount: data.largest.amount, category: data.largest.categoryName } : null,
-    uncategorised: data.uncategorised.expense,
+    uncategorised: data.uncategorised.expense.count,
   });
   const cachedSummary = aiReady ? await getCachedSummary(summaryKey) : null;
   const summarySubtitle =
     data.ongoing && data.hint ? t("rangeDaysLeft", { range: rangeLabel, count: data.hint.daysLeft }) : rangeLabel;
 
+  // Months by name in sentences ("€210 less than September"), for month-long periods.
+  const nameOfMonth = (start: string, end: string): PeriodName | null => {
+    const month = monthOfPeriod(start, end);
+    if (!month) return null;
+    const first = date(`${month}-01`);
+    return {
+      long: new Intl.DateTimeFormat(locale, { month: "long" }).format(first),
+      short: new Intl.DateTimeFormat(locale, { month: "short" }).format(first).replace(/\.$/, ""),
+    };
+  };
+  const month = nameOfMonth(from, to);
+  const previousMonth = nameOfMonth(data.prevFrom, data.prevTo);
+
+  // One grid, so the columns line up from row to row: the hero (two columns) beside the
+  // summary; the merchants beside week by week (two); the accounts beside where it went
+  // (two); the calendar over the full width. At lg (two columns) the summary and the
+  // merchants pair up and the accounts take a row of their own.
   return (
     <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-      {/* Key figures — a row of four from xl, two by two below. */}
-      <div className="grid grid-cols-2 gap-2.5 lg:col-span-2 lg:gap-5 xl:col-span-3 xl:grid-cols-4">
-        <KpiCard
-          highlight
-          label={t("income")}
-          icon={<IconCoins />}
-          value={<Amount value={data.income} className="tabular-nums" centsClassName="opacity-55" />}
-          foot={data.incomeChange && (
-            <>
-              <ChangeChip change={data.incomeChange} goodWhenUp onEmber />
-              {vsLast}
-            </>
-          )}
-        />
-        <KpiCard
-          label={t("expenses")}
-          icon={<IconShoppingBag />}
-          value={<Amount value={data.expense} className="tabular-nums" />}
-          foot={data.expenseChange && (
-            <>
-              <ChangeChip change={data.expenseChange} goodWhenUp={false} />
-              {vsLast}
-            </>
-          )}
-        />
-        <KpiCard
-          label={t("saved")}
-          icon={<IconTarget />}
-          value={<Amount value={data.saved} className="tabular-nums" />}
-          foot={savedPct != null && (
-            <>
-              <ClearChip tone="sky" className="h-6 px-2 text-xs tabular-nums">{savedPct}%</ClearChip>
-              {t("ofIncome")}
-            </>
-          )}
-        />
-        <KpiCard
-          label={t("largest")}
-          iconTile={!!data.largest?.categoryIcon}
-          icon={data.largest?.categoryIcon ? <Icon iconKey={data.largest.categoryIcon} color={data.largest.categoryColor} size="md" soft /> : <IconBuildingStore />}
-          value={<Amount value={data.largest?.amount ?? 0} className="tabular-nums" />}
-          foot={data.largest && (
-            <>
-              {data.largest.categoryName && <ClearChip tone="stone" className="h-6 max-w-full truncate px-2 text-xs">{data.largest.categoryName}</ClearChip>}
-              <span className="min-w-0 truncate">
-                {data.largest.name ? t("largestWhere", { name: data.largest.name, date: dayMonth.format(date(data.largest.date)) }) : dayMonth.format(date(data.largest.date))}
-              </span>
-            </>
-          )}
-        />
-      </div>
-
-      {/* Week by week beside the summary from xl; at lg the summary goes under it. */}
-      <FlowCard buckets={buckets} grain={data.grain} hint={data.hint} className="lg:col-span-2" />
-      <SummaryCard
-        facts={summaryFacts}
-        aiReady={aiReady}
-        cacheKey={summaryKey}
-        initial={cachedSummary}
-        subtitle={summarySubtitle}
-        className="lg:col-span-2 xl:col-span-1"
+      <OverviewHero
+        ongoing={data.ongoing}
+        month={month}
+        previousMonth={previousMonth}
+        spent={data.expense}
+        totals={data.totals}
+        budget={data.budgetTarget}
+        income={data.income}
+        incomeChange={data.incomeChange}
+        saved={data.saved}
+        savedPct={savedPct}
+        left={data.hint}
+        avgPerDay={data.avgExpensePerDay}
+        largest={data.largest ? { amount: data.largest.amount, name: data.largest.name, date: dayMonth.format(date(data.largest.date)) } : null}
+        startLabel={dayMonth.format(date(from))}
+        endLabel={dayMonth.format(date(to))}
+        className="lg:col-span-2"
       />
+      <SummaryCard facts={summaryFacts} aiReady={aiReady} cacheKey={summaryKey} initial={cachedSummary} subtitle={summarySubtitle} />
 
+      <MerchantsCard merchants={data.topMerchants} spendingTotal={data.expense} allHref={`/transactions?from=${from}&to=${to}&direction=expense`} />
+      <FlowCard buckets={buckets} grain={data.grain} hint={data.hint} className="lg:col-span-2" />
+
+      <AccountsCard accounts={data.accountsSpend} className="lg:col-span-2 xl:col-span-1" />
       <CategoryBreakdownCard
         spendingVisible={data.spendingVisible}
         spendingAll={data.spendingAll}
@@ -565,17 +577,27 @@ export async function AnalyticsTab({
         incomeAll={data.incomeAll}
         incomeTotal={data.income}
         groups={{ spendingVisible: data.groupSpendingVisible, spendingAll: data.groupSpendingAll, incomeAll: data.groupIncomeAll }}
+        previousGroups={data.previousGroups}
+        previousMonth={previousMonth?.short ?? "none"}
         uncategorised={data.uncategorised}
         ongoing={data.ongoing}
         financialMonth={financialMonth}
         budgetPeriod={data.budgetPeriod}
         className="lg:col-span-2"
       />
-      <MerchantsCard merchants={data.topMerchants} spendingTotal={data.expense} allHref={`/transactions?from=${from}&to=${to}&direction=expense`} />
 
-      <AccountsCard accounts={data.accountsSpend} />
-      <CalendarCard days={data.calendar} rangeLabel={rangeLabel} avgPerDay={data.avgExpensePerDay} popularDay={popularDay} className="lg:col-span-2" />
+      <CalendarCard
+        days={data.calendar}
+        avgPerDay={data.avgExpensePerDay}
+        prevAvgPerDay={data.prevAvgExpensePerDay}
+        previousMonth={previousMonth?.long ?? "none"}
+        popularDay={popularDay}
+        popularDayAvg={data.popularDayAvg}
+        className="lg:col-span-2 xl:col-span-3"
+      />
 
+      <AnchoredTip id="insightsRunningTotal" anchor="insightsRunningTotal" active={data.totals.elapsed > 0} />
+      <AnchoredTip id="insightsBlockMap" anchor="insightsBlockMap" active={data.groupSpendingVisible.length > 0} />
       <AnchoredTip id="insightsMerchants" anchor="insightsMerchants" active={data.topMerchants.length > 0} />
       <AnchoredTip id="insightsCategorySwitch" anchor="insightsCategorySwitch" active={data.incomeAll.length > 0} />
       <AnchoredTip id="insightsGroupSwitch" anchor="insightsGroupSwitch" active={data.groupSpendingAll.length > 0} />
