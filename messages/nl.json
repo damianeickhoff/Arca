@@ -1305,9 +1305,13 @@
       "title": "Budget verplaatsen met één tik",
       "body": "Loopt een categorie hard op, dan stelt Arca voor om budget te verplaatsen van een categorie met ruimte over. Je totale budget blijft gelijk."
     },
-    "budgetBills": {
-      "title": "De rekeningen van deze maand",
-      "body": "Betaalde rekeningen staan boven de streep Vandaag, de rest eronder. Vink een rekening af als hij betaald is."
+    "billStatusControl": {
+      "title": "auto, Betaald en Betaald?",
+      "body": "auto: Arca vinkt de rekening zelf af zodra de betaling binnenkomt. Betaald: hij is te laat en er is geen betaling gevonden. Betaald?: Arca kan het niet zien, dus zeg het zelf of leer Arca het patroon."
+    },
+    "budgetNeedsCategory": {
+      "title": "Nog zonder categorie",
+      "body": "Geen enkel categoriebudget ziet deze transacties nog. Sorteer ze, dan klopt wat er per categorie over is weer."
     },
     "budgetPeriodNav": {
       "title": "Terugkijken naar eerdere maanden",
@@ -3636,6 +3640,26 @@
     "markPaid": "Markeer als betaald",
     "markUnpaid": "Markeer als onbetaald"
   },
+  "billStatus": {
+    "auto": "auto",
+    "autoHint": "Arca vinkt dit af zodra de betaling binnenkomt",
+    "autoIncomeHint": "Arca vinkt dit af zodra het geld binnenkomt",
+    "paid": "Betaald",
+    "received": "Ontvangen",
+    "markPaid": "Markeer als betaald",
+    "markReceived": "Markeer als ontvangen",
+    "undoPaid": "Door jou als betaald gemarkeerd. Tik om ongedaan te maken",
+    "undoReceived": "Door jou als ontvangen gemarkeerd. Tik om ongedaan te maken",
+    "ask": "Betaald?",
+    "askReceived": "Ontvangen?",
+    "askTitle": "Is deze rekening betaald?",
+    "askIncomeTitle": "Is dit binnengekomen?",
+    "yesPaid": "Ja, betaald",
+    "yesReceived": "Ja, ontvangen",
+    "notYet": "Nog niet",
+    "teach": "Leer Arca het patroon",
+    "teachHint": "Dan vinkt Arca dit de volgende keer zelf af"
+  },
   "activity": {
     "title": "Activiteit",
     "subtitle": "Elke transactie op {accounts, plural, one {# rekening} other {# rekeningen}}",
@@ -4058,22 +4082,41 @@
         "title": "Rekeningen {month}",
         "view": "Alle rekeningen",
         "empty": "Geen rekeningen of abonnementen deze maand.",
-        "summary": "{paid} betaald · {due} te gaan",
-        "next": "{name} {days, plural, =0 {vandaag} one {morgen} other {over # dagen}}",
-        "allPaid": "alles betaald",
-        "paid": "Betaald",
-        "paidOn": "Betaald · {date}",
+        "stillToPay": "{amount} nog te betalen",
+        "next": "volgende: {name} {days, plural, =0 {vandaag} one {morgen} other {over # dagen}}",
+        "allPaid": "Alles betaald",
+        "matched": "Gekoppeld",
+        "marked": "Door jou betaald",
+        "thisMonth": "Deze maand",
         "due": "Vervalt {date}",
-        "dueToday": "Vervalt vandaag",
-        "overdue": "Te laat · {date}",
-        "noDate": "Geen vaste datum",
-        "today": "Vandaag · {date}",
+        "dueIn": "Vervalt {date} · {days, plural, =0 {vandaag} one {morgen} other {over # dagen}}",
+        "dueAgo": "Verviel {date} · {days, plural, one {# dag} other {# dagen}} geleden",
         "paidAmount": "{amount} betaald",
         "total": "{amount} in totaal",
-        "nextIncome": "Volgend inkomen · {name} op {date}",
-        "stillToPay": "nog te betalen",
+        "overdueGroup": "Te laat",
+        "comingUp": "Komt nog",
         "notPaid": "Niet betaald",
-        "paidAuto": "Betaald, gekoppeld aan een transactie"
+        "showMore": "Nog {count} tonen",
+        "showLess": "Minder tonen",
+        "paidFold": "{count} betaald · {amount}",
+        "foldNamesMore": "{names} en {count} meer",
+        "nextIncomeLabel": "Volgend inkomen",
+        "nextIncomeValue": "{name} · {date} · {amount}",
+        "nextIncomeNoAmount": "{name} · {date}",
+        "frequency": {
+          "daily": "dagelijks",
+          "weekly": "wekelijks",
+          "four_weekly": "elke vier weken",
+          "quarterly": "per kwartaal",
+          "yearly": "jaarlijks"
+        }
+      },
+      "needsCategory": {
+        "title": "Zonder categorie",
+        "subtitle": "{count, plural, one {# transactie} other {# transacties}} · {amount}",
+        "merchantCount": "{name} · {count}",
+        "more": "{count} meer",
+        "sort": "Sorteren"
       }
     },
     "debts": {

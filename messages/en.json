@@ -1305,9 +1305,13 @@
       "title": "Move budget in one tap",
       "body": "When a category runs hot, Arca suggests moving budget from a category with room to spare. Your overall budget stays the same."
     },
-    "budgetBills": {
-      "title": "This month's bills",
-      "body": "Paid bills sit above the Today line, the ones still to come below it. Tick a bill off once it is paid."
+    "billStatusControl": {
+      "title": "auto, Paid and Paid?",
+      "body": "auto: Arca ticks the bill off itself when the payment arrives. Paid: it is due and no payment was found. Paid?: Arca can't tell, so say so yourself or teach Arca the pattern."
+    },
+    "budgetNeedsCategory": {
+      "title": "Still without a category",
+      "body": "No category budget sees these transactions yet. Sort them and what is left per category is right again."
     },
     "budgetPeriodNav": {
       "title": "Look back at earlier months",
@@ -3636,6 +3640,26 @@
     "markPaid": "Mark as paid",
     "markUnpaid": "Mark as unpaid"
   },
+  "billStatus": {
+    "auto": "auto",
+    "autoHint": "Arca ticks this off when the payment arrives",
+    "autoIncomeHint": "Arca ticks this off when the money comes in",
+    "paid": "Paid",
+    "received": "Received",
+    "markPaid": "Mark as paid",
+    "markReceived": "Mark as received",
+    "undoPaid": "Marked paid by you. Tap to undo",
+    "undoReceived": "Marked received by you. Tap to undo",
+    "ask": "Paid?",
+    "askReceived": "Received?",
+    "askTitle": "Is this bill paid?",
+    "askIncomeTitle": "Has this come in?",
+    "yesPaid": "Yes, paid",
+    "yesReceived": "Yes, received",
+    "notYet": "Not yet",
+    "teach": "Teach Arca the pattern",
+    "teachHint": "So it ticks this off itself next time"
+  },
   "activity": {
     "title": "Activity",
     "subtitle": "Every transaction across {accounts, plural, one {# account} other {# accounts}}",
@@ -4058,22 +4082,41 @@
         "title": "{month} bills",
         "view": "Bills view",
         "empty": "No bills or subscriptions this month.",
-        "summary": "{paid} paid · {due} to come",
-        "next": "{name} {days, plural, =0 {today} one {tomorrow} other {in # days}}",
-        "allPaid": "all paid",
-        "paid": "Paid",
-        "paidOn": "Paid · {date}",
+        "stillToPay": "{amount} still to pay",
+        "next": "next: {name} {days, plural, =0 {today} one {tomorrow} other {in # days}}",
+        "allPaid": "All paid",
+        "matched": "Matched",
+        "marked": "Marked paid",
+        "thisMonth": "This month",
         "due": "Due {date}",
-        "dueToday": "Due today",
-        "overdue": "Overdue · {date}",
-        "noDate": "No fixed date",
-        "today": "Today · {date}",
+        "dueIn": "Due {date} · {days, plural, =0 {today} one {tomorrow} other {in # days}}",
+        "dueAgo": "Due {date} · {days, plural, one {# day} other {# days}} ago",
         "paidAmount": "{amount} paid",
         "total": "{amount} in total",
-        "nextIncome": "Next income · {name} on {date}",
-        "stillToPay": "still to pay",
+        "overdueGroup": "Overdue",
+        "comingUp": "Coming up",
         "notPaid": "Not paid",
-        "paidAuto": "Paid, matched to a transaction"
+        "showMore": "Show {count} more",
+        "showLess": "Show less",
+        "paidFold": "{count} paid · {amount}",
+        "foldNamesMore": "{names} and {count} more",
+        "nextIncomeLabel": "Next income",
+        "nextIncomeValue": "{name} · {date} · {amount}",
+        "nextIncomeNoAmount": "{name} · {date}",
+        "frequency": {
+          "daily": "daily",
+          "weekly": "weekly",
+          "four_weekly": "every four weeks",
+          "quarterly": "quarterly",
+          "yearly": "yearly"
+        }
+      },
+      "needsCategory": {
+        "title": "Needs a category",
+        "subtitle": "{count, plural, one {# transaction} other {# transactions}} · {amount}",
+        "merchantCount": "{name} · {count}",
+        "more": "{count} more",
+        "sort": "Sort them"
       }
     },
     "debts": {

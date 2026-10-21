@@ -71,7 +71,8 @@ export type TipAnchor =
   // Redesigned Budget
   | "budgetStrategy"
   | "budgetMove"
-  | "budgetBills"
+  | "billStatusControl"
+  | "budgetNeedsCategory"
   | "budgetUnbudgeted"
   | "budgetAddCategory"
   | "budgetPeriodNav"
