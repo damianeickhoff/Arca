@@ -1337,6 +1337,10 @@
       "title": "Elke schuld z'n eigen einddatum",
       "body": "Elke schuld toont de maand waarin hij is afgelost. Schuif met de extra aflossing en de datums schuiven mee, in de volgorde waarin je schulden gesorteerd zijn."
     },
+    "debtsTimeline": {
+      "title": "Elke schuld, maand voor maand",
+      "body": "Open het verloop om de lijn van elke schuld te zien, met en zonder het extra bedrag. Wijs of tik een maand aan om te zien wat er dan is afgelost, en schuif daar ook met het extra bedrag."
+    },
     "goalsContributions": {
       "title": "Wat je opzij zet",
       "body": "Twaalf maanden geld dat naar je doelen ging, op basis van de gekoppelde transacties. Deze maand is de felste balk."
@@ -4077,6 +4081,7 @@
       "yours": "Je schulden",
       "yoursOrder": "{count, plural, one {# schuld} other {# schulden}} · {order}",
       "yoursCount": "{count, plural, one {# schuld} other {# schulden}}",
+      "yoursExtra": "einddatums inclusief de {amount} extra",
       "sort": {
         "label": "Schulden sorteren: {order}",
         "options": {
@@ -4145,15 +4150,15 @@
         "notLinked": "Niet gekoppeld aan een vaste last",
         "edit": "{name} bewerken",
         "leftOf": "over van {amount}",
-        "freeBy": "Vrij {date}",
         "payoffIn": "Vrij in {date}",
         "payoffNever": "Zo nooit afgelost",
         "payoffSooner": "{count, plural, one {# maand eerder} other {# maanden eerder}}",
+        "soonerThanMinimum": "{count, plural, one {# maand eerder dan met het minimum} other {# maanden eerder dan met het minimum}}",
         "never": "Zo nooit afgelost",
         "noDate": "Geen einddatum",
         "done": "Afgelost",
         "paid": "<b>{pct}%</b> afgelost · {amount}",
-        "monthsLeft": "{count, plural, one {nog # maand} other {nog # maanden}}",
+        "monthsLeftLabel": "Maanden te gaan",
         "monthly": "Per maand",
         "interest": "Rente",
         "perYear": "{rate}% p.j.",
@@ -4184,18 +4189,36 @@
       },
       "payoff": {
         "title": "Aflossingsverloop",
-        "subtitle": "{count, plural, one {Het saldo van je schuld, maand voor maand} other {Alle # schulden gestapeld, maand voor maand}}",
+        "subtitleExtra": "Met de {amount} extra",
+        "subtitleMinimums": "Met de minimale bedragen",
+        "open": "Openen",
+        "openLabel": "Open het aflossingsverloop, elke schuld maand voor maand",
+        "now": "Nu",
+        "never": "Nooit",
+        "atMinimumsLabel": "Met het minimum",
+        "withExtraLabel": "Met {amount} extra",
         "debtFree": "Schuldenvrij {date}",
         "debtFreeNever": "Niet schuldenvrij met deze betalingen",
         "sooner": "{count, plural, one {# maand} other {# maanden}} eerder met {amount} extra per maand",
-        "today": "{amount} vandaag",
-        "paidOff": "{name} · {date}",
-        "paidOffNever": "{name} · nooit",
-        "atMinimums": "Minimaal · {date}",
-        "atMinimumsNever": "Minimaal · nooit",
         "summary": "{amount} schuld vandaag. {end}",
         "summaryDebt": "{name} afgelost {date}",
         "summaryDebtNever": "{name} nooit afgelost"
+      },
+      "timeline": {
+        "subtitleExtra": "Elke schuld, maand voor maand · met {amount} extra",
+        "subtitleMinimums": "Elke schuld, maand voor maand · met het minimum",
+        "minimumsOnly": "alleen het minimum",
+        "now": "Nu",
+        "keys": "Gebruik de pijltjestoetsen links en rechts om door de maanden te gaan",
+        "paidOff": "{names} afgelost",
+        "debtFree": "Schuldenvrij",
+        "leftTotal": "Nog {amount} in totaal",
+        "done": "{name} klaar",
+        "left": "{name} nog {amount}",
+        "free": "Vrij {date}",
+        "never": "Zo nooit afgelost",
+        "saved": "{amount} rente bespaard",
+        "noInterest": "geen rente"
       },
       "simulator": {
         "title": "Wat als ik extra betaal?",
@@ -4207,12 +4230,16 @@
         "saved": "Rente bespaard",
         "months": "{count, plural, one {# maand} other {# maanden}}",
         "orderOne": "Het extra bedrag gaat direct naar {name}.",
-        "orderSort": "Het extra bedrag gaat eerst naar {first}, daarna naar {rest}: de volgorde van je lijst ({order}).",
+        "orderFirst": "Het extra bedrag gaat eerst naar <b>{first}</b> ({order}), daarna naar {rest}.",
+        "thenJoin": ", dan ",
+        "changeOrder": "Volgorde wijzigen",
+        "eachDebt": "Elke schuld, met het extra bedrag",
+        "eachDebtFree": "Vrij in <b>{date}</b>",
         "free": {
           "title": "Vrij te besteden per maand",
           "change": "{from} nu, {to} met het extra bedrag",
           "short": "Je komt {amount} per maand tekort",
-          "basis": "Vast inkomen min vaste lasten, aflossingen, sparen en je budget",
+          "stillLeft": "Elke maand blijft er nog geld over",
           "noIncome": "Voeg je vaste inkomen toe om te zien wat een extra aflossing overlaat om per maand te besteden."
         }
       },

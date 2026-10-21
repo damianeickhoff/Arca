@@ -7,13 +7,11 @@ import {
   IconAlertTriangle,
   IconArrowDownRight,
   IconArrowUpRight,
-  IconCalendarCheck,
   IconCalendarEvent,
   IconCheck,
   IconChevronDown,
   IconChevronRight,
   IconCreditCard,
-  IconInfoCircle,
   IconPencil,
   IconPlus,
   IconCalendarDue,
@@ -21,7 +19,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { formatCompactEur, formatEur, formatEurWhole } from "@/lib/format";
+import { formatEur, formatEurWhole } from "@/lib/format";
 import { payoffMonthsById, simulatePayoff } from "@/lib/debt-simulate";
 import type { OpenAdvance } from "@/lib/open-advances";
 import { Amount } from "@/components/clear/amount";
@@ -49,7 +47,8 @@ import {
 } from "./debt-shared";
 import { DebtDetailDialog } from "./debt-detail-dialog";
 import { DebtFormDialog } from "./debt-form-dialog";
-import { DebtIcon, PaymentNotice, monthsFromNow, pastel, useMonthYear, usePaymentNotice } from "./debt-ui";
+import { DebtIcon, ExtraSlider, PaymentNotice, monthsFromNow, pastel, useMonthYear, usePaymentNotice } from "./debt-ui";
+import { PayoffCard, PayoffTimelineDialog } from "./payoff-timeline";
 import { MoneyText } from "@/components/clear/money";
 
 /** What the add/edit form opens with — also what /debts?add=… and /debts?edit=… ask for. */
@@ -67,10 +66,11 @@ function monthsUntil(date: Date) {
 
 /**
  * Plan · Debts. One grid: three summary tiles (you owe, owed to you, debt-free) across
- * the top; your debts above the payoff timeline in a two-column-wide stack, beside the
- * extra-payment simulator and what others owe you. Every debt opens its detail sheet;
- * adding and editing happen in the debt form sheet. ?sort=… orders your debts and
- * decides which one the simulator's extra goes to first.
+ * the top, the extra-payment simulator across the full width under them, then your
+ * debts (two columns wide) beside the payoff timeline and what others owe you. Every
+ * debt opens its detail sheet; adding and editing happen in the debt form sheet; the
+ * timeline opens its per-debt popup, which shares the simulator's extra. ?sort=…
+ * orders your debts and decides which one the simulator's extra goes to first.
  */
 export function DebtsView({
   computed,
@@ -152,6 +152,9 @@ export function DebtsView({
   // simulator's order), next to the month it would at the minimums.
   const payoff = useMemo(() => ({ now: payoffMonthsById(sim), base: payoffMonthsById(base) }), [sim, base]);
   const hasRight = active.length > 0 || hasOwed;
+  // The slider runs to €500, or further when the minimums are higher than that.
+  const extraMax = Math.max(500, Math.ceil(totalMonthly / 100) * 100);
+  const [timelineOpen, setTimelineOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
@@ -175,32 +178,45 @@ export function DebtsView({
               hasOwn={computed.length > 0}
             />
 
-            <div className={cn("flex min-w-0 flex-col gap-5 lg:col-span-2", !hasRight && "xl:col-span-3")}>
-              <YourDebtsCard
-                computed={sorted}
-                payoff={payoff}
+            {active.length > 0 && (
+              <SimulatorCard
+                active={active}
                 sort={sort}
-                onSort={chooseSort}
-                onOpen={setSheetId}
-                onEdit={(id) => openForm({ kind: "edit", id })}
-                onAdd={() => openForm({ kind: "add", direction: "owe" })}
+                base={base}
+                sim={sim}
+                extra={extra}
+                max={extraMax}
+                onExtra={setExtra}
+                totalMonthly={totalMonthly}
+                freeToSpend={freeToSpend}
+                sortable={computed.length > 1}
+                className="lg:col-span-2 xl:col-span-3"
               />
-              {active.length > 0 && <PayoffCard active={active} base={base} sim={sim} extra={extra} />}
-            </div>
+            )}
 
+            <YourDebtsCard
+              computed={sorted}
+              payoff={payoff}
+              extra={extra}
+              sort={sort}
+              onSort={chooseSort}
+              onOpen={setSheetId}
+              onEdit={(id) => openForm({ kind: "edit", id })}
+              onAdd={() => openForm({ kind: "add", direction: "owe" })}
+              className={cn("lg:col-span-2", !hasRight && "xl:col-span-3")}
+            />
+
+            {/* One column at xl beside Your debts; side by side under it at lg. The
+                timeline card fills the column so it lines up with Your debts. */}
             {hasRight && (
-              <div className="grid min-w-0 content-start gap-5 lg:col-span-2 lg:grid-cols-2 xl:col-span-1 xl:flex xl:flex-col">
+              <div className="grid min-w-0 gap-5 lg:col-span-2 lg:grid-cols-2 xl:col-span-1 xl:flex xl:flex-col">
                 {active.length > 0 && (
-                  <SimulatorCard
-                    active={active}
-                    sort={sort}
+                  <PayoffCard
                     base={base}
                     sim={sim}
                     extra={extra}
-                    onExtra={setExtra}
-                    totalMonthly={totalMonthly}
-                    freeToSpend={freeToSpend}
-                    className={cn(!hasOwed && "xl:flex-1")}
+                    onOpen={() => setTimelineOpen(true)}
+                    className={cn("xl:flex-1", !hasOwed && "lg:col-span-2")}
                   />
                 )}
                 {hasOwed && (
@@ -218,6 +234,18 @@ export function DebtsView({
         )}
       </div>
 
+      {active.length > 0 && (
+        <PayoffTimelineDialog
+          open={timelineOpen}
+          onOpenChange={setTimelineOpen}
+          active={active}
+          base={base}
+          sim={sim}
+          extra={extra}
+          max={extraMax}
+          onExtra={setExtra}
+        />
+      )}
       <DebtDetailDialog computed={sheet} bills={bills} onClose={() => setSheetId(null)} />
       <DebtFormDialog
         open={formOpen && (form.kind === "add" || editing != null)}
@@ -233,6 +261,7 @@ export function DebtsView({
       <AnchoredTip id="debtsSortAndImpact" anchor="debtsSortAndImpact" active={active.length > 0} />
       <AnchoredTip id="debtsOwed" anchor="debtsOwed" active={hasOwed} />
       <AnchoredTip id="debtsPayoffDates" anchor="debtsPayoffDates" active={active.length > 0} />
+      <AnchoredTip id="debtsTimeline" anchor="debtsTimeline" active={active.length > 0 && !timelineOpen} />
     </div>
   );
 }
@@ -396,12 +425,15 @@ function SummaryTiles({
 
 // ── Your debts ────────────────────────────────────────────────────────────────
 
+/** The sort menu's trigger, which the simulator's "Change order" scrolls to. */
+const SORT_TRIGGER_ID = "debts-sort";
+
 /** The sort menu in the "Your debts" header — styled like Activity's. */
 function DebtSortMenu({ sort, onSort }: { sort: DebtSort; onSort: (sort: DebtSort) => void }) {
   const t = useTranslations("plan.debts.sort");
   return (
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger aria-label={t("label", { order: t(`options.${sort}`) })} className={clearButtonVariants({ variant: "secondary", size: "sm" })}>
+      <DropdownMenuTrigger id={SORT_TRIGGER_ID} aria-label={t("label", { order: t(`options.${sort}`) })} className={clearButtonVariants({ variant: "secondary", size: "sm" })}>
         {t(`options.${sort}`)}
         <IconChevronDown aria-hidden stroke={2.2} />
       </DropdownMenuTrigger>
@@ -421,35 +453,38 @@ type PayoffMonths = { now: Map<number, number | null>; base: Map<number, number 
 function YourDebtsCard({
   computed,
   payoff,
+  extra,
   sort,
   onSort,
   onOpen,
   onEdit,
   onAdd,
+  className,
 }: {
   computed: ComputedDebt[];
   payoff: PayoffMonths;
+  extra: number;
   sort: DebtSort;
   onSort: (sort: DebtSort) => void;
   onOpen: (id: number) => void;
   onEdit: (id: number) => void;
   onAdd: () => void;
+  className?: string;
 }) {
   const t = useTranslations("plan.debts");
-  // The tip points at the first open debt's "Free in …" line.
+  // The tip points at the first open debt's "Free in …" chip.
   const firstOpen = computed.find((c) => payoff.now.has(c.debt.id))?.debt.id;
   const sortable = computed.length > 1;
+  const parts =
+    computed.length === 0
+      ? []
+      : [sortable ? t("yoursOrder", { count: computed.length, order: t(`sort.inline.${sort}`) }) : t("yoursCount", { count: computed.length })];
+  if (extra > 0 && firstOpen != null) parts.push(t("yoursExtra", { amount: formatEurWhole(extra) }));
   return (
-    <ClearCard aria-labelledby="debts-yours-title">
+    <ClearCard aria-labelledby="debts-yours-title" className={className}>
       <ClearCardHeader
         title={<span id="debts-yours-title">{t("yours")}</span>}
-        subtitle={
-          computed.length === 0
-            ? undefined
-            : sortable
-              ? t("yoursOrder", { count: computed.length, order: t(`sort.inline.${sort}`) })
-              : t("yoursCount", { count: computed.length })
-        }
+        subtitle={parts.length > 0 ? parts.join(" · ") : undefined}
         action={sortable ? <DebtSortMenu sort={sort} onSort={onSort} /> : undefined}
       />
       {computed.length === 0 ? (
@@ -514,19 +549,31 @@ function DebtTile({
       ? t("paidByOn", { name: bill.friendlyName ?? bill.name, day: bill.dueDay })
       : t("paidBy", { name: bill.friendlyName ?? bill.name })
     : t("notLinked");
+  // The payoff month follows the simulator's extra (the minimums when it is 0).
   const status = done
     ? { tone: "mint" as const, text: t("done") }
-    : c.neverPaysOff
+    : months === null || (months === undefined && c.neverPaysOff)
       ? { tone: "rose" as const, text: t("never") }
-      : c.lastPaymentDate
-        ? { tone: "mint" as const, text: t("freeBy", { date: monthYear(c.lastPaymentDate) }) }
+      : months !== undefined
+        ? { tone: "mint" as const, text: t("payoffIn", { date: monthYear(monthsFromNow(months)) }) }
         : { tone: "neutral" as const, text: t("noDate") };
-  const mini = "flex min-w-0 flex-col gap-0.5 rounded-clear-icon bg-clear-card px-3 py-2.5";
+  const sooner = months != null && baseMonths != null ? baseMonths - months : 0;
+  const monthsLeft = done ? null : months !== undefined ? months : c.monthsRemaining;
+  const mini = "flex min-w-0 flex-col gap-0.5 rounded-clear-icon bg-clear-card px-2.5 py-2.5";
+  // The payoff chip sits in the header row when the tile is wide enough for it beside
+  // the name and the pencil, else beside the balance (only one of the two is shown).
+  const chip = (className: string) => (
+    <span data-tip-anchor={payoffAnchor ? "debtsPayoffDates" : undefined} className={className}>
+      <ClearChip tone={status.tone} icon={done ? <IconCheck stroke={3} aria-hidden /> : undefined} className="font-semibold">
+        {status.text}
+      </ClearChip>
+    </span>
+  );
 
   return (
     <article
       data-tip-anchor={anchor ? "debtsDetail" : undefined}
-      className="relative flex min-w-0 flex-col gap-3.5 rounded-clear-tile bg-clear-tile p-[18px] transition-shadow hover:ring-2 hover:ring-clear-ink/10"
+      className="@container relative flex min-w-0 flex-col gap-3.5 rounded-clear-tile bg-clear-tile p-[18px] transition-shadow hover:ring-2 hover:ring-clear-ink/10"
     >
       <div className="flex items-center gap-3">
         <DebtIcon icon={debt.icon ?? bill?.icon} color={debt.color} />
@@ -535,12 +582,13 @@ function DebtTile({
           <button
             type="button"
             onClick={onOpen}
-            className="cursor-pointer truncate text-left text-base font-bold outline-none after:absolute after:inset-0 after:rounded-clear-tile focus-visible:after:ring-3 focus-visible:after:ring-clear-ember/50"
+            className="cursor-pointer truncate text-left text-base font-semibold outline-none after:absolute after:inset-0 after:rounded-clear-tile focus-visible:after:ring-3 focus-visible:after:ring-clear-ember/50"
           >
             {debt.name}
           </button>
-          <span className="truncate text-[13px] text-clear-muted">{meta}</span>
+          <span className="truncate text-[13px] font-medium text-clear-muted">{meta}</span>
         </span>
+        {chip("hidden shrink-0 @[21rem]:inline-flex")}
         <button
           type="button"
           onClick={onEdit}
@@ -551,62 +599,41 @@ function DebtTile({
         </button>
       </div>
 
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-baseline gap-2">
           <Amount value={currentBalance} whole splitCents={false} sign="none" className="text-[30px] leading-none tracking-[-0.03em]" />
-          <span className="text-sm text-clear-ink-2"><MoneyText>{t("leftOf", { amount: formatEurWhole(total) })}</MoneyText></span>
+          <span className="text-sm font-medium text-clear-ink-2"><MoneyText>{t("leftOf", { amount: formatEurWhole(total) })}</MoneyText></span>
         </span>
-        <ClearChip tone={status.tone} icon={done ? <IconCheck stroke={3} aria-hidden /> : undefined}>
-          {status.text}
-        </ClearChip>
-        {months !== undefined && <PayoffLine months={months} baseMonths={baseMonths} anchor={payoffAnchor} />}
+        {chip("inline-flex @[21rem]:hidden")}
       </div>
 
       <div className="flex flex-col gap-1.5">
         <ClearProgress value={pct / 100} size="md" className="bg-clear-card" fillClassName={done ? "bg-clear-positive-fill" : "bg-clear-primary"} />
-        <span className="flex flex-wrap justify-between gap-x-3 text-[13px] tabular-nums text-clear-ink-2">
-          <span><MoneyText>{t.rich("paid", { pct, amount: formatEurWhole(paid), b: (ch) => <b className="text-clear-ink"><MoneyText>{ch}</MoneyText></b> })}</MoneyText></span>
-          {!done && c.monthsRemaining != null && c.monthsRemaining > 0 && <span>{t("monthsLeft", { count: c.monthsRemaining })}</span>}
+        <span className="flex flex-wrap justify-between gap-x-3 text-[13px] font-medium tabular-nums text-clear-ink-2">
+          <span><MoneyText>{t.rich("paid", { pct, amount: formatEurWhole(paid), b: (ch) => <b className="font-bold text-clear-ink"><MoneyText>{ch}</MoneyText></b> })}</MoneyText></span>
+          {sooner > 0 && <span className="font-semibold text-clear-positive">{t("soonerThanMinimum", { count: sooner })}</span>}
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <div className={mini}>
-          <span className="text-xs text-clear-muted">{t("monthly")}</span>
-          <span className="clear-amount text-base"><MoneyText>{formatEur(debt.minimumPayment)}</MoneyText></span>
+          <span className="truncate text-xs font-medium text-clear-muted">{t("monthly")}</span>
+          <span className="clear-amount truncate text-sm"><MoneyText>{formatEur(debt.minimumPayment)}</MoneyText></span>
         </div>
         <div className={mini}>
-          <span className="text-xs text-clear-muted">{t("interest")}</span>
-          <span className="clear-amount truncate text-base">
+          <span className="truncate text-xs font-medium text-clear-muted">{t("interest")}</span>
+          <span className="clear-amount truncate text-sm">
             {debt.interestRate ? t("perYear", { rate: debt.interestRate.toLocaleString(locale) }) : t("noInterest")}
           </span>
+        </div>
+        <div className={mini}>
+          <span className="truncate text-xs font-medium text-clear-muted">{t("monthsLeftLabel")}</span>
+          <span className="clear-amount truncate text-sm">{monthsLeft != null && monthsLeft > 0 ? monthsLeft : "—"}</span>
         </div>
       </div>
 
       <PaymentNotice variant="line" notice={notice({ balance: currentBalance, payment: debt.minimumPayment, rate: debt.interestRate, owed: false })} />
     </article>
-  );
-}
-
-/**
- * "Free in Mar 2028" under a debt's balance: when it reaches zero with the simulator's
- * extra (the minimums when the extra is 0), and how many months sooner that is.
- */
-function PayoffLine({ months, baseMonths, anchor }: { months: number | null; baseMonths: number | null | undefined; anchor: boolean }) {
-  const t = useTranslations("plan.debts.tile");
-  const monthYear = useMonthYear();
-  const sooner = months != null && baseMonths != null ? baseMonths - months : 0;
-  return (
-    <span data-tip-anchor={anchor ? "debtsPayoffDates" : undefined} className="basis-full text-[13px] text-clear-ink-2">
-      {months == null ? (
-        <span className="text-clear-muted">{t("payoffNever")}</span>
-      ) : (
-        <>
-          {t("payoffIn", { date: monthYear(monthsFromNow(months)) })}
-          {sooner > 0 && <span className="font-semibold text-clear-positive"> · {t("payoffSooner", { count: sooner })}</span>}
-        </>
-      )}
-    </span>
   );
 }
 
@@ -790,210 +817,25 @@ function OwedProgress({ pct, back }: { pct: number; back: number }) {
   );
 }
 
-// ── Payoff timeline ───────────────────────────────────────────────────────────
-
-/** A round step for the y-axis: 1, 2, 2.5 or 5 times a power of ten. */
-function niceStep(raw: number) {
-  const mag = 10 ** Math.floor(Math.log10(Math.max(raw, 1)));
-  const n = raw / mag;
-  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
-}
-
-/** Band colours for debts without a colour of their own: the Clear pastels with their ink. */
-const BAND_TOKENS = ["sky", "peach", "lilac", "mint", "butter", "rose", "stone"] as const;
-
-function bandColor(color: string | null | undefined, index: number) {
-  if (color) return { fill: `color-mix(in srgb, ${color} 34%, var(--clr-card))`, line: color };
-  const token = BAND_TOKENS[index % BAND_TOKENS.length];
-  return { fill: `var(--clr-${token})`, line: `var(--clr-${token}-ink)` };
-}
-
-/**
- * Every debt's balance month by month, stacked: the top edge is the total, each band one
- * debt, with a marker where it reaches zero. Follows the simulator — the extra goes to
- * the debts in the list's order — and, while there is an extra, a dashed line shows the
- * total at the minimums. Drawn in a stretchy SVG (non-scaling strokes) under HTML labels
- * and dots, so the chart can grow to fill its card; the summary is the aria-label.
- */
-function PayoffCard({ active, base, sim, extra }: { active: ComputedDebt[]; base: Sim; sim: Sim; extra: number }) {
-  const t = useTranslations("plan.debts.payoff");
-  const monthYear = useMonthYear();
-  const showBase = extra > 0;
-  // Long enough to show everything ending, capped at 30 years so a never-ending debt
-  // doesn't flatten everything else.
-  const span = Math.max(1, Math.min(360, Math.max(sim.totals.length, showBase ? base.totals.length : 0) - 1));
-  const start = sim.totals[0] ?? 0;
-  const step = niceStep(start / 3);
-  const top = Math.max(step, Math.ceil(start / step) * step);
-  const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
-  const x = (i: number) => (i / span) * 1000;
-  const y = (v: number) => 1000 - (v / top) * 1000;
-  const pct = (i: number) => `${(i / span) * 100}%`;
-  const topPct = (v: number) => `${(1 - v / top) * 100}%`;
-  const at = (series: number[], i: number) => series[Math.min(i, series.length - 1)] ?? 0;
-
-  // Colours stay with the debt whatever the sort (assigned by id), and the bands stack
-  // with the debt that lasts longest at the bottom — so each one ends on the top edge.
-  const colourIndex = new Map([...active].sort((a, z) => a.debt.id - z.debt.id).map((c, i) => [c.debt.id, i]));
-  const debtsById = new Map(active.map((c) => [c.debt.id, c]));
-  const bands = sim.byDebt
-    .filter((d) => debtsById.has(d.id))
-    .sort((a, z) => (z.months ?? Infinity) - (a.months ?? Infinity) || a.id - z.id)
-    .map((d) => ({ ...d, debt: debtsById.get(d.id)!.debt, colour: bandColor(debtsById.get(d.id)!.debt.color, colourIndex.get(d.id) ?? 0) }));
-
-  const lower = new Array<number>(span + 1).fill(0);
-  const shapes = bands.map((b) => {
-    const end = Math.min(span, b.months ?? span);
-    const bottom = lower.slice(0, end + 1);
-    const upper = bottom.map((v, i) => v + at(b.balances, i));
-    for (let i = 0; i <= end; i++) lower[i] = upper[i];
-    const edge = upper.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
-    const back = bottom.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).reverse();
-    return { ...b, area: [...edge, ...back].join(" "), edge: edge.join(" "), zeroAt: b.months != null && b.months <= span ? { i: b.months, v: bottom[b.months] ?? 0 } : null };
-  });
-  const baseLine = base.totals.slice(0, span + 1).map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
-
-  // Year starts inside the span, thinned to at most seven labels.
-  const now = new Date();
-  const years: { label: number; at: number }[] = [];
-  for (let yr = now.getFullYear() + 1; ; yr++) {
-    const a = (yr - now.getFullYear()) * 12 - now.getMonth();
-    if (a > span) break;
-    years.push({ label: yr, at: a });
-  }
-  const every = Math.max(1, Math.ceil(years.length / 7));
-  const yearLabels = years.filter((_, i) => i % every === 0);
-
-  const sooner = showBase && base.months != null && sim.months != null ? base.months - sim.months : 0;
-  const debtFree = sim.months != null ? t("debtFree", { date: monthYear(monthsFromNow(sim.months)) }) : t("debtFreeNever");
-  const subtitle = sooner > 0 ? t("sooner", { count: sooner, amount: formatEurWhole(extra) }) : t("subtitle", { count: active.length });
-  const summary = [
-    t("summary", { amount: formatEurWhole(start), end: debtFree }),
-    ...(sooner > 0 ? [subtitle] : []),
-    ...[...bands]
-      .reverse()
-      .map((b) => (b.months != null ? t("summaryDebt", { name: b.debt.name, date: monthYear(monthsFromNow(b.months)) }) : t("summaryDebtNever", { name: b.debt.name }))),
-  ].join(". ");
-
-  const legend = "inline-flex h-[30px] max-w-full items-center gap-2 rounded-full bg-clear-tile px-3";
-
-  return (
-    <ClearCard aria-labelledby="debts-payoff-title" className="flex-1 gap-3.5">
-      <ClearCardHeader
-        title={<span id="debts-payoff-title">{t("title")}</span>}
-        subtitle={<MoneyText>{subtitle}</MoneyText>}
-        action={
-          <ClearChip tone={sim.months != null ? "mint" : "rose"} icon={sim.months != null ? <IconCalendarCheck stroke={2.2} aria-hidden /> : undefined}>
-            {debtFree}
-          </ClearChip>
-        }
-      />
-
-      <div role="img" aria-label={summary} className="relative flex min-h-[220px] flex-1 pb-7 pl-12 text-xs text-clear-muted">
-        <div aria-hidden className="relative flex-1">
-          {/* y-axis labels */}
-          {ticks.map((v) => (
-            <span key={v} className="absolute -left-12 w-10 -translate-y-1/2 text-right tabular-nums" style={{ top: topPct(v) }}>
-              <MoneyText>{v === 0 ? formatEurWhole(0) : formatCompactEur(v)}</MoneyText>
-            </span>
-          ))}
-          <svg viewBox="0 0 1000 1000" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
-            {ticks.map((v) => (
-              <line
-                key={v}
-                x1={0}
-                x2={1000}
-                y1={y(v)}
-                y2={y(v)}
-                stroke="var(--clr-line)"
-                strokeDasharray={v === 0 ? undefined : "3 4"}
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-            {shapes.map((s) => (
-              <polygon key={`a${s.id}`} points={s.area} style={{ fill: s.colour.fill }} />
-            ))}
-            {shapes.map((s) => (
-              <polyline
-                key={`l${s.id}`}
-                points={s.edge}
-                fill="none"
-                stroke={s.colour.line}
-                strokeWidth={2}
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-            {showBase && (
-              <polyline points={baseLine} fill="none" stroke="var(--clr-ink-2)" strokeWidth={2} strokeDasharray="5 5" vectorEffect="non-scaling-stroke" />
-            )}
-            {sim.months != null && sim.months <= span && (
-              <line x1={x(sim.months)} x2={x(sim.months)} y1={1000} y2={60} stroke="var(--clr-placeholder)" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
-            )}
-          </svg>
-
-          {/* Today */}
-          <span className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-clear-ink" style={{ left: 0, top: topPct(start) }} />
-          <span className="absolute left-2 font-bold whitespace-nowrap text-clear-ink" style={{ top: `calc(${topPct(start)} - 22px)` }}>
-            <MoneyText>{t("today", { amount: formatEurWhole(start) })}</MoneyText>
-          </span>
-
-          {/* Where each debt reaches zero */}
-          {shapes.map((s) =>
-            s.zeroAt && s.zeroAt.i > 0 ? (
-              <span
-                key={`z${s.id}`}
-                className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[2.5px] bg-clear-card"
-                style={{ left: pct(s.zeroAt.i), top: topPct(s.zeroAt.v), borderColor: s.colour.line }}
-              />
-            ) : null,
-          )}
-
-          {/* Debt-free */}
-          {sim.months != null && sim.months <= span && (
-            <span className="absolute bottom-0 size-3.5 -translate-x-1/2 translate-y-1/2 rounded-full border-2 border-clear-card bg-clear-ember" style={{ left: pct(sim.months) }} />
-          )}
-
-          {/* x-axis: year starts */}
-          {yearLabels.map((yl) => (
-            <span key={yl.label} className="absolute -bottom-7 -translate-x-1/2 tabular-nums" style={{ left: pct(yl.at) }}>
-              {yl.label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <ul aria-hidden className="m-0 flex list-none flex-wrap gap-2 p-0 text-[13px] font-bold">
-        {[...bands].reverse().map((b) => (
-          <li key={b.id} className={legend}>
-            <span className="size-3 shrink-0 rounded-full border-2" style={{ background: b.colour.fill, borderColor: b.colour.line }} />
-            <span className="truncate">
-              {b.months != null ? t("paidOff", { name: b.debt.name, date: monthYear(monthsFromNow(b.months)) }) : t("paidOffNever", { name: b.debt.name })}
-            </span>
-          </li>
-        ))}
-        {showBase && (
-          <li className={legend}>
-            <span className="h-0 w-4 shrink-0 border-t-2 border-dashed border-clear-ink-2" />
-            {base.months != null ? t("atMinimums", { date: monthYear(monthsFromNow(base.months)) }) : t("atMinimumsNever")}
-          </li>
-        )}
-      </ul>
-    </ClearCard>
-  );
-}
-
 // ── Simulator ─────────────────────────────────────────────────────────────────
 
+/**
+ * "What if I pay extra?", across the full width: on the left the slider and which debt
+ * the extra goes to first (with a jump to the sort menu); on the right what it does —
+ * debt-free, how much sooner, the interest saved — then what it leaves to spend each
+ * month and each debt's own payoff month with the extra.
+ */
 function SimulatorCard({
   active,
   sort,
   base,
   sim,
   extra,
+  max,
   onExtra,
   totalMonthly,
   freeToSpend,
+  sortable,
   className,
 }: {
   active: ComputedDebt[];
@@ -1001,84 +843,90 @@ function SimulatorCard({
   base: Sim;
   sim: Sim;
   extra: number;
+  max: number;
   onExtra: (n: number) => void;
   totalMonthly: number;
   freeToSpend: DebtsFreeToSpend;
+  /** Whether the sort menu is there to jump to. */
+  sortable: boolean;
   className?: string;
 }) {
   const t = useTranslations("plan.debts.simulator");
   const tSort = useTranslations("plan.debts.sort");
   const monthYear = useMonthYear();
-  const max = Math.max(500, Math.ceil(totalMonthly / 100) * 100);
   const names = sim.order.map((id) => active.find((c) => c.debt.id === id)?.debt.name ?? "");
   const sooner = base.months != null && sim.months != null ? base.months - sim.months : null;
   const saved = Math.max(0, Math.round((base.interest - sim.interest) * 100) / 100);
-  const fill = `calc(13px + (100% - 26px) * ${extra / max})`;
   const stat = "flex min-w-0 flex-col gap-1 rounded-clear-tile p-3.5";
 
+  function changeOrder() {
+    const trigger = document.getElementById(SORT_TRIGGER_ID);
+    if (!trigger) return;
+    trigger.scrollIntoView({ behavior: "smooth", block: "center" });
+    trigger.focus({ preventScroll: true });
+  }
+
   return (
-    <ClearCard data-tip-anchor="debtsSimulator" aria-labelledby="debts-sim-title" className={className}>
-      <ClearCardHeader title={<span id="debts-sim-title">{t("title")}</span>} subtitle={<MoneyText>{t("subtitle", { amount: formatEurWhole(totalMonthly) })}</MoneyText>} />
+    <ClearCard data-tip-anchor="debtsSimulator" aria-labelledby="debts-sim-title" className={cn("gap-6 xl:grid xl:grid-cols-[1.3fr_2fr]", className)}>
+      <div className="flex min-w-0 flex-col gap-3.5">
+        <ClearCardHeader title={<span id="debts-sim-title">{t("title")}</span>} subtitle={<MoneyText>{t("subtitle", { amount: formatEurWhole(totalMonthly) })}</MoneyText>} />
 
-      <div className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <label htmlFor="debt-extra" className="text-[13px] font-bold text-clear-ink-2">
-            {t("extra")}
-          </label>
-          <Amount value={extra} whole splitCents={false} sign="none" className="text-[28px] leading-none tracking-[-0.03em]" />
+        <div className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="debt-extra" className="text-[13px] font-semibold text-clear-ink-2">
+              {t("extra")}
+            </label>
+            <Amount value={extra} whole splitCents={false} sign="none" className="text-[28px] leading-none tracking-[-0.03em]" />
+          </div>
+          <ExtraSlider id="debt-extra" value={extra} max={max} onChange={onExtra} valueText={t("valueText", { amount: formatEurWhole(extra) })} />
+          <div aria-hidden className="flex justify-between text-xs tabular-nums text-clear-muted">
+            {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+              <span key={f}><MoneyText>{formatEurWhole(Math.round(max * f))}</MoneyText></span>
+            ))}
+          </div>
         </div>
-        <div className="relative flex h-7 items-center">
-          <span aria-hidden className="clear-hatch absolute inset-x-0 h-2.5 rounded-full" />
-          <span aria-hidden className="absolute left-0 h-2.5 rounded-full bg-clear-ember" style={{ width: fill }} />
-          <input
-            id="debt-extra"
-            type="range"
-            min={0}
-            max={max}
-            step={10}
-            value={extra}
-            onChange={(e) => onExtra(Number(e.target.value))}
-            aria-valuetext={t("valueText", { amount: formatEurWhole(extra) })}
-            className="peer absolute inset-0 m-0 h-7 w-full cursor-pointer opacity-0"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute size-[26px] -translate-x-1/2 rounded-full border-4 border-clear-card bg-clear-primary shadow-clear-float peer-focus-visible:ring-3 peer-focus-visible:ring-clear-ember/50"
-            style={{ left: `calc(13px + (100% - 26px) * ${extra / max})` }}
-          />
-        </div>
-        <div aria-hidden className="flex justify-between text-xs tabular-nums text-clear-muted">
-          {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-            <span key={f}><MoneyText>{formatEurWhole(Math.round(max * f))}</MoneyText></span>
-          ))}
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <div className={cn(stat, "bg-clear-ember text-clear-ember-ink")}>
-          <span className="text-xs font-semibold">{t("debtFree")}</span>
-          <span className="clear-amount truncate text-lg">{sim.months != null ? monthYear(monthsFromNow(sim.months)) : "—"}</span>
-        </div>
-        <div className={cn(stat, "bg-clear-mint")}>
-          <span className="text-xs font-semibold text-clear-mint-ink">{t("sooner")}</span>
-          <span className="clear-amount truncate text-lg">{sooner != null && sooner > 0 ? t("months", { count: sooner }) : "—"}</span>
-        </div>
-        <div className={cn(stat, "col-span-2 bg-clear-tile sm:col-span-1")}>
-          <span className="text-xs font-semibold text-clear-ink-2">{t("saved")}</span>
-          <span className="clear-amount truncate text-lg"><MoneyText>{formatEur(saved)}</MoneyText></span>
-        </div>
-      </div>
-
-      <FreeToSpendTile freeToSpend={freeToSpend} extra={extra} />
-
-      <p className="m-0 mt-auto flex gap-2 text-[13px] leading-[1.45] text-clear-ink-2">
-        <IconInfoCircle aria-hidden size={16} stroke={2} className="mt-px shrink-0" />
-        <span>
+        <p className="m-0 text-[13px] leading-[1.45] font-medium text-clear-ink-2">
           {names.length <= 1
             ? t("orderOne", { name: names[0] ?? "" })
-            : t("orderSort", { first: names[0], rest: names.slice(1).join(", "), order: tSort(`inline.${sort}`) })}
-        </span>
-      </p>
+            : t.rich("orderFirst", {
+                first: names[0],
+                rest: names.slice(1).join(t("thenJoin")),
+                order: tSort(`inline.${sort}`),
+                b: (ch) => <b className="font-semibold text-clear-ink">{ch}</b>,
+              })}
+          {sortable && (
+            <>
+              {" "}
+              <button type="button" onClick={changeOrder} className="cursor-pointer font-semibold text-clear-ember-text hover:underline">
+                {t("changeOrder")}
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className={cn(stat, "bg-clear-ember text-clear-ember-ink")}>
+            <span className="text-xs font-semibold">{t("debtFree")}</span>
+            <span className="clear-amount truncate text-[22px]">{sim.months != null ? monthYear(monthsFromNow(sim.months)) : "—"}</span>
+          </div>
+          <div className={cn(stat, "bg-clear-mint")}>
+            <span className="text-xs font-semibold text-clear-mint-ink">{t("sooner")}</span>
+            <span className="clear-amount truncate text-[22px]">{sooner != null && sooner > 0 ? t("months", { count: sooner }) : "—"}</span>
+          </div>
+          <div className={cn(stat, "col-span-2 bg-clear-tile sm:col-span-1")}>
+            <span className="text-xs font-semibold text-clear-ink-2">{t("saved")}</span>
+            <span className="clear-amount truncate text-[22px]"><MoneyText>{formatEurWhole(saved)}</MoneyText></span>
+          </div>
+        </div>
+
+        <div className="grid flex-1 gap-3 sm:grid-cols-3">
+          <FreeToSpendTile freeToSpend={freeToSpend} extra={extra} />
+          <EachDebtTile active={active} base={base} sim={sim} className="sm:col-span-2" />
+        </div>
+      </div>
     </ClearCard>
   );
 }
@@ -1086,17 +934,17 @@ function SimulatorCard({
 /**
  * What the extra does to the month: free to spend now (recurring income minus bills,
  * debt payments, savings and the budget — computed on the server) and after the extra,
- * with a warning when the extra is more than there is.
+ * with a chip saying whether that still leaves something or how much it falls short.
  */
 function FreeToSpendTile({ freeToSpend, extra }: { freeToSpend: DebtsFreeToSpend; extra: number }) {
   const t = useTranslations("plan.debts.simulator.free");
-  const box = "flex min-w-0 flex-col gap-1.5 rounded-clear-tile bg-clear-tile p-3.5";
+  const box = "flex min-w-0 flex-col justify-between gap-2 rounded-clear-tile bg-clear-tile p-3.5";
 
   if (freeToSpend.income <= 0) {
     return (
       <div data-tip-anchor="debtsSortAndImpact" className={box}>
         <span className="text-xs font-semibold text-clear-ink-2">{t("title")}</span>
-        <span className="text-[13px] leading-[1.45] text-clear-ink-2">{t("noIncome")}</span>
+        <span className="text-[13px] leading-[1.45] font-medium text-clear-ink-2">{t("noIncome")}</span>
       </div>
     );
   }
@@ -1107,25 +955,67 @@ function FreeToSpendTile({ freeToSpend, extra }: { freeToSpend: DebtsFreeToSpend
 
   return (
     <div data-tip-anchor="debtsSortAndImpact" className={box}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-col gap-1">
         <span className="text-xs font-semibold text-clear-ink-2">{t("title")}</span>
-        {short > 0 && (
-          <ClearChip tone="ember" icon={<IconAlertTriangle stroke={2.2} aria-hidden />} className="h-7 px-2.5 text-xs">
-            <MoneyText>{t("short", { amount: formatEurWhole(short) })}</MoneyText>
-          </ClearChip>
-        )}
+        {extra > 0 && <span className="sr-only"><MoneyText>{t("change", { from: formatEurWhole(now), to: formatEurWhole(after) })}</MoneyText></span>}
+        <span aria-hidden={extra > 0 || undefined} className="flex flex-wrap items-baseline gap-x-2 text-lg">
+          <Amount value={now} whole splitCents={false} className={cn(extra > 0 && "text-clear-ink-2")} />
+          {extra > 0 && (
+            <>
+              <span className="text-clear-muted">→</span>
+              <Amount value={after} whole splitCents={false} className={cn(short > 0 && "text-clear-ember-text")} />
+            </>
+          )}
+        </span>
       </div>
-      {extra > 0 && <span className="sr-only"><MoneyText>{t("change", { from: formatEurWhole(now), to: formatEurWhole(after) })}</MoneyText></span>}
-      <span aria-hidden={extra > 0 || undefined} className="flex flex-wrap items-baseline gap-x-2 text-lg">
-        <Amount value={now} whole splitCents={false} className={cn(extra > 0 && "text-clear-ink-2")} />
-        {extra > 0 && (
-          <>
-            <span className="text-clear-muted">→</span>
-            <Amount value={after} whole splitCents={false} className={cn(short > 0 && "text-clear-ember-text")} />
-          </>
-        )}
-      </span>
-      <span className="text-xs text-clear-muted">{t("basis")}</span>
+      {short > 0 ? (
+        <ClearChip tone="ember" icon={<IconAlertTriangle stroke={2.2} aria-hidden />} className="h-auto min-h-7 self-start px-2.5 py-1 text-xs font-semibold whitespace-normal">
+          <MoneyText>{t("short", { amount: formatEurWhole(short) })}</MoneyText>
+        </ClearChip>
+      ) : (
+        extra > 0 && (
+          <ClearChip tone="neutral" className="h-auto min-h-7 self-start px-2.5 py-1 text-xs font-semibold whitespace-normal">
+            {t("stillLeft")}
+          </ClearChip>
+        )
+      )}
+    </div>
+  );
+}
+
+/** Each debt's payoff month with the extra, and how much sooner than at the minimums. */
+function EachDebtTile({ active, base, sim, className }: { active: ComputedDebt[]; base: Sim; sim: Sim; className?: string }) {
+  const t = useTranslations("plan.debts.simulator");
+  const tTile = useTranslations("plan.debts.tile");
+  const monthYear = useMonthYear();
+  const now = payoffMonthsById(sim);
+  const before = payoffMonthsById(base);
+
+  return (
+    <div className={cn("flex min-w-0 flex-col gap-2 rounded-clear-tile bg-clear-tile p-3.5", className)}>
+      <span className="text-xs font-semibold text-clear-ink-2">{t("eachDebt")}</span>
+      <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px] font-medium">
+        {active.map((c) => {
+          const m = now.get(c.debt.id);
+          const b = before.get(c.debt.id);
+          const sooner = m != null && b != null ? b - m : 0;
+          return (
+            <li key={c.debt.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3">
+              <span className="min-w-0 truncate font-semibold">{c.debt.name}</span>
+              <span className="text-clear-ink-2">
+                {m == null ? (
+                  tTile("payoffNever")
+                ) : (
+                  <>
+                    {t.rich("eachDebtFree", { date: monthYear(monthsFromNow(m)), b: (ch) => <b className="font-semibold text-clear-ink">{ch}</b> })}
+                    {sooner > 0 && <> · {tTile("payoffSooner", { count: sooner })}</>}
+                  </>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

@@ -5,6 +5,9 @@ import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBudgetData } from "@/lib/budget-data";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { safeToSpend } from "@/lib/safe-to-spend";
+import { getNeedsReviewTransactions } from "@/lib/needs-review";
+import { summarizeNeedsReview } from "@/lib/needs-review-summary";
+import { byDueDate } from "@/lib/bill-groups";
 import { BudgetEditorProvider } from "./budget-editor";
 import { BudgetView, type BudgetBill, type BudgetSuggestion, type BudgetViewData } from "./budget-view";
 
@@ -24,12 +27,13 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
   const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month) && sp.month < current && sp.month >= oldest ? sp.month : current;
   const isCurrent = month === current;
 
-  const [overview, budgetData, billStatuses, recurringMode, locale] = await Promise.all([
+  const [overview, budgetData, billStatuses, recurringMode, locale, needsReview] = await Promise.all([
     getBudgetOverview(financialMonth, { month }),
     getBudgetData(month, financialMonth),
     getBillStatuses(month, financialMonth, UPCOMING_TYPES),
     getBudgetRecurringMode(),
     getLocale(),
+    getNeedsReviewTransactions(),
   ]);
 
   const today = todayStr();
@@ -100,7 +104,9 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
     };
   }
 
-  // ── Bills and income this financial month, soonest first, date-less ones last.
+  // ── Bills and income this financial month (each only in the months it is due in:
+  //    getBillStatuses places quarterly and yearly items in their own months), soonest
+  //    first, one without a due day last.
   const bills: BudgetBill[] = billStatuses
     .map((s) => ({
       id: s.item.id,
@@ -108,13 +114,18 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
       amount: s.item.amount,
       icon: s.icon,
       iconColor: s.iconColor,
+      iconBackground: s.iconBackground,
       dueDate: s.dueDate,
+      frequency: s.item.frequency,
       paid: s.paid === true,
-      paidByMatch: s.paidSource === "match",
+      paidSource: s.paidSource,
+      hasPattern: !!s.item.matchPattern,
+      // Only a bill without a pattern needs the item itself: "Teach Arca the pattern".
+      item: s.item.matchPattern ? null : s.item,
       overdue: s.overdue,
       isIncome: s.item.type === "income",
     }))
-    .sort((a, z) => (a.dueDate ?? "9999").localeCompare(z.dueDate ?? "9999") || a.name.localeCompare(z.name));
+    .sort(byDueDate);
 
   // ── The next income: this month's when one is still to come, else the first one of
   //    the next financial month (salary often lands on the day the new month starts).
@@ -168,6 +179,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
     today,
     ended,
     nextIncome,
+    needsReview: summarizeNeedsReview(needsReview),
     financialMonth,
     // The budget-month switcher: back up to HISTORY_MONTHS, forward up to now.
     periodNav: weekly

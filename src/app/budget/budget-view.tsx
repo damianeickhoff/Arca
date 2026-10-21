@@ -3,7 +3,7 @@
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { IconAlertTriangle, IconCheck, IconChevronLeft, IconChevronRight, IconDots, IconPencil, IconPlus, IconSparkles, IconTag } from "@tabler/icons-react";
+import { IconAlertTriangle, IconCheck, IconChevronDown, IconChevronLeft, IconChevronRight, IconDots, IconPencil, IconPlus, IconSparkles, IconTag } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import { Icon } from "@/components/icon";
@@ -16,11 +16,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLinkIt
 import { PlanSwitch } from "@/components/shell/plan-switch";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { ContextualTip } from "@/components/contextual-tip";
-import { MarkPaidButton } from "@/app/mark-paid-button";
+import { BillStatusControl } from "@/components/bill-status-control";
 import { CategoryDetailPortal } from "@/components/category-detail-portal";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetPeriod } from "@/lib/budget-overview";
 import type { SafeToSpend } from "@/lib/safe-to-spend";
+import type { NeedsReviewSummary } from "@/lib/needs-review-summary";
+import type { RecurringItem } from "@/db/schema";
+import { billControl, billsTotal, foldSummary, groupBudgetBills } from "@/lib/bill-groups";
 import { useBudgetEditor } from "./budget-editor";
 import { MoneyText } from "@/components/clear/money";
 
@@ -44,10 +47,17 @@ export interface BudgetBill {
   amount: number | null;
   icon: string | null;
   iconColor: string | null;
+  iconBackground: string | null;
+  /** YYYY-MM-DD; null only for a hand-made item without a due day ("This month"). */
   dueDate: string | null;
+  frequency: string;
   paid: boolean;
-  /** Paid because a transaction matched it — nothing to toggle. */
-  paidByMatch: boolean;
+  /** "match": a transaction matched it; "manual": marked paid by hand. */
+  paidSource: "match" | "manual" | null;
+  /** Has a match pattern, so Arca ticks it off itself. */
+  hasPattern: boolean;
+  /** The item, for "Teach Arca the pattern"; only set when it has no pattern. */
+  item: RecurringItem | null;
   overdue: boolean;
   isIncome: boolean;
 }
@@ -90,6 +100,8 @@ export interface BudgetViewData {
   ended: boolean;
   /** The next expected income, also when it lands in the next financial month. */
   nextIncome: { name: string; amount: number | null; date: string } | null;
+  /** Transactions without a category, for the "Needs a category" card. */
+  needsReview: NeedsReviewSummary;
   /** Earlier / later budget month (?month=); "" is the current month, null is none. Null for weekly budgets. */
   periodNav: { prev: string | null; next: string | null } | null;
   /** For the category detail's period picker. */
@@ -120,10 +132,10 @@ function dayAfter(date: string) {
 
 /**
  * Plan · Budget. One grid: the budget (black hero), the strategy and a suggestion on
- * top; the category budgets (two columns wide) beside this month's bills underneath.
- * At lg (two columns) the bills move up beside the suggestion and the category list
- * spans the full width at the bottom. Phones follow the phone mockup: budget,
- * suggestion and categories first, the strategy and the bills after them.
+ * top; the category budgets (two columns wide) beside a stack of this month's bills and
+ * "Needs a category", each at its own height. At lg (two columns) the stack sits under
+ * the suggestion and the category list fills the column beside them. Phones: budget,
+ * suggestion, bills, categories, then the strategy.
  */
 export function BudgetView({ data }: { data: BudgetViewData }) {
   return (
@@ -135,14 +147,18 @@ export function BudgetView({ data }: { data: BudgetViewData }) {
         <StrategyCard strategy={data.strategy} income={data.income} actuals={data.actuals} />
         <SuggestionCard data={data} />
         <CategoryBudgetsCard data={data} />
-        <BillsCard data={data} />
+        <div className="order-1 flex min-w-0 flex-col gap-5 self-start lg:order-none lg:col-start-1 xl:col-start-auto">
+          <BillsCard data={data} />
+          <NeedsCategoryCard summary={data.needsReview} />
+        </div>
       </div>
 
       <ContextualTip id="budget" />
       <AnchoredTip id="budgetStrategyTarget" anchor="budgetStrategy" />
       <AnchoredTip id="budgetMove" anchor="budgetMove" active={data.suggestion?.move != null} />
       <AnchoredTip id="budgetUnbudgeted" anchor="budgetUnbudgeted" active={data.rows.length > 0} />
-      <AnchoredTip id="budgetBills" anchor="budgetBills" />
+      <AnchoredTip id="billStatusControl" anchor="billStatusControl" active={data.bills.some((b) => !b.isIncome)} />
+      <AnchoredTip id="budgetNeedsCategory" anchor="budgetNeedsCategory" active={data.needsReview.count > 0} />
       <AnchoredTip id="budgetPeriodNav" anchor="budgetPeriodNav" active={data.periodNav != null && data.hasBudget} />
     </div>
   );
@@ -390,7 +406,7 @@ function StrategyCard({ strategy, income, actuals }: { strategy: Strategy; incom
   const share = (pct: number) => formatEurWhole((income * pct) / 100);
 
   return (
-    <ClearCard data-tip-anchor="budgetStrategy" aria-labelledby="budget-strategy-title" className="order-1 gap-4 lg:order-none">
+    <ClearCard data-tip-anchor="budgetStrategy" aria-labelledby="budget-strategy-title" className="order-3 gap-4 lg:order-none">
       <ClearCardHeader
         title={<span id="budget-strategy-title">{t("title")}</span>}
         subtitle={t("subtitle")}
@@ -499,7 +515,7 @@ function SuggestionCard({ data }: { data: BudgetViewData }) {
   const afterDonor = s.move ? s.move.fromBudget - s.move.amount - s.move.fromSpent : null;
 
   return (
-    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-peach text-clear-ink lg:self-start xl:self-stretch">
+    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-peach text-clear-ink lg:col-start-1 lg:self-start xl:col-start-auto xl:self-stretch">
       <div className="flex items-center gap-2.5">
         <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-clear-card text-clear-peach-ink">
           <IconAlertTriangle size={18} stroke={2} />
@@ -562,7 +578,7 @@ function OnTrackCard({ data }: { data: BudgetViewData }) {
   const roomiest = [...data.rows].sort((a, z) => z.budget - z.spent - (a.budget - a.spent))[0];
   const tileClass = "flex min-w-0 flex-col gap-1 rounded-clear-tile bg-white/70 px-3.5 py-3 dark:bg-clear-card/60";
   return (
-    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-mint text-clear-ink lg:self-start xl:self-stretch">
+    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-mint text-clear-ink lg:col-start-1 lg:self-start xl:col-start-auto xl:self-stretch">
       <div className="flex items-center gap-2.5">
         <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-clear-card text-clear-mint-ink">
           <IconCheck size={18} stroke={2.4} />
@@ -593,7 +609,7 @@ function StartCard() {
   const t = useTranslations("plan.budget.suggestion.start");
   const editor = useBudgetEditor();
   return (
-    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-butter text-clear-ink lg:self-start xl:self-stretch">
+    <ClearCard aria-labelledby="budget-suggestion-title" className="bg-clear-butter text-clear-ink lg:col-start-1 lg:self-start xl:col-start-auto xl:self-stretch">
       <div className="flex items-center gap-2.5">
         <span aria-hidden className="inline-flex size-9 items-center justify-center rounded-full bg-clear-card text-clear-butter-ink">
           <IconSparkles size={18} stroke={2} />
@@ -624,7 +640,7 @@ function CategoryBudgetsCard({ data }: { data: BudgetViewData }) {
   const free = (data.figures?.target ?? 0) - data.allocated;
 
   return (
-    <ClearCard aria-labelledby="budget-categories-title" className="gap-3.5 lg:order-last lg:col-span-2 xl:order-none">
+    <ClearCard aria-labelledby="budget-categories-title" className="order-2 gap-3.5 lg:order-none lg:col-start-2 lg:row-span-2 xl:col-span-2 xl:col-start-auto xl:row-span-1">
       <ClearCardHeader
         title={<span id="budget-categories-title">{t("title")}</span>}
         subtitle={<MoneyText>{data.rows.length > 0 ? t("subtitle", { spent: formatEurWhole(spent), allocated: formatEurWhole(data.allocated) }) : undefined}</MoneyText>}
@@ -729,131 +745,204 @@ function CategoryBudgetsCard({ data }: { data: BudgetViewData }) {
 
 // ── Bills ─────────────────────────────────────────────────────────────────────
 
+/** How many open bills the card lists before "Show N more". */
+const OPEN_ROWS = 6;
+
 /**
- * This month's bills: the paid ones, a "Today" line, then the ones still to come, with
- * a paid-of-total bar on top and the next income beside what is still to pay below.
+ * This month's bills, kept short: a paid-of-total bar, then Overdue, Coming up (by due
+ * date, one without a due day last as "This month") and everything paid folded into one
+ * row that opens in place. Each row ends in its status: auto, Paid or Paid?. The next
+ * income sits in a mint tile at the foot. Only bills due in this month are listed.
  */
 function BillsCard({ data }: { data: BudgetViewData }) {
   const t = useTranslations("plan.budget.bills");
+  const tFreq = useTranslations("plan.budget.bills.frequency");
   const short = useShortDate();
-  const out = data.bills.filter((b) => !b.isIncome);
-  const paid = out.filter((b) => b.paid);
-  const due = out.filter((b) => !b.paid);
-  const paidTotal = paid.reduce((s, b) => s + (b.amount ?? 0), 0);
-  const dueTotal = due.reduce((s, b) => s + (b.amount ?? 0), 0);
+  const [showAll, setShowAll] = useState(false);
+  const [paidOpen, setPaidOpen] = useState(false);
+  const { overdue, comingUp, paid } = groupBudgetBills(data.bills);
+  const open = [...overdue, ...comingUp];
+  const paidTotal = billsTotal(paid);
+  const dueTotal = billsTotal(open);
   const total = paidTotal + dueTotal;
-  const next = data.ended ? undefined : due.find((b) => b.dueDate != null && b.dueDate >= data.today);
+  const fold = foldSummary(paid);
+  const next = data.ended ? undefined : comingUp.find((b) => b.dueDate != null && b.dueDate >= data.today);
   const days = (date: string) =>
     Math.round((new Date(`${date}T12:00:00`).getTime() - new Date(`${data.today}T12:00:00`).getTime()) / 86_400_000);
   const nextIncome = data.nextIncome;
+  const empty = open.length === 0 && paid.length === 0;
 
-  const summary = [
-    t("summary", { paid: paid.length, due: due.length }),
-    next ? t("next", { name: next.name, days: days(next.dueDate!) }) : due.length === 0 && out.length > 0 ? t("allPaid") : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // The first open rows only; overdue ones always come first, so they are never hidden.
+  const visible = showAll ? open : open.slice(0, OPEN_ROWS);
+  const shownOverdue = visible.filter((b) => overdue.includes(b));
+  const shownComingUp = visible.filter((b) => !overdue.includes(b));
+  const firstControl = visible[0] ?? (paidOpen ? paid[0] : undefined);
 
-  function status(b: BudgetBill): { text: string; tone: "mint" | "neutral" | "rose" | "peach"; ink: string } {
-    if (b.paid) return { text: b.dueDate ? t("paidOn", { date: short(b.dueDate) }) : t("paid"), tone: "mint", ink: "text-clear-positive" };
-    if (!b.dueDate) return { text: t("noDate"), tone: "neutral", ink: "text-clear-muted" };
-    if (b.overdue) return { text: t("overdue", { date: short(b.dueDate) }), tone: "rose", ink: "text-clear-negative" };
-    return { text: b.dueDate === data.today ? t("dueToday") : t("due", { date: short(b.dueDate) }), tone: "peach", ink: "text-clear-ember-text" };
+  const subtitle = empty
+    ? undefined
+    : open.length === 0
+      ? t("allPaid")
+      : [t("stillToPay", { amount: formatEur(dueTotal) }), next ? t("next", { name: next.name, days: days(next.dueDate!) }) : null]
+          .filter(Boolean)
+          .join(" · ");
+
+  function meta(b: BudgetBill): { text: string; ink: string } {
+    const freq = b.frequency !== "monthly" && FREQUENCIES.has(b.frequency) ? tFreq(b.frequency) : null;
+    const withFreq = (text: string) => (freq ? `${text} · ${freq}` : text);
+    if (b.paid) {
+      const how = b.paidSource === "match" ? t("matched") : t("marked");
+      return { text: b.dueDate ? `${how} · ${short(b.dueDate)}` : how, ink: "text-clear-muted" };
+    }
+    if (!b.dueDate) return { text: withFreq(t("thisMonth")), ink: "text-clear-muted" };
+    const d = days(b.dueDate);
+    if (b.overdue) return { text: withFreq(t("dueAgo", { date: short(b.dueDate), days: -d })), ink: "text-clear-ember-text" };
+    if (!data.ended && d >= 0 && d <= 3) return { text: withFreq(t("dueIn", { date: short(b.dueDate), days: d })), ink: "text-clear-ember-text" };
+    return { text: withFreq(t("due", { date: short(b.dueDate) })), ink: "text-clear-muted" };
   }
 
   function row(b: BudgetBill) {
-    const st = status(b);
+    const m = meta(b);
     return (
-      <li key={`${b.id}-${b.dueDate}`} className="flex min-h-[52px] items-center gap-3 border-b border-clear-ground py-1.5 last:border-b-0">
-        <Icon iconKey={b.icon} color={b.iconColor} size="md" soft />
+      <li key={`${b.id}-${b.dueDate}`} className="flex min-h-[52px] items-center gap-3 py-1.5">
+        <Icon iconKey={b.icon} color={b.iconColor} background={b.iconBackground} size="md" soft />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-sm font-bold">{b.name}</span>
-          <span className={cn("truncate text-xs font-semibold sm:hidden", st.ink)}>{st.text}</span>
+          <span className={cn("truncate text-xs font-semibold", m.ink)}>{m.text}</span>
         </span>
-        <ClearChip
-          tone={st.tone}
-          icon={b.paid ? <IconCheck stroke={3} aria-hidden /> : undefined}
-          className="hidden h-[26px] px-2.5 text-xs font-bold sm:inline-flex"
-        >
-          {st.text}
-        </ClearChip>
-        <span className={cn("w-[76px] shrink-0 text-right text-[15px] font-extrabold tabular-nums", b.paid && "text-clear-ink-2")}>
+        <span className={cn("shrink-0 text-right text-sm font-extrabold tabular-nums", b.paid && "text-clear-ink-2")}>
           <MoneyText>{b.amount != null ? formatEur(b.amount) : "—"}</MoneyText>
         </span>
-        {b.paidByMatch ? (
-          <span
-            role="img"
-            aria-label={t("paidAuto")}
-            title={t("paidAuto")}
-            className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-clear-positive text-white"
-          >
-            <IconCheck className="size-3.5" stroke={2.4} />
-          </span>
-        ) : (
-          <MarkPaidButton recurringItemId={b.id} month={data.billsMonth} paid={b.paid} />
-        )}
+        <span className="flex w-[68px] shrink-0 justify-end">
+          <BillStatusControl
+            state={billControl(b, data.today)}
+            recurringItemId={b.id}
+            month={data.billsMonth}
+            item={b.item}
+            tipAnchor={b === firstControl}
+          />
+        </span>
       </li>
     );
   }
 
+  const groupLabel = "flex items-center justify-between pt-3 pb-1 text-xs font-bold";
+
   return (
-    <ClearCard data-tip-anchor="budgetBills" aria-labelledby="budget-bills-title" className="order-2 gap-3.5 lg:order-none">
+    <ClearCard aria-labelledby="budget-bills-title" className="gap-3.5">
       <ClearCardHeader
         title={<span id="budget-bills-title">{t("title", { month: data.billsMonthName })}</span>}
-        subtitle={out.length > 0 ? summary : undefined}
+        subtitle={subtitle}
         action={<ClearCardLink href="/transactions/upcoming">{t("view")}</ClearCardLink>}
       />
 
-      {out.length === 0 ? (
+      {empty ? (
         <p className="m-0 text-sm text-clear-muted">{t("empty")}</p>
       ) : (
         <>
           {total > 0 && (
             <div className="flex flex-col gap-1.5">
-              <ClearProgress value={paidTotal / total} hatchRemainder fillClassName="bg-clear-primary" />
-              <div className="flex justify-between gap-3 text-[13px] tabular-nums text-clear-ink-2">
+              <ClearProgress size="sm" value={paidTotal / total} hatchRemainder fillClassName="bg-clear-primary" />
+              <div className="flex justify-between gap-3 text-xs tabular-nums text-clear-muted">
                 <span><MoneyText>{t("paidAmount", { amount: formatEur(paidTotal) })}</MoneyText></span>
                 <span><MoneyText>{t("total", { amount: formatEur(total) })}</MoneyText></span>
               </div>
             </div>
           )}
+
           <div className="flex flex-col">
-            {paid.length > 0 && <ul className="m-0 flex list-none flex-col p-0">{paid.map(row)}</ul>}
-            {due.length > 0 && (
+            {shownOverdue.length > 0 && (
               <>
-                <div className="flex items-center gap-2.5 py-2.5">
-                  <span className="inline-flex h-6 items-center rounded-full bg-clear-primary px-2.5 text-xs font-extrabold text-clear-primary-ink">
-                    {data.ended ? t("notPaid") : t("today", { date: short(data.today) })}
-                  </span>
-                  <span aria-hidden className="h-px flex-1 bg-clear-line" />
-                </div>
-                <ul className="m-0 flex list-none flex-col p-0">{due.map(row)}</ul>
+                <div className={cn(groupLabel, "text-clear-ember-text")}>{t("overdueGroup")}</div>
+                <ul className="m-0 flex list-none flex-col p-0">{shownOverdue.map(row)}</ul>
               </>
             )}
+            {shownComingUp.length > 0 && (
+              <>
+                <div className={cn(groupLabel, "text-clear-muted")}>{data.ended ? t("notPaid") : t("comingUp")}</div>
+                <ul className="m-0 flex list-none flex-col p-0">{shownComingUp.map(row)}</ul>
+              </>
+            )}
+            {open.length > OPEN_ROWS && (
+              <button
+                type="button"
+                onClick={() => setShowAll((v) => !v)}
+                className={cn(clearButtonVariants({ variant: "ghost", size: "sm" }), "mt-1 self-start")}
+              >
+                {showAll ? t("showLess") : t("showMore", { count: open.length - OPEN_ROWS })}
+              </button>
+            )}
           </div>
+
+          {paid.length > 0 && (
+            <div className="flex flex-col">
+              <button
+                type="button"
+                aria-expanded={paidOpen}
+                onClick={() => setPaidOpen((v) => !v)}
+                className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-clear-tile bg-clear-tile px-3.5 py-2.5 text-left transition-colors hover:bg-clear-line"
+              >
+                <span className="shrink-0 text-[13px] font-bold">
+                  <MoneyText>{t("paidFold", { count: fold.count, amount: formatEur(fold.total) })}</MoneyText>
+                </span>
+                <span className="flex min-w-0 items-center gap-1.5 text-xs text-clear-muted">
+                  <span className="truncate">
+                    {fold.more > 0 ? t("foldNamesMore", { names: fold.names.join(", "), count: fold.more }) : fold.names.join(", ")}
+                  </span>
+                  <IconChevronDown size={14} stroke={2.2} aria-hidden className={cn("shrink-0 transition-transform", paidOpen && "rotate-180")} />
+                </span>
+              </button>
+              {paidOpen && <ul className="m-0 flex list-none flex-col p-0 pt-1">{paid.map(row)}</ul>}
+            </div>
+          )}
         </>
       )}
 
-      {(dueTotal > 0 || nextIncome) && (
-        <div className="mt-auto flex items-center justify-between gap-3 rounded-clear-tile bg-clear-tile px-4 py-3.5">
-          {nextIncome ? (
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate text-[13px] text-clear-ink-2">{t("nextIncome", { name: nextIncome.name, date: short(nextIncome.date) })}</span>
-              {nextIncome.amount != null && (
-                <Amount value={nextIncome.amount} sign="always" splitCents={false} className="text-sm text-clear-positive" />
-              )}
-            </span>
-          ) : (
-            <span />
-          )}
-          {dueTotal > 0 && (
-            <span className="flex shrink-0 flex-col items-end gap-0.5">
-              <Amount value={dueTotal} sign="none" splitCents={false} className="text-xl" />
-              <span className="text-[13px] font-semibold text-clear-ink-2">{t("stillToPay")}</span>
-            </span>
-          )}
+      {nextIncome && (
+        <div className="mt-auto flex items-center justify-between gap-3 rounded-clear-tile bg-clear-mint px-3.5 py-3 text-clear-mint-ink">
+          <span className="shrink-0 text-[13px] font-bold">{t("nextIncomeLabel")}</span>
+          <span className="min-w-0 truncate text-right text-[13px] font-bold">
+            <MoneyText>
+              {nextIncome.amount != null
+                ? t("nextIncomeValue", { name: nextIncome.name, date: short(nextIncome.date), amount: formatEurWhole(nextIncome.amount) })
+                : t("nextIncomeNoAmount", { name: nextIncome.name, date: short(nextIncome.date) })}
+            </MoneyText>
+          </span>
         </div>
       )}
+    </ClearCard>
+  );
+}
+
+const FREQUENCIES = new Set(["daily", "weekly", "four_weekly", "quarterly", "yearly"]);
+
+// ── Needs a category ──────────────────────────────────────────────────────────
+
+/** How many transactions still have no category, the merchants most of them come
+ *  from, and a way to sort them. Hidden once everything has a category. */
+function NeedsCategoryCard({ summary }: { summary: NeedsReviewSummary }) {
+  const t = useTranslations("plan.budget.needsCategory");
+  if (summary.count === 0) return null;
+  return (
+    <ClearCard data-tip-anchor="budgetNeedsCategory" aria-labelledby="budget-review-title" className="gap-3">
+      <ClearCardHeader
+        title={<span id="budget-review-title">{t("title")}</span>}
+        subtitle={t("subtitle", { count: summary.count, amount: formatEurWhole(summary.total) })}
+      />
+      <div className="flex flex-wrap gap-1.5">
+        {summary.top.map((m) => (
+          <ClearChip key={m.name} tone="stone" className="h-7 max-w-full px-2.5 text-xs">
+            <span className="truncate">{m.count > 1 ? t("merchantCount", { name: m.name, count: m.count }) : m.name}</span>
+          </ClearChip>
+        ))}
+        {summary.otherMerchants > 0 && (
+          <ClearChip tone="stone" className="h-7 px-2.5 text-xs">
+            {t("more", { count: summary.otherMerchants })}
+          </ClearChip>
+        )}
+      </div>
+      <Link href="/transactions/needs-review" className={cn(clearButtonVariants({ variant: "secondary", size: "sm" }), "self-start")}>
+        {t("sort")}
+      </Link>
     </ClearCard>
   );
 }

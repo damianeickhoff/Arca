@@ -173,3 +173,58 @@ export function PaymentNotice({
     </div>
   );
 }
+
+/**
+ * The "extra each month" range input: hatched track, ember fill up to the value and a
+ * round black thumb. The Debts page's simulator and the payoff timeline popup both draw
+ * it on the same state, so moving one moves the other. Label it with a <label htmlFor>.
+ */
+export function ExtraSlider({
+  id,
+  value,
+  max,
+  onChange,
+  valueText,
+}: {
+  id: string;
+  value: number;
+  max: number;
+  onChange: (n: number) => void;
+  /** Already translated, e.g. "€200 a month". */
+  valueText: string;
+}) {
+  const at = `calc(13px + (100% - 26px) * ${Math.min(1, value / max)})`;
+  return (
+    <div className="relative flex h-7 items-center">
+      <span aria-hidden className="clear-hatch absolute inset-x-0 h-2.5 rounded-full" />
+      <span aria-hidden className="absolute left-0 h-2.5 rounded-full bg-clear-ember" style={{ width: at }} />
+      <input
+        id={id}
+        type="range"
+        min={0}
+        max={max}
+        step={10}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-valuetext={valueText}
+        className="peer absolute inset-0 m-0 h-7 w-full cursor-pointer opacity-0"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute size-[26px] -translate-x-1/2 rounded-full border-4 border-clear-card bg-clear-primary shadow-clear-float peer-focus-visible:ring-3 peer-focus-visible:ring-clear-ember/50"
+        style={{ left: at }}
+      />
+    </div>
+  );
+}
+
+/** Line colours for the debts in a chart: the Clear pastels' inks, one per debt. */
+const LINE_TONES = ["peach", "sky", "lilac", "mint", "butter", "rose", "stone"] as const;
+
+/**
+ * Each debt's chart colour, by id, so a debt keeps its colour whatever the list's sort:
+ * the debts in id order take peach, sky, lilac … in turn.
+ */
+export function debtLineColours(ids: readonly number[]): Map<number, string> {
+  return new Map([...ids].sort((a, z) => a - z).map((id, i) => [id, `var(--clr-${LINE_TONES[i % LINE_TONES.length]}-ink)`]));
+}

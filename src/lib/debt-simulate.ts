@@ -33,8 +33,9 @@ export interface PayoffSimulation {
   /** The order the extra is applied in (debt ids). */
   order: number[];
   /** Each debt's own balance at month 0 and after each month (same length as `totals`),
-   *  and the month it reaches zero — null when it never does within the cap. */
-  byDebt: { id: number; balances: number[]; months: number | null }[];
+   *  the month it reaches zero — null when it never does within the cap — and the
+   *  interest it accrued over the simulated months (together they add up to `interest`). */
+  byDebt: { id: number; balances: number[]; months: number | null; interest: number }[];
 }
 
 /** Cents, like debt-interest.ts — a long schedule must not drift on floating-point dust. */
@@ -60,7 +61,7 @@ export function simulatePayoff(
   maxMonths = 600,
   preferred?: readonly number[],
 ): PayoffSimulation {
-  const state = debts.map((d) => ({ id: d.id, balance: Math.max(0, d.balance), payment: d.payment, rate: monthlyRate(d.annualRate) }));
+  const state = debts.map((d) => ({ id: d.id, balance: Math.max(0, d.balance), payment: d.payment, rate: monthlyRate(d.annualRate), interest: 0 }));
   const avalanche = payoffOrder(debts);
   const given = (preferred ?? []).filter((id, i, all) => avalanche.includes(id) && all.indexOf(id) === i);
   const order = [...given, ...avalanche.filter((id) => !given.includes(id))];
@@ -77,6 +78,7 @@ export function simulatePayoff(
       const i = d.rate > 0 ? round(d.balance * d.rate) : 0;
       const pay = round(Math.min(Math.max(0, d.payment), d.balance + i));
       interest = round(interest + i);
+      d.interest = round(d.interest + i);
       d.balance = Math.max(0, round(d.balance + i - pay));
     }
     let pool = Math.max(0, extra);
@@ -96,7 +98,7 @@ export function simulatePayoff(
   const byDebt = state.map((d) => {
     const series = balances.get(d.id)!;
     const zero = series.findIndex((b) => b <= 0.005);
-    return { id: d.id, balances: series, months: zero === -1 ? null : zero };
+    return { id: d.id, balances: series, months: zero === -1 ? null : zero, interest: d.interest };
   });
   return { months: done ? month : null, totals, interest, order, byDebt };
 }

@@ -124,7 +124,8 @@ export async function getBillStatuses(
           paidSource = null;
         }
 
-        const overdue = paid === false && dueDate != null && dueDate <= todayStr && todayStr >= from && todayStr <= to;
+        // Overdue only once the due date has passed: a bill due today is simply due.
+        const overdue = paid === false && dueDate != null && dueDate < todayStr && todayStr >= from && todayStr <= to;
 
         return {
           item,

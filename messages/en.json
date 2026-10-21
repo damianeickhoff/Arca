@@ -1337,6 +1337,10 @@
       "title": "Each debt's own finish line",
       "body": "Every debt shows the month it is paid off. Slide the extra payment and the dates move along, in the order your debts are sorted."
     },
+    "debtsTimeline": {
+      "title": "Every debt, month by month",
+      "body": "Open the timeline to see each debt's own line, with and without the extra. Hover or tap a month to see what is paid off by then, and slide the extra right there."
+    },
     "goalsContributions": {
       "title": "What you put aside",
       "body": "Twelve months of money moved into your goals, from the transactions linked to them. This month is the bright bar."
@@ -4077,6 +4081,7 @@
       "yours": "Your debts",
       "yoursOrder": "{count, plural, one {# debt} other {# debts}} · {order}",
       "yoursCount": "{count, plural, one {# debt} other {# debts}}",
+      "yoursExtra": "payoff dates include the {amount} extra",
       "sort": {
         "label": "Sort debts: {order}",
         "options": {
@@ -4145,15 +4150,15 @@
         "notLinked": "Not linked to a recurring bill",
         "edit": "Edit {name}",
         "leftOf": "left of {amount}",
-        "freeBy": "Free {date}",
         "payoffIn": "Free in {date}",
         "payoffNever": "Never at this rate",
         "payoffSooner": "{count, plural, one {# month sooner} other {# months sooner}}",
+        "soonerThanMinimum": "{count, plural, one {# month sooner than at the minimum} other {# months sooner than at the minimum}}",
         "never": "Never at this rate",
         "noDate": "No payoff date",
         "done": "Paid off",
         "paid": "<b>{pct}%</b> paid · {amount}",
-        "monthsLeft": "{count, plural, one {# month left} other {# months left}}",
+        "monthsLeftLabel": "Months left",
         "monthly": "Monthly",
         "interest": "Interest",
         "perYear": "{rate}% p.a.",
@@ -4184,18 +4189,36 @@
       },
       "payoff": {
         "title": "Payoff timeline",
-        "subtitle": "{count, plural, one {Your debt's balance, month by month} other {All # debts stacked, month by month}}",
+        "subtitleExtra": "With the {amount} extra",
+        "subtitleMinimums": "At the minimums",
+        "open": "Open",
+        "openLabel": "Open the payoff timeline, each debt month by month",
+        "now": "Now",
+        "never": "Never",
+        "atMinimumsLabel": "At the minimums",
+        "withExtraLabel": "With {amount} extra",
         "debtFree": "Debt-free {date}",
         "debtFreeNever": "Not debt-free at these payments",
         "sooner": "{count, plural, one {# month} other {# months}} sooner with {amount} extra a month",
-        "today": "{amount} today",
-        "paidOff": "{name} · {date}",
-        "paidOffNever": "{name} · never",
-        "atMinimums": "At minimums · {date}",
-        "atMinimumsNever": "At minimums · never",
         "summary": "{amount} owed today. {end}",
         "summaryDebt": "{name} paid off {date}",
         "summaryDebtNever": "{name} never paid off"
+      },
+      "timeline": {
+        "subtitleExtra": "Each debt, month by month · with {amount} extra",
+        "subtitleMinimums": "Each debt, month by month · at the minimums",
+        "minimumsOnly": "minimums only",
+        "now": "Now",
+        "keys": "Use the left and right arrow keys to step through the months",
+        "paidOff": "{names} paid off",
+        "debtFree": "Debt-free",
+        "leftTotal": "{amount} left in total",
+        "done": "{name} done",
+        "left": "{name} {amount} left",
+        "free": "Free {date}",
+        "never": "Never at this rate",
+        "saved": "{amount} interest saved",
+        "noInterest": "no interest"
       },
       "simulator": {
         "title": "What if I pay extra?",
@@ -4207,12 +4230,16 @@
         "saved": "Interest saved",
         "months": "{count, plural, one {# month} other {# months}}",
         "orderOne": "The extra goes straight to {name}.",
-        "orderSort": "Extra goes to {first} first, then {rest}: the order of your list ({order}).",
+        "orderFirst": "Extra goes to <b>{first}</b> first ({order}), then {rest}.",
+        "thenJoin": ", then ",
+        "changeOrder": "Change order",
+        "eachDebt": "Each debt, with the extra",
+        "eachDebtFree": "Free in <b>{date}</b>",
         "free": {
           "title": "Free to spend each month",
           "change": "{from} now, {to} with the extra",
           "short": "You'd be {amount} short each month",
-          "basis": "Recurring income minus bills, debt payments, savings and your budget",
+          "stillLeft": "Still money left each month",
           "noIncome": "Add your recurring income to see what an extra payment leaves you to spend each month."
         }
       },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { IconChevronDown, IconDotsVertical, IconPlus, IconRepeat, IconSearch, IconTrash } from "@tabler/icons-react";
@@ -71,6 +71,9 @@ interface EditProps {
   /** Hide the end-date editor — used when this bill is linked to a debt, whose own
    *  computed "last payment on" date is the source of truth for the end date. */
   lockEndDate?: boolean;
+  /** Open with this field focused and in view: "Teach Arca the pattern" on a bill's
+   *  Paid? popover opens the editor on the match pattern. */
+  focusField?: "matchPattern";
 }
 type Props = AddProps | EditProps;
 
@@ -274,6 +277,18 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
+
+  const patternRef = useRef<HTMLInputElement>(null);
+  const focusField = props.action === "edit" ? props.focusField : undefined;
+  useEffect(() => {
+    if (!open || focusField !== "matchPattern") return;
+    // After the dialog's open animation, or its focus trap moves focus back to the top.
+    const timer = setTimeout(() => {
+      patternRef.current?.focus({ preventScroll: true });
+      patternRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [open, focusField]);
 
   const amountVal = parseAmount(amountExpr);
   const isIncome = form.type === "income";
@@ -580,6 +595,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
               <IconSearch size={18} stroke={2} aria-hidden className="shrink-0" />
               <input
                 id="rec-pattern"
+                ref={patternRef}
                 type="text"
                 autoComplete="off"
                 value={form.matchPattern}

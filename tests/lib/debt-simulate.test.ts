@@ -48,6 +48,22 @@ describe("debt-simulate: simulatePayoff", () => {
     expect(simulatePayoff([duo, car], 0, 600, [99]).order).toEqual([2, 1]);
   });
 
+  it("tracks each debt's own interest, adding up to the total", () => {
+    const base = simulatePayoff([duo, car]);
+    const extra = simulatePayoff([duo, car], 100);
+    for (const sim of [base, extra]) {
+      expect(sim.byDebt.reduce((s, d) => s + d.interest, 0)).toBeCloseTo(sim.interest, 2);
+    }
+    // At no extra, each debt's interest is its own totalInterest.
+    const own = (s: typeof base, id: number) => s.byDebt.find((d) => d.id === id)!.interest;
+    expect(own(base, 2)).toBeCloseTo(totalInterest(car.balance, car.payment, monthlyRate(car.annualRate)), 1);
+    // The extra saves interest on the debt it goes to first, and never costs any.
+    expect(own(extra, 2)).toBeLessThan(own(base, 2));
+    expect(own(extra, 1)).toBeLessThanOrEqual(own(base, 1));
+    // An interest-free debt accrues none.
+    expect(simulatePayoff([{ id: 9, balance: 600, payment: 100, annualRate: null }]).byDebt[0].interest).toBe(0);
+  });
+
   it("interest-free debts reduce to balance ÷ payment", () => {
     const sim = simulatePayoff([{ id: 1, balance: 1100, payment: 300, annualRate: null }]);
     expect(sim.months).toBe(4);
