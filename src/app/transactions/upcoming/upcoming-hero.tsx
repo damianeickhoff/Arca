@@ -4,12 +4,18 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard } from "@/components/clear/card";
-import { ClearProgress } from "@/components/clear/progress";
 import { MoneyText } from "@/components/clear/money";
 import { billsTotal } from "@/lib/bill-groups";
 import { formatEur } from "@/lib/format";
+import { paydayBar } from "@/lib/upcoming-plan";
 import type { UpcomingData } from "./upcoming-view";
+import { cn } from "@/lib/utils";
 import { useDates } from "./use-dates";
+
+const pct = (n: number) => `${Math.max(0, Math.min(100, n * 100))}%`;
+/** The hero's hatch: half-strength hero-ink stripes on a clear gap, so the track shows through. */
+const HERO_HATCH =
+  "repeating-linear-gradient(135deg, color-mix(in srgb, var(--clr-hero-ink) 55%, transparent) 0 3px, transparent 3px 6px)";
 
 /**
  * The answer card. The month in progress: what still has to leave the account before
@@ -46,6 +52,7 @@ export function UpcomingHero({ data }: { data: UpcomingData }) {
   const left = balance != null ? balance - data.payday.amount : null;
   const income = data.nextIncome;
   const accountName = data.account?.name ?? t("accounts", { count: data.account?.count ?? 0 });
+  const bar = paydayBar(data.bills, data.payday.amount);
 
   return (
     <ClearCard hero aria-labelledby="upcoming-hero-title" className="gap-0">
@@ -57,26 +64,26 @@ export function UpcomingHero({ data }: { data: UpcomingData }) {
         {data.payday.count === 0 ? t("none") : t("count", { count: data.payday.count, date: d.day(data.payday.until) })}
       </span>
 
+      {bar && (
+        // Solid: this month's bills already paid. Hatched: what still leaves before payday.
+        <div aria-hidden className="mt-3.5 flex h-2 overflow-hidden rounded-full bg-clear-hero-ink/14">
+          <span className="h-full bg-clear-hero-ink" style={{ width: pct(bar.paid) }} />
+          <span className="h-full" style={{ width: pct(bar.toLeave), backgroundImage: HERO_HATCH }} />
+        </div>
+      )}
+
       {balance != null && left != null ? (
-        <div className="mt-3.5 flex flex-col gap-1.5">
-          {balance > 0 && (
-            <ClearProgress
-              onHero
-              size="sm"
-              value={Math.max(0, left) / balance}
-              reserved={Math.min(balance, data.payday.amount) / balance}
-              fillClassName="bg-clear-hero-ink"
-            />
-          )}
-          <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs text-clear-hero-ink-2">
-            <span className={left < 0 ? "font-bold text-clear-ember" : undefined}>
-              <MoneyText>{left >= 0 ? t("leftAfter", { amount: formatEur(left) }) : t("shortBy", { amount: formatEur(-left) })}</MoneyText>
-            </span>
-            <span><MoneyText>{t("inAccount", { amount: formatEur(balance), name: accountName })}</MoneyText></span>
-          </div>
+        <div className={cn("flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-xs text-clear-hero-ink-2", bar ? "mt-1.5" : "mt-3.5")}>
+          <span className={left < 0 ? "font-bold text-clear-ember" : undefined}>
+            <MoneyText>{left >= 0 ? t("leftAfter", { amount: formatEur(left) }) : t("shortBy", { amount: formatEur(-left) })}</MoneyText>
+          </span>
+          <span><MoneyText>{t("inAccount", { amount: formatEur(balance), name: accountName })}</MoneyText></span>
         </div>
       ) : (
-        <Link href="/settings?panel=accounts" className="mt-3.5 text-xs font-bold text-clear-hero-ink-2 underline-offset-2 hover:underline">
+        <Link
+          href="/settings?panel=accounts"
+          className={cn("text-xs font-bold text-clear-hero-ink-2 underline-offset-2 hover:underline", bar ? "mt-1.5" : "mt-3.5")}
+        >
           {t("setBalance")}
         </Link>
       )}

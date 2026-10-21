@@ -16,6 +16,8 @@ import { useDates } from "./use-dates";
 
 const PAD = { left: 44, right: 14, top: 30, bottom: 46 };
 const HEIGHT = 200;
+/** The height of the "Lowest" pill. */
+const LOW_H = 22;
 
 /** A bill's dot colour under the chart: paid, to pay, overdue or income (ringed). */
 function dotStyle(b: UpcomingBill): { fill: string; stroke?: string } {
@@ -107,6 +109,25 @@ export function BalanceCard({ data, className }: { data: UpcomingData; className
     const pillW = pill ? pill.length * 7 + 22 : 0;
     const pillX = Math.min(Math.max(todayX - pillW / 2, PAD.left), W - PAD.right - pillW);
 
+    // The lowest point's pill: under the point, above it when it would run into the axis,
+    // and beside it (right, else left) when centring it would clip at an edge.
+    let low: { x: number; y: number; w: number; px: number; py: number; label: string } | null = null;
+    if (lowest) {
+      const label = t("lowest", { amount: signed(lowest.balance) });
+      const w = label.length * 7 + 20;
+      const px = x(lowest.date);
+      const py = y(lowest.balance);
+      let lx = px - w / 2;
+      let ly = py + 10 + LOW_H > bottom ? py - 10 - LOW_H : py + 10;
+      if (lx < 2 || lx + w > W - 2) {
+        lx = px + 10 + w <= W - 2 ? px + 10 : px - 10 - w;
+        ly = py - LOW_H / 2;
+      }
+      lx = Math.min(Math.max(lx, 2), W - 2 - w);
+      ly = Math.min(Math.max(ly, 2), bottom - LOW_H);
+      low = { x: lx, y: ly, w, px, py, label };
+    }
+
     description = t("description", {
       account,
       now: signed(balanceNow),
@@ -154,22 +175,6 @@ export function BalanceCard({ data, className }: { data: UpcomingData; className
           </>
         )}
 
-        {lowest && (
-          <>
-            <circle cx={x(lowest.date)} cy={y(lowest.balance)} r={4.5} fill="var(--clr-card)" stroke="var(--clr-ink)" strokeWidth="2" />
-            <text
-              x={Math.min(Math.max(x(lowest.date), PAD.left + 40), W - PAD.right - 40)}
-              y={Math.min(y(lowest.balance) + 18, bottom - 4)}
-              textAnchor="middle"
-              fontSize="12"
-              fontWeight="700"
-              fill="var(--clr-ink)"
-            >
-              <SvgMoneyText>{t("lowest", { amount: signed(lowest.balance) })}</SvgMoneyText>
-            </text>
-          </>
-        )}
-
         {[...perDay].map(([day, list]) =>
           list.map((b, i) => {
             const s = dotStyle(b);
@@ -197,6 +202,17 @@ export function BalanceCard({ data, className }: { data: UpcomingData; className
           <text x={todayX} y={HEIGHT - 6} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--clr-ink)">
             {data.today.slice(8).replace(/^0/, "")}
           </text>
+        )}
+
+        {/* Last, so the line never crosses it: a card-coloured pill with the dot on top. */}
+        {low && (
+          <g>
+            <rect x={low.x} y={low.y} width={low.w} height={LOW_H} rx={LOW_H / 2} fill="var(--clr-card)" stroke="var(--clr-line)" />
+            <text x={low.x + low.w / 2} y={low.y + 15} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--clr-ink)">
+              <SvgMoneyText>{low.label}</SvgMoneyText>
+            </text>
+            <circle cx={low.px} cy={low.py} r={4.5} fill="var(--clr-card)" stroke="var(--clr-ink)" strokeWidth="2" />
+          </g>
         )}
       </svg>
     );

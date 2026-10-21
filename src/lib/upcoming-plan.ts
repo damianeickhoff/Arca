@@ -64,6 +64,19 @@ export function beforePayday(bills: readonly PlanBill[], to: string, nextIncomeD
   return { amount: billsTotal(items), count: items.length, until };
 }
 
+/**
+ * The hero's bar: of this month's bills (income and skipped ones left out), the share
+ * already paid (solid) and the share that still has to leave before payday (hatched);
+ * what is left of the track is due after payday. Null when the month has no bills.
+ */
+export function paydayBar(bills: readonly PlanBill[], stillToLeave: number) {
+  const out = bills.filter((b) => !b.isIncome && !b.skipped);
+  const paid = billsTotal(out.filter((b) => b.paid));
+  const total = Math.max(billsTotal(out), paid + stillToLeave);
+  if (total <= 0) return null;
+  return { paid: paid / total, toLeave: stillToLeave / total };
+}
+
 export interface BalancePoint {
   date: string;
   balance: number;
