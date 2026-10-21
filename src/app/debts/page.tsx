@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { getDebtPayoffOrder } from "@/lib/app-settings";
 import { getOpenAdvances } from "@/lib/open-advances";
-import { loadDebtsData, loadDebtsFreeToSpend } from "./load-debts";
+import { loadDebtsData, loadDebtsFreeToSpend, loadDebtsMonthPayments } from "./load-debts";
 import { DebtsView, type DebtFormRequest } from "./debts-view";
 
 /** ?add=owe|owed opens the add form, ?edit=<id> the edit form (the old /debts/add and
- *  /debts/[id]/edit routes redirect here). ?sort=… orders "Your debts" (read on the
- *  client, see DebtsView). */
+ *  /debts/[id]/edit routes redirect here). */
 function formRequest(sp: { add?: string; edit?: string }): DebtFormRequest | null {
   if (sp.edit && Number.isFinite(Number(sp.edit))) return { kind: "edit", id: Number(sp.edit) };
   if (sp.add != null) return { kind: "add", direction: sp.add === "owed" ? "owed" : "owe" };
@@ -17,8 +17,8 @@ export default async function DebtsPage({ searchParams }: { searchParams: Promis
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const [data, advances, sp] = await Promise.all([loadDebtsData(), getOpenAdvances(), searchParams]);
-  const freeToSpend = await loadDebtsFreeToSpend(data.computed);
+  const [data, advances, order, sp] = await Promise.all([loadDebtsData(), getOpenAdvances(), getDebtPayoffOrder(), searchParams]);
+  const [freeToSpend, thisMonth] = await Promise.all([loadDebtsFreeToSpend(data.computed), loadDebtsMonthPayments(data.computed)]);
 
   return (
     <DebtsView
@@ -29,7 +29,9 @@ export default async function DebtsPage({ searchParams }: { searchParams: Promis
       totalOwed={data.totalOwed}
       totalMonthly={data.totalMonthly}
       freeToSpend={freeToSpend}
+      thisMonth={thisMonth}
       advances={advances}
+      order={order}
       initialForm={formRequest(sp)}
     />
   );

@@ -68,7 +68,8 @@ export type TipAnchor =
   | "debtsSortAndImpact"
   | "debtsOwed"
   | "debtsPayoffDates"
-  | "debtsTimeline"
+  | "debtsWhereExtraGoes"
+  | "debtsPaymentsMonth"
   // Redesigned Budget
   | "budgetStrategy"
   | "budgetMove"

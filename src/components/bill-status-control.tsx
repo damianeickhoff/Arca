@@ -21,20 +21,26 @@ const PILL = "h-7 px-3 text-xs";
  * marked paid by hand, which takes the mark off again.
  *
  * A mark is stored per financial month (bill_payments), like the old tick button.
+ * `onMark` stores it somewhere else instead (a debt with no linked bill marks its own
+ * minimum, see app/debts/actions.ts); it resolves to whether the save worked.
  */
 export function BillStatusControl({
   state,
   recurringItemId,
   month,
   item,
+  onMark,
   income = false,
   onIncomeRow = false,
   tipAnchor = false,
 }: {
   state: BillControl;
-  recurringItemId: number;
+  /** The bill the mark is for; not needed with `onMark`. */
+  recurringItemId?: number;
   /** The financial month (YYYY-MM) the mark is for. */
   month: string;
+  /** Saves the mark instead of /api/recurring/payments. */
+  onMark?: (paid: boolean) => Promise<boolean>;
   /** The item itself, for "Teach Arca the pattern" (only needed for "ask"). */
   item?: RecurringItem | null;
   /** Money coming in: "Received" instead of "Paid". */
@@ -58,12 +64,16 @@ export function BillStatusControl({
 
   async function mark(paid: boolean) {
     setOptimistic({ from: state, to: paid ? "paid" : state });
-    const res = await fetch("/api/recurring/payments", {
-      method: paid ? "POST" : "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ recurringItemId, month }),
-    }).catch(() => null);
-    if (!res?.ok) setOptimistic(null);
+    const ok = onMark
+      ? await onMark(paid).catch(() => false)
+      : !!(
+          await fetch("/api/recurring/payments", {
+            method: paid ? "POST" : "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ recurringItemId, month }),
+          }).catch(() => null)
+        )?.ok;
+    if (!ok) setOptimistic(null);
     router.refresh();
   }
 

@@ -175,9 +175,9 @@ export function PaymentNotice({
 }
 
 /**
- * The "extra each month" range input: hatched track, ember fill up to the value and a
- * round black thumb. The Debts page's simulator and the payoff timeline popup both draw
- * it on the same state, so moving one moves the other. Label it with a <label htmlFor>.
+ * The "extra each month" range input: a soft grey track, black fill up to the value and
+ * a round black thumb with a white ring (both turn light in dark mode). Label it with a
+ * <label htmlFor>.
  */
 export function ExtraSlider({
   id,
@@ -193,11 +193,11 @@ export function ExtraSlider({
   /** Already translated, e.g. "€200 a month". */
   valueText: string;
 }) {
-  const at = `calc(13px + (100% - 26px) * ${Math.min(1, value / max)})`;
+  const at = `calc(11px + (100% - 22px) * ${Math.min(1, value / max)})`;
   return (
     <div className="relative flex h-7 items-center">
-      <span aria-hidden className="clear-hatch absolute inset-x-0 h-2.5 rounded-full" />
-      <span aria-hidden className="absolute left-0 h-2.5 rounded-full bg-clear-ember" style={{ width: at }} />
+      <span aria-hidden className="absolute inset-x-0 h-1.5 rounded-full bg-clear-line" />
+      <span aria-hidden className="absolute left-0 h-1.5 rounded-full bg-clear-primary" style={{ width: at }} />
       <input
         id={id}
         type="range"
@@ -211,20 +211,22 @@ export function ExtraSlider({
       />
       <span
         aria-hidden
-        className="pointer-events-none absolute size-[26px] -translate-x-1/2 rounded-full border-4 border-clear-card bg-clear-primary shadow-clear-float peer-focus-visible:ring-3 peer-focus-visible:ring-clear-ember/50"
+        className="pointer-events-none absolute size-[22px] -translate-x-1/2 rounded-full border-[3px] border-clear-card bg-clear-primary ring-1 ring-clear-line peer-focus-visible:ring-3 peer-focus-visible:ring-clear-ember/50"
         style={{ left: at }}
       />
     </div>
   );
 }
 
-/** Line colours for the debts in a chart: the Clear pastels' inks, one per debt. */
-const LINE_TONES = ["peach", "sky", "lilac", "mint", "butter", "rose", "stone"] as const;
+/** The pastels the debts take in the payoff timeline, in turn. */
+const DEBT_TONES = ["peach", "sky", "lilac", "butter", "mint", "rose"] as const;
+export type DebtTone = (typeof DEBT_TONES)[number];
 
 /**
- * Each debt's chart colour, by id, so a debt keeps its colour whatever the list's sort:
- * the debts in id order take peach, sky, lilac … in turn.
+ * Each debt's pastel in the payoff timeline, by id, so a debt keeps its colour whatever
+ * the order: the debts in id order take peach, sky, lilac, then butter, mint, rose.
+ * Fill `var(--clr-<tone>)`, stroke `var(--clr-<tone>-ink)`.
  */
-export function debtLineColours(ids: readonly number[]): Map<number, string> {
-  return new Map([...ids].sort((a, z) => a - z).map((id, i) => [id, `var(--clr-${LINE_TONES[i % LINE_TONES.length]}-ink)`]));
+export function debtTones(ids: readonly number[]): Map<number, DebtTone> {
+  return new Map([...ids].sort((a, z) => a - z).map((id, i) => [id, DEBT_TONES[i % DEBT_TONES.length]]));
 }

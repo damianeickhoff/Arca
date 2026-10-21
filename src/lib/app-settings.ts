@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { appSettings, financialMonthOverrides } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import { asc, eq } from "drizzle-orm";
+import { parseDebtSort, type DebtSort } from "@/app/debts/debt-shared";
 
 function parseStartDay(value: string | null | undefined) {
   if (!value) return 1;
@@ -107,6 +108,13 @@ export interface AppLockConfig {
   // length was recorded. The lock screen uses it to size the dots and know when
   // to auto-submit; a null falls back to a manual confirm button.
   pinLength: number | null;
+}
+
+/** Plan › Debts' payoff order: which debt the extra goes to first, and how Your debts
+ *  is sorted (see DEBT_SORTS). Set from the simulator's Order switch. */
+export async function getDebtPayoffOrder(): Promise<DebtSort> {
+  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, "debt_payoff_order")).limit(1);
+  return parseDebtSort(row?.value);
 }
 
 /** Whether the user skipped Home's "Get started" card (set from the card's Skip button). */

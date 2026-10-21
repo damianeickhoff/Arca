@@ -10,7 +10,7 @@ import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { migrateAutoRecurringItems } from "@/lib/recurring-migration";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
-import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, INVITES_TABLE_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
+import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE_SQL, INVITES_TABLE_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
 // full schema for fresh databases — run on first start and by `npm run db:init`). Any
@@ -324,7 +324,11 @@ sqlite.exec(`
   )
 `);
 
-// Auto-migrate: debt direction — "owe" (you owe someone) vs "owed" (someone owes you).
+// Auto-migrate: payments recorded on a debt by hand (extra and lump-sum payments, and the
+// "paid" mark for a debt without a linked bill), see DEBT_PAYMENTS_TABLE_SQL.
+sqlite.exec(DEBT_PAYMENTS_TABLE_SQL);
+
+// Auto-migrate: debt direction —"owe" (you owe someone) vs "owed" (someone owes you).
 addColumnIfMissing("debts", "direction", "TEXT NOT NULL DEFAULT 'owe'");
 addColumnIfMissing("debts", "end_month", "TEXT");
 addColumnIfMissing("debts", "original_amount", "REAL");

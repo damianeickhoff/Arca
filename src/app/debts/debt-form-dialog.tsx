@@ -102,7 +102,7 @@ const DATE_TRIGGER =
   "mt-0 mb-0 h-12 rounded-clear-row border-[1.5px] border-transparent bg-clear-tile px-4 font-clear text-[15px] font-bold text-clear-ink focus-visible:border-clear-ink focus-visible:ring-0";
 
 /** A money field: currency sign, the amount (sums allowed) and what a sum comes to. */
-function MoneyInput({
+export function MoneyInput({
   id,
   value,
   onChange,

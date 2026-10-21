@@ -596,7 +596,26 @@ export function createSchema(sqlite: Database.Database): void {
   sqlite.exec(ACTIVITY_LOG_TABLE_SQL);
   sqlite.exec(INVITES_TABLE_SQL);
   sqlite.exec(RECURRING_SUGGESTIONS_TABLE_SQL);
+  sqlite.exec(DEBT_PAYMENTS_TABLE_SQL);
 }
+
+// Payments recorded on a debt by hand (Plan › Debts): "extra" is an extra or lump-sum
+// payment that lowers the balance (see debtBalance in app/debts/debt-shared.ts);
+// "minimum" marks this month's minimum as paid for a debt no recurring bill pays (a
+// status only: the unlinked payoff model already counts every scheduled minimum).
+// Shared with the runtime auto-migrate in src/db/index.ts.
+export const DEBT_PAYMENTS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS debt_payments (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    debt_id    INTEGER NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
+    kind       TEXT    NOT NULL DEFAULT 'extra',
+    date       TEXT    NOT NULL,
+    amount     REAL    NOT NULL,
+    note       TEXT,
+    created_at TEXT    DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_debt_payments_debt ON debt_payments(debt_id);
+`;
 
 // What the recurring detector found, waiting for Accept / Not a bill (see
 // src/lib/recurring-suggestions.ts). Also run on boot by src/db/index.ts.

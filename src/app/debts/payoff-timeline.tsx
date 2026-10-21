@@ -1,316 +1,228 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatEurWhole } from "@/lib/format";
-import type { simulatePayoff } from "@/lib/debt-simulate";
-import { Amount } from "@/components/clear/amount";
+import type { PayoffSimulation } from "@/lib/debt-simulate";
 import { ClearCard, ClearCardHeader } from "@/components/clear/card";
-import { ClearDialogHeader } from "@/components/clear/dialog-chrome";
-import { MoneyText } from "@/components/clear/money";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { MoneyText, SvgMoneyText } from "@/components/clear/money";
+import { Segmented } from "@/components/clear/segmented";
 import type { ComputedDebt } from "./debt-shared";
-import { ExtraSlider, debtLineColours, monthsFromNow, useMonthYear } from "./debt-ui";
+import { debtTones, monthsFromNow, useMonthYear } from "./debt-ui";
 
-type Sim = ReturnType<typeof simulatePayoff>;
+type Mode = "balance" | "interest";
 
 /** A series' value at month `i`; past its end it stays at its last value. */
 const at = (series: readonly number[], i: number) => series[Math.min(i, series.length - 1)] ?? 0;
 
-/** Months the charts cover: long enough to show everything ending, capped at 30 years
- *  so a debt that never ends doesn't flatten the rest. */
-function chartSpan(base: Sim, sim: Sim) {
-  return Math.max(1, Math.min(360, Math.max(sim.totals.length, base.totals.length) - 1));
+/** Running totals: what has been paid in interest by each month. */
+function cumulative(series: readonly number[]) {
+  let sum = 0;
+  return series.map((v) => (sum = Math.round((sum + v) * 100) / 100));
 }
 
-const pct = (i: number, span: number) => `${(i / span) * 100}%`;
-
-// ── The card ──────────────────────────────────────────────────────────────────
-
-/**
- * Plan · Debts' "Payoff timeline" card: the total still owed month by month at the
- * minimums (dashed) and with the simulator's extra (solid, with a peach fill), the
- * debt-free month as an orange dot. The chart has a fixed height; the card fills its
- * column with the two "debt-free" tiles pinned to its bottom. "Open", or a click on
- * the chart, opens the per-debt timeline popup.
- */
-export function PayoffCard({
-  base,
-  sim,
-  extra,
-  onOpen,
-  className,
-}: {
-  base: Sim;
-  sim: Sim;
-  extra: number;
-  onOpen: () => void;
-  className?: string;
-}) {
-  const t = useTranslations("plan.debts.payoff");
-  const monthYear = useMonthYear();
-  const span = chartSpan(base, sim);
-  const start = sim.totals[0] ?? 0;
-  const top = Math.max(1, start);
-  const W = 1000;
-  const H = 120;
-  const x = (i: number) => (i / span) * W;
-  const y = (v: number) => 4 + (1 - v / top) * (H - 8);
-  const line = (series: readonly number[], end: number) =>
-    Array.from({ length: end + 1 }, (_, i) => `${x(i).toFixed(1)},${y(at(series, i)).toFixed(1)}`).join(" ");
-
-  const simEnd = Math.min(span, sim.months ?? span);
-  const baseEnd = Math.min(span, base.months ?? span);
-  const simLine = line(sim.totals, simEnd);
-  const area = `${simLine} ${x(simEnd).toFixed(1)},${H} 0,${H}`;
-  const showBase = extra > 0;
-
-  const date = (months: number | null) => (months != null ? monthYear(monthsFromNow(months)) : t("never"));
-  // The extra's date sits under its own month, unless it would run into Now or the end.
-  const extraAt = showBase && sim.months != null && sim.months <= span ? sim.months / span : null;
-  const showExtraLabel = extraAt != null && extraAt > 0.2 && extraAt < 0.78;
-
-  const debtFree = sim.months != null ? t("debtFree", { date: monthYear(monthsFromNow(sim.months)) }) : t("debtFreeNever");
-  const sooner = showBase && base.months != null && sim.months != null ? base.months - sim.months : 0;
-  const summary = [t("summary", { amount: formatEurWhole(start), end: debtFree }), ...(sooner > 0 ? [t("sooner", { count: sooner, amount: formatEurWhole(extra) })] : [])].join(". ");
-
-  const tile = "flex min-w-0 flex-col gap-0.5 rounded-clear-tile px-3 py-2.5";
-
-  return (
-    <ClearCard aria-labelledby="debts-payoff-title" className={cn("gap-3", className)}>
-      <ClearCardHeader
-        title={<span id="debts-payoff-title">{t("title")}</span>}
-        subtitle={<MoneyText>{showBase ? t("subtitleExtra", { amount: formatEurWhole(extra) }) : t("subtitleMinimums")}</MoneyText>}
-        action={
-          <button type="button" onClick={onOpen} data-tip-anchor="debtsTimeline" className="cursor-pointer text-sm font-bold text-clear-ember-text hover:underline">
-            {t("open")}
-          </button>
-        }
-      />
-
-      <div className="flex flex-col gap-1.5">
-        <button
-          type="button"
-          onClick={onOpen}
-          aria-label={t("openLabel")}
-          aria-describedby="debts-payoff-summary"
-          className="relative block h-[120px] w-full cursor-pointer rounded-clear-row outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50"
-        >
-          <svg aria-hidden viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
-            <line x1={0} x2={W} y1={y(0)} y2={y(0)} stroke="var(--clr-line)" vectorEffect="non-scaling-stroke" />
-            <polygon points={area} style={{ fill: "var(--clr-peach)" }} opacity={0.7} />
-            {showBase && (
-              <polyline
-                points={line(base.totals, baseEnd)}
-                fill="none"
-                stroke="var(--clr-placeholder)"
-                strokeWidth={2.5}
-                strokeDasharray="4 4"
-                vectorEffect="non-scaling-stroke"
-              />
-            )}
-            <polyline points={simLine} fill="none" stroke="var(--clr-ink)" strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          </svg>
-          {sim.months != null && sim.months <= span && (
-            <span
-              aria-hidden
-              className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-clear-ember"
-              style={{ left: pct(sim.months, span), top: `${(y(0) / H) * 100}%` }}
-            />
-          )}
-        </button>
-        <div aria-hidden className="relative h-4 text-xs tabular-nums text-clear-muted">
-          <span className="absolute left-0">{t("now")}</span>
-          {showExtraLabel && (
-            <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${extraAt! * 100}%` }}>
-              {date(sim.months)}
-            </span>
-          )}
-          <span className="absolute right-0 whitespace-nowrap">{date(base.months)}</span>
-        </div>
-        <p id="debts-payoff-summary" className="sr-only">
-          <MoneyText>{summary}</MoneyText>
-        </p>
-      </div>
-
-      <div className={cn("mt-auto grid gap-2 pt-1", showBase && "grid-cols-2")}>
-        <div className={cn(tile, "bg-clear-tile")}>
-          <span className="text-xs font-medium text-clear-muted">{t("atMinimumsLabel")}</span>
-          <span className="truncate text-sm font-semibold">{date(base.months)}</span>
-        </div>
-        {showBase && (
-          <div className={cn(tile, "bg-clear-peach text-clear-peach-ink")}>
-            <span className="truncate text-xs font-medium"><MoneyText>{t("withExtraLabel", { amount: formatEurWhole(extra) })}</MoneyText></span>
-            <span className="truncate text-sm font-semibold">{date(sim.months)}</span>
-          </div>
-        )}
-      </div>
-    </ClearCard>
-  );
-}
-
-// ── The popup ─────────────────────────────────────────────────────────────────
+const HEIGHT = 220;
+const PAD = { top: 12, bottom: 10 };
 
 /**
- * Popup · Payoff timeline: every debt's own balance month by month — with the extra
- * solid, at the minimums dashed and faded — in a stable colour per debt, a readout for
- * the month under the pointer (or the arrow keys), a tile per debt with its payoff
- * month and the interest the extra saves on it, and the same "extra each month" slider
- * as the page (one shared value). A centred modal on desktop, a bottom sheet on phones.
+ * Plan · Debts' "Payoff timeline", a full-width row under everything else: each debt as
+ * its own stacked area in its pastel (the first in the payoff order on top), the
+ * minimums-only total as a dashed line, the debt-free month as an orange dot. A fixed
+ * 220px chart, so the card never stretches. Hover, tap or the arrow keys read out a
+ * month: what is paid off by then, each debt's balance and the total against the
+ * minimums. "Interest paid" stacks the interest each debt has cost so far instead.
  */
-export function PayoffTimelineDialog({
-  open,
-  onOpenChange,
+export function PayoffTimelineCard({
   active,
   base,
   sim,
   extra,
-  max,
-  onExtra,
+  className,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  /** The open debts, in the payoff order. */
   active: ComputedDebt[];
-  base: Sim;
-  sim: Sim;
+  /** The minimums only. */
+  base: PayoffSimulation;
+  /** With the extra. */
+  sim: PayoffSimulation;
   extra: number;
-  max: number;
-  onExtra: (n: number) => void;
+  className?: string;
 }) {
   const t = useTranslations("plan.debts.timeline");
-  const tPayoff = useTranslations("plan.debts.payoff");
-  const tSim = useTranslations("plan.debts.simulator");
-  const tClose = useTranslations("debtForm");
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent hideHeaderRow title={tPayoff("title")} className="gap-4 pt-6" sheetClassName="lg:w-[760px]">
-        <ClearDialogHeader
-          title={tPayoff("title")}
-          subtitle={extra > 0 ? t("subtitleExtra", { amount: formatEurWhole(extra) }) : t("subtitleMinimums")}
-          onClose={() => onOpenChange(false)}
-          closeLabel={tClose("close")}
-        />
-        <TimelineBody active={active} base={base} sim={sim} extra={extra} />
-        <div className="flex items-center gap-4 rounded-clear-tile bg-clear-tile px-4 py-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <label htmlFor="debt-extra-timeline" className="text-xs font-semibold text-clear-ink-2">
-              {tSim("extra")}
-            </label>
-            <ExtraSlider id="debt-extra-timeline" value={extra} max={max} onChange={onExtra} valueText={tSim("valueText", { amount: formatEurWhole(extra) })} />
-          </div>
-          <Amount value={extra} whole splitCents={false} sign="none" className="text-[22px] leading-none tracking-[-0.03em]" />
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function TimelineBody({ active, base, sim, extra }: { active: ComputedDebt[]; base: Sim; sim: Sim; extra: number }) {
-  const t = useTranslations("plan.debts.timeline");
-  const tPayoff = useTranslations("plan.debts.payoff");
   const locale = useLocale();
   const monthYear = useMonthYear();
   const list = useMemo(() => new Intl.ListFormat(locale, { type: "conjunction" }), [locale]);
+  const [mode, setMode] = useState<Mode>("balance");
+  const [hover, setHover] = useState<number | null>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
 
-  const span = chartSpan(base, sim);
-  const colours = useMemo(() => debtLineColours(active.map((c) => c.debt.id)), [active]);
-  const baseById = new Map(base.byDebt.map((d) => [d.id, d]));
-  // In the list's order, so the tiles and the readout read like the page.
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setWidth(Math.round(entry.contentRect.width)));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const tones = useMemo(() => debtTones(active.map((c) => c.debt.id)), [active]);
+  const showBase = extra > 0;
+  // Long enough to show everything ending (the minimums too, when they are shown),
+  // capped at 30 years so a debt that never ends doesn't flatten the rest.
+  const span = Math.max(1, Math.min(360, (showBase ? Math.max(sim.totals.length, base.totals.length) : sim.totals.length) - 1));
+
+  // Each debt's series in the chosen mode, in the payoff order.
   const debts = active.flatMap((c) => {
     const s = sim.byDebt.find((d) => d.id === c.debt.id);
-    const b = baseById.get(c.debt.id);
-    return s && b ? [{ c, s, b, colour: colours.get(c.debt.id)! }] : [];
+    if (!s) return [];
+    const series = mode === "balance" ? s.balances : cumulative(s.interestByMonth);
+    return [{ c, s, series, tone: tones.get(c.debt.id) ?? "peach" }];
   });
+  const baseSeries = mode === "balance" ? base.totals : cumulative(base.byDebt.reduce<number[]>((sum, d) => d.interestByMonth.map((v, i) => (sum[i] ?? 0) + v), []));
+  const simTotal = (i: number) => debts.reduce((sum, d) => sum + at(d.series, i), 0);
 
-  const W = 1000;
-  const H = 220;
-  const top = Math.max(1, ...debts.map((d) => d.s.balances[0] ?? 0));
+  const top = Math.max(1, ...Array.from({ length: span + 1 }, (_, i) => Math.max(simTotal(i), showBase ? at(baseSeries, i) : 0)));
+  const W = width;
   const x = (i: number) => (i / span) * W;
-  const y = (v: number) => 6 + (1 - v / top) * (H - 12);
-  // Each line ends where its debt reaches zero.
-  const line = (series: readonly number[], months: number | null) =>
-    Array.from({ length: Math.min(span, months ?? span) + 1 }, (_, i) => `${x(i).toFixed(1)},${y(at(series, i)).toFixed(1)}`).join(" ");
+  const y = (v: number) => PAD.top + (1 - v / top) * (HEIGHT - PAD.top - PAD.bottom);
+  const floor = y(0);
 
-  // The readout starts on the first payoff, so the popup opens on something to read.
+  // Stacked bottom-up from the last debt in the order, so the one the extra goes to
+  // first sits on top. A balance band ends in the month its debt is paid off.
+  const bands: { id: number; tone: string; d: string }[] = [];
+  let lower = Array.from({ length: span + 1 }, () => 0);
+  for (const d of [...debts].reverse()) {
+    const end = mode === "balance" ? Math.min(span, d.s.months ?? span) : span;
+    const upper = lower.map((v, i) => v + at(d.series, i));
+    const topEdge = upper.slice(0, end + 1).map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+    const bottomEdge = lower
+      .slice(0, end + 1)
+      .map((v, i) => `L${x(i).toFixed(1)},${y(v).toFixed(1)}`)
+      .reverse();
+    bands.push({ id: d.c.debt.id, tone: d.tone, d: `${topEdge.join(" ")} ${bottomEdge.join(" ")} Z` });
+    lower = upper;
+  }
+  const baseLine = Array.from({ length: Math.min(span, base.totals.length - 1) + 1 }, (_, i) => `${x(i).toFixed(1)},${y(at(baseSeries, i)).toFixed(1)}`).join(" ");
+
+  const date = (m: number) => (m === 0 ? t("now") : monthYear(monthsFromNow(m)));
+  // The readout opens on the first payoff, so there is something to read straight away.
   const firstPayoff = Math.min(span, ...debts.map((d) => d.s.months ?? span).filter((m) => m > 0));
-  const [hover, setHover] = useState<number | null>(null);
   const month = hover ?? firstPayoff;
 
   const readout = (() => {
     const finished = debts.filter((d) => month > 0 && d.s.months === month);
-    const left = Math.round(at(sim.totals, month));
+    const total = Math.round(simTotal(month));
+    const baseTotal = Math.round(at(baseSeries, month));
     const headline =
       finished.length > 0
         ? t("paidOff", { names: list.format(finished.map((d) => d.c.debt.name)) })
-        : left <= 0
-          ? t("debtFree")
-          : t("leftTotal", { amount: formatEurWhole(left) });
+        : mode === "balance"
+          ? total <= 0
+            ? t("debtFree")
+            : t("leftTotal", { amount: formatEurWhole(total) })
+          : t("interestSoFar", { amount: formatEurWhole(total) });
     const detail = debts
       .filter((d) => !finished.includes(d))
       .map((d) =>
-        d.s.months != null && d.s.months <= month ? t("done", { name: d.c.debt.name }) : t("left", { name: d.c.debt.name, amount: formatEurWhole(at(d.s.balances, month)) }),
+        mode === "balance" && d.s.months != null && d.s.months <= month
+          ? t("debtDone", { name: d.c.debt.name })
+          : t("debtLine", { name: d.c.debt.name, amount: formatEurWhole(at(d.series, month)) }),
       )
       .join(" · ");
-    return { date: month === 0 ? t("now") : monthYear(monthsFromNow(month)), headline, detail };
+    const totals = showBase
+      ? t("totalVs", { amount: formatEurWhole(total), base: formatEurWhole(baseTotal) })
+      : t("total", { amount: formatEurWhole(total) });
+    return { date: date(month), headline, detail, totals };
   })();
 
-  function pick(e: React.PointerEvent<HTMLDivElement>) {
+  function pick(e: React.PointerEvent<HTMLElement>) {
     const r = e.currentTarget.getBoundingClientRect();
     if (r.width <= 0) return;
     setHover(Math.max(0, Math.min(span, Math.round(((e.clientX - r.left) / r.width) * span))));
   }
 
-  function step(e: React.KeyboardEvent<HTMLDivElement>) {
-    const by: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, PageUp: 12, PageDown: -12 };
-    let next: number | null = null;
-    if (e.key in by) next = month + by[e.key];
-    else if (e.key === "Home") next = 0;
-    else if (e.key === "End") next = span;
-    if (next == null) return;
+  function step(e: React.KeyboardEvent<HTMLElement>) {
+    const next =
+      e.key === "ArrowLeft" ? month - 1
+      : e.key === "ArrowRight" ? month + 1
+      : e.key === "PageDown" ? month - 12
+      : e.key === "PageUp" ? month + 12
+      : e.key === "Home" ? 0
+      : e.key === "End" ? span
+      : e.key === "Escape" ? null
+      : undefined;
+    if (next === undefined) return;
     e.preventDefault();
-    setHover(Math.max(0, Math.min(span, next)));
+    setHover(next == null ? null : Math.max(0, Math.min(span, next)));
   }
 
-  // Axis labels: now, the end of the chart, then the debt-free month with the extra and
-  // the first payoff — each only where it doesn't run into one already placed.
+  // Axis labels: now, the debt-free month with the extra and at the minimums — each
+  // only where it doesn't run into one already placed.
   const marks: number[] = [];
-  for (const m of [0, base.months != null ? Math.min(span, base.months) : null, sim.months, firstPayoff]) {
+  for (const m of [0, sim.months, showBase ? base.months : null]) {
     if (m == null || m > span) continue;
-    if (marks.every((p) => Math.abs(p - m) / span >= 0.16)) marks.push(m);
+    if (marks.every((p) => Math.abs(p - m) / span >= 0.12)) marks.push(m);
   }
   marks.sort((a, z) => a - z);
 
+  const end = sim.months != null ? t("debtFreeOn", { date: monthYear(monthsFromNow(sim.months)) }) : t("debtFreeNever");
   const summary = [
-    tPayoff("summary", { amount: formatEurWhole(sim.totals[0] ?? 0), end: sim.months != null ? tPayoff("debtFree", { date: monthYear(monthsFromNow(sim.months)) }) : tPayoff("debtFreeNever") }),
+    mode === "balance"
+      ? t("summary", { amount: formatEurWhole(sim.totals[0] ?? 0), end })
+      : t("summaryInterest", { amount: formatEurWhole(sim.interest), end }),
     ...debts.map((d) =>
-      d.s.months != null ? tPayoff("summaryDebt", { name: d.c.debt.name, date: monthYear(monthsFromNow(d.s.months)) }) : tPayoff("summaryDebtNever", { name: d.c.debt.name }),
+      d.s.months != null ? t("summaryDebt", { name: d.c.debt.name, date: monthYear(monthsFromNow(d.s.months)) }) : t("summaryDebtNever", { name: d.c.debt.name }),
     ),
   ].join(". ");
 
-  const flipped = month / span > 0.55;
-  const showBase = extra > 0;
+  const dotAt = mode === "balance" && sim.months != null && sim.months <= span ? x(sim.months) : null;
+  const labelLeft = dotAt != null && dotAt > W - 150;
+  const flipped = month / span > 0.6;
 
   return (
-    <>
-      <ul aria-hidden className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1.5 p-0 text-xs font-medium text-clear-ink-2">
-        {debts.map((d) => (
-          <li key={d.c.debt.id} className="inline-flex items-center gap-1.5">
-            <span className="h-[3px] w-3.5 shrink-0 rounded-full" style={{ background: d.colour }} />
-            {d.c.debt.name}
-          </li>
-        ))}
-        {showBase && (
-          <li className="inline-flex items-center gap-1.5">
-            <span className="h-0 w-3.5 shrink-0 border-t-2 border-dashed border-clear-muted" />
-            {t("minimumsOnly")}
-          </li>
-        )}
-      </ul>
+    <ClearCard aria-labelledby="debts-timeline-title" className={cn("gap-3.5", className)}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <ClearCardHeader
+          title={<span id="debts-timeline-title">{t("title")}</span>}
+          subtitle={<MoneyText>{showBase ? t("subtitleExtra", { amount: formatEurWhole(extra) }) : t("subtitleMinimums")}</MoneyText>}
+          className="min-w-0 flex-1"
+        />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <ul aria-hidden className="m-0 flex list-none flex-wrap gap-x-3.5 gap-y-1 p-0 text-xs font-medium text-clear-ink-2">
+            {debts.map((d) => (
+              <li key={d.c.debt.id} className="inline-flex items-center gap-1.5">
+                <span
+                  className="size-2.5 shrink-0 rounded-[3px] border"
+                  style={{ background: `var(--clr-${d.tone})`, borderColor: `var(--clr-${d.tone}-ink)` }}
+                />
+                {d.c.debt.name}
+              </li>
+            ))}
+            {showBase && (
+              <li className="inline-flex items-center gap-1.5">
+                <span className="h-0 w-3.5 shrink-0 border-t-2 border-dashed border-clear-muted" />
+                {t("minimumsOnly")}
+              </li>
+            )}
+          </ul>
+          <Segmented<Mode>
+            label={t("modeLabel")}
+            surface="tile"
+            size="sm"
+            value={mode}
+            onChange={setMode}
+            items={[
+              { value: "balance", label: t("balance") },
+              { value: "interest", label: t("interest") },
+            ]}
+          />
+        </div>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <div
+          ref={boxRef}
           role="group"
           tabIndex={0}
           aria-label={`${summary}. ${t("keys")}`}
@@ -320,67 +232,53 @@ function TimelineBody({ active, base, sim, extra }: { active: ComputedDebt[]; ba
             if (e.pointerType === "mouse") setHover(null);
           }}
           onKeyDown={step}
-          className="relative h-[200px] w-full cursor-crosshair touch-pan-y rounded-clear-row outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50 lg:h-[220px]"
+          className="relative w-full cursor-crosshair touch-pan-y rounded-clear-row outline-none select-none focus-visible:ring-3 focus-visible:ring-clear-ember/50"
+          style={{ height: HEIGHT }}
         >
-          <svg aria-hidden viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible">
-            <line x1={0} x2={W} y1={y(0)} y2={y(0)} stroke="var(--clr-line)" vectorEffect="non-scaling-stroke" />
-            {sim.months != null && sim.months <= span && (
-              <line x1={x(sim.months)} x2={x(sim.months)} y1={0} y2={y(0)} stroke="var(--clr-line)" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" />
-            )}
-            {showBase &&
-              debts.map((d) => (
-                <polyline
-                  key={`b${d.c.debt.id}`}
-                  points={line(d.b.balances, d.b.months)}
-                  fill="none"
-                  stroke={d.colour}
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                  opacity={0.5}
-                  vectorEffect="non-scaling-stroke"
-                />
+          {W > 0 && (
+            <svg aria-hidden width={W} height={HEIGHT} className="absolute inset-0 block overflow-visible">
+              <line x1={0} x2={W} y1={floor} y2={floor} stroke="var(--clr-line)" />
+              {bands.map((b) => (
+                <path key={b.id} d={b.d} fill={`var(--clr-${b.tone})`} stroke={`var(--clr-${b.tone}-ink)`} strokeWidth={1.5} strokeLinejoin="round" />
               ))}
-            {debts.map((d) => (
-              <polyline
-                key={`s${d.c.debt.id}`}
-                points={line(d.s.balances, d.s.months)}
-                fill="none"
-                stroke={d.colour}
-                strokeWidth={2.5}
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-              />
-            ))}
-            <line x1={x(month)} x2={x(month)} y1={0} y2={y(0)} stroke="var(--clr-ink)" strokeOpacity={0.35} vectorEffect="non-scaling-stroke" />
-          </svg>
-
-          {/* Where each debt stands in the readout's month */}
-          {debts.map((d) =>
-            d.s.months == null || d.s.months >= month ? (
-              <span
-                key={`p${d.c.debt.id}`}
-                aria-hidden
-                className="pointer-events-none absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-clear-card"
-                style={{ left: pct(month, span), top: `${(y(at(d.s.balances, month)) / H) * 100}%`, borderColor: d.colour }}
-              />
-            ) : null,
+              {showBase && <polyline points={baseLine} fill="none" stroke="var(--clr-muted)" strokeWidth={2} strokeDasharray="5 5" strokeLinejoin="round" />}
+              <line x1={x(month)} x2={x(month)} y1={PAD.top - 4} y2={floor} stroke="var(--clr-ink)" strokeDasharray="3 3" />
+              {dotAt != null && (
+                <g>
+                  <circle cx={dotAt} cy={floor} r={5} fill="var(--clr-ember)" />
+                  <text
+                    x={labelLeft ? dotAt - 10 : dotAt + 10}
+                    y={floor - 6}
+                    textAnchor={labelLeft ? "end" : "start"}
+                    fontSize="12"
+                    fontWeight={600}
+                    fill="var(--clr-ink)"
+                  >
+                    <SvgMoneyText>{end}</SvgMoneyText>
+                  </text>
+                </g>
+              )}
+            </svg>
           )}
 
-          <div
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute top-1 flex max-w-[min(260px,70%)] flex-col gap-0.5 rounded-clear-row bg-clear-hero px-3 py-2 text-clear-hero-ink",
-              flipped ? "-translate-x-[calc(100%+8px)]" : "translate-x-2",
-            )}
-            style={{ left: pct(month, span) }}
-          >
-            <span className="text-xs font-medium text-clear-hero-ink-2">{readout.date}</span>
-            <span className="text-[13px] font-semibold"><MoneyText>{readout.headline}</MoneyText></span>
-            {readout.detail && <span className="text-xs font-medium text-clear-hero-ink-2"><MoneyText>{readout.detail}</MoneyText></span>}
-          </div>
+          {W > 0 && (
+            <div
+              aria-hidden
+              className={cn(
+                "pointer-events-none absolute top-1 flex w-max max-w-[min(280px,75%)] flex-col gap-0.5 rounded-clear-row bg-clear-hero px-3 py-2 text-clear-hero-ink",
+                flipped ? "-translate-x-[calc(100%+8px)]" : "translate-x-2",
+              )}
+              style={{ left: x(month) }}
+            >
+              <span className="text-xs font-medium text-clear-hero-ink-2">{readout.date}</span>
+              <span className="text-[13px] font-semibold"><MoneyText>{readout.headline}</MoneyText></span>
+              {readout.detail && <span className="text-xs font-medium text-clear-hero-ink-2"><MoneyText>{readout.detail}</MoneyText></span>}
+              <span className="text-xs font-medium text-clear-hero-ink-2"><MoneyText>{readout.totals}</MoneyText></span>
+            </div>
+          )}
         </div>
         <p aria-live="polite" className="sr-only">
-          <MoneyText>{hover != null ? [readout.date, readout.headline, readout.detail].filter(Boolean).join(". ") : ""}</MoneyText>
+          <MoneyText>{hover != null ? [readout.date, readout.headline, readout.detail, readout.totals].filter(Boolean).join(". ") : ""}</MoneyText>
         </p>
 
         <div aria-hidden className="relative h-4 text-xs tabular-nums text-clear-muted">
@@ -388,35 +286,13 @@ function TimelineBody({ active, base, sim, extra }: { active: ComputedDebt[]; ba
             <span
               key={m}
               className={cn("absolute whitespace-nowrap", m / span < 0.08 ? "" : m / span > 0.92 ? "-translate-x-full" : "-translate-x-1/2")}
-              style={{ left: pct(m, span) }}
+              style={{ left: `${(m / span) * 100}%` }}
             >
-              {m === 0 ? t("now") : monthYear(monthsFromNow(m))}
+              {date(m)}
             </span>
           ))}
         </div>
       </div>
-
-      <ul className="m-0 grid list-none gap-2.5 p-0 sm:grid-cols-2 lg:grid-cols-3">
-        {debts.map((d) => {
-          const saved = Math.max(0, Math.round(d.b.interest - d.s.interest));
-          const rate = d.c.debt.interestRate ?? 0;
-          return (
-            <li key={d.c.debt.id} className="flex min-w-0 flex-col gap-1 rounded-clear-tile bg-clear-tile px-3.5 py-3">
-              <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-clear-ink-2">
-                <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: d.colour }} />
-                <span className="truncate">{d.c.debt.name}</span>
-              </span>
-              <span className="text-sm font-semibold">
-                <MoneyText>
-                  {d.s.months == null
-                    ? t("never")
-                    : [t("free", { date: monthYear(monthsFromNow(d.s.months)) }), rate > 0 ? t("saved", { amount: formatEurWhole(saved) }) : t("noInterest")].join(" · ")}
-                </MoneyText>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </>
+    </ClearCard>
   );
 }

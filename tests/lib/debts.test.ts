@@ -187,6 +187,24 @@ describe("debtBalance and computeDebt", () => {
     expect(result.amountPaid).toBeLessThan(300);
   });
 
+  it("logged extra payments come off the balance between the balance date and today", () => {
+    const extras = [
+      { date: "2026-03-10", amount: 150 },
+      { date: "2026-01-01", amount: 999 }, // before the balance date: already in it
+      { date: "2026-06-01", amount: 999 }, // after today: not yet
+    ];
+    // Interest-free: 4 assumed minimums of 100 plus the 150 extra.
+    expect(debtBalance(debt({}), null, undefined, extras)).toEqual({ amountPaid: 550, currentBalance: 450 });
+    // Logged on the balance date itself, it still counts.
+    expect(debtBalance(debt({ balanceDate: "2026-05-20" }), null, undefined, [{ date: "2026-05-20", amount: 200 }]).currentBalance).toBe(800);
+    // With interest the extra joins its month's payment, so it saves the interest after it.
+    const plain = debtBalance(debt({ interestRate: 12 }), null);
+    const withExtra = debtBalance(debt({ interestRate: 12 }), null, undefined, extras);
+    expect(plain.currentBalance - withExtra.currentBalance).toBeGreaterThan(150);
+    // And computeDebt's months left follow the lower balance.
+    expect(computeDebt(debt({}), null, extras).monthsRemaining).toBeLessThan(computeDebt(debt({}), null).monthsRemaining!);
+  });
+
   it("computeDebtBillEndDate and computeDebt agree on the last payment for a 31st start", () => {
     // Balance true on 31 Jan, €1000 at €100/month: ten payments, the last in November.
     const d = debt({ startDate: "2026-01-31", startMonth: "2026-01", balanceDate: "2026-01-31", startingBalance: 1000 });
@@ -246,7 +264,7 @@ describe("debtBalance and computeDebt", () => {
   });
 });
 
-describe("debt-shared: sorting Your debts", () => {
+describe("debt-shared: the payoff order", () => {
   const row = (id: number, currentBalance: number, interestRate: number | null, monthsRemaining: number | null, neverPaysOff = false) => ({
     debt: debt({ id, interestRate }),
     currentBalance,
@@ -259,12 +277,9 @@ describe("debt-shared: sorting Your debts", () => {
   it("orders by the chosen sort, paid-off debts last", () => {
     expect(ids("interest")).toEqual([2, 5, 1, 3, 4]);
     expect(ids("smallest")).toEqual([3, 2, 5, 1, 4]);
-    // No date (3) and never (5) come after every debt that has a payoff date.
-    expect(ids("soonest")).toEqual([2, 1, 3, 5, 4]);
-    expect(ids("largest")).toEqual([1, 5, 2, 3, 4]);
   });
 
-  it("reads ?sort= safely", () => {
+  it("reads a stored payoff order safely", () => {
     expect(parseDebtSort("smallest")).toBe("smallest");
     expect(parseDebtSort("nonsense")).toBe("interest");
     expect(parseDebtSort(null)).toBe("interest");

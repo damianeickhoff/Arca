@@ -1,7 +1,7 @@
 // The Debts page's payoff timeline and "What if I pay extra?" simulator.
 import { describe, expect, it } from "vitest";
 import { payoffMonths, monthlyRate, totalInterest } from "@/lib/debt-interest";
-import { payoffMonthsById, payoffOrder, simulatePayoff } from "@/lib/debt-simulate";
+import { buildPayoffPlan, payoffMonthsById, payoffOrder, simulatePayoff } from "@/lib/debt-simulate";
 
 const duo = { id: 1, balance: 6900, payment: 212, annualRate: 0.46 };
 const car = { id: 2, balance: 1520, payment: 160, annualRate: 5.9 };
@@ -110,5 +110,48 @@ describe("debt-simulate: payoffMonthsById", () => {
     expect(months.get(3)).toBeNull();
     // An extra large enough rescues it once it reaches the stuck debt.
     expect(payoffMonthsById(simulatePayoff([car, stuck], 500, 120)).get(3)).not.toBeNull();
+  });
+});
+
+describe("debt-simulate: rollover and buildPayoffPlan", () => {
+  const card = { id: 1, balance: 2140, payment: 120, annualRate: 18.9 };
+  const loan = { id: 2, balance: 4780, payment: 142, annualRate: 6.4 };
+  const family = { id: 3, balance: 1500, payment: 50, annualRate: 0 };
+  const debts = [card, loan, family];
+
+  it("rolls a paid-off debt's whole payment on, so the month's total stays the same", () => {
+    const plain = simulatePayoff(debts, 200);
+    const rolled = simulatePayoff(debts, 200, 600, undefined, { rollover: true });
+    expect(rolled.rollover).toBe(true);
+    expect(rolled.months!).toBeLessThan(plain.months!);
+    expect(rolled.interest).toBeLessThan(plain.interest);
+    // Every month but the last pays the minimums plus the extra: 120 + 142 + 50 + 200.
+    for (let m = 1; m < rolled.months!; m++) {
+      expect(rolled.byDebt.reduce((s, d) => s + d.payments[m], 0)).toBeCloseTo(512, 2);
+    }
+    // Each debt's monthly interest adds up to its total.
+    for (const d of rolled.byDebt) expect(d.interestByMonth.reduce((s, i) => s + i, 0)).toBeCloseTo(d.interest, 2);
+    // At no extra and no rollover nothing changes from the minimums.
+    expect(simulatePayoff(debts, 0, 600, undefined, { rollover: false }).months).toBe(simulatePayoff(debts).months);
+  });
+
+  it("reads the plan: the extra on the first debt, then each payment rolling on", () => {
+    const sim = simulatePayoff(debts, 200, 600, undefined, { rollover: true });
+    const plan = buildPayoffPlan(debts, sim, 200);
+    expect(plan.map((r) => r.id)).toEqual([1, 2, 3]);
+    const [first, second, third] = plan;
+    expect(first).toMatchObject({ minimum: 120, extraNow: 200, pay: 320, step: null, rollsTo: 2 });
+    expect(second).toMatchObject({ minimum: 142, extraNow: 0, pay: 142, rollsTo: 3 });
+    expect(second.step).toEqual({ month: first.months! + 1, pay: 462 });
+    expect(third.step).toEqual({ month: second.months! + 1, pay: 512 });
+    expect(third.rollsTo).toBeNull();
+    expect(third.months).toBe(sim.months);
+  });
+
+  it("without rollover nothing rolls on", () => {
+    const sim = simulatePayoff(debts, 0);
+    const plan = buildPayoffPlan(debts, sim, 0);
+    expect(plan.every((r) => r.step == null && r.rollsTo == null && r.extraNow === 0)).toBe(true);
+    expect(plan.map((r) => r.pay)).toEqual([120, 142, 50]);
   });
 });

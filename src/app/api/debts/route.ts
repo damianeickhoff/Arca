@@ -31,8 +31,8 @@ async function settleDebt(id: number) {
   const [debt] = await db.select().from(debts).where(eq(debts.id, id));
   if (!debt) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const { linkMap, paidFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
-  const { amountPaid, currentBalance } = computeDebt(debt, paidFor(debt));
+  const { linkMap, paidFor, extrasFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
+  const { amountPaid, currentBalance } = computeDebt(debt, paidFor(debt), extrasFor(debt.id));
   const received = Math.max(0, Math.round(debtEffectivePaid(debt, amountPaid, currentBalance) * 100) / 100);
   const now = new Date();
   const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;

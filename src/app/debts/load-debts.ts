@@ -1,13 +1,17 @@
 import { db } from "@/db";
-import { categories, debts, recurringItems } from "@/db/schema";
-import { asc } from "drizzle-orm";
+import { billPayments, categories, debtPayments, debts, recurringItems, transactions } from "@/db/schema";
+import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import type { RecurringItem } from "@/db/schema";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
 import { getMonthlyFreeToSpend } from "@/lib/monthly-free-to-spend";
+import { getBillStatuses } from "@/lib/bill-status";
+import { billControl } from "@/lib/bill-groups";
+import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
+import { currentFinancialMonth, financialMonthRangeByMonth, todayStr } from "@/lib/date-range";
 import { computeDebt } from "./debt-shared";
-import type { ComputedDebt, DebtsFreeToSpend, DebtsPageData } from "./debt-shared";
+import type { ComputedDebt, DebtMonthPayment, DebtsFreeToSpend, DebtsMonthPayments, DebtsPageData } from "./debt-shared";
 
 /**
  * Every recurring item, for the debt form's "Linked recurring bills". Recurring bills
@@ -39,13 +43,13 @@ export async function loadDebtsData(): Promise<DebtsPageData> {
 
   // Payoff progress comes from the paid-months history of each debt's linked
   // recurring bills (see lib/debt-recurring-paid.ts).
-  const { linkMap, paidFor } = await getDebtRecurringLinks(financialMonth);
+  const { linkMap, paidFor, extrasFor } = await getDebtRecurringLinks(financialMonth);
   const billMap = new Map(bills.map((b) => [b.id, b]));
 
   const computedAll = rows.map((debt) => {
     const linkedBillIds = linkMap.get(debt.id) ?? [];
     const linkedBills = linkedBillIds.map((id) => billMap.get(id)).filter((b): b is RecurringItem => !!b);
-    return { debt, linkedBills, linkedBillIds, ...computeDebt(debt, paidFor(debt)) };
+    return { debt, linkedBills, linkedBillIds, ...computeDebt(debt, paidFor(debt), extrasFor(debt.id)) };
   }).sort((a, b) => b.currentBalance - a.currentBalance);
 
   // Split by direction: the payoff model (progress, simulator, timeline) is about "owe"
@@ -83,4 +87,83 @@ export function unlinkedDebtMinimums(computed: readonly ComputedDebt[]): number 
 export async function loadUnlinkedDebtMinimums(): Promise<number> {
   const { computed } = await loadDebtsData();
   return unlinkedDebtMinimums(computed);
+}
+
+/**
+ * "This month's payments": each open debt's payment in the current financial month.
+ * A debt paid by a linked recurring bill takes that bill's status (matched to a
+ * transaction, marked by hand, or still to come), the same rule as the bills on Plan ›
+ * Budget; a debt without one is "Paid?" until it is marked (debt_payments, kind
+ * "minimum"). Also the extra payments logged so far this calendar year.
+ */
+export async function loadDebtsMonthPayments(computed: readonly ComputedDebt[]): Promise<DebtsMonthPayments> {
+  const config = await getFinancialMonthConfig();
+  const month = currentFinancialMonth(config);
+  const { from, to } = financialMonthRangeByMonth(month, config);
+  const today = todayStr();
+  const open = computed.filter((c) => (c.debt.direction ?? "owe") === "owe" && c.currentBalance > 0);
+  const billIds = [...new Set(open.flatMap((c) => c.linkedBillIds))];
+
+  const [statuses, marks, minimumMarks, extraRows, monthTx] = await Promise.all([
+    billIds.length ? getBillStatuses(month, config) : [],
+    billIds.length
+      ? db.select().from(billPayments).where(and(eq(billPayments.month, month), inArray(billPayments.recurringItemId, billIds)))
+      : [],
+    db
+      .select()
+      .from(debtPayments)
+      .where(and(eq(debtPayments.kind, "minimum"), gte(debtPayments.date, from), lte(debtPayments.date, to))),
+    db
+      .select({ amount: debtPayments.amount })
+      .from(debtPayments)
+      .where(and(eq(debtPayments.kind, "extra"), gte(debtPayments.date, `${today.slice(0, 4)}-01-01`), lte(debtPayments.date, today))),
+    billIds.length
+      ? db
+          .select({ date: transactions.date, description: transactions.description, amount: transactions.amount })
+          .from(transactions)
+          .where(and(eq(transactions.direction, "expense"), gte(transactions.date, from), lte(transactions.date, to)))
+          .orderBy(asc(transactions.date))
+      : [],
+  ]);
+
+  const payments = open.map((c): DebtMonthPayment => {
+    const base = { debtId: c.debt.id, amount: c.debt.minimumPayment, month };
+    if (c.linkedBillIds.length === 0) {
+      const mark = minimumMarks.find((m) => m.debtId === c.debt.id);
+      const day = c.debt.startDate ? Number(c.debt.startDate.slice(8, 10)) || null : null;
+      return { ...base, kind: "unlinked", paid: !!mark, paidOn: mark?.date ?? null, source: mark ? "manual" : null, dueDate: null, dueDay: day, control: mark ? "paid" : "ask", billId: null, item: null };
+    }
+    // The first linked bill that is due this month.
+    const status = statuses.find((s) => c.linkedBillIds.includes(s.item.id));
+    if (!status) {
+      return { ...base, kind: "notDue", paid: false, paidOn: null, source: null, dueDate: null, dueDay: null, control: null, billId: c.linkedBillIds[0], item: null };
+    }
+    const paid = status.paid === true;
+    let paidOn: string | null = null;
+    if (status.paidSource === "manual") {
+      paidOn = marks.find((m) => m.recurringItemId === status.item.id)?.paidAt?.slice(0, 10) ?? null;
+    } else if (status.paidSource === "match") {
+      paidOn = monthTx.find((t) => transactionMatchesRecurringItem(t.description, t.amount, status.item))?.date ?? null;
+    }
+    const control = billControl(
+      { paid, paidSource: status.paidSource, hasPattern: !!status.item.matchPattern, dueDate: status.dueDate },
+      today,
+    );
+    return {
+      ...base,
+      amount: status.item.amount ?? c.debt.minimumPayment,
+      kind: "bill",
+      paid,
+      paidOn,
+      source: status.paidSource,
+      dueDate: status.dueDate,
+      dueDay: null,
+      control,
+      billId: status.item.id,
+      // Only a bill without a pattern needs the item itself: "Teach Arca the pattern".
+      item: status.item.matchPattern ? null : status.item,
+    };
+  });
+
+  return { month, payments, extraThisYear: Math.round(extraRows.reduce((s, r) => s + r.amount, 0) * 100) / 100 };
 }

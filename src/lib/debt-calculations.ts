@@ -25,11 +25,11 @@ export async function getDebtSummary(): Promise<DebtSummary | null> {
 
   // Progress comes from the paid-months history of each debt's linked recurring bills;
   // debts with no links fall back to the linear minimumPayment × monthsElapsed model.
-  const { paidFor } = await getDebtRecurringLinks(financialMonth);
+  const { paidFor, extrasFor } = await getDebtRecurringLinks(financialMonth);
 
   // Same maths as the debts page (interest included when the debt carries a rate) —
   // net worth and the debts page must never disagree about what a debt is worth.
-  const computed = debtRows.map((debt: Debt) => ({ debt, ...debtBalance(debt, paidFor(debt)) }));
+  const computed = debtRows.map((debt: Debt) => ({ debt, ...debtBalance(debt, paidFor(debt), new Date(), extrasFor(debt.id)) }));
 
   // Split by direction: money you owe is a liability (totalBalance), money owed to you
   // is an asset (totalOwed). They must never be lumped together — doing so subtracts

@@ -400,6 +400,21 @@ export const debtRecurring = sqliteTable("debt_recurring", {
   recurringItemId: integer("recurring_item_id").notNull().references(() => recurringItems.id, { onDelete: "cascade" }),
 });
 
+// ─── Debt payments ───────────────────────────────────────────────────────────
+// Payments recorded on a debt by hand, from Plan › Debts. "extra": an extra or lump-sum
+// payment that comes off the balance on its date (see debtBalance). "minimum": this
+// month's minimum marked as paid for a debt no recurring bill pays, a status only (the
+// unlinked payoff model already counts every scheduled minimum).
+export const debtPayments = sqliteTable("debt_payments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  debtId: integer("debt_id").notNull().references(() => debts.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull().default("extra"), // extra | minimum
+  date: text("date").notNull(), // YYYY-MM-DD
+  amount: real("amount").notNull(),
+  note: text("note"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
 // ─── App settings ────────────────────────────────────────────────────────────
 export const appSettings = sqliteTable("app_settings", {
   key: text("key").primaryKey(),
@@ -751,6 +766,7 @@ export type NewCategoryRule = typeof categoryRules.$inferInsert;
 export type Debt = typeof debts.$inferSelect;
 export type NewDebt = typeof debts.$inferInsert;
 export type DebtRecurring = typeof debtRecurring.$inferSelect;
+export type DebtPayment = typeof debtPayments.$inferSelect;
 export type FinancialMonthOverride = typeof financialMonthOverrides.$inferSelect;
 export type PrognoseOverride = typeof prognoseOverrides.$inferSelect;
 export type SavingsMonthOverride = typeof savingsMonthOverrides.$inferSelect;

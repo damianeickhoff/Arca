@@ -8,6 +8,7 @@ import {
   totalInterest,
 } from "@/lib/debt-interest";
 import type { Debt, RecurringItem } from "@/db/schema";
+import type { BillControl } from "@/lib/bill-groups";
 
 /**
  * What the recurring bills linked to a debt cost per month — the debt's minimum
@@ -128,36 +129,58 @@ export type DebtProgress = {
  * payment covers that month's interest first — so `amountPaid` is *principal* retired,
  * always ≤ the cash in `progress.total`.
  */
-export function debtBalance(debt: Debt, progress: DebtProgress | null, asOf: Date = new Date()) {
+export function debtBalance(
+  debt: Debt,
+  progress: DebtProgress | null,
+  asOf: Date = new Date(),
+  /** Extra and lump-sum payments logged on the debt (debt_payments, kind "extra"). */
+  extras: readonly DebtExtraPayment[] = [],
+) {
   const rate = monthlyRate(debt.interestRate);
+  const balanceDate = debtBalanceDate(debt);
+  const asOfDate = toDateString(asOf);
   // Everything is measured from the balance date, not the debt's start date. With the
   // default (balance date = today) there are no months in between, so nothing is assumed
   // repaid and the balance you entered is the balance you have.
-  const assumedMonths = scheduledPaymentMonths(debtBalanceDate(debt), toDateString(asOf)).length;
+  const scheduled = scheduledPaymentMonths(balanceDate, asOfDate);
+  // An extra payment counts from the balance date on (one logged the day the balance was
+  // entered still comes off it) up to the date the balance is read for.
+  const counted = extras.filter((e) => e.amount > 0 && e.date >= balanceDate && e.date <= asOfDate);
 
   if (rate === 0) {
-    const amountPaid =
-      progress !== null
-        ? Math.min(progress.total, debt.startingBalance)
-        : Math.min(assumedMonths * debt.minimumPayment, debt.startingBalance);
+    const extraPaid = counted.reduce((s, e) => s + e.amount, 0);
+    const paid =
+      progress !== null ? progress.total : scheduled.length * debt.minimumPayment;
+    const amountPaid = Math.min(paid + extraPaid, debt.startingBalance);
     return { amountPaid, currentBalance: Math.max(debt.startingBalance - amountPaid, 0) };
   }
 
   // No links to read a history from — assume the schedule was kept to, which is the
   // same assumption the interest-free branch's linear model makes.
-  const payments = progress
-    ? progress.byMonth.map((m) => m.amount)
-    : Array.from({ length: assumedMonths }, () => debt.minimumPayment);
-
-  const currentBalance = applyPayments(debt.startingBalance, rate, payments);
+  const months = progress ? progress.byMonth.map((m) => m.month) : scheduled;
+  const payments = progress ? progress.byMonth.map((m) => m.amount) : scheduled.map(() => debt.minimumPayment);
+  // An extra joins its month's payment; one in the balance month itself (or a month the
+  // history doesn't cover) comes straight off the balance before the first month.
+  let upfront = 0;
+  for (const e of counted) {
+    const i = months.indexOf(monthOf(e.date));
+    if (i === -1) upfront += e.amount;
+    else payments[i] += e.amount;
+  }
+  const start = Math.max(0, Math.round((debt.startingBalance - upfront) * 100) / 100);
+  const currentBalance = applyPayments(start, rate, payments);
   return { amountPaid: Math.max(debt.startingBalance - currentBalance, 0), currentBalance };
 }
 
+/** An extra or lump-sum payment logged on a debt (debt_payments, kind "extra"). */
+export type DebtExtraPayment = { date: string; amount: number };
+
 // `progress` is the payment history from the debt's linked recurring bills, or null when
 // it has no links — in which case the linear minimumPayment × monthsElapsed model applies.
-export function computeDebt(debt: Debt, progress: DebtProgress | null) {
+// `extras` are the extra payments logged on it, which come off the balance on their date.
+export function computeDebt(debt: Debt, progress: DebtProgress | null, extras: readonly DebtExtraPayment[] = []) {
   const rate = monthlyRate(debt.interestRate);
-  const { amountPaid, currentBalance } = debtBalance(debt, progress);
+  const { amountPaid, currentBalance } = debtBalance(debt, progress, new Date(), extras);
   const monthsRemaining =
     debt.minimumPayment > 0 && currentBalance > 0
       ? payoffMonths(currentBalance, debt.minimumPayment, rate)
@@ -306,33 +329,59 @@ export interface DebtsFreeToSpend {
   free: number;
 }
 
-// ── Sorting ───────────────────────────────────────────────────────────────────
+/** One debt's payment in "This month's payments" (see loadDebtsMonthPayments). */
+export interface DebtMonthPayment {
+  debtId: number;
+  /** "bill": paid by a linked recurring bill due this month; "notDue": linked, but its
+   *  bill isn't due this month; "unlinked": no bill, marked by hand. */
+  kind: "bill" | "notDue" | "unlinked";
+  amount: number;
+  /** The financial month (YYYY-MM). */
+  month: string;
+  paid: boolean;
+  /** YYYY-MM-DD: the matched transaction's date or the day it was marked. */
+  paidOn: string | null;
+  source: "match" | "manual" | null;
+  /** The linked bill's due date this month. */
+  dueDate: string | null;
+  /** An unlinked debt's payment day (its start date's day). */
+  dueDay: number | null;
+  /** The bill status control's state; null when there is nothing to mark. */
+  control: BillControl | null;
+  billId: number | null;
+  /** The linked bill when it has no pattern, for "Teach Arca the pattern". */
+  item: RecurringItem | null;
+}
 
-/** How "Your debts" is ordered — and so which debt the simulator's extra goes to first. */
-export const DEBT_SORTS = ["interest", "smallest", "soonest", "largest"] as const;
+export interface DebtsMonthPayments {
+  month: string;
+  payments: DebtMonthPayment[];
+  /** Extra payments logged this calendar year. */
+  extraThisYear: number;
+}
+
+// ── Order ─────────────────────────────────────────────────────────────────────
+
+/**
+ * The payoff order: which debt the simulator's extra goes to first, and the order
+ * "Your debts" lists them in. Highest interest first (the "avalanche", which saves the
+ * most interest) or the smallest balance first (the "snowball", quick wins). Saved in
+ * app settings (debt_payoff_order, see getDebtPayoffOrder).
+ */
+export const DEBT_SORTS = ["interest", "smallest"] as const;
 export type DebtSort = (typeof DEBT_SORTS)[number];
 
-/** A ?sort= value as a sort; anything unknown is the default, highest interest first. */
+/** A stored order; anything unknown is the default, highest interest first. */
 export function parseDebtSort(value: string | null | undefined): DebtSort {
   return (DEBT_SORTS as readonly string[]).includes(value ?? "") ? (value as DebtSort) : "interest";
 }
 
-/**
- * Debts in the chosen order. Paid-off debts always come last; ties go to the smaller
- * balance. "Paid off soonest" puts debts without a payoff date (no payment, or one that
- * never covers the interest) after every debt that has one.
- */
-export function sortDebts<T extends Pick<ComputedDebt, "debt" | "currentBalance" | "monthsRemaining" | "neverPaysOff">>(
-  list: readonly T[],
-  sort: DebtSort,
-): T[] {
+/** Debts in the chosen order. Paid-off debts always come last; ties go to the smaller balance. */
+export function sortDebts<T extends Pick<ComputedDebt, "debt" | "currentBalance">>(list: readonly T[], sort: DebtSort): T[] {
   const rate = (c: T) => c.debt.interestRate ?? 0;
-  const months = (c: T) => (c.neverPaysOff || c.monthsRemaining == null ? Infinity : c.monthsRemaining);
   const compare: Record<DebtSort, (a: T, b: T) => number> = {
     interest: (a, b) => rate(b) - rate(a),
     smallest: (a, b) => a.currentBalance - b.currentBalance,
-    soonest: (a, b) => (months(a) === months(b) ? 0 : months(a) < months(b) ? -1 : 1),
-    largest: (a, b) => b.currentBalance - a.currentBalance,
   };
   return [...list].sort(
     (a, b) =>

@@ -36,7 +36,7 @@ export async function getNetWorthForecast(
   // owed. A recurring income item linked to such a debt is that same repayment, so it is
   // left out of the income total — counting it in both places double-counted it, and
   // kept counting it after the debt had been fully repaid.
-  const { linkMap, paidFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
+  const { linkMap, paidFor, extrasFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
   const repaymentItemIds = new Set(owedDebts.flatMap((d) => linkMap.get(d.id) ?? []));
   const monthlyIncome = incomeItems
     .filter((i) => !repaymentItemIds.has(i.id))
@@ -50,7 +50,7 @@ export async function getNetWorthForecast(
   // private copy of the maths — the two used to be able to disagree about a debt's worth.
   const owedRemaining = owedDebts.map((d) => ({
     monthlyPayment: d.minimumPayment,
-    remaining: Math.max(0, debtBalance(d, paidFor(d)).currentBalance),
+    remaining: Math.max(0, debtBalance(d, paidFor(d), new Date(), extrasFor(d.id)).currentBalance),
   }));
 
   if (monthlyIncome <= 0 && monthlySavings <= 0 && owedRemaining.every((d) => d.remaining <= 0)) return [];

@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   IconAlertTriangle,
@@ -9,26 +9,26 @@ import {
   IconArrowUpRight,
   IconCalendarEvent,
   IconCheck,
-  IconChevronDown,
   IconChevronRight,
   IconCreditCard,
   IconPencil,
   IconPlus,
   IconCalendarDue,
+  IconReceipt,
   IconSchool,
   IconUsers,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { formatEur, formatEurWhole } from "@/lib/format";
-import { payoffMonthsById, simulatePayoff } from "@/lib/debt-simulate";
+import { buildPayoffPlan, payoffMonthsById, simulatePayoff, type PayoffPlanRow, type PayoffSimulation } from "@/lib/debt-simulate";
 import type { OpenAdvance } from "@/lib/open-advances";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader } from "@/components/clear/card";
 import { ClearChip } from "@/components/clear/chip";
 import { ClearProgress } from "@/components/clear/progress";
+import { Segmented } from "@/components/clear/segmented";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useConfirm } from "@/components/clear/confirm-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Icon } from "@/components/icon";
 import { PlanSwitch } from "@/components/shell/plan-switch";
 import { AnchoredTip } from "@/components/anchored-tip";
@@ -39,16 +39,19 @@ import {
   debtEffectivePaid,
   debtEffectiveTotal,
   debtPaidPct,
-  parseDebtSort,
   sortDebts,
   type ComputedDebt,
   type DebtSort,
   type DebtsFreeToSpend,
+  type DebtsMonthPayments,
 } from "./debt-shared";
 import { DebtDetailDialog } from "./debt-detail-dialog";
 import { DebtFormDialog } from "./debt-form-dialog";
 import { DebtIcon, ExtraSlider, PaymentNotice, monthsFromNow, pastel, useMonthYear, usePaymentNotice } from "./debt-ui";
-import { PayoffCard, PayoffTimelineDialog } from "./payoff-timeline";
+import { PayoffTimelineCard } from "./payoff-timeline";
+import { ThisMonthCard } from "./this-month-card";
+import { LogPaymentDialog } from "./log-payment-dialog";
+import { setDebtPayoffOrderAction } from "./actions";
 import { MoneyText } from "@/components/clear/money";
 
 /** What the add/edit form opens with — also what /debts?add=… and /debts?edit=… ask for. */
@@ -56,7 +59,7 @@ export type DebtFormRequest = { kind: "add"; direction: "owe" | "owed" } | { kin
 
 const LINK_BUTTON = "cursor-pointer text-sm font-bold text-clear-ember-text hover:underline";
 
-type Sim = ReturnType<typeof simulatePayoff>;
+type Sim = PayoffSimulation;
 
 /** Whole months from this month to `date`'s month; 0 for this month or earlier. */
 function monthsUntil(date: Date) {
@@ -66,11 +69,13 @@ function monthsUntil(date: Date) {
 
 /**
  * Plan · Debts. One grid: three summary tiles (you owe, owed to you, debt-free) across
- * the top, the extra-payment simulator across the full width under them, then your
- * debts (two columns wide) beside the payoff timeline and what others owe you. Every
- * debt opens its detail sheet; adding and editing happen in the debt form sheet; the
- * timeline opens its per-debt popup, which shares the simulator's extra. ?sort=…
- * orders your debts and decides which one the simulator's extra goes to first.
+ * the top, the extra-payment simulator across the full width under them (the slider,
+ * the payoff order and where the extra goes month by month), then your debts (two
+ * columns wide) beside this month's payments and what others owe you, and the payoff
+ * timeline as the last full-width row. Every debt opens its detail sheet; adding and
+ * editing happen in the debt form sheet; "Log a payment" records an extra or lump sum.
+ * The order (saved in app settings) decides which debt the extra goes to first and how
+ * Your debts is sorted.
  */
 export function DebtsView({
   computed,
@@ -80,7 +85,9 @@ export function DebtsView({
   totalOwed,
   totalMonthly,
   freeToSpend,
+  thisMonth,
   advances,
+  order: savedOrder,
   initialForm,
 }: {
   computed: ComputedDebt[];
@@ -90,13 +97,15 @@ export function DebtsView({
   totalOwed: number;
   totalMonthly: number;
   freeToSpend: DebtsFreeToSpend;
+  thisMonth: DebtsMonthPayments;
   advances: OpenAdvance[];
+  order: DebtSort;
   initialForm: DebtFormRequest | null;
 }) {
   const router = useRouter();
-  const params = useSearchParams();
-  const sort = parseDebtSort(params.get("sort"));
-  const sorted = useMemo(() => sortDebts(computed, sort), [computed, sort]);
+  const [order, setOrder] = useState<DebtSort>(savedOrder);
+  const [, startSaving] = useTransition();
+  const sorted = useMemo(() => sortDebts(computed, order), [computed, order]);
   const active = useMemo(() => sorted.filter((c) => c.currentBalance > 0), [sorted]);
   const openOwed = useMemo(() => computedOwed.filter((c) => c.currentBalance > 0), [computedOwed]);
   const hasOwed = openOwed.length > 0 || advances.length > 0;
@@ -109,11 +118,13 @@ export function DebtsView({
   const [formOpen, setFormOpen] = useState(initialForm != null);
   const [fromUrl, setFromUrl] = useState(initialForm != null);
   const [extra, setExtra] = useState(100);
+  // Remounted per opening, so it always starts empty on the first debt.
+  const [logOpen, setLogOpen] = useState(false);
+  const [logKey, setLogKey] = useState(0);
 
   const all = [...computed, ...computedOwed];
   const sheet = sheetId != null ? all.find((c) => c.debt.id === sheetId) ?? null : null;
   const editing = form.kind === "edit" ? all.find((c) => c.debt.id === form.id) ?? null : null;
-  const sortQuery = sort === "interest" ? "" : `?sort=${sort}`;
 
   function openForm(next: DebtFormRequest) {
     setForm(next);
@@ -123,42 +134,55 @@ export function DebtsView({
   function formOpenChange(open: boolean) {
     setFormOpen(open);
     // Opened from /debts?add=… or ?edit=…: drop the parameter so a refresh doesn't
-    // open the form again (the sort stays).
+    // open the form again.
     if (!open && fromUrl) {
       setFromUrl(false);
-      router.replace(`/debts${sortQuery}`, { scroll: false });
+      router.replace("/debts", { scroll: false });
     }
   }
 
-  // The sort lives in the URL so it survives a refresh; the native history API updates
-  // it (and useSearchParams) without a server round trip.
-  function chooseSort(next: DebtSort) {
-    const query = new URLSearchParams(params.toString());
-    if (next === "interest") query.delete("sort");
-    else query.set("sort", next);
-    const qs = query.toString();
-    window.history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+  function chooseOrder(next: DebtSort) {
+    setOrder(next);
+    startSaving(async () => {
+      await setDebtPayoffOrderAction(next);
+    });
+  }
+
+  function openLog() {
+    setLogKey((k) => k + 1);
+    setLogOpen(true);
   }
 
   const simDebts = useMemo(
     () => active.map((c) => ({ id: c.debt.id, balance: c.currentBalance, payment: c.debt.minimumPayment, annualRate: c.debt.interestRate })),
     [active],
   );
-  // The extra goes to the debts in the order the list shows them.
-  const order = useMemo(() => active.map((c) => c.debt.id), [active]);
-  const base = useMemo(() => simulatePayoff(simDebts, 0, 600, order), [simDebts, order]);
-  const sim = useMemo(() => simulatePayoff(simDebts, extra, 600, order), [simDebts, extra, order]);
-  // Each debt card's "Free in …" line: the month it reaches zero with the extra (the
-  // simulator's order), next to the month it would at the minimums.
-  const payoff = useMemo(() => ({ now: payoffMonthsById(sim), base: payoffMonthsById(base) }), [sim, base]);
+  // The extra goes to the debts in the order the list shows them; once one is paid off
+  // its whole payment rolls on to the next. The minimums alone are the comparison.
+  const ids = useMemo(() => active.map((c) => c.debt.id), [active]);
+  const base = useMemo(() => simulatePayoff(simDebts, 0, 600, ids), [simDebts, ids]);
+  const sim = useMemo(() => simulatePayoff(simDebts, extra, 600, ids, { rollover: extra > 0 }), [simDebts, extra, ids]);
+  const plan = useMemo(() => buildPayoffPlan(simDebts, sim, extra), [simDebts, sim, extra]);
+  // Each debt card's "Free in …" line: the month it reaches zero with the extra, next to
+  // the month it would at the minimums, and the extra it gets this month.
+  const payoff = useMemo(
+    () => ({ now: payoffMonthsById(sim), base: payoffMonthsById(base), extraNow: new Map(plan.map((r) => [r.id, r.extraNow])) }),
+    [sim, base, plan],
+  );
   const hasRight = active.length > 0 || hasOwed;
   // The slider runs to €500, or further when the minimums are higher than that.
   const extraMax = Math.max(500, Math.ceil(totalMonthly / 100) * 100);
-  const [timelineOpen, setTimelineOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
-      <DebtsHeader active={active.length} monthly={totalMonthly} toReceive={openOwed.length + advances.length} empty={empty} onAdd={() => openForm({ kind: "add", direction: "owe" })} />
+      <DebtsHeader
+        active={active.length}
+        monthly={totalMonthly}
+        toReceive={openOwed.length + advances.length}
+        empty={empty}
+        onAdd={() => openForm({ kind: "add", direction: "owe" })}
+        onLog={active.length > 0 ? openLog : undefined}
+      />
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {empty ? (
@@ -174,6 +198,8 @@ export function DebtsView({
               owedTotal={totalOwed + advances.reduce((s, a) => s + a.remaining, 0)}
               owedCount={openOwed.length + advances.length}
               base={base}
+              sim={sim}
+              extra={extra}
               totalMonthly={totalMonthly}
               hasOwn={computed.length > 0}
             />
@@ -181,15 +207,16 @@ export function DebtsView({
             {active.length > 0 && (
               <SimulatorCard
                 active={active}
-                sort={sort}
+                order={order}
+                onOrder={chooseOrder}
                 base={base}
                 sim={sim}
+                plan={plan}
                 extra={extra}
                 max={extraMax}
                 onExtra={setExtra}
                 totalMonthly={totalMonthly}
                 freeToSpend={freeToSpend}
-                sortable={computed.length > 1}
                 className="lg:col-span-2 xl:col-span-3"
               />
             )}
@@ -198,27 +225,18 @@ export function DebtsView({
               computed={sorted}
               payoff={payoff}
               extra={extra}
-              sort={sort}
-              onSort={chooseSort}
+              order={order}
               onOpen={setSheetId}
               onEdit={(id) => openForm({ kind: "edit", id })}
               onAdd={() => openForm({ kind: "add", direction: "owe" })}
               className={cn("lg:col-span-2", !hasRight && "xl:col-span-3")}
             />
 
-            {/* One column at xl beside Your debts; side by side under it at lg. The
-                timeline card fills the column so it lines up with Your debts. */}
+            {/* One column at xl beside Your debts; side by side under it at lg. This
+                month's payments fills the column so it lines up with Your debts. */}
             {hasRight && (
               <div className="grid min-w-0 gap-5 lg:col-span-2 lg:grid-cols-2 xl:col-span-1 xl:flex xl:flex-col">
-                {active.length > 0 && (
-                  <PayoffCard
-                    base={base}
-                    sim={sim}
-                    extra={extra}
-                    onOpen={() => setTimelineOpen(true)}
-                    className={cn("xl:flex-1", !hasOwed && "lg:col-span-2")}
-                  />
-                )}
+                {active.length > 0 && <ThisMonthCard active={active} thisMonth={thisMonth} className={cn("xl:flex-1", !hasOwed && "lg:col-span-2")} />}
                 {hasOwed && (
                   <OwedCard
                     owed={openOwed}
@@ -230,22 +248,13 @@ export function DebtsView({
                 )}
               </div>
             )}
+
+            {active.length > 0 && <PayoffTimelineCard active={active} base={base} sim={sim} extra={extra} className="lg:col-span-2 xl:col-span-3" />}
           </>
         )}
       </div>
 
-      {active.length > 0 && (
-        <PayoffTimelineDialog
-          open={timelineOpen}
-          onOpenChange={setTimelineOpen}
-          active={active}
-          base={base}
-          sim={sim}
-          extra={extra}
-          max={extraMax}
-          onExtra={setExtra}
-        />
-      )}
+      {active.length > 0 && <LogPaymentDialog key={logKey} open={logOpen} onOpenChange={setLogOpen} debts={active} />}
       <DebtDetailDialog computed={sheet} bills={bills} onClose={() => setSheetId(null)} />
       <DebtFormDialog
         open={formOpen && (form.kind === "add" || editing != null)}
@@ -259,9 +268,10 @@ export function DebtsView({
       <AnchoredTip id="debtsDetail" anchor="debtsDetail" active={computed.length > 0} />
       <AnchoredTip id="debtsSimulator" anchor="debtsSimulator" active={active.length > 0} />
       <AnchoredTip id="debtsSortAndImpact" anchor="debtsSortAndImpact" active={active.length > 0} />
+      <AnchoredTip id="debtsWhereExtraGoes" anchor="debtsWhereExtraGoes" active={plan.length > 0} />
+      <AnchoredTip id="debtsPaymentsMonth" anchor="debtsPaymentsMonth" active={active.length > 0} />
       <AnchoredTip id="debtsOwed" anchor="debtsOwed" active={hasOwed} />
       <AnchoredTip id="debtsPayoffDates" anchor="debtsPayoffDates" active={active.length > 0} />
-      <AnchoredTip id="debtsTimeline" anchor="debtsTimeline" active={active.length > 0 && !timelineOpen} />
     </div>
   );
 }
@@ -274,12 +284,15 @@ function DebtsHeader({
   toReceive,
   empty,
   onAdd,
+  onLog,
 }: {
   active: number;
   monthly: number;
   toReceive: number;
   empty: boolean;
   onAdd: () => void;
+  /** "Log a payment"; left out when there is no open debt to log one on. */
+  onLog?: () => void;
 }) {
   const t = useTranslations("plan.debts");
   const tPlan = useTranslations("plan");
@@ -292,17 +305,28 @@ function DebtsHeader({
       <div className="flex flex-wrap items-center justify-between gap-3 lg:items-end lg:gap-4">
         <div className="flex min-w-0 flex-col gap-1.5">
           <h1 className="m-0 text-[26px] font-extrabold tracking-[-0.03em] lg:text-[40px]">{tPlan("title")}</h1>
-          <span className="hidden text-base text-clear-ink-2 lg:inline"><MoneyText>{empty ? t("subtitleNone") : parts.join(" · ")}</MoneyText></span>
+          <span className="hidden text-base font-medium text-clear-ink-2 lg:inline"><MoneyText>{empty ? t("subtitleNone") : parts.join(" · ")}</MoneyText></span>
         </div>
         <div className="flex items-center gap-2.5">
           {/* A cost paid in parts isn't a debt, but this is where people look for one. */}
-          <AddRecurringButton type="plan" ariaLabel={t("addPlan")} className={cn(clearButtonVariants({ variant: "secondary", size: "icon" }), "size-12 lg:hidden")}>
+          <AddRecurringButton type="plan" ariaLabel={t("addPlan")} className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 lg:hidden")}>
             <IconCalendarDue aria-hidden />
           </AddRecurringButton>
-          <AddRecurringButton type="plan" className={cn(clearButtonVariants({ variant: "secondary" }), "hidden lg:inline-flex")}>
+          <AddRecurringButton type="plan" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
             <IconCalendarDue aria-hidden />
             {t("addPlan")}
           </AddRecurringButton>
+          {onLog && (
+            <>
+              <button type="button" onClick={onLog} aria-label={t("logPayment.button")} className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 lg:hidden")}>
+                <IconReceipt aria-hidden />
+              </button>
+              <button type="button" onClick={onLog} className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
+                <IconReceipt aria-hidden />
+                {t("logPayment.button")}
+              </button>
+            </>
+          )}
           <button type="button" onClick={onAdd} aria-label={t("add")} className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}>
             <IconPlus aria-hidden />
           </button>
@@ -352,6 +376,8 @@ function SummaryTiles({
   owedTotal,
   owedCount,
   base,
+  sim,
+  extra,
   totalMonthly,
   hasOwn,
 }: {
@@ -360,6 +386,8 @@ function SummaryTiles({
   owedTotal: number;
   owedCount: number;
   base: Sim;
+  sim: Sim;
+  extra: number;
   totalMonthly: number;
   hasOwn: boolean;
 }) {
@@ -367,41 +395,50 @@ function SummaryTiles({
   const monthYear = useMonthYear();
   const oweLine = useOweLine(active);
   const card = "gap-2.5 px-5 py-5 lg:px-6 lg:py-[22px]";
-  const figure = "text-[30px] leading-none tracking-[-0.035em] lg:text-[40px]";
+  const figure = "text-[30px] leading-none font-bold! tracking-[-0.03em] lg:text-[36px]";
   const round = "inline-flex size-9 items-center justify-center rounded-full [&_svg]:size-[18px]";
+  // The interest still to come at the current extra (the slider's plan).
+  const interest = active.length > 0 && sim.months != null && sim.interest >= 0.5 ? t("interestToCome", { amount: formatEurWhole(sim.interest) }) : null;
 
   let free: { value: string; foot: string };
   if (!hasOwn) free = { value: "—", foot: t("free.none") };
   else if (active.length === 0) free = { value: t("free.now"), foot: t("free.allPaid") };
+  else if (extra > 0 && sim.months != null)
+    free = {
+      value: monthYear(monthsFromNow(sim.months)),
+      foot: base.months != null ? t("freeWithExtra", { amount: formatEurWhole(extra), date: monthYear(monthsFromNow(base.months)) }) : t("free.never"),
+    };
   else if (base.months == null) free = { value: "—", foot: t("free.never") };
   else free = { value: monthYear(monthsFromNow(base.months)), foot: t("free.atMinimums", { amount: formatEurWhole(totalMonthly) }) };
 
   return (
     <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:col-span-2 xl:col-span-3">
-      <ClearCard aria-labelledby="debts-owe-title" className={cn(card, "col-span-2 bg-clear-ember text-clear-ember-ink sm:col-span-1")}>
+      <ClearCard hero aria-labelledby="debts-owe-title" className={cn(card, "col-span-2 sm:col-span-1")}>
         <div className="flex items-center justify-between gap-2">
-          <h2 id="debts-owe-title" className="m-0 text-[15px] font-bold">{t("owe")}</h2>
-          <span aria-hidden className={cn(round, "bg-clear-card/35")}>
+          <h2 id="debts-owe-title" className="m-0 text-[15px] font-semibold text-clear-hero-ink-2">{t("owe")}</h2>
+          <span aria-hidden className={cn(round, "bg-clear-hero-ink/15")}>
             <IconArrowUpRight stroke={2.2} />
           </span>
         </div>
         <Amount value={totalDebt} whole splitCents={false} sign="none" className={figure} />
-        <span className="line-clamp-2 text-[13px] font-semibold"><MoneyText>{oweLine}</MoneyText></span>
+        <span className="line-clamp-2 text-[13px] font-medium text-clear-hero-ink-2">
+          <MoneyText>{interest ? `${oweLine} · ${interest}` : oweLine}</MoneyText>
+        </span>
       </ClearCard>
 
       <ClearCard aria-labelledby="debts-owed-title" className={card}>
         <div className="flex items-center justify-between gap-2">
-          <h2 id="debts-owed-title" className="m-0 text-[15px] font-bold">{t("owed")}</h2>
+          <h2 id="debts-owed-title" className="m-0 text-[15px] font-semibold text-clear-ink-2">{t("owed")}</h2>
           <span aria-hidden className={cn(round, "bg-clear-ground")}>
             <IconArrowDownRight stroke={2.2} />
           </span>
         </div>
         <Amount value={owedTotal} whole splitCents={false} sign="none" className={figure} />
-        <span className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-clear-ink-2">
+        <span className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-clear-ink-2">
           {owedCount > 0 ? (
             t.rich("toReceive", {
               count: owedCount,
-              n: (c) => <ClearChip tone="sky" className="h-6 px-2 text-xs">{c}</ClearChip>,
+              n: (c) => <ClearChip tone="sky" className="h-6 px-2 text-xs font-semibold">{c}</ClearChip>,
             })
           ) : (
             t("owedNone")
@@ -411,13 +448,13 @@ function SummaryTiles({
 
       <ClearCard aria-labelledby="debts-free-title" className={card}>
         <div className="flex items-center justify-between gap-2">
-          <h2 id="debts-free-title" className="m-0 text-[15px] font-bold">{t("free.title")}</h2>
+          <h2 id="debts-free-title" className="m-0 text-[15px] font-semibold text-clear-ink-2">{t("free.title")}</h2>
           <span aria-hidden className={cn(round, "bg-clear-ground")}>
             <IconCalendarEvent stroke={2} />
           </span>
         </div>
         <span className={cn("clear-amount whitespace-nowrap", figure)}><MoneyText>{free.value}</MoneyText></span>
-        <span className="text-[13px] font-semibold text-clear-ink-2"><MoneyText>{free.foot}</MoneyText></span>
+        <span className="text-[13px] font-medium text-clear-ink-2"><MoneyText>{free.foot}</MoneyText></span>
       </ClearCard>
     </div>
   );
@@ -425,37 +462,13 @@ function SummaryTiles({
 
 // ── Your debts ────────────────────────────────────────────────────────────────
 
-/** The sort menu's trigger, which the simulator's "Change order" scrolls to. */
-const SORT_TRIGGER_ID = "debts-sort";
-
-/** The sort menu in the "Your debts" header — styled like Activity's. */
-function DebtSortMenu({ sort, onSort }: { sort: DebtSort; onSort: (sort: DebtSort) => void }) {
-  const t = useTranslations("plan.debts.sort");
-  return (
-    <DropdownMenu modal={false}>
-      <DropdownMenuTrigger id={SORT_TRIGGER_ID} aria-label={t("label", { order: t(`options.${sort}`) })} className={clearButtonVariants({ variant: "secondary", size: "sm" })}>
-        {t(`options.${sort}`)}
-        <IconChevronDown aria-hidden stroke={2.2} />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={8} className="min-w-52 p-1.5">
-        {DEBT_SORTS.map((o) => (
-          <DropdownMenuItem key={o} onClick={() => onSort(o)} aria-checked={o === sort} className={o === sort ? "font-bold" : undefined}>
-            {t(`options.${o}`)}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-type PayoffMonths = { now: Map<number, number | null>; base: Map<number, number | null> };
+type PayoffMonths = { now: Map<number, number | null>; base: Map<number, number | null>; extraNow: Map<number, number> };
 
 function YourDebtsCard({
   computed,
   payoff,
   extra,
-  sort,
-  onSort,
+  order,
   onOpen,
   onEdit,
   onAdd,
@@ -464,8 +477,7 @@ function YourDebtsCard({
   computed: ComputedDebt[];
   payoff: PayoffMonths;
   extra: number;
-  sort: DebtSort;
-  onSort: (sort: DebtSort) => void;
+  order: DebtSort;
   onOpen: (id: number) => void;
   onEdit: (id: number) => void;
   onAdd: () => void;
@@ -474,22 +486,17 @@ function YourDebtsCard({
   const t = useTranslations("plan.debts");
   // The tip points at the first open debt's "Free in …" chip.
   const firstOpen = computed.find((c) => payoff.now.has(c.debt.id))?.debt.id;
-  const sortable = computed.length > 1;
   const parts =
     computed.length === 0
       ? []
-      : [sortable ? t("yoursOrder", { count: computed.length, order: t(`sort.inline.${sort}`) }) : t("yoursCount", { count: computed.length })];
+      : [computed.length > 1 ? t("yoursOrder", { count: computed.length, order: t(`sort.inline.${order}`) }) : t("yoursCount", { count: computed.length })];
   if (extra > 0 && firstOpen != null) parts.push(t("yoursExtra", { amount: formatEurWhole(extra) }));
   return (
     <ClearCard aria-labelledby="debts-yours-title" className={className}>
-      <ClearCardHeader
-        title={<span id="debts-yours-title">{t("yours")}</span>}
-        subtitle={parts.length > 0 ? parts.join(" · ") : undefined}
-        action={sortable ? <DebtSortMenu sort={sort} onSort={onSort} /> : undefined}
-      />
+      <ClearCardHeader title={<span id="debts-yours-title">{t("yours")}</span>} subtitle={parts.length > 0 ? parts.join(" · ") : undefined} />
       {computed.length === 0 ? (
         <div className="flex flex-col items-start gap-3 rounded-clear-tile bg-clear-tile p-5">
-          <p className="m-0 text-[15px] leading-[1.45] text-clear-ink-2">{t("noneOfYourOwn")}</p>
+          <p className="m-0 text-[15px] leading-[1.45] font-medium text-clear-ink-2">{t("noneOfYourOwn")}</p>
           <button type="button" onClick={onAdd} className={clearButtonVariants()}>
             <IconPlus aria-hidden />
             {t("add")}
@@ -505,6 +512,7 @@ function YourDebtsCard({
               payoffAnchor={c.debt.id === firstOpen}
               months={payoff.now.get(c.debt.id)}
               baseMonths={payoff.base.get(c.debt.id)}
+              extraNow={payoff.extraNow.get(c.debt.id) ?? 0}
               onOpen={() => onOpen(c.debt.id)}
               onEdit={() => onEdit(c.debt.id)}
             />
@@ -521,6 +529,7 @@ function DebtTile({
   payoffAnchor,
   months,
   baseMonths,
+  extraNow,
   onOpen,
   onEdit,
 }: {
@@ -531,6 +540,8 @@ function DebtTile({
   months: number | null | undefined;
   /** The same at the minimums, for "N months sooner". */
   baseMonths: number | null | undefined;
+  /** What the extra adds to this debt's payment this month. */
+  extraNow: number;
   onOpen: () => void;
   onEdit: () => void;
 }) {
@@ -560,6 +571,7 @@ function DebtTile({
   const sooner = months != null && baseMonths != null ? baseMonths - months : 0;
   const monthsLeft = done ? null : months !== undefined ? months : c.monthsRemaining;
   const mini = "flex min-w-0 flex-col gap-0.5 rounded-clear-icon bg-clear-card px-2.5 py-2.5";
+  const miniValue = "clear-amount truncate text-sm font-bold!";
   // The payoff chip sits in the header row when the tile is wide enough for it beside
   // the name and the pencil, else beside the balance (only one of the two is shown).
   const chip = (className: string) => (
@@ -601,7 +613,7 @@ function DebtTile({
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-baseline gap-2">
-          <Amount value={currentBalance} whole splitCents={false} sign="none" className="text-[30px] leading-none tracking-[-0.03em]" />
+          <Amount value={currentBalance} whole splitCents={false} sign="none" className="text-[28px] leading-none font-bold! tracking-[-0.03em]" />
           <span className="text-sm font-medium text-clear-ink-2"><MoneyText>{t("leftOf", { amount: formatEurWhole(total) })}</MoneyText></span>
         </span>
         {chip("inline-flex @[21rem]:hidden")}
@@ -618,17 +630,25 @@ function DebtTile({
       <div className="grid grid-cols-3 gap-2">
         <div className={mini}>
           <span className="truncate text-xs font-medium text-clear-muted">{t("monthly")}</span>
-          <span className="clear-amount truncate text-sm"><MoneyText>{formatEur(debt.minimumPayment)}</MoneyText></span>
+          <span className={miniValue}>
+            <MoneyText>{formatEur(debt.minimumPayment)}</MoneyText>
+            {extraNow > 0 && (
+              <>
+                {" "}
+                <span className="text-clear-ember-text"><MoneyText>{t("extraPlus", { amount: formatEurWhole(extraNow) })}</MoneyText></span>
+              </>
+            )}
+          </span>
         </div>
         <div className={mini}>
           <span className="truncate text-xs font-medium text-clear-muted">{t("interest")}</span>
-          <span className="clear-amount truncate text-sm">
+          <span className={miniValue}>
             {debt.interestRate ? t("perYear", { rate: debt.interestRate.toLocaleString(locale) }) : t("noInterest")}
           </span>
         </div>
         <div className={mini}>
           <span className="truncate text-xs font-medium text-clear-muted">{t("monthsLeftLabel")}</span>
-          <span className="clear-amount truncate text-sm">{monthsLeft != null && monthsLeft > 0 ? monthsLeft : "—"}</span>
+          <span className={miniValue}>{monthsLeft != null && monthsLeft > 0 ? monthsLeft : "—"}</span>
         </div>
       </div>
 
@@ -724,7 +744,7 @@ function OwedCard({
                   <button
                     type="button"
                     onClick={() => onOpen(c.debt.id)}
-                    className="cursor-pointer truncate text-left text-base font-bold outline-none after:absolute after:inset-0 after:rounded-clear-tile focus-visible:after:ring-3 focus-visible:after:ring-clear-ember/50"
+                    className="cursor-pointer truncate text-left text-base font-semibold outline-none after:absolute after:inset-0 after:rounded-clear-tile focus-visible:after:ring-3 focus-visible:after:ring-clear-ember/50"
                   >
                     {c.debt.name}
                   </button>
@@ -758,12 +778,12 @@ function OwedCard({
                       <Icon iconKey={a.icon} color={a.color} background={pastel(a.color)} size="md" round />
                     </span>
                   ) : (
-                    <span aria-hidden className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-clear-sky text-[15px] font-extrabold text-clear-sky-ink">
+                    <span aria-hidden className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-clear-sky text-[15px] font-bold text-clear-sky-ink">
                       {a.name.trim().charAt(0).toUpperCase()}
                     </span>
                   )
                 }
-                name={<span className="truncate text-base font-bold">{a.name}</span>}
+                name={<span className="truncate text-base font-semibold">{a.name}</span>}
                 sub={t("advanceSub", { date: day.format(new Date(`${a.date}T12:00:00`)) })}
                 amount={a.remaining}
                 of={a.expected}
@@ -797,7 +817,7 @@ function OwedHead({ avatar, name, sub, amount, of }: { avatar: React.ReactNode; 
         <span className="truncate text-[13px] text-clear-muted"><MoneyText>{sub}</MoneyText></span>
       </span>
       <span className="flex shrink-0 flex-col items-end gap-0.5">
-        <Amount value={amount} sign="none" splitCents={false} className="text-lg" />
+        <Amount value={amount} sign="none" splitCents={false} className="text-lg font-bold!" />
         <span className="text-xs text-clear-muted"><MoneyText>{t("leftOf", { amount: formatEurWhole(of) })}</MoneyText></span>
       </span>
     </div>
@@ -820,112 +840,102 @@ function OwedProgress({ pct, back }: { pct: number; back: number }) {
 // ── Simulator ─────────────────────────────────────────────────────────────────
 
 /**
- * "What if I pay extra?", across the full width: on the left the slider and which debt
- * the extra goes to first (with a jump to the sort menu); on the right what it does —
- * debt-free, how much sooner, the interest saved — then what it leaves to spend each
- * month and each debt's own payoff month with the extra.
+ * "What if I pay extra?", across the full width. On the left the slider, the payoff
+ * order (highest interest first · smallest first, which also sorts Your debts) and,
+ * pinned to the bottom, what the extra leaves to spend each month. On the right what it
+ * does — debt-free, how much sooner, the interest saved — and where the extra goes,
+ * month by month: one row per debt, the extra on the first, each paid-off debt's whole
+ * payment rolling on to the next.
  */
 function SimulatorCard({
   active,
-  sort,
+  order,
+  onOrder,
   base,
   sim,
+  plan,
   extra,
   max,
   onExtra,
   totalMonthly,
   freeToSpend,
-  sortable,
   className,
 }: {
   active: ComputedDebt[];
-  sort: DebtSort;
+  order: DebtSort;
+  onOrder: (order: DebtSort) => void;
   base: Sim;
   sim: Sim;
+  plan: PayoffPlanRow[];
   extra: number;
   max: number;
   onExtra: (n: number) => void;
   totalMonthly: number;
   freeToSpend: DebtsFreeToSpend;
-  /** Whether the sort menu is there to jump to. */
-  sortable: boolean;
   className?: string;
 }) {
   const t = useTranslations("plan.debts.simulator");
   const tSort = useTranslations("plan.debts.sort");
   const monthYear = useMonthYear();
-  const names = sim.order.map((id) => active.find((c) => c.debt.id === id)?.debt.name ?? "");
   const sooner = base.months != null && sim.months != null ? base.months - sim.months : null;
   const saved = Math.max(0, Math.round((base.interest - sim.interest) * 100) / 100);
   const stat = "flex min-w-0 flex-col gap-1 rounded-clear-tile p-3.5";
-
-  function changeOrder() {
-    const trigger = document.getElementById(SORT_TRIGGER_ID);
-    if (!trigger) return;
-    trigger.scrollIntoView({ behavior: "smooth", block: "center" });
-    trigger.focus({ preventScroll: true });
-  }
+  const statValue = "clear-amount truncate text-[22px] font-bold! tracking-[-0.02em]";
 
   return (
-    <ClearCard data-tip-anchor="debtsSimulator" aria-labelledby="debts-sim-title" className={cn("gap-6 xl:grid xl:grid-cols-[1.3fr_2fr]", className)}>
+    <ClearCard data-tip-anchor="debtsSimulator" aria-labelledby="debts-sim-title" className={cn("gap-6 xl:grid xl:grid-cols-[1.1fr_2fr]", className)}>
       <div className="flex min-w-0 flex-col gap-3.5">
         <ClearCardHeader title={<span id="debts-sim-title">{t("title")}</span>} subtitle={<MoneyText>{t("subtitle", { amount: formatEurWhole(totalMonthly) })}</MoneyText>} />
 
         <div className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
           <div className="flex flex-col gap-1">
-            <label htmlFor="debt-extra" className="text-[13px] font-semibold text-clear-ink-2">
+            <label htmlFor="debt-extra" className="text-xs font-medium text-clear-muted">
               {t("extra")}
             </label>
-            <Amount value={extra} whole splitCents={false} sign="none" className="text-[28px] leading-none tracking-[-0.03em]" />
+            <Amount value={extra} whole splitCents={false} sign="none" className="text-[28px] leading-none font-bold! tracking-[-0.03em]" />
           </div>
           <ExtraSlider id="debt-extra" value={extra} max={max} onChange={onExtra} valueText={t("valueText", { amount: formatEurWhole(extra) })} />
-          <div aria-hidden className="flex justify-between text-xs tabular-nums text-clear-muted">
+          <div aria-hidden className="flex justify-between text-xs font-medium tabular-nums text-clear-muted">
             {[0, 0.25, 0.5, 0.75, 1].map((f) => (
               <span key={f}><MoneyText>{formatEurWhole(Math.round(max * f))}</MoneyText></span>
             ))}
           </div>
         </div>
 
-        <p className="m-0 text-[13px] leading-[1.45] font-medium text-clear-ink-2">
-          {names.length <= 1
-            ? t("orderOne", { name: names[0] ?? "" })
-            : t.rich("orderFirst", {
-                first: names[0],
-                rest: names.slice(1).join(t("thenJoin")),
-                order: tSort(`inline.${sort}`),
-                b: (ch) => <b className="font-semibold text-clear-ink">{ch}</b>,
-              })}
-          {sortable && (
-            <>
-              {" "}
-              <button type="button" onClick={changeOrder} className="cursor-pointer font-semibold text-clear-ember-text hover:underline">
-                {t("changeOrder")}
-              </button>
-            </>
-          )}
-        </p>
+        {active.length > 1 && (
+          <div data-tip-anchor="debtsSortAndImpact" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <span className="text-[13px] font-medium text-clear-muted">{t("order")}</span>
+            <Segmented<DebtSort>
+              label={t("orderLabel")}
+              surface="tile"
+              size="sm"
+              value={order}
+              onChange={onOrder}
+              items={DEBT_SORTS.map((o) => ({ value: o, label: tSort(`options.${o}`) }))}
+            />
+          </div>
+        )}
+
+        <FreeToSpendTile freeToSpend={freeToSpend} extra={extra} tipAnchor={active.length <= 1} className="xl:mt-auto" />
       </div>
 
       <div className="flex min-w-0 flex-col gap-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className={cn(stat, "bg-clear-ember text-clear-ember-ink")}>
-            <span className="text-xs font-semibold">{t("debtFree")}</span>
-            <span className="clear-amount truncate text-[22px]">{sim.months != null ? monthYear(monthsFromNow(sim.months)) : "—"}</span>
+            <span className="text-xs font-medium">{t("debtFree")}</span>
+            <span className={statValue}>{sim.months != null ? monthYear(monthsFromNow(sim.months)) : "—"}</span>
           </div>
-          <div className={cn(stat, "bg-clear-mint")}>
-            <span className="text-xs font-semibold text-clear-mint-ink">{t("sooner")}</span>
-            <span className="clear-amount truncate text-[22px]">{sooner != null && sooner > 0 ? t("months", { count: sooner }) : "—"}</span>
+          <div className={cn(stat, "bg-clear-mint text-clear-mint-ink")}>
+            <span className="text-xs font-medium">{t("sooner")}</span>
+            <span className={statValue}>{sooner != null && sooner > 0 ? t("months", { count: sooner }) : "—"}</span>
           </div>
           <div className={cn(stat, "col-span-2 bg-clear-tile sm:col-span-1")}>
-            <span className="text-xs font-semibold text-clear-ink-2">{t("saved")}</span>
-            <span className="clear-amount truncate text-[22px]"><MoneyText>{formatEurWhole(saved)}</MoneyText></span>
+            <span className="text-xs font-medium text-clear-muted">{t("saved")}</span>
+            <span className={statValue}><MoneyText>{formatEurWhole(saved)}</MoneyText></span>
           </div>
         </div>
 
-        <div className="grid flex-1 gap-3 sm:grid-cols-3">
-          <FreeToSpendTile freeToSpend={freeToSpend} extra={extra} />
-          <EachDebtTile active={active} base={base} sim={sim} className="sm:col-span-2" />
-        </div>
+        <PlanTile active={active} plan={plan} extra={extra} className="flex-1" />
       </div>
     </ClearCard>
   );
@@ -936,14 +946,26 @@ function SimulatorCard({
  * debt payments, savings and the budget — computed on the server) and after the extra,
  * with a chip saying whether that still leaves something or how much it falls short.
  */
-function FreeToSpendTile({ freeToSpend, extra }: { freeToSpend: DebtsFreeToSpend; extra: number }) {
+function FreeToSpendTile({
+  freeToSpend,
+  extra,
+  tipAnchor,
+  className,
+}: {
+  freeToSpend: DebtsFreeToSpend;
+  extra: number;
+  /** Carries the order tip's anchor when there is no order switch to point at. */
+  tipAnchor: boolean;
+  className?: string;
+}) {
   const t = useTranslations("plan.debts.simulator.free");
-  const box = "flex min-w-0 flex-col justify-between gap-2 rounded-clear-tile bg-clear-tile p-3.5";
+  const box = cn("flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-clear-tile bg-clear-tile px-4 py-3", className);
+  const anchor = tipAnchor ? "debtsSortAndImpact" : undefined;
 
   if (freeToSpend.income <= 0) {
     return (
-      <div data-tip-anchor="debtsSortAndImpact" className={box}>
-        <span className="text-xs font-semibold text-clear-ink-2">{t("title")}</span>
+      <div data-tip-anchor={anchor} className={cn(box, "flex-col items-start")}>
+        <span className="text-xs font-medium text-clear-muted">{t("title")}</span>
         <span className="text-[13px] leading-[1.45] font-medium text-clear-ink-2">{t("noIncome")}</span>
       </div>
     );
@@ -954,27 +976,27 @@ function FreeToSpendTile({ freeToSpend, extra }: { freeToSpend: DebtsFreeToSpend
   const short = after < 0 ? -after : 0;
 
   return (
-    <div data-tip-anchor="debtsSortAndImpact" className={box}>
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-semibold text-clear-ink-2">{t("title")}</span>
+    <div data-tip-anchor={anchor} className={box}>
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-xs font-medium text-clear-muted">{t("title")}</span>
         {extra > 0 && <span className="sr-only"><MoneyText>{t("change", { from: formatEurWhole(now), to: formatEurWhole(after) })}</MoneyText></span>}
-        <span aria-hidden={extra > 0 || undefined} className="flex flex-wrap items-baseline gap-x-2 text-lg">
-          <Amount value={now} whole splitCents={false} className={cn(extra > 0 && "text-clear-ink-2")} />
+        <span aria-hidden={extra > 0 || undefined} className="flex flex-wrap items-baseline gap-x-1.5 text-[15px]">
+          <Amount value={now} whole splitCents={false} className={cn("font-bold!", extra > 0 && "text-clear-ink-2")} />
           {extra > 0 && (
             <>
               <span className="text-clear-muted">→</span>
-              <Amount value={after} whole splitCents={false} className={cn(short > 0 && "text-clear-ember-text")} />
+              <Amount value={after} whole splitCents={false} className={cn("font-bold!", short > 0 && "text-clear-ember-text")} />
             </>
           )}
         </span>
       </div>
       {short > 0 ? (
-        <ClearChip tone="ember" icon={<IconAlertTriangle stroke={2.2} aria-hidden />} className="h-auto min-h-7 self-start px-2.5 py-1 text-xs font-semibold whitespace-normal">
+        <ClearChip tone="ember" icon={<IconAlertTriangle stroke={2.2} aria-hidden />} className="h-auto min-h-7 px-2.5 py-1 text-xs font-semibold whitespace-normal">
           <MoneyText>{t("short", { amount: formatEurWhole(short) })}</MoneyText>
         </ClearChip>
       ) : (
         extra > 0 && (
-          <ClearChip tone="neutral" className="h-auto min-h-7 self-start px-2.5 py-1 text-xs font-semibold whitespace-normal">
+          <ClearChip tone="mint" className="h-auto min-h-7 px-2.5 py-1 text-xs font-semibold whitespace-normal">
             {t("stillLeft")}
           </ClearChip>
         )
@@ -983,39 +1005,82 @@ function FreeToSpendTile({ freeToSpend, extra }: { freeToSpend: DebtsFreeToSpend
   );
 }
 
-/** Each debt's payoff month with the extra, and how much sooner than at the minimums. */
-function EachDebtTile({ active, base, sim, className }: { active: ComputedDebt[]; base: Sim; sim: Sim; className?: string }) {
-  const t = useTranslations("plan.debts.simulator");
+/**
+ * "Where the €200 goes, month by month": the plan as a table, one row per debt in the
+ * payoff order — its minimum, the extra it gets now, what you pay, until when, and what
+ * happens then. Scrolls sideways inside its tile on a phone.
+ */
+function PlanTile({ active, plan, extra, className }: { active: ComputedDebt[]; plan: PayoffPlanRow[]; extra: number; className?: string }) {
+  const t = useTranslations("plan.debts.simulator.plan");
   const tTile = useTranslations("plan.debts.tile");
+  const locale = useLocale();
   const monthYear = useMonthYear();
-  const now = payoffMonthsById(sim);
-  const before = payoffMonthsById(base);
+  const byId = new Map(active.map((c) => [c.debt.id, c]));
+  const name = (id: number | null) => (id != null ? byId.get(id)?.debt.name ?? "" : "");
+  const date = (m: number) => monthYear(monthsFromNow(m));
+  const th = "pb-2 text-xs font-medium text-clear-muted whitespace-nowrap";
+  const td = "border-t border-clear-ground py-2 align-top";
 
   return (
-    <div className={cn("flex min-w-0 flex-col gap-2 rounded-clear-tile bg-clear-tile p-3.5", className)}>
-      <span className="text-xs font-semibold text-clear-ink-2">{t("eachDebt")}</span>
-      <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-[13px] font-medium">
-        {active.map((c) => {
-          const m = now.get(c.debt.id);
-          const b = before.get(c.debt.id);
-          const sooner = m != null && b != null ? b - m : 0;
-          return (
-            <li key={c.debt.id} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3">
-              <span className="min-w-0 truncate font-semibold">{c.debt.name}</span>
-              <span className="text-clear-ink-2">
-                {m == null ? (
-                  tTile("payoffNever")
-                ) : (
-                  <>
-                    {t.rich("eachDebtFree", { date: monthYear(monthsFromNow(m)), b: (ch) => <b className="font-semibold text-clear-ink">{ch}</b> })}
-                    {sooner > 0 && <> · {tTile("payoffSooner", { count: sooner })}</>}
-                  </>
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+    <div data-tip-anchor="debtsWhereExtraGoes" className={cn("flex min-w-0 flex-col gap-2.5 rounded-clear-tile bg-clear-tile p-4", className)}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+        <h3 className="m-0 text-[13px] font-semibold text-clear-ink">
+          <MoneyText>{extra > 0 ? t("title", { amount: formatEurWhole(extra) }) : t("titleNone")}</MoneyText>
+        </h3>
+        <span className="text-xs font-medium text-clear-muted">{t("note")}</span>
+      </div>
+      <div className="-mx-4 overflow-x-auto px-4">
+        <table className="w-full min-w-[620px] border-collapse text-left text-[13px] font-medium tabular-nums">
+          <thead>
+            <tr>
+              <th scope="col" className={cn(th, "pr-3")}>{t("debt")}</th>
+              <th scope="col" className={cn(th, "pr-3 text-right")}>{t("minimum")}</th>
+              <th scope="col" className={cn(th, "pr-3 text-right")}>{t("extraNow")}</th>
+              <th scope="col" className={cn(th, "pr-3 text-right")}>{t("pay")}</th>
+              <th scope="col" className={cn(th, "pr-3")}>{t("until")}</th>
+              <th scope="col" className={th}>{t("then")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {plan.map((r) => {
+              const c = byId.get(r.id);
+              if (!c) return null;
+              const rate = c.debt.interestRate ?? 0;
+              const until =
+                r.months == null
+                  ? t("never")
+                  : r.step
+                    ? t("untilStep", { date: date(r.step.month), amount: formatEurWhole(r.step.pay) })
+                    : t("untilPaidOff", { date: date(r.months) });
+              const then =
+                r.months == null
+                  ? t("none")
+                  : r.step
+                    ? r.rollsTo != null
+                      ? t("paidOffRolls", { date: date(r.months), name: name(r.rollsTo) })
+                      : t("paidOff", { date: date(r.months) })
+                    : r.rollsTo != null
+                      ? t("rollsOn", { amount: formatEurWhole(r.pay), name: name(r.rollsTo) })
+                      : t("none");
+              return (
+                <tr key={r.id}>
+                  <th scope="row" className={cn(td, "pr-3 font-medium whitespace-nowrap")}>
+                    <span className="font-semibold text-clear-ink">{c.debt.name}</span>{" "}
+                    <span className="text-xs text-clear-muted">{t("rate", { rate: rate.toLocaleString(locale) })}</span>
+                  </th>
+                  <td className={cn(td, "pr-3 text-right")}><MoneyText>{formatEurWhole(r.minimum)}</MoneyText></td>
+                  <td className={cn(td, "pr-3 text-right", r.extraNow > 0 ? "font-bold text-clear-ember-text" : "text-clear-ink-2")}>
+                    <MoneyText>{r.extraNow > 0 ? tTile("extraPlus", { amount: formatEurWhole(r.extraNow) }) : formatEurWhole(0)}</MoneyText>
+                  </td>
+                  <td className={cn(td, "pr-3 text-right font-bold")}><MoneyText>{formatEurWhole(r.pay)}</MoneyText></td>
+                  <td className={cn(td, "pr-3 whitespace-nowrap")}><MoneyText>{until}</MoneyText></td>
+                  <td className={cn(td, "text-clear-muted")}><MoneyText>{then}</MoneyText></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1040,7 +1105,7 @@ function EmptyCard({ onAdd }: { onAdd: (direction: "owe" | "owed") => void }) {
         <circle cx="200" cy="36" r="4" fill="var(--clr-card)" stroke="var(--clr-ink)" strokeWidth="2" />
       </svg>
       <div className="flex flex-col items-center gap-2.5">
-        <h2 id="debts-empty-title" className="m-0 text-2xl font-extrabold tracking-[-0.02em]">{t("title")}</h2>
+        <h2 id="debts-empty-title" className="m-0 text-2xl font-bold tracking-[-0.02em]">{t("title")}</h2>
         <p className="m-0 max-w-[480px] text-base leading-normal text-clear-ink-2">{t("body")}</p>
       </div>
       <div className="flex flex-wrap justify-center gap-2.5">
@@ -1079,7 +1144,7 @@ function TrackCard({ onAdd }: { onAdd: (direction: "owe" | "owed") => void }) {
               {k.icon}
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="text-[15px] font-bold">{t(`${k.key}.title`)}</span>
+              <span className="text-[15px] font-semibold">{t(`${k.key}.title`)}</span>
               <span className="text-[13px] leading-[1.45] text-clear-muted">{t(`${k.key}.body`)}</span>
             </span>
             <IconChevronRight aria-hidden size={18} stroke={2.2} className="mt-3 shrink-0 text-clear-muted" />
@@ -1088,7 +1153,7 @@ function TrackCard({ onAdd }: { onAdd: (direction: "owe" | "owed") => void }) {
       </div>
       <div className="mt-auto flex items-center justify-between gap-3 rounded-clear-tile bg-clear-tile px-4 py-3.5">
         <span className="text-sm font-bold">{t("total")}</span>
-        <Amount value={0} sign="none" className="text-lg text-clear-placeholder" />
+        <Amount value={0} sign="none" className="text-lg font-bold! text-clear-placeholder" />
       </div>
     </ClearCard>
   );

@@ -1331,7 +1331,7 @@
     },
     "debtsSortAndImpact": {
       "title": "Your order, your month",
-      "body": "Sort your debts to choose which one gets the extra first. Here you also see what the extra leaves you free to spend each month."
+      "body": "Choose which debt gets the extra first: the highest interest saves the most, the smallest is done soonest. Your debts follow the same order. Below it, what the extra leaves you to spend each month."
     },
     "debtsOwed": {
       "title": "Money coming back to you",
@@ -1340,10 +1340,6 @@
     "debtsPayoffDates": {
       "title": "Each debt's own finish line",
       "body": "Every debt shows the month it is paid off. Slide the extra payment and the dates move along, in the order your debts are sorted."
-    },
-    "debtsTimeline": {
-      "title": "Every debt, month by month",
-      "body": "Open the timeline to see each debt's own line, with and without the extra. Hover or tap a month to see what is paid off by then, and slide the extra right there."
     },
     "goalsContributions": {
       "title": "What you put aside",
@@ -1568,6 +1564,14 @@
     "recurringScan": {
       "title": "Check your whole history",
       "body": "Imports only re-check the shops and people they touched. This looks through everything for payments that come back at a steady rhythm."
+    },
+    "debtsWhereExtraGoes": {
+      "title": "Where the extra goes",
+      "body": "One row per debt: its minimum, the extra it gets now and what you pay. When a debt is paid off, its whole payment rolls on to the next one, so the plan reads month by month."
+    },
+    "debtsPaymentsMonth": {
+      "title": "This month's payments",
+      "body": "Each debt's payment this month: paid once it matches its bill, or say Paid? yourself for a debt without one. Log a payment adds an extra or a lump sum, and it comes straight off the balance."
     }
   },
   "categoryPicker": {
@@ -4251,18 +4255,13 @@
       "yoursCount": "{count, plural, one {# debt} other {# debts}}",
       "yoursExtra": "payoff dates include the {amount} extra",
       "sort": {
-        "label": "Sort debts: {order}",
         "options": {
           "interest": "Highest interest first",
-          "smallest": "Smallest balance first",
-          "soonest": "Paid off soonest",
-          "largest": "Largest balance first"
+          "smallest": "Smallest first"
         },
         "inline": {
           "interest": "highest interest first",
-          "smallest": "smallest balance first",
-          "soonest": "paid off soonest first",
-          "largest": "largest balance first"
+          "smallest": "smallest first"
         }
       },
       "noneOfYourOwn": "No debts of your own. Add a loan or a credit card to see when it is paid off.",
@@ -4310,7 +4309,9 @@
           "now": "Now",
           "allPaid": "Everything is paid off",
           "none": "No debts of your own"
-        }
+        },
+        "interestToCome": "{amount} interest still to come",
+        "freeWithExtra": "with {amount} extra · {date} at the minimums"
       },
       "tile": {
         "paidBy": "Paid by “{name}”",
@@ -4319,8 +4320,6 @@
         "edit": "Edit {name}",
         "leftOf": "left of {amount}",
         "payoffIn": "Free in {date}",
-        "payoffNever": "Never at this rate",
-        "payoffSooner": "{count, plural, one {# month sooner} other {# months sooner}}",
         "soonerThanMinimum": "{count, plural, one {# month sooner than at the minimum} other {# months sooner than at the minimum}}",
         "never": "Never at this rate",
         "noDate": "No payoff date",
@@ -4330,7 +4329,8 @@
         "monthly": "Monthly",
         "interest": "Interest",
         "perYear": "{rate}% p.a.",
-        "noInterest": "None"
+        "noInterest": "None",
+        "extraPlus": "+{amount}"
       },
       "notice": {
         "covers": "{dir, select, owed {Their} other {Your}} <b>{payment}</b> covers <b>{interest}</b> interest. <b>{principal}</b> goes to the balance.",
@@ -4355,38 +4355,30 @@
         "settleDebtConfirmBody": "The {amount} still open will no longer be expected, and its linked recurring payments end today.",
         "settleNamed": "Mark {name} as settled"
       },
-      "payoff": {
-        "title": "Payoff timeline",
-        "subtitleExtra": "With the {amount} extra",
-        "subtitleMinimums": "At the minimums",
-        "open": "Open",
-        "openLabel": "Open the payoff timeline, each debt month by month",
-        "now": "Now",
-        "never": "Never",
-        "atMinimumsLabel": "At the minimums",
-        "withExtraLabel": "With {amount} extra",
-        "debtFree": "Debt-free {date}",
-        "debtFreeNever": "Not debt-free at these payments",
-        "sooner": "{count, plural, one {# month} other {# months}} sooner with {amount} extra a month",
-        "summary": "{amount} owed today. {end}",
-        "summaryDebt": "{name} paid off {date}",
-        "summaryDebtNever": "{name} never paid off"
-      },
       "timeline": {
-        "subtitleExtra": "Each debt, month by month · with {amount} extra",
-        "subtitleMinimums": "Each debt, month by month · at the minimums",
+        "title": "Payoff timeline",
+        "subtitleExtra": "Each debt stacked · with {amount} extra · minimums only as the dashed line",
+        "subtitleMinimums": "Each debt stacked · at the minimums",
+        "modeLabel": "Show the balance or the interest paid",
+        "balance": "Balance",
+        "interest": "Interest paid",
         "minimumsOnly": "minimums only",
         "now": "Now",
         "keys": "Use the left and right arrow keys to step through the months",
         "paidOff": "{names} paid off",
         "debtFree": "Debt-free",
+        "debtFreeOn": "Debt-free {date}",
+        "debtFreeNever": "Not debt-free at these payments",
         "leftTotal": "{amount} left in total",
-        "done": "{name} done",
-        "left": "{name} {amount} left",
-        "free": "Free {date}",
-        "never": "Never at this rate",
-        "saved": "{amount} interest saved",
-        "noInterest": "no interest"
+        "interestSoFar": "{amount} interest so far",
+        "debtLine": "{name} {amount}",
+        "debtDone": "{name} done",
+        "totalVs": "Total {amount} · {base} at the minimums",
+        "total": "Total {amount}",
+        "summary": "{amount} owed today. {end}",
+        "summaryInterest": "{amount} interest in total. {end}",
+        "summaryDebt": "{name} paid off {date}",
+        "summaryDebtNever": "{name} never paid off"
       },
       "simulator": {
         "title": "What if I pay extra?",
@@ -4397,18 +4389,33 @@
         "sooner": "Sooner by",
         "saved": "Interest saved",
         "months": "{count, plural, one {# month} other {# months}}",
-        "orderOne": "The extra goes straight to {name}.",
-        "orderFirst": "Extra goes to <b>{first}</b> first ({order}), then {rest}.",
-        "thenJoin": ", then ",
-        "changeOrder": "Change order",
-        "eachDebt": "Each debt, with the extra",
-        "eachDebtFree": "Free in <b>{date}</b>",
         "free": {
           "title": "Free to spend each month",
           "change": "{from} now, {to} with the extra",
           "short": "You'd be {amount} short each month",
           "stillLeft": "Still money left each month",
           "noIncome": "Add your recurring income to see what an extra payment leaves you to spend each month."
+        },
+        "order": "Order",
+        "orderLabel": "Which debt gets the extra first",
+        "plan": {
+          "title": "Where the {amount} goes, month by month",
+          "titleNone": "Each debt, month by month",
+          "note": "payments include the minimum",
+          "debt": "Debt",
+          "minimum": "Minimum",
+          "extraNow": "Extra now",
+          "pay": "You pay",
+          "until": "Until",
+          "then": "Then",
+          "rate": "{rate}%",
+          "untilPaidOff": "{date} · paid off",
+          "untilStep": "{date} → {amount} a month",
+          "never": "Never at this rate",
+          "rollsOn": "its {amount} rolls to {name}",
+          "paidOffRolls": "paid off {date}, rolls to {name}",
+          "paidOff": "paid off {date}",
+          "none": "—"
         }
       },
       "sheet": {
@@ -4457,7 +4464,39 @@
         "split": "{principal} off · {interest} interest",
         "allPrincipal": "All off the balance"
       },
-      "addPlan": "Add payment plan"
+      "addPlan": "Add payment plan",
+      "logPayment": {
+        "button": "Log a payment",
+        "title": "Log a payment",
+        "subtitle": "An extra payment or a lump sum comes straight off the balance",
+        "debt": "Debt",
+        "balance": "{amount} left",
+        "amount": "Amount",
+        "after": "Leaves {amount} on {name}",
+        "afterDone": "Pays off {name}",
+        "date": "Date",
+        "note": "Note",
+        "notePlaceholder": "Optional, for example a holiday bonus",
+        "save": "Log payment",
+        "cancel": "Cancel",
+        "close": "Close",
+        "invalidAmount": "Enter an amount above zero",
+        "futureDate": "Pick today or an earlier day",
+        "error": "That didn't save. Try again."
+      },
+      "thisMonth": {
+        "title": "This month's payments",
+        "subtitle": "{amount} in minimums · {count, plural, =0 {all paid} one {# still to go} other {# still to go}}",
+        "paidMatched": "Paid {date} · matched",
+        "paidMarked": "Paid {date} · marked by you",
+        "paidUndated": "Paid",
+        "dueOn": "Due {date}",
+        "notDue": "Not due this month",
+        "noBill": "No bill linked · due around the {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+        "noBillNoDay": "No bill linked",
+        "paid": "paid",
+        "extraYear": "Extra paid so far this year"
+      }
     },
     "goals": {
       "add": "New goal",

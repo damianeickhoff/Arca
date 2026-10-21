@@ -1,8 +1,9 @@
 import { db } from "@/db";
-import { billPayments, debtRecurring, recurringItems, transactions } from "@/db/schema";
+import { billPayments, debtPayments, debtRecurring, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
 import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
-import { debtBalanceDate, scheduledPaymentMonths, type DebtProgress } from "@/app/debts/debt-shared";
+import { eq } from "drizzle-orm";
+import { debtBalanceDate, scheduledPaymentMonths, type DebtExtraPayment, type DebtProgress } from "@/app/debts/debt-shared";
 import { financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
 
 /**
@@ -47,6 +48,9 @@ export type DebtRecurringLinks = {
     },
     endMonth?: string,
   ) => DebtProgress | null;
+  /** The extra and lump-sum payments logged on a debt (debt_payments, kind "extra"),
+   *  oldest first. Pass them to computeDebt / debtBalance with the progress. */
+  extrasFor: (debtId: number) => DebtExtraPayment[];
 };
 
 /** Re-exported so callers don't need both modules for the one type. */
@@ -55,7 +59,21 @@ export type { DebtProgress };
 export async function getDebtRecurringLinks(
   financialMonth: FinancialMonthConfig,
 ): Promise<DebtRecurringLinks> {
-  const links = await db.select().from(debtRecurring);
+  const [links, extraRows] = await Promise.all([
+    db.select().from(debtRecurring),
+    db
+      .select({ debtId: debtPayments.debtId, date: debtPayments.date, amount: debtPayments.amount })
+      .from(debtPayments)
+      .where(eq(debtPayments.kind, "extra"))
+      .orderBy(debtPayments.date),
+  ]);
+  const extrasByDebt = new Map<number, DebtExtraPayment[]>();
+  for (const row of extraRows) {
+    const list = extrasByDebt.get(row.debtId) ?? [];
+    list.push({ date: row.date, amount: row.amount });
+    extrasByDebt.set(row.debtId, list);
+  }
+  const extrasFor = (debtId: number) => extrasByDebt.get(debtId) ?? [];
 
   const linkMap = new Map<number, number[]>();
   for (const row of links) {
@@ -65,7 +83,7 @@ export async function getDebtRecurringLinks(
   }
 
   if (links.length === 0) {
-    return { linkMap, itemsById: new Map(), paidFor: () => null };
+    return { linkMap, itemsById: new Map(), paidFor: () => null, extrasFor };
   }
 
   const linkedIds = new Set(links.map((l) => l.recurringItemId));
@@ -148,5 +166,5 @@ export async function getDebtRecurringLinks(
     return { total, byMonth };
   }
 
-  return { linkMap, itemsById, paidFor };
+  return { linkMap, itemsById, paidFor, extrasFor };
 }
