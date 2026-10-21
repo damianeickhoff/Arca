@@ -37,6 +37,7 @@ const KIND_LOOK: Record<ActivityKind, { icon: React.ComponentType<{ stroke?: num
   merchantDeleted: { icon: IconBuildingStore, tone: "rose" },
   categoryDeleted: { icon: IconFolderX, tone: "rose" },
   recurringDetected: { icon: IconRepeat, tone: "mint" },
+  recurringMigrated: { icon: IconRepeat, tone: "butter" },
 };
 
 /** Entries shown before "Show all". */

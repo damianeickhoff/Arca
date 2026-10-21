@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
-import { acceptSuggestion, linkSuggestion, rejectSuggestion } from "@/lib/recurring-suggestions";
+import { acceptSuggestion, linkSuggestion, rejectSuggestion, resolveMigrated } from "@/lib/recurring-suggestions";
 
 // The review strip's buttons (Upcoming, Settings › Recurring). Server actions so the
 // layout is revalidated: an accepted bill shows up on Home, Budget and Upcoming at once.
@@ -28,4 +28,9 @@ export async function rejectSuggestionAction(id: number): Promise<Result> {
 /** After "Edit": the recurring editor saved the suggestion as this item. */
 export async function linkSuggestionAction(id: number, recurringItemId: number): Promise<Result> {
   return run(() => linkSuggestion(id, recurringItemId));
+}
+
+/** The migration review on Upcoming: Keep all / Remove all, or one item (`id`). */
+export async function resolveMigratedAction(keep: boolean, id?: number): Promise<Result> {
+  return run(async () => (await resolveMigrated(keep, id != null ? [id] : undefined)) > 0);
 }

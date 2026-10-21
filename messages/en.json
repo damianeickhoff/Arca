@@ -2042,7 +2042,8 @@
         "merchantDeleted": "Deleted the merchant {name}",
         "categoryDeleted": "Deleted the category {name}{transactions, plural, =0 {} one { and # transaction} other { and # transactions}}",
         "recurringDetected": "Found {count, plural, one {a recurring payment: {name}} other {# recurring payments}}",
-        "unknown": "A change"
+        "unknown": "A change",
+        "recurringMigrated": "Re-checked auto-detected bills: {review, plural, =0 {all still regular} one {# looks like ordinary spending} other {# look like ordinary spending}}"
       }
     }
   },
@@ -4646,6 +4647,21 @@
     "accept": "Accept",
     "edit": "Edit",
     "reject": "Not a bill",
-    "error": "That didn't save. Try again."
+    "error": "That didn't save. Try again.",
+    "migration": {
+      "title": "{count, plural, one {An earlier auto-detected bill looks like ordinary spending} other {# earlier auto-detected bills look like ordinary spending}}",
+      "subtitle": "Arca now only calls something a bill when it comes back at a steady rhythm and amount. These didn't pass, so they're switched off. Keep them or let them go?",
+      "line": "{amount} · {count, plural, one {# payment} other {# payments}} since {since}",
+      "lineNone": "{amount} · no payments linked",
+      "keepAll": "Keep all",
+      "review": "Review",
+      "hide": "Hide list",
+      "removeAll": "Remove all",
+      "keep": "Keep",
+      "remove": "Remove",
+      "confirmTitle": "{count, plural, one {Remove this bill?} other {Remove these # bills?}}",
+      "confirmBody": "They stop counting as bills and won't be detected again. You can bring one back from Settings › Recurring, or undo this under Data health › Recent changes.",
+      "error": "That didn't save. Try again."
+    }
   }
 }

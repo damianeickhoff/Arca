@@ -141,6 +141,18 @@ export function evaluateSeries(input: DetectTransaction[], ctx: SeriesContext): 
 }
 
 /**
+ * evaluateSeries on recent history only: the last RECENT_DAYS, then YEARLY_DAYS (which
+ * a yearly payment needs). The migration pass re-tests old auto items with it.
+ */
+export function evaluateRecent(txns: DetectTransaction[], ctx: SeriesContext): SeriesResult {
+  const recent = txns.filter((t) => t.date >= shiftDays(ctx.today, -RECENT_DAYS));
+  const longer = txns.filter((t) => t.date >= shiftDays(ctx.today, -YEARLY_DAYS));
+  const first = recent.length > 0 ? evaluateSeries(recent, ctx) : ({ ok: false, reason: "tooFew" } as const);
+  if (first.ok || longer.length <= recent.length) return first;
+  return evaluateSeries(longer, ctx);
+}
+
+/**
  * Every recurring series in `txns`. Each counterparty is first tested as one series
  * (a subscription, a salary, an energy bill whose amount varies); when that fails, each
  * of its amount bands is tested on its own (the subscription inside a shop's purchases).
@@ -151,22 +163,17 @@ export function evaluateSeries(input: DetectTransaction[], ctx: SeriesContext): 
 export function detectRecurring(txns: DetectTransaction[], options: DetectOptions): RecurringCandidate[] {
   const out: RecurringCandidate[] = [];
   const recentFrom = shiftDays(options.today, -RECENT_DAYS);
-  const yearlyFrom = shiftDays(options.today, -YEARLY_DAYS);
   for (const [key, all] of groupByCounterparty(txns)) {
     const merchantId = all[0].merchantId;
     const hints = merchantId != null ? (options.merchantPatterns?.get(merchantId) ?? []) : [];
     const base = { today: options.today, hints, curated: options.curated, signature: `r:${key}` };
 
-    const group = all.filter((t) => t.date >= recentFrom);
-    const longer = all.filter((t) => t.date >= yearlyFrom);
-    const whole = [group, longer]
-      .filter((list, i) => list.length > 0 && (i === 0 || list.length > group.length))
-      .map((list) => evaluateSeries(list, base))
-      .find((r) => r.ok);
-    if (whole?.ok) {
+    const whole = evaluateRecent(all, base);
+    if (whole.ok) {
       out.push(whole.candidate);
       continue;
     }
+    const group = all.filter((t) => t.date >= recentFrom);
     const bands = amountBands(group);
     if (bands.length < 2) continue;
     for (const band of bands) {

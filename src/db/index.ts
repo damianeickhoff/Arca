@@ -8,6 +8,7 @@ import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
 import { detectBrandIcon } from "@/lib/brand-detect";
 import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
+import { migrateAutoRecurringItems } from "@/lib/recurring-migration";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
 import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, INVITES_TABLE_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
 
@@ -616,6 +617,9 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
   // Auto-migrate: recurring suggestions (Upcoming, Settings › Recurring), see
   // src/lib/recurring-suggestions.ts.
   sqlite.exec(RECURRING_SUGGESTIONS_TABLE_SQL);
+
+  // The old detector's items, re-tested against the new rules (one time).
+  migrateAutoRecurringItems(sqlite);
 
   return drizzle(sqlite, { schema });
 }

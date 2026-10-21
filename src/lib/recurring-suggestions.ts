@@ -269,6 +269,31 @@ export async function rejectSuggestion(id: number): Promise<boolean> {
   return true;
 }
 
+/**
+ * Keep or remove items the migration pass switched off (all of them, or `ids`). Keep
+ * switches the item back on; Remove dismisses it the way deleting an auto item always
+ * has, so it stays restorable from Settings › Recurring and is never suggested again.
+ * Returns how many were resolved.
+ */
+export async function resolveMigrated(keep: boolean, ids?: number[]): Promise<number> {
+  const rows = (await db.select().from(recurringSuggestions)
+    .where(and(eq(recurringSuggestions.status, "pending"), eq(recurringSuggestions.wasActive, true))))
+    .filter((r) => !ids || ids.includes(r.id));
+  if (rows.length === 0) return 0;
+  const itemIds = rows.map((r) => r.recurringItemId).filter((id): id is number => id != null);
+  if (itemIds.length > 0) {
+    await db.update(recurringItems)
+      .set(keep ? { active: true, dismissed: false } : { active: false, dismissed: true })
+      .where(inArray(recurringItems.id, itemIds));
+  }
+  await db.update(recurringSuggestions)
+    .set({ status: keep ? "accepted" : "rejected", updatedAt: sql`(datetime('now'))` })
+    .where(inArray(recurringSuggestions.id, rows.map((r) => r.id)));
+  // Kept items link their payments again; removed ones are already unlinked.
+  if (keep) await applyAllRules();
+  return rows.length;
+}
+
 /** A suggestion as the review strip shows it. */
 export type SuggestionView = {
   id: number;
@@ -294,12 +319,22 @@ export type SuggestionView = {
 };
 
 /** Pending suggestions, most confident first. */
-export async function listPendingSuggestions(): Promise<SuggestionView[]> {
+export function listPendingSuggestions(): Promise<SuggestionView[]> {
+  return listSuggestions(false);
+}
+
+/** The old detector's items that failed the new tests (the migration pass), waiting
+ *  for Keep / Remove on Upcoming. */
+export function listMigrationReview(): Promise<SuggestionView[]> {
+  return listSuggestions(true);
+}
+
+async function listSuggestions(wasActive: boolean): Promise<SuggestionView[]> {
   const rows = await db
     .select({ s: recurringSuggestions, icon: merchants.icon, iconColor: merchants.color })
     .from(recurringSuggestions)
     .leftJoin(merchants, eq(merchants.id, recurringSuggestions.merchantId))
-    .where(and(eq(recurringSuggestions.status, "pending"), eq(recurringSuggestions.wasActive, false)))
+    .where(and(eq(recurringSuggestions.status, "pending"), eq(recurringSuggestions.wasActive, wasActive)))
     .orderBy(sql`${recurringSuggestions.confidence} DESC`, recurringSuggestions.name);
   return rows.map(({ s, icon, iconColor }) => {
     // The merchant's own logo when it has one, else whatever the name resolves to.

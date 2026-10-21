@@ -15,7 +15,8 @@ export type ActivityKind =
   | "ruleDeleted"
   | "merchantDeleted"
   | "categoryDeleted"
-  | "recurringDetected";
+  | "recurringDetected"
+  | "recurringMigrated";
 
 export const ACTIVITY_KINDS: readonly ActivityKind[] = [
   "csvImport",
@@ -27,6 +28,7 @@ export const ACTIVITY_KINDS: readonly ActivityKind[] = [
   "merchantDeleted",
   "categoryDeleted",
   "recurringDetected",
+  "recurringMigrated",
 ];
 
 export type DbValue = string | number | null;
@@ -348,5 +350,47 @@ export function recurringDetectedEntry(items: { id: number; name: string }[]): A
       }],
       rerunRules: true,
     },
+  };
+}
+
+/**
+ * The one-time re-test of the old detector's items (lib/recurring-migration.ts): the
+ * ones that failed were switched off, unlinked from their payments and listed for
+ * review; the ones that passed and were untouched got their detected rhythm. Undo puts
+ * all of it back and drops the review rows. Null when there were no auto items at all.
+ */
+export function recurringMigratedEntry(input: {
+  kept: number;
+  failed: { id: number; name: string }[];
+  rescheduled: { id: number; before: DbRow; after: DbRow }[];
+  unlinked: { id: number; itemId: number }[];
+  suggestionIds: number[];
+}): ActivityEntryInput | null {
+  const { kept, failed, rescheduled, unlinked, suggestionIds } = input;
+  if (kept === 0 && failed.length === 0) return null;
+  const ops: UndoOp[] = [];
+  if (failed.length > 0) {
+    ops.push({ op: "update", table: "recurring_items", rows: failed.map((f) => ({ id: f.id, before: { active: 1 }, after: { active: 0 } })) });
+  }
+  if (rescheduled.length > 0) ops.push({ op: "update", table: "recurring_items", rows: rescheduled });
+  if (unlinked.length > 0) {
+    ops.push({
+      op: "update",
+      table: "transactions",
+      rows: unlinked.map((u) => ({ id: u.id, before: { recurring_item_id: u.itemId }, after: { recurring_item_id: null } })),
+    });
+  }
+  if (suggestionIds.length > 0) ops.push({ op: "delete", table: "recurring_suggestions", ids: suggestionIds });
+  const itemIds = [...new Set([...failed.map((f) => f.id), ...rescheduled.map((r) => r.id)])];
+  return {
+    kind: "recurringMigrated",
+    params: { kept, review: failed.length },
+    affectedCount: failed.length + rescheduled.length,
+    refs: {
+      ...(itemIds.length ? { recurring_items: itemIds } : {}),
+      ...(unlinked.length ? { transactions: unlinked.map((u) => u.id) } : {}),
+      ...(suggestionIds.length ? { recurring_suggestions: suggestionIds } : {}),
+    },
+    undoData: ops.length ? { ops, rerunRules: true } : null,
   };
 }

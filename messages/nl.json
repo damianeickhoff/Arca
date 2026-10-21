@@ -2042,7 +2042,8 @@
         "merchantDeleted": "Winkel {name} verwijderd",
         "categoryDeleted": "Categorie {name} verwijderd{transactions, plural, =0 {} one { met # transactie} other { met # transacties}}",
         "recurringDetected": "{count, plural, one {Vaste betaling gevonden: {name}} other {# vaste betalingen gevonden}}",
-        "unknown": "Een wijziging"
+        "unknown": "Een wijziging",
+        "recurringMigrated": "Eerder gevonden vaste lasten opnieuw gecontroleerd: {review, plural, =0 {allemaal nog regelmatig} one {# lijkt gewone uitgaven} other {# lijken gewone uitgaven}}"
       }
     }
   },
@@ -4646,6 +4647,21 @@
     "accept": "Accepteren",
     "edit": "Aanpassen",
     "reject": "Geen vaste last",
-    "error": "Dat is niet opgeslagen. Probeer het opnieuw."
+    "error": "Dat is niet opgeslagen. Probeer het opnieuw.",
+    "migration": {
+      "title": "{count, plural, one {Een eerder gevonden vaste last lijkt gewone uitgaven} other {# eerder gevonden vaste lasten lijken gewone uitgaven}}",
+      "subtitle": "Arca noemt iets nu pas een vaste last als het terugkomt met een vast ritme en bedrag. Deze kwamen daar niet doorheen en staan uit. Houden of laten gaan?",
+      "line": "{amount} · {count, plural, one {# betaling} other {# betalingen}} sinds {since}",
+      "lineNone": "{amount} · geen betalingen gekoppeld",
+      "keepAll": "Alles houden",
+      "review": "Bekijken",
+      "hide": "Lijst verbergen",
+      "removeAll": "Alles verwijderen",
+      "keep": "Houden",
+      "remove": "Verwijderen",
+      "confirmTitle": "{count, plural, one {Deze vaste last verwijderen?} other {Deze # vaste lasten verwijderen?}}",
+      "confirmBody": "Ze tellen niet meer als vaste last en worden niet opnieuw gevonden. Je kunt er een terugzetten via Instellingen › Terugkerend, of dit ongedaan maken onder Gegevenscontrole › Recente wijzigingen.",
+      "error": "Dat is niet opgeslagen. Probeer het opnieuw."
+    }
   }
 }

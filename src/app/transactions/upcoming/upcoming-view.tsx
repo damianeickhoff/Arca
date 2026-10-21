@@ -16,7 +16,7 @@ import { SubpageHeading } from "../subpage-heading";
 import { BillsCalendar } from "./bills-calendar";
 import { BillRow, daysUntil } from "./bill-row";
 import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
-import { RecurringSuggestions } from "@/components/settings/recurring/recurring-suggestions";
+import { MigrationReview, RecurringSuggestions } from "@/components/settings/recurring/recurring-suggestions";
 import type { SuggestionView } from "@/lib/recurring-suggestions";
 
 export interface UpcomingBill {
@@ -51,6 +51,8 @@ export interface UpcomingData {
   bills: UpcomingBill[];
   /** Regular payments the detector found, waiting for Accept / Not a bill. */
   suggestions: SuggestionView[];
+  /** Earlier auto-detected bills that failed the new tests, waiting for Keep / Remove. */
+  migration: SuggestionView[];
 }
 
 const sum = (list: UpcomingBill[]) => list.reduce((s, b) => s + (b.amount ?? 0), 0);
@@ -111,6 +113,7 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
       />
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        <MigrationReview items={data.migration} className="lg:col-span-2 xl:col-span-3" />
         <RecurringSuggestions suggestions={data.suggestions} className="lg:col-span-2 xl:col-span-3" />
         {empty ? (
           <EmptyCard />
