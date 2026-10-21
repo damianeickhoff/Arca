@@ -159,7 +159,7 @@ export async function detectRecurringSuggestions(touchedTransactionIds?: number[
     const [row] = await db.insert(recurringSuggestions).values({ ...suggestionValues(c), status: "accepted" }).onConflictDoNothing().returning();
     if (!row) continue;
     const item = await createItemFor(row);
-    if (item) accepted.push(item);
+    if (item.changed) accepted.push(item);
   }
   if (accepted.length > 0) {
     await applyAllRules();
@@ -200,9 +200,10 @@ function suggestionValues(c: RecurringCandidate) {
  * Makes (or revives) the recurring item for a suggestion and marks the suggestion
  * accepted. An item with the same name is reused: a dismissed or paused one is switched
  * back on with the detected schedule, an active one is simply linked. Doesn't run the
- * rule pass — callers do, once, after their last accept.
+ * rule pass — callers do, once, after their last accept. `changed` is false when an
+ * active item was only linked: there is nothing of ours to undo there.
  */
-async function createItemFor(s: RecurringSuggestion): Promise<{ id: number; name: string } | null> {
+async function createItemFor(s: RecurringSuggestion): Promise<{ id: number; name: string; changed: boolean }> {
   const schedule = {
     type: s.type,
     amount: s.amount,
@@ -218,8 +219,10 @@ async function createItemFor(s: RecurringSuggestion): Promise<{ id: number; name
   };
   const existing = await findRecurringItemByName(s.name);
   let itemId: number;
+  let changed = true;
   if (existing?.active && !existing.dismissed) {
     itemId = existing.id;
+    changed = false;
   } else if (existing) {
     await db.update(recurringItems).set({ ...schedule, active: true, dismissed: false }).where(eq(recurringItems.id, existing.id));
     itemId = existing.id;
@@ -233,7 +236,7 @@ async function createItemFor(s: RecurringSuggestion): Promise<{ id: number; name
   await db.update(recurringSuggestions)
     .set({ status: "accepted", recurringItemId: itemId, updatedAt: sql`(datetime('now'))` })
     .where(eq(recurringSuggestions.id, s.id));
-  return { id: itemId, name: s.name };
+  return { id: itemId, name: s.name, changed };
 }
 
 async function pendingSuggestion(id: number): Promise<RecurringSuggestion | null> {
