@@ -15,7 +15,7 @@ import { SvgMoneyText, MoneyText } from "@/components/clear/money";
 const PAD = { left: 52, right: 12, top: 16, bottom: 30 };
 
 /** A step of 1, 2, 2.5 or 5 × 10ⁿ, so the gridlines land on round amounts. */
-function niceStep(raw: number) {
+export function niceStep(raw: number) {
   const exp = 10 ** Math.floor(Math.log10(raw));
   const f = raw / exp;
   return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * exp;

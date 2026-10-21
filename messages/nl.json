@@ -1421,6 +1421,14 @@
       "title": "Kijk terug of vooruit",
       "body": "Gebruik de pijlen om te zien welke rekeningen in een eerdere maand betaald zijn, of wat er volgende maand aankomt."
     },
+    "upcomingNextMonth": {
+      "title": "Volgende maand, alvast bekeken",
+      "body": "Wat de rekeningen van volgende maand kosten, wat er nieuw is (de eerste termijn van een betalingsregeling) en wat wegvalt, zodat je het verschil ziet voordat het zover is."
+    },
+    "billSkip": {
+      "title": "Een maand overslaan",
+      "body": "Deze maand niet sparen? Sla de overboeking over, dan telt hij alleen deze maand nergens mee. Volgende maand staat hij er gewoon weer."
+    },
     "needsReviewTriage": {
       "title": "Eén voor één",
       "body": "Kies een categorie en druk op Opslaan en volgende (of Enter). Zet de regel aan en vergelijkbare transacties krijgen die categorie voortaan vanzelf."
@@ -3670,10 +3678,6 @@
     "setSalary": "Stel je salaris in",
     "salaryName": "Salaris"
   },
-  "bills": {
-    "markPaid": "Markeer als betaald",
-    "markUnpaid": "Markeer als onbetaald"
-  },
   "billStatus": {
     "auto": "auto",
     "autoHint": "Arca vinkt dit af zodra de betaling binnenkomt",
@@ -4492,64 +4496,116 @@
     "subtitleNone": "De rekeningen en inkomsten die je elke maand verwacht",
     "recurringItems": "Terugkerende posten",
     "addBill": "Rekening toevoegen",
-    "close": "Sluiten",
-    "tiles": {
-      "due": "Nog te betalen",
-      "dueNone": "Niets meer te betalen",
-      "dueNext": "{count, plural, one {# rekening} other {# rekeningen}} · volgende: {name} op {date}",
-      "dueCount": "{count, plural, one {# rekening} other {# rekeningen}}",
-      "paid": "Betaald",
-      "paidNone": "Nog niets betaald",
-      "paidCount": "{count, plural, one {# rekening} other {# rekeningen}} · {pct}% van de vaste lasten deze maand",
-      "income": "Verwacht binnen",
-      "incomeNext": "{name} · {date}",
-      "incomeReceived": "Alle inkomsten zijn binnen",
-      "incomeNone": "Geen inkomsten verwacht"
-    },
-    "calendar": {
+    "subtitlePayday": "{days, plural, =0 {vandaag betaaldag} one {nog # dag tot betaaldag} other {nog # dagen tot betaaldag}}",
+    "nav": {
       "previous": "Vorige maand",
       "next": "Volgende maand",
-      "today": "Vandaag",
-      "payday": "Betaaldag",
-      "legend": {
-        "paid": "Betaald",
-        "due": "Te betalen",
-        "income": "Inkomsten",
-        "today": "Vandaag"
-      },
-      "more": "+{count}",
-      "dayTitle": "Rekeningen op deze dag",
-      "dayTotal": "{amount} te betalen"
+      "today": "Vandaag"
     },
-    "row": {
+    "hero": {
+      "title": "Gaat nog af voor betaaldag",
+      "titleMonth": "Gaat deze maand nog af",
+      "count": "{count, plural, one {# rekening} other {# rekeningen}} van vandaag tot {date}",
+      "none": "Tot dan niets meer te betalen",
+      "leftAfter": "{amount} over na deze rekeningen",
+      "shortBy": "{amount} tekort na deze rekeningen",
+      "inAccount": "{amount} nu op {name}",
+      "accounts": "{count, plural, =0 {je rekeningen} one {je rekening} other {je # betaalrekeningen}}",
+      "setBalance": "Stel het saldo van je rekening in om te zien wat er daarna over is",
+      "nextIncome": "Volgend inkomen",
+      "daysLeft": "{count, plural, one {dag te gaan} other {dagen te gaan}}",
+      "noIncome": "Deze maand geen inkomen verwacht",
+      "monthTitle": "Rekeningen {month}",
+      "pastSub": "{paid} betaald · {open} niet betaald",
+      "futureSub": "{count, plural, one {# rekening} other {# rekeningen}} · {amount} inkomen verwacht"
+    },
+    "balance": {
+      "title": "Saldo door {month}",
+      "subtitle": "{account} · alleen rekeningen en inkomen, dagelijkse uitgaven komen erbovenop",
+      "accounts": "{count, plural, =0 {Je rekeningen} one {Je rekening} other {Je # betaalrekeningen}}",
+      "soFar": "Tot nu",
+      "afterBills": "Na rekeningen",
+      "today": "Vandaag {amount}",
+      "lowest": "Laagste {amount}",
+      "description": "{account}: vandaag {now}, het laagst {lowest} op {date}, alleen rekeningen en inkomen meegeteld.",
+      "noBalance": "Stel het saldo van je betaalrekening één keer in, dan tekent Arca hoe het door de maand loopt, rekening voor rekening.",
+      "setBalance": "Saldo instellen"
+    },
+    "list": {
+      "title": "Rekeningen {month}",
+      "toPay": "{count} te betalen · {amount}",
+      "paidCount": "{count} betaald",
+      "incomeCount": "{count} inkomen",
+      "paidAmount": "{amount} betaald",
+      "totalAmount": "{amount} aan rekeningen deze maand",
+      "groups": {
+        "overdue": "Te laat",
+        "thisWeek": "Deze week",
+        "later": "Later deze maand",
+        "notPaid": "Niet betaald",
+        "comingUp": "Komt nog"
+      },
+      "allDone": "Alles voor {month} is betaald.",
+      "dayHeading": "{date} · {amount}",
+      "allDays": "Alle dagen",
+      "dayEmpty": "Niets op deze dag.",
+      "foldPaid": "{count} betaald · {amount}",
+      "foldSkipped": "{count} overgeslagen",
+      "foldIncome": "{count} inkomen binnen · +{amount}",
+      "foldNamesMore": "{names} en {count} meer",
+      "thisMonth": "Deze maand",
       "received": "Ontvangen",
       "matched": "Gekoppeld aan een transactie",
       "marked": "Door jou afgevinkt",
-      "noDate": "Geen vaste datum",
-      "overdue": "{date} · te laat",
-      "paidAuto": "Betaald — gekoppeld aan een transactie"
+      "skippedNote": "overgeslagen in {month}",
+      "overdueDays": "{count, plural, one {# dag te laat} other {# dagen te laat}}",
+      "noPayment": "geen betaling gevonden",
+      "payday": "betaaldag",
+      "debt": "aflossing",
+      "savings": "naar spaarrekening",
+      "noPattern": "geen herkenningspatroon",
+      "ends": "loopt tot {month}",
+      "part": "termijn {part} van {parts}",
+      "skip": "{month} overslaan",
+      "undoSkip": "Toch niet overslaan"
     },
-    "due": {
-      "title": "Nog te betalen",
-      "empty": "Alles voor {month} is betaald."
+    "glance": {
+      "title": "{month} in één oogopslag",
+      "busiest": "Drukste dag: {date} · {amount}",
+      "quiet": "Geen rekeningen deze maand",
+      "paid": "Betaald",
+      "due": "Te betalen",
+      "overdue": "Te laat",
+      "income": "Inkomen",
+      "sizes": "Grotere stip, groter bedrag"
     },
-    "paid": {
-      "title": "Betaald",
-      "empty": "Deze maand is nog niets betaald."
-    },
-    "income": {
-      "title": "Verwachte inkomsten"
-    },
-    "info": {
-      "title": "Rekeningen vinken zichzelf af",
-      "body": "Komt er een betaling binnen die bij een rekening past, dan zet Centje hem voor je op betaald. Op een andere manier betaald? Vink hem hier af en hij wordt apart gezet van Veilig te besteden."
+    "preview": {
+      "title": "Vooruitblik {month}",
+      "summary": "{amount} in {count, plural, one {# rekening} other {# rekeningen}}",
+      "more": "{amount} meer dan {month}",
+      "less": "{amount} minder dan {month}",
+      "same": "evenveel als {month}",
+      "empty": "Nog geen rekeningen verwacht",
+      "open": "Openen",
+      "bills": "Rekeningen",
+      "income": "Inkomen",
+      "new": "Nieuw",
+      "newPart": "Nieuw · termijn {part} van {parts}",
+      "part": "termijn {part} van {parts}",
+      "thisMonth": "Deze maand",
+      "nextIn": "volgende in {month}",
+      "ended": "niet meer verschuldigd",
+      "skips": "slaat over",
+      "moreRows": "Nog {count}, hetzelfde als {month}",
+      "leftAfterLabel": "Na de rekeningen en het inkomen van {month}",
+      "left": "{amount} over",
+      "short": "{amount} tekort"
     },
     "empty": {
       "title": "Nog geen rekeningen",
       "body": "Voeg je huur, abonnementen en andere vaste lasten toe om te zien wat er deze maand nog betaald moet worden.",
       "add": "Rekening toevoegen"
-    },
-    "planPart": "{name} · termijn {part} van {parts}"
+    }
   },
   "needsReview": {
     "title": "Heeft een categorie nodig",

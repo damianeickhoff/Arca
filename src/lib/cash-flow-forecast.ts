@@ -79,7 +79,8 @@ export async function getCashFlowForecast(
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
       .where(and(gt(transactions.date, today), lte(transactions.date, to)))
       .orderBy(transactions.date),
-    getBillStatuses(currentFinancialMonth(financialMonth), financialMonth),
+    // Skipped occurrences ("Skip October") included, so they can count as settled below.
+    getBillStatuses(currentFinancialMonth(financialMonth), financialMonth, undefined, { includeSkipped: true }),
   ]);
 
   // A real starting balance only exists once the user has told Arca what an account
@@ -124,9 +125,11 @@ export async function getCashFlowForecast(
   //    a booked future transaction in the same calendar month.
   // Weekly and four-weekly items have a status per due date: a paid date is skipped on
   // its own, and once every date this month is paid the whole month is.
-  const paidDates = new Set(billStatuses.filter((s) => s.paid === true && s.dueDate).map((s) => `${s.item.id}|${s.dueDate}`));
-  const unpaidItems = new Set(billStatuses.filter((s) => s.paid !== true).map((s) => s.item.id));
-  const paidThisMonth = new Set(billStatuses.filter((s) => s.paid === true && !unpaidItems.has(s.item.id)).map((s) => s.item.id));
+  // A skipped month counts as settled: nothing leaves the account for it.
+  const settled = (s: (typeof billStatuses)[number]) => s.paid === true || s.skipped;
+  const paidDates = new Set(billStatuses.filter((s) => settled(s) && s.dueDate).map((s) => `${s.item.id}|${s.dueDate}`));
+  const unpaidItems = new Set(billStatuses.filter((s) => !settled(s)).map((s) => s.item.id));
+  const paidThisMonth = new Set(billStatuses.filter((s) => settled(s) && !unpaidItems.has(s.item.id)).map((s) => s.item.id));
   const currentMonthKey = today.slice(0, 7);
 
   for (const item of items) {

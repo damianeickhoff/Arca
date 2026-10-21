@@ -1,6 +1,6 @@
 import { and, eq, gt, gte, lte, or } from "drizzle-orm";
 import { db } from "@/db";
-import { billPayments, categories, recurringItems, transactions } from "@/db/schema";
+import { billPayments, billSkips, categories, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
@@ -21,6 +21,8 @@ export type BillStatus = {
   paid: boolean | null;
   paidSource: "match" | "manual" | null;
   overdue: boolean;
+  /** "Skip October": this month's occurrence is left out (only listed with includeSkipped). */
+  skipped: boolean;
 };
 
 /** Recurrence types the "upcoming" surfaces treat as money leaving the account. */
@@ -48,12 +50,15 @@ export async function getBillStatuses(
   /** Which recurrence types to report on. Defaults to outgoing money only — callers
    *  that show a full "what's still to come this month" list pass UPCOMING_TYPES. */
   types: readonly string[] = EXPENSE_TYPES,
+  /** Skipped occurrences are left out of every total, so they are dropped unless the
+   *  caller lists them itself (Upcoming shows them with an Undo). */
+  options: { includeSkipped?: boolean } = {},
 ): Promise<BillStatus[]> {
   const { from, to } = financialMonthRangeByMonth(month, financialMonth);
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-  const [items, periodTx, payments, cats] = await Promise.all([
+  const [items, periodTx, payments, cats, skips] = await Promise.all([
     // Items that start later are switched off until then (syncRecurringLifecycle), but a
     // later month must still list them — a payment plan whose first part is next month.
     // They only stay in when they're actually due in this month (filtered below).
@@ -69,7 +74,9 @@ export async function getBillStatuses(
       .where(and(gte(transactions.date, from), lte(transactions.date, to))),
     db.select().from(billPayments).where(eq(billPayments.month, month)),
     db.select({ id: categories.id, icon: categories.icon, color: categories.color }).from(categories),
+    db.select({ recurringItemId: billSkips.recurringItemId }).from(billSkips).where(eq(billSkips.month, month)),
   ]);
+  const skipped = new Set(skips.map((s) => s.recurringItemId));
 
   const paymentByItem = new Map(payments.map((p) => [p.recurringItemId, p]));
   const categoriesById = new Map(cats.map((c) => [c.id, { icon: c.icon, color: c.color }]));
@@ -93,7 +100,7 @@ export async function getBillStatuses(
   }
 
   return items
-    .filter((r) => types.includes(r.type))
+    .filter((r) => types.includes(r.type) && (options.includeSkipped || !skipped.has(r.id)))
     .flatMap((item) => {
       const dates = dueDatesOf(item);
       // A not-yet-started item belongs only to the months it's due in; a quarterly or
@@ -135,7 +142,8 @@ export async function getBillStatuses(
           dueDate,
           paid,
           paidSource,
-          overdue,
+          overdue: overdue && !skipped.has(item.id),
+          skipped: skipped.has(item.id),
         };
       });
     });

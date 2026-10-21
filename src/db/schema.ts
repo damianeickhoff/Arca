@@ -560,6 +560,20 @@ export const billPayments = sqliteTable("bill_payments", {
 export type BillPayment = typeof billPayments.$inferSelect;
 export type NewBillPayment = typeof billPayments.$inferInsert;
 
+// ─── Bill skips ───────────────────────────────────────────────────────────────
+// "Skip October" on a savings transfer: this month's occurrence is left out of every
+// list total, Safe to spend and the forecast, one row per (item, financial month). The
+// item itself keeps running; the next month is untouched.
+export const billSkips = sqliteTable("bill_skips", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  recurringItemId: integer("recurring_item_id").notNull().references(() => recurringItems.id, { onDelete: "cascade" }),
+  month: text("month").notNull(), // financial month, YYYY-MM
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+}, (t) => [
+  uniqueIndex("bill_skips_item_month_unique").on(t.recurringItemId, t.month),
+]);
+export type BillSkip = typeof billSkips.$inferSelect;
+
 // ─── Net worth snapshots ──────────────────────────────────────────────────────
 // One row per calendar day, recorded automatically when the Reports page is
 // visited. Powers the net worth trend chart — without this there is no

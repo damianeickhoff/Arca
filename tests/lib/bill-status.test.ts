@@ -84,4 +84,19 @@ describe("getBillStatuses", () => {
     expect((await getBillStatuses("2026-11", 1)).find((s) => s.item.name === "Water")?.dueDate).toBe("2026-11-08");
     expect((await getBillStatuses("2027-03", 1)).find((s) => s.item.name === "Insurance")?.dueDate).toBe("2027-03-13");
   });
+
+  it("leaves a skipped month out unless asked for, and only that month", async () => {
+    const { db } = await import("@/db");
+    const s = await import("@/db/schema");
+    const { getBillStatuses } = await import("@/lib/bill-status");
+    const [saving] = await db
+      .insert(s.recurringItems)
+      .values({ name: "Holiday fund", type: "savings", amount: 150, frequency: "monthly", dueDay: 25, startDate: "2026-01-25", matchPattern: "vakantie" })
+      .returning();
+    await db.insert(s.billSkips).values({ recurringItemId: saving.id, month: "2026-10" });
+    expect((await getBillStatuses("2026-10", 1)).some((b) => b.item.id === saving.id)).toBe(false);
+    const listed = (await getBillStatuses("2026-10", 1, undefined, { includeSkipped: true })).find((b) => b.item.id === saving.id);
+    expect(listed).toMatchObject({ skipped: true, overdue: false, dueDate: "2026-10-25" });
+    expect((await getBillStatuses("2026-11", 1)).find((b) => b.item.id === saving.id)?.skipped).toBe(false);
+  });
 });

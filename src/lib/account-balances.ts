@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, banks, vermogenAccounts } from "@/db/schema";
 import type { Bank } from "@/db/schema";
-import { and, eq, getTableColumns, gte, lt, sql } from "drizzle-orm";
+import { and, eq, getTableColumns, gte, inArray, lt, lte, sql } from "drizzle-orm";
 import { roundToCents } from "@/lib/transaction-splits";
 
 // Live account balances + a best-effort balance-over-time series for the Accounts
@@ -120,4 +120,43 @@ function tomorrowIso(from: Date): string {
   const d = new Date(from);
   d.setDate(d.getDate() + 1);
   return d.toISOString().slice(0, 10);
+}
+
+/** The everyday accounts: debit cards and accounts without a type (not savings,
+ *  credit cards or cash, and none tagged as a savings or investment account). */
+function isCheckingAccount(b: Bank) {
+  return (b.cardType == null || b.cardType === "debitcard") && b.transferKind !== "savings" && b.transferKind !== "investments";
+}
+
+export interface CheckingBalance {
+  /** The account's name when there is exactly one; null for several (or none). */
+  name: string | null;
+  count: number;
+  /** Their live balance together; null until one of them has a starting balance, since
+   *  until then the "balance" is only summed history. */
+  balance: number | null;
+  /** Net money moved per day (income in, the rest out) from `from` through `through`. */
+  flows: Map<string, number>;
+}
+
+/** What Upcoming's hero and running balance start from: the checking accounts' balance
+ *  now and how it moved day by day this month. */
+export async function getCheckingBalance(from: string, through: string): Promise<CheckingBalance> {
+  const accounts = (await getBankBalances()).filter(isCheckingAccount);
+  const known = accounts.some((b) => b.startingBalance != null);
+  const ids = accounts.map((b) => b.id);
+  const daily = ids.length === 0 || from > through
+    ? []
+    : await db
+        .select({ date: transactions.date, net: sql<number>`SUM(${signedFlow})` })
+        .from(transactions)
+        .innerJoin(banks, eq(transactions.account, banks.accountNumber))
+        .where(and(inArray(banks.id, ids), gte(transactions.date, from), lte(transactions.date, through)))
+        .groupBy(transactions.date);
+  return {
+    name: accounts.length === 1 ? accounts[0].displayName ?? accounts[0].accountNumber : null,
+    count: accounts.length,
+    balance: known ? roundToCents(accounts.reduce((s, b) => s + Number(b.balance), 0)) : null,
+    flows: new Map(daily.map((d) => [d.date, roundToCents(Number(d.net) || 0)])),
+  };
 }

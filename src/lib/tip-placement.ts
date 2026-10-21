@@ -133,6 +133,8 @@ export type TipAnchor =
   | "linkSearch"
   // Upcoming's month arrows and the Needs a category queue's Select button
   | "upcomingMonthNav"
+  | "upcomingNextMonth"
+  | "billSkip"
   | "needsReviewSelect"
   // Settings › Accounts: the Bank accounts heading (overdraft limits)
   | "accountsBanks"

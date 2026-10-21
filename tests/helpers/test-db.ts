@@ -25,6 +25,7 @@ export async function clearFixtures() {
   const { sql } = await import("drizzle-orm");
   const tables = [
     "bill_payments",
+    "bill_skips",
     "debt_recurring",
     "debts",
     "reimbursements",

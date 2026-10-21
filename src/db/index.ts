@@ -301,6 +301,17 @@ sqlite.exec(`
   )
 `);
 
+// Auto-migrate: bill skips ("Skip October" on a savings transfer, one month only)
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS bill_skips (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    recurring_item_id INTEGER NOT NULL REFERENCES recurring_items(id) ON DELETE CASCADE,
+    month             TEXT    NOT NULL,
+    created_at        TEXT DEFAULT (datetime('now')),
+    UNIQUE(recurring_item_id, month)
+  )
+`);
+
 // Auto-migrate: debts ↔ recurring bills. Replaces the old debt_categories link;
 // payoff progress now comes from the linked bills' paid-months history. The old
 // debt_categories table is intentionally left in place rather than dropped — an

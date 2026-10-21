@@ -1421,6 +1421,14 @@
       "title": "Look back or ahead",
       "body": "Use the arrows to see which bills were paid in an earlier month, or what is coming up next month."
     },
+    "upcomingNextMonth": {
+      "title": "Next month, before it starts",
+      "body": "What next month's bills come to, what is new (a payment plan's first part) and what drops out, so the jump is explained before it hits."
+    },
+    "billSkip": {
+      "title": "Skip a month",
+      "body": "Not saving this month? Skip the transfer and it drops out of every total for this month only. Next month it is back as usual."
+    },
     "needsReviewTriage": {
       "title": "One at a time",
       "body": "Pick a category and press Save and next (or Enter). Switch on the rule and similar transactions get that category from now on."
@@ -3670,10 +3678,6 @@
     "setSalary": "Set your salary",
     "salaryName": "Salary"
   },
-  "bills": {
-    "markPaid": "Mark as paid",
-    "markUnpaid": "Mark as unpaid"
-  },
   "billStatus": {
     "auto": "auto",
     "autoHint": "Arca ticks this off when the payment arrives",
@@ -4492,64 +4496,116 @@
     "subtitleNone": "The bills and income you expect each month",
     "recurringItems": "Recurring items",
     "addBill": "Add a bill",
-    "close": "Close",
-    "tiles": {
-      "due": "Still due",
-      "dueNone": "Nothing left to pay",
-      "dueNext": "{count, plural, one {# bill} other {# bills}} · next {name} on {date}",
-      "dueCount": "{count, plural, one {# bill} other {# bills}}",
-      "paid": "Paid",
-      "paidNone": "Nothing paid yet",
-      "paidCount": "{count, plural, one {# bill} other {# bills}} · {pct}% of this month's fixed costs",
-      "income": "Expected in",
-      "incomeNext": "{name} · {date}",
-      "incomeReceived": "All income is in",
-      "incomeNone": "No income expected"
-    },
-    "calendar": {
+    "subtitlePayday": "{days, plural, =0 {payday today} one {# day until payday} other {# days until payday}}",
+    "nav": {
       "previous": "Previous month",
       "next": "Next month",
-      "today": "Today",
-      "payday": "Payday",
-      "legend": {
-        "paid": "Paid",
-        "due": "To pay",
-        "income": "Income",
-        "today": "Today"
-      },
-      "more": "+{count}",
-      "dayTitle": "Bills on this day",
-      "dayTotal": "{amount} to pay"
+      "today": "Today"
     },
-    "row": {
+    "hero": {
+      "title": "Still to leave before payday",
+      "titleMonth": "Still to leave this month",
+      "count": "{count, plural, one {# bill} other {# bills}} from today to {date}",
+      "none": "Nothing left to pay before then",
+      "leftAfter": "{amount} left after them",
+      "shortBy": "{amount} short after them",
+      "inAccount": "{amount} in {name} now",
+      "accounts": "{count, plural, =0 {your accounts} one {your account} other {your # current accounts}}",
+      "setBalance": "Set your account's balance to see what is left after them",
+      "nextIncome": "Next income",
+      "daysLeft": "{count, plural, one {day left} other {days left}}",
+      "noIncome": "No income expected this month",
+      "monthTitle": "{month} bills",
+      "pastSub": "{paid} paid · {open} not paid",
+      "futureSub": "{count, plural, one {# bill} other {# bills}} · {amount} income expected"
+    },
+    "balance": {
+      "title": "Balance through {month}",
+      "subtitle": "{account} · bills and income only, day-to-day spending comes on top",
+      "accounts": "{count, plural, =0 {Your accounts} one {Your account} other {Your # current accounts}}",
+      "soFar": "So far",
+      "afterBills": "After bills",
+      "today": "Today {amount}",
+      "lowest": "Lowest {amount}",
+      "description": "{account}: {now} today, lowest {lowest} on {date}, counting bills and income only.",
+      "noBalance": "Set your current account's balance once and Arca draws how it moves through the month, bill by bill.",
+      "setBalance": "Set a balance"
+    },
+    "list": {
+      "title": "{month} bills",
+      "toPay": "{count} to pay · {amount}",
+      "paidCount": "{count} paid",
+      "incomeCount": "{count} income",
+      "paidAmount": "{amount} paid",
+      "totalAmount": "{amount} in bills this month",
+      "groups": {
+        "overdue": "Overdue",
+        "thisWeek": "This week",
+        "later": "Later this month",
+        "notPaid": "Not paid",
+        "comingUp": "Coming up"
+      },
+      "allDone": "Everything for {month} is paid.",
+      "dayHeading": "{date} · {amount}",
+      "allDays": "All days",
+      "dayEmpty": "Nothing on this day.",
+      "foldPaid": "{count} paid · {amount}",
+      "foldSkipped": "{count} skipped",
+      "foldIncome": "{count} income in · +{amount}",
+      "foldNamesMore": "{names} and {count} more",
+      "thisMonth": "This month",
       "received": "Received",
       "matched": "Matched to a transaction",
       "marked": "Marked by you",
-      "noDate": "No fixed date",
-      "overdue": "{date} · overdue",
-      "paidAuto": "Paid — matched to a transaction"
+      "skippedNote": "skipped in {month}",
+      "overdueDays": "{count, plural, one {# day overdue} other {# days overdue}}",
+      "noPayment": "no payment found",
+      "payday": "payday",
+      "debt": "debt payment",
+      "savings": "transfer to savings",
+      "noPattern": "no match pattern",
+      "ends": "ends {month}",
+      "part": "part {part} of {parts}",
+      "skip": "Skip {month}",
+      "undoSkip": "Undo skip"
     },
-    "due": {
-      "title": "Still due",
-      "empty": "Everything for {month} is paid."
+    "glance": {
+      "title": "{month} at a glance",
+      "busiest": "Busiest day: {date} · {amount}",
+      "quiet": "No bills this month",
+      "paid": "Paid",
+      "due": "To pay",
+      "overdue": "Overdue",
+      "income": "Income",
+      "sizes": "Bigger dot, bigger amount"
     },
-    "paid": {
-      "title": "Paid",
-      "empty": "Nothing paid yet this month."
-    },
-    "income": {
-      "title": "Income expected"
-    },
-    "info": {
-      "title": "Bills tick themselves off",
-      "body": "When a payment matching a bill arrives, Centje marks it paid for you. Paid it another way? Tick it off here and it is set aside from Safe to spend."
+    "preview": {
+      "title": "{month} preview",
+      "summary": "{amount} in {count, plural, one {# bill} other {# bills}}",
+      "more": "{amount} more than {month}",
+      "less": "{amount} less than {month}",
+      "same": "the same as {month}",
+      "empty": "No bills expected yet",
+      "open": "Open",
+      "bills": "Bills",
+      "income": "Income",
+      "new": "New",
+      "newPart": "New · part {part} of {parts}",
+      "part": "part {part} of {parts}",
+      "thisMonth": "This month",
+      "nextIn": "next in {month}",
+      "ended": "no longer due",
+      "skips": "skips",
+      "moreRows": "{count} more, same as {month}",
+      "leftAfterLabel": "After {month}'s bills and income",
+      "left": "{amount} left",
+      "short": "{amount} short"
     },
     "empty": {
       "title": "No bills yet",
       "body": "Add your rent, subscriptions and other fixed costs to see what is still to pay this month.",
       "add": "Add a bill"
-    },
-    "planPart": "{name} · part {part} of {parts}"
+    }
   },
   "needsReview": {
     "title": "Needs a category",

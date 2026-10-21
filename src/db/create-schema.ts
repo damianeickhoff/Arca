@@ -551,6 +551,16 @@ export function createSchema(sqlite: Database.Database): void {
     );
   `);
 
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS bill_skips (
+      id                INTEGER PRIMARY KEY AUTOINCREMENT,
+      recurring_item_id INTEGER NOT NULL REFERENCES recurring_items(id) ON DELETE CASCADE,
+      month             TEXT    NOT NULL,
+      created_at        TEXT DEFAULT (datetime('now')),
+      UNIQUE(recurring_item_id, month)
+    );
+  `);
+
   try {
     sqlite.exec(`ALTER TABLE banks ADD COLUMN include_in_net_worth INTEGER NOT NULL DEFAULT 0`);
   } catch { /* column already exists */ }
