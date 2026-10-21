@@ -3,8 +3,6 @@
 import { useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Amount } from "@/components/clear/amount";
-import { DeltaChip } from "@/components/clear/chip";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { currencySymbol, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MoneyText } from "@/components/clear/money";
@@ -33,26 +31,15 @@ function alignAt(x: number) {
  * A balance over time in the Clear style: a solid line over a soft wash for what was
  * recorded and, dashed, a forecast continuing from its last point. Lines are drawn in a
  * stretched SVG (so the chart fills whatever height it gets); dots, labels and the hover
- * read-out are HTML on top so they never distort. `onHero` switches to the hero card's
- * colours. Used by Insights · Net worth (the hero) and the Forecast tab.
+ * read-out are HTML on top so they never distort. Used by the Forecast tab.
  */
 export function NetWorthTrendChart({
   data,
   forecast,
-  onHero = false,
-  marker,
-  endLabel,
-  ariaLabel,
   className,
 }: {
   data: TrendPoint[];
   forecast?: TrendPoint[];
-  onHero?: boolean;
-  /** A point to call out with a dashed line and a label ("30 days ago · €14.645"). */
-  marker?: { date: string; label: string };
-  /** Label above the last recorded point ("Today · €15.057"). */
-  endLabel?: string;
-  ariaLabel?: string;
   /** Size the chart; it is 190px tall unless the caller gives it a height or lets it flex. */
   className?: string;
 }) {
@@ -120,19 +107,15 @@ export function NetWorthTrendChart({
     xTicks = [...picked].map((i) => ({ key: points[i].date, x: px(points[i].date), label: dayFmt.format(asDate(points[i].date)), current: false }));
   }
 
-  const ink = onHero ? "var(--clr-hero-ink)" : "var(--clr-ink)";
-  const soft = onHero ? "var(--clr-hero-ink-2)" : "var(--clr-muted)";
-  const grid = onHero ? "color-mix(in srgb, var(--clr-hero-ink) 14%, transparent)" : "var(--clr-line)";
-  const textMuted = onHero ? "text-clear-hero-ink-2" : "text-clear-muted";
-  const textStrong = onHero ? "text-clear-hero-ink" : "text-clear-ink";
-  const ring = onHero ? "border-clear-hero" : "border-clear-card";
+  const ink = "var(--clr-ink)";
+  const soft = "var(--clr-muted)";
+  const grid = "var(--clr-line)";
+  const textMuted = "text-clear-muted";
+  const textStrong = "text-clear-ink";
 
-  const markerPoint = marker ? data.find((p) => p.date === marker.date) : undefined;
   const hovered = hover != null ? points[hover] : null;
 
-  const description =
-    ariaLabel ??
-    t("netWorth.chartDescription", {
+  const description = t("netWorth.chartDescription", {
       from: fullFmt.format(asDate(points[0].date)),
       to: fullFmt.format(asDate(last.date)),
       start: formatEurWhole(data[0].netWorth),
@@ -157,7 +140,7 @@ export function NetWorthTrendChart({
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden className="absolute inset-0 h-full w-full overflow-visible">
             <defs>
               <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0" stopColor={ink} stopOpacity={onHero ? 0.22 : 0.1} />
+                <stop offset="0" stopColor={ink} stopOpacity={0.1} />
                 <stop offset="1" stopColor={ink} stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -167,17 +150,6 @@ export function NetWorthTrendChart({
             <line x1="0" x2="100" y1="100" y2="100" stroke={grid} vectorEffect="non-scaling-stroke" />
             {data.length > 1 && (
               <polygon points={`${px(data[0].date)},100 ${actualLine} ${px(last.date)},100`} fill={`url(#${gradientId})`} />
-            )}
-            {markerPoint && (
-              <line
-                x1={px(markerPoint.date)}
-                x2={px(markerPoint.date)}
-                y1={py(markerPoint.netWorth)}
-                y2="100"
-                stroke={soft}
-                strokeDasharray="3 4"
-                vectorEffect="non-scaling-stroke"
-              />
             )}
             {data.length > 1 && (
               <polyline points={actualLine} fill="none" stroke={ink} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
@@ -190,43 +162,16 @@ export function NetWorthTrendChart({
             )}
           </svg>
 
-          {markerPoint && marker && (
-            <>
-              <span
-                aria-hidden
-                className={cn("absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2", onHero ? "border-clear-hero-ink bg-clear-hero" : "border-clear-ink bg-clear-card")}
-                style={{ left: `${px(markerPoint.date)}%`, top: `${py(markerPoint.netWorth)}%` }}
-              />
-              <span
-                aria-hidden
-                className={cn("absolute -translate-x-[calc(100%+8px)] -translate-y-[calc(100%+6px)] whitespace-nowrap text-xs", textMuted)}
-                style={{ left: `${px(markerPoint.date)}%`, top: `${py(markerPoint.netWorth)}%` }}
-              >
-                <MoneyText>{marker.label}</MoneyText>
-              </span>
-            </>
-          )}
-
           <span
             aria-hidden
-            className={cn("absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] bg-clear-ember", ring)}
+            className={cn("absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-clear-card bg-clear-ember")}
             style={{ left: `${px(last.date)}%`, top: `${py(last.netWorth)}%` }}
           />
-          {endLabel && (
-            <span
-              aria-hidden
-              className={cn("absolute -translate-x-full -translate-y-[calc(100%+12px)] whitespace-nowrap text-xs font-bold", textStrong)}
-              style={{ left: `${px(last.date)}%`, top: `${py(last.netWorth)}%` }}
-            >
-              <MoneyText>{endLabel}</MoneyText>
-            </span>
-          )}
-
           {hovered && (
             <>
               <span
                 aria-hidden
-                className={cn("absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full", onHero ? "bg-clear-hero-ink" : "bg-clear-ink")}
+                className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-clear-ink"
                 style={{ left: `${px(hovered.date)}%`, top: `${py(hovered.netWorth)}%` }}
               />
               <span
@@ -270,113 +215,5 @@ export function NetWorthTrendChart({
         ))}
       </div>
     </div>
-  );
-}
-
-const RANGES = [30, 90, 180] as const;
-type Range = (typeof RANGES)[number];
-
-/**
- * The Net worth hero: today's figure, how it moved against 30 days ago, and the
- * recorded history with a 30 / 90 / 180-day range switch. `history` already ends with
- * today's live figure, so the line ends exactly on the number above it.
- */
-export function NetWorthHero({ netWorth, history, today }: { netWorth: number; history: TrendPoint[]; today: string }) {
-  const t = useTranslations("insights.netWorth");
-  const locale = useLocale();
-  const [range, setRange] = useState<Range>(180);
-
-  const hasHistory = history.length >= 2;
-  const todayT = time(today);
-  const spanDays = hasHistory ? (todayT - time(history[0].date)) / DAY : 0;
-  const showRange = spanDays > 30;
-
-  const inRange = history.filter((p) => time(p.date) >= todayT - range * DAY);
-  const visible = inRange.length >= 2 ? inRange : history.slice(-2);
-
-  // The point the chip compares with: the last one at least 30 days old, else the oldest.
-  const monthAgo = [...history].reverse().find((p) => time(p.date) <= todayT - 30 * DAY);
-  const ref = monthAgo ?? (hasHistory ? history[0] : undefined);
-  const refDays = ref ? Math.round((todayT - time(ref.date)) / DAY) : 0;
-  const refDelta = ref ? netWorth - ref.netWorth : 0;
-  const signed = (v: number) => `${v >= 0 ? "+" : "−"}${formatEurWhole(Math.abs(v))}`;
-
-  const first = visible[0];
-  const sinceDelta = first ? netWorth - first.netWorth : 0;
-  const sinceDate = first ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" }).format(new Date(`${first.date}T12:00:00`)) : "";
-  const sinceKey = Math.round(sinceDelta) > 0 ? "sinceUp" : Math.round(sinceDelta) < 0 ? "sinceDown" : "sinceSame";
-
-  const marker =
-    monthAgo && range > 30 && visible.some((p) => p.date === monthAgo.date)
-      ? { date: monthAgo.date, label: t("daysAgoAt", { count: refDays, amount: formatEurWhole(monthAgo.netWorth) }) }
-      : undefined;
-
-  return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="networth-hero-title" className="m-0 text-[17px] font-bold">{t("title")}</h2>
-        {showRange && (
-          <div
-            role="radiogroup"
-            aria-label={t("rangeLabel")}
-            data-tip-anchor="insightsNetWorthRange"
-            className="inline-flex gap-1 rounded-full bg-clear-hero-ink/10 p-1"
-          >
-            {RANGES.map((r) => (
-              <button
-                key={r}
-                type="button"
-                role="radio"
-                aria-checked={r === range}
-                onClick={() => setRange(r)}
-                className={cn(
-                  "h-9 cursor-pointer rounded-full px-4 text-[13px] outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
-                  r === range ? "bg-clear-hero-ink font-extrabold text-clear-hero" : "font-bold text-clear-hero-ink-2 hover:text-clear-hero-ink",
-                )}
-              >
-                {t("rangeDays", { count: r })}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
-          <Amount value={netWorth} className="text-[44px] lg:text-[60px]" />
-          {ref && refDays > 0 && (
-            <DeltaChip direction={refDelta >= 0 ? "up" : "down"} good={refDelta >= 0} className="mb-1.5">
-              <MoneyText>{t("vsDaysAgo", { amount: signed(refDelta), count: refDays })}</MoneyText>
-            </DeltaChip>
-          )}
-        </div>
-        {hasHistory && (
-          <p className="m-0 text-[15px] text-clear-hero-ink-2">
-            <MoneyText>{t(sinceKey, { amount: formatEurWhole(Math.abs(sinceDelta)), date: sinceDate })}</MoneyText>
-          </p>
-        )}
-      </div>
-
-      {hasHistory ? (
-        <NetWorthTrendChart
-          onHero
-          data={visible}
-          marker={marker}
-          endLabel={t("todayAt", { amount: formatEurWhole(netWorth) })}
-          ariaLabel={t("heroChartDescription", {
-            count: Math.round((todayT - time(visible[0].date)) / DAY),
-            start: formatEurWhole(visible[0].netWorth),
-            end: formatEurWhole(netWorth),
-          })}
-          className="h-auto min-h-[200px] flex-1"
-        />
-      ) : (
-        <div className="flex min-h-[200px] flex-1 items-center justify-center rounded-clear-tile border-2 border-dashed border-clear-hero-ink/20 p-6 text-center">
-          <p className="m-0 max-w-sm text-[15px] text-clear-hero-ink-2">{t("building")}</p>
-        </div>
-      )}
-
-      <AnchoredTip id="insightsNetWorthRange" anchor="insightsNetWorthRange" active={showRange} />
-    </>
   );
 }

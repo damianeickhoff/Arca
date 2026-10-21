@@ -92,13 +92,10 @@ export type TipId =
   | "goalsSuggestions"
   // redesign (mustard): Insights
   | "insightsMerchants"
-  | "insightsCategorySwitch"
-  | "insightsNeedsWants"
   | "insightsHealthNextStep"
   | "insightsHealthHistory"
   | "insightsComingUp"
   | "insightsForecastRange"
-  | "insightsNetWorthRange"
   // redesign (Clear): shared pickers and search
   | "categoryPickerByGroup"
   | "categoryPickerSuggestions"
@@ -161,9 +158,12 @@ export type TipId =
   // Recurring detection: the review strip on Upcoming and Settings › Recurring
   | "recurringSuggestions"
   | "recurringScan"
-  // Insights › Overview (Clear): the hero's running-total line and the Where it went block map
+  // Insights › Overview (Clear): the running-total card's line and the Where it went block map
   | "insightsRunningTotal"
-  | "insightsBlockMap";
+  | "insightsBlockMap"
+  // Insights › Trends (Clear): Biggest movers; Insights › Net worth: What changed this month
+  | "insightsMovers"
+  | "insightsNetWorthChanges";
 
 interface TipState {
   /** Tips already shown. A tip is recorded the moment it appears rather than when
@@ -179,7 +179,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activitySelectMode", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "billStatusControl", "budgetNeedsCategory", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsCategorySwitch", "insightsNeedsWants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","insightsNetWorthRange", "categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "upcomingNextMonth", "billSkip", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "financialMonthExceptions", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "iconPicker", "ruleTeach", "merchantPatterns", "bankConnection", "debtsPayoffDates", "debtsTimeline", "insightsSummary", "quickAdd", "reviewTeach", "recentChanges", "importBankFirst", "helpGuide", "userInvites", "recurringSuggestions", "recurringScan", "insightsRunningTotal", "insightsBlockMap"];
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activitySelectMode", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "billStatusControl", "budgetNeedsCategory", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "upcomingNextMonth", "billSkip", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "financialMonthExceptions", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "iconPicker", "ruleTeach", "merchantPatterns", "bankConnection", "debtsPayoffDates", "debtsTimeline", "insightsSummary", "quickAdd", "reviewTeach", "recentChanges", "importBankFirst", "helpGuide", "userInvites", "recurringSuggestions", "recurringScan", "insightsRunningTotal", "insightsBlockMap", "insightsMovers", "insightsNetWorthChanges"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;

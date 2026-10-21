@@ -388,6 +388,16 @@ export function createSchema(sqlite: Database.Database): void {
   `);
 
   sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS vermogen_account_values (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL REFERENCES vermogen_accounts(id) ON DELETE CASCADE,
+      date       TEXT    NOT NULL,
+      value      REAL    NOT NULL,
+      created_at TEXT    DEFAULT (datetime('now'))
+    );
+  `);
+
+  sqlite.exec(`
     CREATE TABLE IF NOT EXISTS net_worth_snapshots (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
       date         TEXT    NOT NULL UNIQUE,

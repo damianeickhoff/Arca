@@ -542,6 +542,20 @@ export const vermogenAccounts = sqliteTable("vermogen_accounts", {
 export type VermogenAccount = typeof vermogenAccounts.$inferSelect;
 export type NewVermogenAccount = typeof vermogenAccounts.$inferInsert;
 
+// ─── Vermogen account values ─────────────────────────────────────────────────
+// The values a hand-kept account (investments, a car) has had, one row per update made
+// from Insights › Net worth › Update balances, so the net worth chart can show the
+// step and "What changed" can say by how much. The account's own value/last_updated
+// stay the current truth; see manualHistory in src/lib/net-worth-history.ts.
+export const vermogenAccountValues = sqliteTable("vermogen_account_values", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  accountId: integer("account_id").notNull().references(() => vermogenAccounts.id, { onDelete: "cascade" }),
+  date: text("date").notNull(), // ISO date YYYY-MM-DD
+  value: real("value").notNull(),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+export type VermogenAccountValue = typeof vermogenAccountValues.$inferSelect;
+
 // ─── Bill payments ────────────────────────────────────────────────────────────
 // Manual "mark as paid" overrides for recurring items, one row per (item, month).
 // Auto-matching (recurringItems.matchPattern/matchAmount against transactions) stays

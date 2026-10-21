@@ -409,6 +409,17 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
   // Auto-migrate: per-asset-account glyph (editable in the account edit sheet)
   addColumnIfMissing("vermogen_accounts", "icon", "TEXT");
 
+  // Auto-migrate: the values a hand-kept account has had (Insights › Net worth › Update balances)
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS vermogen_account_values (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL REFERENCES vermogen_accounts(id) ON DELETE CASCADE,
+      date       TEXT    NOT NULL,
+      value      REAL    NOT NULL,
+      created_at TEXT    DEFAULT (datetime('now'))
+    )
+  `);
+
   // Auto-migrate: saved manual CSV column-mapping profiles for unrecognized bank formats
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS import_profiles (

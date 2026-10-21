@@ -50,15 +50,14 @@ export type TipAnchor =
   | "activityDetailTabs"
   // Redesigned Insights
   | "insightsMerchants"
-  | "insightsCategorySwitch"
-  | "insightsNeedsWants"
   | "insightsHealthNextStep"
   | "insightsHealthHistory"
   | "insightsComingUp"
   | "insightsForecastRange"
-  | "insightsNetWorthRange"
   | "insightsRunningTotal"
   | "insightsBlockMap"
+  | "insightsMovers"
+  | "insightsNetWorthChanges"
   // Redesigned Goals
   | "goalsContributions"
   | "goalsDetail"

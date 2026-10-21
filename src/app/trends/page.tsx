@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-/** Trends lives on Insights now (/reports?tab=trends); old links keep their period and
- * comparison months (from, to, cmpA, cmpB, cat, acct). */
+/** Trends lives on Insights now (/reports?tab=trends, drawn by ./trends-tab.tsx); old links keep their period and
+ * comparison months (range, from, to, cmpA, cmpB, cat, acct). */
 export default async function TrendsPage({
   searchParams,
 }: {

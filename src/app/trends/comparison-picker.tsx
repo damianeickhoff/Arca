@@ -17,7 +17,7 @@ type Side = "a" | "b";
  * `cmpA`/`cmpB`, merged into the existing query so the tab, period and filters stay.
  */
 export function ComparisonPicker({ cmpA, cmpB, months }: { cmpA: string; cmpB: string; months: { value: string; label: string }[] }) {
-  const t = useTranslations("insights.trends");
+  const t = useTranslations("insights.trendsTab.compare");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);

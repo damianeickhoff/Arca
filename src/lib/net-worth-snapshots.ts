@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { netWorthSnapshots, savingsGoals, vermogenAccounts, goals } from "@/db/schema";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { getDebtSummary } from "@/lib/debt-calculations";
 import { getBankBalances } from "@/lib/account-balances";
 
@@ -50,9 +50,4 @@ export async function maybeRecordDailyNetWorthSnapshot() {
   } catch {
     // Best-effort — never let a snapshot failure surface to the user.
   }
-}
-
-export async function getNetWorthHistory(limit = 30) {
-  const rows = await db.select().from(netWorthSnapshots).orderBy(asc(netWorthSnapshots.date));
-  return rows.slice(-limit);
 }

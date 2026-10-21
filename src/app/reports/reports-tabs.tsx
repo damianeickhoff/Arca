@@ -18,23 +18,28 @@ export const INSIGHTS_TAB_LABEL_KEY: Record<InsightsTab, string> = {
   health: "health",
 };
 
-export function ReportsTabs({ active }: { active: string }) {
+/** The tab row; `aside` is the active tab's own control at its right (Trends' period,
+ *  Net worth's range), under the tabs on phones. */
+export function ReportsTabs({ active, aside }: { active: string; aside?: React.ReactNode }) {
   const t = useTranslations("insights.tabs");
   const tInsights = useTranslations("insights");
   const pathname = usePathname();
 
   return (
     <>
-      {/* The Clear segmented control (links). Scrolls sideways on the narrowest phones
-          rather than squeezing five labels. */}
-      <nav aria-label={tInsights("title")} className="-mx-4 overflow-x-auto px-4 scrollbar-hide lg:mx-0 lg:px-0">
-        <Segmented
-          label={tInsights("title")}
-          value={active}
-          items={INSIGHTS_TABS.map((id) => ({ value: id, label: t(INSIGHTS_TAB_LABEL_KEY[id]), href: `${pathname}?tab=${id}` }))}
-          className="shrink-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap"
-        />
-      </nav>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        {/* The Clear segmented control (links). Scrolls sideways on the narrowest phones
+            rather than squeezing five labels. */}
+        <nav aria-label={tInsights("title")} className="-mx-4 max-w-[calc(100%+2rem)] overflow-x-auto px-4 scrollbar-hide lg:mx-0 lg:max-w-full lg:px-0">
+          <Segmented
+            label={tInsights("title")}
+            value={active}
+            items={INSIGHTS_TABS.map((id) => ({ value: id, label: t(INSIGHTS_TAB_LABEL_KEY[id]), href: `${pathname}?tab=${id}` }))}
+            className="shrink-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap"
+          />
+        </nav>
+        {aside && <div className="-mx-4 max-w-[calc(100%+2rem)] overflow-x-auto px-4 scrollbar-hide lg:mx-0 lg:max-w-full lg:px-0">{aside}</div>}
+      </div>
 
       {/* The feature tips that used to fire inside the Insights portal, now on the page. */}
       <ContextualTip id="reports" active={active === "rapporten" || active === "trends" || active === "vermogen"} />

@@ -126,13 +126,10 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   goalsDetail: IconChartLine,
   goalsSuggestions: IconTarget,
   insightsMerchants: IconBuildingStore,
-  insightsCategorySwitch: IconArrowsExchange,
-  insightsNeedsWants: IconChartBar,
   insightsHealthNextStep: IconTarget,
   insightsHealthHistory: IconHeartbeat,
   insightsComingUp: IconCalendarDue,
   insightsForecastRange: IconCalendarStats,
-  insightsNetWorthRange: IconChartLine,
   categoryPickerByGroup: IconTag,
   categoryPickerSuggestions: IconFilter2,
   dateQuickPicks: IconCalendarCheck,
@@ -177,6 +174,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   recurringScan: IconRepeat,
   insightsRunningTotal: IconChartLine,
   insightsBlockMap: IconLayoutGrid,
+  insightsMovers: IconTrendingUp,
+  insightsNetWorthChanges: IconScale,
 };
 
 /**
