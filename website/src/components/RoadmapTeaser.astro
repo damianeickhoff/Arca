@@ -1,26 +1,55 @@
 ---
-// The landing page's "Where Arca is heading" card: one tile per phase with its count and
-// first item, and a pill to the roadmap. Reads the same data as the roadmap page.
-import { phases } from "../data/roadmap";
+// The landing page's "Where Arca is heading" card: one tile per column (Now, Next, Later)
+// with its count and first item, and a pill to the roadmap. It reads the columns and tiles
+// straight from the roadmap page's Markdown (see the comment at the top of roadmap.md), so
+// adding a tile there updates this card too.
+import source from "../content/docs/roadmap.md?raw";
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
-const shown = phases.filter((p) => p.id !== "not-planned");
+
+const decode = (text: string) =>
+  text
+    .trim()
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+
+// Skip the frontmatter (its comment shows example tiles) and any HTML comments.
+const body = source.replace(/^---[\s\S]*?\n---/, "").replace(/<!--[\s\S]*?-->/g, "");
+
+const columns = body
+  .split(/<section class="rm-col"/)
+  .slice(1)
+  .map((chunk) => {
+    const id = chunk.match(/id="([^"]+)"/)?.[1] ?? "";
+    const title = decode(chunk.match(/<h2[^>]*>([^<]+)<\/h2>/)?.[1] ?? id);
+    const items = [...chunk.matchAll(/<div class="rm-tile">[\s\S]*?<h3[^>]*>([^<]+)<\/h3>/g)].map((m) =>
+      decode(m[1]),
+    );
+    return { id, title, items };
+  })
+  .filter((column) => column.id !== "not-planned");
 ---
 
 <section class="rm-teaser not-content" aria-labelledby="rm-teaser-title">
   <div class="rm-teaser__copy">
     <h2 class="rm-teaser__title" id="rm-teaser-title">Where Arca is heading</h2>
     <p class="rm-teaser__text">What's being built now, what's next, and the ideas waiting their turn. A direction, not a promise.</p>
-    <a class="rm-teaser__link" href={`${base}/roadmap/`}>See the roadmap</a>
+    <a class="arca-pill arca-pill--primary rm-teaser__link" href={`${base}/roadmap/`}>See the roadmap</a>
   </div>
   <ol class="rm-teaser__phases">
     {
-      shown.map((phase) => (
-        <li class="rm-teaser__phase" data-tone={phase.tone}>
-          <a href={`${base}/roadmap/#${phase.id}`}>
-            <span class="rm-teaser__chip">{phase.status}</span>
-            <span class="rm-teaser__count">{phase.items.length}</span>
-            <span class="rm-teaser__first">{phase.items[0]?.title}{phase.items.length > 1 ? ` and ${phase.items.length - 1} more` : ""}</span>
+      columns.map((column) => (
+        <li class="rm-teaser__phase" data-column={column.id}>
+          <a href={`${base}/roadmap/#${column.id}`}>
+            <span class="rm-teaser__chip">{column.title}</span>
+            <span class="rm-teaser__count">{column.items.length}</span>
+            <span class="rm-teaser__first">
+              {column.items[0]}
+              {column.items.length > 1 ? ` and ${column.items.length - 1} more` : ""}
+            </span>
           </a>
         </li>
       ))
@@ -64,24 +93,7 @@ const shown = phases.filter((p) => p.id !== "not-planned");
     color: var(--clr-ink-2);
   }
   .rm-teaser__link {
-    display: inline-flex;
-    align-items: center;
-    height: 2.75rem;
     margin-top: 1.25rem;
-    padding: 0 1.25rem;
-    border-radius: 999px;
-    background-color: var(--clr-primary);
-    color: var(--clr-primary-ink);
-    font-size: 0.9375rem;
-    font-weight: 700;
-    text-decoration: none;
-    transition: opacity 150ms ease, transform 150ms ease;
-  }
-  .rm-teaser__link:hover {
-    opacity: 0.9;
-  }
-  .rm-teaser__link:active {
-    transform: scale(0.97);
   }
 
   .rm-teaser__phases {
@@ -110,12 +122,14 @@ const shown = phases.filter((p) => p.id !== "not-planned");
     height: 1.625rem;
     padding: 0 0.625rem;
     border-radius: 999px;
+    background-color: var(--clr-stone);
+    color: var(--clr-stone-ink);
     font-size: 0.75rem;
     font-weight: 700;
   }
-  [data-tone="ember"] .rm-teaser__chip { background-color: var(--clr-ember); color: var(--clr-ember-ink); }
-  [data-tone="sky"] .rm-teaser__chip { background-color: var(--clr-sky); color: var(--clr-sky-ink); }
-  [data-tone="lilac"] .rm-teaser__chip { background-color: var(--clr-lilac); color: var(--clr-lilac-ink); }
+  /* The roadmap's column dots: Now ember, Next black, Later grey. */
+  [data-column="now"] .rm-teaser__chip { background-color: var(--clr-ember); color: var(--clr-ember-ink); }
+  [data-column="next"] .rm-teaser__chip { background-color: var(--clr-primary); color: var(--clr-primary-ink); }
   .rm-teaser__count {
     margin-top: 0.5rem;
     font-size: 1.75rem;

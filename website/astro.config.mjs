@@ -36,9 +36,12 @@ export default defineConfig({
       customCss: [
         "@fontsource-variable/plus-jakarta-sans",
         "./src/styles/clear.css",
+        "./src/styles/roadmap.css",
       ],
       components: {
         Hero: "./src/components/Hero.astro",
+        // The heading row: title, optional subtitle and pill (frontmatter subtitle / titleAction).
+        PageTitle: "./src/components/PageTitle.astro",
         // Adds the "Roadmap" pill to the header, in front of the GitHub icon.
         SocialIcons: "./src/components/SocialIcons.astro",
       },

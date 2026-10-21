@@ -1,0 +1,40 @@
+---
+// The page title as the app's heading row: the 40px title, an optional subtitle under it
+// and an optional black pill on the right (frontmatter `subtitle` and `titleAction`, see
+// src/content.config.ts). Pages without them get the plain title, as before.
+const { title, subtitle, titleAction } = Astro.locals.starlightRoute.entry.data;
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const withBase = (href: string) =>
+  href.startsWith("/") && !href.startsWith(base + "/") ? base + href : href;
+---
+
+{
+  subtitle || titleAction ? (
+    <div class="arca-title-row">
+      <div class="arca-title-row__copy">
+        <h1 id="_top">{title}</h1>
+        {subtitle && <p class="arca-title-row__subtitle">{subtitle}</p>}
+      </div>
+      {titleAction && (
+        <a class="arca-pill arca-pill--primary" href={withBase(titleAction.link)}>
+          {titleAction.text}
+        </a>
+      )}
+    </div>
+  ) : (
+    <h1 id="_top">{title}</h1>
+  )
+}
+
+<style>
+  @layer starlight.core {
+    h1 {
+      margin-top: 1rem;
+      font-size: var(--sl-text-h1);
+      line-height: var(--sl-line-height-headings);
+      font-weight: 600;
+      color: var(--sl-color-white);
+    }
+  }
+</style>

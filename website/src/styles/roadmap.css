@@ -1,0 +1,347 @@
+/*
+ * The roadmap page (src/content/docs/roadmap.md): a "just shipped" strip, the black hero
+ * card with the AI rules, and four columns (Now, Next, Later, Not planned) of tiles.
+ * The markup is plain HTML in the Markdown file; the block syntax is documented at the
+ * top of that file. Built from the --clr-* tokens in clear.css only.
+ */
+
+/* Full width and no white page card: the roadmap draws its own cards. */
+.main-pane:has(.rm) {
+  --sl-content-width: 100%;
+}
+
+html:not([data-has-hero]) .sl-markdown-content:has(> .rm) {
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
+.rm {
+  container-type: inline-size;
+  display: grid;
+  gap: 1.25rem;
+  color: var(--clr-ink);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.rm :is(h2, h3, p, ul, li) {
+  margin: 0;
+}
+
+.rm ul {
+  list-style: none;
+  padding: 0;
+}
+
+.rm :is(h2, h3) {
+  color: var(--clr-ink);
+}
+
+/* ---------- Just shipped ---------- */
+
+.rm-shipped {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem 1rem;
+  padding: 0.875rem 1.25rem 0.875rem 0.875rem;
+  border-radius: 24px;
+  background-color: var(--clr-card);
+}
+
+.rm-shipped__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2rem;
+  padding: 0 0.875rem 0 0.75rem;
+  border-radius: 999px;
+  background-color: var(--clr-mint);
+  color: var(--clr-mint-ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rm-shipped__chip::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background-color: currentColor;
+}
+
+.rm .rm-shipped__items {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 20rem;
+  row-gap: 0.25rem;
+  font-weight: 600;
+}
+.rm-shipped__items li + li::before {
+  content: "·";
+  margin: 0 0.5rem;
+  color: var(--clr-muted);
+}
+
+.rm-shipped__link {
+  margin-inline-start: auto;
+  color: var(--clr-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--clr-ink) 30%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
+}
+.rm-shipped__link:hover {
+  text-decoration-color: var(--clr-ember);
+}
+
+/* ---------- Hero: how AI fits in (on .hero-card from clear.css) ---------- */
+
+.rm .rm-hero {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.75rem 1.5rem;
+}
+
+.rm .hero-card .rm-hero__title {
+  margin-top: 0.375rem;
+  color: var(--clr-hero-ink);
+  font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.rm .hero-card .rm-hero__text {
+  margin-top: 0.75rem;
+  max-width: 32rem;
+  color: var(--clr-hero-ink-2);
+}
+
+.rm .rm-hero__rules {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rm-hero__rules > li {
+  padding: 1rem 1.125rem 1.125rem;
+  border-radius: 16px;
+  background-color: color-mix(in srgb, var(--clr-hero-ink) 9%, transparent);
+}
+
+.rm .hero-card .rm-hero__rules h3 {
+  color: var(--clr-hero-ink);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.rm .hero-card .rm-hero__rules p {
+  margin-top: 0.25rem;
+  color: var(--clr-hero-ink-2);
+  font-size: 0.875rem;
+}
+
+@container (min-width: 30rem) {
+  .rm .rm-hero__rules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 56rem) {
+  .rm .rm-hero {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: center;
+    gap: 2.5rem;
+    padding: 2.25rem;
+  }
+}
+
+/* ---------- The four columns ---------- */
+
+.rm-board {
+  display: grid;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@container (min-width: 36rem) {
+  .rm-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 60rem) {
+  .rm-board {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* A column is a grid: the dot (::before), the title and the count chip (::after) on the
+   first row, the tiles below across all three. The count is a CSS counter, so it never
+   needs updating by hand; the "Missing something?" tile does not count. */
+.rm-col {
+  --rm-dot: var(--clr-placeholder);
+  counter-reset: rm-items;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.5rem;
+  row-gap: 0.75rem;
+  padding: 1.25rem 1.25rem 1.25rem;
+  border-radius: 24px;
+  background-color: var(--clr-card);
+  scroll-margin-top: 6rem;
+}
+
+.rm-col::before {
+  content: "";
+  grid-row: 1;
+  grid-column: 1;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 999px;
+  background-color: var(--rm-dot);
+}
+
+.rm-col > h2 {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.rm .rm-col h2 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.rm-col::after {
+  content: counter(rm-items);
+  grid-row: 1;
+  grid-column: 3;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background-color: var(--clr-tile);
+  color: var(--clr-ink-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rm-col > :not(h2) {
+  grid-column: 1 / -1;
+}
+
+.rm-col > h2 + * {
+  margin-top: 0.25rem;
+}
+
+.rm-col .rm-tile:not(.rm-ask) {
+  counter-increment: rm-items;
+}
+
+.rm-col#now {
+  --rm-dot: var(--clr-ember);
+}
+.rm-col#next {
+  --rm-dot: var(--clr-primary);
+}
+.rm-col#later {
+  --rm-dot: var(--clr-placeholder);
+}
+.rm-col#not-planned {
+  --rm-dot: var(--clr-line);
+}
+.rm-col#not-planned::before {
+  box-shadow: inset 0 0 0 1.5px var(--clr-placeholder);
+}
+
+/* ---------- Tiles ---------- */
+
+.rm-tile {
+  display: grid;
+  justify-items: start;
+  gap: 0.375rem;
+  padding: 0.875rem 1rem 1rem;
+  border-radius: 16px;
+  background-color: var(--clr-tile);
+}
+
+.rm .rm-tile h3 {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.rm .rm-area + h3 {
+  margin-top: 0.25rem;
+}
+
+.rm .rm-tile p {
+  color: var(--clr-ink-2);
+  font-size: 0.875rem;
+}
+
+/* Area chips: AI lilac, Banking sky, App butter, Guide mint. */
+.rm-area {
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rm-area--ai { background-color: var(--clr-lilac); color: var(--clr-lilac-ink); }
+.rm-area--banking { background-color: var(--clr-sky); color: var(--clr-sky-ink); }
+.rm-area--app { background-color: var(--clr-butter); color: var(--clr-butter-ink); }
+.rm-area--guide { background-color: var(--clr-mint); color: var(--clr-mint-ink); }
+
+/* "In progress · Oct 2026", or "Planned" with a Vote link at the end. */
+.rm .rm-tile .rm-meta {
+  justify-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  color: var(--clr-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.rm-meta a {
+  color: var(--clr-ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--clr-ink) 30%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+}
+.rm-meta a:hover {
+  text-decoration-color: var(--clr-ember);
+}
+
+/* Not planned: quiet white tiles with a dashed hairline. */
+.rm-col#not-planned .rm-tile:not(.rm-ask) {
+  background-color: transparent;
+  border: 1.5px dashed var(--clr-line);
+}
+
+/* "Missing something?" at the end of Not planned. */
+.rm-ask .arca-pill {
+  margin-top: 0.375rem;
+}

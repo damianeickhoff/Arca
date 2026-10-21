@@ -134,7 +134,8 @@
 
   /* The app's sidebar is 260px. */
   --sl-sidebar-width: 16.25rem;
-  --sl-content-width: 48rem;
+  /* The content column: wide enough for the Clear cards (the TOC column keeps its own width). */
+  --sl-content-width: 66rem;
 }
 
 @media (min-width: 50em) {
@@ -334,6 +335,28 @@ h1#_top {
   letter-spacing: -0.03em;
   line-height: 1.1;
   color: var(--clr-ink);
+}
+
+/* The heading row (src/components/PageTitle.astro), for pages with a `subtitle` or a
+   `titleAction` in their frontmatter: title and subtitle on the left, a pill on the right. */
+.arca-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  margin-top: 1rem;
+}
+
+.arca-title-row h1#_top {
+  margin: 0;
+}
+
+.arca-title-row__subtitle {
+  margin: 0.5rem 0 0;
+  max-width: 44rem;
+  color: var(--clr-ink-2);
+  font-size: var(--sl-text-body);
 }
 
 /* The page's first paragraph after the title reads as its subtitle. */
@@ -776,6 +799,21 @@ footer .kudos {
   opacity: 0.9;
 }
 
+/* The black pill on the grey ground or a white card (light in dark mode). */
+.arca-pill--primary {
+  background-color: var(--clr-primary);
+  color: var(--clr-primary-ink) !important;
+}
+.arca-pill--primary:hover {
+  opacity: 0.9;
+}
+
+.arca-pill--sm {
+  height: 2.25rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+}
+
 .arca-pill--outline {
   background-color: transparent;
   color: var(--clr-hero-ink) !important;
@@ -835,11 +873,12 @@ footer .kudos {
   background-color: var(--clr-tile) !important;
 }
 
-/* Pastel tiles for the landing page's feature list. */
+/* Pastel tiles for the landing page's feature list: three across at full width (six
+   tiles in two even rows), two on tablets, one on phones. */
 .tile-grid {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
   margin-top: 1.25rem;
 }
 
