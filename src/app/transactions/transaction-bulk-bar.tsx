@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { useTranslations } from "next-intl";
-import { IconEyeOff, IconEye, IconTag, IconTrash, IconX } from "@tabler/icons-react";
+import { IconBuildingStore, IconEyeOff, IconEye, IconTag, IconTrash, IconX } from "@tabler/icons-react";
 import { bottomDockClass } from "@/components/dock";
 import { CategoryPickerSheet } from "@/components/category-picker";
 import { useConfirm } from "@/components/clear/confirm-dialog";
+import { MerchantPickerDialog } from "./_activity/merchant-picker";
 import { acquireNavHidden } from "@/lib/nav-visibility";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/db/schema";
@@ -41,10 +42,29 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [merchantOpen, setMerchantOpen] = useState(false);
 
   useEffect(() => acquireNavHidden(), []);
 
   const count = selectedIds.length;
+
+  // The merchant picker get-or-creates the merchant by name; every selected row then
+  // moves to it in one bulk update.
+  async function pickMerchant(name: string) {
+    setError(null);
+    const res = await fetch("/api/merchants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      setError(await res.text());
+      return;
+    }
+    const merchant: { id: number } = await res.json();
+    setMerchantOpen(false);
+    await patch({ merchantId: merchant.id });
+  }
 
   async function patch(data: Record<string, unknown>) {
     if (count === 0) return;
@@ -131,6 +151,20 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
           }}
         />
 
+        <button type="button" onClick={() => setMerchantOpen(true)} disabled={busy || count === 0} aria-haspopup="dialog" className={actionClass}>
+          <IconBuildingStore />
+          {t("bulkMerchant")}
+        </button>
+        <MerchantPickerDialog
+          open={merchantOpen}
+          currentId={null}
+          suggestion=""
+          subtitle={t("bulkMerchantFor", { count })}
+          footerHint={t("bulkMerchantHint", { count })}
+          onOpenChange={setMerchantOpen}
+          onPick={pickMerchant}
+        />
+
         <button type="button" onClick={() => patch({ excludeFromReports: !allExcluded })} disabled={busy || count === 0} className={actionClass}>
           {allExcluded ? <IconEye /> : <IconEyeOff />}
           {allExcluded ? t("bulkInclude") : t("bulkExclude")}
@@ -141,8 +175,7 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
           {t("bulkDelete")}
         </button>
 
-        {/* Desktop has the select-all checkbox in the list header. */}
-        <button type="button" onClick={onSelectAll} className={cn(actionClass, "lg:hidden")}>
+        <button type="button" onClick={onSelectAll} disabled={total === 0} className={actionClass}>
           {allSelected ? t("bulkSelectNone") : t("bulkSelectAll", { count: total })}
         </button>
 

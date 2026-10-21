@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { IconReload } from "@tabler/icons-react";
+import { IconCheck, IconReload } from "@tabler/icons-react";
 import { Icon } from "@/components/icon";
 import { Pressable } from "@/components/ui/pressable";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { formatEur } from "@/lib/format";
 import { isValidISODate } from "@/lib/date-valid";
 import { resolveTransactionIcon } from "@/lib/auto-brand";
@@ -17,6 +16,7 @@ import type { Category } from "@/db/schema";
 import { TransactionBulkBar } from "../transaction-bulk-bar";
 import type { TransactionRow } from "../transaction-types";
 import { MoneyText } from "@/components/clear/money";
+import { useActivitySelection } from "./select-mode";
 
 type T = ReturnType<typeof useTranslations>;
 
@@ -106,7 +106,6 @@ function ActivityRow({
   onOpen,
   onToggle,
   onStartSelect,
-  tipAnchor,
   dateLabel,
 }: {
   row: TransactionRow;
@@ -117,11 +116,10 @@ function ActivityRow({
   onOpen: () => void;
   onToggle: () => void;
   onStartSelect: () => void;
-  tipAnchor: boolean;
   /** In a flat (amount-sorted) list each row shows its own date. */
   dateLabel?: string;
 }) {
-  // Press and hold starts multi-select on phones; on desktop the checkbox does.
+  // Press and hold starts select mode (phones); on desktop Shift- or Ctrl/Cmd-click does.
   const { longPressProps, consumeClick } = useLongPress(onStartSelect, !selectMode);
   const value = signedValue(row);
   const tags = rowTags(row, tr);
@@ -141,40 +139,46 @@ function ActivityRow({
             : "hover:ring-1 hover:ring-inset hover:ring-clear-ember/25 active:bg-clear-tile",
       )}
     >
-      {/* Desktop: a real checkbox on every row; ticking one starts select mode. */}
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={() => (selectMode ? onToggle() : onStartSelect())}
-        aria-label={tr("bulk.selectRow", { name })}
-        className="hidden size-[18px] shrink-0 cursor-pointer accent-[var(--clr-ink)] lg:block"
-      />
       <Pressable
         scale={0.99}
         type="button"
         {...longPressProps}
-        onClick={() => {
+        onClick={(e) => {
           // The click the browser fires after a completed hold would otherwise also open
           // the row just selected.
           if (consumeClick()) return;
           if (selectMode) onToggle();
+          else if (e.shiftKey || e.ctrlKey || e.metaKey) onStartSelect();
           else onOpen();
         }}
         aria-pressed={selectMode ? selected : undefined}
         aria-current={active ? "true" : undefined}
-        data-tip-anchor={tipAnchor ? "activityRow" : undefined}
         className="flex min-h-16 min-w-0 flex-1 select-none items-center gap-3 py-2 text-left [-webkit-touch-callout:none] [touch-action:pan-y]"
       >
-        {selectMode && (
+        {/* In select mode the icon tile crossfades into a round check in the same spot,
+            so nothing in the row shifts. The whole row is the control; the check is
+            only its picture. */}
+        <span className="relative inline-flex shrink-0">
+          <span className={cn("inline-flex transition-[opacity,scale] duration-[160ms] motion-reduce:transition-none", selectMode && "scale-90 opacity-0")}>
+            <RowIcon row={row} />
+          </span>
           <span
             aria-hidden
             className={cn(
-              "flex size-5 shrink-0 items-center justify-center rounded-full border-2 lg:hidden",
-              selected ? "border-clear-ink bg-clear-primary" : "border-clear-line",
+              "absolute inset-0 flex items-center justify-center transition-[opacity,scale] duration-[160ms] motion-reduce:transition-none",
+              selectMode ? "opacity-100" : "pointer-events-none scale-75 opacity-0",
             )}
-          />
-        )}
-        <RowIcon row={row} />
+          >
+            <span
+              className={cn(
+                "flex size-5 items-center justify-center rounded-full border-2 transition-colors duration-[160ms] motion-reduce:transition-none",
+                selected ? "border-clear-primary bg-clear-primary text-clear-primary-ink" : "border-clear-line bg-clear-card text-transparent",
+              )}
+            >
+              <IconCheck className="size-3" stroke={3.5} />
+            </span>
+          </span>
+        </span>
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[15px] font-bold text-clear-ink">{name}</span>
           <span className={cn("truncate text-[13px]", needsCategory(row) ? "text-clear-ember-text" : "text-clear-muted")}>
@@ -202,11 +206,12 @@ function ActivityRow({
 }
 
 /**
- * Activity's list: a header (select all on desktop, the title and the count), then day
- * groups — a grey day bar with that day's net — with one row per transaction. Tapping a
- * row reports it to the page (which shows the detail panel on desktop or the bottom
- * sheet on phones); multi-select starts with a long press on phones or a row's checkbox
- * on desktop, and keeps every bulk action.
+ * Activity's list: a header (the title, the count and the sort menu), then day groups —
+ * a grey day bar with that day's net — with one row per transaction. Tapping a row
+ * reports it to the page (which shows the detail panel on desktop or the bottom sheet on
+ * phones). Select mode (see select-mode.tsx) starts from the Select button, a press and
+ * hold on a row, or a Shift- / Ctrl / Cmd-click; the rows then toggle and the bulk bar
+ * carries every bulk action.
  */
 export function ActivityList({
   rows,
@@ -235,18 +240,19 @@ export function ActivityList({
   const locale = useLocale();
   const [{ today, yesterday }] = useState(() => ({ today: isoToday(), yesterday: isoToday(-1) }));
 
-  // Non-null *is* select mode; an empty set means the mode is on with nothing picked.
-  const [selectedIds, setSelectedIds] = useState<Set<number> | null>(null);
-  const selectMode = selectedIds !== null;
-  const allSelected = selectedIds != null && selectedIds.size === rows.length && rows.length > 0;
+  const { selectedIds, setSelectedIds, selectMode, enter, exit } = useActivitySelection();
+  // Only rows on screen count: a selection made before a filter change keeps nothing
+  // the new list no longer shows.
+  const picked = selectedIds ? rows.filter((r) => selectedIds.has(r.id)).map((r) => r.id) : [];
+  const allSelected = rows.length > 0 && picked.length === rows.length;
 
   function toggle(id: number) {
     setSelectedIds((prev) => {
       const next = new Set(prev ?? []);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      // Unticking the last row leaves select mode, so the bar never shows "0 selected".
-      return next.size > 0 ? next : null;
+      // Unticking the last row keeps select mode on; Done or Deselect leaves it.
+      return next;
     });
   }
 
@@ -258,23 +264,23 @@ export function ActivityList({
         if (allIn) next.delete(r.id);
         else next.add(r.id);
       }
-      return next.size > 0 ? next : null;
+      return next;
     });
   }
 
-  function toggleAll() {
-    setSelectedIds((prev) => (prev && prev.size === rows.length ? null : new Set(rows.map((r) => r.id))));
-  }
-
-  // Escape leaves select mode — the keyboard equivalent of the bar's close button.
+  // Escape leaves select mode — the keyboard equivalent of the bar's Deselect. Not while
+  // a dialog (the category or merchant picker, the delete confirm) is open: there
+  // Escape closes that dialog only.
   useEffect(() => {
     if (!selectMode) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setSelectedIds(null);
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (document.querySelector('[role="dialog"], [role="alertdialog"]')) return;
+      setSelectedIds(null);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectMode]);
+  }, [selectMode, setSelectedIds]);
 
   function dayLabel(date: string) {
     if (date === today) return tTx("today");
@@ -296,13 +302,6 @@ export function ActivityList({
   return (
     <div className="flex flex-col gap-1.5 font-clear">
       <div className="flex items-center gap-3.5 px-1 pb-1.5 lg:px-3">
-        <input
-          type="checkbox"
-          checked={allSelected}
-          onChange={toggleAll}
-          aria-label={tTx("bulkSelectAll", { count: rows.length })}
-          className="hidden size-[18px] shrink-0 cursor-pointer accent-[var(--clr-ink)] lg:block"
-        />
         <h2 className="m-0 min-w-0 flex-1 truncate text-lg font-bold text-clear-ink">
           {title} <span className="font-semibold text-clear-muted">· {count}</span>
         </h2>
@@ -339,8 +338,7 @@ export function ActivityList({
                   active={row.id === activeId}
                   onOpen={() => onOpen(row)}
                   onToggle={() => toggle(row.id)}
-                  onStartSelect={() => setSelectedIds(new Set([row.id]))}
-                  tipAnchor={row.id === rows[0]?.id}
+                  onStartSelect={() => enter([row.id])}
                   dateLabel={grouped ? undefined : dayLabel(row.date)}
                 />
               ))}
@@ -351,21 +349,15 @@ export function ActivityList({
 
       {selectMode && (
         <TransactionBulkBar
-          selectedIds={[...selectedIds!]}
+          selectedIds={picked}
           categories={categories}
-          allExcluded={selectedIds!.size > 0 && rows.filter((r) => selectedIds!.has(r.id)).every((r) => !!r.excludeFromReports)}
+          allExcluded={picked.length > 0 && rows.filter((r) => selectedIds!.has(r.id)).every((r) => !!r.excludeFromReports)}
           total={rows.length}
           allSelected={allSelected}
-          onSelectAll={() =>
-            setSelectedIds((prev) => (prev && prev.size === rows.length ? null : new Set(rows.map((r) => r.id))))
-          }
-          onDone={() => setSelectedIds(null)}
+          onSelectAll={() => setSelectedIds(allSelected ? new Set() : new Set(rows.map((r) => r.id)))}
+          onDone={exit}
         />
       )}
-
-      {/* Bulk select: hold a row (phones) or tick its checkbox (desktop). Shown once,
-          even to someone who turned tips off before Activity was redesigned. */}
-      <AnchoredTip id="activityBulkSelect" anchor="activityRow" active={!selectMode && rows.length > 1} />
     </div>
   );
 }

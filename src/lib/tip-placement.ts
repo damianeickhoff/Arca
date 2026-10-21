@@ -37,7 +37,7 @@ export type TipAnchor =
   // Privacy mode: the eye button on Home's hero
   | "privacyEye"
   // Redesigned Activity
-  | "activityRow"
+  | "activitySelect"
   | "activityFilters"
   | "activityDetail"
   | "activitySearchBar"

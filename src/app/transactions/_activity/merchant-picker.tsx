@@ -19,6 +19,7 @@ export function MerchantPickerDialog({
   currentId,
   suggestion,
   subtitle,
+  footerHint,
   onOpenChange,
   onPick,
 }: {
@@ -27,6 +28,8 @@ export function MerchantPickerDialog({
   suggestion: string;
   /** Already formatted: which transaction this is for ("For Lotus · −€46,00"). */
   subtitle?: string;
+  /** Already translated: replaces the one-transaction footer note (bulk select). */
+  footerHint?: string;
   onOpenChange: (open: boolean) => void;
   onPick: (name: string) => void | Promise<void>;
 }) {
@@ -45,7 +48,7 @@ export function MerchantPickerDialog({
       >
         <ClearDialogHeader title={t("title")} subtitle={subtitle} onClose={() => onOpenChange(false)} closeLabel={t("close")} />
         {/* Mounted only while open so the search box and selection reset per opening. */}
-        {open && <MerchantPickerBody currentId={currentId} suggestion={suggestion} onPick={onPick} onCancel={() => onOpenChange(false)} />}
+        {open && <MerchantPickerBody currentId={currentId} suggestion={suggestion} footerHint={footerHint} onPick={onPick} onCancel={() => onOpenChange(false)} />}
       </DialogContent>
     </Dialog>
   );
@@ -67,11 +70,13 @@ function Highlight({ text, term }: { text: string; term: string }) {
 function MerchantPickerBody({
   currentId,
   suggestion,
+  footerHint,
   onPick,
   onCancel,
 }: {
   currentId: number | null;
   suggestion: string;
+  footerHint?: string;
   onPick: (name: string) => void | Promise<void>;
   onCancel: () => void;
 }) {
@@ -237,7 +242,7 @@ function MerchantPickerBody({
       <ClearDialogFooterDock className="flex flex-col gap-3.5 border-t border-clear-line pt-4">
         <span className="flex items-start gap-2 text-[13px] leading-snug font-medium text-clear-ink-2">
           <IconInfoCircle className="mt-px size-4 shrink-0" stroke={2} aria-hidden />
-          {t("footerHint")}
+          {footerHint ?? t("footerHint")}
         </span>
         <ClearDialogFooter>
           <button type="button" onClick={onCancel} className={clearButtonVariants({ variant: "secondary" })}>

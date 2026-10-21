@@ -778,10 +778,12 @@
     "bulkSelectAllShort": "dag selecteren",
     "bulkSelectNoneShort": "dag wissen",
     "bulkCategory": "Categorie",
+    "bulkMerchant": "Winkel",
+    "bulkMerchantFor": "Voor {count, plural, one {# transactie} other {# transacties}}",
+    "bulkMerchantHint": "{count, plural, one {De geselecteerde transactie gaat naar deze winkel en krijgt het icoon ervan.} other {Alle # geselecteerde transacties gaan naar deze winkel en krijgen het icoon ervan.}}",
     "bulkExclude": "Uitsluiten",
     "bulkInclude": "Meetellen",
     "bulkDelete": "Verwijderen",
-    "bulkDone": "Selectiemodus verlaten",
     "bulkConfirmDelete": "{count, plural, one {# transactie} other {# transacties}} definitief verwijderen?",
     "bulkConfirmDeleteBody": "Dit kan niet ongedaan worden gemaakt. Wat {count, plural, one {deze transactie} other {deze transacties}} aan een spaardoel {count, plural, one {heeft} other {hebben}} toegevoegd, gaat er weer af.",
     "bulkConfirmDeleteLabel": "{count, plural, one {Transactie} other {# transacties}} verwijderen",
@@ -1279,9 +1281,9 @@
       "title": "Filterchips",
       "body": "Verfijn de lijst op periode, rekening, categorie, nodig/willen/sparen, vaste lasten, bedrag of richting. Tik op de × van een chip om hem te wissen."
     },
-    "activityBulkSelect": {
+    "activitySelectMode": {
       "title": "Meerdere tegelijk selecteren",
-      "body": "Houd een transactie ingedrukt (of vink haar aan op een computer) om een hele selectie te categoriseren, uit te sluiten of te verwijderen."
+      "body": "Tik op Selecteren, houd een rij ingedrukt of Shift-klik."
     },
     "activitySearchBar": {
       "title": "Zoeken zit onderin",
@@ -3630,7 +3632,7 @@
     "bulk": {
       "select": "Selecteren",
       "deselect": "Deselecteren",
-      "selectRow": "Selecteer {name}"
+      "done": "Klaar"
     },
     "summary": {
       "in": "In",

@@ -778,10 +778,12 @@
     "bulkSelectAllShort": "select day",
     "bulkSelectNoneShort": "clear day",
     "bulkCategory": "Category",
+    "bulkMerchant": "Merchant",
+    "bulkMerchantFor": "For {count, plural, one {# transaction} other {# transactions}}",
+    "bulkMerchantHint": "{count, plural, one {The selected transaction moves to this merchant and takes its icon.} other {All # selected transactions move to this merchant and take its icon.}}",
     "bulkExclude": "Exclude",
     "bulkInclude": "Include",
     "bulkDelete": "Delete",
-    "bulkDone": "Leave selection mode",
     "bulkConfirmDelete": "Permanently delete {count, plural, one {# transaction} other {# transactions}}?",
     "bulkConfirmDeleteBody": "This can't be undone. Anything {count, plural, one {it} other {they}} added to a savings goal comes off that goal again.",
     "bulkConfirmDeleteLabel": "Delete {count, plural, one {transaction} other {# transactions}}",
@@ -1279,9 +1281,9 @@
       "title": "Filter chips",
       "body": "Narrow the list by period, account, category, needs/wants/save, recurring, amount or direction. Tap the × on a chip to clear it."
     },
-    "activityBulkSelect": {
+    "activitySelectMode": {
       "title": "Select several at once",
-      "body": "Press and hold a transaction (or tick its checkbox on a computer) to categorise, exclude or delete a whole selection."
+      "body": "Tap Select, hold a row, or Shift-click."
     },
     "activitySearchBar": {
       "title": "Search sits at the bottom",
@@ -3630,7 +3632,7 @@
     "bulk": {
       "select": "Select",
       "deselect": "Deselect",
-      "selectRow": "Select {name}"
+      "done": "Done"
     },
     "summary": {
       "in": "In",

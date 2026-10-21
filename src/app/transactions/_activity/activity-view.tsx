@@ -39,6 +39,7 @@ import { useFadeOnChange } from "@/lib/use-motion";
 import { TransactionDetailPanel } from "./detail-panel";
 import type { ActivityContext, ActivityTiles } from "./context";
 import { MoneyText } from "@/components/clear/money";
+import { ActivitySelectButton, useActivitySelection } from "./select-mode";
 
 export type ActivityFilters = {
   cats: Category[];
@@ -111,17 +112,20 @@ const CARD = "rounded-clear-card bg-clear-card";
 
 /**
  * Activity's header row: the title with "Every transaction across N accounts · M need a
- * category" from lg; phone actions are search and a Filters button (every chip in a
- * sheet); desktop actions are Scan receipt, Import CSV, search and Add transaction.
+ * category" from lg; phone actions are Select (select mode) and a Filters button (every
+ * chip in a sheet); desktop actions are Scan receipt, Import CSV and Add transaction.
  */
 export function ActivityHeader({
   accountCount,
   needsReviewCount,
   filters,
+  canSelect,
 }: {
   accountCount: number;
   needsReviewCount: number;
   filters: ActivityFilters;
+  /** False when the list is empty: there is nothing to select. */
+  canSelect: boolean;
 }) {
   const t = useTranslations("activity");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -137,6 +141,7 @@ export function ActivityHeader({
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          <ActivitySelectButton layout="phone" disabled={!canSelect} />
           <button
             type="button"
             onClick={() => setFiltersOpen(true)}
@@ -343,6 +348,7 @@ export function ActivityView({
   // The bulk bar takes the bottom of the screen (and hides the tab bar) while bulk
   // select is on; the docked search bar steps aside with it.
   const navHidden = useNavHidden();
+  const { selectMode } = useActivitySelection();
 
   // Category changes made in the panel show in the list immediately; the list's rows
   // are a server snapshot until the refresh lands.
@@ -507,6 +513,10 @@ export function ActivityView({
         >
           {t("clearFilters")}
         </button>
+        {/* Desktop: select mode, at the end of the filter row (phones: in the header). */}
+        <div className="ml-auto hidden lg:block">
+          <ActivitySelectButton layout="desktop" disabled={filteredCount === 0} />
+        </div>
       </div>
 
       <div className={cn("order-3 flex flex-col gap-5 lg:order-none lg:grid lg:min-h-0 lg:flex-1", SPLIT_COLUMNS_WIDE)}>
@@ -604,6 +614,7 @@ export function ActivityView({
       <AnchoredTip id="activityDetailTabs" anchor="activityDetailTabs" active={isDesktop ? desktopRow != null : sheetRow != null} />
       <AnchoredTip id="activityHistory" anchor="activityHistory" active={isDesktop ? desktopRow != null : sheetRow != null} />
       <AnchoredTip id="activityKeys" anchor="activityKeys" active={isDesktop} />
+      <AnchoredTip id="activitySelectMode" anchor="activitySelect" active={!selectMode && rows.length > 1} />
     </div>
   );
 }
