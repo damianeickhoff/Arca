@@ -9,6 +9,68 @@ import { adjustGoalAmount, goalDeltaForTransaction } from "@/lib/goal-contributi
 import { resolveMerchantIdFor } from "@/lib/merchants";
 import { recordActivity, selectRowsByIds } from "@/lib/activity-log";
 import { bulkCategoryMoveEntry, type ActivityEntryInput } from "@/lib/activity-log-entries";
+import { isValidISODate } from "@/lib/date-valid";
+
+// The columns a client may set. Everything else in a request body is dropped, so a body
+// can never touch `id`, `importHash`, `reportedBalance` or `createdAt`.
+const WRITABLE_FIELDS = [
+  "date",
+  "direction",
+  "type",
+  "amount",
+  "correctedAmount",
+  "description",
+  "rawDescription",
+  "categoryId",
+  "merchantId",
+  "manuallyCategorized",
+  "source",
+  "account",
+  "counterAccount",
+  "brandIcon",
+  "brandIconColor",
+  "brandIconBgColor",
+  "notes",
+  "customName",
+  "budgetTypeOverride",
+  "isManualTransfer",
+  "isReimbursement",
+  "excludeFromReports",
+  "expectedReimbursement",
+  "sharedWithCount",
+  "receiptUrl",
+  "goalId",
+  "recurringItemId",
+  "transferType",
+] as const;
+
+type WritableField = (typeof WRITABLE_FIELDS)[number];
+type TransactionPatch = Partial<Pick<typeof transactions.$inferInsert, WritableField>>;
+
+/** Keeps only the writable columns of a request body; `null` means "unknown body". */
+function pickWritable(body: unknown): TransactionPatch | null {
+  if (!body || typeof body !== "object") return null;
+  const source = body as Record<string, unknown>;
+  const data: Record<string, unknown> = {};
+  for (const field of WRITABLE_FIELDS) {
+    if (source[field] !== undefined) data[field] = source[field];
+  }
+  if (data.date !== undefined && !isValidISODate(typeof data.date === "string" ? data.date : null)) {
+    throw new Error("Invalid date.");
+  }
+  return data as TransactionPatch;
+}
+
+function parseId(value: unknown): number | null {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+function parseIds(value: unknown): number[] | null {
+  if (!Array.isArray(value)) return null;
+  const ids = value.map(parseId);
+  return ids.every((id): id is number => id !== null) ? ids : null;
+}
 
 function parseSplitPayload(input: unknown, expectedTotal: number) {
   if (!Array.isArray(input)) {
@@ -51,8 +113,18 @@ export async function PATCH(req: NextRequest) {
   if (denied) return denied;
 
   const body = await req.json();
+  if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid body." }, { status: 400 });
+
+  let data: TransactionPatch;
+  try {
+    data = pickWritable(body) ?? {};
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid body." }, { status: 400 });
+  }
 
   if (body.id !== undefined && body.splits !== undefined) {
+    const id = parseId(body.id);
+    if (id === null) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
     const [transaction] = await db
       .select({
         id: transactions.id,
@@ -60,7 +132,7 @@ export async function PATCH(req: NextRequest) {
         correctedAmount: transactions.correctedAmount,
       })
       .from(transactions)
-      .where(eq(transactions.id, body.id))
+      .where(eq(transactions.id, id))
       .limit(1);
 
     if (!transaction) {
@@ -78,11 +150,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    await db.delete(transactionSplits).where(eq(transactionSplits.transactionId, body.id));
+    await db.delete(transactionSplits).where(eq(transactionSplits.transactionId, id));
     if (parsed.splits.length > 0) {
       await db.insert(transactionSplits).values(
         parsed.splits.map((split) => ({
-          transactionId: body.id,
+          transactionId: id,
           amount: split.amount,
           categoryId: split.categoryId,
           position: split.position,
@@ -92,13 +164,13 @@ export async function PATCH(req: NextRequest) {
 
     // The split dialog saves its shared-cost section in the same request.
     const shared =
-      body.sharedWithCount !== undefined
-        ? { sharedWithCount: body.sharedWithCount ?? null, expectedReimbursement: body.expectedReimbursement ?? null }
+      data.sharedWithCount !== undefined
+        ? { sharedWithCount: data.sharedWithCount ?? null, expectedReimbursement: data.expectedReimbursement ?? null }
         : {};
     const [row] = await db
       .update(transactions)
       .set({ manuallyCategorized: parsed.splits.length > 0, ...shared })
-      .where(eq(transactions.id, body.id))
+      .where(eq(transactions.id, id))
       .returning();
 
     return NextResponse.json(row);
@@ -106,8 +178,11 @@ export async function PATCH(req: NextRequest) {
 
   // Bulk update by ids array: { ids: number[], ...data }
   if (Array.isArray(body.ids)) {
-    const { ids, byRule, ...data } = body;
+    const ids = parseIds(body.ids);
+    if (ids === null) return NextResponse.json({ error: "Invalid ids." }, { status: 400 });
+    const byRule = body.byRule;
     if (ids.length === 0) return NextResponse.json({ updated: 0 });
+    if (Object.keys(data).length === 0) return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
     // A category move goes in the change log: each row's previous category and manual
     // flag, and the splits the move removes.
     let moveEntry: ActivityEntryInput | null = null;
@@ -132,7 +207,11 @@ export async function PATCH(req: NextRequest) {
 
   // Bulk update by description: { description, categoryId, matchType? }
   if (body.description !== undefined && body.id === undefined) {
-    const { description, categoryId, matchType = "exact" } = body;
+    const { description, categoryId } = data;
+    const matchType = body.matchType ?? "exact";
+    if (typeof description !== "string" || (categoryId !== null && parseId(categoryId) === null)) {
+      return NextResponse.json({ error: "Invalid body." }, { status: 400 });
+    }
     const whereClause = matchType === "contains"
       ? like(transactions.description, `%${description}%`)
       : eq(transactions.description, description);
@@ -153,7 +232,9 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Single update by id — mark as manually categorized when categoryId is being set
-  const { id, ...data } = body;
+  const id = parseId(body.id);
+  if (id === null) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
+  if (Object.keys(data).length === 0) return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   if (data.categoryId !== undefined) {
     data.manuallyCategorized = true;
     await db.delete(transactionSplits).where(eq(transactionSplits.transactionId, id));
@@ -232,12 +313,29 @@ export async function POST(req: NextRequest) {
   const denied = await requireAuth();
   if (denied) return denied;
 
-  const body = await req.json();
-  // Derive the merchant unless the caller already picked one explicitly.
-  if (body.merchantId === undefined && typeof body.description === "string") {
-    body.merchantId = await resolveMerchantIdFor({ description: body.description, rawDescription: body.rawDescription });
+  let data: TransactionPatch | null;
+  try {
+    data = pickWritable(await req.json());
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid body." }, { status: 400 });
   }
-  const [row] = await db.insert(transactions).values(body).returning();
+  if (!data || !isValidISODate(data.date) || typeof data.description !== "string" || typeof data.amount !== "number" || !Number.isFinite(data.amount)) {
+    return NextResponse.json({ error: "date, description and amount are required." }, { status: 400 });
+  }
+  if (data.direction !== "expense" && data.direction !== "income") {
+    return NextResponse.json({ error: "direction must be expense or income." }, { status: 400 });
+  }
+  if (typeof data.type !== "string" || !data.type) {
+    return NextResponse.json({ error: "type is required." }, { status: 400 });
+  }
+  // Derive the merchant unless the caller already picked one explicitly.
+  if (data.merchantId === undefined) {
+    data.merchantId = await resolveMerchantIdFor({ description: data.description, rawDescription: data.rawDescription });
+  }
+  const [row] = await db
+    .insert(transactions)
+    .values({ ...data, date: data.date, description: data.description, amount: data.amount, direction: data.direction, type: data.type })
+    .returning();
   if (row.goalId) {
     await adjustGoalAmount(row.goalId, goalDeltaForTransaction(row.direction, getTransactionSplitTotal(row.amount, row.correctedAmount)));
   }
@@ -270,14 +368,18 @@ export async function DELETE(req: NextRequest) {
   }
 
   if (Array.isArray(body.ids)) {
-    if (body.ids.length === 0) return NextResponse.json({ ok: true });
-    await reverseGoalContributions(body.ids);
-    await db.delete(transactions).where(inArray(transactions.id, body.ids));
+    const ids = parseIds(body.ids);
+    if (ids === null) return NextResponse.json({ error: "Invalid ids." }, { status: 400 });
+    if (ids.length === 0) return NextResponse.json({ ok: true });
+    await reverseGoalContributions(ids);
+    await db.delete(transactions).where(inArray(transactions.id, ids));
     revalidatePath("/", "layout");
     return NextResponse.json({ ok: true });
   }
-  await reverseGoalContributions([body.id]);
-  await db.delete(transactions).where(eq(transactions.id, body.id));
+  const id = parseId(body.id);
+  if (id === null) return NextResponse.json({ error: "Invalid id." }, { status: 400 });
+  await reverseGoalContributions([id]);
+  await db.delete(transactions).where(eq(transactions.id, id));
   revalidatePath("/", "layout");
   return NextResponse.json({ ok: true });
 }

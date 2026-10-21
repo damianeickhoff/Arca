@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { transactions } from "@/db/schema";
 import { like, and, eq, desc } from "drizzle-orm";
+import { requireAuth } from "@/lib/auth";
 
 // GET /api/merchant-stats?q=ALBERT+HEIJN&direction=expense
 // Returns total + full transaction list filtered by direction (expense or income).
 export async function GET(req: NextRequest) {
+  const denied = await requireAuth();
+  if (denied) return denied;
+
   const q = req.nextUrl.searchParams.get("q")?.trim();
   const direction = req.nextUrl.searchParams.get("direction")?.trim();
   if (!q || q.length < 2) {

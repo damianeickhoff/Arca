@@ -15,24 +15,6 @@ const MFA_COOKIE = "mfa_pending";
 const MFA_CHALLENGE_MINUTES = 5;
 const MFA_MAX_ATTEMPTS = 5;
 
-export async function registerAction(formData: FormData): Promise<{ error?: string }> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const name = String(formData.get("name") ?? "").trim();
-  const password = String(formData.get("password") ?? "");
-
-  if (!EMAIL_RE.test(email)) return { error: "Enter a valid email address." };
-  if (!name) return { error: "Enter your name." };
-  if (password.length < 8) return { error: "Password must be at least 8 characters." };
-
-  const existing = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (existing.length > 0) return { error: "Dit e-mailadres is al geregistreerd." };
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  await db.insert(users).values({ email, name, passwordHash });
-
-  return {};
-}
-
 // Cheap check used by the register page to decide up-front whether the wizard should
 // include the (first-user-only) recurring-bill and CSV-import steps. The wizard's actual
 // account creation lives in the POST /api/onboarding route handler (not a server action) —
