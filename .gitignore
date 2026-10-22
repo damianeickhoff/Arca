@@ -62,3 +62,7 @@ CLAUDE.md
 *.tar
 # Uploaded profile photos (user data, lives next to finance.db)
 /avatars/
+
+# The data dir is the repo root in dev: the version marker and the backups the app writes
+/.arca-version
+/backups/
