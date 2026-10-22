@@ -47,9 +47,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Only now is the mapping worth remembering: it produced a clean parse.
-  const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
-  const headerLine = withoutBom.split(/\r?\n/)[0] ?? "";
-  await saveProfile(label || "Custom bank", headerLine, mapping.delimiter, mapping);
+  await saveProfile(label || "Custom bank", parsed.headerLine, mapping.delimiter, mapping);
 
   const { insertedIds, ...result } = await importParsedRows(parsed.rows);
   await recordImport("csvImport", insertedIds, { skipped: result.skipped });

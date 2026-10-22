@@ -1253,6 +1253,10 @@
       "title": "Bank read wrong, or not at all?",
       "body": "Map columns lets you pick the date, description and amount columns yourself. Centje saves it as a profile for next time."
     },
+    "importHeaderRow": {
+      "title": "Account details above your columns?",
+      "body": "Some banks start the file with a few lines about the account. Pick the row with the column names here and Arca skips everything above it."
+    },
     "dataHealth": {
       "title": "Something imported wrong?",
       "body": "Data Health finds transactions with an unreadable date — the kind an import with the wrong column mapping leaves behind — and lets you correct or delete them."
@@ -1976,6 +1980,10 @@
     "bankNamePlaceholder": "e.g. My Bank",
     "column": "Column {index}",
     "none": "None",
+    "headerRow": "Column names are in",
+    "headerRowOption": "Row {row}: {preview}",
+    "headerRowHint": "If your file starts with a few lines about the account, pick the row with the column names.",
+    "headerRowSkipped": "{count, plural, one {The # line above it is} other {The # lines above it are}} skipped.",
     "dateColumn": "Date column",
     "dateFormat": "Date format",
     "dateFormatIso": "YYYY-MM-DD",

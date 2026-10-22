@@ -15,7 +15,7 @@ import { ClearSelect, type ClearSelectOption } from "@/components/settings/accou
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { guessBalanceColumn } from "@/lib/import-columns";
-import { parseAmount, parseDate, type ColumnMapping } from "@/lib/import-parse";
+import { HEADER_ROW_CHOICES, parseAmount, parseDate, type ColumnMapping } from "@/lib/import-parse";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Bank } from "@/db/schema";
@@ -25,8 +25,10 @@ export interface NeedsMappingResponse {
   needsMapping: true;
   rawId: string;
   delimiter: string;
-  headers: string[];
-  previewRows: string[][];
+  /** The row the server took as the column names; the user can pick another. */
+  headerRow: number;
+  /** The file's first lines, split into cells. */
+  rows: string[][];
   /** A mapping we already have but couldn't trust — a saved profile that stopped
    *  producing readable dates. Seeds the form so the user corrects it rather than
    *  rebuilding it from scratch. */
@@ -172,6 +174,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
   const locale = useLocale();
   const ids = useId();
   const [label, setLabel] = useState("");
+  const [headerRow, setHeaderRow] = useState(data.headerRow);
   const [dateColumn, setDateColumn] = useState<number | null>(0);
   const [dateFormat, setDateFormat] = useState<ColumnMapping["dateFormat"]>("dmy");
   const [customDateFormat, setCustomDateFormat] = useState("");
@@ -194,6 +197,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
   // stays free to change anything, and a later re-render won't undo that.
   if (guessedFor !== data.rawId) {
     setGuessedFor(data.rawId);
+    setHeaderRow(data.headerRow);
     const p = data.prefill;
     if (p) {
       setDateColumn(p.dateColumn);
@@ -208,12 +212,33 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
       setCounterAccountColumn(p.counterAccountColumn);
       setBalanceColumn(p.balanceColumn ?? null);
     } else {
-      setBalanceColumn(guessBalanceColumn(data.headers));
+      setBalanceColumn(guessBalanceColumn(data.rows[data.headerRow] ?? []));
     }
   }
 
-  const columnName = (i: number) => data.headers[i] || t("column", { index: i + 1 });
-  const columns: ClearSelectOption<number | null>[] = data.headers.map((_, i) => ({ value: i, label: columnName(i) }));
+  // Everything above the header row is the bank's account summary; the columns and the
+  // preview follow whichever row the user says holds the column names.
+  const headers = data.rows[headerRow] ?? [];
+  const previewRows = data.rows.slice(headerRow + 1, headerRow + 1 + PREVIEW_ROWS);
+  const headerRowOptions: ClearSelectOption<number>[] = data.rows
+    .slice(0, Math.max(1, Math.min(HEADER_ROW_CHOICES, data.rows.length - 1)))
+    .map((row, i) => ({ value: i, label: t("headerRowOption", { row: i + 1, preview: row.filter(Boolean).join(" · ") }) }));
+
+  // Column numbers mean something else under another header, so start the picks over.
+  function changeHeaderRow(row: number) {
+    if (row === headerRow) return;
+    setHeaderRow(row);
+    setDateColumn(0);
+    setDescriptionColumn(null);
+    setAmountColumn(null);
+    setDirectionColumn(null);
+    setAccountColumn(null);
+    setCounterAccountColumn(null);
+    setBalanceColumn(guessBalanceColumn(data.rows[row] ?? []));
+  }
+
+  const columnName = (i: number) => headers[i] || t("column", { index: i + 1 });
+  const columns: ClearSelectOption<number | null>[] = headers.map((_, i) => ({ value: i, label: columnName(i) }));
   const withNone: ClearSelectOption<number | null>[] = [{ value: null, label: t("none") }, ...columns];
   const directionOptions: ClearSelectOption<number | null>[] = [{ value: null, label: t("useAmountSign") }, ...columns];
 
@@ -235,7 +260,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
   ];
   const rolesOf = (col: number) => roles.filter(([, c]) => c === col).map(([r]) => r);
 
-  const sampleRows = data.previewRows.slice(0, SAMPLE_ROWS);
+  const sampleRows = previewRows.slice(0, SAMPLE_ROWS);
   const longDate = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
   const datePreview = dateColumn === null
@@ -273,6 +298,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
 
     const mapping: ColumnMapping = {
       delimiter: data.delimiter,
+      headerRow,
       dateColumn: dateColumn!,
       dateFormat,
       customDateFormat: dateFormat === "custom" ? customDateFormat.trim() : null,
@@ -329,12 +355,21 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
         closeLabel={t("close")}
       />
 
+      {/* ── Where the column names are: below any account summary the bank puts on top ── */}
+      <div data-tip-anchor="importHeaderRow" className="flex flex-col gap-1.5">
+        <span id={`${ids}-header`} className="text-[13px] font-bold text-clear-ink-2">{t("headerRow")}</span>
+        <ClearSelect value={headerRow} options={headerRowOptions} onChange={changeHeaderRow} ariaLabelledBy={`${ids}-header`} />
+        <span className="text-[13px] text-clear-muted">
+          {headerRow > 0 ? t("headerRowSkipped", { count: headerRow }) : t("headerRowHint")}
+        </span>
+      </div>
+
       {/* ── The file's first rows, each column tagged with what it's mapped to ── */}
       <div className="clear-scrollbar overflow-x-auto rounded-clear-tile border border-clear-line p-2">
-        <table className="w-full border-collapse font-clear text-[13px] tabular-nums" aria-label={t("previewTable", { count: Math.min(PREVIEW_ROWS, data.previewRows.length) })}>
+        <table className="w-full border-collapse font-clear text-[13px] tabular-nums" aria-label={t("previewTable", { count: Math.min(PREVIEW_ROWS, previewRows.length) })}>
           <thead>
             <tr>
-              {data.headers.map((_, i) => (
+              {headers.map((_, i) => (
                 <th
                   key={i}
                   scope="col"
@@ -355,7 +390,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
             </tr>
           </thead>
           <tbody>
-            {data.previewRows.slice(0, PREVIEW_ROWS).map((row, ri) => (
+            {previewRows.map((row, ri) => (
               <tr key={ri} className="border-b border-clear-ground last:border-b-0">
                 {row.map((cell, ci) => (
                   <td key={ci} className={cn("max-w-[220px] truncate px-3 py-2.5 whitespace-nowrap", ci === descriptionColumn ? "font-semibold" : ci === amountColumn ? "font-bold" : "text-clear-ink-2")}>
@@ -496,6 +531,8 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
         </ClearDialogFooter>
       </ClearDialogFooterDock>
 
+      {/* Points out the header-row picker, for banks that put an account summary on top. */}
+      <AnchoredTip id="importHeaderRow" anchor="importHeaderRow" />
       {/* Points out the balance column while this dialog is the thing on screen. */}
       <ContextualTip id="importBalance" active />
       {/* Only one tip shows at a time, so this queues behind the balance tip. */}

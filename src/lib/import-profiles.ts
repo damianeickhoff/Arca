@@ -1,8 +1,8 @@
 import { db } from "@/db";
 import { importProfiles } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { cleanLines, guessDelimiter, splitDelimited, type ParsedRow } from "@/lib/bank-parsers/types";
-import { parseAmount, parseDate, type ColumnMapping } from "@/lib/import-parse";
+import { HEADER_ROW_CHOICES, detectCsvLayout, parseAmount, parseDate, resolveHeaderRow, type ColumnMapping } from "@/lib/import-parse";
 import crypto from "crypto";
 
 export type { ColumnMapping };
@@ -13,24 +13,41 @@ function normalizeHeaderSignature(headerLine: string, delimiter: string): string
     .join("|");
 }
 
-function firstLine(raw: string): string {
-  return cleanLines(raw).find((l) => l.trim()) ?? "";
-}
-
+/**
+ * The saved profile whose column names appear in the file, with `headerRow` set to the
+ * line they were found on. Every one of the first lines is a candidate, not just the
+ * first: a bank that opens with an account summary (DKB: "Kontostand vom 22.07.2026")
+ * changes those lines with every export, so only the real header line is stable.
+ */
 export async function findMatchingProfile(raw: string) {
-  const header = firstLine(raw);
-  if (!header) return null;
-  const delimiter = guessDelimiter(header);
-  const signature = normalizeHeaderSignature(header, delimiter);
+  const lines = cleanLines(raw).filter((l) => l.trim());
+  if (lines.length === 0) return null;
+  const { delimiter } = detectCsvLayout(lines);
 
-  const [profile] = await db
+  // Signature → the first line producing it. Each line is tried with the file's
+  // delimiter and with its own best guess, which is how profiles were saved before
+  // header rows existed.
+  const candidates = new Map<string, number>();
+  lines.slice(0, HEADER_ROW_CHOICES).forEach((line, row) => {
+    for (const d of new Set([delimiter, guessDelimiter(line)])) {
+      if (splitDelimited(line, d).length < 2) continue;
+      const signature = normalizeHeaderSignature(line, d);
+      if (!candidates.has(signature)) candidates.set(signature, row);
+    }
+  });
+  if (candidates.size === 0) return null;
+
+  const profiles = await db
     .select()
     .from(importProfiles)
-    .where(eq(importProfiles.headerSignature, signature))
-    .limit(1);
+    .where(inArray(importProfiles.headerSignature, [...candidates.keys()]));
+  if (profiles.length === 0) return null;
 
-  if (!profile) return null;
-  return { ...profile, mapping: JSON.parse(profile.mapping) as ColumnMapping };
+  const [best] = profiles
+    .map((profile) => ({ profile, row: candidates.get(profile.headerSignature)! }))
+    .sort((a, b) => a.row - b.row);
+  const mapping = JSON.parse(best.profile.mapping) as ColumnMapping;
+  return { ...best.profile, mapping: { ...mapping, headerRow: best.row } };
 }
 
 export async function saveProfile(label: string, headerLine: string, delimiter: string, mapping: ColumnMapping) {
@@ -67,15 +84,19 @@ export interface InvalidDateRow {
 export interface MappedParseResult {
   rows: ParsedRow[];
   invalid: InvalidDateRow[];
+  /** The line the column names were read from — what a saved profile is keyed on. */
+  headerLine: string;
 }
 
 export function parseWithMapping(raw: string, mapping: ColumnMapping): MappedParseResult {
   const lines = cleanLines(raw).filter((l) => l.trim());
-  if (lines.length < 2) throw new Error("File has no data rows");
+  // Lines above the header are the bank's account summary, not transactions.
+  const headerRow = resolveHeaderRow(lines, mapping);
+  if (lines.length < headerRow + 2) throw new Error("File has no data rows");
 
   const rows: ParsedRow[] = [];
   const invalid: InvalidDateRow[] = [];
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = headerRow + 1; i < lines.length; i++) {
     const cols = splitDelimited(lines[i], mapping.delimiter);
     const maxIdx = Math.max(mapping.dateColumn, mapping.descriptionColumn, mapping.amountColumn);
     if (cols.length <= maxIdx) continue;
@@ -137,5 +158,5 @@ export function parseWithMapping(raw: string, mapping: ColumnMapping): MappedPar
       reportedBalance,
     });
   }
-  return { rows, invalid };
+  return { rows, invalid, headerLine: lines[headerRow] };
 }

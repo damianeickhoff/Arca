@@ -20,6 +20,8 @@ export type TipAnchor =
   // Redesigned Import CSV: the Check step's summary and "Map columns"
   | "importCheck"
   | "importMapColumns"
+  // Map columns: the header-row picker
+  | "importHeaderRow"
   | "dataHealthMenu"
   // Settings › Data health: the change log
   | "recentChanges"

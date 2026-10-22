@@ -56,6 +56,7 @@ If your file has a balance column, Arca keeps your bank's own balance next to ea
 
 When Arca doesn't recognise a file, it asks you to **Map columns**: tell it which column is which.
 
+- **Column names are in**: the row with the column names. Some banks (DKB, for example) start the file with a few lines about the account; Arca finds the real column names by itself and skips those lines. If it picks the wrong row, choose another one here.
 - **Bank name**: so you recognise the profile later (optional).
 - **Date column** and its **Date format**, for example DD-MM-YYYY.
 - **Description column**.

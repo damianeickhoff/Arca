@@ -61,6 +61,7 @@ import {
   IconFlask,
   IconHistory,
   IconLayoutGrid,
+  IconTableRow,
 } from "@tabler/icons-react";
 
 import type { TipId } from "@/lib/tips";
@@ -88,6 +89,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   importDatePreview: IconCalendarCheck,
   importCheck: IconChecklist,
   importMapColumns: IconAdjustments,
+  importHeaderRow: IconTableRow,
   bulkSelect: IconChecklist,
   budgetLocation: IconWallet,
   reportsLocation: IconChartBar,

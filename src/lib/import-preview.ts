@@ -2,8 +2,9 @@ import { inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { banks, transactions } from "@/db/schema";
 import { detectAndParse, type ParsedRow } from "@/lib/bank-parsers";
-import { cleanLines, guessDelimiter, splitDelimited } from "@/lib/bank-parsers/types";
+import { cleanLines, splitDelimited } from "@/lib/bank-parsers/types";
 import { findMatchingProfile, parseWithMapping, type ColumnMapping } from "@/lib/import-profiles";
+import { HEADER_ROW_CHOICES, detectCsvLayout } from "@/lib/import-parse";
 import { cacheRawImport } from "@/lib/import-raw-cache";
 import { normalizeAccountNumber } from "@/lib/internal-transfers";
 import { isValidISODate } from "@/lib/date-valid";
@@ -49,23 +50,31 @@ export interface MappingRequest {
   needsMapping: true;
   rawId: string;
   delimiter: string;
-  headers: string[];
-  previewRows: string[][];
+  /** The row holding the column names: the saved profile's, else a detected one. */
+  headerRow: number;
+  /** The file's first lines, split — enough to pick any header row and preview the
+   *  rows under it. */
+  rows: string[][];
   prefill: ColumnMapping | null;
 }
+
+/** Rows shown under the header in the mapping dialog. */
+const MAPPING_PREVIEW_ROWS = 5;
 
 /** The file handed back to the client so the user can map its columns; null for an
  *  empty file. */
 export function mappingRequest(text: string, prefill?: ColumnMapping): MappingRequest | null {
   const lines = cleanLines(text).filter((l) => l.trim());
   if (lines.length === 0) return null;
-  const delimiter = guessDelimiter(lines[0]);
+  const { delimiter, headerRow: detected } = detectCsvLayout(lines);
+  const prefillRow = prefill?.headerRow;
+  const headerRow = typeof prefillRow === "number" && prefillRow >= 0 && prefillRow < Math.min(lines.length, HEADER_ROW_CHOICES) ? prefillRow : detected;
   return {
     needsMapping: true,
     rawId: cacheRawImport(text),
     delimiter,
-    headers: splitDelimited(lines[0], delimiter),
-    previewRows: lines.slice(1, 6).map((l) => splitDelimited(l, delimiter)),
+    headerRow,
+    rows: lines.slice(0, HEADER_ROW_CHOICES + MAPPING_PREVIEW_ROWS).map((l) => splitDelimited(l, delimiter)),
     prefill: prefill ?? null,
   };
 }

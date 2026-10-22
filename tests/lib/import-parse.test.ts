@@ -1,7 +1,58 @@
 // Characterisation tests for the manual column-mapping helpers (pure, no DB).
 import { describe, expect, it } from "vitest";
-import { buildCustomDateParser, parseAmount, parseDate } from "@/lib/import-parse";
+import { buildCustomDateParser, detectCsvLayout, parseAmount, parseDate, resolveHeaderRow } from "@/lib/import-parse";
 import { guessBalanceColumn } from "@/lib/import-columns";
+
+describe("detectCsvLayout", () => {
+  it("keeps the first line as header for a plain export", () => {
+    expect(detectCsvLayout(["Date,Description,Amount", "2026-07-01,Coffee,-3.50", "2026-07-02,Salary,2500.00"])).toEqual({ delimiter: ",", headerRow: 0 });
+  });
+
+  it("skips a DKB-style account summary above the column names", () => {
+    const lines = [
+      '"Girokonto";"DE12 1203 0000 1234 5678 90"',
+      '"Zeitraum:";"01.07.2026 - 22.07.2026"',
+      '"Kontostand vom 22.07.2026:";"1.234,56 €"',
+      '"Buchungsdatum";"Wertstellung";"Status";"Zahlungspflichtige*r";"Zahlungsempfänger*in";"Verwendungszweck";"Betrag (€)"',
+      '"22.07.26";"22.07.26";"Gebucht";"Max Muster";"REWE";"Einkauf, Filiale 12";"-12,34"',
+      '"21.07.26";"21.07.26";"Gebucht";"Firma GmbH";"Max Muster";"Gehalt";"2.500,00"',
+    ];
+    expect(detectCsvLayout(lines)).toEqual({ delimiter: ";", headerRow: 3 });
+  });
+
+  it("finds the header through unquoted preamble lines without any delimiter", () => {
+    const lines = ["Kontoumsätze", "Export vom 22.07.2026", "Datum;Text;Betrag", "01.07.2026;Miete;-800,00", "02.07.2026;Lohn;2000,00"];
+    expect(detectCsvLayout(lines)).toEqual({ delimiter: ";", headerRow: 2 });
+  });
+
+  it("accepts a header one field short of rows that end in a delimiter", () => {
+    expect(detectCsvLayout(["Date;Name;Amount", "01-07-2026;A;1;", "02-07-2026;B;2;", "03-07-2026;C;3;"]).headerRow).toBe(0);
+  });
+
+  it("does not split on decimal commas inside a semicolon file", () => {
+    expect(detectCsvLayout(["Datum;Naam;Bedrag;Saldo", "01-07-2026;A;-1,50;10,00", "02-07-2026;B;2,00;12,00"]).delimiter).toBe(";");
+  });
+
+  it("falls back to the first line for a file with a single column", () => {
+    expect(detectCsvLayout(["just text", "more text"])).toEqual({ delimiter: expect.any(String), headerRow: 0 });
+  });
+});
+
+describe("resolveHeaderRow", () => {
+  const lines = ["Konto;DE12", "Datum;Text;Betrag", "01.07.2026;Miete;-800,00", "02.07.2026;Lohn;2000,00"];
+
+  it("uses the mapping's row when it points inside the file", () => {
+    expect(resolveHeaderRow(lines, { headerRow: 0 })).toBe(0);
+    expect(resolveHeaderRow(lines, { headerRow: 2 })).toBe(2);
+  });
+
+  it("detects the row for profiles saved without one or with a bad value", () => {
+    expect(resolveHeaderRow(lines, {})).toBe(1);
+    expect(resolveHeaderRow(lines, { headerRow: null })).toBe(1);
+    expect(resolveHeaderRow(lines, { headerRow: 9 })).toBe(1);
+    expect(resolveHeaderRow(lines, { headerRow: -1 })).toBe(1);
+  });
+});
 
 describe("parseAmount", () => {
   it("reads comma-decimal amounts with dot thousands", () => {

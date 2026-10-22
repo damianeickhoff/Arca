@@ -1253,6 +1253,10 @@
       "title": "Bank verkeerd of niet herkend?",
       "body": "Met Kolommen koppelen kies je zelf de kolommen voor datum, omschrijving en bedrag. Centje bewaart het als profiel voor de volgende keer."
     },
+    "importHeaderRow": {
+      "title": "Rekeninggegevens boven je kolommen?",
+      "body": "Sommige banken beginnen het bestand met een paar regels over de rekening. Kies hier de rij met de kolomnamen en Arca slaat alles daarboven over."
+    },
     "dataHealth": {
       "title": "Import misgegaan?",
       "body": "Data Health vindt transacties met een onleesbare datum — precies wat een import met de verkeerde kolomkoppeling achterlaat — en laat je ze corrigeren of verwijderen."
@@ -1976,6 +1980,10 @@
     "bankNamePlaceholder": "bijv. Mijn Bank",
     "column": "Kolom {index}",
     "none": "Geen",
+    "headerRow": "Kolomnamen staan in",
+    "headerRowOption": "Rij {row}: {preview}",
+    "headerRowHint": "Begint je bestand met een paar regels over de rekening? Kies dan de rij met de kolomnamen.",
+    "headerRowSkipped": "{count, plural, one {De # regel daarboven wordt} other {De # regels daarboven worden}} overgeslagen.",
     "dateColumn": "Datumkolom",
     "dateFormat": "Datumformaat",
     "dateFormatIso": "JJJJ-MM-DD",
