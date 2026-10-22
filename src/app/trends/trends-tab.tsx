@@ -476,7 +476,7 @@ async function TrendsEmpty() {
           <h2 id="trends-empty-title" className="m-0 text-2xl font-bold tracking-[-0.02em]">{t("title")}</h2>
           <p className="m-0 max-w-[460px] text-base leading-normal text-clear-ink-2">{t("body")}</p>
         </div>
-        <Link href="/import" className={clearButtonVariants({ size: "lg" })}>
+        <Link href="/settings?panel=import" className={clearButtonVariants({ size: "lg" })}>
           <IconFileImport aria-hidden />
           {t("action")}
         </Link>

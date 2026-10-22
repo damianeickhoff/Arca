@@ -154,7 +154,7 @@ export function ActivityHeader({
             <IconCamera aria-hidden />
             {t("scanReceipt")}
           </Link>
-          <Link href="/import" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
+          <Link href="/settings?panel=import" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
             <IconFileUpload aria-hidden />
             {t("importCsv")}
           </Link>
@@ -526,7 +526,7 @@ export function ActivityView({
             {filteredCount === 0 ? (
               <div className={cn(CARD, "flex flex-col items-center gap-4 px-6 py-14 text-center lg:border-0 lg:shadow-none")}>
                 <p className="text-sm text-clear-muted">{tTx("noneFound")}</p>
-                <Link href="/import" className="inline-flex h-10 items-center gap-2 rounded-full bg-clear-primary px-4 text-[13px] font-bold text-clear-primary-ink">
+                <Link href="/settings?panel=import" className="inline-flex h-10 items-center gap-2 rounded-full bg-clear-primary px-4 text-[13px] font-bold text-clear-primary-ink">
                   <IconFileUpload size={16} stroke={1.8} />
                   {tTx("importCsv")}
                 </Link>

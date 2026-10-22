@@ -8,7 +8,7 @@ import { GetStartedSkip } from "./get-started-skip";
 import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 
 const STEPS = [
-  { key: "imported", href: "/import" },
+  { key: "imported", href: "/settings?panel=import" },
   { key: "budget", href: "/budget" },
   { key: "bills", href: null },
   { key: "goal", href: "/goals/add" },

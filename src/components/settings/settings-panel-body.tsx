@@ -12,13 +12,11 @@ import { SharedCostCard } from "@/components/settings/shared-cost-card";
 import { ProfileForms, SecurityForms } from "@/components/settings/account-forms";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { SELF_CHROMED_PANELS, isHeavyPanel, type SettingsPanelKey } from "@/components/settings/settings-sections";
-import { ImportCsvCard } from "@/components/import-csv-card";
 import { ThemeList } from "@/components/theme-toggle";
 import { LanguageList } from "@/components/language-switcher";
 import { CurrencyList } from "@/components/currency-switcher";
 import { PrivacyToggle } from "@/components/privacy-toggle";
 import { AiSettingsPanel } from "@/components/settings/ai-settings-panel";
-import { BankConnectionSection } from "@/components/settings/bank-connection-section";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { IconTile } from "@/components/clear/icon-tile";
 import { ListRow } from "@/components/clear/list-row";
@@ -67,14 +65,6 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
 
     case "security":
       return <div className="px-4 pt-4 pb-6"><SecurityForms /></div>;
-
-    case "import":
-      return (
-        <div className="flex flex-col gap-6 px-4 pt-4">
-          <BankConnectionSection className="" />
-          <ImportCsvCard />
-        </div>
-      );
 
     case "appearance":
       return (

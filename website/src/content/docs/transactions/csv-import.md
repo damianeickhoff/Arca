@@ -24,7 +24,7 @@ In your bank's website or app, look for "Download transactions", "Export" or "Af
 
 ## Import a file
 
-1. Open **Import** in the sidebar (on a phone: Settings → Import), or choose **Import CSV** from search.
+1. Open Settings → **Import**. The **Import** item in the sidebar and **Import CSV** in search take you there too. The **CSV file** tab is open.
 2. **Upload**: drop the file on the card or choose **Choose file**. Nothing is imported yet.
 3. **Check**: see what Arca found before anything changes (below).
 4. Choose **Import**. The **Done** step shows how many were imported, how many were categorised, and how many duplicates were skipped.

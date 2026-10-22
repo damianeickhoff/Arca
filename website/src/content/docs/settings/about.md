@@ -11,15 +11,14 @@ The top of the panel shows the version you are running, the licence (Arca is fre
 
 ## What leaves your server
 
-Arca is built to keep your data at home, so the About panel lists every connection it can make. Each one is off until you turn it on:
+Arca is built to keep your data at home, so the About panel lists every connection it can make, each with its state right now: **On**, **Off** or **On tap**. A tile is only highlighted when that connection is actually on.
 
 | Connection | When | What goes out |
 | --- | --- | --- |
 | Bank connection | Only after you [connect a bank](/Arca/transactions/bank-connection/) | The consent you give at your bank; Arca fetches your accounts and transactions |
 | AI (Gemini) | Only with [your own key](/Arca/settings/ai/), per feature | Cleaned descriptions, amounts, dates and your category names; never account numbers |
 | Receipt scanning | Only when the server is configured with an Ollama host of your own | Receipt photos |
-| Map lookup | Only when you open the map on a transaction | Your browser asks OpenStreetMap for the place by name |
-| Look up a merchant | Only when you tap the search button on a transaction | Opens Google in a new tab |
+| Map and merchant lookup | Only when you press the button on a transaction | Your browser asks OpenStreetMap for the place by name, or opens Google in a new tab |
 
 Nothing else: no telemetry, no analytics, no crash reports and no update checks. The release notes on this panel ship inside the image, so opening About makes no request anywhere.
 

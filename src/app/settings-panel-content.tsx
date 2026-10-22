@@ -25,7 +25,11 @@ import { listActivity } from "@/lib/activity-log";
 import { listBackups } from "@/lib/backups";
 import { loadChangelog } from "@/lib/changelog";
 import { APP_VERSION } from "@/lib/app-version";
-import { AboutPanel } from "@/components/settings/about-panel";
+import { AboutPanel, type AboutStatus } from "@/components/settings/about-panel";
+import { listBankConnections, getBankSyncStatus } from "@/lib/bank-sync";
+import { loadImportOverview } from "@/lib/import-overview";
+import { ImportPanel } from "@/components/settings/import-panel";
+import { isAiReady } from "@/lib/gemini";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
 // Server-rendered content for the data-heavy settings panels. Two hosts:
@@ -109,9 +113,24 @@ async function DataHealthPanel({ canManageBackups }: { canManageBackups: boolean
   );
 }
 
-/** Version, what leaves the server, and the release notes from CHANGELOG.md. */
-function AboutPanelContent() {
-  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} />;
+/** Import: the CSV flow and the bank connection as two tabs, with profiles, recent
+ *  imports and the sync log beside them. `now` keeps the "last synced" text the same on
+ *  the server and in the browser. */
+async function ImportPanelContent() {
+  const [overview, bankSync] = await Promise.all([loadImportOverview(), getBankSyncStatus()]);
+  return <ImportPanel overview={overview} bankSync={bankSync} bankSyncNow={new Date().toISOString()} />;
+}
+
+/** Version, what leaves the server (with its live state), and the release notes. */
+async function AboutPanelContent() {
+  const [connections, aiOn] = await Promise.all([listBankConnections(), isAiReady()]);
+  const status: AboutStatus = {
+    bankConnections: connections.filter((c) => !c.expired).length,
+    aiOn,
+    ocrConfigured: !!process.env.OLLAMA_HOST,
+    newestBackup: listBackups()[0]?.createdAt ?? null,
+  };
+  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} />;
 }
 
 async function ImportProfilesPanel() {
@@ -140,6 +159,8 @@ export function getSettingsPanel(key: HeavyPanelKey, currentUser: { id: number; 
       return <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel canManageBackups={currentUser.isAdmin} /></Suspense>;
     case "about":
       return <Suspense key="about" fallback={<PanelSkeleton />}><AboutPanelContent /></Suspense>;
+    case "import":
+      return <Suspense key="import" fallback={<PanelSkeleton />}><ImportPanelContent /></Suspense>;
     case "importProfiles":
       return <Suspense key="importProfiles" fallback={<PanelSkeleton />}><ImportProfilesPanel /></Suspense>;
     case "users":

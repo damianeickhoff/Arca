@@ -72,7 +72,7 @@ export function AppShell({
           {children}
           {!chromeless && (
             <>
-              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} user={user!} needsReviewCount={needsReviewCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
+              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} user={user!} needsReviewCount={needsReviewCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
               {!navHidden && <PhoneTabBar pathname={pathname} />}
               {/* The navigation changed; it announces itself once, even to someone who
                   turned tips off (see IGNORES_DISABLED). */}
@@ -104,6 +104,7 @@ const NEXT_THEME: Record<ThemeMode, ThemeMode> = { light: "dark", dark: "system"
 function DesktopSidebar({
   pathname,
   insightsTab,
+  settingsPanel,
   user,
   needsReviewCount,
   bankSync,
@@ -112,6 +113,8 @@ function DesktopSidebar({
   pathname: string;
   /** The open Insights tab (?tab=), for its sub-menu. */
   insightsTab: string;
+  /** The open settings panel (?panel=), so the Import shortcut can show as active. */
+  settingsPanel: string | null;
   user: ShellUser;
   needsReviewCount: number;
   bankSync: BankSyncStatus | null;
@@ -122,7 +125,7 @@ function DesktopSidebar({
   const active = activeNavKey(pathname);
   const activePlan = activePlanKey(pathname);
   const { mode, setMode } = useTheme();
-  const importActive = pathname.startsWith("/import");
+  const importActive = pathname === "/settings" && settingsPanel === "import";
   const sync = useBankSyncText(bankSync, bankSyncNow);
 
   // Rows grow with the window: 40px below 800px of height, 44px from 800px, 48px from 900px.
@@ -218,10 +221,11 @@ function DesktopSidebar({
 
       <div className="mt-auto flex flex-col gap-1">
         <span aria-hidden className="mb-1 h-px bg-clear-line [@media(min-height:900px)]:mb-3" />
-        {/* Import: bank sync and CSV. Once a bank is connected a second line says when it
-            last synced (or that its consent ran out); the whole row still opens the page. */}
+        {/* Import: a shortcut to Settings › Import (CSV file and bank connection). Once a
+            bank is connected a second line says when it last synced (or that its consent
+            ran out); the whole row still opens the panel. */}
         <Link
-          href="/import"
+          href="/settings?panel=import"
           aria-current={importActive ? "page" : undefined}
           className={cn(
             row,

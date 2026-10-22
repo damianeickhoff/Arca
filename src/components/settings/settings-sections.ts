@@ -111,7 +111,7 @@ export function settingsSections({ isAdmin, withAccount }: { isAdmin: boolean; w
 
 /** Panels whose content is server-rendered (settings-panel-content.tsx) and passed in
  *  as nodes; the rest are client-only and built by SettingsPanelBody. */
-export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles", "about"] as const;
+export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles", "about", "import"] as const;
 export type HeavyPanelKey = (typeof HEAVY_PANELS)[number];
 
 export function isHeavyPanel(key: SettingsPanelKey): key is HeavyPanelKey {

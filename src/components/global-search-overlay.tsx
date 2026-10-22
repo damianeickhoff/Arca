@@ -50,7 +50,7 @@ interface Props {
 /** Shortcuts shown with the results — and on their own before anything is typed. */
 const ACTIONS = [
   { key: "addTransaction", href: "/transactions/add", Glyph: IconPlus, hint: false },
-  { key: "importCsv", href: "/import", Glyph: IconFileUpload, hint: false },
+  { key: "importCsv", href: "/settings?panel=import", Glyph: IconFileUpload, hint: false },
   { key: "budget", href: "/budget", Glyph: IconCompass, hint: true },
   { key: "insights", href: "/reports", Glyph: IconChartBar, hint: true },
 ] as const;

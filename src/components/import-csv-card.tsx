@@ -29,7 +29,6 @@ import { TONE_FILL, type ClearTone } from "@/components/clear/tones";
 import type { Bank } from "@/db/schema";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { SettingsSection } from "@/components/settings/settings-ui";
 
 // The CSV import flow — Upload → Check → Done. Picking a file only reads it
 // (/api/import/preview): the Check step shows how it was recognised, its first rows
@@ -151,33 +150,6 @@ export function useCsvImport() {
 }
 
 export type CsvImporter = ReturnType<typeof useCsvImport>;
-
-/** Settings › Import: the CSV flow on its own, inside the settings panel. */
-export function ImportCsvCard() {
-  const importer = useCsvImport();
-  const t = useTranslations("importPage.unrecognised");
-  const tCsv = useTranslations("importPage.csv");
-  return (
-    <SettingsSection title={tCsv("title")} subtitle={tCsv("subtitle")} className="pb-6">
-      <ImportFlow importer={importer} variant="panel" />
-      {importer.step === "upload" && (
-        <div className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
-          <span className="text-[15px] font-bold">{t("title")}</span>
-          <p className="m-0 text-sm leading-normal text-clear-ink-2">{t("body")}</p>
-          <button
-            type="button"
-            data-tip-anchor="importMapColumns"
-            onClick={() => importer.choose({ map: true })}
-            className={cn(clearButtonVariants({ variant: "surface" }), "self-start")}
-          >
-            {t("action")}
-          </button>
-          <AnchoredTip id="importMapColumns" anchor="importMapColumns" />
-        </div>
-      )}
-    </SettingsSection>
-  );
-}
 
 /**
  * The drop zone and whatever the current step shows under it. `page` puts the steps on

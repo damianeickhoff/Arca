@@ -1255,7 +1255,7 @@
     },
     "importMapColumns": {
       "title": "Bank verkeerd of niet herkend?",
-      "body": "Met Kolommen koppelen kies je zelf de kolommen voor datum, omschrijving en bedrag. Centje bewaart het als profiel voor de volgende keer."
+      "body": "Met Kolommen koppelen kies je zelf de kolommen voor datum, omschrijving en bedrag. Arca bewaart het als profiel voor de volgende keer."
     },
     "importHeaderRow": {
       "title": "Rekeninggegevens boven je kolommen?",
@@ -1565,10 +1565,6 @@
       "title": "Een bulkwijziging terugdraaien",
       "body": "Elke import, regelronde, bulkverplaatsing en verwijdering staat hier. Ongedaan maken zet het terug, zolang niets daarna dezelfde rijen heeft gewijzigd."
     },
-    "importBankFirst": {
-      "title": "Je bank staat voorop",
-      "body": "Importeren begint nu met je bankkoppeling en laat zien wanneer die voor het laatst synchroniseerde. Een CSV-bestand kan nog steeds: upload het hieronder."
-    },
     "helpGuide": {
       "title": "Hulp is één tik verwijderd",
       "body": "De Arca-handleiding legt elke pagina stap voor stap uit. Open Help om hem te vinden, of om een probleem of idee te melden."
@@ -1600,6 +1596,10 @@
     "backups": {
       "title": "Je eigen back-ups",
       "body": "Arca kopieert de database al voor elke update. Nu een back-up maken maakt er direct een, en met de downloadknop bewaar je een kopie ergens anders."
+    },
+    "importTabs": {
+      "title": "Importeren zit nu hier",
+      "body": "CSV-bestand en Bankkoppeling zijn twee tabbladen op één plek. De stip bij Bankkoppeling betekent dat een toestemming is verlopen."
     }
   },
   "categoryPicker": {
@@ -1939,9 +1939,9 @@
       },
       "newTitle": "{count, plural, =0 {Niets nieuws in dit bestand} one {# nieuwe transactie} other {# nieuwe transacties}}",
       "newBody": "Je regels zetten de categorieën zodra ze binnenkomen",
-      "newBodyNone": "Alles in dit bestand staat al in Centje",
+      "newBodyNone": "Alles in dit bestand staat al in Arca",
       "duplicatesTitle": "{count, plural, one {# dubbele wordt} other {# dubbele worden}} overgeslagen",
-      "duplicatesBody": "Staan al in Centje — herkend op datum, bedrag en omschrijving",
+      "duplicatesBody": "Staan al in Arca — herkend op datum, bedrag en omschrijving",
       "invalidTitle": "{count, plural, one {# rij heeft} other {# rijen hebben}} een onleesbare datum",
       "invalidBody": "Deze rijen worden overgeslagen. Is dat het grootste deel van het bestand, gebruik dan Kolommen koppelen.",
       "cancel": "Annuleren",
@@ -1981,7 +1981,7 @@
     },
     "unrecognised": {
       "title": "Bank niet herkend?",
-      "body": "Vertel Centje welke kolom de datum, omschrijving en het bedrag bevat. We bewaren het als profiel, zodat het bestand de volgende keer meteen wordt herkend.",
+      "body": "Vertel Arca welke kolom de datum, omschrijving en het bedrag bevat. We bewaren het als profiel, zodat het bestand de volgende keer meteen wordt herkend.",
       "action": "Kolommen koppelen"
     },
     "recent": {
@@ -1989,6 +1989,17 @@
       "rows": "{count, plural, one {# rij} other {# rijen}}",
       "unknownAccount": "Geen rekeningnummer",
       "empty": "Nog niets geïmporteerd. Je imports verschijnen hier."
+    },
+    "tabs": {
+      "label": "Hoe importeren",
+      "csv": "CSV-bestand",
+      "bank": "Bankkoppeling"
+    },
+    "syncLog": {
+      "title": "Synclogboek",
+      "empty": "Nog geen syncs. Koppel een bank en de eerste sync verschijnt hier.",
+      "entry": "{imported, plural, =0 {niets nieuws} one {# nieuw} other {# nieuw}} · {skipped, plural, =0 {} one {# was er al} other {# waren er al}}",
+      "allBanks": "Alle banken"
     }
   },
   "importMapping": {
@@ -2535,7 +2546,7 @@
   },
   "newAccounts": {
     "title": "{count, plural, one {Nieuwe rekening gevonden} other {Nieuwe rekeningen gevonden}}",
-    "subtitle": "{count, plural, one {Deze import bevat een rekening die Centje nog niet kende.} other {Deze import bevat # rekeningen die Centje nog niet kende.}}",
+    "subtitle": "{count, plural, one {Deze import bevat een rekening die Arca nog niet kende.} other {Deze import bevat # rekeningen die Arca nog niet kende.}}",
     "close": "Sluiten",
     "foundHere": "Gevonden in deze import",
     "new": "Nieuw",
@@ -3505,7 +3516,7 @@
         "criticalTitle": "Je komt tekort op {date}",
         "criticalBody": "De prognose zakt tot <b>{amount}</b> op {date}. Verschuif een betaling of plan extra inkomen voor die tijd.",
         "emptyTitle": "Nog niets om te voorspellen",
-        "emptyBody": "Stel een beginsaldo in voor een rekening of voeg je rekeningen en inkomen toe, dan laat Centje zien waar je geld naartoe gaat.",
+        "emptyBody": "Stel een beginsaldo in voor een rekening of voeg je rekeningen en inkomen toe, dan laat Arca zien waar je geld naartoe gaat.",
         "emptyAction": "Vaste post toevoegen",
         "cumulative": "Er is geen rekeningsaldo ingesteld, dus deze cijfers tellen de kasstroom vanaf vandaag op.",
         "pastLimitTitle": "Je gaat over je roodlimiet op {date}",
@@ -3579,7 +3590,7 @@
       },
       "items": {
         "title": "Vaste posten",
-        "subtitle": "Wat Centje elke maand verwacht · de prognose en je budget gebruiken ze allebei",
+        "subtitle": "Wat Arca elke maand verwacht · de prognose en je budget gebruiken ze allebei",
         "add": "Vaste post toevoegen",
         "empty": "Nog geen vaste posten. Voeg je inkomen en rekeningen toe, dan vullen de prognose en het plan zich.",
         "types": {
@@ -3682,7 +3693,7 @@
         "invalidKey": "Google accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
         "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
         "unavailable": "Gemini is niet bereikbaar. Probeer het later opnieuw.",
-        "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw.",
+        "badResponse": "Gemini gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
         "dailyLimit": "De gratis daglimiet is op. Morgen kan het weer.",
         "noFreeTier": "Het gekozen model valt niet onder de gratis versie. Kies een ander bij Instellingen › AI.",
         "modelUnavailable": "Het gekozen model is niet beschikbaar. Kies een ander bij Instellingen › AI."
@@ -4867,7 +4878,7 @@
         "invalidKey": "Google accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
         "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
         "unavailable": "Gemini is niet bereikbaar. Probeer het later opnieuw.",
-        "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw.",
+        "badResponse": "Gemini gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
         "dailyLimit": "De gratis daglimiet is op. Morgen kan het weer.",
         "noFreeTier": "Het gekozen model valt niet onder de gratis versie. Kies een ander bij Instellingen › AI.",
         "modelUnavailable": "Het gekozen model is niet beschikbaar. Kies een ander bij Instellingen › AI."
@@ -4906,7 +4917,7 @@
     "modelAuto": "Automatisch (een Flash-model)",
     "modelHint": "Flash-modellen hebben de ruimste gratis limiet.",
     "modelsLoading": "Modellen voor je sleutel laden…",
-    "privacy": "Bij de gratis versie mag Google wat je verstuurt gebruiken om zijn producten te verbeteren. Centje stuurt alleen wat een functie nodig heeft: namen van winkels, bedragen, datums en je categorienamen. Rekeningnummers verlaten de app nooit.",
+    "privacy": "Bij de gratis versie mag Google wat je verstuurt gebruiken om zijn producten te verbeteren. Arca stuurt alleen wat een functie nodig heeft: namen van winkels, bedragen, datums en je categorienamen. Rekeningnummers verlaten de app nooit.",
     "test": "Verbinding testen",
     "testing": "Testen…",
     "testOk": "Verbonden. Gemini gaf antwoord.",
@@ -4920,7 +4931,7 @@
       "invalidKey": "Google accepteerde deze sleutel of dit model niet. Controleer de sleutel in Google AI Studio.",
       "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
       "unavailable": "Gemini is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
-      "badResponse": "Gemini gaf een antwoord dat Centje niet kon lezen. Probeer het opnieuw.",
+      "badResponse": "Gemini gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
       "dailyLimit": "De gratis daglimiet voor dit model is op. Morgen kan het weer, of kies een ander model.",
       "noFreeTier": "Dit model valt voor jouw sleutel niet onder de gratis versie. Kies Automatisch of een ander Flash-model.",
       "modelUnavailable": "Dit model is niet beschikbaar voor jouw sleutel. Kies Automatisch of een ander model."
@@ -4958,7 +4969,7 @@
     "syncNow": "Nu synchroniseren",
     "syncing": "Synchroniseren…",
     "syncResult": "{imported, plural, =0 {Geen nieuwe transacties} one {# nieuwe transactie} other {# nieuwe transacties}}, {already} stonden er al.",
-    "dailyNote": "Centje synchroniseert ook elke dag vanzelf zolang het draait.",
+    "dailyNote": "Arca synchroniseert ook elke dag vanzelf zolang het draait.",
     "validUntil": "Geldig tot {date}",
     "consentExpired": "Toestemming verlopen",
     "expiredPrompt": "Je toestemming bij de bank is verlopen. Koppel opnieuw om hem te vernieuwen; wat al geïmporteerd is blijft staan.",
@@ -4967,7 +4978,7 @@
     "linkAccounts": "Rekeningen koppelen",
     "disconnect": "Ontkoppelen",
     "disconnectTitle": "{bank} ontkoppelen?",
-    "disconnectBody": "Centje synchroniseert deze bank niet meer en trekt de toestemming in. Al geïmporteerde transacties blijven staan.",
+    "disconnectBody": "Arca synchroniseert deze bank niet meer en trekt de toestemming in. Al geïmporteerde transacties blijven staan.",
     "disconnectConfirm": "Ontkoppelen",
     "accountFallback": "Rekening",
     "linkedTo": "Naar {bank}",
@@ -4983,13 +4994,13 @@
     "noBanks": "Geen bank met die naam.",
     "beta": "Bèta",
     "redirecting": "Je bank wordt geopend…",
-    "connectNote": "Centje kan je rekeningen alleen lezen: saldo's en transacties. De toestemming geldt maximaal 180 dagen.",
+    "connectNote": "Arca kan je rekeningen alleen lezen: saldo's en transacties. De toestemming geldt maximaal 180 dagen.",
     "mapTitle": "Rekeningen koppelen",
-    "mapSubtitle": "Bij welke rekening in Centje hoort elke rekening van {bank}?",
+    "mapSubtitle": "Bij welke rekening in Arca hoort elke rekening van {bank}?",
     "mapNew": "Nieuwe rekening hiervan maken",
     "mapSkip": "Niet synchroniseren",
     "mapNoAccounts": "De bank heeft geen rekeningen gedeeld. Koppel opnieuw en kies de rekeningen bij de bank.",
-    "mapHint": "Rekeningen waarvan Centje de IBAN al kent, zijn al voor je gekoppeld.",
+    "mapHint": "Rekeningen waarvan Arca de IBAN al kent, zijn al voor je gekoppeld.",
     "mapSaveOnly": "Opslaan",
     "mapSaveSync": "Opslaan en synchroniseren",
     "errors": {
@@ -5056,42 +5067,41 @@
       "source": "Broncode",
       "issues": "Een probleem melden"
     },
+    "status": {
+      "on": "Aan",
+      "off": "Uit",
+      "onTap": "Bij tikken"
+    },
     "network": {
       "title": "Wat je server verlaat",
-      "intro": "Alles wat je invoert blijft in de datamap op je eigen server. Dit zijn de enige verbindingen die Arca maakt, en elke staat uit tot jij hem aanzet.",
+      "intro": "Elke verbinding staat uit tot jij hem aanzet. Verder verlaat niets ooit je datamap.",
       "items": {
         "bank": {
           "title": "Bankkoppeling",
-          "body": "Alleen als je een bank koppelt. Arca praat met Enable Banking om je rekeningen en transacties op te halen. Er gaat niets van jou naartoe, behalve de toestemming die je bij je bank geeft."
+          "body": "Enable Banking. Alleen je toestemming gaat eruit; rekeningen en transacties komen binnen."
         },
         "ai": {
           "title": "AI (Gemini)",
-          "body": "Alleen met je eigen Google-sleutel, en per functie. Opgeschoonde omschrijvingen, bedragen, datums en je categorienamen gaan eruit; rekeningnummers nooit. Je bevestigt elke suggestie voor die wordt opgeslagen."
+          "body": "Je eigen sleutel, per functie. Opgeschoonde omschrijvingen, bedragen, datums en categorienamen. Nooit rekeningnummers."
         },
         "ocr": {
           "title": "Bonnen scannen",
-          "body": "Alleen als de server is ingesteld met een eigen Ollama-host. Bonfoto's gaan daarheen, nergens anders."
+          "body": "Bonfoto's gaan naar een eigen Ollama-host, als de server er een heeft."
         },
         "map": {
-          "title": "Kaart opzoeken",
-          "body": "Alleen als je de kaart bij een transactie opent. Je browser vraagt OpenStreetMap naar de plek op naam."
-        },
-        "search": {
-          "title": "Een winkel opzoeken",
-          "body": "De zoekknop bij een transactie opent Google in een nieuw tabblad. Er gebeurt niets tot je erop tikt."
+          "title": "Kaart en winkel opzoeken",
+          "body": "Je browser vraagt OpenStreetMap naar een plek, of opent Google, alleen als jij op de knop drukt."
         }
       },
-      "nothingElseTitle": "Verder niets",
-      "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten en geen updatecontrole. De release-notes hieronder zitten in de image, dus deze pagina doet nergens een verzoek."
+      "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten, geen updatecontrole. Deze pagina deed geen enkel verzoek om dit te tonen."
     },
     "backups": {
-      "title": "Back-ups",
       "open": "Back-ups staan bij Datacontrole",
-      "body": "Arca maakt voor elke update een kopie van de database. Maak er zelf een wanneer je wilt en download hem."
+      "body": "Een kopie voor elke update, plus de kopieën die je zelf maakt.",
+      "bodyNewest": "Een kopie voor elke update, plus de kopieën die je zelf maakt. Nieuwste {when}."
     },
     "changelog": {
       "title": "Wat er veranderde",
-      "intro": "Elke release, nieuwste eerst.",
       "onGitHub": "Op GitHub",
       "current": "Deze versie",
       "none": "Bij deze build zijn geen release-notes meegeleverd."

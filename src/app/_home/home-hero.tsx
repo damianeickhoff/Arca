@@ -48,7 +48,7 @@ export async function HomeHero({
             <IconWallet aria-hidden />
             {t("setBudget")}
           </Link>
-          <Link href="/import" className={cn(clearButtonVariants({ variant: "outline", size: "lg" }), "flex-1")}>
+          <Link href="/settings?panel=import" className={cn(clearButtonVariants({ variant: "outline", size: "lg" }), "flex-1")}>
             <IconFileUpload aria-hidden />
             {t("importCsv")}
           </Link>

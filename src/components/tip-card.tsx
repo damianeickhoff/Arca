@@ -176,7 +176,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   ruleTeach: IconWand,
   bankConnection: IconBuildingBank,
   quickAdd: IconCirclePlus,
-  importBankFirst: IconBuildingBank,
+  importTabs: IconArrowsExchange,
   helpGuide: IconBook2,
   userInvites: IconUserPlus,
   recurringSuggestions: IconSparkles,

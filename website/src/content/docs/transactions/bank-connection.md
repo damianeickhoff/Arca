@@ -70,7 +70,7 @@ Your new app starts as **Inactive**. To switch it on:
 
 ## Step 4: connect Arca
 
-1. In Arca, open **Import** in the sidebar (on a phone: Settings → Import). The **Bank connection** card is at the top.
+1. In Arca, open Settings → **Import** (the **Import** item in the sidebar takes you there) and choose the **Bank connection** tab.
 2. Paste your **Application ID**.
 3. Open the `.pem` file in a text editor (Notepad, TextEdit) and copy **everything**, including the `BEGIN` and `END` lines. Paste it into **Private key**.
 4. Choose **Test**. When it says "It works", choose **Save**.
@@ -89,7 +89,7 @@ Banks usually share about the last 90 days on the first sync. [Import a CSV](/Ar
 
 While Arca is running, it syncs every connected bank **once a day** by itself. Each sync also looks back a week, to pick up payments your bank booked late. You can always choose **Sync now** for one bank or **Sync all**.
 
-The sidebar shows when your banks last synced, under **Import**.
+The sidebar shows when your banks last synced, under **Import**. A dot on the **Bank connection** tab means a consent ran out, and the **Sync log** under the banks lists every sync with what it brought in.
 
 Banks only allow a few syncs a day without you present. If you see "The bank allows only a few syncs a day", just try again later.
 

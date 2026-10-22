@@ -93,7 +93,7 @@ export function ImportProfilesClient({ profiles }: { profiles: ImportProfileList
           <SettingsEmpty
             icon={<IconTableOptions stroke={1.9} />}
             action={
-              <Link href="/import" className={clearButtonVariants({ size: "sm" })}>
+              <Link href="/settings?panel=import" className={clearButtonVariants({ size: "sm" })}>
                 <IconFileUpload aria-hidden stroke={2} />
                 {t("importFile")}
               </Link>
@@ -161,7 +161,7 @@ export function ImportProfilesClient({ profiles }: { profiles: ImportProfileList
 
         {profiles.length > 0 && (
         <Link
-          href="/import"
+          href="/settings?panel=import"
           className="flex items-center gap-3.5 rounded-clear-tile border-2 border-dashed border-clear-line px-4 py-3.5 text-clear-ink no-underline transition-colors hover:bg-clear-tile"
         >
           <IconTile size="md"><IconFileUpload stroke={1.9} /></IconTile>

@@ -1255,7 +1255,7 @@
     },
     "importMapColumns": {
       "title": "Bank read wrong, or not at all?",
-      "body": "Map columns lets you pick the date, description and amount columns yourself. Centje saves it as a profile for next time."
+      "body": "Map columns lets you pick the date, description and amount columns yourself. Arca saves it as a profile for next time."
     },
     "importHeaderRow": {
       "title": "Account details above your columns?",
@@ -1565,10 +1565,6 @@
       "title": "Undo a bulk change",
       "body": "Every import, rule run, bulk move and delete is listed here. Undo puts it back, as long as nothing later changed the same rows."
     },
-    "importBankFirst": {
-      "title": "Your bank comes first",
-      "body": "Import now starts with your bank connection and shows when it last synced. A CSV file still works: upload it below."
-    },
     "helpGuide": {
       "title": "Help is one tap away",
       "body": "The Arca guide explains every page step by step. Open Help any time to find it, or to report a problem or idea."
@@ -1600,6 +1596,10 @@
     "backups": {
       "title": "Your own backups",
       "body": "Arca already copies the database before every update. Back up now makes one on the spot, and the download button keeps a copy somewhere else."
+    },
+    "importTabs": {
+      "title": "Import lives here now",
+      "body": "CSV file and Bank connection are two tabs in one place. The dot on Bank connection means a consent ran out."
     }
   },
   "categoryPicker": {
@@ -1939,9 +1939,9 @@
       },
       "newTitle": "{count, plural, =0 {Nothing new in this file} one {# new transaction} other {# new transactions}}",
       "newBody": "Your rules will set categories as they come in",
-      "newBodyNone": "Everything in this file is already in Centje",
+      "newBodyNone": "Everything in this file is already in Arca",
       "duplicatesTitle": "{count, plural, one {# duplicate} other {# duplicates}} will be skipped",
-      "duplicatesBody": "Already in Centje — matched on date, amount and description",
+      "duplicatesBody": "Already in Arca — matched on date, amount and description",
       "invalidTitle": "{count, plural, one {# row has} other {# rows have}} an unreadable date",
       "invalidBody": "These rows are skipped. If that is most of the file, use Map columns instead.",
       "cancel": "Cancel",
@@ -1981,7 +1981,7 @@
     },
     "unrecognised": {
       "title": "Bank not recognised?",
-      "body": "Tell Centje which column holds the date, description and amount. We save it as a profile, so next time the file is recognised straight away.",
+      "body": "Tell Arca which column holds the date, description and amount. We save it as a profile, so next time the file is recognised straight away.",
       "action": "Map columns"
     },
     "recent": {
@@ -1989,6 +1989,17 @@
       "rows": "{count, plural, one {# row} other {# rows}}",
       "unknownAccount": "No account number",
       "empty": "Nothing imported yet. Your imports show up here."
+    },
+    "tabs": {
+      "label": "How to import",
+      "csv": "CSV file",
+      "bank": "Bank connection"
+    },
+    "syncLog": {
+      "title": "Sync log",
+      "empty": "No syncs yet. Connect a bank and the first sync shows up here.",
+      "entry": "{imported, plural, =0 {nothing new} one {# new} other {# new}} · {skipped, plural, =0 {} one {# already there} other {# already there}}",
+      "allBanks": "All banks"
     }
   },
   "importMapping": {
@@ -2535,7 +2546,7 @@
   },
   "newAccounts": {
     "title": "{count, plural, one {New account found} other {New accounts found}}",
-    "subtitle": "{count, plural, one {This import introduced an account Centje hasn't seen before.} other {This import introduced # accounts Centje hasn't seen before.}}",
+    "subtitle": "{count, plural, one {This import introduced an account Arca hasn't seen before.} other {This import introduced # accounts Arca hasn't seen before.}}",
     "close": "Close",
     "foundHere": "Found in this import",
     "new": "New",
@@ -3505,7 +3516,7 @@
         "criticalTitle": "You run short on {date}",
         "criticalBody": "The forecast drops to <b>{amount}</b> on {date}. Move a payment or plan extra income before then.",
         "emptyTitle": "Nothing to forecast yet",
-        "emptyBody": "Set a starting balance on an account or add your bills and income, and Centje projects where your money goes.",
+        "emptyBody": "Set a starting balance on an account or add your bills and income, and Arca projects where your money goes.",
         "emptyAction": "Add recurring item",
         "cumulative": "No account balance is set, so these figures add up cash flow from today.",
         "pastLimitTitle": "You go past your overdraft on {date}",
@@ -3579,7 +3590,7 @@
       },
       "items": {
         "title": "Recurring items",
-        "subtitle": "What Centje expects each month · the forecast and your budget both use these",
+        "subtitle": "What Arca expects each month · the forecast and your budget both use these",
         "add": "Add recurring item",
         "empty": "No recurring items yet. Add your income and bills, and the forecast and plan fill in.",
         "types": {
@@ -3682,7 +3693,7 @@
         "invalidKey": "Google didn't accept the API key. Check it in Settings › AI.",
         "rateLimited": "Too many requests in a short time. Try again in a minute.",
         "unavailable": "Couldn't reach Gemini. Try again later.",
-        "badResponse": "Gemini answered in a way Centje couldn't read. Try again.",
+        "badResponse": "Gemini answered in a way Arca couldn't read. Try again.",
         "dailyLimit": "Today's free-tier limit is used up. It resets tomorrow.",
         "noFreeTier": "The chosen model isn't on the free tier. Pick another one in Settings › AI.",
         "modelUnavailable": "The chosen model isn't available. Pick another one in Settings › AI."
@@ -4867,7 +4878,7 @@
         "invalidKey": "Google didn't accept the API key. Check it in Settings › AI.",
         "rateLimited": "Too many requests in a short time. Try again in a minute.",
         "unavailable": "Couldn't reach Gemini. Try again later.",
-        "badResponse": "Gemini answered in a way Centje couldn't read. Try again.",
+        "badResponse": "Gemini answered in a way Arca couldn't read. Try again.",
         "dailyLimit": "Today's free-tier limit is used up. It resets tomorrow.",
         "noFreeTier": "The chosen model isn't on the free tier. Pick another one in Settings › AI.",
         "modelUnavailable": "The chosen model isn't available. Pick another one in Settings › AI."
@@ -4906,7 +4917,7 @@
     "modelAuto": "Automatic (a Flash model)",
     "modelHint": "Flash models have the most generous free tier.",
     "modelsLoading": "Loading the models your key can use…",
-    "privacy": "On the free tier Google may use what's sent to improve its products. Centje only sends what a feature needs: merchant names, amounts, dates and your category names. Account numbers never leave the app.",
+    "privacy": "On the free tier Google may use what's sent to improve its products. Arca only sends what a feature needs: merchant names, amounts, dates and your category names. Account numbers never leave the app.",
     "test": "Test connection",
     "testing": "Testing…",
     "testOk": "Connected. Gemini answered.",
@@ -4920,7 +4931,7 @@
       "invalidKey": "Google didn't accept this key or model. Check the key in Google AI Studio.",
       "rateLimited": "Too many requests in a short time. Try again in a minute.",
       "unavailable": "Couldn't reach Gemini. Check your connection and try again.",
-      "badResponse": "Gemini answered in a way Centje couldn't read. Try again.",
+      "badResponse": "Gemini answered in a way Arca couldn't read. Try again.",
       "dailyLimit": "Today's free-tier limit for this model is used up. It resets tomorrow, or pick another model.",
       "noFreeTier": "This model isn't on the free tier for your key. Choose Automatic or another Flash model.",
       "modelUnavailable": "This model isn't available for your key. Choose Automatic or another model."
@@ -4958,7 +4969,7 @@
     "syncNow": "Sync now",
     "syncing": "Syncing…",
     "syncResult": "{imported, plural, =0 {No new transactions} one {# new transaction} other {# new transactions}}, {already} already there.",
-    "dailyNote": "Centje also syncs every day by itself while it is running.",
+    "dailyNote": "Arca also syncs every day by itself while it is running.",
     "validUntil": "Valid until {date}",
     "consentExpired": "Consent expired",
     "expiredPrompt": "Your consent at the bank has run out. Reconnect to renew it; nothing already imported is lost.",
@@ -4967,7 +4978,7 @@
     "linkAccounts": "Link accounts",
     "disconnect": "Disconnect",
     "disconnectTitle": "Disconnect {bank}?",
-    "disconnectBody": "Centje stops syncing this bank and closes the consent. Transactions already imported stay.",
+    "disconnectBody": "Arca stops syncing this bank and closes the consent. Transactions already imported stay.",
     "disconnectConfirm": "Disconnect",
     "accountFallback": "Account",
     "linkedTo": "Into {bank}",
@@ -4983,13 +4994,13 @@
     "noBanks": "No bank matches that name.",
     "beta": "Beta",
     "redirecting": "Opening your bank…",
-    "connectNote": "Centje can only read your accounts: balances and transactions. The consent lasts up to 180 days.",
+    "connectNote": "Arca can only read your accounts: balances and transactions. The consent lasts up to 180 days.",
     "mapTitle": "Link accounts",
-    "mapSubtitle": "Which account in Centje does each {bank} account belong to?",
+    "mapSubtitle": "Which account in Arca does each {bank} account belong to?",
     "mapNew": "New account from this one",
     "mapSkip": "Don't sync",
     "mapNoAccounts": "The bank didn't share any accounts. Reconnect and select the accounts at the bank.",
-    "mapHint": "Accounts whose IBAN Centje already knows are linked for you.",
+    "mapHint": "Accounts whose IBAN Arca already knows are linked for you.",
     "mapSaveOnly": "Save",
     "mapSaveSync": "Save and sync",
     "errors": {
@@ -5056,42 +5067,41 @@
       "source": "Source code",
       "issues": "Report a problem"
     },
+    "status": {
+      "on": "On",
+      "off": "Off",
+      "onTap": "On tap"
+    },
     "network": {
       "title": "What leaves your server",
-      "intro": "Everything you enter stays in the data folder on your own server. These are the only connections Arca makes, and each one is off until you turn it on.",
+      "intro": "Each connection is off until you turn it on. Nothing else ever leaves your data folder.",
       "items": {
         "bank": {
           "title": "Bank connection",
-          "body": "Only when you connect a bank. Arca talks to Enable Banking to fetch your accounts and transactions. Nothing of yours is sent except the consent you give at your bank."
+          "body": "Enable Banking. Only your consent goes out; accounts and transactions come in."
         },
         "ai": {
           "title": "AI (Gemini)",
-          "body": "Only with your own Google key, and per feature. Cleaned descriptions, amounts, dates and your category names go out; account numbers never. You confirm every suggestion before it is saved."
+          "body": "Your own key, per feature. Cleaned descriptions, amounts, dates and category names. Never account numbers."
         },
         "ocr": {
           "title": "Receipt scanning",
-          "body": "Only when the server is configured with an Ollama host of your own. Receipt photos go there, nowhere else."
+          "body": "Receipt photos go to an Ollama host of your own, when the server has one."
         },
         "map": {
-          "title": "Map lookup",
-          "body": "Only when you open the map on a transaction. Your browser asks OpenStreetMap for the place by its name."
-        },
-        "search": {
-          "title": "Look up a merchant",
-          "body": "The search button on a transaction opens Google in a new tab. Nothing happens until you tap it."
+          "title": "Map and merchant lookup",
+          "body": "Your browser asks OpenStreetMap for a place, or opens Google, only when you press the button."
         }
       },
-      "nothingElseTitle": "Nothing else",
-      "nothingElse": "No telemetry, no analytics, no crash reports and no update checks. The release notes below ship inside the image, so this page makes no request anywhere."
+      "nothingElse": "No telemetry, no analytics, no crash reports, no update checks. This page made no request to show you this."
     },
     "backups": {
-      "title": "Backups",
       "open": "Backups live in Data health",
-      "body": "Arca makes a copy of the database before every update. Make one yourself any time and download it."
+      "body": "A copy before every update, plus the ones you make yourself.",
+      "bodyNewest": "A copy before every update, plus the ones you make yourself. Newest {when}."
     },
     "changelog": {
       "title": "What changed",
-      "intro": "Every release, newest first.",
       "onGitHub": "On GitHub",
       "current": "This version",
       "none": "No release notes were shipped with this build."

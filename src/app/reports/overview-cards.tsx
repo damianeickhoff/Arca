@@ -673,7 +673,7 @@ export async function EmptyOverview() {
           <p className="m-0 max-w-[500px] text-[15px] leading-normal text-clear-ink-2 lg:text-base">{t("empty.body")}</p>
         </div>
         <div className="flex flex-wrap justify-center gap-2.5">
-          <Link href="/import" className={clearButtonVariants({ size: "lg" })}>
+          <Link href="/settings?panel=import" className={clearButtonVariants({ size: "lg" })}>
             <IconFileImport aria-hidden />
             {t("empty.import")}
           </Link>

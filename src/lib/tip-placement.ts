@@ -160,7 +160,7 @@ export type TipAnchor =
   // Merchant-first rules: Needs a category's Worth teaching strip
   | "reviewTeach"
   // Import: the Bank connection card at the top of the page
-  | "importBank"
+  | "importTabs"
   // The Settings page: the Help row (the online guide)
   | "settingsHelp"
   // Settings › Data health: "Look for regular payments"
