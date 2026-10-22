@@ -1465,6 +1465,14 @@
       "title": "Money flow",
       "body": "Money in and money out this month, added up day by day. The gap between the two lines today is what you've kept so far."
     },
+    "homeNetWorth": {
+      "title": "Net worth on Home",
+      "body": "What you own minus what you owe, how it moved this month and the last six months as a line. Tap a row to open your accounts, goals or debts."
+    },
+    "homeBudgetLink": {
+      "title": "Your budget moved",
+      "body": "The budget card is gone: Safe to spend already shows the budget. Tap the budget figure here to open the Budget page."
+    },
     "budgetStrategyTarget": {
       "title": "Target against actual",
       "body": "Each kind shows its target share of income (striped) above what you actually spent or saved so far. Tap Adjust to change the split."
@@ -3674,6 +3682,7 @@
       "overBudget": "You've spent more than this period's budget.",
       "sum": "{spent} spent · {bills} bills to come",
       "budget": "{amount} budget",
+      "openBudget": "Open your budget",
       "add": "Add transaction",
       "scan": "Scan receipt",
       "noBudget": "Set a budget to see what you can spend each day.",
@@ -3705,13 +3714,22 @@
       "empty": "Nothing to show yet.",
       "description": "Bar chart of money in and out per budget month (in / out): {months}"
     },
-    "budget": {
-      "title": "{month} budget",
-      "titleWeekly": "This week's budget",
-      "open": "Open Plan",
-      "spentOf": "<b>{amount}</b> spent of",
-      "left": "{amount} left",
-      "over": "{amount} over"
+    "netWorth": {
+      "title": "Net worth",
+      "open": "Insights",
+      "thisMonth": "{amount} this month",
+      "level": "Level this month",
+      "own": "Own",
+      "owe": "Owe",
+      "splitDescription": "You own {assets} and owe {debts}.",
+      "chartDescription": "Line of your net worth over the last {months} months, from {from} to {to}.",
+      "rows": {
+        "accounts": "Accounts",
+        "goals": "Savings goals",
+        "debts": "Debts"
+      },
+      "empty": "Add your accounts, savings and debts to see what you're worth.",
+      "addAccount": "Add an account"
     },
     "comingUp": {
       "title": "Coming up",

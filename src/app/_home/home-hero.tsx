@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { IconCheck, IconAlertTriangle, IconPlus, IconScan, IconFileUpload, IconWallet } from "@tabler/icons-react";
+import { IconCheck, IconAlertTriangle, IconChevronRight, IconPlus, IconScan, IconFileUpload, IconWallet } from "@tabler/icons-react";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard } from "@/components/clear/card";
 import { ClearChip } from "@/components/clear/chip";
@@ -99,10 +99,19 @@ export async function HomeHero({
           reserved={target > 0 ? reserved / target : 0}
           marker={elapsed}
         />
-        {/* The sum behind the number, so it never has to be taken on trust. */}
+        {/* The sum behind the number, so it never has to be taken on trust. The budget
+            figure is the way into the Budget page. */}
         <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-[13px] text-clear-hero-ink-2">
           <span><MoneyText>{t("sum", { spent: formatEur(spent), bills: formatEur(reserved) })}</MoneyText></span>
-          <span><MoneyText>{t("budget", { amount: formatEurWhole(target) })}</MoneyText></span>
+          <Link
+            href="/budget"
+            title={t("openBudget")}
+            data-tip-anchor="homeBudgetLink"
+            className="inline-flex items-center gap-0.5 rounded-full text-clear-hero-ink-2 no-underline hover:text-clear-hero-ink hover:underline"
+          >
+            <MoneyText>{t("budget", { amount: formatEurWhole(target) })}</MoneyText>
+            <IconChevronRight size={14} stroke={2.4} aria-hidden />
+          </Link>
         </div>
       </div>
 

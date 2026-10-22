@@ -36,6 +36,8 @@ export type TipAnchor =
   | "homeComingUp"
   | "homeIncomeVsSpending"
   | "homeMoneyFlow"
+  | "homeNetWorth"
+  | "homeBudgetLink"
   // Privacy mode: the eye button on Home's hero
   | "privacyEye"
   // Redesigned Activity

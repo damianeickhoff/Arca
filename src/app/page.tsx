@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
@@ -23,22 +22,21 @@ import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { HomeHero } from "@/app/_home/home-hero";
 import {
   AccountsCard,
-  BudgetCard,
   ComingUpCard,
   IncomeSpendingCard,
   MoneyFlowCard,
   ReviewLink,
   ThisMonthCard,
-  type BudgetRow,
   type ComingUpBill,
   type FlowDay,
   type MonthBar,
 } from "@/app/_home/home-sections";
+import { NetWorthCard } from "@/app/_home/home-net-worth";
+import { loadNetWorth } from "@/app/net-worth/load-net-worth";
 import { HomeRecentActivity } from "@/app/_home/home-recent-activity";
 import { GetStartedCard } from "@/app/_home/get-started";
 import { SetSalaryButton } from "@/app/_home/set-salary-button";
 import { HomeTips } from "@/app/_home/home-tips";
-import { cn } from "@/lib/utils";
 
 /** How many budget months the income-vs-spending chart shows. */
 const CHART_MONTHS = 6;
@@ -202,8 +200,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * Home, on the Clear design. Desktop: the page heading, then Safe to spend, this
- * month's figures and income vs spending in one row, then the budget and what is
- * coming up beside recent activity and the accounts. Phones stack the same tree.
+ * month's figures and income vs spending in one row, then money flow beside net worth,
+ * then what is coming up and the accounts beside recent activity. Phones stack the same tree.
  * Before anything is imported it shows the get-started checklist instead.
  */
 export default async function HomePage({
@@ -222,12 +220,14 @@ export default async function HomePage({
   const currentMonth = financialMonthRange(financialMonth, 0);
 
   const [sharedCostMode, budgetRecurringMode, getStartedDismissed, overdraftMode] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed(), getOverdraftMode()]);
-  const [data, billStatuses, needsReview, budgetOverview, bankBalances] = await Promise.all([
+  const [data, billStatuses, needsReview, budgetOverview, bankBalances, netWorth] = await Promise.all([
     getHomeData(from, to, financialMonth, sharedCostMode === "net"),
     getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
     getNeedsReviewTransactions(),
     getBudgetOverview(financialMonth),
     getBankBalances(),
+    // The same figures Insights › Net worth draws, over the last six months.
+    loadNetWorth("6m", financialMonth),
   ]);
 
   const locale = await getLocale();
@@ -258,17 +258,6 @@ export default async function HomePage({
     today,
   );
   const spendByDay = hero ? budgetSpendByDay(data.expenses, budgetOverview, budgetRecurringMode, today) : [];
-
-  const budgetRows: BudgetRow[] = budgetOverview.categories
-    .filter((c) => c.budget != null && c.budget > 0)
-    .sort((a, z) => z.spent / z.budget! - a.spent / a.budget!)
-    .slice(0, 4)
-    .map((c) => ({ categoryId: c.categoryId, name: c.categoryName, icon: c.icon, color: c.color, spent: c.spent, budget: c.budget! }));
-  const budgetTitle =
-    budgetOverview.budget?.period === "weekly"
-      ? t("budget.titleWeekly")
-      : // Named after the month the period ends in: 23 Sep – 22 Oct is the October budget.
-        t("budget.title", { month: new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(`${budgetOverview.to}T12:00:00`)) });
 
   const accounts = bankBalances.map((b) => ({
     key: `bank-${b.id}`,
@@ -339,8 +328,8 @@ export default async function HomePage({
 
       {/* One grid for every card, so columns line up from row to row: three columns from
           xl (two from lg). Safe to spend, this month and income vs spending on top; then
-          the budget beside money flow; then what's coming up and the accounts beside
-          recent activity. */}
+          money flow (two columns from xl) beside net worth; then what's coming up and the
+          accounts beside recent activity. */}
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         <HomeHero figures={hero} resetsOn={hero ? shortDate(hero.resetsOn) : ""} spendByDay={spendByDay} />
         {hasTransactions ? (
@@ -361,10 +350,13 @@ export default async function HomePage({
               <IncomeSpendingCard months={data.chartMonths} />
             </div>
 
-            {/* The budget and money flow share a row, so they're the same height. */}
-            {hero && <BudgetCard title={budgetTitle} target={hero.target} spent={hero.spent} rows={budgetRows} />}
-            <div className={cn("flex min-w-0 xl:col-span-2 [&>*]:flex-1", !hero && "lg:col-span-2 xl:col-span-3")}>
+            {/* Money flow and net worth share a row, so they're the same height; both
+                charts stretch to fill it. */}
+            <div className="flex min-w-0 xl:col-span-2 [&>*]:flex-1">
               <MoneyFlowCard days={data.flowDays} today={today} />
+            </div>
+            <div className="flex min-w-0 [&>*]:flex-1">
+              <NetWorthCard data={netWorth} />
             </div>
             {/* Coming up and the accounts share the height of recent activity equally; their
                 tiles grow to fill each card. */}

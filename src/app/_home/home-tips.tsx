@@ -14,6 +14,8 @@ export function HomeTips() {
       <AnchoredTip id="privacyEye" anchor="privacyEye" />
       <AnchoredTip id="homeIncomeVsSpending" anchor="homeIncomeVsSpending" />
       <AnchoredTip id="homeMoneyFlow" anchor="homeMoneyFlow" />
+      <AnchoredTip id="homeNetWorth" anchor="homeNetWorth" />
+      <AnchoredTip id="homeBudgetLink" anchor="homeBudgetLink" />
       <AnchoredTip id="homeComingUp" anchor="homeComingUp" />
     </>
   );

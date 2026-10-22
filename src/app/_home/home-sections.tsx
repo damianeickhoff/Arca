@@ -3,9 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { IconCalendar, IconCoins, IconInbox, IconShoppingBag, IconTarget } from "@tabler/icons-react";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader, ClearCardLink, ClearTile } from "@/components/clear/card";
-import { ClearProgress } from "@/components/clear/progress";
 import { StatTile } from "@/components/clear/stat-tile";
-import { Icon } from "@/components/icon";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MoneyText } from "@/components/clear/money";
@@ -190,76 +188,6 @@ export async function IncomeSpendingCard({ months }: { months: MonthBar[] }) {
             );
           })}
         </svg>
-      )}
-    </ClearCard>
-  );
-}
-
-/* ── Budget ───────────────────────────────────────────────────────────────────── */
-
-export interface BudgetRow {
-  categoryId: number;
-  name: string;
-  icon: string | null;
-  color: string | null;
-  spent: number;
-  budget: number;
-}
-
-export async function BudgetCard({
-  title,
-  target,
-  spent,
-  rows,
-}: {
-  /** Already translated ("October budget", "This week's budget"). */
-  title: string;
-  target: number;
-  spent: number;
-  rows: BudgetRow[];
-}) {
-  const t = await getTranslations("home.budget");
-
-  return (
-    <ClearCard aria-labelledby="home-budget-title">
-      <ClearCardHeader
-        title={<span id="home-budget-title">{title}</span>}
-        action={<ClearCardLink href="/budget">{t("open")}</ClearCardLink>}
-      />
-      <div className="flex flex-col gap-2.5">
-        <ClearProgress value={target > 0 ? spent / target : 0} hatchRemainder size="lg" />
-        <div className="flex items-baseline justify-between text-sm text-clear-ink-2">
-          <span><MoneyText>{t.rich("spentOf", { amount: formatEur(spent), b: (c) => <b className="text-base text-clear-ink"><MoneyText>{c}</MoneyText></b> })}</MoneyText></span>
-          <b className="text-base text-clear-ink"><MoneyText>{formatEur(target)}</MoneyText></b>
-        </div>
-      </div>
-      {rows.length > 0 && (
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {rows.map((r) => {
-            const over = r.spent > r.budget;
-            const left = r.budget - r.spent;
-            const near = !over && r.spent / r.budget >= 0.85;
-            return (
-              <li key={r.categoryId} className="flex items-center gap-3 py-2">
-                <Icon iconKey={r.icon} color={r.color} size="md" soft />
-                <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <span className="flex justify-between gap-2 text-sm">
-                    <span className="truncate font-bold">{r.name}</span>
-                    <span className={cn("shrink-0 font-bold", over ? "text-clear-negative" : near ? "text-clear-warning" : "text-clear-ink-2")}>
-                      <MoneyText>{over ? t("over", { amount: formatEurWhole(-left) }) : t("left", { amount: formatEurWhole(left) })}</MoneyText>
-                    </span>
-                  </span>
-                  <ClearProgress
-                    size="sm"
-                    value={r.spent / r.budget}
-                    fillClassName={over ? "bg-clear-negative-fill" : undefined}
-                    className="bg-clear-tile"
-                  />
-                </span>
-              </li>
-            );
-          })}
-        </ul>
       )}
     </ClearCard>
   );

@@ -5,7 +5,7 @@ description: Safe to spend, this month in numbers, what's coming up and your acc
 
 Home is the answer to "how am I doing?": one number at the top, the details underneath.
 
-![Home with Safe to spend, This month, the budget and money flow](../../../assets/screenshots/home.png)
+![Home with Safe to spend, This month, money flow and net worth](../../../assets/screenshots/home.png)
 
 ## Safe to spend
 
@@ -34,6 +34,8 @@ The **Spending pace** chart compares what you've spent with an even pace through
 Safe to spend needs a budget. Until you set one, the card shows **Set a budget** and **Import CSV** buttons instead.
 :::
 
+The budget figure under the bar is a link: tap it to open the [Budget](/Arca/plan/budget/) page.
+
 The card also has **Add transaction** and a **Scan receipt** button, and an eye button that turns on [privacy mode](/Arca/settings/security/#privacy-mode).
 
 ## This month
@@ -51,13 +53,13 @@ Transfers between your own accounts and money paid back to you are left out, so 
 
 The last six budget months side by side: money in as dark bars, money out striped. This month's spending is the orange bar.
 
-## Budget
-
-Your budget for this month (or week), how much is spent, and the four categories that have used the biggest share. **Open Plan** takes you to the full [budget](/Arca/plan/budget/). This card only shows once you have a budget.
-
 ## Money flow
 
 Money in and money out this period, added up day by day. The gap between the two lines today is what you've kept so far.
+
+## Net worth
+
+What you own minus what you owe, as [Insights › Net worth](/Arca/insights/net-worth/) works it out: the figure today, how much it moved since the budget month started, a bar of what you own against what you owe, and the last six months as a line. Under it, the sums behind the number: **Accounts**, **Savings goals** and **Debts**, each opening its own page. **Insights** at the top opens the full picture.
 
 ## Coming up
 

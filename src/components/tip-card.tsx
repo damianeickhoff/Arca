@@ -100,6 +100,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   clearNavigation: IconLayoutSidebar,
   settingsNav: IconSettings,
   homeMoneyFlow: IconChartLine,
+  homeNetWorth: IconScale,
+  homeBudgetLink: IconWallet,
   planHub: IconCompass,
   homeSafeToSpendSum: IconCalculator,
   privacyEye: IconEyeOff,

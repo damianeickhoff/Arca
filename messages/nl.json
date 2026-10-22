@@ -1465,6 +1465,14 @@
       "title": "Geldstroom",
       "body": "Geld erin en eruit deze maand, per dag opgeteld. Het verschil tussen de twee lijnen vandaag is wat je tot nu toe hebt overgehouden."
     },
+    "homeNetWorth": {
+      "title": "Vermogen op Home",
+      "body": "Wat je bezit min wat je schuldig bent, hoe het deze maand bewoog en de laatste zes maanden als lijn. Tik op een rij om je rekeningen, doelen of schulden te openen."
+    },
+    "homeBudgetLink": {
+      "title": "Je budget is verhuisd",
+      "body": "De budgetkaart is weg: Vrij te besteden toont het budget al. Tik hier op het budgetbedrag om de Budgetpagina te openen."
+    },
     "budgetStrategyTarget": {
       "title": "Doel tegen werkelijkheid",
       "body": "Per soort zie je het doel als aandeel van je inkomen (gestreept) boven wat je tot nu toe echt hebt uitgegeven of gespaard. Tik op Aanpassen om de verdeling te wijzigen."
@@ -3674,6 +3682,7 @@
       "overBudget": "Je hebt meer uitgegeven dan het budget voor deze periode.",
       "sum": "{spent} uitgegeven · {bills} rekeningen nog te gaan",
       "budget": "{amount} budget",
+      "openBudget": "Je budget openen",
       "add": "Transactie toevoegen",
       "scan": "Bon scannen",
       "noBudget": "Stel een budget in om te zien wat je per dag kunt uitgeven.",
@@ -3705,13 +3714,22 @@
       "empty": "Nog niets te laten zien.",
       "description": "Staafdiagram van geld erin en eruit per budgetmaand (erin / eruit): {months}"
     },
-    "budget": {
-      "title": "Budget {month}",
-      "titleWeekly": "Budget deze week",
-      "open": "Naar Plan",
-      "spentOf": "<b>{amount}</b> uitgegeven van",
-      "left": "nog {amount}",
-      "over": "{amount} over"
+    "netWorth": {
+      "title": "Vermogen",
+      "open": "Inzichten",
+      "thisMonth": "{amount} deze maand",
+      "level": "Gelijk gebleven deze maand",
+      "own": "Bezit",
+      "owe": "Schuld",
+      "splitDescription": "Je bezit {assets} en hebt {debts} schuld.",
+      "chartDescription": "Lijn van je vermogen over de laatste {months} maanden, van {from} naar {to}.",
+      "rows": {
+        "accounts": "Rekeningen",
+        "goals": "Spaardoelen",
+        "debts": "Schulden"
+      },
+      "empty": "Voeg je rekeningen, spaargeld en schulden toe om je vermogen te zien.",
+      "addAccount": "Rekening toevoegen"
     },
     "comingUp": {
       "title": "Binnenkort",
