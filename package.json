@@ -2,6 +2,7 @@
   "name": "arca",
   "version": "1.5.1",
   "private": true,
+  "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

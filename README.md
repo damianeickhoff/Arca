@@ -145,4 +145,4 @@ Issues and feature requests: <https://github.com/damianeickhoff/Arca/issues>
 
 ## 📄 License
 
-Arca is distributed as a self-hosted application.
+Arca is free software under the [GNU Affero General Public License v3.0](LICENSE). You may run it, study it, change it and share it. If you distribute a changed version, or run one as a service for others, you must share your changes under the same licence. Running it at home for yourself and your household carries no obligation at all.

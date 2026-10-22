@@ -47,12 +47,13 @@ tableOfContents: false
 <div class="rm not-content">
 
 <div class="rm-shipped">
-  <span class="rm-shipped__chip">Just shipped · 1.4.0</span>
+  <span class="rm-shipped__chip">Just shipped · 1.5.1</span>
   <ul class="rm-shipped__items">
-    <li>Bank connection</li>
-    <li>Recent changes with undo</li>
-    <li>Add anything from anywhere</li>
-    <li>The Arca guide</li>
+    <li>Bills found by their rhythm</li>
+    <li>Debt payoff planner</li>
+    <li>New Insights and Upcoming</li>
+    <li>Invite links</li>
+    <li>CSV files with a summary on top</li>
   </ul>
   <a class="rm-shipped__link" href="https://github.com/damianeickhoff/Arca/releases/latest">Release notes</a>
 </div>
@@ -113,13 +114,6 @@ tableOfContents: false
   <span class="rm-area rm-area--app">App</span>
   <h3>Notifications</h3>
   <p>A heads-up for upcoming bills, a shortfall in the forecast and the payday check-in, by push notification or email.</p>
-  <p class="rm-meta">Planned <a href="https://github.com/damianeickhoff/Arca/issues">Vote</a></p>
-</div>
-
-<div class="rm-tile">
-  <span class="rm-area rm-area--app">App</span>
-  <h3>Smarter recurring detection</h3>
-  <p>Bills found by their rhythm, not by their name, as proposals you accept.</p>
   <p class="rm-meta">Planned <a href="https://github.com/damianeickhoff/Arca/issues">Vote</a></p>
 </div>
 
