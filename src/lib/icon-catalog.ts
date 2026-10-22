@@ -122,6 +122,10 @@ export const PICKER_ICONS: readonly { key: string; keywords: string }[] = [
 
 const ICON_KEYS = new Set(PICKER_ICONS.map((i) => i.key));
 
+/** The curated keywords by key, added to the full Tabler search index so the Dutch
+ *  words (and the extra English ones) find those icons there too. */
+export const PICKER_ICON_KEYWORDS: Record<string, string> = Object.fromEntries(PICKER_ICONS.map((i) => [i.key, i.keywords]));
+
 /** The colour row's named swatches, as the hex stored on the category, merchant or
  *  goal. Icons render "soft" (16% fill, glyph in a deeper shade), so each hex is the
  *  saturated colour whose soft tile lands on the matching Clear pastel. */

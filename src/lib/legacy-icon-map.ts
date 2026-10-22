@@ -57,12 +57,13 @@ export const LEGACY_LUCIDE_TO_TABLER: Record<string, string> = {
   Sparkles: "IconSparkles",
 };
 
-/** Resolves a possibly-legacy icon key ("Car", "filled:Pizza") to a Tabler component key ("IconCar", "IconPizzaFilled"). */
-export function resolveLegacyIconKey(key: string, tablerKeys: Set<string>): string | null {
+/** Resolves a possibly-legacy icon key ("Car", "filled:Pizza") to a Tabler component key
+ *  ("IconCar", "IconPizzaFilled"). A Filled key whose icon has no filled style shows the
+ *  line icon when it loads (components/tabler-glyph.tsx). */
+export function resolveLegacyIconKey(key: string): string | null {
   const isFilled = key.startsWith("filled:");
   const base = isFilled ? key.slice(7) : key;
   const tablerBase = LEGACY_LUCIDE_TO_TABLER[base];
   if (!tablerBase) return null;
-  if (isFilled && tablerKeys.has(`${tablerBase}Filled`)) return `${tablerBase}Filled`;
-  return tablerBase;
+  return isFilled ? `${tablerBase}Filled` : tablerBase;
 }

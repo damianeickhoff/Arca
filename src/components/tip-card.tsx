@@ -57,6 +57,7 @@ import {
   IconTarget,
   IconCirclePlus,
   IconZoomIn,
+  IconCategory2,
   IconIcons,
   IconWand,
   IconFingerprint,
@@ -203,6 +204,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   aiPicksKept: IconSparkles,
   ruleMatches: IconListCheck,
   reviewBulkRules: IconListCheck,
+  iconPickerAllIcons: IconCategory2,
 };
 
 /**

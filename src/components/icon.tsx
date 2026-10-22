@@ -1,6 +1,8 @@
 import { BRAND_MAP } from "@/lib/brand-map";
-import * as Tabler from "@tabler/icons-react";
+import { IconQuestionMark } from "@tabler/icons-react";
+import { TablerGlyph } from "@/components/tabler-glyph";
 import { resolveLegacyIconKey } from "@/lib/legacy-icon-map";
+import { isTablerKey } from "@/lib/tabler-icons";
 import { contrastIconColor } from "@/lib/color-luminance";
 
 const SIZE = {
@@ -11,12 +13,6 @@ const SIZE = {
   xl: { wrap: "size-12", svg: 26 },
   xxl: { wrap: "size-14", svg: 30 },
 };
-
-
-type TablerLib = Record<
-  string,
-  React.ComponentType<{ size?: number; color?: string; style?: React.CSSProperties }>
->;
 
 // Parses img: keys that may carry ?s=scale&x=offsetX&y=offsetY transform params.
 export function parseImgKey(key: string): { src: string; scale: number; ox: number; oy: number } {
@@ -168,7 +164,7 @@ export function Icon({
             {initials}
           </span>
         ) : (
-          <Tabler.IconQuestionMark size={svgSize} />
+          <IconQuestionMark size={svgSize} />
         )}
       </div>
     );
@@ -197,7 +193,7 @@ export function Icon({
           <div className="size-2 rounded-sm" style={{ backgroundColor: contrastIconColor(color!) }} />
         ) : (
           // Genuinely uncategorized / no icon and no color — the gray question mark.
-          <Tabler.IconQuestionMark size={svgSize} className="text-gray-600 dark:text-white/90" />
+          <IconQuestionMark size={svgSize} className="text-gray-600 dark:text-white/90" />
         )}
       </div>
     );
@@ -276,15 +272,8 @@ export function Icon({
     );
   }
 
-  const tablerLib = Tabler as unknown as TablerLib;
-  const tablerKeys = new Set(Object.keys(Tabler));
-
-  const resolvedKey =
-    iconKey.startsWith("Icon") && tablerKeys.has(iconKey)
-      ? iconKey
-      : resolveLegacyIconKey(iconKey, tablerKeys);
-
-  const TablerIconComp = resolvedKey ? tablerLib[resolvedKey] : undefined;
+  // Tabler glyphs load one file per icon (components/tabler-glyph.tsx), never the whole set.
+  const resolvedKey = isTablerKey(iconKey) ? iconKey : resolveLegacyIconKey(iconKey);
   const isFilled = resolvedKey?.endsWith("Filled") ?? false;
 
   // color = the icon glyph color; the chip gets an automatic muted tint of that
@@ -313,7 +302,7 @@ export function Icon({
         : { stroke: `url(#${gradId})` }
       : {};
 
-  if (!TablerIconComp) {
+  if (!resolvedKey) {
     return (
       <div
         className={`${wrap} ${shape} ${hasColorBackground || softTint ? "" : softEmpty || chipBg} shrink-0`}
@@ -342,7 +331,7 @@ export function Icon({
         className={`${wrap} ${shape} ${hasColorBackground || softTint ? "" : softEmpty || chipBg} shrink-0 flex items-center justify-center`}
         style={chipStyle}
       >
-        <TablerIconComp size={svgSize} color={fg} style={iconStyle} />
+        <TablerGlyph iconKey={resolvedKey} size={svgSize} color={fg} style={iconStyle} />
       </div>
     </>
   );

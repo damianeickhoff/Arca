@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import * as Tabler from "@tabler/icons-react";
 import {
   IconArrowDown,
   IconArrowLeft,
@@ -27,11 +26,21 @@ import { useConfirm } from "@/components/clear/confirm-dialog";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { IconCropDialog } from "@/components/icon-crop-dialog";
 import { Icon, buildBrandKey, buildImgKey, isBrandIcon, parseBrandKey, parseImgKey, softIconColors } from "@/components/icon";
+import { TablerGlyph } from "@/components/tabler-glyph";
 import { BRAND_MAP } from "@/lib/brand-map";
+import {
+  buildTablerIndex,
+  lineKeyOf,
+  searchTablerIndex,
+  tablerCategoryKey,
+  type TablerIndex,
+  type TablerIndexFile,
+} from "@/lib/tabler-icons";
 import {
   PICKER_COLOURS,
   PICKER_COLOUR_NAMES,
   PICKER_ICONS,
+  PICKER_ICON_KEYWORDS,
   autoColourFor,
   colourNameOf,
   matchesQuery,
@@ -67,7 +76,8 @@ type Sample = { name: string; date: string; categoryName: string | null; amount:
 interface UploadedIcon { key: string; url: string; name: string }
 
 const BRANDS_FIRST: IconSubjectKind[] = ["merchant", "transaction"];
-const TABLER = Tabler as unknown as Record<string, React.ComponentType<{ size?: number; color?: string; stroke?: number }>>;
+/** Tiles of the whole set shown at a time; "Show more" adds another page. */
+const ALL_ICONS_PAGE = 120;
 const SIZE_STEP = 0.1;
 const SIZE_MIN = 0.4;
 const SIZE_MAX = 2;
@@ -174,11 +184,10 @@ function TileGrid({ label, children }: { label: string; children: React.ReactNod
 }
 
 function GlyphTile({ iconKey, label, color, selected, onPick }: { iconKey: string; label: string; color: string; selected: boolean; onPick: () => void }) {
-  const Comp = TABLER[iconKey];
   const soft = softIconColors(color);
   return (
     <Tile label={label} selected={selected} onPick={onPick} style={{ background: soft.background, color: soft.foreground }}>
-      {Comp ? <Comp size={28} stroke={1.9} /> : null}
+      <TablerGlyph iconKey={iconKey} size={28} stroke={1.9} />
     </Tile>
   );
 }
@@ -396,7 +405,21 @@ function PickerBody({
   const [cropSrc, setCropSrc] = useState<string | null>(null);
   const [info, setInfo] = useState<{ count: number | null; sample: Sample | null } | null>(null);
   const [saving, setSaving] = useState(false);
+  // The whole Tabler set: its search index loads when the picker opens, never with the page.
+  const [index, setIndex] = useState<TablerIndex | null>(null);
+  const [category, setCategory] = useState<string | null>(null);
+  const [more, setMore] = useState({ sig: "", pages: 1 });
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let live = true;
+    import("@/lib/generated/tabler-icon-index.json")
+      .then((m) => live && setIndex(buildTablerIndex(m.default as unknown as TablerIndexFile, PICKER_ICON_KEYWORDS)))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -415,7 +438,16 @@ function PickerBody({
     };
   }, [subject.kind, subject.id]);
 
-  const labelOf = (key: string) => (t.has(`icons.${key}`) ? t(`icons.${key}`) : key.replace(/^Icon/, ""));
+  // Curated glyphs have a translated label; the rest of the set shows Tabler's own name.
+  const labelOf = (key: string) => {
+    if (t.has(`icons.${key}`)) return t(`icons.${key}`);
+    const named = index?.byKey.get(lineKeyOf(key))?.name.replace(/-/g, " ");
+    return named ? named.charAt(0).toUpperCase() + named.slice(1) : key.replace(/^Icon/, "");
+  };
+  const categoryLabel = (c: string) => {
+    const k = `categories.${tablerCategoryKey(c)}`;
+    return t.has(k) ? t(k) : c;
+  };
   const brands = useMemo(() => pickerBrands(), []);
   const resolvedColour =
     colour === "auto" ? autoColourFor(draft, name) : colour === "custom" ? value.color ?? autoColourFor(draft, name) : PICKER_COLOURS[colour];
@@ -477,9 +509,22 @@ function PickerBody({
 
   // ── What the grid shows ──
   const q = query.trim();
-  const glyphKey = (key: string) => (filled && TABLER[`${key}Filled`] ? `${key}Filled` : key);
-  const glyphItems = PICKER_ICONS.filter((i) => TABLER[i.key]).filter((i) => !filled || TABLER[`${i.key}Filled`]);
-  const iconHits = q ? PICKER_ICONS.filter((i) => TABLER[i.key] && matchesQuery(q, i.key, labelOf(i.key), i.keywords)) : [];
+  // Which icons have a filled style comes from the index; until it is in, tiles stay line.
+  const hasFilled = (key: string) => index?.byKey.get(key)?.filled ?? false;
+  const glyphKey = (key: string) => (filled && hasFilled(key) ? `${key}Filled` : key);
+  const glyphItems = PICKER_ICONS.filter((i) => !filled || !index || hasFilled(i.key));
+  // Search: the curated glyphs first (their labels and Dutch keywords), then the rest of the set.
+  const curatedHits = q ? PICKER_ICONS.filter((i) => matchesQuery(q, i.key, labelOf(i.key), i.keywords)).map((i) => i.key) : [];
+  const iconHits = q
+    ? [...new Set([...curatedHits, ...(index ? searchTablerIndex(index, q).map((e) => e.key) : [])])]
+    : [];
+  // Browsing: the whole set (or one category) under the suggested row.
+  const browseKeys =
+    !q && tab === "icons" && index ? searchTablerIndex(index, "", { category, filledOnly: filled }).map((e) => e.key) : [];
+  // Long lists render a page at a time; a new query, category or style starts at one page.
+  const sig = `${q}|${tab}|${category ?? ""}|${filled}`;
+  const pages = more.sig === sig ? more.pages : 1;
+  const limit = pages * ALL_ICONS_PAGE;
   const brandHits = q ? brands.filter((b) => matchesQuery(q, b.key, b.label)) : [];
   const uploadHits = q ? uploads.filter((u) => matchesQuery(q, u.name)) : [];
   const total = iconHits.length + brandHits.length + uploadHits.length;
@@ -509,10 +554,42 @@ function PickerBody({
     </button>
   );
 
-  const groupHead = (label: string, extra?: React.ReactNode) => (
-    <div className="flex min-h-8 items-center justify-between gap-3">
+  const groupHead = (label: string, extra?: React.ReactNode, anchor?: string) => (
+    <div data-tip-anchor={anchor} className="flex min-h-8 items-center justify-between gap-3">
       <span className="text-[13px] font-bold text-clear-ink-2">{label}</span>
       {extra}
+    </div>
+  );
+  /** "Showing 120 of 5,093" and Show more, under a list longer than what is drawn. */
+  const moreFooter = (count: number) =>
+    count > limit ? (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-[13px] text-clear-muted">{t("showing", { shown: limit, total: count })}</span>
+        <ClearButton variant="secondary" size="sm" onClick={() => setMore({ sig, pages: pages + 1 })}>
+          {t("showMore")}
+        </ClearButton>
+      </div>
+    ) : null;
+  const categoryChips = index && (
+    <div role="radiogroup" aria-label={t("categoriesLabel")} className="-mx-1 flex gap-2 overflow-x-auto px-1 pt-0.5 pb-1.5">
+      {[null, ...index.categories.filter(Boolean)].map((c) => {
+        const on = category === c;
+        return (
+          <button
+            key={c ?? "all"}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => setCategory(c)}
+            className={cn(
+              "h-9 shrink-0 cursor-pointer rounded-full px-3.5 text-[13px] font-bold whitespace-nowrap outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+              on ? "bg-clear-primary text-clear-primary-ink" : "bg-clear-tile text-clear-ink hover:bg-clear-line",
+            )}
+          >
+            {c ? categoryLabel(c) : t("categories.all")}
+          </button>
+        );
+      })}
     </div>
   );
   const styleToggle = (
@@ -529,14 +606,40 @@ function PickerBody({
     />
   );
 
-  const groups: { id: string; title: string; extra?: React.ReactNode; tiles: React.ReactNode[] }[] = [];
+  const groups: {
+    id: string;
+    title: string;
+    extra?: React.ReactNode;
+    anchor?: string;
+    /** Above the tiles (the category chips). */
+    before?: React.ReactNode;
+    /** Under the tiles (Show more, or a loading line). */
+    after?: React.ReactNode;
+    tiles: React.ReactNode[];
+  }[] = [];
   if (q) {
-    if (iconHits.length) groups.push({ id: "icons", title: t("groups.icons"), extra: styleToggle, tiles: iconHits.map((i) => glyph(i.key)) });
+    if (iconHits.length)
+      groups.push({ id: "icons", title: t("groups.icons"), extra: styleToggle, tiles: iconHits.slice(0, limit).map((k) => glyph(k)), after: moreFooter(iconHits.length) });
     if (brandHits.length) groups.push({ id: "brands", title: t("groups.brands"), tiles: brandHits.map((b) => brand(b)) });
     if (uploadHits.length) groups.push({ id: "uploads", title: t("groups.uploads"), tiles: uploadHits.map(uploadTile) });
   } else if (tab === "icons") {
-    if (suggestedIcons.length && name) groups.push({ id: "suggested", title: t("groups.suggested", { name }), tiles: suggestedIcons.map((k) => glyph(k, `s-${k}`)) });
-    groups.push({ id: "all", title: t("groups.allIcons"), extra: styleToggle, tiles: glyphItems.map((i) => glyph(i.key)) });
+    // One suggested row: the glyphs that fit the name first, then the rest of the curated set.
+    const forName = name ? suggestedIcons : [];
+    const suggestedKeys = [...new Set([...forName, ...glyphItems.map((i) => i.key)])];
+    groups.push({
+      id: "suggested",
+      title: forName.length ? t("groups.suggested", { name }) : t("groups.curated"),
+      extra: styleToggle,
+      tiles: suggestedKeys.map((k) => glyph(k)),
+    });
+    groups.push({
+      id: "all",
+      title: t("groups.allIcons"),
+      anchor: "iconPickerAllIcons",
+      before: categoryChips,
+      tiles: browseKeys.slice(0, limit).map((k) => glyph(k)),
+      after: index ? moreFooter(browseKeys.length) : <p className="m-0 text-[13px] text-clear-muted">{t("loadingAll")}</p>,
+    });
   } else {
     const sugg = [
       ...suggestedBrands.map((k) => brand({ key: k, label: BRAND_MAP[k]?.title ?? k }, `s-${k}`)),
@@ -628,7 +731,7 @@ function PickerBody({
               label: (
                 <>
                   {t("tabs.icons")}
-                  <span className="ml-1 font-semibold opacity-60">{q ? iconHits.length : PICKER_ICONS.length}</span>
+                  <span className="ml-1 font-semibold opacity-60">{q ? iconHits.length : (index?.entries.length ?? PICKER_ICONS.length)}</span>
                 </>
               ),
             },
@@ -698,8 +801,10 @@ function PickerBody({
         ) : (
           groups.map((g) => (
             <div key={g.id} className="flex flex-col gap-2.5">
-              {groupHead(g.title, g.extra)}
-              <TileGrid label={g.title}>{g.tiles}</TileGrid>
+              {groupHead(g.title, g.extra, g.anchor)}
+              {g.before}
+              {g.tiles.length > 0 && <TileGrid label={g.title}>{g.tiles}</TileGrid>}
+              {g.after}
             </div>
           ))
         )}
@@ -745,6 +850,7 @@ function PickerBody({
       </ClearDialogFooterDock>
 
       <AnchoredTip id="iconPicker" anchor="iconPickerTabs" />
+      <AnchoredTip id="iconPickerAllIcons" anchor="iconPickerAllIcons" active={tab === "icons" && !q && !!index} />
 
       {cropSrc && (
         <IconCropDialog

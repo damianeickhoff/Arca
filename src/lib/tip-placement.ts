@@ -153,6 +153,8 @@ export type TipAnchor =
   | "insightsSummary"
   // The one icon picker: its Icons · Brands tabs
   | "iconPickerTabs"
+  // The icon picker: the All icons heading with its category chips
+  | "iconPickerAllIcons"
   // Merchant-first rules: the teach strip after a category pick
   | "ruleTeach"
   // Merchant-first rules: the merchant card's Recognised by patterns

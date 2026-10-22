@@ -27,6 +27,10 @@ Choose **New category** (or the **+** add menu → **Category**) and set:
 
 Each category shows how many rules it has and what it spent this month.
 
+### Choosing an icon
+
+Tap the icon to open the icon picker (the same one for categories, merchants, goals, debts and accounts). The **Icons** tab starts with a **Suggested** row: icons that fit the name, then a hand-picked set for money things. Under it, **All icons** holds the full Tabler set of more than 5,000 icons. Tap a category chip (Food, Vehicles, Health…) to browse one kind, or type in the search field: it matches icon names and their tags (search in English for the full set; the suggested icons also answer to Dutch words). **Line** and **Filled** switch the style for icons that have a filled version. The **Brands** tab holds brand logos and your own uploads.
+
 :::caution[Deleting a category]
 Deleting a category also deletes its transactions, recurring items, budget and rules. To keep the transactions, move them to another category first (select them in Activity and change the category).
 :::

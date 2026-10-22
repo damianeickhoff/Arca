@@ -1653,6 +1653,10 @@
     "reviewBulkRules": {
       "title": "Eén categorie, een regel per winkel",
       "body": "Meerdere gekozen? Kies Categorie en zet de regel aan: Arca maakt voor elke winkel een eigen regel. Houd een rij ingedrukt of Shift-klik erop om te beginnen met selecteren."
+    },
+    "iconPickerAllIcons": {
+      "title": "Alle iconen staan er nu in",
+      "body": "Onder de voorgestelde iconen vind je alle 5.000+ Tabler-iconen: zoek op naam of blader per categorie."
     }
   },
   "categoryPicker": {
@@ -1749,7 +1753,8 @@
       "allIcons": "Alle iconen",
       "icons": "Iconen",
       "brands": "Merken",
-      "uploads": "Jouw uploads"
+      "uploads": "Jouw uploads",
+      "curated": "Voorgesteld"
     },
     "style": "Icoonstijl",
     "line": "Lijn",
@@ -1880,6 +1885,54 @@
       "IconTag": "Label",
       "IconSparkles": "Overig",
       "IconEyeglass": "Bril"
+    },
+    "showing": "{shown, number} van {total, number} getoond. Typ meer of kies een categorie om te verfijnen.",
+    "showMore": "Meer tonen",
+    "loadingAll": "Alle iconen laden…",
+    "categoriesLabel": "Icooncategorieën",
+    "categories": {
+      "all": "Alles",
+      "animals": "Dieren",
+      "arrows": "Pijlen",
+      "badges": "Badges",
+      "brand": "Merkiconen",
+      "buildings": "Gebouwen",
+      "charts": "Grafieken",
+      "communication": "Communicatie",
+      "computers": "Computers",
+      "currencies": "Valuta",
+      "database": "Database",
+      "design": "Ontwerp",
+      "development": "Ontwikkeling",
+      "devices": "Apparaten",
+      "document": "Documenten",
+      "eCommerce": "Webwinkel",
+      "electrical": "Elektra",
+      "extensions": "Bestandstypen",
+      "food": "Eten",
+      "games": "Spellen",
+      "gender": "Gender",
+      "gestures": "Gebaren",
+      "health": "Gezondheid",
+      "laundry": "Was",
+      "letters": "Letters",
+      "logic": "Logica",
+      "map": "Kaart",
+      "math": "Wiskunde",
+      "media": "Media",
+      "mood": "Stemming",
+      "nature": "Natuur",
+      "numbers": "Cijfers",
+      "photography": "Fotografie",
+      "shapes": "Vormen",
+      "sport": "Sport",
+      "symbols": "Symbolen",
+      "system": "Systeem",
+      "text": "Tekst",
+      "vehicles": "Voertuigen",
+      "versionControl": "Versiebeheer",
+      "weather": "Weer",
+      "zodiac": "Sterrenbeelden"
     }
   },
   "teachRule": {

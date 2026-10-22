@@ -1653,6 +1653,10 @@
     "reviewBulkRules": {
       "title": "One category, a rule per merchant",
       "body": "Picked several? Choose Category and switch on the rule: Arca makes one rule for each merchant. Hold a row, or Shift-click it, to start selecting."
+    },
+    "iconPickerAllIcons": {
+      "title": "Every icon is here now",
+      "body": "Under the suggested icons you find all 5,000+ Tabler icons: search by name or browse a category."
     }
   },
   "categoryPicker": {
@@ -1749,7 +1753,8 @@
       "allIcons": "All icons",
       "icons": "Icons",
       "brands": "Brands",
-      "uploads": "Your uploads"
+      "uploads": "Your uploads",
+      "curated": "Suggested"
     },
     "style": "Icon style",
     "line": "Line",
@@ -1880,6 +1885,54 @@
       "IconTag": "Label",
       "IconSparkles": "Other",
       "IconEyeglass": "Glasses"
+    },
+    "showing": "Showing {shown, number} of {total, number}. Type more or pick a category to narrow it down.",
+    "showMore": "Show more",
+    "loadingAll": "Loading all icons…",
+    "categoriesLabel": "Icon categories",
+    "categories": {
+      "all": "All",
+      "animals": "Animals",
+      "arrows": "Arrows",
+      "badges": "Badges",
+      "brand": "Brand icons",
+      "buildings": "Buildings",
+      "charts": "Charts",
+      "communication": "Communication",
+      "computers": "Computers",
+      "currencies": "Currencies",
+      "database": "Database",
+      "design": "Design",
+      "development": "Development",
+      "devices": "Devices",
+      "document": "Documents",
+      "eCommerce": "E-commerce",
+      "electrical": "Electrical",
+      "extensions": "File types",
+      "food": "Food",
+      "games": "Games",
+      "gender": "Gender",
+      "gestures": "Gestures",
+      "health": "Health",
+      "laundry": "Laundry",
+      "letters": "Letters",
+      "logic": "Logic",
+      "map": "Map",
+      "math": "Maths",
+      "media": "Media",
+      "mood": "Mood",
+      "nature": "Nature",
+      "numbers": "Numbers",
+      "photography": "Photography",
+      "shapes": "Shapes",
+      "sport": "Sport",
+      "symbols": "Symbols",
+      "system": "System",
+      "text": "Text",
+      "vehicles": "Vehicles",
+      "versionControl": "Version control",
+      "weather": "Weather",
+      "zodiac": "Zodiac"
     }
   },
   "teachRule": {
