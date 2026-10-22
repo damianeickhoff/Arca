@@ -31,6 +31,7 @@ import { loadImportOverview } from "@/lib/import-overview";
 import { ImportPanel } from "@/components/settings/import-panel";
 import { isAiReady } from "@/lib/gemini";
 import { getUpdateCheckState } from "@/lib/update-check";
+import { getBuildInfo } from "@/lib/build-info";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
 // Server-rendered content for the data-heavy settings panels. Two hosts:
@@ -131,7 +132,7 @@ async function AboutPanelContent({ canManageUpdates }: { canManageUpdates: boole
     ocrConfigured: !!process.env.OLLAMA_HOST,
     newestBackup: listBackups()[0]?.createdAt ?? null,
   };
-  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} updates={updates} canManageUpdates={canManageUpdates} />;
+  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} updates={updates} canManageUpdates={canManageUpdates} build={getBuildInfo()} />;
 }
 
 async function ImportProfilesPanel() {

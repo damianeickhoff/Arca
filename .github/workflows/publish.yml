@@ -67,6 +67,11 @@ jobs:
           context: .
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # The app shows which build it is (Settings › About; a Beta chip on dev builds).
+          build-args: |
+            ARCA_BUILD_REF=${{ github.ref_name }}
+            ARCA_BUILD_SHA=${{ github.sha }}
+            ARCA_BUILD_DATE=${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
           # Docker media types and no provenance index: GHCR won't serve an OCI manifest
           # to Unraid's update check, which then shows the version as "not available".
           outputs: type=registry,oci-mediatypes=false

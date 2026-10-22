@@ -18,6 +18,8 @@ import { ConfirmProvider } from "@/components/clear/confirm-dialog";
 import { INSIGHTS_TABS, INSIGHTS_TAB_LABEL_KEY } from "@/app/reports/reports-tabs";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 import type { BankSyncStatus } from "@/lib/bank-sync-status";
+import type { BuildInfo } from "@/lib/build-info";
+import { ClearChip } from "@/components/clear/chip";
 import { useBankSyncText } from "@/components/shell/bank-sync-line";
 
 export interface ShellUser {
@@ -44,12 +46,15 @@ export interface ShellUser {
 export function AppShell({
   children,
   user,
+  build,
   needsReviewCount,
   bankSync,
   bankSyncNow,
 }: {
   children: React.ReactNode;
   user: ShellUser | null;
+  /** Which build runs; a dev or local build shows a Beta chip under the logo. */
+  build: BuildInfo;
   needsReviewCount: number;
   /** The bank sync line under Import; null without a connected bank. */
   bankSync: BankSyncStatus | null;
@@ -72,7 +77,7 @@ export function AppShell({
           {children}
           {!chromeless && (
             <>
-              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} user={user!} needsReviewCount={needsReviewCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
+              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} build={build} user={user!} needsReviewCount={needsReviewCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
               {!navHidden && <PhoneTabBar pathname={pathname} />}
               {/* The navigation changed; it announces itself once, even to someone who
                   turned tips off (see IGNORES_DISABLED). */}
@@ -99,12 +104,28 @@ export function Wordmark({ className }: { className?: string }) {
   );
 }
 
+/** "Beta · dev 99773d0" under the logo on a dev or local build; nothing on a release,
+ *  so a test container is never mistaken for the real one. */
+export function BuildChip({ build, className }: { build: BuildInfo; className?: string }) {
+  const t = useTranslations("nav.build");
+  if (!build.prerelease) return null;
+  const label =
+    build.channel === "local" ? t("local") : build.channel === "dev" ? t("dev", { sha: build.sha }) : t("branch", { ref: build.ref, sha: build.sha });
+  return (
+    <span data-tip-anchor="betaBuild" className={cn("inline-flex", className)}>
+      <ClearChip tone="butter" className="h-6 px-2.5 text-xs">{label}</ClearChip>
+      <AnchoredTip id="betaBuild" anchor="betaBuild" />
+    </span>
+  );
+}
+
 const NEXT_THEME: Record<ThemeMode, ThemeMode> = { light: "dark", dark: "system", system: "light" };
 
 function DesktopSidebar({
   pathname,
   insightsTab,
   settingsPanel,
+  build,
   user,
   needsReviewCount,
   bankSync,
@@ -115,6 +136,7 @@ function DesktopSidebar({
   insightsTab: string;
   /** The open settings panel (?panel=), so the Import shortcut can show as active. */
   settingsPanel: string | null;
+  build: BuildInfo;
   user: ShellUser;
   needsReviewCount: number;
   bankSync: BankSyncStatus | null;
@@ -141,7 +163,10 @@ function DesktopSidebar({
     // menu (Insights open) scrolls inside the sidebar.
     <aside className="clear-scrollbar fixed inset-y-0 left-0 z-40 hidden w-[260px] flex-col gap-3 overflow-y-auto border-r border-clear-line bg-clear-card px-4 py-4 font-clear text-clear-ink lg:flex [@media(min-height:800px)]:gap-4 [@media(min-height:800px)]:py-5 [@media(min-height:900px)]:gap-6 [@media(min-height:900px)]:px-5 [@media(min-height:900px)]:py-7">
       {/* Centred over the profile, which stacks centred from 900px too. */}
-      <Wordmark className="hidden self-center [@media(min-height:900px)]:inline-flex" />
+      <div className="flex flex-col items-center gap-1.5 self-center">
+        <Wordmark className="hidden [@media(min-height:900px)]:inline-flex" />
+        <BuildChip build={build} />
+      </div>
 
       <Link
         href="/settings"

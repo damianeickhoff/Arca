@@ -63,6 +63,7 @@ import {
   IconTableRow,
   IconDatabase,
   IconDownload,
+  IconFlask,
   IconGift,
   IconRefresh,
 } from "@tabler/icons-react";
@@ -191,6 +192,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   backups: IconDatabase,
   updateCheck: IconRefresh,
   updateAvailable: IconDownload,
+  betaBuild: IconFlask,
 };
 
 /**

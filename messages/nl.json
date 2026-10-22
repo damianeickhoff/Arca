@@ -610,7 +610,8 @@
     },
     "dialog": {
       "profile": "Je profiel",
-      "version": "Arca {version}"
+      "version": "Arca {version}",
+      "versionBuild": "Versie {version} · {build}"
     },
     "automations": {
       "summary": "<b>{merchants, plural, one {# winkel} other {# winkels}}</b> en <b>{rules, plural, one {# regel} other {# regels}}</b> bepalen de categorie van <b>{total, plural, one {# transactie} other {# transacties}}</b>.",
@@ -1608,6 +1609,10 @@
     "updateAvailable": {
       "title": "Er is een nieuwere Arca",
       "body": "Update wanneer het jou uitkomt; Arca maakt eerst een back-up van de database."
+    },
+    "betaBuild": {
+      "title": "Dit is een testbuild",
+      "body": "Je draait een dev- of lokale build van Arca, geen release. Je echte installatie toont geen Bèta-label."
     }
   },
   "categoryPicker": {
@@ -2931,6 +2936,11 @@
         "title": "Categorie",
         "meta": "Een nieuwe categorie in een van je groepen"
       }
+    },
+    "build": {
+      "local": "Lokale build",
+      "dev": "Bèta · dev {sha}",
+      "branch": "Bèta · {ref} {sha}"
     }
   },
   "insights": {
@@ -5138,6 +5148,10 @@
       "seeNotes": "Wat is er nieuw in {version}",
       "unavailable": "GitHub was niet bereikbaar. De volgende controle is morgen.",
       "denied": "Alleen een beheerder kan dit veranderen."
+    },
+    "build": {
+      "local": "Lokale build",
+      "prerelease": "Bèta · {ref} {sha}"
     }
   }
 }

@@ -16,6 +16,7 @@ import { maybeRecordDailyNetWorthSnapshot } from "@/lib/net-worth-snapshots";
 import { maybeRecordMonthlyHealthSnapshot } from "@/lib/health-snapshots";
 import { backfillBankAccountNumbers } from "@/lib/bank-account-numbers";
 import { maybeCheckForUpdate } from "@/lib/update-check";
+import { getBuildInfo } from "@/lib/build-info";
 import { getBankSyncStatus } from "@/lib/bank-sync";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { RefreshOnReturn } from "@/components/refresh-on-return";
@@ -145,6 +146,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 userName={user?.name ?? null}
               >
                 <AppShell
+                  build={getBuildInfo()}
                   needsReviewCount={needsReviewCount}
                   bankSync={bankSync}
                   bankSyncNow={bankSyncNow}

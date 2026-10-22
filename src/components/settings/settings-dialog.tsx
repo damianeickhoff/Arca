@@ -13,6 +13,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useEscapeToClose } from "@/lib/use-escape-to-close";
 import { logoutAction } from "@/app/actions/auth";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
+import type { BuildInfo } from "@/lib/build-info";
 import { PanelChromeContext } from "@/components/settings/settings-panel-chrome";
 import { SettingsPanelBody } from "@/components/settings/settings-panel-body";
 import { settingsSections, isHeavyPanel, type SettingsPanelKey } from "@/components/settings/settings-sections";
@@ -78,16 +79,20 @@ export function SettingsDialog({
   budgetRecurringMode = "budgeted",
   sharedCostMode = "gross",
   iconOnly,
+  build,
 }: {
   user: User;
   panels: SettingsPanelContent;
   financialMonth: FinancialMonthConfig;
   budgetRecurringMode?: BudgetRecurringMode;
   sharedCostMode?: SharedCostMode;
+  /** Which build runs; a dev or local build says so under the version. */
+  build?: BuildInfo;
   /** Just the avatar; otherwise the avatar and the first name in a pill. */
   iconOnly?: boolean;
 }) {
   const t = useTranslations("settings");
+  const tNav = useTranslations("nav");
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -269,7 +274,11 @@ export function SettingsDialog({
 
             <div className="flex flex-col items-center gap-1.5 pt-4 pb-2 text-center text-clear-muted">
               <BrandMark className="size-7 opacity-60" />
-              <p className="m-0 text-xs">{t("dialog.version", { version: packageJson.version })}</p>
+              <p className="m-0 text-xs">
+                {build?.prerelease
+                  ? t("dialog.versionBuild", { version: packageJson.version, build: build.channel === "local" ? tNav("build.local") : build.channel === "dev" ? tNav("build.dev", { sha: build.sha }) : tNav("build.branch", { ref: build.ref, sha: build.sha }) })
+                  : t("dialog.version", { version: packageJson.version })}
+              </p>
             </div>
           </div>
 

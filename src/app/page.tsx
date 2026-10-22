@@ -40,6 +40,7 @@ import { HomeTips } from "@/app/_home/home-tips";
 import { APP_VERSION } from "@/lib/app-version";
 import { releaseNoteFor } from "@/lib/changelog";
 import { getUpdateCheckState } from "@/lib/update-check";
+import { getBuildInfo } from "@/lib/build-info";
 
 /** How many budget months the income-vs-spending chart shows. */
 const CHART_MONTHS = 6;
@@ -295,6 +296,7 @@ export default async function HomePage({
       <div className="flex items-center justify-between gap-3 lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <SettingsDialog
+            build={getBuildInfo()}
             user={toClientUser(user)}
             panels={getSettingsPanelContent(user)}
             financialMonth={financialMonth}

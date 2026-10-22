@@ -610,7 +610,8 @@
     },
     "dialog": {
       "profile": "Your profile",
-      "version": "Arca {version}"
+      "version": "Arca {version}",
+      "versionBuild": "Version {version} · {build}"
     },
     "automations": {
       "summary": "<b>{merchants, plural, one {# merchant} other {# merchants}}</b> and <b>{rules, plural, one {# rule} other {# rules}}</b> decide the category of <b>{total, plural, one {# transaction} other {# transactions}}</b>.",
@@ -1608,6 +1609,10 @@
     "updateAvailable": {
       "title": "A newer Arca is out",
       "body": "Update when it suits you; Arca backs the database up first."
+    },
+    "betaBuild": {
+      "title": "This is a test build",
+      "body": "You are running a dev or local build of Arca, not a release. Your real install shows no Beta chip."
     }
   },
   "categoryPicker": {
@@ -2931,6 +2936,11 @@
         "title": "Category",
         "meta": "A new category in one of your groups"
       }
+    },
+    "build": {
+      "local": "Local build",
+      "dev": "Beta · dev {sha}",
+      "branch": "Beta · {ref} {sha}"
     }
   },
   "insights": {
@@ -5138,6 +5148,10 @@
       "seeNotes": "What is new in {version}",
       "unavailable": "GitHub could not be reached. The next check is tomorrow.",
       "denied": "Only an admin can change this."
+    },
+    "build": {
+      "local": "Local build",
+      "prerelease": "Beta · {ref} {sha}"
     }
   }
 }

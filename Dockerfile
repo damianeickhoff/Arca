@@ -37,6 +37,15 @@ ENV COOKIE_SECURE=false
 # must survive an update (uploads, backups) lives next to it.
 ENV DB_PATH=/data/finance.db
 
+# Which build this is (publish.yml passes them): a release image is built from the
+# vX.Y.Z tag; the dev image says "Beta" in the app so it is never mistaken for one.
+ARG ARCA_BUILD_REF=""
+ARG ARCA_BUILD_SHA=""
+ARG ARCA_BUILD_DATE=""
+ENV ARCA_BUILD_REF=$ARCA_BUILD_REF
+ENV ARCA_BUILD_SHA=$ARCA_BUILD_SHA
+ENV ARCA_BUILD_DATE=$ARCA_BUILD_DATE
+
 # 1. The traced production dependencies: the big layer, stable between releases.
 COPY --from=builder /app/.next/standalone/node_modules ./node_modules
 # 2. The server and the build output: small, changes every release. Copied piece by

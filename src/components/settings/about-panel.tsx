@@ -17,6 +17,7 @@ import { checkForUpdateNowAction, setUpdateCheckAction } from "@/app/actions/upd
 import { DOCS_URL, ISSUES_URL, LICENSE_URL, RELEASES_URL, REPO_URL } from "@/lib/links";
 import type { ChangelogEntry } from "@/lib/changelog";
 import type { UpdateCheckState } from "@/lib/update-check";
+import type { BuildInfo } from "@/lib/build-info";
 import { cn } from "@/lib/utils";
 
 /** What is switched on right now, so the connection tiles show the truth, not a description. */
@@ -45,12 +46,14 @@ export function AboutPanel({
   status,
   updates,
   canManageUpdates,
+  build,
 }: {
   version: string;
   entries: ChangelogEntry[];
   status: AboutStatus;
   updates: UpdateCheckState;
   canManageUpdates: boolean;
+  build: BuildInfo;
 }) {
   const t = useTranslations("about");
   const tPanels = useTranslations("settings.panels");
@@ -80,6 +83,11 @@ export function AboutPanel({
               <div className="flex flex-wrap items-center gap-2.5">
                 <span className="text-[26px] font-extrabold leading-none tracking-[-0.03em]">Arca</span>
                 <ClearChip tone="stone">{t("version", { version })}</ClearChip>
+                {build.prerelease && (
+                  <ClearChip tone="butter">
+                    {build.channel === "local" ? t("build.local") : t("build.prerelease", { ref: build.ref, sha: build.sha })}
+                  </ClearChip>
+                )}
                 {updates.available && updates.latest && (
                   <a href={updates.latest.url} target="_blank" rel="noreferrer" className="no-underline">
                     <ClearChip tone="butter">{t("updates.available", { version: updates.latest.version })}</ClearChip>
