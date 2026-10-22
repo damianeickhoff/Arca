@@ -62,7 +62,7 @@ jobs:
             # Plain version too (1.6.0), the form the Docker Hub tags have always had.
             type=semver,pattern={{version}}
             type=sha,format=short
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           tags: ${{ steps.meta.outputs.tags }}
