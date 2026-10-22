@@ -115,7 +115,7 @@ export default defineConfig({
             { label: "Preferences", slug: "settings/preferences" },
             { label: "Categories and groups", slug: "settings/categories" },
             { label: "Data health, backups and undo", slug: "settings/data-health" },
-            { label: "AI (Gemini)", slug: "settings/ai" },
+            { label: "AI", slug: "settings/ai" },
             { label: "About and release notes", slug: "settings/about" },
           ],
         },

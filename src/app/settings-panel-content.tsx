@@ -29,7 +29,7 @@ import { AboutPanel, type AboutStatus } from "@/components/settings/about-panel"
 import { listBankConnections, getBankSyncStatus } from "@/lib/bank-sync";
 import { loadImportOverview } from "@/lib/import-overview";
 import { ImportPanel } from "@/components/settings/import-panel";
-import { isAiReady } from "@/lib/gemini";
+import { getAiSettings, isProviderConfigured } from "@/lib/ai-provider";
 import { getUpdateCheckState } from "@/lib/update-check";
 import { getBuildInfo } from "@/lib/build-info";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
@@ -125,11 +125,13 @@ async function ImportPanelContent() {
 
 /** Version, what leaves the server (with its live state), and the release notes. */
 async function AboutPanelContent({ canManageUpdates }: { canManageUpdates: boolean }) {
-  const [connections, aiOn, updates] = await Promise.all([listBankConnections(), isAiReady(), getUpdateCheckState()]);
+  const [connections, ai, updates] = await Promise.all([listBankConnections(), getAiSettings(), getUpdateCheckState()]);
   const status: AboutStatus = {
     bankConnections: connections.filter((c) => !c.expired).length,
-    aiOn,
-    ocrConfigured: !!process.env.OLLAMA_HOST,
+    aiProvider: ai.provider,
+    aiOn: ai.enabled && isProviderConfigured(ai),
+    localAddress: ai.local.baseUrl,
+    receiptScan: !!ai.local.baseUrl && !!ai.local.visionModel,
     newestBackup: listBackups()[0]?.createdAt ?? null,
   };
   return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} updates={updates} canManageUpdates={canManageUpdates} build={getBuildInfo()} />;

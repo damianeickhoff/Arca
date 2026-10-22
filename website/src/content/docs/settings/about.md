@@ -16,10 +16,9 @@ Arca is built to keep your data at home, so the About panel lists every connecti
 | Connection | When | What goes out |
 | --- | --- | --- |
 | Bank connection | Only after you [connect a bank](/Arca/transactions/bank-connection/) | The consent you give at your bank; Arca fetches your accounts and transactions |
-| AI (Gemini) | Only with [your own key](/Arca/settings/ai/), per feature | Cleaned descriptions, amounts, dates and your category names; never account numbers |
-| Receipt scanning | Only when the server is configured with an Ollama host of your own | Receipt photos |
+| AI | Only after you [switch it on](/Arca/settings/ai/), per feature. The tile names the provider: **AI (Gemini)** goes to Google, **AI (local server)** to the address of your own server, on your own network | Cleaned descriptions, amounts, dates and your category names; never account numbers |
+| Receipt scanning | Only when your own AI server has a [vision model](/Arca/settings/ai/#receipt-scanning) set | Receipt photos, to your own server only |
 | Map and merchant lookup | Only when you press the button on a transaction | Your browser asks OpenStreetMap for the place by name, or opens Google in a new tab |
-
 | Update check | Only when you turn it on, see below | A request to GitHub's public releases page for the newest version number; nothing of yours goes along |
 
 Nothing else: no telemetry, no analytics, no crash reports. The release notes on this panel ship inside the image, so opening About makes no request anywhere.

@@ -25,7 +25,7 @@ function writtenAgo(createdAt: string, locale: string): string {
 
 /**
  * Insights › Overview's summary: a headline, three facts and a budgeting tip. With AI on
- * Gemini writes them (only when asked, free-tier quota, kept until rewritten) from the
+ * the AI provider writes them (only when asked, kept until rewritten) from the
  * figures this page shows (`facts`); before that, and with AI off, the card shows the
  * same facts as the app computes them, without any prose. Either way the card has one
  * shape that fills its height: the facts take the free space, the tip and the footer

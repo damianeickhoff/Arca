@@ -1,6 +1,6 @@
 // The figures behind Insights › Overview — pure, so they can be tested and shared: the
 // hero's running totals and projection, the block map's layout, and the summary card's
-// facts, which the card shows as they are when AI is off and Gemini gets exactly when
+// facts, which the card shows as they are when AI is off and the AI provider gets exactly when
 // it is on ("AI explains, the app computes").
 
 import { daysInclusive, financialMonthForDate, financialMonthRangeByMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
@@ -274,7 +274,7 @@ export function buildSummaryFacts(input: SummaryInput): SummaryFacts {
   };
 }
 
-/** Gemini's structured summary, as kept in app_settings. */
+/** The AI's structured summary, as kept in app_settings. */
 export interface PeriodSummary {
   headline: string;
   /** Three short facts, each with figures from the input. */

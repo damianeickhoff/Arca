@@ -70,9 +70,9 @@
 - **Goals**: savings goals with contributions and suggestions.
 - **Overdraft limits** per bank account; you choose whether the overdraft counts as money you can spend.
 
-**Optional AI (Gemini, free tier)**
+**Optional AI (Gemini or your own server)**
 - Category suggestions in Needs a category, and a short written summary of any period on Insights.
-- Off until you add your own API key. Only merchant names, amounts, dates and category names are sent, never account numbers.
+- Off until you add your own Gemini API key, or point it at your own AI server (Ollama, LM Studio or anything OpenAI-compatible) so nothing leaves your network. Only merchant names, amounts, dates and category names are sent, never account numbers.
 
 **Yours**
 - Self-hosted: one SQLite file in `/data`, no cloud account. **Settings › About** lists every connection Arca can make (bank, AI, receipts, map) with its state and shows the release notes offline; there is no telemetry, and the update check is a switch that is off until you turn it on.

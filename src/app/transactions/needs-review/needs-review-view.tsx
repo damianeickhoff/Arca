@@ -76,7 +76,7 @@ export function NeedsReviewView({
   rows: TransactionDetail[];
   categories: Category[];
   savingsGoals: Goal[];
-  /** Gemini is switched on with a key (Settings › AI): show "Ask AI". */
+  /** AI is switched on and its provider set up (Settings › AI): show "Ask AI". */
   aiReady: boolean;
 }) {
   const t = useTranslations("needsReview");
@@ -114,7 +114,7 @@ export function NeedsReviewView({
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [selected, setSelected] = useState<Set<number> | null>(null);
   const selectMode = selected !== null;
-  // Gemini's picks, by transaction id. One "Ask AI" covers the current row and the next
+  // The AI's picks, by transaction id. One "Ask AI" covers the current row and the next
   // ones in the queue, so moving on shows their picks without another request.
   const [aiPicks, setAiPicks] = useState<Record<number, number>>({});
   const [aiAsked, setAiAsked] = useState<Set<number>>(new Set());
@@ -141,7 +141,7 @@ export function NeedsReviewView({
   const data = current && info?.id === current.id ? info.data : null;
   const aiPick = current ? categories.find((c) => c.id === aiPicks[current.id]) ?? null : null;
   const localSuggested = (data?.suggested ?? []).map((id) => categories.find((c) => c.id === id)).filter((c): c is Category => !!c);
-  // Gemini's pick joins the suggestions (marked) unless your rules and history already offer it.
+  // The AI's pick joins the suggestions (marked) unless your rules and history already offer it.
   const suggested = aiPick && !localSuggested.some((c) => c.id === aiPick.id) ? [...localSuggested, aiPick] : localSuggested;
   // The top suggestion is staged until another one is picked.
   const stagedId = current ? (picked?.id === current.id ? picked.categoryId : suggested[0]?.id ?? null) : null;

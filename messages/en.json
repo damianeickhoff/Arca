@@ -205,7 +205,7 @@
       },
       "ai": {
         "title": "AI",
-        "subtitle": "Gemini suggestions and summaries."
+        "subtitle": "Suggestions and summaries, from Gemini or your own server."
       },
       "about": {
         "title": "About",
@@ -856,9 +856,9 @@
     },
     "scan": {
       "title": "Scan a receipt",
-      "subtitle": "Read on this device — the photo never leaves it",
+      "subtitle": "Read by your own AI server — the photo goes nowhere else",
       "pick": "Take or choose a photo",
-      "local": "Read locally by Ollama, nothing is uploaded",
+      "local": "Read by the vision model on your own server, nothing goes to the cloud",
       "reading": "Reading the receipt…",
       "slow": "This can take a moment on a local model.",
       "error": "Something went wrong reading that receipt.",
@@ -873,7 +873,19 @@
       "detected": "Total on the receipt: {amount}",
       "another": "Another photo",
       "apply": "Use these details",
-      "close": "Close"
+      "close": "Close",
+      "errors": {
+        "notConfigured": "Receipt scanning needs a vision model on your own AI server. Set one in Settings › AI › Local server.",
+        "noFile": "Choose a photo first.",
+        "badType": "Only PNG, JPG and WEBP photos can be read.",
+        "tooLarge": "This photo is too large (10 MB at most).",
+        "unavailable": "Couldn't reach your AI server, or it took too long. Check that it's running and try again.",
+        "modelUnavailable": "The server doesn't have the model \"{model}\". Download it first, for example: ollama pull {model}",
+        "invalidKey": "Your AI server didn't accept the API key. Check it in Settings › AI.",
+        "badResponse": "The server couldn't read this photo with \"{model}\". Is it a vision model?",
+        "rateLimited": "Your AI server is busy. Try again in a moment.",
+        "unreadable": "Couldn't read the receipt. Try a clearer photo."
+      }
     },
     "split": {
       "title": "Split transaction",
@@ -1527,8 +1539,8 @@
       "body": "Choose Payment plan for a bill you pay off in parts, like the dentist. Enter the total and the number of parts, and each part shows up in the month it's due."
     },
     "aiSettings": {
-      "title": "AI with Gemini",
-      "body": "Add a free Gemini API key here to get category suggestions and a summary of your spending. It's off until you switch it on."
+      "title": "AI with Gemini or your own server",
+      "body": "Add a free Gemini API key or your own AI server here to get category suggestions and a summary of your spending. It's off until you switch it on."
     },
     "aiCategories": {
       "title": "Let AI suggest a category",
@@ -1536,7 +1548,7 @@
     },
     "insightsSummary": {
       "title": "Three facts and what's left",
-      "body": "This card sums up the period in three facts and what's left to spend per day. With AI on, Gemini can write them up with a budgeting tip."
+      "body": "This card sums up the period in three facts and what's left to spend per day. With AI on, it can write them up with a budgeting tip."
     },
     "iconPicker": {
       "title": "One picker for icons, logos and colour",
@@ -1613,6 +1625,10 @@
     "betaBuild": {
       "title": "This is a test build",
       "body": "You are running a dev or local build of Arca, not a release. Your real install shows no Beta chip."
+    },
+    "aiProvider": {
+      "title": "Gemini or your own server",
+      "body": "Pick Local server to use Ollama, LM Studio or another AI server on your own network instead of Google."
     }
   },
   "categoryPicker": {
@@ -3684,7 +3700,7 @@
       "title": "Summary",
       "aiChip": "AI",
       "written": "Written {time}",
-      "write": "Write with Gemini",
+      "write": "Write with AI",
       "rewrite": "Rewrite",
       "writing": "Writing…",
       "footAi": "Based on the figures on this page",
@@ -3708,10 +3724,10 @@
       "errors": {
         "signedOut": "You're signed out. Sign in and try again.",
         "notConfigured": "AI is off. Switch it on in Settings › AI.",
-        "invalidKey": "Google didn't accept the API key. Check it in Settings › AI.",
+        "invalidKey": "The AI service didn't accept the API key. Check it in Settings › AI.",
         "rateLimited": "Too many requests in a short time. Try again in a minute.",
-        "unavailable": "Couldn't reach Gemini. Try again later.",
-        "badResponse": "Gemini answered in a way Arca couldn't read. Try again.",
+        "unavailable": "Couldn't reach the AI service. Try again later.",
+        "badResponse": "The AI answered in a way Arca couldn't read. Try again.",
         "dailyLimit": "Today's free-tier limit is used up. It resets tomorrow.",
         "noFreeTier": "The chosen model isn't on the free tier. Pick another one in Settings › AI.",
         "modelUnavailable": "The chosen model isn't available. Pick another one in Settings › AI."
@@ -4897,10 +4913,10 @@
       "errors": {
         "signedOut": "You're signed out. Sign in and try again.",
         "notConfigured": "AI is off. Switch it on in Settings › AI.",
-        "invalidKey": "Google didn't accept the API key. Check it in Settings › AI.",
+        "invalidKey": "The AI service didn't accept the API key. Check it in Settings › AI.",
         "rateLimited": "Too many requests in a short time. Try again in a minute.",
-        "unavailable": "Couldn't reach Gemini. Try again later.",
-        "badResponse": "Gemini answered in a way Arca couldn't read. Try again.",
+        "unavailable": "Couldn't reach the AI service. Try again later.",
+        "badResponse": "The AI answered in a way Arca couldn't read. Try again.",
         "dailyLimit": "Today's free-tier limit is used up. It resets tomorrow.",
         "noFreeTier": "The chosen model isn't on the free tier. Pick another one in Settings › AI.",
         "modelUnavailable": "The chosen model isn't available. Pick another one in Settings › AI."
@@ -4956,9 +4972,48 @@
       "badResponse": "Gemini answered in a way Arca couldn't read. Try again.",
       "dailyLimit": "Today's free-tier limit for this model is used up. It resets tomorrow, or pick another model.",
       "noFreeTier": "This model isn't on the free tier for your key. Choose Automatic or another Flash model.",
-      "modelUnavailable": "This model isn't available for your key. Choose Automatic or another model."
+      "modelUnavailable": "This model isn't available for your key. Choose Automatic or another model.",
+      "badAddress": "That isn't a web address. Use something like http://192.168.1.10:11434.",
+      "denied": "Only an admin can change the AI settings."
     },
-    "testOkModel": "Connected. {model} answered."
+    "testOkModel": "Connected. {model} answered.",
+    "provider": "AI provider",
+    "providers": {
+      "gemini": "Google Gemini",
+      "local": "Local server"
+    },
+    "receiptsOnLocal": "Receipt scanning always runs on a local server: set its address and a vision model under Local server, even when Gemini writes the text.",
+    "local": {
+      "address": "Address",
+      "addressPlaceholder": "http://192.168.1.10:11434",
+      "addressHint": "The server's address as Arca's server reaches it. Ollama listens on port 11434, LM Studio on 1234. Arca adds /v1 itself.",
+      "loadModels": "Load models",
+      "loadingModels": "Loading…",
+      "noModels": "The server has no models yet. Download one first, for example with: ollama pull llama3.1:8b",
+      "modelChoose": "Choose a model",
+      "modelPlaceholder": "For example llama3.1:8b",
+      "modelHint": "A model of 7B or more follows the answer format reliably; smaller ones may need a retry.",
+      "modelTypedHint": "Type the model name, or press Load models to pick it from the list.",
+      "visionModel": "Vision model (optional)",
+      "visionModelNone": "None: no receipt scanning",
+      "visionModelHint": "For receipt photos, for example llava or qwen2.5vl. Receipt scanning shows up only when this is set, whichever provider writes the text.",
+      "key": "API key (optional)",
+      "keyHint": "Only when your server asks for one. Ollama and LM Studio don't by default.",
+      "keyPlaceholder": "Leave empty when there is none",
+      "keyRemoved": "Key removed.",
+      "enableNeedsServer": "Enter the server address and choose a model first.",
+      "privacy": "Everything a feature needs (merchant names, amounts, dates and your category names) goes to this address and nowhere else. Account numbers never leave the app.",
+      "testOkList": "Connected. The server offers {count, plural, one {# model} other {# models}}. Choose one and test again to try an answer.",
+      "errors": {
+        "notConfigured": "Enter the server's address first.",
+        "unavailable": "Couldn't reach the server at this address. Check that it's running and that Arca's server can reach it.",
+        "invalidKey": "The server didn't accept the API key.",
+        "modelUnavailable": "The server doesn't have this model. Load the list and pick one.",
+        "badResponse": "The model didn't answer in the format Arca needs, even after a second try. A bigger model (7B or more) usually does.",
+        "rateLimited": "The server is busy. Try again in a moment."
+      }
+    },
+    "adminOnly": "Only an admin can change the AI settings. They apply to everyone on this server."
   },
   "bankConnection": {
     "loading": "Loading…",
@@ -5108,7 +5163,7 @@
         },
         "ocr": {
           "title": "Receipt scanning",
-          "body": "Receipt photos go to an Ollama host of your own, when the server has one."
+          "body": "Receipt photos go to your own AI server, once it has a vision model (Settings › AI)."
         },
         "map": {
           "title": "Map and merchant lookup",
@@ -5117,6 +5172,14 @@
         "update": {
           "title": "Update check",
           "body": "Only when you turn it on below. The server asks GitHub once a day which version is newest. Nothing of yours goes along."
+        },
+        "aiLocal": {
+          "title": "AI (local server)",
+          "body": "Cleaned descriptions, amounts, dates and category names go to your own server at {address}, on your own network, and never leave it."
+        },
+        "ocrLocal": {
+          "title": "Receipt scanning",
+          "body": "Receipt photos go to the vision model on your own server at {address}, and nowhere else."
         }
       },
       "nothingElse": "No telemetry, no analytics, no crash reports. No update check unless you turn it on. This page made no request to show you this."

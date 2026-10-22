@@ -1,20 +1,28 @@
-# AI roadmap (Gemini)
+# AI roadmap
 
 Planned AI features for Centje, in build order. One feature per session/commit.
 
 ## What already exists (October 2026)
 
-- **Gemini client** — `src/lib/gemini.ts`: settings (`ai_enabled`, `ai_gemini_key`, `ai_model` in
-  `app_settings`), `listModels`, `generateJson(prompt, schema)` with JSON output, automatic model
-  fallback past paid-only models, quota-error reading (`readQuotaError`), `redactForAi()` to strip
-  IBANs, card numbers and long references. Key never leaves the server.
+- **Provider seam** — `src/lib/ai-provider.ts`: settings (`ai_enabled`, `ai_provider` gemini|local,
+  `ai_gemini_key`, `ai_model`, `ai_local_base_url`, `ai_local_model`, `ai_local_vision_model`,
+  `ai_local_api_key` in `app_settings`) and `generateJson(prompt, schema)`, which sends the request
+  to the one provider chosen in Settings › AI. Keys never leave the server.
+- **Gemini** — `src/lib/gemini.ts`: `listModels`, JSON output, automatic model fallback past
+  paid-only models, quota-error reading (`readQuotaError`).
+- **Local server** — `src/lib/openai-compatible.ts`: any OpenAI-compatible server (Ollama, LM
+  Studio, …); answers are parsed, validated against the schema (`src/lib/ai-schema.ts`) and retried
+  once with the problem. Receipt scanning uses its vision model, whichever provider writes text.
+- **Shared** — `src/lib/ai-schema.ts`: `AiError`/`AiResult`, `redactForAi()` to strip IBANs, card
+  numbers and long references, the schema converter and validator. A new feature writes its schema
+  once (Gemini's OpenAPI subset, type "OBJECT" …) and works on both providers.
 - **Features** — `src/lib/ai-features.ts` (`suggestCategories`, `summarizePeriod` — a structured
   headline, three facts and a tip from the facts built in `src/lib/period-facts.ts` — + cache in
   `app_settings.ai_summaries`), server actions in `src/app/actions/ai.ts`.
 - **UI** — Settings › AI (`src/components/settings/ai-settings-panel.tsx`), Ask AI in Needs a
   category (`src/app/transactions/needs-review/needs-review-view.tsx`), Summary card on Insights ›
   Overview (`src/app/reports/summary-card.tsx`; with AI off it shows the computed facts instead).
-- **Diagnostics** — `npm run ai:check` (`scripts/ai-check.ts`).
+- **Diagnostics** — `npm run ai:check` (`scripts/ai-check.ts`, Gemini only).
 
 ## Ground rules for every AI feature
 
@@ -134,7 +142,7 @@ it has to work offline and on the free tier. What AI can add sits around it:
 **Why:** a receipt photo becomes the split, instead of typing amounts.
 
 - Receipts already attach to a transaction (`/api/receipts`). Add "Read receipt": the image goes
-  to Gemini (multimodal) and comes back as `{ merchant, date, total, lines: [{ text, amount,
+  to the local server's vision model (as receipt scanning does; photos never go to Gemini) and comes back as `{ merchant, date, total, lines: [{ text, amount,
   categoryId? }] }`, validated against the transaction total.
 - Show the lines as a proposed split in the existing split dialog; the user adjusts and saves.
 - Image stays local except for that one call; no OCR text is stored unless the split is saved.

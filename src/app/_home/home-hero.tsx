@@ -11,6 +11,7 @@ import { clearButtonVariants } from "@/components/clear/button-variants";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import type { SafeToSpend } from "@/lib/safe-to-spend";
 import { cn } from "@/lib/utils";
+import { isReceiptScanReady } from "@/lib/ai-provider";
 
 // On the hero the button colours follow the hero (black in light mode, light in dark),
 // so they use the hero tokens rather than the primary ones.
@@ -33,7 +34,7 @@ export async function HomeHero({
   /** Cumulative spend against the budget per day so far (lib/safe-to-spend budgetSpendByDay). */
   spendByDay: number[];
 }) {
-  const t = await getTranslations("home.hero");
+  const [t, receiptScan] = await Promise.all([getTranslations("home.hero"), isReceiptScanReady()]);
 
   if (!figures) {
     return (
@@ -121,14 +122,16 @@ export async function HomeHero({
           <IconPlus aria-hidden />
           {t("add")}
         </Link>
-        <Link
-          href="/transactions/add?scan=1"
-          aria-label={t("scan")}
-          title={t("scan")}
-          className={clearButtonVariants({ variant: "outline", size: "icon" })}
-        >
-          <IconScan aria-hidden />
-        </Link>
+        {receiptScan && (
+          <Link
+            href="/transactions/add?scan=1"
+            aria-label={t("scan")}
+            title={t("scan")}
+            className={clearButtonVariants({ variant: "outline", size: "icon" })}
+          >
+            <IconScan aria-hidden />
+          </Link>
+        )}
       </div>
     </ClearCard>
   );

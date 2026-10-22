@@ -12,7 +12,7 @@ import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { safeToSpend } from "@/lib/safe-to-spend";
 import { currentFinancialMonth, daysInclusive, shiftDate, todayStr, type FinancialMonthConfig } from "@/lib/date-range";
 import { AnchoredTip } from "@/components/anchored-tip";
-import { isAiReady } from "@/lib/gemini";
+import { isAiReady } from "@/lib/ai-provider";
 import { getCachedSummary } from "@/lib/ai-features";
 import { averagePerDay, buildSummaryFacts, monthOfPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
 import { SummaryCard } from "./summary-card";
@@ -481,7 +481,7 @@ export async function AnalyticsTab({
   });
 
 
-  // The summary: computed facts, which Gemini (Settings › AI) writes up when it is on.
+  // The summary: computed facts, which the AI provider (Settings › AI) writes up when it is on.
   // "v2": summaries are structured now; paragraph ones from before are never shown.
   const aiReady = await isAiReady();
   const signedPct = (c: { pct: number; up: boolean } | null) => (c ? (c.up ? c.pct : -c.pct) : null);

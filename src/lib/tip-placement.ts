@@ -167,7 +167,8 @@ export type TipAnchor =
   | "recurringScan"
   | "backups"
   | "updateCheck"
-  | "betaBuild";
+  | "betaBuild"
+  | "aiProvider";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

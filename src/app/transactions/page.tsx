@@ -10,6 +10,7 @@ import { billsDueTotal } from "@/lib/bill-amounts";
 import { normalizeBudgetType } from "@/lib/format";
 import { getLocale } from "next-intl/server";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
+import { isReceiptScanReady } from "@/lib/ai-provider";
 import { ActivityHeader, ActivityView, type ActivityFilters } from "./_activity/activity-view";
 import { ActivitySelectionProvider } from "./_activity/select-mode";
 import { ActivityNavigationProvider } from "./_activity/filter-transition";
@@ -272,7 +273,7 @@ export default async function TransactionsPage({
   // ── Context for the detail panel (see _activity/context.ts and lib/activity-context.ts)
   const monthRange = financialMonthRange(financialMonth, 0);
   const linkedRecurringIds = visibleRows.map((r) => r.recurringItemId).filter((id): id is number => id != null);
-  const [context, locale] = await Promise.all([getActivityContext(financialMonth, linkedRecurringIds), getLocale()]);
+  const [context, locale, receiptScan] = await Promise.all([getActivityContext(financialMonth, linkedRecurringIds), getLocale(), isReceiptScanReady()]);
 
   // ── The two link tiles ─────────────────────────────────────────────────────
   const resetDate = shiftDate(monthRange.to, 1);
@@ -289,7 +290,7 @@ export default async function TransactionsPage({
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:h-dvh lg:min-h-[720px] lg:gap-7 lg:px-8 lg:pt-7 lg:pb-4">
       <ActivityNavigationProvider>
       <ActivitySelectionProvider>
-      <ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} canSelect={visibleRows.length > 0} />
+      <ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} canSelect={visibleRows.length > 0} receiptScan={receiptScan} />
       <ActivityView
         filters={filters}
         categories={cats}

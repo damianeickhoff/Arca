@@ -104,7 +104,7 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
       );
 
     case "ai":
-      return <AiSettingsPanel />;
+      return <AiSettingsPanel canManage={user.isAdmin} />;
 
     case "financialMonth":
       return (

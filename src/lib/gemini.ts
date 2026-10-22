@@ -1,81 +1,14 @@
-import { eq, inArray } from "drizzle-orm";
-import { db } from "@/db";
-import { appSettings } from "@/db/schema";
+import type { AiError, AiResult, AiSchema } from "@/lib/ai-schema";
 
-// The Gemini integration (Google AI Studio, free tier). Server only: the API key lives in
-// app_settings and never reaches the browser — clients only learn whether one is set and
-// its last four characters. Every call goes through generateJson, which returns a typed
-// error instead of throwing so each feature can say what went wrong in its own words.
+// The Gemini provider (Google AI Studio, free tier). Server only. The settings (key,
+// model, on/off) are read and saved by lib/ai-provider.ts, which is also what features
+// call: generateJson there picks Gemini or the local server and passes the key in here.
 //
 // Free-tier note: Google may use what is sent on the free tier to improve its products,
 // so callers send only what a feature needs (merchant text, amounts, category names) and
-// never account numbers — see redactForAi.
+// never account numbers — see redactForAi in lib/ai-schema.ts.
 
 const API = "https://generativelanguage.googleapis.com/v1beta";
-
-const KEYS = { enabled: "ai_enabled", apiKey: "ai_gemini_key", model: "ai_model" } as const;
-
-export type AiError =
-  | "notConfigured"
-  | "invalidKey"
-  | "rateLimited"
-  | "dailyLimit"
-  | "noFreeTier"
-  | "modelUnavailable"
-  | "unavailable"
-  | "badResponse";
-export type AiResult<T> = { ok: true; value: T } | { ok: false; error: AiError };
-
-export interface AiConfig {
-  enabled: boolean;
-  apiKey: string | null;
-  /** The chosen model id ("gemini-…"), or null to pick a Flash model automatically. */
-  model: string | null;
-}
-
-/** What the settings panel may see: never the key itself. */
-export interface AiSettingsView {
-  enabled: boolean;
-  hasKey: boolean;
-  keyHint: string | null;
-  model: string | null;
-}
-
-export async function getAiConfig(): Promise<AiConfig> {
-  const rows = await db.select().from(appSettings).where(inArray(appSettings.key, Object.values(KEYS)));
-  const value = (key: string) => rows.find((r) => r.key === key)?.value || null;
-  return { enabled: value(KEYS.enabled) === "1", apiKey: value(KEYS.apiKey), model: value(KEYS.model) };
-}
-
-export function toSettingsView(config: AiConfig): AiSettingsView {
-  return {
-    enabled: config.enabled,
-    hasKey: !!config.apiKey,
-    keyHint: config.apiKey ? config.apiKey.slice(-4) : null,
-    model: config.model,
-  };
-}
-
-/** AI features show only when switched on and a key is set. */
-export async function isAiReady(): Promise<boolean> {
-  const config = await getAiConfig();
-  return config.enabled && !!config.apiKey;
-}
-
-async function setSetting(key: string, value: string | null) {
-  if (value == null) {
-    await db.delete(appSettings).where(eq(appSettings.key, key));
-    return;
-  }
-  await db.insert(appSettings).values({ key, value }).onConflictDoUpdate({ target: appSettings.key, set: { value } });
-}
-
-/** Saves the settings; an undefined `apiKey` keeps the stored one, null removes it. */
-export async function saveAiConfig(next: { enabled: boolean; apiKey?: string | null; model: string | null }) {
-  await setSetting(KEYS.enabled, next.enabled ? "1" : "0");
-  if (next.apiKey !== undefined) await setSetting(KEYS.apiKey, next.apiKey?.trim() || null);
-  await setSetting(KEYS.model, next.model?.trim() || null);
-}
 
 function errorFor(status: number): AiError {
   if (status === 400 || status === 401 || status === 403) return "invalidKey";
@@ -182,20 +115,16 @@ async function callModel(apiKey: string, model: string, body: string): Promise<C
 
 /**
  * One generateContent call that must answer with JSON matching `schema` (OpenAPI subset,
- * as the API expects). Uses the saved settings unless `override` is given (the settings
- * panel's "Test connection" checks a key before it is saved). In automatic mode a model
- * without free quota (or not offered to this key) is skipped for the next one; a short
- * per-minute wait is retried once.
+ * as the API expects), with the key and model (null = automatic) the caller passes. In
+ * automatic mode a model without free quota (or not offered to this key) is skipped for
+ * the next one; a short per-minute wait is retried once.
  */
-export async function generateJson<T>(
+export async function generateGeminiJson<T>(
   prompt: { system: string; user: string },
-  schema: Record<string, unknown>,
-  override?: { apiKey: string; model: string | null },
+  schema: AiSchema,
+  { apiKey, model: chosen }: { apiKey: string; model: string | null },
 ): Promise<AiResult<T> & { model?: string }> {
-  const saved = override ? null : await getAiConfig();
-  const apiKey = override?.apiKey ?? saved?.apiKey;
-  if (!apiKey || (saved && !saved.enabled)) return { ok: false, error: "notConfigured" };
-  const chosen = override ? override.model : saved!.model;
+  if (!apiKey) return { ok: false, error: "notConfigured" };
   const candidates = await candidateModels(apiKey, chosen);
   if (!candidates.ok) return candidates;
 
@@ -228,18 +157,4 @@ export async function generateJson<T>(
     if (autoModel.get(apiKey) === model) autoModel.delete(apiKey);
   }
   return { ok: false, error: last };
-}
-
-/**
- * Bank text with what identifies an account taken out: IBANs, card numbers and any long
- * run of digits (references, account numbers) become "…". What's left — the merchant and
- * the free text — is what a category can be guessed from.
- */
-export function redactForAi(text: string): string {
-  return text
-    .replace(/\b[A-Z]{2}\d{2}\s?(?:[A-Z0-9]{4}\s?){2,7}[A-Z0-9]{1,4}\b/gi, "…")
-    .replace(/\d[\d\s-]{6,}\d/g, "…")
-    .replace(/\s{2,}/g, " ")
-    .trim()
-    .slice(0, 140);
 }

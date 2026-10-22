@@ -1,6 +1,7 @@
 // What may leave the app for Gemini: merchant text, never an account or card number.
 import { describe, expect, it } from "vitest";
-import { readQuotaError, redactForAi } from "@/lib/gemini";
+import { readQuotaError } from "@/lib/gemini";
+import { redactForAi } from "@/lib/ai-schema";
 
 describe("redactForAi", () => {
   it("removes IBANs, with or without spaces", () => {

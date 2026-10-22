@@ -24,10 +24,14 @@ import { cn } from "@/lib/utils";
 export interface AboutStatus {
   /** Active bank connections (Enable Banking). */
   bankConnections: number;
-  /** AI turned on with a key present. */
+  /** Which AI service answers (Settings › AI), on or not. */
+  aiProvider: "gemini" | "local";
+  /** AI turned on and the chosen provider set up. */
   aiOn: boolean;
-  /** The server has an Ollama host configured for receipt scanning. */
-  ocrConfigured: boolean;
+  /** The local AI server's address, shown in the AI and receipt tiles. */
+  localAddress: string | null;
+  /** The local AI server has a vision model, so receipt photos go to it. */
+  receiptScan: boolean;
   /** ISO timestamp of the newest backup, or null when there is none yet. */
   newestBackup: string | null;
 }
@@ -62,10 +66,13 @@ export function AboutPanel({
   const connections: Connection[] = [
     { key: "bank", state: status.bankConnections > 0 ? "on" : "off" },
     { key: "ai", state: status.aiOn ? "on" : "off" },
-    { key: "ocr", state: status.ocrConfigured ? "on" : "off" },
+    { key: "ocr", state: status.receiptScan ? "on" : "off" },
     { key: "map", state: "onTap" },
     { key: "update", state: updates.enabled ? "on" : "off" },
   ];
+
+  // The AI tile tells what the chosen provider means: Google's servers or one on your network.
+  const itemKey = (key: Connection["key"]) => (key === "ai" && status.aiProvider === "local" ? "aiLocal" : key === "ocr" && status.receiptScan ? "ocrLocal" : key);
 
   const newest = status.newestBackup
     ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(status.newestBackup))
@@ -138,7 +145,7 @@ export function AboutPanel({
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[15px] font-bold">{t(`network.items.${c.key}.title`)}</span>
+                  <span className="text-[15px] font-bold">{t(`network.items.${itemKey(c.key)}.title`)}</span>
                   <span
                     className={cn(
                       "shrink-0 rounded-full bg-clear-card px-2.5 py-1 text-xs font-bold",
@@ -149,7 +156,7 @@ export function AboutPanel({
                   </span>
                 </div>
                 <p className={cn("m-0 text-[13px] leading-normal", c.state === "on" ? "" : "text-clear-ink-2")}>
-                  {t(`network.items.${c.key}.body`)}
+                  {t(`network.items.${itemKey(c.key)}.body`, { address: status.localAddress ?? "" })}
                 </p>
               </li>
             ))}

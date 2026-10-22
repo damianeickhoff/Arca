@@ -27,7 +27,7 @@ The **Period** menu at the top: **Budget** (your budget month, payday to payday)
 
 The **Summary** card sums up the period in three facts and what's left to spend per day, worked out from the numbers on the page.
 
-If you've switched on [AI](/Arca/settings/ai/), choose **Write with Gemini** and it writes those facts up in plain sentences with a budgeting tip. The numbers always come from Arca; the AI only writes the words.
+If you've switched on [AI](/Arca/settings/ai/), choose **Write with AI** and it writes those facts up in plain sentences with a budgeting tip. The numbers always come from Arca; the AI only writes the words.
 
 :::tip[Not much to see yet?]
 Insights needs a little history. Import a few months of transactions (see [CSV import](/Arca/transactions/csv-import/)) and the cards fill up.

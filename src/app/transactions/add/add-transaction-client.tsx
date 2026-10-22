@@ -108,6 +108,7 @@ export function AddTransactionClient({
   financialMonth,
   budgets,
   budgetPeriod,
+  receiptScan,
   openScanner = false,
 }: {
   categories: Category[];
@@ -116,6 +117,8 @@ export function AddTransactionClient({
   financialMonth: FinancialMonthConfig;
   budgets: ActivityContext["budgets"];
   budgetPeriod?: ActivityContext["budgetPeriod"];
+  /** The local AI server has a vision model (Settings › AI); without one there is no scan button. */
+  receiptScan: boolean;
   /** Open the receipt scanner straight away — Home's "Scan receipt" quick action. */
   openScanner?: boolean;
 }) {
@@ -548,7 +551,7 @@ export function AddTransactionClient({
               </ClearField>
             </div>
 
-            {mode !== "transfer" && (
+            {receiptScan && mode !== "transfer" && (
               <button
                 type="button"
                 onClick={() => setScanOpen(true)}
@@ -700,7 +703,7 @@ export function AddTransactionClient({
             </>
           )}
         </button>
-        {mode !== "transfer" && (
+        {receiptScan && mode !== "transfer" && (
           <button type="button" onClick={() => setScanOpen(true)} className={chip}>
             <IconCamera aria-hidden />
             {t("scanReceipt")}

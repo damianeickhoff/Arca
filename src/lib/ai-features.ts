@@ -2,16 +2,18 @@ import { eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { appSettings, categories, merchants, transactions } from "@/db/schema";
 import { resolveDisplayName } from "@/lib/friendly-names";
-import { generateJson, redactForAi, type AiResult } from "@/lib/gemini";
+import { generateJson, type AiResult } from "@/lib/ai-provider";
+import { redactForAi } from "@/lib/ai-schema";
 import { AI_CATEGORY_BATCH } from "@/lib/ai-shared";
 import { formatEur } from "@/lib/format";
 import { toPeriodSummary, type PeriodSummary, type SummaryFacts } from "@/lib/period-facts";
 
 export type { PeriodSummary, SummaryFacts };
 
-// What the app asks Gemini for. Each feature builds the smallest prompt that does the job
-// out of data that can't identify an account (see redactForAi), and checks the answer
-// before anything uses it — a model can return ids that don't exist.
+// What the app asks the AI provider (Gemini or a local server) for. Each feature builds
+// the smallest prompt that does the job out of data that can't identify an account (see
+// redactForAi), and checks the answer before anything uses it — a model can return ids
+// that don't exist.
 
 /** Suggested category per transaction id, for the ones the model could place. */
 export async function suggestCategories(ids: number[]): Promise<AiResult<Record<number, number>>> {

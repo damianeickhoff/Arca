@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { categories, goals } from "@/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
-import { isAiReady } from "@/lib/gemini";
+import { isAiReady } from "@/lib/ai-provider";
 import { NeedsReviewView } from "./needs-review-view";
 
 export const dynamic = "force-dynamic";

@@ -120,12 +120,15 @@ export function ActivityHeader({
   needsReviewCount,
   filters,
   canSelect,
+  receiptScan,
 }: {
   accountCount: number;
   needsReviewCount: number;
   filters: ActivityFilters;
   /** False when the list is empty: there is nothing to select. */
   canSelect: boolean;
+  /** The local AI server has a vision model (Settings › AI), so receipts can be scanned. */
+  receiptScan: boolean;
 }) {
   const t = useTranslations("activity");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -150,10 +153,12 @@ export function ActivityHeader({
           >
             <IconAdjustmentsHorizontal size={20} stroke={1.9} />
           </button>
-          <Link href="/transactions/add?scan=1" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
-            <IconCamera aria-hidden />
-            {t("scanReceipt")}
-          </Link>
+          {receiptScan && (
+            <Link href="/transactions/add?scan=1" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
+              <IconCamera aria-hidden />
+              {t("scanReceipt")}
+            </Link>
+          )}
           <Link href="/settings?panel=import" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
             <IconFileUpload aria-hidden />
             {t("importCsv")}

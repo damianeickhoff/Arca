@@ -20,10 +20,10 @@ export interface ScannedReceipt {
   categoryName: string | null;
 }
 
-// Scans a receipt photo via a locally-running Ollama vision model (see
-// /api/receipts/scan) — never leaves the machine, no cloud API, no cost. Ollama not
-// being installed/running is treated as a normal, expected error state, not a crash:
-// the manual add-transaction flow works exactly the same with or without it.
+// Scans a receipt photo with the vision model on the user's own AI server (Settings › AI ›
+// Local server, see /api/receipts/scan) — no cloud API, no cost. The server not running
+// or not having the model is a normal, expected error state, not a crash: the manual
+// add-transaction flow works exactly the same with or without it.
 export function ReceiptScanDialog({
   open,
   onOpenChange,
@@ -62,7 +62,9 @@ export function ReceiptScanDialog({
       const res = await fetch("/api/receipts/scan", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? t("error"));
+        // The route answers with a code (and the model's name where it helps).
+        const code = typeof data.error === "string" ? data.error : "";
+        setError(t.has(`errors.${code}`) ? t(`errors.${code}`, { model: data.model ?? "" }) : t("error"));
         setStatus("error");
         return;
       }

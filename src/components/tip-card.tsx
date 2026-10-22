@@ -4,6 +4,7 @@ import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
   IconListNumbers,
+  IconServer,
   IconBook2,
   IconUserPlus,
   IconRepeat,
@@ -193,6 +194,7 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   updateCheck: IconRefresh,
   updateAvailable: IconDownload,
   betaBuild: IconFlask,
+  aiProvider: IconServer,
 };
 
 /**

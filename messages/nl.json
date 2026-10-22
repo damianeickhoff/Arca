@@ -205,7 +205,7 @@
       },
       "ai": {
         "title": "AI",
-        "subtitle": "Suggesties en samenvattingen van Gemini."
+        "subtitle": "Suggesties en samenvattingen, van Gemini of je eigen server."
       },
       "about": {
         "title": "Over Arca",
@@ -856,9 +856,9 @@
     },
     "scan": {
       "title": "Bon scannen",
-      "subtitle": "Gelezen op dit apparaat — de foto gaat nergens heen",
+      "subtitle": "Gelezen door je eigen AI-server — de foto gaat nergens anders heen",
       "pick": "Maak of kies een foto",
-      "local": "Lokaal gelezen door Ollama, er wordt niets geüpload",
+      "local": "Gelezen door het beeldmodel op je eigen server, er gaat niets naar de cloud",
       "reading": "Bon lezen…",
       "slow": "Met een lokaal model kan dit even duren.",
       "error": "Er ging iets mis bij het lezen van deze bon.",
@@ -873,7 +873,19 @@
       "detected": "Totaal op de bon: {amount}",
       "another": "Andere foto",
       "apply": "Deze gegevens gebruiken",
-      "close": "Sluiten"
+      "close": "Sluiten",
+      "errors": {
+        "notConfigured": "Bonnen scannen heeft een beeldmodel op je eigen AI-server nodig. Stel er een in bij Instellingen › AI › Eigen server.",
+        "noFile": "Kies eerst een foto.",
+        "badType": "Alleen PNG-, JPG- en WEBP-foto's kunnen worden gelezen.",
+        "tooLarge": "Deze foto is te groot (maximaal 10 MB).",
+        "unavailable": "Je AI-server is niet bereikbaar, of het duurde te lang. Controleer of hij draait en probeer het opnieuw.",
+        "modelUnavailable": "De server heeft het model \"{model}\" niet. Download het eerst, bijvoorbeeld: ollama pull {model}",
+        "invalidKey": "Je AI-server accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
+        "badResponse": "De server kon deze foto niet lezen met \"{model}\". Is het een beeldmodel?",
+        "rateLimited": "Je AI-server heeft het druk. Probeer het zo opnieuw.",
+        "unreadable": "De bon kon niet worden gelezen. Probeer een scherpere foto."
+      }
     },
     "split": {
       "title": "Transactie splitsen",
@@ -1527,8 +1539,8 @@
       "body": "Kies Betalingsregeling voor een rekening die je in delen afbetaalt, zoals de tandarts. Vul het totaal en het aantal termijnen in, dan verschijnt elke termijn in de maand waarin hij valt."
     },
     "aiSettings": {
-      "title": "AI met Gemini",
-      "body": "Voeg hier een gratis Gemini API-sleutel toe voor categoriesuggesties en een samenvatting van je uitgaven. Het staat uit tot je het aanzet."
+      "title": "AI met Gemini of je eigen server",
+      "body": "Voeg hier een gratis Gemini API-sleutel of je eigen AI-server toe voor categoriesuggesties en een samenvatting van je uitgaven. Het staat uit tot je het aanzet."
     },
     "aiCategories": {
       "title": "Laat AI een categorie voorstellen",
@@ -1536,7 +1548,7 @@
     },
     "insightsSummary": {
       "title": "Drie feiten en wat er over is",
-      "body": "Deze kaart vat de periode samen in drie feiten en wat je per dag nog kunt besteden. Met AI aan schrijft Gemini ze uit, met een budgettip."
+      "body": "Deze kaart vat de periode samen in drie feiten en wat je per dag nog kunt besteden. Met AI aan kan die ze uitschrijven, met een budgettip."
     },
     "iconPicker": {
       "title": "Eén kiezer voor iconen, logo's en kleur",
@@ -1613,6 +1625,10 @@
     "betaBuild": {
       "title": "Dit is een testbuild",
       "body": "Je draait een dev- of lokale build van Arca, geen release. Je echte installatie toont geen Bèta-label."
+    },
+    "aiProvider": {
+      "title": "Gemini of je eigen server",
+      "body": "Kies Eigen server om Ollama, LM Studio of een andere AI-server in je eigen netwerk te gebruiken in plaats van Google."
     }
   },
   "categoryPicker": {
@@ -3684,7 +3700,7 @@
       "title": "Samenvatting",
       "aiChip": "AI",
       "written": "Geschreven {time}",
-      "write": "Laat Gemini schrijven",
+      "write": "Laat AI schrijven",
       "rewrite": "Opnieuw schrijven",
       "writing": "Schrijven…",
       "footAi": "Op basis van de cijfers op deze pagina",
@@ -3708,10 +3724,10 @@
       "errors": {
         "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw.",
         "notConfigured": "AI staat uit. Zet het aan bij Instellingen › AI.",
-        "invalidKey": "Google accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
+        "invalidKey": "De AI-dienst accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
         "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
-        "unavailable": "Gemini is niet bereikbaar. Probeer het later opnieuw.",
-        "badResponse": "Gemini gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
+        "unavailable": "De AI-dienst is niet bereikbaar. Probeer het later opnieuw.",
+        "badResponse": "De AI gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
         "dailyLimit": "De gratis daglimiet is op. Morgen kan het weer.",
         "noFreeTier": "Het gekozen model valt niet onder de gratis versie. Kies een ander bij Instellingen › AI.",
         "modelUnavailable": "Het gekozen model is niet beschikbaar. Kies een ander bij Instellingen › AI."
@@ -4897,10 +4913,10 @@
       "errors": {
         "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw.",
         "notConfigured": "AI staat uit. Zet het aan bij Instellingen › AI.",
-        "invalidKey": "Google accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
+        "invalidKey": "De AI-dienst accepteerde de API-sleutel niet. Controleer hem bij Instellingen › AI.",
         "rateLimited": "Te veel verzoeken in korte tijd. Probeer het over een minuut opnieuw.",
-        "unavailable": "Gemini is niet bereikbaar. Probeer het later opnieuw.",
-        "badResponse": "Gemini gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
+        "unavailable": "De AI-dienst is niet bereikbaar. Probeer het later opnieuw.",
+        "badResponse": "De AI gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
         "dailyLimit": "De gratis daglimiet is op. Morgen kan het weer.",
         "noFreeTier": "Het gekozen model valt niet onder de gratis versie. Kies een ander bij Instellingen › AI.",
         "modelUnavailable": "Het gekozen model is niet beschikbaar. Kies een ander bij Instellingen › AI."
@@ -4956,9 +4972,48 @@
       "badResponse": "Gemini gaf een antwoord dat Arca niet kon lezen. Probeer het opnieuw.",
       "dailyLimit": "De gratis daglimiet voor dit model is op. Morgen kan het weer, of kies een ander model.",
       "noFreeTier": "Dit model valt voor jouw sleutel niet onder de gratis versie. Kies Automatisch of een ander Flash-model.",
-      "modelUnavailable": "Dit model is niet beschikbaar voor jouw sleutel. Kies Automatisch of een ander model."
+      "modelUnavailable": "Dit model is niet beschikbaar voor jouw sleutel. Kies Automatisch of een ander model.",
+      "badAddress": "Dit is geen webadres. Gebruik iets als http://192.168.1.10:11434.",
+      "denied": "Alleen een beheerder kan de AI-instellingen wijzigen."
     },
-    "testOkModel": "Verbonden. {model} gaf antwoord."
+    "testOkModel": "Verbonden. {model} gaf antwoord.",
+    "provider": "AI-dienst",
+    "providers": {
+      "gemini": "Google Gemini",
+      "local": "Eigen server"
+    },
+    "receiptsOnLocal": "Bonnen scannen loopt altijd via een eigen server: vul het adres en een beeldmodel in bij Eigen server, ook als Gemini de teksten schrijft.",
+    "local": {
+      "address": "Adres",
+      "addressPlaceholder": "http://192.168.1.10:11434",
+      "addressHint": "Het adres van de server zoals de Arca-server hem bereikt. Ollama luistert op poort 11434, LM Studio op 1234. Arca zet er zelf /v1 achter.",
+      "loadModels": "Modellen laden",
+      "loadingModels": "Laden…",
+      "noModels": "De server heeft nog geen modellen. Download er eerst een, bijvoorbeeld met: ollama pull llama3.1:8b",
+      "modelChoose": "Kies een model",
+      "modelPlaceholder": "Bijvoorbeeld llama3.1:8b",
+      "modelHint": "Een model van 7B of groter houdt zich goed aan het antwoordformaat; kleinere hebben soms een tweede poging nodig.",
+      "modelTypedHint": "Typ de naam van het model, of druk op Modellen laden om er een uit de lijst te kiezen.",
+      "visionModel": "Beeldmodel (optioneel)",
+      "visionModelNone": "Geen: niet scannen",
+      "visionModelHint": "Voor bonfoto's, bijvoorbeeld llava of qwen2.5vl. Bonnen scannen verschijnt alleen als dit is ingevuld, welke dienst de teksten ook schrijft.",
+      "key": "API-sleutel (optioneel)",
+      "keyHint": "Alleen als je server erom vraagt. Ollama en LM Studio doen dat standaard niet.",
+      "keyPlaceholder": "Leeg laten als er geen is",
+      "keyRemoved": "Sleutel verwijderd.",
+      "enableNeedsServer": "Vul eerst het adres van de server in en kies een model.",
+      "privacy": "Wat een functie nodig heeft (namen van winkels, bedragen, datums en je categorienamen) gaat naar dit adres en nergens anders heen. Rekeningnummers verlaten de app nooit.",
+      "testOkList": "Verbonden. De server heeft {count, plural, one {# model} other {# modellen}}. Kies er een en test opnieuw om een antwoord te proberen.",
+      "errors": {
+        "notConfigured": "Vul eerst het adres van de server in.",
+        "unavailable": "De server op dit adres is niet bereikbaar. Controleer of hij draait en of de Arca-server erbij kan.",
+        "invalidKey": "De server accepteerde de API-sleutel niet.",
+        "modelUnavailable": "De server heeft dit model niet. Laad de lijst en kies er een.",
+        "badResponse": "Het model antwoordde niet in het formaat dat Arca nodig heeft, ook niet bij een tweede poging. Een groter model (7B of meer) lukt dat meestal wel.",
+        "rateLimited": "De server heeft het druk. Probeer het zo opnieuw."
+      }
+    },
+    "adminOnly": "Alleen een beheerder kan de AI-instellingen wijzigen. Ze gelden voor iedereen op deze server."
   },
   "bankConnection": {
     "loading": "Laden…",
@@ -5108,7 +5163,7 @@
         },
         "ocr": {
           "title": "Bonnen scannen",
-          "body": "Bonfoto's gaan naar een eigen Ollama-host, als de server er een heeft."
+          "body": "Bonfoto's gaan naar je eigen AI-server, zodra die een beeldmodel heeft (Instellingen › AI)."
         },
         "map": {
           "title": "Kaart en winkel opzoeken",
@@ -5117,6 +5172,14 @@
         "update": {
           "title": "Updatecontrole",
           "body": "Alleen als je hem hieronder aanzet. De server vraagt GitHub één keer per dag welke versie de nieuwste is. Er gaat niets van jou mee."
+        },
+        "aiLocal": {
+          "title": "AI (eigen server)",
+          "body": "Opgeschoonde omschrijvingen, bedragen, datums en categorienamen gaan naar je eigen server op {address}, in je eigen netwerk, en verlaten dat nooit."
+        },
+        "ocrLocal": {
+          "title": "Bonnen scannen",
+          "body": "Bonfoto's gaan naar het beeldmodel op je eigen server op {address}, en nergens anders heen."
         }
       },
       "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten. Geen updatecontrole tenzij jij die aanzet. Deze pagina deed geen enkel verzoek om dit te tonen."

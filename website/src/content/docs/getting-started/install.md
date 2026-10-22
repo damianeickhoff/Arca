@@ -99,8 +99,8 @@ Only the very first visitor can create an account by themselves; that account be
 | `ALLOW_OPEN_SIGNUP` | not set | Set to `true` to let anyone create an account again, without an [invite link](/Arca/settings/security/#inviting-someone). Only for getting back into a household whose admin is locked out: set it, restart Arca, create a new account on the sign-in page (it becomes an admin) and remove the setting again. |
 | `BANK_SYNC_DISABLED` | not set | Set to `1` to switch off the automatic daily [bank sync](/Arca/transactions/bank-connection/#the-daily-sync). |
 | `BANK_SYNC_TOKEN` | not set | A long random string, only if you want to [start the bank sync from your own scheduler](#start-the-bank-sync-from-your-own-scheduler). |
-| `OLLAMA_HOST` | `http://localhost:11434` | Where Arca finds [Ollama](https://ollama.com) for **Scan receipt**. Inside Docker, point it at your Ollama container or server, for example `http://192.168.1.20:11434`. |
-| `OLLAMA_VISION_MODEL` | `llava` | The Ollama model that reads receipts. Install it first with `ollama pull llava`. |
+| `OLLAMA_HOST` | not set | Older way to set up **Scan receipt**: now set in [Settings → AI](/Arca/settings/ai/#receipt-scanning). Still read as the default address of your local AI server until you save one there, for example `http://192.168.1.20:11434`. |
+| `OLLAMA_VISION_MODEL` | `llava` when `OLLAMA_HOST` is set | Older way to pick the model that reads receipts; the default **Vision model** in Settings → AI until you save one there. |
 
 ## Install it on your phone
 
