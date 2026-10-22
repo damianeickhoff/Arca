@@ -168,6 +168,7 @@ export type TipAnchor =
   | "backups"
   | "updateCheck"
   | "betaBuild"
+  | "betaChanges"
   | "aiProvider";
 
 export const CARD_WIDTH = 320;

@@ -113,7 +113,10 @@ export function BuildChip({ build, className }: { build: BuildInfo; className?: 
     build.channel === "local" ? t("local") : build.channel === "dev" ? t("dev", { sha: build.sha }) : t("branch", { ref: build.ref, sha: build.sha });
   return (
     <span data-tip-anchor="betaBuild" className={cn("inline-flex", className)}>
-      <ClearChip tone="butter" className="h-6 px-2.5 text-xs">{label}</ClearChip>
+      {/* One tap opens About, which lists the commits in this build since the last release. */}
+      <Link href="/settings?panel=about" className="no-underline">
+        <ClearChip tone="butter" className="h-6 px-2.5 text-xs transition-opacity hover:opacity-80">{label}</ClearChip>
+      </Link>
       <AnchoredTip id="betaBuild" anchor="betaBuild" />
     </span>
   );

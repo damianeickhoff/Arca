@@ -16,6 +16,10 @@ RUN npm install -g npm@11 && npm ci
 
 COPY . .
 
+# build/changes.json lists the commits since the last release (publish.yml writes it);
+# a build without it (docker build on a PC) gets an empty list instead of failing.
+RUN mkdir -p build && { [ -f build/changes.json ] || echo '{"since":null,"commits":[]}' > build/changes.json; }
+
 RUN npm run build
 
 
@@ -58,6 +62,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 # Settings › About reads the release notes from this file at runtime.
 COPY --from=builder /app/CHANGELOG.md ./CHANGELOG.md
+# …and, on prerelease builds, the commits since the last release from this one.
+COPY --from=builder /app/build/changes.json ./build/changes.json
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh

@@ -1626,6 +1626,10 @@
       "title": "Dit is een testbuild",
       "body": "Je draait een dev- of lokale build van Arca, geen release. Je echte installatie toont geen Bèta-label."
     },
+    "betaChanges": {
+      "title": "Wat zit er in deze build",
+      "body": "Elke wijziging sinds de laatste release, nieuwste eerst, zodat je ziet of die van jou er al in zit."
+    },
     "aiProvider": {
       "title": "Gemini of je eigen server",
       "body": "Kies Eigen server om Ollama, LM Studio of een andere AI-server in je eigen netwerk te gebruiken in plaats van Google."
@@ -5215,6 +5219,13 @@
     "build": {
       "local": "Lokale build",
       "prerelease": "Bèta · {ref} {sha}"
+    },
+    "beta": {
+      "title": "In deze bèta: {count, plural, one {# wijziging} other {# wijzigingen}} sinds {since}",
+      "titleNoSince": "In deze bèta: {count, plural, one {# wijziging} other {# wijzigingen}}",
+      "compare": "Vergelijken op GitHub",
+      "showAll": "Alle {count} tonen",
+      "showFewer": "Minder tonen"
     }
   }
 }

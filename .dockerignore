@@ -22,3 +22,5 @@ sqlite.db
 centje.tar
 StyleDescriptions
 !CHANGELOG.md
+build
+!build/changes.json

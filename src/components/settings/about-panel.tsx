@@ -18,6 +18,7 @@ import { DOCS_URL, ISSUES_URL, LICENSE_URL, RELEASES_URL, REPO_URL } from "@/lib
 import type { ChangelogEntry } from "@/lib/changelog";
 import type { UpdateCheckState } from "@/lib/update-check";
 import type { BuildInfo } from "@/lib/build-info";
+import type { BetaChanges } from "@/lib/beta-changes";
 import { cn } from "@/lib/utils";
 
 /** What is switched on right now, so the connection tiles show the truth, not a description. */
@@ -51,6 +52,7 @@ export function AboutPanel({
   updates,
   canManageUpdates,
   build,
+  betaChanges,
 }: {
   version: string;
   entries: ChangelogEntry[];
@@ -58,6 +60,8 @@ export function AboutPanel({
   updates: UpdateCheckState;
   canManageUpdates: boolean;
   build: BuildInfo;
+  /** The commits since the last release; shown on prerelease builds only. */
+  betaChanges: BetaChanges;
 }) {
   const t = useTranslations("about");
   const tPanels = useTranslations("settings.panels");
@@ -128,6 +132,8 @@ export function AboutPanel({
             </a>
           </div>
         </section>
+
+        {build.prerelease && betaChanges.commits.length > 0 && <BetaChangesSection changes={betaChanges} build={build} />}
 
         {/* What leaves your server */}
         <section aria-labelledby="about-network" className="flex flex-col gap-3.5">
@@ -266,6 +272,66 @@ function UpdateCheckSection({ updates, canManage }: { updates: UpdateCheckState;
       )}
       {notice && <SettingsNotice tone={notice.tone}>{notice.text}</SettingsNotice>}
       {canManage && <AnchoredTip id="updateCheck" anchor="updateCheck" />}
+    </section>
+  );
+}
+
+const BETA_VISIBLE = 12;
+
+/**
+ * Prerelease builds only: the commits since the last release, newest first, so a dev
+ * container answers "is my change in this build yet". One compare link for the lot;
+ * no per-commit links.
+ */
+function BetaChangesSection({ changes, build }: { changes: BetaChanges; build: BuildInfo }) {
+  const t = useTranslations("about.beta");
+  const locale = useLocale();
+  const [showAll, setShowAll] = useState(false);
+  const count = changes.commits.length;
+  const shown = showAll ? changes.commits : changes.commits.slice(0, BETA_VISIBLE);
+  const head = build.channel === "local" || !build.ref ? "dev" : build.ref;
+  const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const when = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? "" : fmt.format(d);
+  };
+
+  return (
+    <section aria-labelledby="about-beta" className="flex flex-col gap-3">
+      <div className="flex items-baseline justify-between gap-3" data-tip-anchor="betaChanges">
+        <h3 id="about-beta" className="m-0 text-lg font-bold">
+          {changes.since ? t("title", { count, since: changes.since }) : t("titleNoSince", { count })}
+        </h3>
+        {changes.since && (
+          <a
+            href={`${REPO_URL}/compare/v${changes.since}...${head}`}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-[13px] font-bold text-clear-ink underline-offset-2 hover:underline"
+          >
+            {t("compare")}
+          </a>
+        )}
+      </div>
+      <ul className="m-0 flex list-none flex-col rounded-clear-tile bg-clear-tile p-0 py-1">
+        {shown.map((c) => (
+          <li key={c.sha} className="flex items-baseline gap-3 px-4 py-2.5">
+            <span className="min-w-0 flex-1 text-sm leading-normal">{c.subject}</span>
+            <span className="shrink-0 text-xs tabular-nums text-clear-muted">
+              <span className="font-mono">{c.sha}</span>
+              {when(c.date) && <> · {when(c.date)}</>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {count > BETA_VISIBLE && (
+        <div>
+          <ClearButton variant="surface" size="sm" onClick={() => setShowAll((s) => !s)} aria-expanded={showAll}>
+            {showAll ? t("showFewer") : t("showAll", { count })}
+          </ClearButton>
+        </div>
+      )}
+      <AnchoredTip id="betaChanges" anchor="betaChanges" />
     </section>
   );
 }

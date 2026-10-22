@@ -1626,6 +1626,10 @@
       "title": "This is a test build",
       "body": "You are running a dev or local build of Arca, not a release. Your real install shows no Beta chip."
     },
+    "betaChanges": {
+      "title": "What is in this build",
+      "body": "Every change since the last release, newest first, so you can see whether yours is in yet."
+    },
     "aiProvider": {
       "title": "Gemini or your own server",
       "body": "Pick Local server to use Ollama, LM Studio or another AI server on your own network instead of Google."
@@ -5215,6 +5219,13 @@
     "build": {
       "local": "Local build",
       "prerelease": "Beta · {ref} {sha}"
+    },
+    "beta": {
+      "title": "In this beta: {count, plural, one {# change} other {# changes}} since {since}",
+      "titleNoSince": "In this beta: {count, plural, one {# change} other {# changes}}",
+      "compare": "Compare on GitHub",
+      "showAll": "Show all {count}",
+      "showFewer": "Show fewer"
     }
   }
 }

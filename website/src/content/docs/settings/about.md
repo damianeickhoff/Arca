@@ -37,6 +37,10 @@ The bottom of the panel lists every release, newest first, with the same notes a
 
 After an update, Home shows a one-time card that names the new version and points here.
 
+## Running a dev build
+
+A test build of Arca (the `dev` image, or Arca started from a source checkout) shows a yellow **Beta** chip under the logo and next to the version on this panel; a release never does. Tap the chip to come here, where **In this beta** lists every change since the last release, newest first, with a link to compare them on GitHub, so you can see whether a fix is in the build you are running.
+
 ## Backups
 
 The panel links to [Data health](/Arca/settings/data-health/#backups), where Arca keeps the backups it makes before every update and where you can make one yourself.

@@ -32,6 +32,7 @@ import { ImportPanel } from "@/components/settings/import-panel";
 import { getAiSettings, isProviderConfigured } from "@/lib/ai-provider";
 import { getUpdateCheckState } from "@/lib/update-check";
 import { getBuildInfo } from "@/lib/build-info";
+import { loadBetaChanges } from "@/lib/beta-changes";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
 // Server-rendered content for the data-heavy settings panels. Two hosts:
@@ -125,7 +126,7 @@ async function ImportPanelContent() {
 
 /** Version, what leaves the server (with its live state), and the release notes. */
 async function AboutPanelContent({ canManageUpdates }: { canManageUpdates: boolean }) {
-  const [connections, ai, updates] = await Promise.all([listBankConnections(), getAiSettings(), getUpdateCheckState()]);
+  const [connections, ai, updates, betaChanges] = await Promise.all([listBankConnections(), getAiSettings(), getUpdateCheckState(), loadBetaChanges()]);
   const status: AboutStatus = {
     bankConnections: connections.filter((c) => !c.expired).length,
     aiProvider: ai.provider,
@@ -134,7 +135,7 @@ async function AboutPanelContent({ canManageUpdates }: { canManageUpdates: boole
     receiptScan: !!ai.local.baseUrl && !!ai.local.visionModel,
     newestBackup: listBackups()[0]?.createdAt ?? null,
   };
-  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} updates={updates} canManageUpdates={canManageUpdates} build={getBuildInfo()} />;
+  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} updates={updates} canManageUpdates={canManageUpdates} build={getBuildInfo()} betaChanges={betaChanges} />;
 }
 
 async function ImportProfilesPanel() {
