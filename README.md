@@ -53,7 +53,7 @@
 ## ✨ Features
 
 **See where you stand**
-- **Home**: what's safe to spend today, what's coming up, money in versus out, and all your accounts at a glance.
+- **Home**: what's safe to spend today, what's coming up, money in versus out, your net worth, and all your accounts at a glance.
 - **Insights**: an overview of any period, trends per category and group, net worth over time, a financial health score, and a cash-flow **forecast** that warns before you run short.
 
 **Keep track without the busywork**

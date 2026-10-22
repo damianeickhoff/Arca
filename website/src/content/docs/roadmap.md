@@ -47,13 +47,11 @@ tableOfContents: false
 <div class="rm not-content">
 
 <div class="rm-shipped">
-  <span class="rm-shipped__chip">Just shipped · 1.5.1</span>
+  <span class="rm-shipped__chip">Just shipped · 1.6.0</span>
   <ul class="rm-shipped__items">
-    <li>Bills found by their rhythm</li>
-    <li>Debt payoff planner</li>
-    <li>New Insights and Upcoming</li>
-    <li>Invite links</li>
-    <li>CSV files with a summary on top</li>
+    <li>Net worth on Home</li>
+    <li>Budget folded into Safe to spend</li>
+    <li>Free software under the AGPL</li>
   </ul>
   <a class="rm-shipped__link" href="https://github.com/damianeickhoff/Arca/releases/latest">Release notes</a>
 </div>
