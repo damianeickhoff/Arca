@@ -17,7 +17,7 @@ import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE
 // new column MUST be added in BOTH places — this file so existing deployed databases pick
 // it up on next boot, create-schema.ts so a brand-new database has it from the start.
 const DB_PATH =
-  process.env.DB_PATH || path.join(process.cwd(), "finance.db");
+  process.env.DB_PATH || path.join(/*turbopackIgnore: true*/ process.cwd(), "finance.db");
 
 // The connection is opened and migrated lazily on first access — NOT at module import.
 // This matters for `next build`: the "Collecting page data" phase evaluates every route

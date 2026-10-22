@@ -19,7 +19,18 @@ import { cn } from "@/lib/utils";
  * the way of the very feature it's describing. Portalled to <body> at z-90 — above
  * the full-screen portals (z-45/z-70) and the sheets (z-50) it gets shown over.
  */
-export function ContextualTip({ id, active = true }: { id: TipId; active?: boolean }) {
+export function ContextualTip({
+  id,
+  active = true,
+  title,
+  body,
+}: {
+  id: TipId;
+  active?: boolean;
+  /** Copy overrides for a tip whose text depends on data (the version card). */
+  title?: string;
+  body?: string;
+}) {
   const { visible, dismiss, dismissAll } = useContextualTip(id, active);
   const [mounted, setMounted] = useState(false);
 
@@ -48,7 +59,7 @@ export function ContextualTip({ id, active = true }: { id: TipId; active?: boole
           // pointer-events lock vaul applies while a modal sheet is open.
           data-dialog-keep-open=""
         >
-          <TipCard id={id} onDismiss={dismiss} onDismissAll={dismissAll} />
+          <TipCard id={id} onDismiss={dismiss} onDismissAll={dismissAll} title={title} body={body} />
         </m.div>
       )}
     </AnimatePresence>,

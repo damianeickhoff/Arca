@@ -22,6 +22,10 @@ import { getPlanProgress } from "@/lib/payment-plan-progress";
 import { syncRecurringLifecycle } from "@/lib/recurring-period";
 import { listPendingSuggestions } from "@/lib/recurring-suggestions";
 import { listActivity } from "@/lib/activity-log";
+import { listBackups } from "@/lib/backups";
+import { loadChangelog } from "@/lib/changelog";
+import { APP_VERSION } from "@/lib/app-version";
+import { AboutPanel } from "@/components/settings/about-panel";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
 // Server-rendered content for the data-heavy settings panels. Two hosts:
@@ -94,8 +98,20 @@ async function MerchantsPanel() {
   return <MerchantsClient initialMerchants={merchants} categories={allCategories} />;
 }
 
-async function DataHealthPanel() {
-  return <DataHealthClient rows={await findBrokenDateTransactions()} changes={listActivity()} />;
+async function DataHealthPanel({ canManageBackups }: { canManageBackups: boolean }) {
+  return (
+    <DataHealthClient
+      rows={await findBrokenDateTransactions()}
+      changes={listActivity()}
+      backups={listBackups()}
+      canManageBackups={canManageBackups}
+    />
+  );
+}
+
+/** Version, what leaves the server, and the release notes from CHANGELOG.md. */
+function AboutPanelContent() {
+  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} />;
 }
 
 async function ImportProfilesPanel() {
@@ -121,7 +137,9 @@ export function getSettingsPanel(key: HeavyPanelKey, currentUser: { id: number; 
     case "merchants":
       return <Suspense key="merchants" fallback={<PanelSkeleton />}><MerchantsPanel /></Suspense>;
     case "dataHealth":
-      return <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel /></Suspense>;
+      return <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel canManageBackups={currentUser.isAdmin} /></Suspense>;
+    case "about":
+      return <Suspense key="about" fallback={<PanelSkeleton />}><AboutPanelContent /></Suspense>;
     case "importProfiles":
       return <Suspense key="importProfiles" fallback={<PanelSkeleton />}><ImportProfilesPanel /></Suspense>;
     case "users":

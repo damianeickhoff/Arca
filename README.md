@@ -18,7 +18,7 @@
 
 <p align="center">📖 <b><a href="https://damianeickhoff.github.io/Arca/">Documentation</a></b>: install, first run, bank connection, budgets and more, in plain language.</p>
 
-> **Work in progress.** Arca is actively developed and may get frequent updates and the occasional breaking change. Back up your `/data` folder before updating.
+> **Updates are safe to take.** Arca backs up its database before the first start on every new version and keeps the last five copies in `/data/backups`. The database is brought up to date by itself; a breaking change only ever comes with a new major version and says so in the release notes.
 
 ## 📸 Screenshots
 
@@ -75,7 +75,8 @@
 - Off until you add your own API key. Only merchant names, amounts, dates and category names are sent, never account numbers.
 
 **Yours**
-- Self-hosted: one SQLite file in `/data`, no cloud account.
+- Self-hosted: one SQLite file in `/data`, no cloud account. **Settings › About** lists every connection Arca can make (bank, AI, receipts, map) and shows the release notes offline; there is no telemetry and no update check.
+- **Backups**: a copy of the database before every update, plus manual backups you can download, all in Settings › Data health.
 - Several users, two-factor sign-in, an app lock (PIN or passkey) and a privacy mode that hides amounts.
 - Light and dark theme, English and Dutch, works on desktop and phone, installable as an app (PWA).
 
@@ -119,7 +120,7 @@ Map `/data` to `/mnt/user/appdata/arca`.
 
 ### Your data
 
-Everything lives in `/data`: the SQLite database (`finance.db`) and uploaded logos and avatars. Back up that folder; nothing else needs to persist.
+Everything lives in `/data`: the SQLite database (`finance.db`), uploaded logos, avatars and receipts, and the `backups/` folder with the copies Arca makes before updates. Back up that folder; nothing else needs to persist.
 
 ## 🔄 Updating
 
@@ -135,7 +136,7 @@ Images are published to [Docker Hub](https://hub.docker.com/r/damianeickhoff/arc
 docker pull damianeickhoff/arca:latest
 ```
 
-Then recreate the container, keeping `/data`. New database columns are added automatically on start. On Unraid, **Check for updates** in the Docker tab picks up a new `latest`.
+Then recreate the container, keeping `/data`. On the first start of a new version Arca copies the database to `/data/backups/`, then adds any new tables and columns by itself. On Unraid, **Check for updates** in the Docker tab picks up a new `latest`. What changed is in **Settings › About** and in [CHANGELOG.md](CHANGELOG.md).
 
 ## 🆘 Support
 

@@ -206,6 +206,10 @@
       "ai": {
         "title": "AI",
         "subtitle": "Suggesties en samenvattingen van Gemini."
+      },
+      "about": {
+        "title": "Over Arca",
+        "subtitle": "Versie, wat je server verlaat en wat er veranderde."
       }
     },
     "inline": {
@@ -1588,6 +1592,14 @@
     "debtsPaymentsMonth": {
       "title": "Betalingen deze maand",
       "body": "De betaling van elke schuld deze maand: betaald zodra hij bij de vaste last gevonden is, of geef zelf aan of hij betaald is bij een schuld zonder vaste last. Met Betaling vastleggen leg je een extra aflossing of een bedrag ineens vast; dat gaat direct van het saldo af."
+    },
+    "whatsNew": {
+      "title": "Arca is bijgewerkt",
+      "body": "Instellingen › Over Arca laat alles zien wat er in deze versie veranderde."
+    },
+    "backups": {
+      "title": "Je eigen back-ups",
+      "body": "Arca kopieert de database al voor elke update. Nu een back-up maken maakt er direct een, en met de downloadknop bewaar je een kopie ergens anders."
     }
   },
   "categoryPicker": {
@@ -2103,6 +2115,25 @@
       "nothingNew": "Niets nieuws gevonden. Alles wat regelmatig is, is al een vaste last of wacht op je bij Binnenkort.",
       "review": "Bekijken bij Binnenkort",
       "busy": "Er loopt een import. Probeer het opnieuw als die klaar is.",
+      "error": "Dat lukte niet. Probeer het opnieuw."
+    },
+    "backups": {
+      "title": "Back-ups",
+      "body": "Arca kopieert de database voor de eerste start op een nieuwe versie en bewaart de laatste vijf. Maak zelf een kopie wanneer je wilt; die blijven staan tot je ze verwijdert.",
+      "makeNow": "Nu een back-up maken",
+      "making": "Bezig met back-up…",
+      "made": "Back-up gemaakt.",
+      "download": "Downloaden",
+      "delete": "Verwijderen",
+      "confirmDelete": "Deze back-up verwijderen?",
+      "confirmDeleteBody": "De back-up van {when} wordt van de server verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "confirmDeleteLabel": "Back-up verwijderen",
+      "empty": "Nog geen back-ups. De eerste wordt gemaakt voor je volgende update.",
+      "reasonUpdate": "Voor update",
+      "reasonManual": "Handmatig",
+      "meta": "Arca {version} · {size}",
+      "adminOnly": "Alleen een beheerder kan back-ups maken, downloaden of verwijderen.",
+      "restoreHint": "Terugzetten: stop Arca, vervang finance.db in de datamap door de back-up en start Arca opnieuw. De handleiding loopt het met je door.",
       "error": "Dat lukte niet. Probeer het opnieuw."
     }
   },
@@ -3799,7 +3830,12 @@
       "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}."
     },
     "setSalary": "Stel je salaris in",
-    "salaryName": "Salaris"
+    "salaryName": "Salaris",
+    "whatsNew": {
+      "title": "Arca {version} staat erop",
+      "body": "{title}. Instellingen › Over Arca laat alles zien wat er veranderde.",
+      "bodyNoTitle": "Instellingen › Over Arca laat alles zien wat er veranderde."
+    }
   },
   "billStatus": {
     "auto": "auto",
@@ -5009,6 +5045,56 @@
       "confirmTitle": "{count, plural, one {Deze vaste last verwijderen?} other {Deze # vaste lasten verwijderen?}}",
       "confirmBody": "Ze tellen niet meer als vaste last en worden niet opnieuw gevonden. Je kunt er een terugzetten via Instellingen › Terugkerend, of dit ongedaan maken onder Gegevenscontrole › Recente wijzigingen.",
       "error": "Dat is niet opgeslagen. Probeer het opnieuw."
+    }
+  },
+  "about": {
+    "version": "Versie {version}",
+    "tagline": "Een rustige app voor je eigen geld, op je eigen server.",
+    "licence": "Vrije software onder de <link>GNU Affero General Public License v3</link>. Gebruik, bestudeer, verander en deel het. Thuis draaien verplicht je tot niets.",
+    "links": {
+      "guide": "Open de handleiding",
+      "source": "Broncode",
+      "issues": "Een probleem melden"
+    },
+    "network": {
+      "title": "Wat je server verlaat",
+      "intro": "Alles wat je invoert blijft in de datamap op je eigen server. Dit zijn de enige verbindingen die Arca maakt, en elke staat uit tot jij hem aanzet.",
+      "items": {
+        "bank": {
+          "title": "Bankkoppeling",
+          "body": "Alleen als je een bank koppelt. Arca praat met Enable Banking om je rekeningen en transacties op te halen. Er gaat niets van jou naartoe, behalve de toestemming die je bij je bank geeft."
+        },
+        "ai": {
+          "title": "AI (Gemini)",
+          "body": "Alleen met je eigen Google-sleutel, en per functie. Opgeschoonde omschrijvingen, bedragen, datums en je categorienamen gaan eruit; rekeningnummers nooit. Je bevestigt elke suggestie voor die wordt opgeslagen."
+        },
+        "ocr": {
+          "title": "Bonnen scannen",
+          "body": "Alleen als de server is ingesteld met een eigen Ollama-host. Bonfoto's gaan daarheen, nergens anders."
+        },
+        "map": {
+          "title": "Kaart opzoeken",
+          "body": "Alleen als je de kaart bij een transactie opent. Je browser vraagt OpenStreetMap naar de plek op naam."
+        },
+        "search": {
+          "title": "Een winkel opzoeken",
+          "body": "De zoekknop bij een transactie opent Google in een nieuw tabblad. Er gebeurt niets tot je erop tikt."
+        }
+      },
+      "nothingElseTitle": "Verder niets",
+      "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten en geen updatecontrole. De release-notes hieronder zitten in de image, dus deze pagina doet nergens een verzoek."
+    },
+    "backups": {
+      "title": "Back-ups",
+      "open": "Back-ups staan bij Datacontrole",
+      "body": "Arca maakt voor elke update een kopie van de database. Maak er zelf een wanneer je wilt en download hem."
+    },
+    "changelog": {
+      "title": "Wat er veranderde",
+      "intro": "Elke release, nieuwste eerst.",
+      "onGitHub": "Op GitHub",
+      "current": "Deze versie",
+      "none": "Bij deze build zijn geen release-notes meegeleverd."
     }
   }
 }

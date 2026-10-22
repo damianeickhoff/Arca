@@ -20,6 +20,8 @@ import type { ActivityItem } from "@/lib/activity-log";
 import { RecentChanges } from "@/components/settings/recent-changes";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { findRegularPaymentsAction } from "@/app/actions/recurring-suggestions";
+import { BackupsCard } from "@/components/settings/backups-card";
+import type { BackupInfo } from "@/lib/backups";
 
 /**
  * Repairs transactions whose stored date isn't a real date — the wreckage of a CSV
@@ -31,7 +33,17 @@ import { findRegularPaymentsAction } from "@/app/actions/recurring-suggestions";
  * recurring detector ("Look for regular payments") and Recent changes, the change log
  * with undo.
  */
-export function DataHealthClient({ rows, changes }: { rows: BrokenDateRow[]; changes: ActivityItem[] }) {
+export function DataHealthClient({
+  rows,
+  changes,
+  backups,
+  canManageBackups,
+}: {
+  rows: BrokenDateRow[];
+  changes: ActivityItem[];
+  backups: BackupInfo[];
+  canManageBackups: boolean;
+}) {
   const t = useTranslations("dataHealth");
   const tPanels = useTranslations("settings.panels");
   const locale = useLocale();
@@ -201,6 +213,8 @@ export function DataHealthClient({ rows, changes }: { rows: BrokenDateRow[]; cha
             </div>
           </>
         )}
+
+        <BackupsCard backups={backups} canManage={canManageBackups} />
 
         <RegularPaymentsScan />
 

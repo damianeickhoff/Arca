@@ -13,7 +13,7 @@ export async function GET() {
   migrateLegacyBrandIcons();
 
   try {
-    const files = await readdir(getBrandIconsDir());
+    const files = await readdir(/*turbopackIgnore: true*/ getBrandIconsDir());
     const icons = files
       .filter((f) => /\.(png|jpg|jpeg|svg|webp)$/i.test(f))
       .map((f) => ({
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   const filepath  = path.join(getBrandIconsDir(), filename);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filepath, buffer);
+  await writeFile(/*turbopackIgnore: true*/ filepath, buffer);
 
   return NextResponse.json({ key: `img:/uploads/icons/${filename}`, url: `/uploads/icons/${filename}` }, { status: 201 });
 }
@@ -60,7 +60,7 @@ export async function DELETE(req: NextRequest) {
   const filename = key.slice("img:/uploads/icons/".length).split("?")[0];
   const filepath = path.join(getBrandIconsDir(), filename);
   try {
-    await unlink(filepath);
+    await unlink(/*turbopackIgnore: true*/ filepath);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

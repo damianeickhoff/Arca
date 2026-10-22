@@ -41,6 +41,7 @@ const ROW_TONES: Record<SettingsPanelKey, ClearTone> = {
   language: "sky",
   currency: "mint",
   ai: "lilac",
+  about: "stone",
   help: "mint",
   users: "lilac",
 };

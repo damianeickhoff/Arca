@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Get help
+    url: https://damianeickhoff.github.io/Arca/help/get-help/
+    about: Not sure it's a bug, or just have a question? Start with the guide's "Get help" page.

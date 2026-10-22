@@ -65,6 +65,8 @@ Everything Arca needs to keep is in the `/data` folder you mapped:
 | The database (all your transactions, budgets and settings) | `finance.db` (plus `finance.db-wal` and `finance.db-shm` while it runs) |
 | Logos you uploaded for merchants | `brand-icons/` |
 | Profile photos | `avatars/` |
+| Receipt photos | `receipts/` |
+| Backups Arca made before updates, and the ones you made | `backups/` |
 
 Back up that folder and you have everything. See [Updating and backups](/Arca/getting-started/updating-and-backups/).
 

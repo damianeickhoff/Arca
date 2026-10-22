@@ -206,6 +206,10 @@
       "ai": {
         "title": "AI",
         "subtitle": "Gemini suggestions and summaries."
+      },
+      "about": {
+        "title": "About",
+        "subtitle": "Version, what leaves your server, and what changed."
       }
     },
     "inline": {
@@ -1588,6 +1592,14 @@
     "debtsPaymentsMonth": {
       "title": "This month's payments",
       "body": "Each debt's payment this month: paid once it matches its bill, or say Paid? yourself for a debt without one. Log a payment adds an extra or a lump sum, and it comes straight off the balance."
+    },
+    "whatsNew": {
+      "title": "Arca was updated",
+      "body": "Settings › About lists everything that changed in this version."
+    },
+    "backups": {
+      "title": "Your own backups",
+      "body": "Arca already copies the database before every update. Back up now makes one on the spot, and the download button keeps a copy somewhere else."
     }
   },
   "categoryPicker": {
@@ -2104,6 +2116,25 @@
       "review": "Review on Upcoming",
       "busy": "An import is running. Try again when it's done.",
       "error": "That didn't work. Try again."
+    },
+    "backups": {
+      "title": "Backups",
+      "body": "Arca copies the database before the first start on a new version and keeps the last five. Make a copy yourself whenever you like; those stay until you delete them.",
+      "makeNow": "Back up now",
+      "making": "Backing up…",
+      "made": "Backup made.",
+      "download": "Download",
+      "delete": "Delete",
+      "confirmDelete": "Delete this backup?",
+      "confirmDeleteBody": "The backup from {when} is removed from the server. This cannot be undone.",
+      "confirmDeleteLabel": "Delete backup",
+      "empty": "No backups yet. The first one is made before your next update.",
+      "reasonUpdate": "Before update",
+      "reasonManual": "Manual",
+      "meta": "Arca {version} · {size}",
+      "adminOnly": "Only an admin can make, download or delete backups.",
+      "restoreHint": "To restore one: stop Arca, replace finance.db in the data folder with the backup, start Arca again. The guide walks you through it.",
+      "error": "That did not work. Try again."
     }
   },
   "importProfiles": {
@@ -3799,7 +3830,12 @@
       "description": "Line chart of money in and money out this period, added up per day. So far {in} in and {out} out, a net of {net}."
     },
     "setSalary": "Set your salary",
-    "salaryName": "Salary"
+    "salaryName": "Salary",
+    "whatsNew": {
+      "title": "Arca {version} is in",
+      "body": "{title}. Settings › About lists everything that changed.",
+      "bodyNoTitle": "Settings › About lists everything that changed."
+    }
   },
   "billStatus": {
     "auto": "auto",
@@ -5009,6 +5045,56 @@
       "confirmTitle": "{count, plural, one {Remove this bill?} other {Remove these # bills?}}",
       "confirmBody": "They stop counting as bills and won't be detected again. You can bring one back from Settings › Recurring, or undo this under Data health › Recent changes.",
       "error": "That didn't save. Try again."
+    }
+  },
+  "about": {
+    "version": "Version {version}",
+    "tagline": "A calm, self-hosted personal finance app.",
+    "licence": "Free software under the <link>GNU Affero General Public License v3</link>. Run it, study it, change it and share it. Running it at home carries no obligation.",
+    "links": {
+      "guide": "Open the guide",
+      "source": "Source code",
+      "issues": "Report a problem"
+    },
+    "network": {
+      "title": "What leaves your server",
+      "intro": "Everything you enter stays in the data folder on your own server. These are the only connections Arca makes, and each one is off until you turn it on.",
+      "items": {
+        "bank": {
+          "title": "Bank connection",
+          "body": "Only when you connect a bank. Arca talks to Enable Banking to fetch your accounts and transactions. Nothing of yours is sent except the consent you give at your bank."
+        },
+        "ai": {
+          "title": "AI (Gemini)",
+          "body": "Only with your own Google key, and per feature. Cleaned descriptions, amounts, dates and your category names go out; account numbers never. You confirm every suggestion before it is saved."
+        },
+        "ocr": {
+          "title": "Receipt scanning",
+          "body": "Only when the server is configured with an Ollama host of your own. Receipt photos go there, nowhere else."
+        },
+        "map": {
+          "title": "Map lookup",
+          "body": "Only when you open the map on a transaction. Your browser asks OpenStreetMap for the place by its name."
+        },
+        "search": {
+          "title": "Look up a merchant",
+          "body": "The search button on a transaction opens Google in a new tab. Nothing happens until you tap it."
+        }
+      },
+      "nothingElseTitle": "Nothing else",
+      "nothingElse": "No telemetry, no analytics, no crash reports and no update checks. The release notes below ship inside the image, so this page makes no request anywhere."
+    },
+    "backups": {
+      "title": "Backups",
+      "open": "Backups live in Data health",
+      "body": "Arca makes a copy of the database before every update. Make one yourself any time and download it."
+    },
+    "changelog": {
+      "title": "What changed",
+      "intro": "Every release, newest first.",
+      "onGitHub": "On GitHub",
+      "current": "This version",
+      "none": "No release notes were shipped with this build."
     }
   }
 }

@@ -16,3 +16,9 @@ tests
 scripts
 *.md
 website
+public/uploads
+finance.db*
+sqlite.db
+centje.tar
+StyleDescriptions
+!CHANGELOG.md

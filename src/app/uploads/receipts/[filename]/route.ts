@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ file
   migrateLegacyReceipts();
 
   try {
-    const buffer = await readFile(path.join(getReceiptsDir(), filename));
+    const buffer = await readFile(/*turbopackIgnore: true*/ path.join(getReceiptsDir(), filename));
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": contentType,

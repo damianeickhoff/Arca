@@ -1,9 +1,14 @@
 # Builds the Docker image and publishes it to Docker Hub (damianeickhoff/arca, what Unraid
 # pulls) and the GitHub Container Registry, with the same tags on both:
-#   damianeickhoff/arca:latest      — the default branch
-#   damianeickhoff/arca:<branch>    — any other branch, to try it before merging
-#   damianeickhoff/arca:v1.3.0      — a version tag
+#   damianeickhoff/arca:latest      — a version tag (v1.6.0) only, never a branch push
+#   damianeickhoff/arca:1.6.0       — the same version tag, the plain form the Docker Hub
+#                                     tags have always had
+#   damianeickhoff/arca:v1.6.0      — the same version tag, as written
+#   damianeickhoff/arca:<branch>    — any branch except master (dev is the test image on
+#                                     Unraid), to try it before merging
 #   damianeickhoff/arca:sha-abc1234 — every build
+# A release is one build: the vX.Y.Z tag. Pushes to master build nothing here (the docs
+# site has its own workflow, docs.yml), so the release commit is not built twice.
 # GHCR needs no secrets (GITHUB_TOKEN). Docker Hub needs the repository secrets
 # DOCKERHUB_USERNAME and DOCKERHUB_TOKEN (an access token with Read & Write); without
 # them the build still runs and publishes to GHCR only.
@@ -11,7 +16,7 @@ name: Publish image
 
 on:
   push:
-    branches: ["**"]
+    branches: ["**", "!master"]
     tags: ["v*"]
     paths-ignore: ["**.md", "unraid/**", "docs/**", "website/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
@@ -48,10 +53,11 @@ jobs:
             ghcr.io/${{ github.repository }}
             name=docker.io/damianeickhoff/arca,enable=${{ env.DOCKERHUB_USERNAME != '' }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            # latest follows the version tag, not a branch.
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
             type=ref,event=branch
             type=ref,event=tag
-            # Plain version too (1.3.2), the form the Docker Hub tags have always had.
+            # Plain version too (1.6.0), the form the Docker Hub tags have always had.
             type=semver,pattern={{version}}
             type=sha,format=short
       - uses: docker/build-push-action@v6

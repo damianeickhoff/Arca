@@ -1,0 +1,49 @@
+name: Feature request
+description: An idea for something Arca should do, or do better.
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. Have a look at the [roadmap](https://damianeickhoff.github.io/Arca/roadmap/) first; it may already be on there.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the problem?
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What's your idea?
+      description: How would you like it to work? A rough sketch is fine.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where in the app?
+      options:
+        - Home
+        - Activity
+        - Plan (budget, debts, goals)
+        - Insights
+        - Import or bank sync
+        - Settings
+        - Somewhere else / not sure
+  - type: dropdown
+    id: roadmap
+    attributes:
+      label: Is it on the roadmap?
+      description: See https://damianeickhoff.github.io/Arca/roadmap/
+      options:
+        - No, I didn't find it there
+        - Yes, but I'd like to add something to it
+        - I didn't check
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: Sketches, screenshots from other apps, anything that helps explain it.

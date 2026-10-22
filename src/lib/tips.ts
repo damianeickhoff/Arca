@@ -66,6 +66,10 @@ export type TipId =
   // Home: the Net worth card and the budget link on the hero
   | "homeNetWorth"
   | "homeBudgetLink"
+  // Updates: the "Arca was updated" card on Home (once per version, see
+  // app/_home/whats-new-tip.tsx) and the backups card in Settings › Data health
+  | "whatsNew"
+  | "backups"
   | "privacyEye"
   // redesign (mustard): Activity
   | "activityDetail"
@@ -186,7 +190,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activitySelectMode", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "billStatusControl", "budgetNeedsCategory", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "upcomingNextMonth", "billSkip", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "financialMonthExceptions", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "iconPicker", "ruleTeach", "merchantPatterns", "bankConnection", "debtsPayoffDates", "debtsWhereExtraGoes", "debtsPaymentsMonth", "insightsSummary", "quickAdd", "reviewTeach", "recentChanges", "importBankFirst", "helpGuide", "userInvites", "recurringSuggestions", "recurringScan", "insightsRunningTotal", "insightsBlockMap", "insightsMovers", "insightsNetWorthChanges", "debtsOrder", "importHeaderRow", "homeNetWorth", "homeBudgetLink"];
+const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activitySelectMode", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "billStatusControl", "budgetNeedsCategory", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "upcomingNextMonth", "billSkip", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "financialMonthExceptions", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "iconPicker", "ruleTeach", "merchantPatterns", "bankConnection", "debtsPayoffDates", "debtsWhereExtraGoes", "debtsPaymentsMonth", "insightsSummary", "quickAdd", "reviewTeach", "recentChanges", "importBankFirst", "helpGuide", "userInvites", "recurringSuggestions", "recurringScan", "insightsRunningTotal", "insightsBlockMap", "insightsMovers", "insightsNetWorthChanges", "debtsOrder", "importHeaderRow", "homeNetWorth", "homeBudgetLink", "whatsNew", "backups"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;
@@ -229,6 +233,14 @@ export function markTipSeen(id: TipId) {
   const current = readState();
   if (current.seen.includes(id)) return;
   writeState({ ...current, seen: [...current.seen, id] });
+}
+
+/** Makes one tip due again — for a tip that repeats on a new occasion (the "Arca
+ *  was updated" card shows once per version, so each new version forgets it). */
+export function forgetTip(id: TipId) {
+  const current = readState();
+  if (!current.seen.includes(id)) return;
+  writeState({ ...current, seen: current.seen.filter((seen) => seen !== id) });
 }
 
 /** Wipes the record, so every tip is due again. Not wired to any UI yet — kept as

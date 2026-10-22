@@ -37,6 +37,8 @@ import { HomeRecentActivity } from "@/app/_home/home-recent-activity";
 import { GetStartedCard } from "@/app/_home/get-started";
 import { SetSalaryButton } from "@/app/_home/set-salary-button";
 import { HomeTips } from "@/app/_home/home-tips";
+import { APP_VERSION } from "@/lib/app-version";
+import { releaseNoteFor } from "@/lib/changelog";
 
 /** How many budget months the income-vs-spending chart shows. */
 const CHART_MONTHS = 6;
@@ -286,7 +288,7 @@ export default async function HomePage({
   return (
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
       <DashboardReadySignal />
-      <HomeTips />
+      <HomeTips whatsNew={releaseNoteFor(APP_VERSION)} />
 
       {/* Phone header — the avatar opens Settings; search sits on the right. */}
       <div className="flex items-center justify-between gap-3 lg:hidden">

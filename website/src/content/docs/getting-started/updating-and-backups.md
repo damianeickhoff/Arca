@@ -3,10 +3,10 @@ title: Updating and backups
 description: Get the newest version of Arca and keep a copy of your data.
 ---
 
-Updating Arca means pulling the newest image and recreating the container. Your data stays in `/data`, and the database is brought up to date by itself when Arca starts.
+Updating Arca means pulling the newest image and recreating the container. Your data stays in `/data`. On the first start of a new version Arca copies its database to `/data/backups/` and then brings the database up to date by itself.
 
-:::caution[Back up first]
-Arca is still changing quickly. Make a backup of your `/data` folder before every update, so you can always go back.
+:::tip[Every update is covered]
+Arca keeps the last five of those automatic copies. Settings → **Data health** lists them, lets you make one by hand and download it. See [Back up your data](#back-up-your-data).
 :::
 
 ## Which version to use
@@ -43,9 +43,11 @@ In the **Docker** tab, choose **Check for updates**. When Arca shows an update, 
 
 ## Back up your data
 
-Everything is in the `/data` folder: the database, uploaded logos and profile photos. A backup is simply a copy of that folder.
+Everything is in the `/data` folder: the database, uploaded logos, profile photos, receipts and the `backups/` folder. There are three layers:
 
-**The simple way** (a few seconds of downtime):
+**Arca's own backups.** Before the first start on a new version, Arca writes a copy of the database to `/data/backups/` and keeps the newest five. In Settings → **Data health** you can also press **Back up now** for a copy on the spot, and download any backup to keep it somewhere else. These copies are made with SQLite's own backup method, so they are consistent even while Arca runs.
+
+**A copy of the whole folder** (a few seconds of downtime) covers the uploads too:
 
 1. Stop the container: `docker stop arca`
 2. Copy the whole data folder somewhere safe, for example to another disk or your backup tool.
@@ -53,19 +55,21 @@ Everything is in the `/data` folder: the database, uploaded logos and profile ph
 
 On Unraid, the **Appdata Backup** plugin can do this on a schedule for you.
 
-**Without stopping Arca**, ask the database to write a copy of itself:
+**A live copy from the command line**, when you do not want to open the app:
 
 ```bash
 docker exec arca node -e "require('better-sqlite3')('/data/finance.db').backup('/data/finance-backup.db').then(() => console.log('Backup written'))"
 ```
 
-This writes `finance-backup.db` next to the database. Copy it off the server along with `brand-icons/`, `avatars/` and `receipts/`.
+This writes `finance-backup.db` next to the database.
 
 ## Restore a backup
 
 1. Stop the container.
-2. Replace the contents of your data folder with the backup. If you used the live backup, rename `finance-backup.db` to `finance.db` and remove any old `finance.db-wal` and `finance.db-shm` files.
-3. Start the container again.
+2. In your data folder, remove `finance.db`, `finance.db-wal` and `finance.db-shm`. Copy the backup you want (from `backups/`, or one you downloaded) into the folder and name it `finance.db`.
+3. Start the container again. Arca brings the restored database up to date if it came from an older version.
+
+To go back to an older version of Arca as well, run that version's image tag (`damianeickhoff/arca:1.5.1`, for example) with the matching backup.
 
 ## Reset a forgotten app lock PIN
 

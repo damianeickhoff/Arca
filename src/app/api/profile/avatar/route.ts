@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   const filepath = path.join(getAvatarsDir(), filename);
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filepath, buffer);
+  await writeFile(/*turbopackIgnore: true*/ filepath, buffer);
 
   const url = `/uploads/avatars/${filename}`;
   await db.update(users).set({ avatarUrl: url }).where(eq(users.id, currentUser.id));

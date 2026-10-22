@@ -6,6 +6,7 @@ import {
   IconCreditCard,
   IconFileUpload,
   IconHelpCircle,
+  IconInfoCircle,
   IconKey,
   IconLanguage,
   IconLock,
@@ -31,7 +32,7 @@ export type SettingsPanelKey =
   | "financialMonth" | "budgetRecurring"
   | "import" | "importProfiles" | "dataHealth"
   | "appearance" | "privacy" | "appLock" | "language" | "currency" | "ai"
-  | "help" | "users";
+  | "about" | "help" | "users";
 
 export type SettingsSectionKey = "account" | "manage" | "data" | "app" | "about";
 
@@ -78,7 +79,10 @@ const SECTIONS: SettingsSection[] = [
   },
   {
     key: "about",
-    rows: [{ key: "help", icon: IconHelpCircle }],
+    rows: [
+      { key: "about", icon: IconInfoCircle },
+      { key: "help", icon: IconHelpCircle },
+    ],
   },
 ];
 
@@ -107,7 +111,7 @@ export function settingsSections({ isAdmin, withAccount }: { isAdmin: boolean; w
 
 /** Panels whose content is server-rendered (settings-panel-content.tsx) and passed in
  *  as nodes; the rest are client-only and built by SettingsPanelBody. */
-export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles"] as const;
+export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles", "about"] as const;
 export type HeavyPanelKey = (typeof HEAVY_PANELS)[number];
 
 export function isHeavyPanel(key: SettingsPanelKey): key is HeavyPanelKey {

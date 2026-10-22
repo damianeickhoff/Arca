@@ -5,7 +5,7 @@ import path from "path";
 // always "wherever finance.db lives" (e.g. /data in Docker, repo root in local dev),
 // so brand icons persist across rebuilds without a new env var to configure.
 function getDbPath(): string {
-  return process.env.DB_PATH || path.join(process.cwd(), "finance.db");
+  return process.env.DB_PATH || path.join(/*turbopackIgnore: true*/ process.cwd(), "finance.db");
 }
 
 export function getDataDir(): string {
@@ -14,19 +14,19 @@ export function getDataDir(): string {
 
 export function getBrandIconsDir(): string {
   const dir = path.join(getDataDir(), "brand-icons");
-  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(/*turbopackIgnore: true*/ dir, { recursive: true });
   return dir;
 }
 
 export function getAvatarsDir(): string {
   const dir = path.join(getDataDir(), "avatars");
-  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(/*turbopackIgnore: true*/ dir, { recursive: true });
   return dir;
 }
 
 export function getReceiptsDir(): string {
   const dir = path.join(getDataDir(), "receipts");
-  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(/*turbopackIgnore: true*/ dir, { recursive: true });
   return dir;
 }
 
@@ -53,7 +53,7 @@ let migrated = false;
 export function migrateLegacyBrandIcons() {
   if (migrated) return;
   migrated = true;
-  migrateLegacyDir(path.join(process.cwd(), "public", "uploads", "icons"), getBrandIconsDir());
+  migrateLegacyDir(path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads", "icons"), getBrandIconsDir());
 }
 
 // Same problem, same fix, for profile photos: src/app/api/profile/avatar/route.ts used to
@@ -63,7 +63,7 @@ let avatarsMigrated = false;
 export function migrateLegacyAvatars() {
   if (avatarsMigrated) return;
   avatarsMigrated = true;
-  migrateLegacyDir(path.join(process.cwd(), "public", "uploads", "avatars"), getAvatarsDir());
+  migrateLegacyDir(path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads", "avatars"), getAvatarsDir());
 }
 
 // And again for receipt photos: src/app/api/transactions/receipt/route.ts used to write into
@@ -72,7 +72,7 @@ let receiptsMigrated = false;
 export function migrateLegacyReceipts() {
   if (receiptsMigrated) return;
   receiptsMigrated = true;
-  migrateLegacyDir(path.join(process.cwd(), "public", "uploads", "receipts"), getReceiptsDir());
+  migrateLegacyDir(path.join(/*turbopackIgnore: true*/ process.cwd(), "public", "uploads", "receipts"), getReceiptsDir());
 }
 
 // Runs every legacy migration once at server start (see src/instrumentation.ts), so files
@@ -86,7 +86,7 @@ export function migrateLegacyUploads() {
 export function migrateLegacyDir(legacyDir: string, targetDir: string) {
   let files: string[];
   try {
-    files = fs.readdirSync(legacyDir);
+    files = fs.readdirSync(/*turbopackIgnore: true*/ legacyDir);
   } catch {
     return; // legacy folder doesn't exist — nothing to migrate
   }
@@ -94,13 +94,13 @@ export function migrateLegacyDir(legacyDir: string, targetDir: string) {
   for (const file of files) {
     const from = path.join(legacyDir, file);
     const to = path.join(targetDir, file);
-    if (fs.existsSync(to)) continue;
+    if (fs.existsSync(/*turbopackIgnore: true*/ to)) continue;
     try {
-      fs.renameSync(from, to);
+      fs.renameSync(/*turbopackIgnore: true*/ from, to);
     } catch {
       // Cross-device rename (e.g. legacy dir and data dir on different volumes) — copy instead.
-      fs.copyFileSync(from, to);
-      fs.unlinkSync(from);
+      fs.copyFileSync(/*turbopackIgnore: true*/ from, to);
+      fs.unlinkSync(/*turbopackIgnore: true*/ from);
     }
   }
 }

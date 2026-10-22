@@ -1,0 +1,67 @@
+name: Bug report
+description: Something in Arca doesn't work the way it should.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. The more of this you can fill in, the faster it gets fixed.
+        Please leave out anything personal: account numbers, names, real transactions.
+  - type: input
+    id: version
+    attributes:
+      label: Arca version
+      description: You'll find it at the bottom of Settings.
+      placeholder: "1.6.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How is Arca installed?
+      options:
+        - Unraid (Community Applications template)
+        - Docker Compose
+        - Other (say what under "What happened?")
+    validations:
+      required: true
+  - type: input
+    id: bank
+    attributes:
+      label: Bank or CSV format
+      description: Only when it's about importing or bank sync. Which bank, or which app exported the CSV?
+      placeholder: "ING, bunq, a Rabobank CSV, …"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, and what did Arca do? Steps to get there again help a lot.
+      placeholder: |
+        1. Open Activity
+        2. Search for …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Container log
+      description: The last lines of the container log from around the time it went wrong (on Unraid, the Docker page → the Arca container → Logs; elsewhere `docker logs arca`). It is shown as code, no backticks needed.
+      render: text
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: "Safari on iPhone, Chrome on Windows, …"
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else?
+      description: Screenshots are welcome, with anything personal blurred out.

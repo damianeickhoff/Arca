@@ -1,3 +1,9 @@
+# Two stages. The builder installs every dependency and runs `next build` with
+# `output: "standalone"` (next.config.ts), which traces the files the server really
+# needs into .next/standalone. The runner copies only that: no full node_modules, no
+# src/, no .next/cache. Layer order matters for updates: node_modules first (changes only
+# when package-lock.json does), the app code last (changes every release), so an update
+# pulls the small code layers and reuses the big dependency layer.
 FROM node:22-alpine AS builder
 
 WORKDIR /app
@@ -6,9 +12,7 @@ COPY package*.json ./
 
 # The lock file is written by npm 11; npm 10 (bundled with Node 22) reads its optional
 # peer entries differently and refuses npm ci. Install with the same npm as development.
-RUN npm install -g npm@11
-
-RUN npm ci
+RUN npm install -g npm@11 && npm ci
 
 COPY . .
 
@@ -20,22 +24,31 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
+# The standalone server listens on these; Docker maps the port.
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 
 # Cookies are only marked Secure when explicitly opted in; set to "true" if you
 # terminate TLS in front of this container (reverse proxy). Left false by
 # default so plain-HTTP deployments (e.g. Unraid LAN access) keep sessions.
 ENV COOKIE_SECURE=false
 
-# The database lives on a mounted volume, never in the image.
+# The database lives on a mounted volume, never in the image. Everything else that
+# must survive an update (uploads, backups) lives next to it.
 ENV DB_PATH=/data/finance.db
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
+# 1. The traced production dependencies: the big layer, stable between releases.
+COPY --from=builder /app/.next/standalone/node_modules ./node_modules
+# 2. The server and the build output: small, changes every release. Copied piece by
+#    piece on purpose: the tracer also drops stray project folders (src/, tests/, …)
+#    into .next/standalone, and none of those belong in the image.
+COPY --from=builder /app/.next/standalone/package.json ./package.json
+COPY --from=builder /app/.next/standalone/server.js ./server.js
+COPY --from=builder /app/.next/standalone/.next ./.next
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-# Needed at runtime by db:init (src/db/migrate.ts + the src/config it imports).
-COPY --from=builder /app/src ./src
-
-RUN npm install -g npm@11 && npm ci --omit=dev && du -sh node_modules
+# Settings › About reads the release notes from this file at runtime.
+COPY --from=builder /app/CHANGELOG.md ./CHANGELOG.md
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh

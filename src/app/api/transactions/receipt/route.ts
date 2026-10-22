@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
   const filename = `${Date.now()}-${transactionId}.${ext}`;
   const filepath = path.join(receiptsDir, filename);
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(filepath, buffer);
+  await writeFile(/*turbopackIgnore: true*/ filepath, buffer);
 
   // Replace: remove the old file once the new one is safely written.
   const oldFilename = receiptFilenameFromUrl(existing.receiptUrl);
   if (oldFilename && oldFilename !== filename) {
-    try { await unlink(path.join(receiptsDir, oldFilename)); } catch { /* already gone */ }
+    try { await unlink(/*turbopackIgnore: true*/ path.join(receiptsDir, oldFilename)); } catch { /* already gone */ }
   }
 
   const receiptUrl = `/uploads/receipts/${filename}`;
@@ -73,7 +73,7 @@ export async function DELETE(req: NextRequest) {
   migrateLegacyReceipts();
   const filename = receiptFilenameFromUrl(existing.receiptUrl);
   if (filename) {
-    try { await unlink(path.join(getReceiptsDir(), filename)); } catch { /* already gone */ }
+    try { await unlink(/*turbopackIgnore: true*/ path.join(getReceiptsDir(), filename)); } catch { /* already gone */ }
   }
 
   await db.update(transactions).set({ receiptUrl: null }).where(eq(transactions.id, transactionId));
