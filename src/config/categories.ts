@@ -630,6 +630,25 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 
+{
+  key: "Eye Care",
+  name: "Eye Care",
+  budgetType: "Needs",
+  color: "#90d731",
+  icon: "IconEyeglassFilled",
+  parentKey: "Health",
+  matchingPatterns: [
+    "Opticien",
+    "Optiek",
+    "Specsavers",
+    "Pearle",
+    "Hans Anders",
+    "Eyewish",
+    "Eyes and More",
+    "Lenzenwinkel"
+  ]
+},
+
 { 
   key: "Sport", 
   name: "Sport", 

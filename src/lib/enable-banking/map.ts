@@ -170,3 +170,26 @@ export function syncDateFrom(lastSyncedDate: string | null, overlapDays = SYNC_O
   d.setUTCDate(d.getUTCDate() - overlapDays);
   return d.toISOString().slice(0, 10);
 }
+
+/** The account types Centje knows (banks.cardType), as far as a bank can tell us. */
+export type DetectedCardType = "debitcard" | "savings" | "creditcard";
+
+/**
+ * Enable Banking's `cash_account_type` (an ISO 20022 code) as a banks.cardType: a current
+ * or transaction account is "Checking", SVGS is savings, CARD a credit card. Anything
+ * else (loans, OTHR, …) or no code at all gives null, so the user picks it in Accounts.
+ */
+export function cardTypeForCashAccountType(code: string | null | undefined): DetectedCardType | null {
+  switch (code?.trim().toUpperCase()) {
+    case "CACC":
+    case "TRAN":
+    case "CASH":
+      return "debitcard";
+    case "SVGS":
+      return "savings";
+    case "CARD":
+      return "creditcard";
+    default:
+      return null;
+  }
+}

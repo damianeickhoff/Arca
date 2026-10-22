@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   await saveProfile(label || "Custom bank", parsed.headerLine, mapping.delimiter, mapping);
 
   const { insertedIds, ...result } = await importParsedRows(parsed.rows);
-  await recordImport("csvImport", insertedIds, { skipped: result.skipped });
+  await recordImport(insertedIds, { skipped: result.skipped });
   // New rows move the sidebar's account balances (root layout).
   revalidatePath("/", "layout");
   return NextResponse.json(result);

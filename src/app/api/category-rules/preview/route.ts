@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { CategoryRule } from "@/db/schema";
+import { db } from "@/db";
+import { banks, type CategoryRule } from "@/db/schema";
 import { requireAuth } from "@/lib/auth";
 import { filedByRule, findRuleMatches } from "@/lib/rule-matches";
 
@@ -12,13 +13,21 @@ function num(v: string | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Each account number's display name. */
+async function accountNamesByNumber() {
+  const rows = await db.select({ accountNumber: banks.accountNumber, displayName: banks.displayName }).from(banks);
+  return new Map(rows.filter((b) => b.accountNumber).map((b) => [b.accountNumber as string, b.displayName ?? b.accountNumber ?? ""]));
+}
+
 /**
  * GET /api/category-rules/preview — what a rule being edited would match, for the
  * rule dialog's live "Matches N earlier transactions" line. Takes the rule's own
  * fields (pattern, match = contains | word | exact, amount or amountMin/amountMax,
  * direction, bankId) and runs them through findRuleMatches, the same matching the
  * apply-rules pass does, so the count is exactly what saving would match. `ids=1` adds
- * every matched id. `categoryId` adds `filed`: the matches with that category that
+ * every matched id; `rows=1` adds every match itself (date, description, amount,
+ * direction, the account's name and its category now), for the "Show the N transactions"
+ * list where matches can be unticked before the rule runs. `categoryId` adds `filed`: the matches with that category that
  * weren't set by hand — what deleting the rule could send back to Needs review.
  */
 export async function GET(req: NextRequest) {
@@ -48,12 +57,26 @@ export async function GET(req: NextRequest) {
   };
 
   const matched = await findRuleMatches(rule);
+  const accountNames = params.get("rows") === "1" ? await accountNamesByNumber() : null;
   return NextResponse.json({
     count: matched.length,
     uncategorized: matched.filter((r) => r.categoryId == null).length,
     examples: matched.slice(0, EXAMPLES).map(({ id, date, description, amount, direction }) => ({ id, date, description, amount, direction })),
     // Every id only when asked: the dialog's save moves them, the live preview doesn't need them.
     ...(params.get("ids") === "1" ? { ids: matched.map((r) => r.id) } : {}),
+    ...(accountNames
+      ? {
+          rows: matched.map(({ id, date, description, amount, direction, account, categoryId }) => ({
+            id,
+            date,
+            description,
+            amount,
+            direction,
+            accountName: (account && accountNames.get(account)) || account || null,
+            categoryId,
+          })),
+        }
+      : {}),
     ...(categoryId != null ? { filed: filedByRule(matched, categoryId).length } : {}),
   });
 }

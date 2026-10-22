@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, asc, eq, gte, inArray, lte, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lte, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { appSettings, bankConnectionAccounts, bankConnections, banks, transactions, type BankConnection } from "@/db/schema";
 import {
@@ -10,12 +10,20 @@ import {
   type EbSession,
   type EbSessionAccount,
 } from "@/lib/enable-banking/client";
-import { mapEnableBankingTransaction, splitAlreadyImported, syncDateFrom, type EbTransaction } from "@/lib/enable-banking/map";
+import {
+  cardTypeForCashAccountType,
+  mapEnableBankingTransaction,
+  splitAlreadyImported,
+  syncDateFrom,
+  type DetectedCardType,
+  type EbTransaction,
+} from "@/lib/enable-banking/map";
 import type { ParsedRow } from "@/lib/bank-parsers";
 import { importParsedRows } from "@/lib/import-rows";
 import { isImportRunning } from "@/lib/import-lock";
 import { normalizeAccountNumber } from "@/lib/internal-transfers";
 import { summarizeBankSync, type BankSyncStatus } from "@/lib/bank-sync-status";
+import { recordBankSync } from "@/lib/activity-log";
 
 // The bank connection: connecting a bank (consent → session → accounts), linking its
 // accounts to Centje's, and syncing their transactions through the CSV import path
@@ -172,6 +180,7 @@ export async function completeBankAuth(params: { state: string | null; code: str
       iban,
       name: account.name?.trim() || account.product?.trim() || account.details?.trim() || null,
       currency: account.currency ?? null,
+      cashAccountType: account.cash_account_type?.trim() || before?.cashAccountType || null,
       bankId: before ? before.bankId : autoBank,
       mapped: before ? before.mapped : false,
       lastSyncedDate: before?.lastSyncedDate ?? null,
@@ -203,6 +212,8 @@ export interface ConnectedAccountView {
   iban: string | null;
   name: string | null;
   currency: string | null;
+  /** The account type the bank reports, as a banks.cardType; set on the account when linked. */
+  detectedType: DetectedCardType | null;
   bankId: number | null;
   bankName: string | null;
   mapped: boolean;
@@ -258,6 +269,7 @@ export async function listBankConnections(): Promise<BankConnectionView[]> {
         iban: account.iban,
         name: account.name,
         currency: account.currency,
+        detectedType: cardTypeForCashAccountType(account.cashAccountType),
         bankId: account.bankId,
         bankName: account.bankId ? bankName?.trim() || bankNumber || null : null,
         mapped: account.mapped,
@@ -283,22 +295,26 @@ export type AccountLinkChoice = number | "new" | null;
  * Linking to a bank without an account number gives it this IBAN, so its rows match; a
  * bank with another number (a custom account's CUSTOM-…) keeps it and the bank's rows
  * are filed under it, next to the ones already there.
+ *
+ * Either way the account gets the type the bank reports (cash_account_type → cardType)
+ * when it has none yet; a type the user picked in Accounts is never overwritten.
  */
 export async function saveAccountLinks(connectionId: number, links: { accountId: number; choice: AccountLinkChoice }[]): Promise<void> {
   const accounts = await db.select().from(bankConnectionAccounts).where(eq(bankConnectionAccounts.connectionId, connectionId));
   for (const link of links) {
     const account = accounts.find((a) => a.id === link.accountId);
     if (!account) continue;
+    const cardType = cardTypeForCashAccountType(account.cashAccountType);
     let bankId: number | null = null;
     if (link.choice === "new") {
       if (account.iban) {
-        await db.insert(banks).values({ accountNumber: account.iban, displayName: account.name }).onConflictDoNothing();
+        await db.insert(banks).values({ accountNumber: account.iban, displayName: account.name, cardType }).onConflictDoNothing();
         const [row] = await db.select({ id: banks.id }).from(banks).where(eq(banks.accountNumber, account.iban)).limit(1);
         bankId = row?.id ?? null;
       } else {
         // No IBAN: the synthetic number custom accounts get (see bank-account-numbers.ts),
         // so its rows still have an account to be filed under.
-        const [row] = await db.insert(banks).values({ displayName: account.name }).returning({ id: banks.id });
+        const [row] = await db.insert(banks).values({ displayName: account.name, cardType }).returning({ id: banks.id });
         await db.update(banks).set({ accountNumber: `CUSTOM-${row.id}` }).where(eq(banks.id, row.id));
         bankId = row.id;
       }
@@ -312,8 +328,15 @@ export async function saveAccountLinks(connectionId: number, links: { accountId:
         }
       }
     }
+    if (bankId != null) await fillCardType(bankId, cardType);
     await db.update(bankConnectionAccounts).set({ bankId, mapped: true }).where(eq(bankConnectionAccounts.id, account.id));
   }
+}
+
+/** Gives an account the bank's type when it has none yet (an existing or reused row). */
+async function fillCardType(bankId: number, cardType: DetectedCardType | null) {
+  if (!cardType) return;
+  await db.update(banks).set({ cardType }).where(and(eq(banks.id, bankId), isNull(banks.cardType)));
 }
 
 export async function disconnectBank(connectionId: number): Promise<void> {
@@ -397,13 +420,34 @@ async function recordResult(connectionId: number, summary: BankSyncSummary, expi
     .where(eq(bankConnections.id, connectionId));
 }
 
+/**
+ * Accounts linked before their bank's type code was stored: asks the bank once for the
+ * account's details, keeps the code ("" when it sends none, so it isn't asked again) and
+ * gives the linked account that type when it has none. A failed call is retried on the
+ * next sync and never fails this one.
+ */
+async function fillMissingAccountType(account: { id: number; accountUid: string; cashAccountType: string | null }, bankId: number) {
+  if (account.cashAccountType != null) return;
+  const details = await ebRequest<{ cash_account_type?: string | null }>("GET", `/accounts/${encodeURIComponent(account.accountUid)}/details`);
+  if (!details.ok) return;
+  const code = details.value.cash_account_type?.trim() || "";
+  await db.update(bankConnectionAccounts).set({ cashAccountType: code }).where(eq(bankConnectionAccounts.id, account.id));
+  await fillCardType(bankId, cardTypeForCashAccountType(code));
+}
+
+/**
+ * One connection's sync. Every run, also one that found nothing new or failed, is
+ * written to the change log (Settings › Import › Sync log, Data health › Recent changes).
+ */
 async function syncOne(connection: BankConnection): Promise<BankSyncSummary> {
   const at = new Date().toISOString();
-  if (isExpired(connection)) {
-    const summary = { imported: 0, alreadyThere: 0, at, error: "expired" as const };
-    await recordResult(connection.id, summary, true);
+  const insertedIds: number[] = [];
+  const finish = async (summary: BankSyncSummary, expired = false) => {
+    await recordResult(connection.id, summary, expired);
+    await recordBankSync(insertedIds, { skipped: summary.alreadyThere, source: connection.aspspName, error: summary.error ?? null });
     return summary;
-  }
+  };
+  if (isExpired(connection)) return finish({ imported: 0, alreadyThere: 0, at, error: "expired" }, true);
   const accounts = await db
     .select({ account: bankConnectionAccounts, accountNumber: banks.accountNumber })
     .from(bankConnectionAccounts)
@@ -412,32 +456,36 @@ async function syncOne(connection: BankConnection): Promise<BankSyncSummary> {
 
   let imported = 0;
   let alreadyThere = 0;
-  for (const { account, accountNumber } of accounts) {
-    const iban = account.iban ?? accountNumber ?? account.accountUid;
-    const fileUnder = normalizeAccountNumber(accountNumber) ?? normalizeAccountNumber(account.iban);
-    if (!fileUnder) continue;
+  try {
+    for (const { account, accountNumber } of accounts) {
+      const iban = account.iban ?? accountNumber ?? account.accountUid;
+      const fileUnder = normalizeAccountNumber(accountNumber) ?? normalizeAccountNumber(account.iban);
+      if (!fileUnder) continue;
 
-    const fetched = await fetchBookedTransactions(account.accountUid, syncDateFrom(account.lastSyncedDate));
-    if (!fetched.ok) {
-      const expired = fetched.error === "sessionExpired";
-      const summary = { imported, alreadyThere, at, error: expired ? ("expired" as const) : fetched.error };
-      await recordResult(connection.id, summary, expired);
-      return summary;
+      const fetched = await fetchBookedTransactions(account.accountUid, syncDateFrom(account.lastSyncedDate));
+      if (!fetched.ok) {
+        const expired = fetched.error === "sessionExpired";
+        return finish({ imported, alreadyThere, at, error: expired ? "expired" : fetched.error }, expired);
+      }
+      if (account.bankId != null) await fillMissingAccountType(account, account.bankId);
+      const rows = fetched.rows
+        .map((tx) => mapEnableBankingTransaction(tx, { iban, account: fileUnder }))
+        .filter((r): r is ParsedRow => r != null);
+      const { fresh, present } = await dropRowsAlreadyImported(rows, fileUnder);
+      const result = fresh.length > 0 ? await importParsedRows(fresh, { source: "bank" }) : null;
+      imported += result?.imported ?? 0;
+      alreadyThere += present + (result?.skipped ?? 0);
+      insertedIds.push(...(result?.insertedIds ?? []));
+
+      const newest = rows.reduce<string | null>((max, r) => (!max || r.date > max ? r.date : max), account.lastSyncedDate);
+      await db.update(bankConnectionAccounts).set({ lastSyncedDate: newest ?? at.slice(0, 10) }).where(eq(bankConnectionAccounts.id, account.id));
     }
-    const rows = fetched.rows
-      .map((tx) => mapEnableBankingTransaction(tx, { iban, account: fileUnder }))
-      .filter((r): r is ParsedRow => r != null);
-    const { fresh, present } = await dropRowsAlreadyImported(rows, fileUnder);
-    const result = fresh.length > 0 ? await importParsedRows(fresh, { source: "bank" }) : null;
-    imported += result?.imported ?? 0;
-    alreadyThere += present + (result?.skipped ?? 0);
-
-    const newest = rows.reduce<string | null>((max, r) => (!max || r.date > max ? r.date : max), account.lastSyncedDate);
-    await db.update(bankConnectionAccounts).set({ lastSyncedDate: newest ?? at.slice(0, 10) }).where(eq(bankConnectionAccounts.id, account.id));
+  } catch (e) {
+    // Still leaves a trace (and keeps what earlier accounts brought in undoable).
+    await finish({ imported, alreadyThere, at, error: "unavailable" });
+    throw e;
   }
-  const summary = { imported, alreadyThere, at };
-  await recordResult(connection.id, summary);
-  return summary;
+  return finish({ imported, alreadyThere, at });
 }
 
 export type SyncOutcome =

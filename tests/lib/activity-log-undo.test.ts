@@ -34,7 +34,7 @@ describe("undoActivity", () => {
     const { db, s, ids } = await setup();
     const { recordImport, undoActivity } = await import("@/lib/activity-log");
     const { eq } = await import("drizzle-orm");
-    const entryId = (await recordImport("csvImport", ids))!;
+    const entryId = (await recordImport(ids))!;
     await db.update(s.transactions).set({ notes: "keep me" }).where(eq(s.transactions.id, ids[0]));
 
     const result = await undoActivity(entryId);
@@ -49,7 +49,7 @@ describe("undoActivity", () => {
     const { recordActivity, recordImport, undoActivity } = await import("@/lib/activity-log");
     const { rulePassEntry } = await import("@/lib/activity-log-entries");
     const { eq } = await import("drizzle-orm");
-    const importId = (await recordImport("csvImport", ids))!;
+    const importId = (await recordImport(ids))!;
 
     await db.update(s.transactions).set({ categoryId: fun.id }).where(eq(s.transactions.id, ids[1]));
     const moveId = (await recordActivity(rulePassEntry([{ id: ids[1], before: { categoryId: groceries.id }, patch: { categoryId: fun.id } }]), null))!;

@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
+  IconTransfer,
   IconListNumbers,
   IconServer,
   IconBook2,
@@ -73,6 +74,7 @@ import {
 import type { TipId } from "@/lib/tips";
 
 const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
+  bankAccountType: IconTag,
   receiptScan: IconCamera,
   csvImport: IconFileTextFilled,
   recurring: IconReload,
@@ -197,6 +199,10 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   betaBuild: IconFlask,
   betaChanges: IconGitCommit,
   aiProvider: IconServer,
+  reviewTransfer: IconTransfer,
+  aiPicksKept: IconSparkles,
+  ruleMatches: IconListCheck,
+  reviewBulkRules: IconListCheck,
 };
 
 /**

@@ -155,17 +155,52 @@ export function findUndoConflict<T extends ConflictCandidate>(entry: ConflictCan
 
 const ids = (rows: DbRow[]) => rows.map((r) => Number(r.id));
 
-/** Rows an import inserted (as stored, after every pass the import ran). */
-export function importEntry(kind: "csvImport" | "bankSync", inserted: DbRow[], params: { skipped?: number; source?: string | null } = {}): ActivityEntryInput | null {
+const importUndo = (inserted: DbRow[]): UndoData => ({
+  ops: [{ op: "deleteUnchanged", table: "transactions", rows: inserted.map((r) => ({ id: Number(r.id), fp: transactionFingerprint(r) })) }],
+});
+
+/** Rows a CSV import inserted (as stored, after every pass the import ran). */
+export function importEntry(inserted: DbRow[], params: { skipped?: number; source?: string | null } = {}): ActivityEntryInput | null {
   if (inserted.length === 0) return null;
   return {
-    kind,
+    kind: "csvImport",
     params: { count: inserted.length, skipped: params.skipped ?? 0, source: params.source ?? null },
     affectedCount: inserted.length,
     refs: { transactions: ids(inserted) },
-    undoData: {
-      ops: [{ op: "deleteUnchanged", table: "transactions", rows: inserted.map((r) => ({ id: Number(r.id), fp: transactionFingerprint(r) })) }],
+    undoData: importUndo(inserted),
+  };
+}
+
+/** What one connection's sync run hands to bankSyncEntry besides the rows. */
+export interface BankSyncParams {
+  /** Rows that were already there (an earlier sync or a CSV import brought them in). */
+  skipped?: number;
+  /** The bank's name (bank_connections.aspsp_name). */
+  source?: string | null;
+  /** Set when the run failed: a BankSyncError code ("expired", "unavailable", …). */
+  error?: string | null;
+}
+
+/**
+ * One connection's sync run, always recorded — also when nothing was new, and when it
+ * failed — so Settings › Import › Sync log shows every run. Params: `count` (inserted),
+ * `skipped`, `source`, and `error` only on a failed run. Undo removes the inserted rows;
+ * a run without rows (every failed one that stopped before importing anything) has
+ * nothing to reverse and is stored without undo data. A run that failed on a later
+ * account keeps the rows the earlier accounts brought in reversible.
+ */
+export function bankSyncEntry(inserted: DbRow[], params: BankSyncParams = {}): ActivityEntryInput {
+  return {
+    kind: "bankSync",
+    params: {
+      count: inserted.length,
+      skipped: params.skipped ?? 0,
+      source: params.source ?? null,
+      ...(params.error ? { error: params.error } : {}),
     },
+    affectedCount: inserted.length,
+    refs: inserted.length ? { transactions: ids(inserted) } : {},
+    undoData: inserted.length ? importUndo(inserted) : null,
   };
 }
 

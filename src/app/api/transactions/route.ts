@@ -58,8 +58,15 @@ function pickWritable(body: unknown): TransactionPatch | null {
   if (data.date !== undefined && !isValidISODate(typeof data.date === "string" ? data.date : null)) {
     throw new Error("Invalid date.");
   }
+  // "Internal transfer" (Needs a category, the detail panel): a real boolean, nothing else.
+  if (data.isManualTransfer !== undefined && typeof data.isManualTransfer !== "boolean") {
+    throw new Error("isManualTransfer must be true or false.");
+  }
   return data as TransactionPatch;
 }
+
+/** A row that gets a category no longer needs the AI pick Needs a category kept for it. */
+const clearAiPick = (categoryId: unknown) => (categoryId != null ? { aiSuggestedCategoryId: null } : {});
 
 function parseId(value: unknown): number | null {
   const id = Number(value);
@@ -169,7 +176,7 @@ export async function PATCH(req: NextRequest) {
         : {};
     const [row] = await db
       .update(transactions)
-      .set({ manuallyCategorized: parsed.splits.length > 0, ...shared })
+      .set({ manuallyCategorized: parsed.splits.length > 0, ...shared, ...(parsed.splits.length > 0 ? { aiSuggestedCategoryId: null } : {}) })
       .where(eq(transactions.id, id))
       .returning();
 
@@ -198,7 +205,7 @@ export async function PATCH(req: NextRequest) {
     }
     const result = await db
       .update(transactions)
-      .set(data)
+      .set({ ...data, ...clearAiPick(data.categoryId) })
       .where(inArray(transactions.id, ids))
       .returning({ id: transactions.id });
     const activityId = await recordActivity(moveEntry);
@@ -225,7 +232,7 @@ export async function PATCH(req: NextRequest) {
     }
     const result = await db
       .update(transactions)
-      .set({ categoryId, manuallyCategorized: true })
+      .set({ categoryId, manuallyCategorized: true, ...clearAiPick(categoryId) })
       .where(whereClause)
       .returning({ id: transactions.id });
     return NextResponse.json({ updated: result.length });
@@ -254,7 +261,7 @@ export async function PATCH(req: NextRequest) {
     .where(eq(transactions.id, id))
     .limit(1);
 
-  const [row] = await db.update(transactions).set(data).where(eq(transactions.id, id)).returning();
+  const [row] = await db.update(transactions).set({ ...data, ...clearAiPick(data.categoryId) }).where(eq(transactions.id, id)).returning();
   if (!row) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
 
   if (existing?.goalId) {

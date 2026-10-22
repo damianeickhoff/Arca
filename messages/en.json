@@ -1633,6 +1633,26 @@
     "aiProvider": {
       "title": "Gemini or your own server",
       "body": "Pick Local server to use Ollama, LM Studio or another AI server on your own network instead of Google."
+    },
+    "bankAccountType": {
+      "title": "The bank says what kind of account it is",
+      "body": "Arca sets that type when you link the account. You can change it later in Settings › Accounts."
+    },
+    "reviewTransfer": {
+      "title": "Money to your own account",
+      "body": "Pick Internal transfer for money to one of your own accounts, also one that isn't in Arca. It stays out of your budgets and spending."
+    },
+    "aiPicksKept": {
+      "title": "AI suggestions are kept",
+      "body": "What AI suggested earlier is still here after a reload, marked with a sparkle. Arca won't ask again for these transactions."
+    },
+    "ruleMatches": {
+      "title": "See what a rule files",
+      "body": "Open the list to see every transaction the new rule files now, and untick the ones it should leave alone."
+    },
+    "reviewBulkRules": {
+      "title": "One category, a rule per merchant",
+      "body": "Picked several? Choose Category and switch on the rule: Arca makes one rule for each merchant. Hold a row, or Shift-click it, to start selecting."
     }
   },
   "categoryPicker": {
@@ -1653,12 +1673,16 @@
     "rule": {
       "title": "Also create a rule for similar transactions",
       "help": "Transactions matching {names} get this category from now on.",
-      "helpWithSimilar": "Transactions matching {names} get this category from now on, and {count, plural, one {# earlier transaction gets} other {# earlier transactions get}} it now."
+      "helpWithSimilar": "Transactions matching {names} get this category from now on, and {count, plural, one {# earlier transaction gets} other {# earlier transactions get}} it now.",
+      "showMatches": "Show the {count, plural, one {# transaction} other {# transactions}}",
+      "showMatchesSome": "{count} of {total} ticked",
+      "titleMany": "Also create a rule for each of the {count} merchants"
     },
     "cancel": "Cancel",
     "apply": "Apply to {count, plural, one {# transaction} other {# transactions}}",
     "applying": "Applying…",
-    "applyFailed": "Couldn't set the category. Try again."
+    "applyFailed": "Couldn't set the category. Try again.",
+    "transfer": "Internal transfer"
   },
   "datePicker": {
     "chooseDate": "Choose a date",
@@ -1854,7 +1878,8 @@
       "IconTarget": "Goal",
       "IconStar": "Favourite",
       "IconTag": "Label",
-      "IconSparkles": "Other"
+      "IconSparkles": "Other",
+      "IconEyeglass": "Glasses"
     }
   },
   "teachRule": {
@@ -1868,7 +1893,9 @@
     "saving": "Saving…",
     "failed": "The rule could not be saved. Try again.",
     "done": "Done: {merchant} now always goes to {category}.",
-    "close": "Close"
+    "close": "Close",
+    "showMatches": "Show the {count, plural, one {# transaction} other {# transactions}}",
+    "showMatchesSome": "{count} of {total} ticked"
   },
   "colorPicker": {
     "previewIcon": "Preview with this icon",
@@ -2031,8 +2058,9 @@
     "syncLog": {
       "title": "Sync log",
       "empty": "No syncs yet. Connect a bank and the first sync shows up here.",
-      "entry": "{imported, plural, =0 {nothing new} one {# new} other {# new}} · {skipped, plural, =0 {} one {# already there} other {# already there}}",
-      "allBanks": "All banks"
+      "entry": "{imported, plural, =0 {nothing new} one {# new} other {# new}}{skipped, plural, =0 {} one { · # already there} other { · # already there}}",
+      "allBanks": "All banks",
+      "failed": "Failed"
     }
   },
   "importMapping": {
@@ -2138,7 +2166,8 @@
       "someRule": "a rule",
       "kinds": {
         "csvImport": "Imported {count, plural, one {# transaction} other {# transactions}}",
-        "bankSync": "Bank sync added {count, plural, one {# transaction} other {# transactions}}",
+        "bankSync": "{count, plural, =0 {Bank sync with {source} found nothing new} one {Bank sync with {source} added # transaction} other {Bank sync with {source} added # transactions}}",
+        "bankSyncFailed": "Bank sync with {source} failed: {error}",
         "rulesApplied": "Rules updated {count, plural, one {# transaction} other {# transactions}}",
         "bulkCategoryMove": "Moved {count, plural, one {# transaction} other {# transactions}} to {category}",
         "ruleCreated": "Added the rule “{pattern}” → {category}",
@@ -2148,7 +2177,8 @@
         "recurringDetected": "Found {count, plural, one {a recurring payment: {name}} other {# recurring payments}}",
         "unknown": "A change",
         "recurringMigrated": "Re-checked auto-detected bills: {review, plural, =0 {all still regular} one {# looks like ordinary spending} other {# look like ordinary spending}}"
-      }
+      },
+      "someBank": "a bank"
     },
     "regularPayments": {
       "title": "Regular payments",
@@ -4883,7 +4913,6 @@
     "noSuggestions": "Nothing to suggest yet — pick from all categories",
     "allCategories": "All categories",
     "details": "Details",
-    "markTransfer": "Mark as internal transfer",
     "skip": "Skip",
     "save": "Save and next",
     "saving": "Saving…",
@@ -4933,6 +4962,13 @@
       "file": "File",
       "fileLabel": "File a transaction from {name}",
       "pickTitle": "Category for {name}"
+    },
+    "transfer": {
+      "choice": "Internal transfer",
+      "allTitle": "Mark all of {name} as internal transfers?",
+      "allBody": "{count, plural, one {# transaction} other {# transactions}} from {name} {count, plural, one {is} other {are}} waiting. Internal transfers stay out of your budgets and spending.",
+      "all": "All {count}",
+      "justThis": "Just this one"
     }
   },
   "categoryList": {
@@ -5227,5 +5263,21 @@
       "showAll": "Show all {count}",
       "showFewer": "Show fewer"
     }
+  },
+  "ruleMatches": {
+    "title": "What the rule files now",
+    "subtitle": "{ticked} of {total} ticked",
+    "close": "Close",
+    "loading": "Finding the transactions…",
+    "failed": "The transactions could not be loaded. Close and try again.",
+    "none": "No other transactions match right now.",
+    "selectAll": "Select all",
+    "selectNone": "Select none",
+    "done": "Done",
+    "note": "Unticked transactions keep what they have now, also when rules run again later. The rule itself stays and files new transactions that match.",
+    "selectAllFor": "Select all of {name}",
+    "selectNoneFor": "Select none of {name}",
+    "groupCount": "{ticked} of {total}",
+    "noteMany": "Unticked transactions keep what they have now, also when rules run again later. Each rule stays and files new transactions from its merchant."
   }
 }

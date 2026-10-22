@@ -21,12 +21,25 @@ export interface CategorySuggestions {
   total: number;
   /** One name pattern per distinct merchant — what the rule matches on ("contains"). */
   patterns: string[];
+  /** The rule per pattern (same order): its direction is the one the picked
+   *  transactions with that pattern share, or null when they're mixed. Several picked
+   *  merchants get one rule each, every one shaped like the single-transaction rule. */
+  rules: RuleSpec[];
   /** The direction every picked transaction shares, or null when they're mixed. */
   direction: "income" | "expense" | null;
   /** Other transactions the patterns match today (split ones left out). */
   similarIds: number[];
   /** The merchant every picked transaction shares, or null (none, or several). */
   merchantName: string | null;
+  /** For one transaction still without a category: the category the AI picked for it
+   *  earlier (Needs a category › Ask AI), kept so a reload shows it again. */
+  aiPick: number | null;
+}
+
+/** One "description contains" rule: its pattern and direction (null = both). */
+export interface RuleSpec {
+  pattern: string;
+  direction: "income" | "expense" | null;
 }
 
 export const SUGGESTION_LIMIT = 3;
@@ -61,8 +74,39 @@ export function rulePatternOf(description: string): string | null {
   return pattern.length >= 2 ? pattern : null;
 }
 
+/**
+ * The rules for a set of picked transactions: one per distinct pattern (case-insensitive,
+ * first spelling wins), with the direction its transactions share or null when mixed.
+ */
+export function ruleSpecsFor(picked: { description: string; direction: string }[]): RuleSpec[] {
+  const byKey = new Map<string, { pattern: string; directions: Set<string> }>();
+  for (const row of picked) {
+    const p = rulePatternOf(row.description);
+    if (!p) continue;
+    const entry = byKey.get(p.toLowerCase()) ?? { pattern: p, directions: new Set<string>() };
+    entry.directions.add(row.direction);
+    byKey.set(p.toLowerCase(), entry);
+  }
+  return [...byKey.values()].map(({ pattern, directions }) => ({
+    pattern,
+    direction: directions.size === 1 ? ([...directions][0] === "income" ? "income" : "expense") : null,
+  }));
+}
+
+/** Whether a description falls under a rule as matchRules' "contains" does it. */
+export function matchesRuleSpec(row: { description: string; direction: string }, rule: RuleSpec): boolean {
+  return (rule.direction == null || row.direction === rule.direction) && row.description.trim().toLowerCase().includes(rule.pattern.toLowerCase());
+}
+
+/** The stored AI pick of a single uncategorised transaction, when it is still a category. */
+export function aiPickOf(picked: { categoryId: number | null; aiSuggestedCategoryId: number | null }[], validIds: Set<number>): number | null {
+  if (picked.length !== 1) return null;
+  const [row] = picked;
+  return row.categoryId == null && row.aiSuggestedCategoryId != null && validIds.has(row.aiSuggestedCategoryId) ? row.aiSuggestedCategoryId : null;
+}
+
 export async function getCategorySuggestions(ids: number[]): Promise<CategorySuggestions> {
-  const empty: CategorySuggestions = { suggested: [], names: [], total: 0, patterns: [], direction: null, similarIds: [], merchantName: null };
+  const empty: CategorySuggestions = { suggested: [], names: [], total: 0, patterns: [], direction: null, similarIds: [], merchantName: null, aiPick: null, rules: [] };
   if (ids.length === 0) return empty;
 
   const picked = await db
@@ -74,6 +118,8 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
       direction: transactions.direction,
       account: transactions.account,
       merchantId: transactions.merchantId,
+      categoryId: transactions.categoryId,
+      aiSuggestedCategoryId: transactions.aiSuggestedCategoryId,
       recurringFriendlyName: recurringItems.friendlyName,
       recurringCategoryId: recurringItems.categoryId,
     })
@@ -100,12 +146,8 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
   }
 
   const names = [...new Set(picked.map((r) => resolveDisplayName(r).trim()).filter(Boolean))];
-  const patternByKey = new Map<string, string>();
-  for (const row of picked) {
-    const p = rulePatternOf(row.description);
-    if (p && !patternByKey.has(p.toLowerCase())) patternByKey.set(p.toLowerCase(), p);
-  }
-  const patterns = [...patternByKey.values()];
+  const ruleSpecs = ruleSpecsFor(picked);
+  const patterns = ruleSpecs.map((r) => r.pattern);
   const directions = new Set(picked.map((r) => r.direction));
   const direction = directions.size === 1 ? ([...directions][0] === "income" ? "income" : "expense") : null;
 
@@ -136,9 +178,9 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
   for (const r of others) if (r.categoryId != null) votes.push({ categoryId: r.categoryId, weight: 1 });
 
   // The rule's "contains" match, same as matchRules: lower-cased substring.
-  const lowered = patterns.map((p) => p.toLowerCase());
+  // Each merchant's rule keeps its own direction, as the single-transaction rule would.
   const similar = others.filter(
-    (r) => (direction == null || r.direction === direction) && lowered.some((p) => r.description.trim().toLowerCase().includes(p)),
+    (r) => ruleSpecs.some((spec) => matchesRuleSpec(r, spec)),
   );
   const splitIds = similar.length
     ? new Set(
@@ -156,8 +198,10 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
     names,
     total: picked.reduce((sum, r) => sum + (r.direction === "expense" ? -r.amount : r.amount), 0),
     patterns,
+    rules: ruleSpecs,
     direction,
     similarIds: similar.filter((r) => !splitIds.has(r.id)).map((r) => r.id),
     merchantName: sharedMerchant?.name ?? null,
+    aiPick: aiPickOf(picked, validIds),
   };
 }

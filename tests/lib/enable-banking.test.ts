@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { buildEnableBankingJwt, isUsablePrivateKey, JWT_LIFETIME_SECONDS } from "@/lib/enable-banking/jwt";
 import {
   bankTransactionHash,
+  cardTypeForCashAccountType,
   mapEnableBankingTransaction,
   splitAlreadyImported,
   syncDateFrom,
@@ -212,5 +213,20 @@ describe("consentSeconds", () => {
     expect(consentSeconds(365 * 86400)).toBe(180 * 86400);
     expect(consentSeconds(null)).toBe(90 * 86400);
     expect(consentSeconds(0)).toBe(90 * 86400);
+  });
+});
+
+describe("cardTypeForCashAccountType", () => {
+  it("maps the ISO 20022 cash account codes to an account type", () => {
+    expect(cardTypeForCashAccountType("CACC")).toBe("debitcard");
+    expect(cardTypeForCashAccountType("TRAN")).toBe("debitcard");
+    expect(cardTypeForCashAccountType("CASH")).toBe("debitcard");
+    expect(cardTypeForCashAccountType(" cacc ")).toBe("debitcard");
+    expect(cardTypeForCashAccountType("SVGS")).toBe("savings");
+    expect(cardTypeForCashAccountType("CARD")).toBe("creditcard");
+  });
+
+  it("leaves anything else to the user", () => {
+    for (const code of ["LOAN", "OTHR", "", null, undefined]) expect(cardTypeForCashAccountType(code)).toBeNull();
   });
 });

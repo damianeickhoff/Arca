@@ -76,7 +76,7 @@ Your new app starts as **Inactive**. To switch it on:
 4. Choose **Test**. When it says "It works", choose **Save**.
 5. Choose **Connect a bank**, search for your bank and pick it.
 6. Confirm at your bank. You come back to Arca automatically.
-7. **Link accounts**: for each account the bank shared, choose which account in Arca it belongs to, **New account from this one**, or **Don't sync**. Accounts whose IBAN Arca already knows are linked for you.
+7. **Link accounts**: for each account the bank shared, choose which account in Arca it belongs to, **New account from this one**, or **Don't sync**. Accounts whose IBAN Arca already knows are linked for you. Next to each account you see the type your bank reports (**Checking**, **Savings** or **Credit card**): Arca gives the account that type when you link it, unless you already picked one. You can always change it later in Settings → **Accounts**. Accounts you linked before Arca read the type get it on their next sync.
 8. Choose **Save and sync**.
 
 Your transactions come in, go through your [rules and merchants](/Arca/transactions/rules-and-merchants/), and anything new lands in [Needs a category](/Arca/everyday/needs-a-category/).
@@ -89,7 +89,9 @@ Banks usually share about the last 90 days on the first sync. [Import a CSV](/Ar
 
 While Arca is running, it syncs every connected bank **once a day** by itself. Each sync also looks back a week, to pick up payments your bank booked late. You can always choose **Sync now** for one bank or **Sync all**.
 
-The sidebar shows when your banks last synced, under **Import**. A dot on the **Bank connection** tab means a consent ran out, and the **Sync log** under the banks lists every sync with what it brought in.
+The sidebar shows when your banks last synced, under **Import**. A dot on the **Bank connection** tab means a consent ran out.
+
+The **Sync log** under the banks lists every sync, automatic or by hand: when it ran, which bank, how many transactions were new and how many were already there. A sync that failed shows up too, with a red dot and the reason (for example an expired permission, or the bank's daily limit). Every sync is also in Settings → **Data health** → **Recent changes**, where you can undo one that brought in transactions: Arca then removes them again, except the ones you changed since.
 
 Banks only allow a few syncs a day without you present. If you see "The bank allows only a few syncs a day", just try again later.
 

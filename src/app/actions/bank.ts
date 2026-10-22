@@ -36,20 +36,20 @@ type Failure = { error: BankApiError | "signedOut" };
 export interface BankPanelData {
   settings: BankSettingsView;
   connections: BankConnectionView[];
-  /** Centje's accounts, for the account mapping dialog. */
-  banks: { id: number; name: string; accountNumber: string | null }[];
+  /** Centje's accounts, for the account mapping dialog; `cardType` decides whether a link sets the bank's type. */
+  banks: { id: number; name: string; accountNumber: string | null; cardType: string | null }[];
 }
 
 async function panelData(): Promise<BankPanelData> {
   const [config, connections, bankRows] = await Promise.all([
     getBankConfig(),
     listBankConnections(),
-    db.select({ id: banks.id, displayName: banks.displayName, accountNumber: banks.accountNumber }).from(banks).orderBy(asc(banks.id)),
+    db.select({ id: banks.id, displayName: banks.displayName, accountNumber: banks.accountNumber, cardType: banks.cardType }).from(banks).orderBy(asc(banks.id)),
   ]);
   return {
     settings: toBankSettingsView(config),
     connections,
-    banks: bankRows.map((b) => ({ id: b.id, name: b.displayName?.trim() || b.accountNumber || "", accountNumber: b.accountNumber })),
+    banks: bankRows.map((b) => ({ id: b.id, name: b.displayName?.trim() || b.accountNumber || "", accountNumber: b.accountNumber, cardType: b.cardType })),
   };
 }
 

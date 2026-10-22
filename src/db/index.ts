@@ -149,6 +149,11 @@ addColumnIfMissing("transactions", "transfer_type", "TEXT");
 // existed simply have no reported balance, which every reader must tolerate.
 addColumnIfMissing("transactions", "reported_balance", "REAL");
 
+// Auto-migrate: the AI's category pick per transaction (Needs a category › Ask AI), so a
+// reload shows it again instead of asking (and paying) twice. Cleared once the row gets a
+// category; ON DELETE SET NULL when that category goes.
+addColumnIfMissing("transactions", "ai_suggested_category_id", "INTEGER REFERENCES categories(id) ON DELETE SET NULL");
+
 // Backfill: "income" is no longer a budgetType value — a category's `group` already
 // marks it as income, so any row still carrying the old inkomen/Income budgetType
 // is reset to null (their income-ness is unaffected, only this redundant field).
@@ -609,6 +614,9 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
 
   // Auto-migrate: the bank connection tables (Enable Banking).
   sqlite.exec(BANK_CONNECTION_TABLES_SQL);
+  // The bank's account type code (CACC, SVGS, …), behind banks.cardType on link. Accounts
+  // linked before it was stored get it on their next sync (fillAccountTypes in bank-sync.ts).
+  addColumnIfMissing("bank_connection_accounts", "cash_account_type", "TEXT");
 
   // Brand icon rules become merchant patterns, logos and colours (one time).
   migrateBrandRulesToMerchants(sqlite);

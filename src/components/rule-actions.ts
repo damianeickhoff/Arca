@@ -10,6 +10,12 @@ import type { RuleFields } from "@/components/rule-dialog";
  * dialog, so the category picker can use it without importing the dialog (which
  * imports the picker). */
 
+/** The rule "also create a rule" and the teach strip make: the description contains
+ *  `pattern`, same direction, any amount and account. */
+export function containsRuleFields(pattern: string, direction: "income" | "expense" | null): RuleFields {
+  return { namePattern: pattern, nameWildcard: true, nameWholeWord: false, amount: null, amountMin: null, amountMax: null, direction, bankId: null };
+}
+
 /** A rule's conditions as the preview endpoint's query string. */
 export function previewQuery(f: RuleFields): string {
   const q = new URLSearchParams();

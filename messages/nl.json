@@ -1633,6 +1633,26 @@
     "aiProvider": {
       "title": "Gemini of je eigen server",
       "body": "Kies Eigen server om Ollama, LM Studio of een andere AI-server in je eigen netwerk te gebruiken in plaats van Google."
+    },
+    "bankAccountType": {
+      "title": "De bank vertelt wat voor rekening het is",
+      "body": "Arca zet dat type bij het koppelen. Je kunt het later wijzigen in Instellingen › Rekeningen."
+    },
+    "reviewTransfer": {
+      "title": "Geld naar je eigen rekening",
+      "body": "Kies Eigen overboeking voor geld naar een van je eigen rekeningen, ook een die niet in Arca staat. Het telt niet mee in je budgetten en uitgaven."
+    },
+    "aiPicksKept": {
+      "title": "AI-voorstellen blijven bewaard",
+      "body": "Wat AI eerder voorstelde staat er na herladen nog, met een sterretje. Arca vraagt het voor deze transacties niet opnieuw."
+    },
+    "ruleMatches": {
+      "title": "Zie wat een regel indeelt",
+      "body": "Open de lijst om elke transactie te zien die de nieuwe regel nu indeelt, en vink de transacties uit die hij moet laten staan."
+    },
+    "reviewBulkRules": {
+      "title": "Eén categorie, een regel per winkel",
+      "body": "Meerdere gekozen? Kies Categorie en zet de regel aan: Arca maakt voor elke winkel een eigen regel. Houd een rij ingedrukt of Shift-klik erop om te beginnen met selecteren."
     }
   },
   "categoryPicker": {
@@ -1653,12 +1673,16 @@
     "rule": {
       "title": "Maak ook een regel voor vergelijkbare transacties",
       "help": "Transacties met {names} krijgen voortaan deze categorie.",
-      "helpWithSimilar": "Transacties met {names} krijgen voortaan deze categorie, en {count, plural, one {# eerdere transactie krijgt} other {# eerdere transacties krijgen}} hem nu al."
+      "helpWithSimilar": "Transacties met {names} krijgen voortaan deze categorie, en {count, plural, one {# eerdere transactie krijgt} other {# eerdere transacties krijgen}} hem nu al.",
+      "showMatches": "Toon de {count, plural, one {# transactie} other {# transacties}}",
+      "showMatchesSome": "{count} van {total} aangevinkt",
+      "titleMany": "Maak ook een regel voor elk van de {count} winkels"
     },
     "cancel": "Annuleren",
     "apply": "Toepassen op {count, plural, one {# transactie} other {# transacties}}",
     "applying": "Bezig…",
-    "applyFailed": "De categorie kon niet worden ingesteld. Probeer het opnieuw."
+    "applyFailed": "De categorie kon niet worden ingesteld. Probeer het opnieuw.",
+    "transfer": "Eigen overboeking"
   },
   "datePicker": {
     "chooseDate": "Kies een datum",
@@ -1854,7 +1878,8 @@
       "IconTarget": "Doel",
       "IconStar": "Favoriet",
       "IconTag": "Label",
-      "IconSparkles": "Overig"
+      "IconSparkles": "Overig",
+      "IconEyeglass": "Bril"
     }
   },
   "teachRule": {
@@ -1868,7 +1893,9 @@
     "saving": "Opslaan…",
     "failed": "De regel kon niet worden opgeslagen. Probeer het opnieuw.",
     "done": "Klaar: {merchant} gaat voortaan altijd naar {category}.",
-    "close": "Sluiten"
+    "close": "Sluiten",
+    "showMatches": "Toon de {count, plural, one {# transactie} other {# transacties}}",
+    "showMatchesSome": "{count} van {total} aangevinkt"
   },
   "colorPicker": {
     "previewIcon": "Voorbeeld met dit icoon",
@@ -2031,8 +2058,9 @@
     "syncLog": {
       "title": "Synclogboek",
       "empty": "Nog geen syncs. Koppel een bank en de eerste sync verschijnt hier.",
-      "entry": "{imported, plural, =0 {niets nieuws} one {# nieuw} other {# nieuw}} · {skipped, plural, =0 {} one {# was er al} other {# waren er al}}",
-      "allBanks": "Alle banken"
+      "entry": "{imported, plural, =0 {niets nieuws} one {# nieuw} other {# nieuw}}{skipped, plural, =0 {} one { · # was er al} other { · # waren er al}}",
+      "allBanks": "Alle banken",
+      "failed": "Mislukt"
     }
   },
   "importMapping": {
@@ -2138,7 +2166,8 @@
       "someRule": "een regel",
       "kinds": {
         "csvImport": "{count, plural, one {# transactie} other {# transacties}} geïmporteerd",
-        "bankSync": "Banksynchronisatie voegde {count, plural, one {# transactie} other {# transacties}} toe",
+        "bankSync": "{count, plural, =0 {Banksynchronisatie met {source} vond niets nieuws} one {Banksynchronisatie met {source} voegde # transactie toe} other {Banksynchronisatie met {source} voegde # transacties toe}}",
+        "bankSyncFailed": "Banksynchronisatie met {source} mislukt: {error}",
         "rulesApplied": "Regels pasten {count, plural, one {# transactie} other {# transacties}} aan",
         "bulkCategoryMove": "{count, plural, one {# transactie} other {# transacties}} verplaatst naar {category}",
         "ruleCreated": "Regel “{pattern}” → {category} toegevoegd",
@@ -2148,7 +2177,8 @@
         "recurringDetected": "{count, plural, one {Vaste betaling gevonden: {name}} other {# vaste betalingen gevonden}}",
         "unknown": "Een wijziging",
         "recurringMigrated": "Eerder gevonden vaste lasten opnieuw gecontroleerd: {review, plural, =0 {allemaal nog regelmatig} one {# lijkt gewone uitgaven} other {# lijken gewone uitgaven}}"
-      }
+      },
+      "someBank": "een bank"
     },
     "regularPayments": {
       "title": "Vaste betalingen",
@@ -4883,7 +4913,6 @@
     "noSuggestions": "Nog niets voor te stellen — kies uit alle categorieën",
     "allCategories": "Alle categorieën",
     "details": "Details",
-    "markTransfer": "Markeer als eigen overboeking",
     "skip": "Overslaan",
     "save": "Opslaan en volgende",
     "saving": "Opslaan…",
@@ -4933,6 +4962,13 @@
       "file": "Indelen",
       "fileLabel": "Een transactie van {name} indelen",
       "pickTitle": "Categorie voor {name}"
+    },
+    "transfer": {
+      "choice": "Eigen overboeking",
+      "allTitle": "Alles van {name} als eigen overboeking markeren?",
+      "allBody": "Er {count, plural, one {wacht # transactie} other {wachten # transacties}} van {name}. Eigen overboekingen tellen niet mee in je budgetten en uitgaven.",
+      "all": "Alle {count}",
+      "justThis": "Alleen deze"
     }
   },
   "categoryList": {
@@ -5227,5 +5263,21 @@
       "showAll": "Alle {count} tonen",
       "showFewer": "Minder tonen"
     }
+  },
+  "ruleMatches": {
+    "title": "Wat de regel nu indeelt",
+    "subtitle": "{ticked} van {total} aangevinkt",
+    "close": "Sluiten",
+    "loading": "Transacties zoeken…",
+    "failed": "De transacties konden niet worden geladen. Sluit en probeer het opnieuw.",
+    "none": "Er komen nu geen andere transacties overeen.",
+    "selectAll": "Alles selecteren",
+    "selectNone": "Niets selecteren",
+    "done": "Klaar",
+    "note": "Uitgevinkte transacties houden wat ze nu hebben, ook als de regels later opnieuw draaien. De regel zelf blijft en deelt nieuwe transacties die overeenkomen in.",
+    "selectAllFor": "Alles van {name} selecteren",
+    "selectNoneFor": "Niets van {name} selecteren",
+    "groupCount": "{ticked} van {total}",
+    "noteMany": "Uitgevinkte transacties houden wat ze nu hebben, ook als de regels later opnieuw draaien. Elke regel blijft en deelt nieuwe transacties van zijn winkel in."
   }
 }

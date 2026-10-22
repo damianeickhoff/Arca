@@ -21,6 +21,7 @@ import { clearButtonVariants } from "@/components/clear/button-variants";
 import { ClearSelect } from "@/components/settings/accounts/clear-select";
 import { RowIconButton, SettingsEmpty, SettingsNotice, SettingsSearch, SettingsSection } from "@/components/settings/settings-ui";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { useBankErrorText } from "@/components/settings/bank-error-text";
 import {
   disconnectBankAction,
   getBankPanelAction,
@@ -37,14 +38,6 @@ import { maskAccountNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Status = { tone: "success" | "error" | "warning"; text: string } | null;
-
-/** Error codes the actions and the callback answer with; anything else reads as "unavailable". */
-const ERRORS = ["notConfigured", "invalidKey", "unauthorized", "sessionExpired", "rateLimited", "badRequest", "unavailable", "busy", "expired", "unknownState", "denied", "signedOut"] as const;
-
-function useErrorText() {
-  const t = useTranslations("bankConnection.errors");
-  return (code: string) => ((ERRORS as readonly string[]).includes(code) ? t(code as (typeof ERRORS)[number]) : t("unavailable"));
-}
 
 function useDates() {
   const locale = useLocale();
@@ -63,7 +56,7 @@ function useDates() {
  */
 export function BankConnectionSection({ className = "pb-6" }: { className?: string }) {
   const t = useTranslations("bankConnection");
-  const errorText = useErrorText();
+  const errorText = useBankErrorText();
   const [data, setData] = useState<BankPanelData | null>(null);
   const [status, setStatus] = useState<Status>(null);
   const [mappingId, setMappingId] = useState<number | null>(null);
@@ -214,7 +207,7 @@ export function BankConnectionSection({ className = "pb-6" }: { className?: stri
 
 function CredentialsForm({ data, onSaved }: { data: BankPanelData; onSaved: (data: BankPanelData) => void }) {
   const t = useTranslations("bankConnection");
-  const errorText = useErrorText();
+  const errorText = useBankErrorText();
   const ids = useId();
   const saved = data.settings;
   const [appId, setAppId] = useState(saved.applicationId ?? "");
@@ -478,7 +471,7 @@ function ConnectBankDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
 function ConnectBankBody({ onClose }: { onClose: () => void }) {
   const t = useTranslations("bankConnection");
-  const errorText = useErrorText();
+  const errorText = useBankErrorText();
   const [choices, setChoices] = useState<AspspOption[] | null>(null);
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -565,7 +558,8 @@ function AccountMappingDialog({
   onSaved: (data: BankPanelData, outcome: SyncOutcome | null) => void;
 }) {
   const t = useTranslations("bankConnection");
-  const errorText = useErrorText();
+  const typeLabels = useTranslations("accountForms");
+  const errorText = useBankErrorText();
   const ids = useId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -579,6 +573,15 @@ function AccountMappingDialog({
       }),
     ),
   );
+
+  // The type the bank reports, shown only where saving will set it: a new account, or
+  // one that has no type yet. A type picked in Accounts is never overwritten.
+  const typeToSet = (account: BankConnectionView["accounts"][number], choice: Choice) => {
+    if (!account.detectedType || choice === "skip") return null;
+    if (choice === "new") return account.detectedType;
+    return banks.find((b) => `${b.id}` === choice)?.cardType ? null : account.detectedType;
+  };
+  const firstTyped = connection.accounts.findIndex((a) => typeToSet(a, choices[a.id] ?? "skip") != null);
 
   const options = [
     { value: "new" as Choice, label: t("mapNew") },
@@ -621,21 +624,32 @@ function AccountMappingDialog({
           closeLabel={t("close")}
         />
         {connection.accounts.length === 0 && <SettingsNotice tone="info">{t("mapNoAccounts")}</SettingsNotice>}
-        {connection.accounts.map((account) => (
-          <div key={account.id} className="flex flex-col gap-1.5">
-            <span id={`${ids}-${account.id}`} className="text-[13px] font-bold text-clear-ink-2">
-              {account.name ?? t("accountFallback")}
-              {account.iban && <span className="font-normal text-clear-muted"> · {account.iban}</span>}
-              {account.currency && account.currency !== "EUR" && <span className="font-normal text-clear-muted"> · {account.currency}</span>}
-            </span>
-            <ClearSelect
-              value={choices[account.id] ?? "skip"}
-              onChange={(value) => setChoices((prev) => ({ ...prev, [account.id]: value }))}
-              ariaLabelledBy={`${ids}-${account.id}`}
-              options={options}
-            />
-          </div>
-        ))}
+        {connection.accounts.map((account, index) => {
+          const type = typeToSet(account, choices[account.id] ?? "skip");
+          return (
+            <div key={account.id} className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-3">
+                <span id={`${ids}-${account.id}`} className="min-w-0 text-[13px] font-bold text-clear-ink-2">
+                  {account.name ?? t("accountFallback")}
+                  {account.iban && <span className="font-normal text-clear-muted"> · {account.iban}</span>}
+                  {account.currency && account.currency !== "EUR" && <span className="font-normal text-clear-muted"> · {account.currency}</span>}
+                </span>
+                {type && (
+                  <span data-tip-anchor={index === firstTyped ? "bankAccountType" : undefined}>
+                    <ClearChip tone="sky">{typeLabels(`bankTypes.${type}`)}</ClearChip>
+                  </span>
+                )}
+              </div>
+              <ClearSelect
+                value={choices[account.id] ?? "skip"}
+                onChange={(value) => setChoices((prev) => ({ ...prev, [account.id]: value }))}
+                ariaLabelledBy={`${ids}-${account.id}`}
+                options={options}
+              />
+            </div>
+          );
+        })}
+        <AnchoredTip id="bankAccountType" anchor="bankAccountType" active={firstTyped >= 0} />
         <p className="m-0 text-[13px] text-clear-muted">{t("mapHint")}</p>
         {error && <SettingsNotice>{error}</SettingsNotice>}
         <ClearDialogFooter>

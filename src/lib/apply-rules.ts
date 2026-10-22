@@ -202,9 +202,33 @@ export async function planRulePass(opts: { since?: string } = {}): Promise<RuleP
   return changes;
 }
 
+/**
+ * The pass without category changes for `exclude`: the transactions someone unticked in
+ * "Show the N transactions" before a new rule ran. Their other changes (the recurring
+ * link, the reimbursement flag) stay; a change left with nothing is dropped.
+ */
+export function withoutCategoryFor(changes: RulePassChange[], exclude: Set<number>): RulePassChange[] {
+  if (exclude.size === 0) return changes;
+  const kept: RulePassChange[] = [];
+  for (const c of changes) {
+    if (!exclude.has(c.id) || c.patch.categoryId === undefined) {
+      kept.push(c);
+      continue;
+    }
+    const patch = { ...c.patch };
+    delete patch.categoryId;
+    if (Object.keys(patch).length > 0) kept.push({ ...c, patch });
+  }
+  return kept;
+}
+
 /** Writes the changes planRulePass worked out. Returns how many transactions changed. */
 export async function applyRulePass(changes: RulePassChange[]): Promise<number> {
-  for (const c of changes) await db.update(transactions).set(c.patch).where(eq(transactions.id, c.id));
+  // A row the pass files no longer needs the AI pick Needs a category kept for it.
+  for (const c of changes) {
+    const set = c.patch.categoryId != null ? { ...c.patch, aiSuggestedCategoryId: null } : c.patch;
+    await db.update(transactions).set(set).where(eq(transactions.id, c.id));
+  }
   return changes.length;
 }
 

@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { Category } from "@/db/schema";
-import { IconCheck, IconChevronDown, IconFilter2, IconSearch, IconX } from "@tabler/icons-react";
+import { IconCheck, IconChevronDown, IconSearch, IconTransfer, IconX } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { clearButtonVariants } from "@/components/clear/button-variants";
-import { IconTile } from "@/components/clear/icon-tile";
-import { ClearSwitch } from "@/components/clear/switch";
 import { ContextualTip } from "@/components/contextual-tip";
 import { Icon } from "@/components/icon";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import type { CategorySuggestions } from "@/lib/category-suggestions";
-import { useSaveRule } from "@/components/rule-actions";
+import { containsRuleFields, useSaveRule } from "@/components/rule-actions";
+import { RuleSwitchCard } from "@/components/rule-switch-card";
 import { cn } from "@/lib/utils";
 import { groupCategories } from "@/lib/category-tree";
 import { formatEur } from "@/lib/format";
@@ -299,7 +298,14 @@ export interface CategoryApply {
   /** After the save: the category set (null = Uncategorized), every id it changed and
    *  whether the rule switch also created a rule (then no teach strip is needed). */
   onApplied: (categoryId: number | null, ids: number[], ruleCreated: boolean) => void;
+  /** Offers "Internal transfer" beside the suggestions (Needs a category): picked and
+   *  applied, the picker calls this instead of setting a category, and closes once it
+   *  resolves "done" ("cancelled" keeps it open). */
+  onTransfer?: () => Promise<"done" | "cancelled">;
 }
+
+/** The staged value of the Internal transfer choice — never a category id. */
+const TRANSFER = "transfer";
 
 type SheetProps = {
   categories: Category[];
@@ -338,11 +344,12 @@ async function postJson(url: string, method: string, body: unknown) {
 export function CategoryPickerSheet(props: SheetProps) {
   const { categories, current, open, onOpenChange, sheetClassName, overlayClassName, apply } = props;
   const t = useTranslations("categoryPicker");
-  const locale = useLocale();
   const isDesktop = useIsDesktop();
   const [search, setSearch] = useState("");
   const [staged, setStaged] = useState<string | undefined>(current);
   const [ruleOn, setRuleOn] = useState(false);
+  // Matches of the rule unticked in "Show the N transactions", left out of its first run.
+  const [excluded, setExcluded] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [info, setInfo] = useState<{ key: string; data: CategorySuggestions } | null>(null);
@@ -357,6 +364,7 @@ export function CategoryPickerSheet(props: SheetProps) {
     if (open) {
       setStaged(current);
       setRuleOn(false);
+      setExcluded(new Set());
       setFailed(false);
     }
   }
@@ -387,11 +395,10 @@ export function CategoryPickerSheet(props: SheetProps) {
   const title = props.title ?? (apply ? t("setTitle") : t("title"));
 
   // ── apply mode
-  const stagedId = staged && staged !== "none" ? Number(staged) : null;
+  const stagedId = staged && staged !== "none" && staged !== TRANSFER ? Number(staged) : null;
   const ruleAvailable = !!apply && apply.allowRule !== false && (data?.patterns.length ?? 0) > 0;
   const withRule = ruleAvailable && ruleOn && stagedId != null;
-  const applyIds = apply ? (withRule && data ? [...new Set([...apply.ids, ...data.similarIds])] : apply.ids) : [];
-  const listFormat = new Intl.ListFormat(locale, { style: "long", type: "conjunction" });
+  const applyIds = apply ? (withRule && data ? [...new Set([...apply.ids, ...data.similarIds.filter((id) => !excluded.has(id))])] : apply.ids) : [];
 
   const sendRule = useSaveRule();
 
@@ -402,6 +409,10 @@ export function CategoryPickerSheet(props: SheetProps) {
     setBusy(true);
     setFailed(false);
     try {
+      if (staged === TRANSFER && apply.onTransfer) {
+        if ((await apply.onTransfer()) === "done") change(false);
+        return;
+      }
       // The picked rows are set by hand; the similar ones the rule brings along are
       // filed by the rule, so deleting it later can offer to send them back.
       await postJson("/api/transactions", "PATCH", { ids: apply.ids, categoryId: stagedId });
@@ -410,22 +421,14 @@ export function CategoryPickerSheet(props: SheetProps) {
       if (withRule && data) {
         // One that already files elsewhere asks before it moves; a Cancel leaves it out.
         let savedAny = false;
-        for (const pattern of data.patterns) {
-          const saved = await sendRule("POST", {
-            categoryId: stagedId,
-            namePattern: pattern,
-            nameWildcard: true,
-            nameWholeWord: false,
-            direction: data.direction,
-            bankId: null,
-            amount: null,
-            amountMin: null,
-            amountMax: null,
-          });
+        // One rule per merchant among the picked transactions, each with its own direction.
+        for (const rule of data.rules) {
+          const saved = await sendRule("POST", { categoryId: stagedId, ...containsRuleFields(rule.pattern, rule.direction) });
           if (saved === "failed") throw new Error("rule failed");
           if (saved !== "cancelled") savedAny = true;
         }
-        if (savedAny) await postJson("/api/apply-rules", "POST", {});
+        // Unticked matches stay out of the rule's first run.
+        if (savedAny) await postJson("/api/apply-rules", "POST", { exclude: [...excluded] });
       }
       apply.onApplied(stagedId, applyIds, withRule);
       change(false);
@@ -449,7 +452,23 @@ export function CategoryPickerSheet(props: SheetProps) {
   }
 
   const suggested = (data?.suggested ?? []).map((id) => categories.find((c) => c.id === id)).filter((c): c is Category => !!c);
-  const suggestions = apply && suggested.length > 0 && (
+  const transferChoice = apply?.onTransfer && (
+    <button
+      type="button"
+      aria-pressed={staged === TRANSFER}
+      onClick={() => setStaged(TRANSFER)}
+      className={cn(
+        "inline-flex h-9 cursor-pointer items-center gap-2 rounded-full pr-3.5 pl-[5px] text-sm font-bold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+        staged === TRANSFER ? "bg-clear-primary text-clear-primary-ink" : "bg-clear-ground text-clear-ink hover:bg-clear-line",
+      )}
+    >
+      <span aria-hidden className="inline-flex size-[26px] shrink-0 items-center justify-center rounded-full bg-clear-sky text-clear-sky-ink">
+        <IconTransfer size={14} stroke={2.2} />
+      </span>
+      {t("transfer")}
+    </button>
+  );
+  const suggestions = apply && (suggested.length > 0 || transferChoice) && (
     <div role="group" aria-labelledby={`${ruleLabelId}-sugg`} className="flex shrink-0 flex-wrap items-center gap-2">
       <span id={`${ruleLabelId}-sugg`} className="mr-1 text-[13px] font-bold text-clear-ink-2">
         {t("suggested")}
@@ -474,11 +493,10 @@ export function CategoryPickerSheet(props: SheetProps) {
           </button>
         );
       })}
+      {transferChoice}
     </div>
   );
 
-  const similarCount = data?.similarIds.length ?? 0;
-  const patternNames = listFormat.format(data?.patterns ?? []);
 
   return (
     <Dialog open={open} onOpenChange={change}>
@@ -509,21 +527,19 @@ export function CategoryPickerSheet(props: SheetProps) {
           between={suggestions}
         />
 
-        {apply && ruleAvailable && (
-          <label className="flex shrink-0 cursor-pointer items-center gap-3 rounded-clear-tile bg-clear-tile px-4 py-3">
-            <IconTile tone="sky" size="sm" className="size-8 rounded-full [&_svg]:size-4">
-              <IconFilter2 stroke={2.1} />
-            </IconTile>
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span id={ruleLabelId} className="text-[15px] font-bold">
-                {t("rule.title")}
-              </span>
-              <span className="text-[13px] font-medium text-clear-ink-2">
-                {similarCount > 0 ? t("rule.helpWithSimilar", { names: patternNames, count: similarCount }) : t("rule.help", { names: patternNames })}
-              </span>
-            </span>
-            <ClearSwitch checked={ruleOn && stagedId != null} onCheckedChange={setRuleOn} labelledBy={ruleLabelId} disabled={stagedId == null || busy} />
-          </label>
+        {apply && ruleAvailable && data && (
+          <RuleSwitchCard
+            rules={data.rules}
+            similarIds={data.similarIds}
+            skipIds={apply.ids}
+            checked={ruleOn && stagedId != null}
+            onCheckedChange={setRuleOn}
+            disabled={stagedId == null || busy}
+            excluded={excluded}
+            onExcludedChange={setExcluded}
+            nested
+            tipActive={open}
+          />
         )}
 
         {apply && (

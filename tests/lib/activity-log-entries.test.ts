@@ -65,8 +65,8 @@ describe("transaction fingerprint", () => {
 
 describe("entry builders", () => {
   it("import: deletes the inserted rows unless changed, nothing when nothing was inserted", () => {
-    expect(importEntry("csvImport", [])).toBeNull();
-    const e = importEntry("csvImport", [{ id: 4, amount: 1 }, { id: 5, amount: 2 }], { skipped: 3 })!;
+    expect(importEntry([])).toBeNull();
+    const e = importEntry([{ id: 4, amount: 1 }, { id: 5, amount: 2 }], { skipped: 3 })!;
     expect(e.kind).toBe("csvImport");
     expect(e.params).toMatchObject({ count: 2, skipped: 3 });
     expect(e.refs).toEqual({ transactions: [4, 5] });

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { insertedIds, ...result } = await importParsedRows(resolved.rows);
-  await recordImport("csvImport", insertedIds, { skipped: result.skipped });
+  await recordImport(insertedIds, { skipped: result.skipped });
   // New rows move the sidebar's account balances (root layout).
   revalidatePath("/", "layout");
   return NextResponse.json(result);

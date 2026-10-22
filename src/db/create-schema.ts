@@ -238,6 +238,10 @@ export function createSchema(sqlite: Database.Database): void {
     // column. Nullable — pre-existing rows keep no reported balance.
     sqlite.exec(`ALTER TABLE transactions ADD COLUMN reported_balance REAL`);
   } catch { /* column already exists */ }
+  try {
+    // The AI's category pick from Needs a category, kept until the row gets a category.
+    sqlite.exec(`ALTER TABLE transactions ADD COLUMN ai_suggested_category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL`);
+  } catch { /* column already exists */ }
 
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS reimbursements (
@@ -689,6 +693,7 @@ export const BANK_CONNECTION_TABLES_SQL = `
     iban             TEXT,
     name             TEXT,
     currency         TEXT,
+    cash_account_type TEXT,
     bank_id          INTEGER REFERENCES banks(id) ON DELETE SET NULL,
     mapped           INTEGER NOT NULL DEFAULT 0,
     last_synced_date TEXT,

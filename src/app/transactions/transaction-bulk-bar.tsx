@@ -23,6 +23,9 @@ interface Props {
   onSelectAll: () => void;
   allSelected: boolean;
   total: number;
+  /** After a category was set (and the rules, one per merchant, when switched on): every
+   *  id it changed. Needs a category takes them out of its queue. */
+  onCategorized?: (ids: number[]) => void;
 }
 
 /**
@@ -34,7 +37,7 @@ interface Props {
  * (`PATCH { ids, … }` and `DELETE { ids }`), which already handle clearing splits on a
  * re-categorisation and reversing savings-goal contributions on delete.
  */
-export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDone, onSelectAll, allSelected, total }: Props) {
+export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDone, onSelectAll, allSelected, total, onCategorized }: Props) {
   const t = useTranslations("transactions");
   const tActivity = useTranslations("activity");
   const router = useRouter();
@@ -144,7 +147,8 @@ export function TransactionBulkBar({ selectedIds, categories, allExcluded, onDon
           onOpenChange={setPickerOpen}
           apply={{
             ids: selectedIds,
-            onApplied: () => {
+            onApplied: (categoryId, ids) => {
+              if (categoryId != null) onCategorized?.(ids);
               router.refresh();
               onDone();
             },

@@ -23,6 +23,7 @@ import { ClearButton } from "@/components/clear/button";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import type { ClearTone } from "@/components/clear/tones";
 import { SettingsNotice } from "@/components/settings/settings-ui";
+import { useBankErrorText } from "@/components/settings/bank-error-text";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { ACTIVITY_KINDS, type ActivityKind, type ActivityParams } from "@/lib/activity-log-entries";
 import type { ActivityItem } from "@/lib/activity-log";
@@ -50,6 +51,7 @@ const COLLAPSED = 8;
  */
 export function RecentChanges({ changes }: { changes: ActivityItem[] }) {
   const t = useTranslations("dataHealth.recentChanges");
+  const bankErrorText = useBankErrorText();
   const locale = useLocale();
   const router = useRouter();
   const confirm = useConfirm();
@@ -67,7 +69,9 @@ export function RecentChanges({ changes }: { changes: ActivityItem[] }) {
       category: params.category ?? t("noCategory"),
       pattern: params.pattern ?? t("someRule"),
       name: params.name ?? "—",
+      source: params.source ?? t("someBank"),
     };
+    if (kind === "bankSync" && typeof params.error === "string") return t("kinds.bankSyncFailed", { ...values, error: bankErrorText(params.error) });
     return t(`kinds.${kind as ActivityKind}`, values);
   }
 
@@ -129,6 +133,7 @@ export function RecentChanges({ changes }: { changes: ActivityItem[] }) {
             {shown.map((item) => {
               const look = KIND_LOOK[item.kind] ?? { icon: IconHistory, tone: "neutral" as const };
               const Icon = look.icon;
+              const tone = item.undoneAt ? "neutral" : item.kind === "bankSync" && item.params.error ? "rose" : look.tone;
               const text = summary(item.kind, item.params);
               const meta = [timeLabel(item.at), t("rows", { count: item.affectedCount }), item.userName ? t("byUser", { name: item.userName }) : null]
                 .filter(Boolean)
@@ -136,7 +141,7 @@ export function RecentChanges({ changes }: { changes: ActivityItem[] }) {
               return (
                 <ListRow
                   key={item.id}
-                  icon={<IconTile tone={item.undoneAt ? "neutral" : look.tone} size="md"><Icon stroke={1.9} /></IconTile>}
+                  icon={<IconTile tone={tone} size="md"><Icon stroke={1.9} /></IconTile>}
                   title={<span className={item.undoneAt ? "text-clear-muted line-through" : undefined}>{text}</span>}
                   meta={meta}
                   trailing={

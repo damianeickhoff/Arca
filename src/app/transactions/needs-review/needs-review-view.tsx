@@ -4,19 +4,19 @@ import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconArrowRight, IconCalendar, IconCategory, IconCheck, IconFilter2, IconInfoCircle, IconListDetails, IconSparkles, IconTransfer } from "@tabler/icons-react";
+import { IconArrowRight, IconCalendar, IconCategory, IconCheck, IconInfoCircle, IconListDetails, IconSparkles, IconTransfer } from "@tabler/icons-react";
 import type { Category, Goal } from "@/db/schema";
 import { Icon } from "@/components/icon";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader } from "@/components/clear/card";
 import { ClearChip } from "@/components/clear/chip";
 import { ClearProgress } from "@/components/clear/progress";
-import { ClearSwitch } from "@/components/clear/switch";
-import { IconTile } from "@/components/clear/icon-tile";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { MoneyText } from "@/components/clear/money";
 import { CategoryPickerSheet } from "@/components/category-picker";
-import { useSaveRule } from "@/components/rule-actions";
+import { containsRuleFields, useSaveRule } from "@/components/rule-actions";
+import { RuleSwitchCard } from "@/components/rule-switch-card";
+import { useChoice } from "@/components/clear/confirm-dialog";
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { TeachRuleStrip, type TeachMoment } from "@/components/teach-rule-strip";
@@ -29,6 +29,7 @@ import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-panel-sheet";
 import { TransactionBulkBar } from "@/app/transactions/transaction-bulk-bar";
+import { useLongPress } from "@/lib/use-long-press";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
 import { SubpageHeading } from "../subpage-heading";
 
@@ -39,6 +40,8 @@ const PAGE_SIZE = 60;
 /** A merchant with at least this many transactions waiting gets a "Worth teaching" row. */
 const TEACH_MIN = 5;
 const TEACH_ROWS = 3;
+/** No matches unticked (never changed: a change makes a new set). */
+const NO_IDS = new Set<number>();
 
 /** Money out negative, money in positive; a reimbursement counts at its full amount. */
 function signedValue(row: TransactionDetail) {
@@ -80,10 +83,10 @@ export function NeedsReviewView({
   aiReady: boolean;
 }) {
   const t = useTranslations("needsReview");
-  const tPicker = useTranslations("categoryPicker");
   const locale = useLocale();
   const router = useRouter();
   const ruleLabelId = useId();
+  const choose = useChoice();
 
   // Rows sorted here leave the queue at once; the server refresh catches up after.
   const [sorted, setSorted] = useState<Set<number>>(new Set());
@@ -99,8 +102,11 @@ export function NeedsReviewView({
   const total = done + queue.length;
 
   const [info, setInfo] = useState<{ id: number; data: CategorySuggestions } | null>(null);
-  const [picked, setPicked] = useState<{ id: number; categoryId: number } | null>(null);
+  // The choice staged for a row: a category id, or "transfer" (Internal transfer).
+  const [picked, setPicked] = useState<{ id: number; choice: number | "transfer" } | null>(null);
   const [ruleOn, setRuleOn] = useState(false);
+  // Matches of the rule unticked in "Show the N transactions", per row: left out when it runs.
+  const [excludedFor, setExcludedFor] = useState<{ id: number; ids: Set<number> } | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -139,12 +145,19 @@ export function NeedsReviewView({
   }, [currentKey]);
 
   const data = current && info?.id === current.id ? info.data : null;
-  const aiPick = current ? categories.find((c) => c.id === aiPicks[current.id]) ?? null : null;
+  // A pick from this visit, else the one stored with the transaction (an earlier Ask AI).
+  const aiPickId = current ? aiPicks[current.id] ?? data?.aiPick ?? null : null;
+  const aiPick = aiPickId != null ? categories.find((c) => c.id === aiPickId) ?? null : null;
+  const aiPickStored = current != null && aiPicks[current.id] === undefined && aiPick != null;
+  const aiDone = current != null && (aiAsked.has(current.id) || aiPickStored);
   const localSuggested = (data?.suggested ?? []).map((id) => categories.find((c) => c.id === id)).filter((c): c is Category => !!c);
   // The AI's pick joins the suggestions (marked) unless your rules and history already offer it.
   const suggested = aiPick && !localSuggested.some((c) => c.id === aiPick.id) ? [...localSuggested, aiPick] : localSuggested;
-  // The top suggestion is staged until another one is picked.
-  const stagedId = current ? (picked?.id === current.id ? picked.categoryId : suggested[0]?.id ?? null) : null;
+  // The top suggestion is staged until another choice is picked.
+  const staged = current ? (picked?.id === current.id ? picked.choice : suggested[0]?.id ?? null) : null;
+  const stagedTransfer = staged === "transfer";
+  const stagedId = typeof staged === "number" ? staged : null;
+  const excluded = current && excludedFor?.id === current.id ? excludedFor.ids : NO_IDS;
 
   async function askAi() {
     if (!current || aiBusy) return;
@@ -166,8 +179,6 @@ export function NeedsReviewView({
   }
   const ruleAvailable = (data?.patterns.length ?? 0) > 0;
   const withRule = ruleAvailable && ruleOn && stagedId != null;
-  const similarCount = data?.similarIds.length ?? 0;
-  const patternNames = new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(data?.patterns ?? []);
 
   /** Takes `ids` out of the queue and moves on to the next row still in it. */
   function markSorted(ids: number[]) {
@@ -194,8 +205,11 @@ export function NeedsReviewView({
   const sendRule = useSaveRule();
 
   async function save() {
-    if (!current || stagedId == null || busy) return;
-    const ids = withRule && data ? [...new Set([current.id, ...data.similarIds])] : [current.id];
+    if (!current || busy) return;
+    if (stagedTransfer) return markTransfer();
+    if (stagedId == null) return;
+    // Unticked matches ("Show the N transactions") stay out of the rule's first run.
+    const ids = withRule && data ? [...new Set([current.id, ...data.similarIds.filter((id) => !excluded.has(id))])] : [current.id];
     setBusy(true);
     setFailed(false);
     try {
@@ -204,22 +218,12 @@ export function NeedsReviewView({
         // The same rule the category picker's switch creates. One that already files
         // elsewhere asks before it moves; a Cancel leaves that rule out.
         let savedAny = false;
-        for (const pattern of data.patterns) {
-          const saved = await sendRule("POST", {
-            categoryId: stagedId,
-            namePattern: pattern,
-            nameWildcard: true,
-            nameWholeWord: false,
-            direction: data.direction,
-            bankId: null,
-            amount: null,
-            amountMin: null,
-            amountMax: null,
-          });
+        for (const rule of data.rules) {
+          const saved = await sendRule("POST", { categoryId: stagedId, ...containsRuleFields(rule.pattern, rule.direction) });
           if (saved === "failed") throw new Error("rule failed");
           if (saved !== "cancelled") savedAny = true;
         }
-        if (savedAny) await send("/api/apply-rules", "POST", {});
+        if (savedAny) await send("/api/apply-rules", "POST", { exclude: [...excluded] });
       }
       setTeach(withRule || current.recurringItemId != null ? null : { transactionId: current.id, categoryId: stagedId });
       markSorted(ids);
@@ -231,12 +235,15 @@ export function NeedsReviewView({
     }
   }
 
+  /** Internal transfer: money to one of your own accounts (also one Arca doesn't have),
+   *  kept out of budgets and spending like the transfers Arca finds itself. */
   async function markTransfer() {
     if (!current || busy) return;
     setBusy(true);
     setFailed(false);
     try {
       await send("/api/transactions", "PATCH", { id: current.id, isManualTransfer: true });
+      setTeach(null);
       markSorted([current.id]);
       await refresh();
     } catch {
@@ -246,9 +253,33 @@ export function NeedsReviewView({
     }
   }
 
+  /**
+   * Worth teaching › Internal transfer: the merchant's newest transaction, or — after
+   * asking — every one of its transactions still waiting. "cancelled" keeps the picker open.
+   */
+  async function teachAsTransfer(row: TransactionDetail): Promise<"done" | "cancelled"> {
+    const name = row.merchantName ?? resolveDisplayName(row);
+    const siblings = row.merchantId != null ? queue.filter((r) => r.merchantId === row.merchantId).map((r) => r.id) : [row.id];
+    let ids = [row.id];
+    if (siblings.length > 1) {
+      const choice = await choose({
+        title: t("transfer.allTitle", { name }),
+        body: t("transfer.allBody", { name, count: siblings.length }),
+        confirmLabel: t("transfer.all", { count: siblings.length }),
+        altLabel: t("transfer.justThis"),
+      });
+      if (choice == null) return "cancelled";
+      if (choice === "confirm") ids = siblings;
+    }
+    await send("/api/transactions", "PATCH", { ids, isManualTransfer: true });
+    markSorted(ids);
+    void refresh();
+    return "done";
+  }
+
   // Enter saves, S skips — outside fields, menus and open dialogs. Enter on another
   // button keeps doing what that button does.
-  const canSave = stagedId != null && !busy;
+  const canSave = (stagedId != null || stagedTransfer) && !busy;
   const keysOn = current != null && !selectMode;
   useEffect(() => {
     if (!keysOn) return;
@@ -321,7 +352,7 @@ export function NeedsReviewView({
 
       {teach && <TeachRuleStrip teach={teach} categories={categories} onClose={() => setTeach(null)} onRuleCreated={() => void refresh()} />}
 
-      {!teach && !selectMode && worthTeaching.length > 0 && (
+      {!teach && worthTeaching.length > 0 && (
         <section data-tip-anchor="reviewTeach" aria-labelledby="review-teach-title" className="flex flex-col gap-3.5 rounded-clear-card bg-clear-card p-5 lg:px-6">
           <div className="flex flex-col gap-1">
             <h2 id="review-teach-title" className="m-0 text-base font-bold">{t("teach.title")}</h2>
@@ -404,7 +435,7 @@ export function NeedsReviewView({
                       type="button"
                       data-suggestion="true"
                       aria-pressed={on}
-                      onClick={() => setPicked({ id: current.id, categoryId: c.id })}
+                      onClick={() => setPicked({ id: current.id, choice: c.id })}
                       className={cn(
                         "inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-full border-2 bg-clear-tile pr-[18px] pl-1.5 text-[15px] font-bold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
                         on ? "border-clear-ink" : "border-transparent hover:bg-clear-line",
@@ -424,6 +455,24 @@ export function NeedsReviewView({
                     </button>
                   );
                 })}
+                {/* Money to one of your own accounts — also one Arca doesn't have. */}
+                <button
+                  type="button"
+                  data-suggestion="true"
+                  data-tip-anchor="reviewTransfer"
+                  aria-pressed={stagedTransfer}
+                  onClick={() => setPicked({ id: current.id, choice: "transfer" })}
+                  className={cn(
+                    "inline-flex h-12 cursor-pointer items-center gap-2.5 rounded-full border-2 bg-clear-tile pr-[18px] pl-1.5 text-[15px] font-bold outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+                    stagedTransfer ? "border-clear-ink" : "border-transparent hover:bg-clear-line",
+                  )}
+                >
+                  <span aria-hidden className="inline-flex size-[34px] shrink-0 items-center justify-center rounded-full bg-clear-sky text-clear-sky-ink">
+                    <IconTransfer size={16} stroke={2.2} />
+                  </span>
+                  {t("transfer.choice")}
+                  {stagedTransfer && <IconCheck size={16} stroke={3} aria-hidden />}
+                </button>
                 <button
                   type="button"
                   onClick={() => setPickerOpen(true)}
@@ -438,11 +487,11 @@ export function NeedsReviewView({
                     type="button"
                     data-tip-anchor="aiCategories"
                     onClick={askAi}
-                    disabled={aiBusy || aiAsked.has(current.id)}
+                    disabled={aiBusy || aiDone}
                     className={cn(clearButtonVariants({ variant: "secondary" }), "h-12 px-[18px]")}
                   >
                     <IconSparkles aria-hidden />
-                    {aiBusy ? t("ai.asking") : aiAsked.has(current.id) && !aiPick ? t("ai.noPick") : t("ai.ask")}
+                    {aiBusy ? t("ai.asking") : aiDone && !aiPick ? t("ai.noPick") : t("ai.ask")}
                   </button>
                 )}
               </div>
@@ -452,21 +501,19 @@ export function NeedsReviewView({
             </div>
 
             {/* The rule */}
-            {ruleAvailable && (
-              <label className="flex cursor-pointer items-center gap-3.5 rounded-clear-tile bg-clear-tile px-4 py-3.5 lg:px-[18px]">
-                <IconTile tone="sky" size="sm" className="size-8 rounded-full [&_svg]:size-4">
-                  <IconFilter2 stroke={2.1} />
-                </IconTile>
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span id={ruleLabelId} className="text-[15px] font-bold">
-                    {tPicker("rule.title")}
-                  </span>
-                  <span className="text-[13px] text-clear-ink-2">
-                    {similarCount > 0 ? tPicker("rule.helpWithSimilar", { names: patternNames, count: similarCount }) : tPicker("rule.help", { names: patternNames })}
-                  </span>
-                </span>
-                <ClearSwitch checked={withRule} onCheckedChange={setRuleOn} labelledBy={ruleLabelId} disabled={stagedId == null || busy} />
-              </label>
+            {ruleAvailable && data && (
+              <RuleSwitchCard
+                className="py-3.5 lg:px-[18px]"
+                rules={data.rules}
+                similarIds={data.similarIds}
+                skipIds={[current.id]}
+                checked={withRule}
+                onCheckedChange={setRuleOn}
+                disabled={stagedId == null || busy}
+                excluded={excluded}
+                onExcludedChange={(ids) => setExcludedFor({ id: current.id, ids })}
+                tipActive={!selectMode}
+              />
             )}
 
             {/* Actions */}
@@ -482,10 +529,6 @@ export function NeedsReviewView({
                 <button type="button" onClick={() => setDetailOpen(true)} aria-haspopup="dialog" className={clearButtonVariants({ variant: "secondary" })}>
                   <IconListDetails aria-hidden />
                   {t("details")}
-                </button>
-                <button type="button" onClick={markTransfer} disabled={busy} className={clearButtonVariants({ variant: "secondary" })}>
-                  <IconTransfer aria-hidden />
-                  {t("markTransfer")}
                 </button>
                 {queue.length > 1 && (
                   <button type="button" onClick={skip} disabled={busy} className={clearButtonVariants({ variant: "secondary" })}>
@@ -530,14 +573,15 @@ export function NeedsReviewView({
                   const name = resolveDisplayName(r);
                   return (
                     <li key={r.id}>
-                      <button
-                        type="button"
-                        onClick={() => (selectMode ? toggleSelected(r.id) : setCurrentId(r.id))}
+                      <QueueRowButton
+                        selectMode={selectMode}
+                        onTap={() => (selectMode ? toggleSelected(r.id) : setCurrentId(r.id))}
+                        onStartSelect={() => setSelected(new Set([r.id]))}
                         aria-current={!selectMode && isCurrent ? "step" : undefined}
                         aria-pressed={selectMode ? isPicked : undefined}
                         aria-label={selectMode ? t("queue.selectRow", { name }) : undefined}
                         className={cn(
-                          "flex min-h-16 w-full cursor-pointer items-center gap-3 rounded-clear-row px-3 text-left outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50",
+                          "flex min-h-16 w-full cursor-pointer select-none items-center gap-3 rounded-clear-row px-3 text-left outline-none transition-colors [-webkit-touch-callout:none] [touch-action:pan-y] focus-visible:ring-3 focus-visible:ring-clear-ember/50",
                           selectMode ? (isPicked ? "bg-clear-peach" : "hover:bg-clear-tile") : isCurrent ? "bg-clear-tile" : "hover:bg-clear-tile",
                         )}
                       >
@@ -569,7 +613,7 @@ export function NeedsReviewView({
                           </span>
                         </span>
                         <Amount value={value} sign="always" splitCents={false} className={cn("shrink-0 text-[15px]", value > 0 && "text-clear-positive")} />
-                      </button>
+                      </QueueRowButton>
                     </li>
                   );
                 })}
@@ -654,6 +698,7 @@ export function NeedsReviewView({
               setTeachPickerOpen(false);
               void refresh();
             },
+            onTransfer: () => teachAsTransfer(teachRow),
           }}
         />
       )}
@@ -667,15 +712,49 @@ export function NeedsReviewView({
           allSelected={selected.size === queue.length}
           onSelectAll={() => setSelected((prev) => (prev && prev.size === queue.length ? new Set() : new Set(queue.map((r) => r.id))))}
           onDone={() => setSelected(null)}
+          onCategorized={(ids) => {
+            setTeach(null);
+            markSorted(ids);
+          }}
         />
       )}
 
       {/* The one-at-a-time flow is new; so is selecting several from the queue. */}
       <ContextualTip id="needsReviewTriage" active={current != null} />
       <AnchoredTip id="needsReviewBulk" anchor="needsReviewSelect" active={!selectMode && queue.length > 1} />
+      <ContextualTip id="reviewBulkRules" active={selectMode && selected.size > 1} />
       <AnchoredTip id="aiCategories" anchor="aiCategories" active={aiReady && current != null} />
-      <AnchoredTip id="reviewTeach" anchor="reviewTeach" active={!teach && !selectMode && worthTeaching.length > 0} />
+      <AnchoredTip id="aiPicksKept" anchor="aiCategories" active={aiReady && aiPickStored} />
+      <AnchoredTip id="reviewTransfer" anchor="reviewTransfer" active={current != null && !selectMode} />
+      <AnchoredTip id="reviewTeach" anchor="reviewTeach" active={!teach && worthTeaching.length > 0} />
     </div>
+  );
+}
+
+/**
+ * A queue row. A tap opens it (or ticks it in select mode); pressing and holding (phones)
+ * or a Shift- or Ctrl/Cmd-click (desktop) starts select mode with this row ticked, as
+ * in Activity.
+ */
+function QueueRowButton({
+  selectMode,
+  onTap,
+  onStartSelect,
+  ...props
+}: Omit<React.ComponentProps<"button">, "onClick" | "type"> & { selectMode: boolean; onTap: () => void; onStartSelect: () => void }) {
+  const { longPressProps, consumeClick } = useLongPress(onStartSelect, !selectMode);
+  return (
+    <button
+      type="button"
+      {...props}
+      {...longPressProps}
+      onClick={(e) => {
+        // The click after a completed hold would otherwise untick the row just ticked.
+        if (consumeClick()) return;
+        if (!selectMode && (e.shiftKey || e.ctrlKey || e.metaKey)) onStartSelect();
+        else onTap();
+      }}
+    />
   );
 }
 

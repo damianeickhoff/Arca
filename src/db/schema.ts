@@ -150,6 +150,10 @@ export const transactions = sqliteTable("transactions", {
   // running sum. Everything reading it must handle null (see the backfill in
   // src/lib/import-rows.ts, which only ever fills a null, never overwrites).
   reportedBalance: real("reported_balance"),
+  // The category the AI picked for this transaction in Needs a category ("Ask AI"),
+  // kept so a reload shows it again without paying for another call. Only meaningful
+  // while the transaction has no category; cleared when it gets one.
+  aiSuggestedCategoryId: integer("ai_suggested_category_id").references(() => categories.id, { onDelete: "set null" }),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 
@@ -510,6 +514,10 @@ export const bankConnectionAccounts = sqliteTable("bank_connection_accounts", {
   iban: text("iban"),
   name: text("name"),
   currency: text("currency"),
+  // Enable Banking's cash_account_type (ISO 20022: CACC, SVGS, CARD, …) as the bank sent
+  // it; "" once asked for on a sync and the bank gave none. Sets banks.cardType on link
+  // (cardTypeForCashAccountType in enable-banking/map.ts).
+  cashAccountType: text("cash_account_type"),
   // The account in Centje its transactions are filed under; null = not synced.
   bankId: integer("bank_id").references(() => banks.id, { onDelete: "set null" }),
   // true once the user confirmed the mapping (bankId null then means "skip it").

@@ -13,8 +13,8 @@ export interface ImportOverview {
   profiles: { id: number; label: string; columns: number; savedOn: string | null }[];
   /** Earlier CSV imports, newest first: one account on one day. */
   recent: { day: string; account: string | null; rows: number }[];
-  /** Bank syncs from the change log, newest first. */
-  syncLog: { id: number; at: string; imported: number; skipped: number; source: string | null }[];
+  /** Bank syncs from the change log, newest first; `error` is a failed run's code. */
+  syncLog: { id: number; at: string; imported: number; skipped: number; source: string | null; error: string | null }[];
 }
 
 /** How many earlier imports and syncs the side cards list. */
@@ -68,6 +68,7 @@ export async function loadImportOverview(): Promise<ImportOverview> {
         imported: a.affectedCount,
         skipped: typeof a.params.skipped === "number" ? a.params.skipped : 0,
         source: typeof a.params.source === "string" ? a.params.source : null,
+        error: typeof a.params.error === "string" ? a.params.error : null,
       })),
   };
 }

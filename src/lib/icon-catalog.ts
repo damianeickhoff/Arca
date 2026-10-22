@@ -86,6 +86,7 @@ export const PICKER_ICONS: readonly { key: string; keywords: string }[] = [
   { key: "IconStethoscope", keywords: "doctor health huisarts dokter gezondheid" },
   { key: "IconPill", keywords: "medicine pharmacy medicijnen apotheek" },
   { key: "IconDental", keywords: "dentist teeth tandarts" },
+  { key: "IconEyeglass", keywords: "glasses optician lenses eyes bril opticien lenzen ogen" },
   { key: "IconMassage", keywords: "massage wellness spa" },
   { key: "IconFaceMask", keywords: "beauty skincare mask schoonheid" },
   { key: "IconPerfume", keywords: "perfume beauty drugstore parfum drogist" },

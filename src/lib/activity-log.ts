@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import { db } from "@/db";
 import {
+  bankSyncEntry,
   findUndoConflict,
   importEntry,
   toDbValue,
@@ -9,6 +10,7 @@ import {
   type ActivityKind,
   type ActivityParams,
   type ActivityRefs,
+  type BankSyncParams,
   type DbRow,
   type DbValue,
   type DeleteSnapshot,
@@ -94,13 +96,20 @@ export async function recordActivity(entry: ActivityEntryInput | null, userId?: 
 }
 
 /**
- * Logs the transactions an import inserted — the CSV import, and the hook point for
- * a bank sync (`recordImport("bankSync", insertedIds, …)` after it imports). Reads
- * the rows as they are now, after every pass the import ran, so "touched since" means
- * touched after the import finished.
+ * Logs the transactions a CSV import inserted. Reads the rows as they are now, after
+ * every pass the import ran, so "touched since" means touched after the import finished.
  */
-export async function recordImport(kind: "csvImport" | "bankSync", insertedIds: number[], params: { skipped?: number; source?: string | null } = {}) {
-  return recordActivity(importEntry(kind, selectRowsByIds("transactions", insertedIds), params));
+export async function recordImport(insertedIds: number[], params: { skipped?: number; source?: string | null } = {}) {
+  return recordActivity(importEntry(selectRowsByIds("transactions", insertedIds), params));
+}
+
+/**
+ * Logs one connection's bank sync run (bank-sync.ts records every run, automatic or by
+ * hand, failed ones included): the rows it inserted, read as stored after the import,
+ * the already-there count, the bank's name and, for a failed run, the error code.
+ */
+export async function recordBankSync(insertedIds: number[], params: BankSyncParams = {}) {
+  return recordActivity(bankSyncEntry(selectRowsByIds("transactions", insertedIds), params));
 }
 
 // ─── Delete snapshots ─────────────────────────────────────────────────────────

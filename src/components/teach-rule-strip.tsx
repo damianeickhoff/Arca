@@ -7,7 +7,8 @@ import type { Category } from "@/db/schema";
 import { ClearButton } from "@/components/clear/button";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { RuleDialog, emptyRuleDraft, fetchRuleMatches, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
-import { useSaveRule } from "@/components/rule-actions";
+import { containsRuleFields, useSaveRule } from "@/components/rule-actions";
+import { RuleMatchesDialog } from "@/components/rule-matches-dialog";
 import type { CategorySuggestions } from "@/lib/category-suggestions";
 
 /** What was just filed: one transaction, into one category. */
@@ -25,15 +26,12 @@ async function send(url: string, method: string, body: unknown) {
 }
 
 /** Moves every transaction a rule matches now to its category, hand-filed ones too:
- *  that is what "N earlier transactions move too" promised. */
-async function moveMatches(fields: RuleFields, categoryId: number) {
+ *  that is what "N earlier transactions move too" promised. Unticked ones (`exclude`,
+ *  from "Show the N transactions") stay where they are. */
+async function moveMatches(fields: RuleFields, categoryId: number, exclude: Set<number>) {
   const { ids = [] } = await fetchRuleMatches(fields, { ids: true });
-  if (ids.length > 0) await send("/api/transactions", "PATCH", { ids, categoryId });
-}
-
-/** The rule "Always" creates for a pattern: the description contains it, same direction. */
-function fieldsFor(pattern: string, direction: "income" | "expense" | null): RuleFields {
-  return { namePattern: pattern, nameWildcard: true, nameWholeWord: false, amount: null, amountMin: null, amountMax: null, direction, bankId: null };
+  const moving = ids.filter((id) => !exclude.has(id));
+  if (moving.length > 0) await send("/api/transactions", "PATCH", { ids: moving, categoryId });
 }
 
 /**
@@ -65,6 +63,9 @@ export function TeachRuleStrip({
   const [data, setData] = useState<{ key: string; patterns: string[]; direction: "income" | "expense" | null; count: number; waiting: number; merchant: string | null } | null>(null);
   const [state, setState] = useState<"ask" | "saving" | "done" | "failed">("ask");
   const [editOpen, setEditOpen] = useState(false);
+  // Matches unticked in "Show the N transactions": left out of the rule's first run.
+  const [excluded, setExcluded] = useState<Set<number>>(new Set());
+  const [matchesOpen, setMatchesOpen] = useState(false);
   const sendRule = useSaveRule();
   const key = `${teach.transactionId}:${teach.categoryId}`;
 
@@ -82,7 +83,7 @@ export function TeachRuleStrip({
       const ids = new Set<number>();
       let waiting = 0;
       for (const p of s.patterns) {
-        const m = await fetchRuleMatches(fieldsFor(p, direction), { ids: true });
+        const m = await fetchRuleMatches(containsRuleFields(p, direction), { ids: true });
         for (const id of m.ids ?? []) if (id !== teach.transactionId) ids.add(id);
         waiting += m.uncategorized;
       }
@@ -100,6 +101,7 @@ export function TeachRuleStrip({
   if (shownKey !== key) {
     setShownKey(key);
     setState("ask");
+    setExcluded(new Set());
   }
 
   const current = data?.key === key ? data : null;
@@ -116,16 +118,16 @@ export function TeachRuleStrip({
       // One that already files elsewhere asks before it moves; a Cancel leaves it out.
       let savedAny = false;
       for (const p of current.patterns) {
-        const fields = fieldsFor(p, current.direction);
+        const fields = containsRuleFields(p, current.direction);
         const saved = await sendRule("POST", { categoryId: teach.categoryId, ...fields });
         if (saved === "failed") throw new Error("rule failed");
         if (saved === "cancelled") continue;
         savedAny = true;
-        await moveMatches(fields, teach.categoryId);
+        await moveMatches(fields, teach.categoryId, excluded);
       }
       // Every move was cancelled: no rule, the question stays.
       if (!savedAny) return setState("ask");
-      await send("/api/apply-rules", "POST", {});
+      await send("/api/apply-rules", "POST", { exclude: [...excluded] });
       setState("done");
       onRuleCreated?.();
     } catch {
@@ -143,7 +145,8 @@ export function TeachRuleStrip({
       setState("failed");
       return;
     }
-    await moveMatches(fields, target);
+    // An edited rule is a different match: nothing from the list is left out.
+    await moveMatches(fields, target, new Set());
     await send("/api/apply-rules", "POST", {});
     setEditOpen(false);
     setState("done");
@@ -192,10 +195,26 @@ export function TeachRuleStrip({
         <ClearButton size="sm" variant="surface" onClick={onClose} disabled={state === "saving"}>
           {t("justThisOne")}
         </ClearButton>
+        {current.count > 0 && (
+          <ClearButton size="sm" variant="ghost" onClick={() => setMatchesOpen(true)} disabled={state === "saving"} aria-haspopup="dialog">
+            {excluded.size > 0 ? t("showMatchesSome", { count: current.count - excluded.size, total: current.count }) : t("showMatches", { count: current.count })}
+          </ClearButton>
+        )}
         <ClearButton size="sm" variant="ghost" onClick={() => setEditOpen(true)} disabled={state === "saving"}>
           {t("editMatch")}
         </ClearButton>
       </div>
+
+      <RuleMatchesDialog
+        open={matchesOpen}
+        onOpenChange={setMatchesOpen}
+        rules={current.patterns.map((pattern) => ({ pattern, direction: current.direction }))}
+        skipIds={[teach.transactionId]}
+        excluded={excluded}
+        onExcludedChange={setExcluded}
+        sheetClassName={sheetClassName}
+        overlayClassName={overlayClassName}
+      />
 
       <RuleDialog
         open={editOpen}

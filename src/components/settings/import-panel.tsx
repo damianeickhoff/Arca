@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { IconAdjustmentsHorizontal, IconBuildingBank, IconCheck, IconRefresh, IconUpload } from "@tabler/icons-react";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import { BankConnectionSection } from "@/components/settings/bank-connection-section";
+import { useBankErrorText } from "@/components/settings/bank-error-text";
 import { ImportFlow, useCsvImport, type CsvImporter, type ImportStep } from "@/components/import-csv-card";
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
@@ -238,8 +239,11 @@ function RecentTile({ recent }: { recent: ImportOverview["recent"] }) {
 
 function SyncLogTile({ log }: { log: ImportOverview["syncLog"] }) {
   const t = useTranslations("importPage.syncLog");
+  const errorText = useBankErrorText();
   const locale = useLocale();
-  const when = (iso: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  // The change log's datetime('now') is UTC without a zone marker.
+  const when = (at: string) =>
+    new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(`${at.replace(" ", "T")}Z`));
   return (
     <section aria-labelledby="import-synclog" className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
       <h3 id="import-synclog" className="m-0 text-[15px] font-bold">{t("title")}</h3>
@@ -255,8 +259,16 @@ function SyncLogTile({ log }: { log: ImportOverview["syncLog"] }) {
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="text-sm font-bold">{when(entry.at)}</span>
                 <span className="truncate text-xs text-clear-muted">{entry.source ?? t("allBanks")}</span>
+                {entry.error && (
+                  <span className="flex items-start gap-1.5 text-xs font-semibold text-clear-negative">
+                    <span aria-hidden className="mt-[5px] size-2 shrink-0 rounded-full bg-clear-negative" />
+                    {errorText(entry.error)}
+                  </span>
+                )}
               </span>
-              <span className="text-[13px] font-bold text-clear-ink-2 tabular-nums">{t("entry", { imported: entry.imported, skipped: entry.skipped })}</span>
+              <span className={cn("text-[13px] font-bold tabular-nums", entry.error ? "text-clear-negative" : "text-clear-ink-2")}>
+                {entry.error ? t("failed") : t("entry", { imported: entry.imported, skipped: entry.skipped })}
+              </span>
             </li>
           ))}
         </ul>

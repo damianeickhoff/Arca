@@ -8,6 +8,7 @@ import { listModels } from "@/lib/gemini";
 import { listLocalModels, normalizeBaseUrl } from "@/lib/openai-compatible";
 import type { AiSettingsView, SaveAiSettingsInput } from "@/lib/ai-shared";
 import { suggestCategories, summarizePeriod, type PeriodSummary, type SummaryFacts } from "@/lib/ai-features";
+import { aiPicksFor } from "@/lib/ai-category-picks";
 
 // Server actions behind Settings › AI, Needs review's "Ask AI" and the Insights summary.
 // API keys only ever travel from the browser to here (when typed), never back.
@@ -117,7 +118,8 @@ export async function testAiConnectionAction(input: TestConnectionInput): Promis
 
 export async function suggestCategoriesAction(ids: number[]): Promise<{ suggestions: Record<number, number> } | Failure> {
   if (!(await getCurrentUser())) return { error: "signedOut" };
-  const result = await suggestCategories(ids.filter((id) => Number.isInteger(id)));
+  // Stored picks come back as they are; only the rest is asked, and its answers stored.
+  const result = await aiPicksFor(ids.filter((id) => Number.isInteger(id)), suggestCategories);
   return result.ok ? { suggestions: result.value } : { error: result.error };
 }
 

@@ -19,6 +19,8 @@ const STORAGE_KEY = "arca:tips";
 //   • pointer tips — a card pinned next to a specific control, explaining where
 //     something lives or that a row is tappable (<AnchoredTip>).
 export type TipId =
+  // Settings › Import › Bank connection: the account type chip in the link dialog
+  | "bankAccountType"
   // feature tips
   | "receiptScan"
   | "csvImport"
@@ -184,7 +186,13 @@ export type TipId =
   | "insightsMovers"
   | "insightsNetWorthChanges"
   // Settings › AI: the Google Gemini · Local server switch
-  | "aiProvider";
+  | "aiProvider"
+  // Needs a category: Internal transfer as a choice, Ask AI's picks kept, a rule's matches shown
+  | "reviewTransfer"
+  | "aiPicksKept"
+  | "ruleMatches"
+  // Needs a category: several picked in the queue, one category and a rule per merchant
+  | "reviewBulkRules";
 
 interface TipState {
   /** Tips already shown. A tip is recorded the moment it appears rather than when
@@ -200,7 +208,7 @@ const EMPTY: TipState = { seen: [], disabled: false };
 /** Tips for features added after a user could already have pressed "Don't show
  *  again" — a blanket opt-out taken months ago shouldn't hide something that
  *  didn't exist yet. They still respect `seen`, so they appear exactly once. */
-const IGNORES_DISABLED: readonly TipId[] = ["keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activitySelectMode", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "billStatusControl", "budgetNeedsCategory", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "upcomingNextMonth", "billSkip", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "financialMonthExceptions", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "iconPicker", "ruleTeach", "merchantPatterns", "bankConnection", "debtsPayoffDates", "debtsWhereExtraGoes", "debtsPaymentsMonth", "insightsSummary", "quickAdd", "reviewTeach", "recentChanges", "importTabs","helpGuide", "userInvites", "recurringSuggestions", "recurringScan", "insightsRunningTotal", "insightsBlockMap", "insightsMovers", "insightsNetWorthChanges", "debtsOrder", "importHeaderRow", "homeNetWorth", "homeBudgetLink", "whatsNew", "backups", "updateCheck", "updateAvailable", "betaBuild", "aiProvider", "betaChanges"];
+const IGNORES_DISABLED: readonly TipId[] = ["bankAccountType", "keyboardShortcuts", "importBalance", "importDatePreview", "importCheck", "importMapColumns", "dataHealth", "bulkSelect", "recurringWholeWord", "googleLookup", "debtLinkedPayment", "sharedCost", "debtFormTour", "savingsFormTour", "clearNavigation", "settingsNav", "planHub", "homeSafeToSpendSum", "homeComingUp", "homeIncomeVsSpending", "homeMoneyFlow", "privacyEye", "activityDetail", "activityFilters", "activitySelectMode", "activitySearchBar", "activityHistory", "globalSearch", "activityKeys", "activityDetailTabs","budgetStrategyTarget", "budgetUnbudgeted", "budgetMove", "billStatusControl", "budgetNeedsCategory", "budgetAddCategory", "budgetPeriodNav", "debtsDetail", "debtsSimulator", "debtsSortAndImpact", "debtsOwed", "goalsContributions", "goalsDetail", "goalsSuggestions", "insightsMerchants", "insightsHealthNextStep", "insightsHealthHistory", "insightsComingUp", "insightsForecastRange","categoryPickerByGroup", "categoryPickerSuggestions", "dateQuickPicks", "searchActions","merchantVisits", "categoryMerchants", "recurringCharges", "recurringMatchPreview", "budgetCategoryDetail","accountsAdd", "addTransactionAnother", "correctAmountPreview", "receiptViewer", "rulePreview", "splitSharedCost", "linkSearchOlder", "upcomingMonthNav", "upcomingNextMonth", "billSkip", "needsReviewTriage", "needsReviewBulk", "financialMonthDays", "financialMonthExceptions", "merchantsWithoutIcon", "categoryGroups", "insightsGroupSwitch", "accountsOverdraft", "paymentPlan", "aiSettings", "aiCategories", "iconPicker", "ruleTeach", "merchantPatterns", "bankConnection", "debtsPayoffDates", "debtsWhereExtraGoes", "debtsPaymentsMonth", "insightsSummary", "quickAdd", "reviewTeach", "recentChanges", "importTabs","helpGuide", "userInvites", "recurringSuggestions", "recurringScan", "insightsRunningTotal", "insightsBlockMap", "insightsMovers", "insightsNetWorthChanges", "debtsOrder", "importHeaderRow", "homeNetWorth", "homeBudgetLink", "whatsNew", "backups", "updateCheck", "updateAvailable", "betaBuild", "aiProvider", "betaChanges", "reviewTransfer", "aiPicksKept", "ruleMatches", "reviewBulkRules"];
 
 function isSuppressed(state: TipState, id: TipId): boolean {
   if (state.seen.includes(id)) return true;

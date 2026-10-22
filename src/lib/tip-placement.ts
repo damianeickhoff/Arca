@@ -10,6 +10,8 @@
  *  several of these controls sit deep inside components that have no business
  *  knowing a tip exists. */
 export type TipAnchor =
+  // Bank connection link dialog: the account type the bank reports
+  | "bankAccountType"
   | "budgetButton"
   | "budgetEdit"
   | "reportsButton"
@@ -169,7 +171,10 @@ export type TipAnchor =
   | "updateCheck"
   | "betaBuild"
   | "betaChanges"
-  | "aiProvider";
+  | "aiProvider"
+  // Needs a category: the Internal transfer choice and a rule's "Show the N transactions"
+  | "reviewTransfer"
+  | "ruleMatches";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */
