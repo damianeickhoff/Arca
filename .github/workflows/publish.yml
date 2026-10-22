@@ -16,7 +16,9 @@ name: Publish image
 
 on:
   push:
-    branches: ["**", "!master"]
+    # No build for Dependabot's branches: its PRs are reviewed on GitHub, and runs it
+    # triggers get no repository secrets, so the Docker Hub login would fail anyway.
+    branches: ["**", "!master", "!dependabot/**"]
     tags: ["v*"]
     paths-ignore: ["**.md", "unraid/**", "docs/**", "website/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
