@@ -11,7 +11,6 @@ import {
   IconChevronDown,
   IconDatabase,
   IconMapPin,
-  IconScale,
   IconSearch,
   IconShieldCheck,
   IconSparkles,

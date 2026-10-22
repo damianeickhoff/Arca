@@ -58,7 +58,6 @@ import {
   IconIcons,
   IconWand,
   IconFingerprint,
-  IconFlask,
   IconHistory,
   IconLayoutGrid,
   IconTableRow,

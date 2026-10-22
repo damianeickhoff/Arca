@@ -65,7 +65,6 @@ export function TwoFactorStep({
   useEffect(() => {
     if (enabled || started.current) return;
     started.current = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- kicks off the async enrollment; state is set once it resolves
     void start();
   }, [enabled]);
 
