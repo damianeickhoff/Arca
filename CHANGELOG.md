@@ -4,6 +4,31 @@ Every release of Arca, newest first. The same notes are on the GitHub releases p
 and in the app under Settings › About. Format: `## version — date`, one line with the
 release title, an intro paragraph, then `###` sections with bullets.
 
+## 1.6.1 — 2026-10-22
+Security fixes, backups before every update, and About
+
+Arca 1.6.1 closes three critical security holes in the framework it runs on, backs your database up before every update, and tells you inside the app what changed and what leaves your server.
+
+### 🔒 Security and data
+- Next.js, the framework under Arca, moved from 16.2.1 to 16.4.2. That closes three critical advisories (remote code execution through the image optimizer, on Windows hosts, and in generated images) and a dozen high ones (proxy bypasses, request forgery, denial of service). Update soon, even if you only run Arca at home.
+- Two packages Arca never used are out of the image, which also clears the remaining audit warnings.
+- **Backups.** Before the first start on a new version, Arca copies its database to `backups/` in your data folder and keeps the last five. Settings › **Data health** lists them, has **Back up now** for a copy on the spot, and lets an admin download or delete any backup.
+
+### ⚙️ Settings
+- **About** is new: the version you run, the licence, every connection Arca can make with its state right now (bank connection, AI, receipt scanning, map and merchant lookup), a link to the backups, and the release notes of every version, read from inside the image. Opening it makes no request anywhere.
+- **Import** lives in Settings now, as two tabs: **CSV file** (the upload with Map columns, your saved profiles and recent imports) and **Bank connection** (your banks and a new **Sync log**). The Import item in the sidebar and every Import button open it; the old address still works.
+
+### 🏠 Home
+- After an update, Home shows an "Arca x.y.z is in" card once, pointing at Settings › About.
+
+### 📖 Guide
+- New pages for About and for backups; the Import and bank connection pages follow the new layout. Bug reports and feature requests on GitHub now use forms.
+
+### 🐳 Installing and updating
+Image: `damianeickhoff/arca:latest` (also `1.6.1`) on Docker Hub, mirrored to `ghcr.io/damianeickhoff/arca`. On Unraid, **Check for updates** in the Docker tab. The image is rebuilt from scratch and a fraction of its old size; updates after this one pull far less. No new tables or columns in this release. `latest` now follows the version tag only.
+
+As always: Arca backs the database up before the first start on a new version.
+
 ## 1.6.0 — 2026-10-22
 Net worth on Home, and free software under the AGPL
 

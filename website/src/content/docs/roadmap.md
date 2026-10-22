@@ -47,11 +47,12 @@ tableOfContents: false
 <div class="rm not-content">
 
 <div class="rm-shipped">
-  <span class="rm-shipped__chip">Just shipped · 1.6.0</span>
+  <span class="rm-shipped__chip">Just shipped · 1.6.1</span>
   <ul class="rm-shipped__items">
-    <li>Net worth on Home</li>
-    <li>Budget folded into Safe to spend</li>
-    <li>Free software under the AGPL</li>
+    <li>Security fixes in the framework</li>
+    <li>A backup before every update</li>
+    <li>Settings › About with release notes</li>
+    <li>Import inside Settings, with a sync log</li>
   </ul>
   <a class="rm-shipped__link" href="https://github.com/damianeickhoff/Arca/releases/latest">Release notes</a>
 </div>
@@ -85,7 +86,7 @@ tableOfContents: false
 <div class="rm-tile">
   <span class="rm-area rm-area--banking">Banking</span>
   <h3>Bank connection, round two</h3>
-  <p>Reconnect reminders before a consent runs out, and a sync log you can read.</p>
+  <p>Reconnect reminders before a consent runs out. The sync log is in.</p>
   <p class="rm-meta">In progress · Oct 2026</p>
 </div>
 
@@ -160,8 +161,8 @@ tableOfContents: false
 
 <div class="rm-tile">
   <span class="rm-area rm-area--app">App</span>
-  <h3>Automatic backups</h3>
-  <p>From Settings, on a schedule, to a folder of your choice.</p>
+  <h3>Scheduled backups</h3>
+  <p>On a schedule, to a folder of your choice. Backups before every update and by hand are already in.</p>
 </div>
 
 <div class="rm-tile">
