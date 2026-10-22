@@ -1600,6 +1600,14 @@
     "importTabs": {
       "title": "Importeren zit nu hier",
       "body": "CSV-bestand en Bankkoppeling zijn twee tabbladen op één plek. De stip bij Bankkoppeling betekent dat een toestemming is verlopen."
+    },
+    "updateCheck": {
+      "title": "Wil je horen van nieuwe versies?",
+      "body": "Arca belt nooit uit zichzelf naar huis. Zet dit aan en de server vraagt GitHub één keer per dag welke versie de nieuwste is."
+    },
+    "updateAvailable": {
+      "title": "Er is een nieuwere Arca",
+      "body": "Update wanneer het jou uitkomt; Arca maakt eerst een back-up van de database."
     }
   },
   "categoryPicker": {
@@ -3846,6 +3854,10 @@
       "title": "Arca {version} staat erop",
       "body": "{title}. Instellingen › Over Arca laat alles zien wat er veranderde.",
       "bodyNoTitle": "Instellingen › Over Arca laat alles zien wat er veranderde."
+    },
+    "updateAvailable": {
+      "title": "Arca {version} is uit",
+      "body": "Update wanneer het jou uitkomt; Arca maakt eerst een back-up van de database. Instellingen › Over Arca heeft de release-notes."
     }
   },
   "billStatus": {
@@ -5091,9 +5103,13 @@
         "map": {
           "title": "Kaart en winkel opzoeken",
           "body": "Je browser vraagt OpenStreetMap naar een plek, of opent Google, alleen als jij op de knop drukt."
+        },
+        "update": {
+          "title": "Updatecontrole",
+          "body": "Alleen als je hem hieronder aanzet. De server vraagt GitHub één keer per dag welke versie de nieuwste is. Er gaat niets van jou mee."
         }
       },
-      "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten, geen updatecontrole. Deze pagina deed geen enkel verzoek om dit te tonen."
+      "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten. Geen updatecontrole tenzij jij die aanzet. Deze pagina deed geen enkel verzoek om dit te tonen."
     },
     "backups": {
       "open": "Back-ups staan bij Datacontrole",
@@ -5105,6 +5121,23 @@
       "onGitHub": "Op GitHub",
       "current": "Deze versie",
       "none": "Bij deze build zijn geen release-notes meegeleverd."
+    },
+    "updates": {
+      "title": "Updates",
+      "switch": "Controleren op updates",
+      "hintOff": "Uit. Arca belt niet naar huis.",
+      "hintOn": "Aan. Eén keer per dag gecontroleerd.",
+      "lastChecked": "Aan. Laatst gecontroleerd {when}.",
+      "body": "Als dit aanstaat vraagt de server één keer per dag aan de openbare releasepagina van GitHub wat de nieuwste Arca-versie is. Een nieuwere staat dan naast de versie hierboven en één keer op Home. Updaten blijft iets wat jij doet.",
+      "adminOnly": "Alleen een beheerder kan dit veranderen.",
+      "checkNow": "Nu controleren",
+      "checking": "Bezig met controleren…",
+      "upToDate": "Je draait de nieuwste versie.",
+      "foundNewer": "Arca {version} is uit.",
+      "available": "{version} is uit",
+      "seeNotes": "Wat is er nieuw in {version}",
+      "unavailable": "GitHub was niet bereikbaar. De volgende controle is morgen.",
+      "denied": "Alleen een beheerder kan dit veranderen."
     }
   }
 }

@@ -75,7 +75,7 @@
 - Off until you add your own API key. Only merchant names, amounts, dates and category names are sent, never account numbers.
 
 **Yours**
-- Self-hosted: one SQLite file in `/data`, no cloud account. **Settings › About** lists every connection Arca can make (bank, AI, receipts, map) and shows the release notes offline; there is no telemetry and no update check.
+- Self-hosted: one SQLite file in `/data`, no cloud account. **Settings › About** lists every connection Arca can make (bank, AI, receipts, map) with its state and shows the release notes offline; there is no telemetry, and the update check is a switch that is off until you turn it on.
 - **Backups**: a copy of the database before every update, plus manual backups you can download, all in Settings › Data health.
 - Several users, two-factor sign-in, an app lock (PIN or passkey) and a privacy mode that hides amounts.
 - Light and dark theme, English and Dutch, works on desktop and phone, installable as an app (PWA).

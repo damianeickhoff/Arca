@@ -165,7 +165,8 @@ export type TipAnchor =
   | "settingsHelp"
   // Settings › Data health: "Look for regular payments"
   | "recurringScan"
-  | "backups";
+  | "backups"
+  | "updateCheck";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

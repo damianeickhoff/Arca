@@ -62,7 +62,9 @@ import {
   IconLayoutGrid,
   IconTableRow,
   IconDatabase,
+  IconDownload,
   IconGift,
+  IconRefresh,
 } from "@tabler/icons-react";
 
 import type { TipId } from "@/lib/tips";
@@ -187,6 +189,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   insightsNetWorthChanges: IconScale,
   whatsNew: IconGift,
   backups: IconDatabase,
+  updateCheck: IconRefresh,
+  updateAvailable: IconDownload,
 };
 
 /**

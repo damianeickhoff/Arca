@@ -90,6 +90,13 @@ tableOfContents: false
   <p class="rm-meta">In progress · Oct 2026</p>
 </div>
 
+<div class="rm-tile">
+  <span class="rm-area rm-area--app">App</span>
+  <h3>Update check, if you want it</h3>
+  <p>A switch in Settings › About that asks GitHub once a day whether a newer Arca is out, off until you turn it on. Shows up on About and once on Home.</p>
+  <p class="rm-meta">In progress · Oct 2026</p>
+</div>
+
 </section>
 
 <section class="rm-col" id="next">

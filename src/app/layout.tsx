@@ -15,6 +15,7 @@ import { isPublicPath } from "@/lib/public-paths";
 import { maybeRecordDailyNetWorthSnapshot } from "@/lib/net-worth-snapshots";
 import { maybeRecordMonthlyHealthSnapshot } from "@/lib/health-snapshots";
 import { backfillBankAccountNumbers } from "@/lib/bank-account-numbers";
+import { maybeCheckForUpdate } from "@/lib/update-check";
 import { getBankSyncStatus } from "@/lib/bank-sync";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { RefreshOnReturn } from "@/components/refresh-on-return";
@@ -103,6 +104,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     void maybeRecordDailyNetWorthSnapshot();
     void maybeRecordMonthlyHealthSnapshot();
     void backfillBankAccountNumbers();
+    void maybeCheckForUpdate();
   }
 
   // The top bar's Activity tab shows how many transactions still need a category. Read

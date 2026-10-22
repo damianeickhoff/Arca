@@ -20,7 +20,17 @@ Arca is built to keep your data at home, so the About panel lists every connecti
 | Receipt scanning | Only when the server is configured with an Ollama host of your own | Receipt photos |
 | Map and merchant lookup | Only when you press the button on a transaction | Your browser asks OpenStreetMap for the place by name, or opens Google in a new tab |
 
-Nothing else: no telemetry, no analytics, no crash reports and no update checks. The release notes on this panel ship inside the image, so opening About makes no request anywhere.
+| Update check | Only when you turn it on, see below | A request to GitHub's public releases page for the newest version number; nothing of yours goes along |
+
+Nothing else: no telemetry, no analytics, no crash reports. The release notes on this panel ship inside the image, so opening About makes no request anywhere.
+
+## Updates
+
+Arca does not call home by itself. If you would like to hear about new versions, switch on **Check for updates**. The server then asks GitHub once a day which version is newest, and when a newer one is out, About shows it next to your version and Home shows a card once. **Check now** asks straight away. Switching it off also forgets what it found.
+
+Updating stays yours to do: pull the new image as described in [Updating and backups](/Arca/getting-started/updating-and-backups/). Arca backs the database up before the first start on a new version.
+
+Only an admin can change this setting, because it is the one connection Arca makes on its own.
 
 ## What changed
 

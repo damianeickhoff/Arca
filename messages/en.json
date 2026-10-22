@@ -1600,6 +1600,14 @@
     "importTabs": {
       "title": "Import lives here now",
       "body": "CSV file and Bank connection are two tabs in one place. The dot on Bank connection means a consent ran out."
+    },
+    "updateCheck": {
+      "title": "Want to hear about new versions?",
+      "body": "Arca never calls home on its own. Turn this on and the server asks GitHub once a day which version is newest."
+    },
+    "updateAvailable": {
+      "title": "A newer Arca is out",
+      "body": "Update when it suits you; Arca backs the database up first."
     }
   },
   "categoryPicker": {
@@ -3846,6 +3854,10 @@
       "title": "Arca {version} is in",
       "body": "{title}. Settings › About lists everything that changed.",
       "bodyNoTitle": "Settings › About lists everything that changed."
+    },
+    "updateAvailable": {
+      "title": "Arca {version} is out",
+      "body": "Update when it suits you; Arca backs the database up first. Settings › About has the release notes."
     }
   },
   "billStatus": {
@@ -5091,9 +5103,13 @@
         "map": {
           "title": "Map and merchant lookup",
           "body": "Your browser asks OpenStreetMap for a place, or opens Google, only when you press the button."
+        },
+        "update": {
+          "title": "Update check",
+          "body": "Only when you turn it on below. The server asks GitHub once a day which version is newest. Nothing of yours goes along."
         }
       },
-      "nothingElse": "No telemetry, no analytics, no crash reports, no update checks. This page made no request to show you this."
+      "nothingElse": "No telemetry, no analytics, no crash reports. No update check unless you turn it on. This page made no request to show you this."
     },
     "backups": {
       "open": "Backups live in Data health",
@@ -5105,6 +5121,23 @@
       "onGitHub": "On GitHub",
       "current": "This version",
       "none": "No release notes were shipped with this build."
+    },
+    "updates": {
+      "title": "Updates",
+      "switch": "Check for updates",
+      "hintOff": "Off. Arca does not call home.",
+      "hintOn": "On. Checked once a day.",
+      "lastChecked": "On. Last checked {when}.",
+      "body": "When on, the server asks GitHub's public releases page once a day for the newest Arca version. A newer one shows next to the version above and once on Home. Updating stays yours to do.",
+      "adminOnly": "Only an admin can change this.",
+      "checkNow": "Check now",
+      "checking": "Checking…",
+      "upToDate": "You run the newest version.",
+      "foundNewer": "Arca {version} is out.",
+      "available": "{version} is out",
+      "seeNotes": "What is new in {version}",
+      "unavailable": "GitHub could not be reached. The next check is tomorrow.",
+      "denied": "Only an admin can change this."
     }
   }
 }

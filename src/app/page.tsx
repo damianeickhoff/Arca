@@ -39,6 +39,7 @@ import { SetSalaryButton } from "@/app/_home/set-salary-button";
 import { HomeTips } from "@/app/_home/home-tips";
 import { APP_VERSION } from "@/lib/app-version";
 import { releaseNoteFor } from "@/lib/changelog";
+import { getUpdateCheckState } from "@/lib/update-check";
 
 /** How many budget months the income-vs-spending chart shows. */
 const CHART_MONTHS = 6;
@@ -221,7 +222,7 @@ export default async function HomePage({
   const billMonth = currentFinancialMonth(financialMonth);
   const currentMonth = financialMonthRange(financialMonth, 0);
 
-  const [sharedCostMode, budgetRecurringMode, getStartedDismissed, overdraftMode] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed(), getOverdraftMode()]);
+  const [sharedCostMode, budgetRecurringMode, getStartedDismissed, overdraftMode, updates] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed(), getOverdraftMode(), getUpdateCheckState()]);
   const [data, billStatuses, needsReview, budgetOverview, bankBalances, netWorth] = await Promise.all([
     getHomeData(from, to, financialMonth, sharedCostMode === "net"),
     getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
@@ -288,7 +289,7 @@ export default async function HomePage({
   return (
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
       <DashboardReadySignal />
-      <HomeTips whatsNew={releaseNoteFor(APP_VERSION)} />
+      <HomeTips whatsNew={releaseNoteFor(APP_VERSION)} updateAvailable={updates.available && updates.latest ? updates.latest.version : null} />
 
       {/* Phone header — the avatar opens Settings; search sits on the right. */}
       <div className="flex items-center justify-between gap-3 lg:hidden">

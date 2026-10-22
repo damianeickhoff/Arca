@@ -30,6 +30,7 @@ import { listBankConnections, getBankSyncStatus } from "@/lib/bank-sync";
 import { loadImportOverview } from "@/lib/import-overview";
 import { ImportPanel } from "@/components/settings/import-panel";
 import { isAiReady } from "@/lib/gemini";
+import { getUpdateCheckState } from "@/lib/update-check";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
 
 // Server-rendered content for the data-heavy settings panels. Two hosts:
@@ -122,15 +123,15 @@ async function ImportPanelContent() {
 }
 
 /** Version, what leaves the server (with its live state), and the release notes. */
-async function AboutPanelContent() {
-  const [connections, aiOn] = await Promise.all([listBankConnections(), isAiReady()]);
+async function AboutPanelContent({ canManageUpdates }: { canManageUpdates: boolean }) {
+  const [connections, aiOn, updates] = await Promise.all([listBankConnections(), isAiReady(), getUpdateCheckState()]);
   const status: AboutStatus = {
     bankConnections: connections.filter((c) => !c.expired).length,
     aiOn,
     ocrConfigured: !!process.env.OLLAMA_HOST,
     newestBackup: listBackups()[0]?.createdAt ?? null,
   };
-  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} />;
+  return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} updates={updates} canManageUpdates={canManageUpdates} />;
 }
 
 async function ImportProfilesPanel() {
@@ -158,7 +159,7 @@ export function getSettingsPanel(key: HeavyPanelKey, currentUser: { id: number; 
     case "dataHealth":
       return <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel canManageBackups={currentUser.isAdmin} /></Suspense>;
     case "about":
-      return <Suspense key="about" fallback={<PanelSkeleton />}><AboutPanelContent /></Suspense>;
+      return <Suspense key="about" fallback={<PanelSkeleton />}><AboutPanelContent canManageUpdates={currentUser.isAdmin} /></Suspense>;
     case "import":
       return <Suspense key="import" fallback={<PanelSkeleton />}><ImportPanelContent /></Suspense>;
     case "importProfiles":
