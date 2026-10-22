@@ -1,0 +1,38 @@
+# Checks every pull request (Dependabot's included) and every push to dev: the type
+# check, eslint, the vitest suite and a production build, on the Node the image runs
+# (node:22-alpine in the Dockerfile). Releases are not built here: publish.yml builds the
+# image from the version tag.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev]
+    paths-ignore: ["**.md", "unraid/**", "docs/**", "website/**", ".github/workflows/docs.yml", ".github/workflows/publish.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # The lock file is npm 11 format; the npm bundled with Node 22 refuses it.
+      - run: npm install -g npm@11
+      - run: npm ci
+      - name: Type check
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
