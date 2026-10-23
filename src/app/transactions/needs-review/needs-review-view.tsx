@@ -388,11 +388,15 @@ export function NeedsReviewView({
         </section>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      {/* One column up to xl (the transaction, then the queue, each full width); from xl
+          the transaction takes two thirds and the queue column one third. `items-start`
+          keeps the transaction card at its own height instead of stretching to the
+          queue's and showing empty space under its footer. */}
+      <div className="grid gap-5 xl:grid-cols-3 xl:items-start">
         {!current ? (
           <EmptyCard />
         ) : (
-          <ClearCard aria-labelledby="review-current-title" className="gap-6 p-5 lg:col-span-2 lg:p-7">
+          <ClearCard aria-labelledby="review-current-title" className="gap-6 p-5 lg:p-7 xl:col-span-2">
             {/* The transaction */}
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-2.5">
@@ -544,8 +548,8 @@ export function NeedsReviewView({
           </ClearCard>
         )}
 
-        {/* The queue and why it matters: one column from xl, side by side at lg. */}
-        <div className={cn("flex min-w-0 flex-col gap-5 lg:col-span-2 lg:grid lg:grid-cols-2 lg:items-start xl:col-span-1 xl:flex", !current && "xl:col-span-3")}>
+        {/* The queue and why it matters, stacked: one column at every width. */}
+        <div className={cn("flex min-w-0 flex-col gap-5 xl:col-span-1", !current && "xl:col-span-3")}>
           {queue.length > 0 && (
             <ClearCard aria-labelledby="review-queue-title" className="gap-3.5">
               <ClearCardHeader
@@ -762,7 +766,7 @@ function QueueRowButton({
 function EmptyCard() {
   const t = useTranslations("needsReview.empty");
   return (
-    <ClearCard aria-labelledby="review-empty-title" className="items-center justify-center gap-6 px-6 py-12 text-center lg:col-span-2 xl:col-span-3">
+    <ClearCard aria-labelledby="review-empty-title" className="items-center justify-center gap-6 px-6 py-12 text-center xl:col-span-3">
       <svg width="260" height="200" viewBox="0 0 260 200" fill="none" aria-hidden className="h-auto w-full max-w-[260px]">
         <circle cx="130" cy="104" r="86" fill="var(--clr-mint)" />
         <rect x="62" y="58" width="136" height="30" rx="15" fill="var(--clr-card)" stroke="var(--clr-ink)" strokeWidth="2.5" />
