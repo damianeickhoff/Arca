@@ -78,6 +78,7 @@ export default defineConfig({
             { label: "Add, search and shortcuts", slug: "everyday/add-and-search" },
             { label: "Needs a category", slug: "everyday/needs-a-category" },
             { label: "Upcoming", slug: "everyday/upcoming" },
+            { label: "Notifications", slug: "everyday/notifications" },
           ],
         },
         {

@@ -10,7 +10,7 @@ import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { migrateAutoRecurringItems } from "@/lib/recurring-migration";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
-import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE_SQL, INVITES_TABLE_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
+import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE_SQL, INVITES_TABLE_SQL, NOTIFICATION_TABLES_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
 // full schema for fresh databases — run on first start and by `npm run db:init`). Any
@@ -651,6 +651,10 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
   // Auto-migrate: recurring suggestions (Upcoming, Settings › Recurring), see
   // src/lib/recurring-suggestions.ts.
   sqlite.exec(RECURRING_SUGGESTIONS_TABLE_SQL);
+
+  // Auto-migrate: notifications and the devices that get them as a push, see
+  // src/lib/notifications.ts and src/lib/push.ts.
+  sqlite.exec(NOTIFICATION_TABLES_SQL);
 
   // The old detector's items, re-tested against the new rules (one time).
   migrateAutoRecurringItems(sqlite);

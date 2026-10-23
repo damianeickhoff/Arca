@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import {
+  IconBell,
   IconBuildingStore,
   IconCalendar,
   IconCoin,
@@ -31,7 +32,7 @@ export type SettingsPanelKey =
   | "accounts" | "categories" | "recurring" | "merchants"
   | "financialMonth" | "budgetRecurring"
   | "import" | "importProfiles" | "dataHealth"
-  | "appearance" | "privacy" | "appLock" | "language" | "currency" | "ai"
+  | "appearance" | "privacy" | "appLock" | "language" | "currency" | "notifications" | "ai"
   | "about" | "help" | "users";
 
 export type SettingsSectionKey = "account" | "manage" | "data" | "app" | "about";
@@ -74,6 +75,7 @@ const SECTIONS: SettingsSection[] = [
       { key: "appLock", icon: IconLock },
       { key: "language", icon: IconLanguage },
       { key: "currency", icon: IconCoin },
+      { key: "notifications", icon: IconBell },
       { key: "ai", icon: IconSparkles },
     ],
   },
@@ -111,7 +113,7 @@ export function settingsSections({ isAdmin, withAccount }: { isAdmin: boolean; w
 
 /** Panels whose content is server-rendered (settings-panel-content.tsx) and passed in
  *  as nodes; the rest are client-only and built by SettingsPanelBody. */
-export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles", "about", "import"] as const;
+export const HEAVY_PANELS = ["accounts", "categories", "recurring", "merchants", "users", "dataHealth", "importProfiles", "about", "import", "notifications"] as const;
 export type HeavyPanelKey = (typeof HEAVY_PANELS)[number];
 
 export function isHeavyPanel(key: SettingsPanelKey): key is HeavyPanelKey {

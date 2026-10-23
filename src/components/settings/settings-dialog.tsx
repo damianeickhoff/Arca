@@ -41,6 +41,7 @@ const ROW_TONES: Record<SettingsPanelKey, ClearTone> = {
   appLock: "stone",
   language: "sky",
   currency: "mint",
+  notifications: "butter",
   ai: "lilac",
   about: "stone",
   help: "mint",

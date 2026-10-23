@@ -34,6 +34,9 @@ import { getUpdateCheckState } from "@/lib/update-check";
 import { getBuildInfo } from "@/lib/build-info";
 import { loadBetaChanges } from "@/lib/beta-changes";
 import { HEAVY_PANELS, type HeavyPanelKey } from "@/components/settings/settings-sections";
+import { NotificationsPanel } from "@/components/settings/notifications-panel";
+import { getDisabledKinds } from "@/lib/notifications";
+import { countPushDevices, listPushDevices } from "@/lib/push";
 
 // Server-rendered content for the data-heavy settings panels. Two hosts:
 //   • the phone SettingsDialog (opened from the Home avatar) gets every panel at once
@@ -125,8 +128,8 @@ async function ImportPanelContent() {
 }
 
 /** Version, what leaves the server (with its live state), and the release notes. */
-async function AboutPanelContent({ canManageUpdates }: { canManageUpdates: boolean }) {
-  const [connections, ai, updates, betaChanges] = await Promise.all([listBankConnections(), getAiSettings(), getUpdateCheckState(), loadBetaChanges()]);
+async function AboutPanelContent({ canManageUpdates, userId }: { canManageUpdates: boolean; userId: number }) {
+  const [connections, ai, updates, betaChanges, pushDevices] = await Promise.all([listBankConnections(), getAiSettings(), getUpdateCheckState(), loadBetaChanges(), countPushDevices(userId)]);
   const status: AboutStatus = {
     bankConnections: connections.filter((c) => !c.expired).length,
     aiProvider: ai.provider,
@@ -134,8 +137,15 @@ async function AboutPanelContent({ canManageUpdates }: { canManageUpdates: boole
     localAddress: ai.local.baseUrl,
     receiptScan: !!ai.local.baseUrl && !!ai.local.visionModel,
     newestBackup: listBackups()[0]?.createdAt ?? null,
+    pushDevices,
   };
   return <AboutPanel version={APP_VERSION} entries={loadChangelog()} status={status} updates={updates} canManageUpdates={canManageUpdates} build={getBuildInfo()} betaChanges={betaChanges} />;
+}
+
+/** The kind switches and this user's push devices (only what the list shows, no keys). */
+async function NotificationsPanelContent({ userId }: { userId: number }) {
+  const [disabled, devices] = await Promise.all([getDisabledKinds(userId), listPushDevices(userId)]);
+  return <NotificationsPanel disabled={disabled} devices={devices.map((d) => ({ id: d.id, label: d.label, endpoint: d.endpoint, createdAt: d.createdAt, failedAt: d.failedAt }))} />;
 }
 
 async function ImportProfilesPanel() {
@@ -163,9 +173,11 @@ export function getSettingsPanel(key: HeavyPanelKey, currentUser: { id: number; 
     case "dataHealth":
       return <Suspense key="dataHealth" fallback={<PanelSkeleton />}><DataHealthPanel canManageBackups={currentUser.isAdmin} /></Suspense>;
     case "about":
-      return <Suspense key="about" fallback={<PanelSkeleton />}><AboutPanelContent canManageUpdates={currentUser.isAdmin} /></Suspense>;
+      return <Suspense key="about" fallback={<PanelSkeleton />}><AboutPanelContent canManageUpdates={currentUser.isAdmin} userId={currentUser.id} /></Suspense>;
     case "import":
       return <Suspense key="import" fallback={<PanelSkeleton />}><ImportPanelContent /></Suspense>;
+    case "notifications":
+      return <Suspense key="notifications" fallback={<PanelSkeleton />}><NotificationsPanelContent userId={currentUser.id} /></Suspense>;
     case "importProfiles":
       return <Suspense key="importProfiles" fallback={<PanelSkeleton />}><ImportProfilesPanel /></Suspense>;
     case "users":

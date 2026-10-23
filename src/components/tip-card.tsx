@@ -70,6 +70,8 @@ import {
   IconGitCommit,
   IconGift,
   IconRefresh,
+  IconBell,
+  IconDeviceMobileMessage,
 } from "@tabler/icons-react";
 
 import type { TipId } from "@/lib/tips";
@@ -205,6 +207,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   ruleMatches: IconListCheck,
   reviewBulkRules: IconListCheck,
   iconPickerAllIcons: IconCategory2,
+  notifications: IconBell,
+  pushDevice: IconDeviceMobileMessage,
 };
 
 /**

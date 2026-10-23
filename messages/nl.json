@@ -210,6 +210,10 @@
       "about": {
         "title": "Over Arca",
         "subtitle": "Versie, wat je server verlaat en wat er veranderde."
+      },
+      "notifications": {
+        "title": "Meldingen",
+        "subtitle": "Waarover Arca je iets laat weten, en push naar je apparaten."
       }
     },
     "inline": {
@@ -1657,6 +1661,14 @@
     "iconPickerAllIcons": {
       "title": "Alle iconen staan er nu in",
       "body": "Onder de voorgestelde iconen vind je alle 5.000+ Tabler-iconen: zoek op naam of blader per categorie."
+    },
+    "notifications": {
+      "title": "Meldingen staan nu hier",
+      "body": "Rekeningen die eraan komen, een krappe prognose, nieuwe transacties: Arca verzamelt ze op deze pagina."
+    },
+    "pushDevice": {
+      "title": "Krijg ze op je telefoon",
+      "body": "Zet push per apparaat aan. Op een iPhone zet je Arca eerst op je beginscherm."
     }
   },
   "categoryPicker": {
@@ -3044,7 +3056,9 @@
       "local": "Lokale build",
       "dev": "Bèta · dev {sha}",
       "branch": "Bèta · {ref} {sha}"
-    }
+    },
+    "notifications": "Meldingen",
+    "notificationsBadge": "{count, plural, one {# ongelezen melding} other {# ongelezen meldingen}}"
   },
   "insights": {
     "title": "Inzichten",
@@ -5273,9 +5287,13 @@
         "ocrLocal": {
           "title": "Bonnen scannen",
           "body": "Bonfoto's gaan naar het beeldmodel op je eigen server op {address}, en nergens anders heen."
+        },
+        "push": {
+          "title": "Pushmeldingen",
+          "body": "Alleen als je het aanzet voor een apparaat. De tekst van een melding gaat via de pushdienst van je browser (Apple, Google of Mozilla), versleuteld zodat zij hem niet kunnen lezen. Verder niets."
         }
       },
-      "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten. Geen updatecontrole tenzij jij die aanzet. Deze pagina deed geen enkel verzoek om dit te tonen."
+      "nothingElse": "Geen telemetrie, geen analytics, geen foutrapporten. Geen updatecontrole of push tenzij jij die aanzet. Deze pagina deed geen enkel verzoek om dit te tonen."
     },
     "backups": {
       "open": "Back-ups staan bij Datacontrole",
@@ -5332,5 +5350,102 @@
     "selectNoneFor": "Niets van {name} selecteren",
     "groupCount": "{ticked} van {total}",
     "noteMany": "Uitgevinkte transacties houden wat ze nu hebben, ook als de regels later opnieuw draaien. Elke regel blijft en deelt nieuwe transacties van zijn winkel in."
+  },
+  "notifications": {
+    "title": "Meldingen",
+    "subtitle": "{count, plural, =0 {Je bent helemaal bij.} one {# ongelezen} other {# ongelezen}}",
+    "markAllRead": "Alles als gelezen markeren",
+    "older": "Ouder",
+    "loading": "Laden…",
+    "settingsLink": "Instellingen voor meldingen",
+    "empty": "Nog niets. Arca laat het je hier weten als een rekening eraan komt, je geld krap kan worden of er nieuwe transacties binnenkomen.",
+    "unread": "Ongelezen",
+    "loadFailed": "Oudere meldingen konden niet worden geladen. Probeer het opnieuw.",
+    "kinds": {
+      "billDueSoon": {
+        "title": "{name} moet {days, plural, one {morgen} other {over # dagen}} betaald",
+        "body": "{amount} op {date}.",
+        "label": "Rekening komt eraan",
+        "hint": "Drie dagen voordat een rekening of abonnement betaald moet."
+      },
+      "billOverdue": {
+        "title": "{name} is nog niet betaald",
+        "body": "{amount} moest op {date} betaald. Markeer hem als betaald in Binnenkort als dat al gebeurd is.",
+        "label": "Rekening te laat",
+        "hint": "De dag na de datum van een rekening, zolang hij nog openstaat."
+      },
+      "forecastShortfall": {
+        "title": "Je geld kan deze maand krap worden",
+        "body": "De prognose zakt op {date} naar {amount}, onder je waarschuwingsgrens van {threshold}.",
+        "label": "Prognose wordt krap",
+        "hint": "Eén keer per maand als de prognose onder je waarschuwingsgrens zakt."
+      },
+      "paydayCheckIn": {
+        "title": "Betaaldag",
+        "body": "Vrij te besteden deze maand: {amount}.",
+        "label": "Betaaldag",
+        "hint": "Op de dag dat je hoofdinkomen binnenkomt, met wat vrij te besteden is."
+      },
+      "bankConsentExpiring": {
+        "title": "Je koppeling met {bank} loopt {days, plural, =0 {vandaag} one {morgen} other {over # dagen}} af",
+        "body": "Koppel opnieuw vóór {date} zodat je transacties blijven binnenkomen.",
+        "label": "Banktoestemming loopt af",
+        "hint": "Een week voordat een bankkoppeling vernieuwd moet worden."
+      },
+      "bankSyncFailed": {
+        "title": "Synchroniseren met {bank} lukte niet",
+        "body": "Open Importeren om te zien wat er misging en probeer het opnieuw.",
+        "label": "Banksynchronisatie mislukt",
+        "hint": "Hooguit één keer per dag per bank."
+      },
+      "importDone": {
+        "title": "{count, plural, one {# nieuwe transactie} other {# nieuwe transacties}}",
+        "body": "{waiting, plural, =0 {Ze hebben allemaal een categorie.} one {# wacht op een categorie.} other {# wachten op een categorie.}}",
+        "label": "Nieuwe transacties",
+        "hint": "Na een banksynchronisatie of CSV-import, één melding per dag."
+      },
+      "updateAvailable": {
+        "title": "Arca {version} is uit",
+        "body": "Kijk wat er nieuw is in Instellingen › Over Arca.",
+        "label": "Nieuwe versie",
+        "hint": "Alleen als de updatecontrole aanstaat (Instellingen › Over Arca)."
+      }
+    },
+    "panel": {
+      "kindsTitle": "Waarover je hoort",
+      "kindsSubtitle": "Op de pagina Meldingen en, als push aanstaat, op je apparaten.",
+      "pushTitle": "Push naar dit apparaat",
+      "pushSubtitle": "Krijg meldingen op deze telefoon of computer, ook als Arca dicht is.",
+      "turnOn": "Push aanzetten voor dit apparaat",
+      "turningOn": "Je browser wordt gevraagd…",
+      "thisDeviceOn": "Push staat aan voor dit apparaat.",
+      "turnOff": "Uitzetten voor dit apparaat",
+      "sendTest": "Stuur een test",
+      "sending": "Bezig met versturen…",
+      "testSent": "Test verstuurd. Hij komt zo binnen.",
+      "testNone": "Geen apparaat kreeg hem. Zet push eerst aan voor dit apparaat.",
+      "testFailed": "De pushdienst nam hem niet aan. Probeer het later opnieuw.",
+      "denied": "Je browser blokkeert meldingen van Arca. Sta ze toe in de site-instellingen van je browser en probeer het opnieuw.",
+      "unsupported": "Deze browser kan geen pushmeldingen ontvangen.",
+      "insecure": "Push werkt alleen als Arca via https (of localhost) draait.",
+      "devBuild": "De ontwikkelserver draait zonder service worker, dus push werkt alleen in een productiebuild.",
+      "iosHomeScreen": "Op iPhone en iPad zet je Arca eerst op je beginscherm (Deel › Zet op beginscherm, iOS 16.4 of nieuwer). Open het daarvandaan en zet push aan.",
+      "privacy": "Een push gaat via de pushdienst van je browser (Apple, Google of Mozilla), versleuteld zodat zij hem niet kunnen lezen. Verder gaat er niets mee.",
+      "failed": "Push aanzetten lukte niet. Probeer het opnieuw.",
+      "devicesTitle": "Apparaten",
+      "devicesEmpty": "Nog geen apparaat krijgt pushmeldingen.",
+      "thisDevice": "Dit apparaat",
+      "unknownDevice": "Onbekend apparaat",
+      "added": "Toegevoegd {date}",
+      "lastFailed": "Laatste push mislukt",
+      "remove": "Verwijderen",
+      "removeLabel": "{device} verwijderen",
+      "removeTitle": "Geen push meer naar {device}?",
+      "removeBody": "Dat apparaat krijgt dan geen meldingen meer. Je kunt push daar altijd weer aanzetten."
+    },
+    "test": {
+      "title": "Test van Arca",
+      "body": "Push werkt op dit apparaat."
+    }
   }
 }

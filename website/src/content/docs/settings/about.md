@@ -20,6 +20,7 @@ Arca is built to keep your data at home, so the About panel lists every connecti
 | Receipt scanning | Only when your own AI server has a [vision model](/Arca/settings/ai/#receipt-scanning) set | Receipt photos, to your own server only |
 | Map and merchant lookup | Only when you press the button on a transaction | Your browser asks OpenStreetMap for the place by name, or opens Google in a new tab |
 | Update check | Only when you turn it on, see below | A request to GitHub's public releases page for the newest version number; nothing of yours goes along |
+| Push notifications | Only when you [turn push on for a device](/Arca/everyday/notifications/#push-to-your-phone-or-computer). The tile is on for you once one of your devices gets pushes | The text of a notification, through your browser's push service (Apple, Google or Mozilla), encrypted so they cannot read it |
 
 Nothing else: no telemetry, no analytics, no crash reports. The release notes on this panel ship inside the image, so opening About makes no request anywhere.
 

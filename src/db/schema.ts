@@ -779,3 +779,49 @@ export type FinancialMonthOverride = typeof financialMonthOverrides.$inferSelect
 export type PrognoseOverride = typeof prognoseOverrides.$inferSelect;
 export type SavingsMonthOverride = typeof savingsMonthOverrides.$inferSelect;
 export type VariablePrognoseOverride = typeof variablePrognoseOverrides.$inferSelect;
+
+// ─── Notifications ──────────────────────────────────────────────────────────
+// The notices on /notifications (and, for a device that opted in, as a push). Made by
+// the hourly job in src/lib/notifications.ts from the pure rules in
+// src/lib/notification-rules.ts. `title` / `body` are translation keys and `params`
+// their JSON values, so the text renders in the reader's language at read time; never
+// English text. `subject` names what the notice is about (a bill occurrence, a
+// connection, a month, a version) and `day` the local date it was made: the unique index
+// keeps the job from writing the same notice twice in a day.
+export const notifications = sqliteTable("notifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  subject: text("subject").notNull(),
+  day: text("day").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  params: text("params"),
+  href: text("href"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  readAt: text("read_at"),
+}, (t) => [
+  uniqueIndex("notifications_dedupe").on(t.userId, t.kind, t.subject, t.day),
+]);
+export type NotificationRow = typeof notifications.$inferSelect;
+
+// ─── Push subscriptions ─────────────────────────────────────────────────────
+// One row per device a user turned push on for (Settings › Notifications). `keys` is the
+// browser's { p256dh, auth } JSON; `label` a short device description ("iPhone · Safari");
+// `locale` the language the device's pushes are written in (the locale cookie when it
+// subscribed). A 404/410 from the push service deletes the row; other errors set
+// `failedAt`. See src/lib/push.ts.
+export const pushSubscriptions = sqliteTable("push_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  endpoint: text("endpoint").notNull(),
+  keys: text("keys").notNull(),
+  label: text("label"),
+  locale: text("locale"),
+  createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+  lastUsedAt: text("last_used_at"),
+  failedAt: text("failed_at"),
+}, (t) => [
+  uniqueIndex("push_subscriptions_endpoint_unique").on(t.endpoint),
+]);
+export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect;

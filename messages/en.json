@@ -210,6 +210,10 @@
       "about": {
         "title": "About",
         "subtitle": "Version, what leaves your server, and what changed."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "subtitle": "What Arca tells you about, and push to your devices."
       }
     },
     "inline": {
@@ -1657,6 +1661,14 @@
     "iconPickerAllIcons": {
       "title": "Every icon is here now",
       "body": "Under the suggested icons you find all 5,000+ Tabler icons: search by name or browse a category."
+    },
+    "notifications": {
+      "title": "Notifications live here now",
+      "body": "Bills due soon, a forecast running low, new transactions: Arca collects them on this page."
+    },
+    "pushDevice": {
+      "title": "Get them on your phone",
+      "body": "Turn push on per device. On iPhone, add Arca to your home screen first."
     }
   },
   "categoryPicker": {
@@ -3044,7 +3056,9 @@
       "local": "Local build",
       "dev": "Beta · dev {sha}",
       "branch": "Beta · {ref} {sha}"
-    }
+    },
+    "notifications": "Notifications",
+    "notificationsBadge": "{count, plural, one {# unread notification} other {# unread notifications}}"
   },
   "insights": {
     "title": "Insights",
@@ -5273,9 +5287,13 @@
         "ocrLocal": {
           "title": "Receipt scanning",
           "body": "Receipt photos go to the vision model on your own server at {address}, and nowhere else."
+        },
+        "push": {
+          "title": "Push notifications",
+          "body": "Only when you turn it on for a device. The text of a notification goes through your browser's push service (Apple, Google or Mozilla), encrypted so they can't read it. Nothing else."
         }
       },
-      "nothingElse": "No telemetry, no analytics, no crash reports. No update check unless you turn it on. This page made no request to show you this."
+      "nothingElse": "No telemetry, no analytics, no crash reports. No update check or push unless you turn it on. This page made no request to show you this."
     },
     "backups": {
       "open": "Backups live in Data health",
@@ -5332,5 +5350,102 @@
     "selectNoneFor": "Select none of {name}",
     "groupCount": "{ticked} of {total}",
     "noteMany": "Unticked transactions keep what they have now, also when rules run again later. Each rule stays and files new transactions from its merchant."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "{count, plural, =0 {You're all caught up.} one {# unread} other {# unread}}",
+    "markAllRead": "Mark all as read",
+    "older": "Older",
+    "loading": "Loading…",
+    "settingsLink": "Notification settings",
+    "empty": "Nothing yet. Arca lets you know here when a bill is due, money may run short or new transactions come in.",
+    "unread": "Unread",
+    "loadFailed": "Couldn't load older notifications. Try again.",
+    "kinds": {
+      "billDueSoon": {
+        "title": "{name} is due {days, plural, one {tomorrow} other {in # days}}",
+        "body": "{amount} on {date}.",
+        "label": "Bill due soon",
+        "hint": "Three days before a bill or subscription is due."
+      },
+      "billOverdue": {
+        "title": "{name} hasn't been paid",
+        "body": "{amount} was due on {date}. Mark it paid in Upcoming if it was.",
+        "label": "Bill overdue",
+        "hint": "The day after a bill's date, while it's still unpaid."
+      },
+      "forecastShortfall": {
+        "title": "Money may run short this month",
+        "body": "The forecast dips to {amount} on {date}, under your {threshold} warning line.",
+        "label": "Forecast runs low",
+        "hint": "Once a month when the forecast drops under your warning line."
+      },
+      "paydayCheckIn": {
+        "title": "Payday",
+        "body": "Safe to spend this month: {amount}.",
+        "label": "Payday check-in",
+        "hint": "The day your main income lands, with what's safe to spend."
+      },
+      "bankConsentExpiring": {
+        "title": "Your {bank} connection ends {days, plural, =0 {today} one {tomorrow} other {in # days}}",
+        "body": "Reconnect before {date} to keep your transactions coming in.",
+        "label": "Bank consent ending",
+        "hint": "A week before a bank connection has to be renewed."
+      },
+      "bankSyncFailed": {
+        "title": "Couldn't sync with {bank}",
+        "body": "Open Import to see what went wrong and try again.",
+        "label": "Bank sync failed",
+        "hint": "At most once a day per bank."
+      },
+      "importDone": {
+        "title": "{count, plural, one {# new transaction} other {# new transactions}}",
+        "body": "{waiting, plural, =0 {Every one has a category.} one {# is waiting for a category.} other {# are waiting for a category.}}",
+        "label": "New transactions",
+        "hint": "After a bank sync or CSV import, one notice per day."
+      },
+      "updateAvailable": {
+        "title": "Arca {version} is out",
+        "body": "See what's new in Settings › About.",
+        "label": "New version",
+        "hint": "Only with the update check on (Settings › About)."
+      }
+    },
+    "panel": {
+      "kindsTitle": "What to tell you about",
+      "kindsSubtitle": "Shown on the Notifications page and, when push is on, on your devices.",
+      "pushTitle": "Push to this device",
+      "pushSubtitle": "Get notices on this phone or computer even when Arca is closed.",
+      "turnOn": "Turn on push for this device",
+      "turningOn": "Asking your browser…",
+      "thisDeviceOn": "Push is on for this device.",
+      "turnOff": "Turn off for this device",
+      "sendTest": "Send a test",
+      "sending": "Sending…",
+      "testSent": "Test sent. It should arrive in a moment.",
+      "testNone": "No device got it. Turn push on for this device first.",
+      "testFailed": "The push service didn't accept it. Try again later.",
+      "denied": "Your browser blocks notifications for Arca. Allow them in the browser's site settings, then try again.",
+      "unsupported": "This browser can't receive push notifications.",
+      "insecure": "Push needs Arca on https (or localhost).",
+      "devBuild": "The dev server runs without the service worker, so push only works in a production build.",
+      "iosHomeScreen": "On iPhone and iPad, add Arca to your home screen first (Share › Add to Home Screen, iOS 16.4 or later), then open it from there and turn push on.",
+      "privacy": "A push goes through your browser's push service (Apple, Google or Mozilla), encrypted so they can't read it. Nothing else is sent.",
+      "failed": "Couldn't turn push on. Try again.",
+      "devicesTitle": "Devices",
+      "devicesEmpty": "No device gets pushes yet.",
+      "thisDevice": "This device",
+      "unknownDevice": "Unknown device",
+      "added": "Added {date}",
+      "lastFailed": "Last push failed",
+      "remove": "Remove",
+      "removeLabel": "Remove {device}",
+      "removeTitle": "Stop pushes to {device}?",
+      "removeBody": "That device stops getting notifications. You can turn push on there again any time."
+    },
+    "test": {
+      "title": "Test from Arca",
+      "body": "Push works on this device."
+    }
   }
 }

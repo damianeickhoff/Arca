@@ -97,6 +97,13 @@ tableOfContents: false
   <p class="rm-meta">In progress · Oct 2026</p>
 </div>
 
+<div class="rm-tile">
+  <span class="rm-area rm-area--app">App</span>
+  <h3>Notifications</h3>
+  <p>A Notifications page for bills due or overdue, a forecast running low, the payday check-in, bank consent and sync trouble, new transactions and new versions. Push to your phone or computer, opt-in per device. No email yet.</p>
+  <p class="rm-meta">In progress · Oct 2026</p>
+</div>
+
 </section>
 
 <section class="rm-col" id="next">
@@ -113,13 +120,6 @@ tableOfContents: false
   <span class="rm-area rm-area--ai">AI</span>
   <h3>The forecast in words</h3>
   <p>Two plain sentences about what's coming, while the forecast and its warnings stay calculated by Arca.</p>
-  <p class="rm-meta">Planned <a href="https://github.com/damianeickhoff/Arca/issues">Vote</a></p>
-</div>
-
-<div class="rm-tile">
-  <span class="rm-area rm-area--app">App</span>
-  <h3>Notifications</h3>
-  <p>A heads-up for upcoming bills, a shortfall in the forecast and the payday check-in, by push notification or email.</p>
   <p class="rm-meta">Planned <a href="https://github.com/damianeickhoff/Arca/issues">Vote</a></p>
 </div>
 

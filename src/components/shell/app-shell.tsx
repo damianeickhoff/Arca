@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { IconDeviceDesktop, IconFileUpload, IconLogout, IconMoon, IconPlus, IconSearch, IconSettings, IconSun } from "@tabler/icons-react";
+import { IconBell, IconDeviceDesktop, IconFileUpload, IconLogout, IconMoon, IconPlus, IconSearch, IconSettings, IconSun } from "@tabler/icons-react";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { logoutAction } from "@/app/actions/auth";
 import { useNavHidden } from "@/lib/nav-visibility";
@@ -35,7 +35,7 @@ export interface ShellUser {
 //   (the add menu, also Ctrl/Cmd+N — see quick-add.tsx), the four destinations
 //   (Plan opens its Budget · Debts · Goals sub-menu while one of them is showing,
 //   Insights its five tabs while it is open, Activity carries the needs-a-category
-//   count), then Import (with "Last synced …" under it once a bank is connected),
+//   count) with Notifications under Home (its unread count beside it), then Import (with "Last synced …" under it once a bank is connected),
 //   Settings, the theme and Sign out. Pages sit to its right (MainContent).
 //   Phones (< lg): a floating black tab bar with the four destinations, the ember
 //   add button (the same add menu) in the middle and, set apart at the end, the global search button.
@@ -48,6 +48,7 @@ export function AppShell({
   user,
   build,
   needsReviewCount,
+  unreadNotificationCount,
   bankSync,
   bankSyncNow,
 }: {
@@ -56,6 +57,8 @@ export function AppShell({
   /** Which build runs; a dev or local build shows a Beta chip under the logo. */
   build: BuildInfo;
   needsReviewCount: number;
+  /** Unread notices, beside the sidebar's Notifications row (/notifications). */
+  unreadNotificationCount: number;
   /** The bank sync line under Import; null without a connected bank. */
   bankSync: BankSyncStatus | null;
   /** ISO time `bankSync` is relative to (the server render). */
@@ -77,7 +80,7 @@ export function AppShell({
           {children}
           {!chromeless && (
             <>
-              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} build={build} user={user!} needsReviewCount={needsReviewCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
+              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} build={build} user={user!} needsReviewCount={needsReviewCount} unreadNotificationCount={unreadNotificationCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
               {!navHidden && <PhoneTabBar pathname={pathname} />}
               {/* The navigation changed; it announces itself once, even to someone who
                   turned tips off (see IGNORES_DISABLED). */}
@@ -86,6 +89,8 @@ export function AppShell({
               <AnchoredTip id="globalSearch" anchor={isDesktop ? "globalSearch" : "globalSearchPhone"} active={!navHidden} />
               {/* Adding moved into the shell too. */}
               <AnchoredTip id="quickAdd" anchor={isDesktop ? "quickAdd" : "quickAddPhone"} active={!navHidden} />
+              {/* Notifications: the sidebar row on desktop, the bell in Home's header on phones. */}
+              <AnchoredTip id="notifications" anchor={isDesktop ? "notificationsNav" : "notificationsBell"} active={!navHidden && (isDesktop || pathname === "/")} />
             </>
           )}
         </QuickAddProvider>
@@ -131,6 +136,7 @@ function DesktopSidebar({
   build,
   user,
   needsReviewCount,
+  unreadNotificationCount,
   bankSync,
   bankSyncNow,
 }: {
@@ -142,6 +148,7 @@ function DesktopSidebar({
   build: BuildInfo;
   user: ShellUser;
   needsReviewCount: number;
+  unreadNotificationCount: number;
   bankSync: BankSyncStatus | null;
   bankSyncNow: string;
 }) {
@@ -216,6 +223,27 @@ function DesktopSidebar({
                   </span>
                 )}
               </Link>
+              {/* Notifications sits under Home. It is not a tab-bar destination (phones reach
+                  it from the bell in Home's header), so it is not in NAV_ITEMS. */}
+              {item.key === "home" && (
+                <Link
+                  href="/notifications"
+                  aria-current={pathname === "/notifications" ? "page" : undefined}
+                  data-tip-anchor="notificationsNav"
+                  className={cn(row, pathname === "/notifications" ? "bg-clear-primary font-bold text-clear-primary-ink" : idle)}
+                >
+                  <IconBell size={20} stroke={1.9} aria-hidden />
+                  <span className="flex-1">{t("notifications")}</span>
+                  {unreadNotificationCount > 0 && (
+                    <span
+                      aria-label={t("notificationsBadge", { count: unreadNotificationCount })}
+                      className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-clear-ember px-1.5 text-xs font-extrabold text-clear-ember-ink"
+                    >
+                      {unreadNotificationCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               {/* Plan shows its three pages and Insights its five tabs while open. */}
               {isActive && (item.key === "plan" || item.key === "insights") && (
                 <div className="flex flex-col gap-0.5 pb-1 pl-[46px]">

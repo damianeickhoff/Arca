@@ -155,6 +155,10 @@ export type TipAnchor =
   | "iconPickerTabs"
   // The icon picker: the All icons heading with its category chips
   | "iconPickerAllIcons"
+  // Notifications: the sidebar row, Home's phone bell, Settings › Notifications' push button
+  | "notificationsNav"
+  | "notificationsBell"
+  | "pushDevice"
   // Merchant-first rules: the teach strip after a category pick
   | "ruleTeach"
   // Merchant-first rules: the merchant card's Recognised by patterns

@@ -18,6 +18,7 @@ import { backfillBankAccountNumbers } from "@/lib/bank-account-numbers";
 import { maybeCheckForUpdate } from "@/lib/update-check";
 import { getBuildInfo } from "@/lib/build-info";
 import { getBankSyncStatus } from "@/lib/bank-sync";
+import { countUnreadNotifications } from "@/lib/notifications";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { RefreshOnReturn } from "@/components/refresh-on-return";
 import { MotionProvider } from "@/components/motion-provider";
@@ -112,7 +113,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // here (the shell is a client component); a soft navigation keeps the layout, so
   // categorising revalidates it — refreshLayoutAction (app/actions/refresh-layout.ts)
   // from the client flows, and revalidatePath("/", "layout") in the transaction routes.
-  const [needsReviewCount, bankSync] = user ? await Promise.all([countNeedsReview(), getBankSyncStatus()]) : [0, null];
+  // The sidebar's Notifications row shows the unread count the same way; marking read
+  // revalidates the layout (app/actions/notifications.ts).
+  const [needsReviewCount, bankSync, unreadNotificationCount] = user
+    ? await Promise.all([countNeedsReview(), getBankSyncStatus(), countUnread(user.id)])
+    : [0, null, 0];
   // The sidebar's Import item says when the bank last synced (null without a connected
   // bank); the bank actions revalidate the layout after a sync, connect or disconnect.
   // `now` is the moment the line is relative to, so server and browser render the same text.
@@ -148,6 +153,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <AppShell
                   build={getBuildInfo()}
                   needsReviewCount={needsReviewCount}
+                  unreadNotificationCount={unreadNotificationCount}
                   bankSync={bankSync}
                   bankSyncNow={bankSyncNow}
                   user={user ? { name: user.name, email: user.email, avatarUrl: user.avatarUrl } : null}
@@ -169,6 +175,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </body>
     </html>
   );
+}
+
+async function countUnread(userId: number): Promise<number> {
+  try {
+    return await countUnreadNotifications(userId);
+  } catch {
+    return 0;
+  }
 }
 
 async function countNeedsReview(): Promise<number> {

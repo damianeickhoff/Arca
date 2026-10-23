@@ -8,7 +8,7 @@ import { requireAuth } from "@/lib/auth";
 // secrets. They are read and written only by their own server code (src/lib/ai-provider.ts, src/lib/enable-banking,
 // src/app/actions/app-lock.ts), which checks what it needs to (the password, a WebAuthn
 // assertion) before touching them.
-const PRIVATE_PREFIXES = ["ai_gemini_key", "ai_local_api_key", "eb_", "app_lock_"];
+const PRIVATE_PREFIXES = ["ai_gemini_key", "ai_local_api_key", "eb_", "app_lock_", "push_vapid_", "notify_"];
 
 function isPrivateKey(key: string) {
   return PRIVATE_PREFIXES.some((prefix) => key === prefix || key.startsWith(prefix));

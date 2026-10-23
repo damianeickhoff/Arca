@@ -1,6 +1,7 @@
-// Hand-written service worker — app-shell caching only, no offline writes/background
-// sync/push. Bump CACHE_NAME on any change here so old caches get cleaned up.
-const CACHE_NAME = "arca-v3";
+// Hand-written service worker — app-shell caching and Web Push (Settings ›
+// Notifications), no offline writes or background sync. Dependency-free plain JS.
+// Bump CACHE_NAME on any change here so old caches get cleaned up.
+const CACHE_NAME = "arca-v4";
 const OFFLINE_URL = "/offline";
 
 self.addEventListener("install", (event) => {
@@ -64,5 +65,44 @@ self.addEventListener("fetch", (event) => {
   // failure. No caching of authenticated responses.
   event.respondWith(
     fetch(request).catch(() => caches.match(request)),
+  );
+});
+
+// A push from src/lib/push.ts: { title, body, href, id }, already written in this
+// device's language. The tag is the notification id, so a notice that was rewritten
+// (today's "N new transactions" growing) replaces the one already shown.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : "" };
+  }
+  const title = data.title || "Arca";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "",
+      icon: "/icon",
+      badge: "/icon",
+      tag: data.id != null ? String(data.id) : undefined,
+      renotify: data.id != null,
+      data: { href: typeof data.href === "string" && data.href.startsWith("/") ? data.href : "/notifications" },
+    }),
+  );
+});
+
+// Tapping a notification: bring an open Arca window forward on that page, or open one.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const href = (event.notification.data && event.notification.data.href) || "/notifications";
+  const target = new URL(href, self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windows) => {
+      const open = windows.find((w) => new URL(w.url).origin === self.location.origin);
+      if (open) {
+        return open.focus().then((w) => (w && "navigate" in w ? w.navigate(target) : w));
+      }
+      return self.clients.openWindow(target);
+    }),
   );
 });

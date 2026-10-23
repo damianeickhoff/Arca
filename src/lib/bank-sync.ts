@@ -509,6 +509,9 @@ export async function syncBankConnections(connectionId?: number): Promise<SyncOu
     for (const connection of connections) {
       results.push({ connectionId: connection.id, summary: await syncOne(connection) });
     }
+    // New rows ("N new transactions") and a failed sync are announced at once rather than
+    // at the next hourly check. Imported lazily: notifications.ts reads bank-sync.ts.
+    void import("@/lib/notifications").then((m) => m.runNotificationChecks()).catch(() => {});
     return { ok: true, results };
   } finally {
     syncState.__centjeBankSyncRunning = false;

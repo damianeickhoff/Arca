@@ -41,6 +41,8 @@ import { APP_VERSION } from "@/lib/app-version";
 import { releaseNoteFor } from "@/lib/changelog";
 import { getUpdateCheckState } from "@/lib/update-check";
 import { getBuildInfo } from "@/lib/build-info";
+import { countUnreadNotifications } from "@/lib/notifications";
+import { NotificationsBell } from "@/app/_home/notifications-bell";
 
 /** How many budget months the income-vs-spending chart shows. */
 const CHART_MONTHS = 6;
@@ -223,7 +225,7 @@ export default async function HomePage({
   const billMonth = currentFinancialMonth(financialMonth);
   const currentMonth = financialMonthRange(financialMonth, 0);
 
-  const [sharedCostMode, budgetRecurringMode, getStartedDismissed, overdraftMode, updates] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed(), getOverdraftMode(), getUpdateCheckState()]);
+  const [sharedCostMode, budgetRecurringMode, getStartedDismissed, overdraftMode, updates, unreadNotifications] = await Promise.all([getSharedCostMode(), getBudgetRecurringMode(), getHomeGetStartedDismissed(), getOverdraftMode(), getUpdateCheckState(), countUnreadNotifications(user.id)]);
   const [data, billStatuses, needsReview, budgetOverview, bankBalances, netWorth] = await Promise.all([
     getHomeData(from, to, financialMonth, sharedCostMode === "net"),
     getBillStatuses(billMonth, financialMonth, UPCOMING_TYPES),
@@ -292,7 +294,7 @@ export default async function HomePage({
       <DashboardReadySignal />
       <HomeTips whatsNew={releaseNoteFor(APP_VERSION)} updateAvailable={updates.available && updates.latest ? updates.latest.version : null} />
 
-      {/* Phone header — the avatar opens Settings; search sits on the right. */}
+      {/* Phone header — the avatar opens Settings; the bell (Notifications) sits on the right. */}
       <div className="flex items-center justify-between gap-3 lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <SettingsDialog
@@ -309,6 +311,7 @@ export default async function HomePage({
             <span className="truncate text-lg font-extrabold tracking-[-0.02em]">{firstName}</span>
           </span>
         </div>
+        <NotificationsBell unread={unreadNotifications} />
       </div>
 
       {/* Heading — desktop title row; on phones only the review strip shows. */}

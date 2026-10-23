@@ -35,9 +35,11 @@ export interface AboutStatus {
   receiptScan: boolean;
   /** ISO timestamp of the newest backup, or null when there is none yet. */
   newestBackup: string | null;
+  /** This user's devices that get pushes (Settings › Notifications). */
+  pushDevices: number;
 }
 
-type Connection = { key: "bank" | "ai" | "ocr" | "map" | "update"; state: "on" | "off" | "onTap" };
+type Connection = { key: "bank" | "ai" | "ocr" | "map" | "update" | "push"; state: "on" | "off" | "onTap" };
 
 /**
  * Settings › About: who you are running (version, licence, links), what leaves your
@@ -73,6 +75,8 @@ export function AboutPanel({
     { key: "ocr", state: status.receiptScan ? "on" : "off" },
     { key: "map", state: "onTap" },
     { key: "update", state: updates.enabled ? "on" : "off" },
+    // Per user: on once this user turned push on for at least one device.
+    { key: "push", state: status.pushDevices > 0 ? "on" : "off" },
   ];
 
   // The AI tile tells what the chosen provider means: Google's servers or one on your network.

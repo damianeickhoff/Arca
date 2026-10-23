@@ -601,7 +601,40 @@ export function createSchema(sqlite: Database.Database): void {
   sqlite.exec(INVITES_TABLE_SQL);
   sqlite.exec(RECURRING_SUGGESTIONS_TABLE_SQL);
   sqlite.exec(DEBT_PAYMENTS_TABLE_SQL);
+  sqlite.exec(NOTIFICATION_TABLES_SQL);
 }
+
+// Notifications (/notifications) and the devices that get them as a push (Settings ›
+// Notifications), see src/lib/notifications.ts and src/lib/push.ts. Shared with the
+// runtime auto-migrate in src/db/index.ts.
+export const NOTIFICATION_TABLES_SQL = `
+  CREATE TABLE IF NOT EXISTS notifications (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    kind       TEXT    NOT NULL,
+    subject    TEXT    NOT NULL,
+    day        TEXT    NOT NULL,
+    title      TEXT    NOT NULL,
+    body       TEXT    NOT NULL,
+    params     TEXT,
+    href       TEXT,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    read_at    TEXT
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS notifications_dedupe ON notifications(user_id, kind, subject, day);
+  CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, id);
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint     TEXT    NOT NULL UNIQUE,
+    keys         TEXT    NOT NULL,
+    label        TEXT,
+    locale       TEXT,
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    last_used_at TEXT,
+    failed_at    TEXT
+  );
+`;
 
 // Payments recorded on a debt by hand (Plan › Debts): "extra" is an extra or lump-sum
 // payment that lowers the balance (see debtBalance in app/debts/debt-shared.ts);
