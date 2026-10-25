@@ -8,18 +8,22 @@ import { ClearSwitch } from "@/components/clear/switch";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { RuleMatchesDialog } from "@/components/rule-matches-dialog";
+import { RuleScopeChoice } from "@/components/rule-scope-choice";
 import type { RuleSpec } from "@/lib/category-suggestions";
 import { cn } from "@/lib/utils";
 
 /**
  * "Also create a rule": the switch that files similar transactions too, with — when the
  * rule would move others — "Show the N transactions", the list where matches can be
- * unticked before the rule runs. Shared by Needs a category and the category picker;
- * the caller keeps the switch and the unticked ids, and leaves those out when it saves.
+ * unticked before the rule runs, and — when some of them already have a category — the
+ * choice between moving only the ones without one (the default) or all of them.
+ * Shared by Needs a category and the category picker; the caller keeps the switch and
+ * the unticked ids, and leaves those out when it saves.
  */
 export function RuleSwitchCard({
   rules,
   similarIds,
+  categorizedIds,
   skipIds,
   checked,
   onCheckedChange,
@@ -34,6 +38,8 @@ export function RuleSwitchCard({
   rules: RuleSpec[];
   /** The other transactions the rule matches today (they move with it). */
   similarIds: number[];
+  /** The similar ones that already have a category. */
+  categorizedIds: number[];
   /** The transactions being filed by hand anyway: not listed. */
   skipIds: number[];
   checked: boolean;
@@ -66,11 +72,14 @@ export function RuleSwitchCard({
             {rules.length > 1 ? t("rule.titleMany", { count: rules.length }) : t("rule.title")}
           </span>
           <span className="text-[13px] font-medium text-clear-ink-2">
-            {total > 0 ? t("rule.helpWithSimilar", { names, count: total }) : t("rule.help", { names })}
+            {ticked > 0 ? t("rule.helpWithSimilar", { names, count: ticked }) : t("rule.help", { names })}
           </span>
         </span>
         <ClearSwitch checked={checked} onCheckedChange={onCheckedChange} labelledBy={labelId} disabled={disabled} />
       </label>
+      {checked && total > 0 && (
+        <RuleScopeChoice total={total} categorizedIds={categorizedIds} excluded={excluded} onExcludedChange={onExcludedChange} />
+      )}
       {total > 0 && (
         <>
           <button

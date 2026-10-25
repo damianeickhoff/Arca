@@ -53,6 +53,8 @@ export interface RuleMatches {
   examples: { id: number; date: string; description: string; amount: number; direction: string }[];
   /** Every matched id; only when asked for (see fetchRuleMatches). */
   ids?: number[];
+  /** The matched ids that already have a category; with `ids`. */
+  categorizedIds?: number[];
 }
 
 /** "12.5" → "12,50": amount inputs take a comma as the decimal separator. */

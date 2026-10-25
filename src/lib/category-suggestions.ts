@@ -29,6 +29,9 @@ export interface CategorySuggestions {
   direction: "income" | "expense" | null;
   /** Other transactions the patterns match today (split ones left out). */
   similarIds: number[];
+  /** The similar ones that already have a category: "Only without a category" leaves
+   *  them where they are when the rule runs the first time. */
+  categorizedIds: number[];
   /** The merchant every picked transaction shares, or null (none, or several). */
   merchantName: string | null;
   /** For one transaction still without a category: the category the AI picked for it
@@ -106,7 +109,7 @@ export function aiPickOf(picked: { categoryId: number | null; aiSuggestedCategor
 }
 
 export async function getCategorySuggestions(ids: number[]): Promise<CategorySuggestions> {
-  const empty: CategorySuggestions = { suggested: [], names: [], total: 0, patterns: [], direction: null, similarIds: [], merchantName: null, aiPick: null, rules: [] };
+  const empty: CategorySuggestions = { suggested: [], names: [], total: 0, patterns: [], direction: null, similarIds: [], categorizedIds: [], merchantName: null, aiPick: null, rules: [] };
   if (ids.length === 0) return empty;
 
   const picked = await db
@@ -201,6 +204,7 @@ export async function getCategorySuggestions(ids: number[]): Promise<CategorySug
     rules: ruleSpecs,
     direction,
     similarIds: similar.filter((r) => !splitIds.has(r.id)).map((r) => r.id),
+    categorizedIds: similar.filter((r) => !splitIds.has(r.id) && r.categoryId != null).map((r) => r.id),
     merchantName: sharedMerchant?.name ?? null,
     aiPick: aiPickOf(picked, validIds),
   };

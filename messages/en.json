@@ -1953,7 +1953,7 @@
   "teachRule": {
     "label": "Teach a rule",
     "title": "Always file {merchant} as {category}?",
-    "body": "Recognised by <b>{patterns}</b>. {count, plural, =0 {No earlier transactions match yet} one {# earlier transaction moves too} other {# earlier transactions move too}}{waiting, plural, =0 {} one {, # of them still without a category} other {, # of them still without a category}}.",
+    "body": "Recognised by <b>{patterns}</b>. {count, plural, =0 {No earlier transactions move} one {# earlier transaction moves too} other {# earlier transactions move too}}.",
     "always": "Always",
     "justThisOne": "Just this one",
     "editMatch": "Edit match",
@@ -5363,6 +5363,16 @@
     "selectNoneFor": "Select none of {name}",
     "groupCount": "{ticked} of {total}",
     "noteMany": "Unticked transactions keep what they have now, also when rules run again later. Each rule stays and files new transactions from its merchant."
+  },
+  "ruleScope": {
+    "label": "Which earlier transactions get the category",
+    "missing": "Only without a category",
+    "all": "All",
+    "hint": {
+      "missing": "{count, plural, one {# of the {total} already has a category and keeps it.} other {# of the {total} already have a category and keep it.}}",
+      "all": "{count, plural, one {# of the {total} already has a category; it moves too.} other {# of the {total} already have a category; they move too.}}",
+      "custom": "{count, plural, one {# of the {total} already has a category.} other {# of the {total} already have a category.}}"
+    }
   },
   "notifications": {
     "title": "Notifications",

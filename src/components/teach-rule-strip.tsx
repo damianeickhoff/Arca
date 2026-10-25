@@ -9,6 +9,7 @@ import { AnchoredTip } from "@/components/anchored-tip";
 import { RuleDialog, emptyRuleDraft, fetchRuleMatches, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
 import { containsRuleFields, useSaveRule } from "@/components/rule-actions";
 import { RuleMatchesDialog } from "@/components/rule-matches-dialog";
+import { RuleScopeChoice } from "@/components/rule-scope-choice";
 import type { CategorySuggestions } from "@/lib/category-suggestions";
 
 /** What was just filed: one transaction, into one category. */
@@ -37,9 +38,9 @@ async function moveMatches(fields: RuleFields, categoryId: number, exclude: Set<
 /**
  * The teach moment (merchant-first rules, step 1): right after a category is picked
  * for a transaction, offer to file every transaction from that merchant the same way.
- * Shows the patterns the rule would use, how many earlier transactions it moves and
- * how many of those wait in Needs review, with Always · Just this one · Edit match
- * (the full rule dialog, prefilled). Renders nothing when no pattern can be derived.
+ * Shows the patterns the rule would use and how many earlier transactions it moves —
+ * only the ones without a category unless "All" is picked — with Always · Just this
+ * one · Edit match (the full rule dialog, prefilled). Renders nothing when no pattern can be derived.
  */
 export function TeachRuleStrip({
   teach,
@@ -60,11 +61,12 @@ export function TeachRuleStrip({
 }) {
   const t = useTranslations("teachRule");
   const locale = useLocale();
-  const [data, setData] = useState<{ key: string; patterns: string[]; direction: "income" | "expense" | null; count: number; waiting: number; merchant: string | null } | null>(null);
+  const [data, setData] = useState<{ key: string; patterns: string[]; direction: "income" | "expense" | null; count: number; categorized: number[]; merchant: string | null } | null>(null);
   const [state, setState] = useState<"ask" | "saving" | "done" | "failed">("ask");
   const [editOpen, setEditOpen] = useState(false);
-  // Matches unticked in "Show the N transactions": left out of the rule's first run.
-  const [excluded, setExcluded] = useState<Set<number>>(new Set());
+  // Matches unticked in "Show the N transactions": left out of the rule's first run;
+  // null until something is changed (then the ones that already have a category).
+  const [excludedPicked, setExcluded] = useState<Set<number> | null>(null);
   const [matchesOpen, setMatchesOpen] = useState(false);
   const sendRule = useSaveRule();
   const key = `${teach.transactionId}:${teach.categoryId}`;
@@ -76,20 +78,20 @@ export function TeachRuleStrip({
       const s: CategorySuggestions = await res.json();
       const direction = s.direction === "income" || s.direction === "expense" ? s.direction : null;
       if (s.patterns.length === 0) {
-        if (!cancelled) setData({ key, patterns: [], direction, count: 0, waiting: 0, merchant: null });
+        if (!cancelled) setData({ key, patterns: [], direction, count: 0, categorized: [], merchant: null });
         return;
       }
       // Union of what each pattern matches; the transaction just filed doesn't count.
       const ids = new Set<number>();
-      let waiting = 0;
+      const categorized = new Set<number>();
       for (const p of s.patterns) {
         const m = await fetchRuleMatches(containsRuleFields(p, direction), { ids: true });
         for (const id of m.ids ?? []) if (id !== teach.transactionId) ids.add(id);
-        waiting += m.uncategorized;
+        for (const id of m.categorizedIds ?? []) if (id !== teach.transactionId) categorized.add(id);
       }
-      if (!cancelled) setData({ key, patterns: s.patterns, direction, count: ids.size, waiting, merchant: s.merchantName });
+      if (!cancelled) setData({ key, patterns: s.patterns, direction, count: ids.size, categorized: [...categorized], merchant: s.merchantName });
     })().catch(() => {
-      if (!cancelled) setData({ key, patterns: [], direction: null, count: 0, waiting: 0, merchant: null });
+      if (!cancelled) setData({ key, patterns: [], direction: null, count: 0, categorized: [], merchant: null });
     });
     return () => {
       cancelled = true;
@@ -101,12 +103,14 @@ export function TeachRuleStrip({
   if (shownKey !== key) {
     setShownKey(key);
     setState("ask");
-    setExcluded(new Set());
+    setExcluded(null);
   }
 
   const current = data?.key === key ? data : null;
   const category = categories.find((c) => c.id === teach.categoryId);
   if (!current || current.patterns.length === 0 || !category) return null;
+  // "Only without a category" until something is changed.
+  const excluded = excludedPicked ?? new Set(current.categorized);
 
   const merchant = teach.merchantName?.trim() || current.merchant || current.patterns[0];
   const patternList = new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(current.patterns);
@@ -182,11 +186,13 @@ export function TeachRuleStrip({
       <p className="m-0 text-[13px] leading-snug text-clear-ink-2">
         {t.rich("body", {
           patterns: patternList,
-          count: current.count,
-          waiting: current.waiting,
+          count: current.count - excluded.size,
           b: (chunks) => <strong className="font-bold text-clear-ink">{chunks}</strong>,
         })}
       </p>
+      {current.count > 0 && (
+        <RuleScopeChoice total={current.count} categorizedIds={current.categorized} excluded={excluded} onExcludedChange={setExcluded} />
+      )}
       {state === "failed" && <p role="alert" className="m-0 text-[13px] font-semibold text-clear-negative">{t("failed")}</p>}
       <div className="flex flex-wrap gap-2">
         <ClearButton size="sm" onClick={always} disabled={state === "saving"}>

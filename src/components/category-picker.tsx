@@ -348,8 +348,9 @@ export function CategoryPickerSheet(props: SheetProps) {
   const [search, setSearch] = useState("");
   const [staged, setStaged] = useState<string | undefined>(current);
   const [ruleOn, setRuleOn] = useState(false);
-  // Matches of the rule unticked in "Show the N transactions", left out of its first run.
-  const [excluded, setExcluded] = useState<Set<number>>(new Set());
+  // Matches of the rule unticked in "Show the N transactions", left out of its first run;
+  // null until something is changed (then the ones that already have a category).
+  const [excludedPicked, setExcluded] = useState<Set<number> | null>(null);
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [info, setInfo] = useState<{ key: string; data: CategorySuggestions } | null>(null);
@@ -364,7 +365,7 @@ export function CategoryPickerSheet(props: SheetProps) {
     if (open) {
       setStaged(current);
       setRuleOn(false);
-      setExcluded(new Set());
+      setExcluded(null);
       setFailed(false);
     }
   }
@@ -386,6 +387,9 @@ export function CategoryPickerSheet(props: SheetProps) {
     };
   }, [open, idsKey]);
   const data = info && info.key === idsKey ? info.data : null;
+  // "Only without a category" until something is changed.
+  const defaultExcluded = useMemo(() => new Set(data?.categorizedIds ?? []), [data]);
+  const excluded = excludedPicked ?? defaultExcluded;
 
   function change(next: boolean) {
     onOpenChange(next);
@@ -531,6 +535,7 @@ export function CategoryPickerSheet(props: SheetProps) {
           <RuleSwitchCard
             rules={data.rules}
             similarIds={data.similarIds}
+            categorizedIds={data.categorizedIds}
             skipIds={apply.ids}
             checked={ruleOn && stagedId != null}
             onCheckedChange={setRuleOn}

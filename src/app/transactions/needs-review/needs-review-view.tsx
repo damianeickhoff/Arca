@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -40,9 +40,6 @@ const PAGE_SIZE = 60;
 /** A merchant with at least this many transactions waiting gets a "Worth teaching" row. */
 const TEACH_MIN = 5;
 const TEACH_ROWS = 3;
-/** No matches unticked (never changed: a change makes a new set). */
-const NO_IDS = new Set<number>();
-
 /** Money out negative, money in positive; a reimbursement counts at its full amount. */
 function signedValue(row: TransactionDetail) {
   const value = Math.abs(row.isReimbursement ? row.amount : row.correctedAmount ?? row.amount);
@@ -157,7 +154,10 @@ export function NeedsReviewView({
   const staged = current ? (picked?.id === current.id ? picked.choice : suggested[0]?.id ?? null) : null;
   const stagedTransfer = staged === "transfer";
   const stagedId = typeof staged === "number" ? staged : null;
-  const excluded = current && excludedFor?.id === current.id ? excludedFor.ids : NO_IDS;
+  // Until something is unticked, the rule leaves the matches that already have a
+  // category alone ("Only without a category"); never changed: a change makes a new set.
+  const defaultExcluded = useMemo(() => new Set(data?.categorizedIds ?? []), [data]);
+  const excluded = current && excludedFor?.id === current.id ? excludedFor.ids : defaultExcluded;
 
   async function askAi() {
     if (!current || aiBusy) return;
@@ -510,6 +510,7 @@ export function NeedsReviewView({
                 className="py-3.5 lg:px-[18px]"
                 rules={data.rules}
                 similarIds={data.similarIds}
+                categorizedIds={data.categorizedIds}
                 skipIds={[current.id]}
                 checked={withRule}
                 onCheckedChange={setRuleOn}

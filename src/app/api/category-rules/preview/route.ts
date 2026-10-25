@@ -63,7 +63,11 @@ export async function GET(req: NextRequest) {
     uncategorized: matched.filter((r) => r.categoryId == null).length,
     examples: matched.slice(0, EXAMPLES).map(({ id, date, description, amount, direction }) => ({ id, date, description, amount, direction })),
     // Every id only when asked: the dialog's save moves them, the live preview doesn't need them.
-    ...(params.get("ids") === "1" ? { ids: matched.map((r) => r.id) } : {}),
+    // `categorizedIds`: the matches that already have a category, which "Only without a
+    // category" leaves where they are.
+    ...(params.get("ids") === "1"
+      ? { ids: matched.map((r) => r.id), categorizedIds: matched.filter((r) => r.categoryId != null).map((r) => r.id) }
+      : {}),
     ...(accountNames
       ? {
           rows: matched.map(({ id, date, description, amount, direction, account, categoryId }) => ({

@@ -1953,7 +1953,7 @@
   "teachRule": {
     "label": "Een regel leren",
     "title": "{merchant} altijd onder {category} zetten?",
-    "body": "Herkend aan <b>{patterns}</b>. {count, plural, =0 {Nog geen eerdere transacties komen overeen} one {# eerdere transactie gaat mee} other {# eerdere transacties gaan mee}}{waiting, plural, =0 {} one {, waarvan # nog zonder categorie} other {, waarvan # nog zonder categorie}}.",
+    "body": "Herkend aan <b>{patterns}</b>. {count, plural, =0 {Er gaan geen eerdere transacties mee} one {# eerdere transactie gaat mee} other {# eerdere transacties gaan mee}}.",
     "always": "Altijd",
     "justThisOne": "Alleen deze",
     "editMatch": "Herkenning aanpassen",
@@ -5363,6 +5363,16 @@
     "selectNoneFor": "Niets van {name} selecteren",
     "groupCount": "{ticked} van {total}",
     "noteMany": "Uitgevinkte transacties houden wat ze nu hebben, ook als de regels later opnieuw draaien. Elke regel blijft en deelt nieuwe transacties van zijn winkel in."
+  },
+  "ruleScope": {
+    "label": "Welke eerdere transacties de categorie krijgen",
+    "missing": "Alleen zonder categorie",
+    "all": "Alle",
+    "hint": {
+      "missing": "{count, plural, one {# van de {total} heeft al een categorie en houdt die.} other {# van de {total} hebben al een categorie en houden die.}}",
+      "all": "{count, plural, one {# van de {total} heeft al een categorie; die gaat ook mee.} other {# van de {total} hebben al een categorie; die gaan ook mee.}}",
+      "custom": "{count, plural, one {# van de {total} heeft al een categorie.} other {# van de {total} hebben al een categorie.}}"
+    }
   },
   "notifications": {
     "title": "Meldingen",
