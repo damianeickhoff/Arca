@@ -332,19 +332,21 @@ describe("debts: getDebtRecurringLinks / getDebtSummary", () => {
 });
 
 describe("net-worth-forecast: getNetWorthForecast", () => {
-  it("adds recurring income, savings contributions and owed repayments each month", async () => {
+  it("carries income minus spending forward, with debt principal repaid and savings kept", async () => {
     const { getNetWorthForecast } = await import("@/lib/net-worth-forecast");
     const points = await getNetWorthForecast(10_000, "2026-03-20", 6);
-    // Monthly: salary 2500 + savings goal 100 + Piet's repayment 50 until the 250 he still
-    // owes is collected (five months), then nothing from Piet. His recurring income item
-    // is linked to the owed debt, so it is that same repayment and isn't added again.
+    // Monthly: income 2500 + Piet's 50 − the 800 overall budget (it covers the bills) = 1750
+    // of cash; + 100 principal on the study loan and ≈136 on the car loan (150 minus 6%
+    // interest), since a repaid debt is net worth kept; − Piet's 50, which only turns what
+    // he owes into cash (until the 250 he still owes is in, after five months). The 100
+    // savings goal moves money, it doesn't spend it.
     expect(points).toEqual([
-      { date: "2026-04-20", netWorth: 12_650 },
-      { date: "2026-05-20", netWorth: 15_300 },
-      { date: "2026-06-20", netWorth: 17_950 },
-      { date: "2026-07-20", netWorth: 20_600 },
-      { date: "2026-08-20", netWorth: 23_250 },
-      { date: "2026-09-20", netWorth: 25_850 },
+      { date: "2026-04-20", netWorth: 11_936 },
+      { date: "2026-05-20", netWorth: 13_873 },
+      { date: "2026-06-20", netWorth: 15_811 },
+      { date: "2026-07-20", netWorth: 17_750 },
+      { date: "2026-08-20", netWorth: 19_689 },
+      { date: "2026-09-20", netWorth: 21_678 },
     ]);
   });
 });

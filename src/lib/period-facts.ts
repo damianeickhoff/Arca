@@ -3,7 +3,7 @@
 // facts, which the card shows as they are when AI is off and the AI provider gets exactly when
 // it is on ("AI explains, the app computes").
 
-import { daysInclusive, financialMonthForDate, financialMonthRangeByMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
+import { daysInclusive, financialMonthForDate, financialMonthRangeByMonth, offsetFinancialMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
 import { roundToCents } from "@/lib/transaction-splits";
 
 /** The average per day over `days` days (at least one), in cents. */
@@ -31,7 +31,8 @@ export interface RunningTotals {
   elapsed: number;
   /** This period's running total at the end of each day so far (`elapsed` entries). */
   current: number[];
-  /** The previous period's running total, aligned by day index (`days` entries). */
+  /** The previous period's running total, aligned by day index (one entry per day of
+   *  the previous period, which can be a day or two shorter or longer). */
   previous: number[];
   /** Where the period ends: spent so far, the bills still due and day-to-day spending
    *  for the days left (see runningTotals); null unless it is running. */
@@ -60,8 +61,19 @@ export function dayToDayPerDay(input: {
 }
 
 /**
- * Running totals for the hero's line chart. The previous period is the one of the
- * same length right before `from`, so day 1 is compared with day 1. The projection is
+ * The period to compare with: for a whole budget month the budget month before it (its
+ * own payday to payday, so a 30-day month is compared with a 31-day one), else the
+ * stretch of the same length right before `from`.
+ */
+export function previousPeriod(from: string, to: string, config: number | FinancialMonthConfig): { from: string; to: string } {
+  if (isWholeFinancialMonth(from, to, config)) return financialMonthRangeByMonth(offsetFinancialMonth(financialMonthForDate(from, config), -1), config);
+  const prevTo = shiftDate(from, -1);
+  return { from: shiftDate(prevTo, -(daysInclusive(from, to) - 1)), to: prevTo };
+}
+
+/**
+ * Running totals for the hero's line chart. The previous period (previousPeriod) is
+ * aligned by day index, so day 1 is compared with day 1. The projection is
  * built from what is known, never a straight line from the first days (rent and a
  * holiday paid on payday would be multiplied by the month's length): spent so far, plus
  * the bills still due before the end, plus day-to-day spending per day for the days left.
@@ -74,6 +86,8 @@ export function runningTotals(input: {
   daily: ReadonlyMap<string, number>;
   /** Spending per date in the previous period. */
   previousDaily: ReadonlyMap<string, number>;
+  /** The previous period; the same length right before `from` when left out. */
+  previousRange?: { from: string; to: string };
   /** What is still to come while the period runs: the bills due from today to the end
    *  and day-to-day spending per day (dayToDayPerDay). */
   ahead: { billsDue: number; perDay: number };
@@ -81,7 +95,8 @@ export function runningTotals(input: {
   const { from, to, today } = input;
   const days = Math.max(1, daysInclusive(from, to));
   const elapsed = today < from ? 0 : today > to ? days : daysInclusive(from, today);
-  const prevFrom = shiftDate(from, -days);
+  const prevFrom = input.previousRange?.from ?? shiftDate(from, -days);
+  const prevDays = input.previousRange ? Math.max(1, daysInclusive(input.previousRange.from, input.previousRange.to)) : days;
 
   const accumulate = (start: string, count: number, map: ReadonlyMap<string, number>) => {
     const out: number[] = [];
@@ -93,13 +108,13 @@ export function runningTotals(input: {
     return out;
   };
   const current = accumulate(from, elapsed, input.daily);
-  const previous = accumulate(prevFrom, days, input.previousDaily);
+  const previous = accumulate(prevFrom, prevDays, input.previousDaily);
 
   const spent = current[elapsed - 1] ?? 0;
   const running = from <= today && today <= to;
   // Today's own spending is already in `spent`, so the per-day rate covers the days after it.
   const projected = running ? roundToCents(spent + input.ahead.billsDue + input.ahead.perDay * (days - elapsed)) : null;
-  const previousAtSameDay = elapsed > 0 && previous[days - 1] > 0 ? previous[elapsed - 1] : null;
+  const previousAtSameDay = elapsed > 0 && previous[prevDays - 1] > 0 ? previous[Math.min(elapsed, prevDays) - 1] : null;
   return {
     days,
     elapsed,
@@ -134,14 +149,15 @@ export function runningTotalPlot(totals: RunningTotals, opts: { width: number; h
   const { days, elapsed, current, previous, projected } = totals;
   const { width: W, height: H, top, budget = null } = opts;
   const spent = current[elapsed - 1] ?? 0;
-  const previousTotal = previous[days - 1] ?? 0;
+  const previousTotal = previous.at(-1) ?? 0;
   const ceiling = Math.max(1, previousTotal, projected ?? 0, budget ?? 0, spent) * 1.04;
   const x = (day: number) => (day / days) * W;
   const y = (v: number) => H - (v / ceiling) * (H - top);
   const points = (values: number[]) => [`0,${H}`, ...values.map((v, i) => `${x(i + 1)},${y(v)}`)].join(" ");
   return {
     current: elapsed > 0 ? points(current) : null,
-    previous: previous.some((v) => v > 0) ? points(previous) : null,
+    // A previous month a day or two longer ends at the right edge with this one.
+    previous: previous.some((v) => v > 0) ? points(previous.slice(0, days)) : null,
     projection: projected != null && elapsed > 0 && elapsed < days ? { x1: x(elapsed), y1: y(spent), x2: W, y2: y(projected) } : null,
     budgetY: budget != null ? y(budget) : null,
     today: elapsed > 0 ? { left: (x(elapsed) / W) * 100, top: (y(spent) / H) * 100 } : null,
@@ -155,7 +171,8 @@ export function runningTotalPlot(totals: RunningTotals, opts: { width: number; h
  */
 export function monthOfPeriod(from: string, to: string): string | null {
   const days = daysInclusive(from, to);
-  if (days < 28 || days > 31) return null;
+  // Up to 33: the weekend rule can start a budget month two days early.
+  if (days < 28 || days > 33) return null;
   return shiftDate(from, Math.floor((days - 1) / 2)).slice(0, 7);
 }
 

@@ -304,7 +304,7 @@
       "resetBody": "Alle eigen categorieën en regels worden verwijderd en de standaardset wordt teruggezet. Je transacties blijven bewaard, maar verliezen hun categorie tot de standaardregels ze opnieuw toewijzen.",
       "resetConfirm": "Categorieën terugzetten",
       "deleteTitle": "De categorie “{name}” verwijderen?",
-      "deleteBody": "De transacties, vaste lasten, het budget en de regels ervan worden ook verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "deleteBody": "Het budget en de regels ervan worden ook verwijderd. De transacties en vaste lasten blijven, zonder categorie.",
       "deleteConfirm": "Categorie verwijderen",
       "newGroup": "Nieuwe groep",
       "summary": "{groups, plural, one {# groep} other {# groepen}} · {categories, plural, one {# categorie} other {# categorieën}}",

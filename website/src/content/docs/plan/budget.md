@@ -32,13 +32,13 @@ Choose **Add a category budget** to give a category its own limit, one at a time
 
 ## Pace
 
-Arca compares what you've spent with an even pace through the period:
+Arca compares what you've spent with an even pace through the period. The bills are taken as they come, so only your day-to-day spending is paced:
 
 - **On pace**: you're fine.
-- **Spending fast**: you're ahead of where you'd expect to be by now.
+- **Spending fast**: your day-to-day spending is ahead of where you'd expect to be by now.
 - **Over budget**: the limit is reached.
 
-You also see how much you're under or over an even pace, and what's safe to spend per day.
+The big number is what's left once the bills still to come are paid, the same as **Safe to spend** on Home. You also see how much you're under or over an even pace, and what's safe to spend per day.
 
 ## Move budget in one tap
 

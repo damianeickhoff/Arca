@@ -15,7 +15,7 @@ The **Period** menu at the top: **Budget** (your budget month, payday to payday)
 
 ## The cards
 
-- **Income**, **Expenses**, **Saved** (with the share of income) and your **Largest expense**. Money moved to or from your Savings and Investments categories is left out.
+- **Income**, **Expenses**, **Saved** (with the share of income) and your **Largest expense**. Money moved to or from your Savings and Investments categories is left out. Money others pay back (a Tikkie) isn't income, but it counts toward **Saved**. The changes compare with the previous period: for a budget month the budget month before it, up to the same day while the month is running.
 - **At this pace**: where the period ends, against your budget. Arca adds what you've spent so far, the bills still due before the end, and your usual day-to-day spending (everything no recurring bill pays, averaged over this period so far and the three before it) for the days left. Rent or a holiday paid on payday is counted once, not multiplied by the month.
 - A chart of money in and out, day by day, week by week or month by month, depending on how long the period is.
 - **Summary**: the period in three facts and what's left to spend per day (below).

@@ -100,6 +100,7 @@ export interface BudgetCategoryRow {
   budget: number | null; // category budget (default target), null if unset
   spent: number;         // spend this period — for a top-level category, includes any
                           // of its sub-categories that don't have their own budget set
+  billsSpent: number;    // the part of `spent` that bills paid (recurring-matched), same rollup
   last30: number;        // spend over the trailing 30 days (creation hint), same rollup rule
 }
 
@@ -110,6 +111,8 @@ export interface BudgetOverview {
   daysLeft: number;
   totalSpent: number;      // variable spend this period, across ALL variable categories and uncategorised spending
   budgetedSpent: number;   // variable spend this period, only across categories that have a budget set
+  billsSpent: number;      // the part of totalSpent that bills paid (recurring-matched transactions)
+  budgetedBillsSpent: number; // the same part of budgetedSpent
   last30Total: number;     // trailing-30-day variable spend (creation hint, shown for monthly)
   last7Total: number;      // trailing-7-day variable spend (creation hint, shown for weekly)
   allocated: number;       // sum of category budgets
@@ -187,30 +190,32 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig, op
   // Resolve one category's raw {nonRecurring, recurring} spend into a single number,
   // applying the recurring-mode setting: recurring bills count toward the category
   // always, never, or only when it is budgeted — see recurringCountsToward.
-  function resolveSpend(entry: CategorySpend | undefined, categoryId: number | null) {
+  // `part` "bills" gives only the recurring part that counts (for the bill-aware pace).
+  function resolveSpend(entry: CategorySpend | undefined, categoryId: number | null, part: "all" | "bills" = "all") {
     if (!entry) return 0;
     const budgeted = categoryId != null && (defaultMap.has(categoryId) || defaultMap.has(parentOf.get(categoryId) ?? -1));
-    return entry.nonRecurring + (recurringCountsToward(recurringMode, hasOverall, budgeted) ? entry.recurring : 0);
+    const bills = recurringCountsToward(recurringMode, hasOverall, budgeted) ? entry.recurring : 0;
+    return part === "bills" ? bills : entry.nonRecurring + bills;
   }
 
   // A top-level category's spend rolls up any child that doesn't have its own budget
   // set — so an un-broken-out "Housing" budget still covers Rent, Utilities, etc.
   // Once a child gets its own saved budget, its spend is tracked on the child instead
   // (and dropped from the parent's rollup) so it isn't counted twice.
-  function topLevelSpend(spend: { byCategory: Map<number, CategorySpend> }, parentId: number) {
-    const own = resolveSpend(spend.byCategory.get(parentId), parentId);
+  function topLevelSpend(spend: { byCategory: Map<number, CategorySpend> }, parentId: number, part: "all" | "bills" = "all") {
+    const own = resolveSpend(spend.byCategory.get(parentId), parentId, part);
     const children = childrenByParent.get(parentId) ?? [];
     const rolled = children
       .filter((c) => !defaultMap.has(c.id))
-      .reduce((s, c) => s + resolveSpend(spend.byCategory.get(c.id), c.id), 0);
+      .reduce((s, c) => s + resolveSpend(spend.byCategory.get(c.id), c.id, part), 0);
     return own + rolled;
   }
 
   // Flat resolved total across every variable category (no rollup, each counted once) —
   // feeds totalSpent and the trailing-window creation hints.
-  function resolvedTotal(spend: { byCategory: Map<number, CategorySpend>; uncategorised: CategorySpend }) {
-    let total = resolveSpend(spend.uncategorised, null);
-    for (const [categoryId, entry] of spend.byCategory) total += resolveSpend(entry, categoryId);
+  function resolvedTotal(spend: { byCategory: Map<number, CategorySpend>; uncategorised: CategorySpend }, part: "all" | "bills" = "all") {
+    let total = resolveSpend(spend.uncategorised, null, part);
+    for (const [categoryId, entry] of spend.byCategory) total += resolveSpend(entry, categoryId, part);
     return total;
   }
 
@@ -224,6 +229,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig, op
       budgetType: cat.budgetType ?? null,
       budget: defaultMap.get(cat.id) ?? null,
       spent: topLevelSpend(periodSpend, cat.id),
+      billsSpent: topLevelSpend(periodSpend, cat.id, "bills"),
       last30: topLevelSpend(last30Spend, cat.id),
     })),
     ...subCats.map((cat) => ({
@@ -235,14 +241,14 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig, op
       budgetType: cat.budgetType ?? null,
       budget: defaultMap.get(cat.id) ?? null,
       spent: resolveSpend(periodSpend.byCategory.get(cat.id), cat.id),
+      billsSpent: resolveSpend(periodSpend.byCategory.get(cat.id), cat.id, "bills"),
       last30: resolveSpend(last30Spend.byCategory.get(cat.id), cat.id),
     })),
   ];
 
   const allocated = categoryRows.reduce((s, r) => s + (r.budget ?? 0), 0);
-  const budgetedSpent = categoryRows
-    .filter((r) => r.budget != null && r.budget > 0)
-    .reduce((s, r) => s + r.spent, 0);
+  const budgetedRows = categoryRows.filter((r) => r.budget != null && r.budget > 0);
+  const budgetedSpent = budgetedRows.reduce((s, r) => s + r.spent, 0);
 
   return {
     budget: budgetRow ? { id: budgetRow.id, amount: budgetRow.amount, period } : null,
@@ -251,6 +257,8 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig, op
     daysLeft: daysBetweenInclusive(todayStr < from ? from : todayStr, to),
     totalSpent: resolvedTotal(periodSpend),
     budgetedSpent,
+    billsSpent: resolvedTotal(periodSpend, "bills"),
+    budgetedBillsSpent: budgetedRows.reduce((s, r) => s + r.billsSpent, 0),
     last30Total: resolvedTotal(last30Spend),
     last7Total: resolvedTotal(last7Spend),
     allocated,

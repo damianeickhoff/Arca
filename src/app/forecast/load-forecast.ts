@@ -23,7 +23,8 @@ import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/interna
 import { computeNetWorth } from "@/lib/net-worth-snapshots";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
 import { budgetCategoryInfo, coveredByBudget, freeToSpend, getOverallMonthlyBudget, PLAN_EXPENSE_TYPES } from "@/lib/monthly-free-to-spend";
-import { loadUnlinkedDebtMinimums } from "@/app/debts/load-debts";
+import { loadDebtsData, unlinkedDebtMinimums } from "@/app/debts/load-debts";
+import { projectedDebts, projectNetWorth } from "@/lib/net-worth-forecast";
 import { amountFor } from "./plan-amounts";
 
 // Everything the Forecast tab shows, loaded in one place. Two halves:
@@ -355,8 +356,8 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
   // when one is set, else the category budgets; the costs that budget already covers are
   // part of it, not counted again; plus the debt minimums no bill pays (paid from the
   // overall budget when there is one, like any other spending).
-  const [overallBudget, debtMinimums, recurringMode] = await Promise.all([getOverallMonthlyBudget(), loadUnlinkedDebtMinimums(), getBudgetRecurringMode()]);
-  const unlinkedDebts = overallBudget != null ? 0 : debtMinimums;
+  const [overallBudget, debtsData, recurringMode] = await Promise.all([getOverallMonthlyBudget(), loadDebtsData(), getBudgetRecurringMode()]);
+  const unlinkedDebts = overallBudget != null ? 0 : unlinkedDebtMinimums(debtsData.computed);
   const budgetFor = (list: PlanItem[], month: string) => overallBudget ?? sum(list, month);
   const byAmount = (list: PlanItem[]) => [...list].sort((a, b) => amountFor(b, baseMonth) - amountFor(a, baseMonth)).filter((i) => amountFor(i, baseMonth) > 0).map((i) => i.name);
 
@@ -393,17 +394,21 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
 
   // ── 12-month projection ─────────────────────────────────────────────────────
   // Net worth today (it already counts money owed to the user), carried forward month
-  // by month with each month's plan (overrides included).
+  // by month with each month's plan (overrides included) by the rule the Net worth tab
+  // uses (projectNetWorth): savings stay yours, debt principal repaid is not a loss.
   let projection: ForecastData["projection"] = null;
   if (income > 0) {
     const anchor = netWorthData.netWorth;
-    let running = 0;
-    const forecast: { date: string; netWorth: number }[] = [];
-    for (let i = 0; i < 12; i++) {
-      const m = offsetFinancialMonth(baseMonth, i);
-      running += sum(incomeItems, m) - sum(costItems, m) - unlinkedDebts - sum(goalItems, m) - budgetFor(budgetItems, m);
-      forecast.push({ date: `${offsetFinancialMonth(baseMonth, i + 1)}-01`, netWorth: Math.round(anchor + running) });
-    }
+    const values = projectNetWorth({
+      start: anchor,
+      months: 12,
+      cashChange: (i) => {
+        const m = offsetFinancialMonth(baseMonth, i);
+        return sum(incomeItems, m) - sum(costItems, m) - unlinkedDebts - budgetFor(budgetItems, m);
+      },
+      ...projectedDebts(debtsData.computed, debtsData.computedOwed),
+    });
+    const forecast = values.map((netWorth, i) => ({ date: `${offsetFinancialMonth(baseMonth, i + 1)}-01`, netWorth: Math.round(netWorth) }));
     projection = { history: [{ date: `${baseMonth}-01`, netWorth: Math.round(anchor) }], forecast };
   }
 

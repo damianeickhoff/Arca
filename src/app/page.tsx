@@ -275,10 +275,15 @@ export default async function HomePage({
   const accountsTotal = accounts.reduce((s, a) => s + a.balance, 0);
 
   const hasTransactions = data.recent.length > 0;
-  // Payday is the next expected salary (an income recurring item still to come); with no
-  // income set up yet the heading asks for it instead of guessing from the month's end.
-  const nextSalary = billStatuses
-    .filter((s) => s.item.type === "income" && s.paid !== true && s.dueDate != null && s.dueDate >= today)
+  // Payday is the next expected salary: an income item in the Salary category still to
+  // come (not a share of a bill paid back or a small repayment), any income item when
+  // none is in Salary; with no income set up yet the heading asks for it instead of
+  // guessing from the month's end.
+  const salaryCategoryIds = new Set(data.allCategories.filter((c) => c.configKey === "Salary").map((c) => c.id));
+  const incomeStatuses = billStatuses.filter((s) => s.item.type === "income");
+  const salaryStatuses = incomeStatuses.filter((s) => s.item.categoryId != null && salaryCategoryIds.has(s.item.categoryId));
+  const nextSalary = (salaryStatuses.length > 0 ? salaryStatuses : incomeStatuses)
+    .filter((s) => s.paid !== true && s.dueDate != null && s.dueDate >= today)
     .sort((a, z) => a.dueDate!.localeCompare(z.dueDate!))[0];
   const hasSalary = billStatuses.some((s) => s.item.type === "income");
   const daysToPayday = nextSalary

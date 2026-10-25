@@ -4,7 +4,7 @@ import { budgetSpendByDay, safeToSpend, type UpcomingBill } from "@/lib/safe-to-
 import type { BudgetCategoryRow } from "@/lib/budget-overview";
 
 function cat(categoryId: number, budget: number | null): BudgetCategoryRow {
-  return { categoryId, categoryName: `c${categoryId}`, color: null, icon: null, parentCategoryId: null, budgetType: "willen", budget, spent: 0, last30: 0 };
+  return { categoryId, categoryName: `c${categoryId}`, color: null, icon: null, parentCategoryId: null, budgetType: "willen", budget, spent: 0, billsSpent: 0, last30: 0 };
 }
 
 const overview = {
@@ -58,6 +58,18 @@ describe("safeToSpend", () => {
     expect(r.target).toBe(1720);
     expect(r.spent).toBe(1322);
     expect(r.reserved).toBeCloseTo(34.99, 2); // streaming's category has no budget
+  });
+
+  it("paces day-to-day spending: bills paid early don't make a month 'fast'", () => {
+    // Day 3 of 30: rent and insurance (1,000) already paid, 400 of bills still to come,
+    // 150 spent day to day. Even pace: 1,000 + (3,000 − 1,000 − 400) × 3 / 30 = 1,160.
+    const early = { ...overview, from: "2026-10-01", to: "2026-10-30", totalSpent: 1150, billsSpent: 1000 };
+    const bills: UpcomingBill[] = [{ categoryId: 10, amount: 400, dueDate: "2026-10-20", isIncome: false }];
+    const r = safeToSpend(early, bills, "always", "2026-10-03")!;
+    expect(r.even).toBeCloseTo(1160, 6);
+    expect(r.pace).toBe("onPace");
+    // 400 spent day to day by day 3 is well ahead of the 160 an even pace allows.
+    expect(safeToSpend({ ...early, totalSpent: 1400 }, bills, "always", "2026-10-03")!.pace).toBe("fast");
   });
 
   it("ignores bills due after the period or already in the past", () => {

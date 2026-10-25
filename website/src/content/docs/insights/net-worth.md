@@ -20,4 +20,4 @@ The **What you own and owe** list shows each item, filtered by **Cash**, **Inves
 
 ## Looking ahead
 
-The projection estimates where your net worth goes in the coming months, from your recurring income, savings and repayments owed to you.
+The projection estimates where your net worth goes in the coming months, the same way the [Forecast](/Arca/insights/forecast/) plan does: your recurring income minus what you plan to spend (your budget and the bills outside it). Money you put into savings stays yours, and paying off a debt doesn't lower your net worth (only its interest does). A repayment someone makes to you turns what you're owed into cash, so it doesn't change it either.

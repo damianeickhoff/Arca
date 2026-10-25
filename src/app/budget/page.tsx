@@ -72,6 +72,9 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
   //    cover its projected overshoot at the current pace.
   let suggestion: BudgetSuggestion | null = null;
   const pace = Math.max(elapsed, 0.1);
+  // Where a category ends at its pace: its bills as paid (a bill isn't paid again later
+  // in the month), its day-to-day spending carried on at the rate so far.
+  const projectedFor = (c: (typeof rows)[number]) => Math.max(c.spent, c.billsSpent + (c.spent - c.billsSpent) / pace);
   // Only for the month in progress: an ended month can't be rebalanced any more.
   const hot = ended
     ? undefined
@@ -80,13 +83,13 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
     .filter((x) => x.pct >= 90)
     .sort((a, z) => z.pct - a.pct)[0];
   if (hot) {
-    const projected = Math.max(hot.c.spent, hot.c.spent / pace);
+    const projected = projectedFor(hot.c);
     const need = up5(Math.max(5, projected - hot.c.budget!));
     const donor = rows
       .filter((c) => c.categoryId !== hot.c.categoryId)
       .map((c) => {
         // What the donor would still have spare at the end of the period at its own pace.
-        const projectedDonor = Math.max(c.spent, c.spent / pace);
+        const projectedDonor = projectedFor(c);
         return { c, spare: down5(Math.min(c.budget! - c.spent, c.budget! - projectedDonor)) };
       })
       .filter((d) => d.spare >= 5)

@@ -304,7 +304,7 @@
       "resetBody": "All custom categories and rules are deleted and the default set is restored. Your transactions are kept, but lose their category until the default rules re-assign them.",
       "resetConfirm": "Reset categories",
       "deleteTitle": "Delete the category “{name}”?",
-      "deleteBody": "Its transactions, recurring items, budget and rules are deleted too. This can't be undone.",
+      "deleteBody": "Its budget and rules are deleted too. Its transactions and recurring items stay, without a category.",
       "deleteConfirm": "Delete category",
       "newGroup": "New group",
       "summary": "{groups, plural, one {# group} other {# groups}} · {categories, plural, one {# category} other {# categories}}",

@@ -25,10 +25,10 @@ The black card at the top is **Safe to spend**: what you can still spend this pe
 A chip tells you how you're doing:
 
 - **On pace**: you're spending at or below an even pace.
-- **Spending fast**: what you've spent plus the bills you've reserved is clearly ahead of how far the period is.
+- **Spending fast**: your day-to-day spending is clearly ahead of an even pace. Bills don't count against the pace: rent paid on payday doesn't make the month "fast".
 - **Over budget**: there's nothing left to spend this period.
 
-The **Spending pace** chart compares what you've spent with an even pace through the period.
+The **Spending pace** chart compares what you've spent with an even pace through the period: the bills already paid, plus what's left of the budget after this period's bills spread evenly over the days.
 
 :::tip[No budget yet?]
 Safe to spend needs a budget. Until you set one, the card shows **Set a budget** and **Import CSV** buttons instead.

@@ -9,11 +9,13 @@ import { categoryDeletedEntry } from "@/lib/activity-log-entries";
 
 // What DELETE removes or clears by hand (older databases may lack the cascading keys),
 // so the change log's snapshot matches it whatever the database's foreign keys say.
+// Transactions and recurring items are money that happened or will happen: they stay,
+// without a category, even though the foreign key on them cascades.
 const CATEGORY_DELETE_EDGES: ReferencingEdge[] = [
   { table: "category_rules", column: "category_id", onDelete: "CASCADE" },
   { table: "budget_targets", column: "category_id", onDelete: "CASCADE" },
-  { table: "recurring_items", column: "category_id", onDelete: "CASCADE" },
-  { table: "transactions", column: "category_id", onDelete: "CASCADE" },
+  { table: "recurring_items", column: "category_id", onDelete: "SET NULL" },
+  { table: "transactions", column: "category_id", onDelete: "SET NULL" },
   { table: "transaction_splits", column: "category_id", onDelete: "SET NULL" },
 ];
 
@@ -178,9 +180,9 @@ export async function DELETE(req: NextRequest) {
     const taken = snapshotDelete("categories", [id], CATEGORY_DELETE_EDGES);
     tx.delete(categoryRules).where(eq(categoryRules.categoryId, id)).run();
     tx.delete(budgetTargets).where(eq(budgetTargets.categoryId, id)).run();
-    tx.delete(recurringItems).where(eq(recurringItems.categoryId, id)).run();
+    tx.update(recurringItems).set({ categoryId: null }).where(eq(recurringItems.categoryId, id)).run();
     tx.update(transactionSplits).set({ categoryId: null }).where(eq(transactionSplits.categoryId, id)).run();
-    tx.delete(transactions).where(eq(transactions.categoryId, id)).run();
+    tx.update(transactions).set({ categoryId: null }).where(eq(transactions.categoryId, id)).run();
     tx.delete(categories).where(eq(categories.id, id)).run();
     return taken;
   });

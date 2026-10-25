@@ -7,6 +7,7 @@ import {
   buildSummaryFacts,
   dayToDayPerDay,
   monthOfPeriod,
+  previousPeriod,
   runningTotals,
   toPeriodSummary,
   withOther,
@@ -112,6 +113,36 @@ describe("runningTotals", () => {
     const noPrevious = runningTotals({ ...base, previousDaily: new Map() });
     expect(noPrevious.previousAtSameDay).toBeNull();
     expect(noPrevious.difference).toBeNull();
+  });
+});
+
+describe("previousPeriod", () => {
+  const payday = { defaultStartDay: 23, overrides: {}, weekendRollback: true };
+
+  it("compares a budget month with the budget month before it", () => {
+    // 23 Oct – 22 Nov 2026 against 23 Sep – 22 Oct, not the 31 days before it (22 Sep – 22 Oct).
+    expect(previousPeriod("2026-10-23", "2026-11-22", payday)).toEqual({ from: "2026-09-23", to: "2026-10-22" });
+    // 21 Aug (a Friday, 23 Aug is a Sunday) – 22 Sep against 23 Jul – 20 Aug.
+    expect(previousPeriod("2026-08-21", "2026-09-22", payday)).toEqual({ from: "2026-07-23", to: "2026-08-20" });
+  });
+
+  it("takes as many days back for any other range", () => {
+    expect(previousPeriod("2026-10-05", "2026-10-11", payday)).toEqual({ from: "2026-09-28", to: "2026-10-04" });
+  });
+
+  it("aligns a longer previous month by day and compares by the same day", () => {
+    const r = runningTotals({
+      from: "2026-10-23",
+      to: "2026-11-22",
+      today: "2026-10-25",
+      daily: new Map([["2026-10-23", 100]]),
+      previousDaily: new Map([["2026-09-23", 40], ["2026-09-25", 60], ["2026-10-22", 500]]),
+      previousRange: { from: "2026-09-23", to: "2026-10-22" },
+      ahead: { billsDue: 0, perDay: 0 },
+    });
+    expect(r.previous).toHaveLength(30);
+    expect(r.previousAtSameDay).toBe(100);
+    expect(r.difference).toBe(0);
   });
 });
 

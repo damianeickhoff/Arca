@@ -97,6 +97,34 @@ describe("undoActivity", () => {
     expect((await db.select().from(s.transactionSplits).where(eq(s.transactionSplits.id, split.id)))[0]?.categoryId).toBe(groceries.id);
   });
 
+  it("keeps a deleted category's transactions, without a category, and links them back on undo", async () => {
+    const { db, s, ids, groceries } = await setup();
+    const { recordActivity, snapshotDelete, undoActivity } = await import("@/lib/activity-log");
+    const { categoryDeletedEntry } = await import("@/lib/activity-log-entries");
+    const { eq } = await import("drizzle-orm");
+    // The edges the categories DELETE route passes: a caller's edge wins over the
+    // database's cascading key on transactions.category_id.
+    const edges = [
+      { table: "transactions", column: "category_id", onDelete: "SET NULL" },
+      { table: "category_rules", column: "category_id", onDelete: "CASCADE" },
+    ];
+    const snapshot = db.transaction((tx) => {
+      const taken = snapshotDelete("categories", [groceries.id], edges);
+      tx.delete(s.categoryRules).where(eq(s.categoryRules.categoryId, groceries.id)).run();
+      tx.update(s.transactions).set({ categoryId: null }).where(eq(s.transactions.categoryId, groceries.id)).run();
+      tx.delete(s.categories).where(eq(s.categories.id, groceries.id)).run();
+      return taken;
+    });
+    const kept = await db.select({ id: s.transactions.id, categoryId: s.transactions.categoryId }).from(s.transactions);
+    expect(kept.filter((r) => ids.includes(r.id)).map((r) => r.categoryId)).toEqual(ids.map(() => null));
+    const entry = categoryDeletedEntry(snapshot)!;
+    expect(entry.params).toMatchObject({ transactions: 0 });
+
+    expect((await undoActivity((await recordActivity(entry, null))!)).ok).toBe(true);
+    const back = await db.select({ id: s.transactions.id }).from(s.transactions).where(eq(s.transactions.categoryId, groceries.id));
+    expect(back.map((r) => r.id).sort()).toEqual([...ids].sort());
+  });
+
   it("keeps only the newest entries", async () => {
     const { recordActivity, listActivity, ACTIVITY_LOG_LIMIT } = await import("@/lib/activity-log");
     const { ruleCreatedEntry } = await import("@/lib/activity-log-entries");

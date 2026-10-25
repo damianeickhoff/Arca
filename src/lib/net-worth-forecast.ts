@@ -1,10 +1,8 @@
-import { db } from "@/db";
-import { recurringItems, savingsGoals, goals, debts } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
-import { toMonthly } from "@/lib/format";
-import { debtBalance } from "@/app/debts/debt-shared";
-import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
+import { loadDebtsData, unlinkedDebtMinimums } from "@/app/debts/load-debts";
+import type { ComputedDebt } from "@/app/debts/debt-shared";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
+import { monthlyRate } from "@/lib/debt-interest";
+import { getMonthlyFreeToSpend } from "@/lib/monthly-free-to-spend";
 
 export type ForecastPoint = { date: string; netWorth: number };
 
@@ -14,61 +12,81 @@ function addMonths(date: string, months: number): string {
   return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}-${String(next.getDate()).padStart(2, "0")}`;
 }
 
-/** Simple, intentionally-optimistic forward projection off the current net worth —
- * driven only by the factors the user cares about seeing on the chart: active
- * recurring income, active savings-goal contributions, and repayments still expected
- * on debts *owed to* the user (direction "owed"). It does not net out the user's own
- * bills/subscriptions/debt payments, so it reads as "where this is headed if income
- * and collections keep flowing", not a full cashflow model. */
+/** A debt as the projection carries it month by month. */
+export interface ProjectedDebt {
+  balance: number;
+  payment: number;
+  /** Annual interest rate in percent (debts you owe). */
+  interestRate?: number | null;
+}
+
+/**
+ * Net worth month by month, the one rule the Net worth tab and the Forecast plan share:
+ * what comes in minus what goes out (`cashChange`, the plan's income minus its spending),
+ * plus the principal repaid on debts you owe — a debt payment leaves the account but the
+ * debt shrinks by the same amount, so only its interest is a loss. Money put into savings
+ * stays yours, so the caller leaves it out of the spending. A repayment collected on a
+ * debt owed to you turns what you are owed into cash, so it changes nothing: it is taken
+ * back out when `cashChange` counts it as income (`owedInIncome`).
+ */
+export function projectNetWorth(input: {
+  start: number;
+  months: number;
+  /** Income minus spending in month i (0 = the first month ahead). */
+  cashChange: (i: number) => number;
+  owe: readonly ProjectedDebt[];
+  /** Debts owed to you whose repayment is part of the income in `cashChange`. */
+  owedInIncome: readonly ProjectedDebt[];
+}): number[] {
+  const owe = input.owe.map((d) => ({ ...d, rate: monthlyRate(d.interestRate) }));
+  const owed = input.owedInIncome.map((d) => ({ ...d }));
+  const out: number[] = [];
+  let netWorth = input.start;
+  for (let i = 0; i < input.months; i++) {
+    let change = input.cashChange(i);
+    for (const d of owe) {
+      if (d.balance <= 0 || d.payment <= 0) continue;
+      const interest = d.balance * d.rate;
+      const principal = Math.min(d.balance, Math.max(0, d.payment - interest));
+      d.balance -= principal;
+      change += principal;
+    }
+    for (const d of owed) {
+      const collected = Math.min(d.balance, Math.max(0, d.payment));
+      d.balance -= collected;
+      change -= collected;
+    }
+    netWorth += change;
+    out.push(netWorth);
+  }
+  return out;
+}
+
+/** The debts the projection carries, from the Debts page's own figures. */
+export function projectedDebts(computed: readonly ComputedDebt[], owed: readonly ComputedDebt[]) {
+  return {
+    owe: computed.filter((c) => c.currentBalance > 0).map((c) => ({ balance: c.currentBalance, payment: c.debt.minimumPayment, interestRate: c.debt.interestRate })),
+    // Only a debt owed to you that a recurring income item pays back is in the income.
+    owedInIncome: owed.filter((c) => c.currentBalance > 0 && c.linkedBillIds.length > 0).map((c) => ({ balance: c.currentBalance, payment: c.debt.minimumPayment })),
+  };
+}
+
+/**
+ * The Net worth tab's projection: this month's plan (getMonthlyFreeToSpend — recurring
+ * income, the bills the budget doesn't cover, the budget, the debt minimums no bill pays)
+ * carried forward with projectNetWorth, so it agrees with the Forecast plan.
+ */
 export async function getNetWorthForecast(
   currentNetWorth: number,
   lastActualDate: string,
   monthsAhead = 6,
 ): Promise<ForecastPoint[]> {
-  const [incomeItems, savingsGoalRows, savingsTypeGoalRows, owedDebts] = await Promise.all([
-    db.select().from(recurringItems).where(and(eq(recurringItems.active, true), eq(recurringItems.type, "income"))),
-    db.select().from(savingsGoals).where(eq(savingsGoals.active, true)),
-    db.select().from(goals).where(and(eq(goals.active, true), eq(goals.goalType, "savings"))),
-    db.select().from(debts).where(eq(debts.direction, "owed")),
-  ]);
-
-  // Repayments on debts owed TO the user are collected below, capped at what is still
-  // owed. A recurring income item linked to such a debt is that same repayment, so it is
-  // left out of the income total — counting it in both places double-counted it, and
-  // kept counting it after the debt had been fully repaid.
-  const { linkMap, paidFor, extrasFor } = await getDebtRecurringLinks(await getFinancialMonthConfig());
-  const repaymentItemIds = new Set(owedDebts.flatMap((d) => linkMap.get(d.id) ?? []));
-  const monthlyIncome = incomeItems
-    .filter((i) => !repaymentItemIds.has(i.id))
-    .reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
-  const monthlySavings = savingsGoalRows.reduce((s, g) => s + (g.monthlyContribution ?? 0), 0)
-    + savingsTypeGoalRows.reduce((s, g) => s + (g.monthlyContribution ?? 0), 0);
-
-  // Remaining balance still owed to the user on each "owed" debt, so repayment
-  // credit stops once a debt is fully collected instead of forecasting past it.
-  // Uses the debts page's own debtBalance (balance date, interest and all) rather than a
-  // private copy of the maths — the two used to be able to disagree about a debt's worth.
-  const owedRemaining = owedDebts.map((d) => ({
-    monthlyPayment: d.minimumPayment,
-    remaining: Math.max(0, debtBalance(d, paidFor(d), new Date(), extrasFor(d.id)).currentBalance),
-  }));
-
-  if (monthlyIncome <= 0 && monthlySavings <= 0 && owedRemaining.every((d) => d.remaining <= 0)) return [];
-
-  const points: ForecastPoint[] = [];
-  let netWorth = currentNetWorth;
-  const remaining = owedRemaining.map((d) => d.remaining);
-
-  for (let i = 1; i <= monthsAhead; i++) {
-    let owedCollected = 0;
-    owedDebts.forEach((d, idx) => {
-      const pay = Math.min(d.minimumPayment, remaining[idx]);
-      remaining[idx] -= pay;
-      owedCollected += pay;
-    });
-    netWorth += monthlyIncome + monthlySavings + owedCollected;
-    points.push({ date: addMonths(lastActualDate, i), netWorth: Math.round(netWorth) });
-  }
-
-  return points;
+  const [plan, debts] = await Promise.all([getMonthlyFreeToSpend(await getFinancialMonthConfig()), loadDebtsData()]);
+  if (plan.income <= 0) return [];
+  // Spending is the bills outside the budget, the budget and the minimums no bill pays
+  // (an overall budget already covers those); savings are not spending.
+  const unlinked = plan.budgetSource === "overall" ? 0 : unlinkedDebtMinimums(debts.computed);
+  const cash = plan.income - plan.recurring - plan.budget - unlinked;
+  const values = projectNetWorth({ start: currentNetWorth, months: monthsAhead, cashChange: () => cash, ...projectedDebts(debts.computed, debts.computedOwed) });
+  return values.map((netWorth, i) => ({ date: addMonths(lastActualDate, i + 1), netWorth: Math.round(netWorth) }));
 }

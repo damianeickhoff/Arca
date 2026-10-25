@@ -85,6 +85,9 @@ export async function HomeHero({
       <PaceLine
         target={target}
         spent={spent}
+        even={figures.even}
+        start={figures.billsSpent}
+        end={target - reserved}
         totalDays={figures.totalDays}
         spendByDay={spendByDay}
         title={t("paceTitle")}
@@ -139,13 +142,17 @@ export async function HomeHero({
 
 /**
  * Spending so far against an even pace through the period: the ember line is what has
- * been spent, day by day, up to today; the dashed line is the budget spread evenly over
- * every day. Below the dashed line means there is room to spare. It grows to fill the
+ * been spent, day by day, up to today; the dashed line is the bills already paid plus the
+ * day-to-day budget spread evenly over every day (SafeToSpend.even), ending below the
+ * budget by the bills still to come. Below the dashed line means there is room to spare. It grows to fill the
  * hero, so the card has no empty bottom next to taller neighbours.
  */
 function PaceLine({
   target,
   spent,
+  even,
+  start,
+  end,
   totalDays,
   spendByDay,
   title,
@@ -155,6 +162,11 @@ function PaceLine({
 }: {
   target: number;
   spent: number;
+  /** What an even pace has spent by today. */
+  even: number;
+  /** Where the dashed even-pace line starts (the bills paid) and ends (the budget minus the bills to come). */
+  start: number;
+  end: number;
   totalDays: number;
   spendByDay: number[];
   title: string;
@@ -175,7 +187,6 @@ function PaceLine({
   const y = (v: number) => H - (v / ceiling) * (H - top);
   const points = [`0,${H}`, ...spendByDay.map((v, i) => `${x(i + 1)},${y(v * scale)}`)];
   const lastX = x(spendByDay.length);
-  const even = (target * spendByDay.length) / totalDays;
   const diff = even - spent;
 
   return (
@@ -191,7 +202,7 @@ function PaceLine({
         role="img"
         aria-label={description(formatEurWhole(spent), formatEurWhole(even))}
       >
-        <line x1="0" y1={H} x2={W} y2={y(target)} stroke="var(--clr-hero-ink)" strokeOpacity="0.35" strokeDasharray="4 5" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+        <line x1="0" y1={y(start)} x2={W} y2={y(end)} stroke="var(--clr-hero-ink)" strokeOpacity="0.35" strokeDasharray="4 5" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
         <polygon points={`${points.join(" ")} ${lastX},${H}`} fill="var(--clr-ember)" fillOpacity="0.18" />
         <polyline points={points.join(" ")} fill="none" stroke="var(--clr-ember)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         <line x1={lastX} y1={top / 2} x2={lastX} y2={H} stroke="var(--clr-hero-ink)" strokeOpacity="0.25" strokeWidth="1" vectorEffect="non-scaling-stroke" />

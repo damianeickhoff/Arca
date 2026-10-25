@@ -143,8 +143,9 @@ function referencingEdges(): Map<string, ReferencingEdge[]> {
  * the rows themselves, every row an ON DELETE CASCADE removes (followed down), and
  * every column an ON DELETE SET NULL clears. `extraEdges` adds relations a caller
  * deletes or clears by hand — older databases may lack the cascading foreign keys,
- * and the snapshot must match what the caller actually removes. Run it inside the
- * same transaction as the delete.
+ * and the snapshot must match what the caller actually removes, so one of them wins
+ * over the database's own key on the same column. Run it inside the same transaction
+ * as the delete.
  */
 export function snapshotDelete(table: string, ids: number[], extraEdges: ReferencingEdge[] = []): DeleteSnapshot {
   const edgesByTarget = referencingEdges();
@@ -164,8 +165,7 @@ export function snapshotDelete(table: string, ids: number[], extraEdges: Referen
     const rows = selectRowsByIds(current, fresh);
     for (const row of rows) seen.set(Number(row.id), row);
 
-    const edges = [...(edgesByTarget.get(current) ?? [])];
-    for (const e of extra) if (!edges.some((x) => x.table === e.table && x.column === e.column)) edges.push(e);
+    const edges = [...(edgesByTarget.get(current) ?? []).filter((x) => !extra.some((e) => e.table === x.table && e.column === x.column)), ...extra];
     for (const edge of edges) {
       const keys = [...new Set(rows.map((r) => r[edge.to ?? "id"]).filter((v) => v != null))];
       if (keys.length === 0) continue;

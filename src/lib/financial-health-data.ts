@@ -102,7 +102,9 @@ function coefficientOfVariation(values: number[]): number | null {
  * Follows the same conventions as the rest of Arca's reporting so the numbers here
  * agree with the Overview and Trends tabs:
  *   • internal transfers between your own accounts are not income or spending;
- *   • reimbursements received (Tikkie) are not income;
+ *   • reimbursements received (Tikkie) are not income, but reporting gross they come off
+ *     that month's expenses (netting, the expenses already shrank by them), so a shared
+ *     holiday costs your share in the savings rate;
  *   • transfers into savings categories are not spending — they're the savings the
  *     savings rate is trying to measure (same rule as getMonthComparison) — and money
  *     taken back out of savings is not income;
@@ -151,11 +153,16 @@ export async function getMonthTotals(months: string[], financialMonth: Financial
     ranges.map((r) => [r.month, { month: r.month, income: 0, expenses: 0, variableSpend: 0 }]),
   );
 
+  const paidBack = new Map<string, number>();
   for (const row of allocations) {
-    if (row.isInternalTransfer || row.isReimbursement) continue;
+    if (row.isInternalTransfer) continue;
     const range = ranges.find((r) => row.date >= r.from && row.date <= r.to);
     if (!range) continue;
     const bucket = totals.get(range.month)!;
+    if (row.isReimbursement) {
+      if (sharedCostMode !== "net" && row.direction === "income") paidBack.set(range.month, (paidBack.get(range.month) ?? 0) + row.amount);
+      continue;
+    }
 
     if (row.direction === "income") {
       if (row.categoryGroup !== "savings") bucket.income += row.amount;
@@ -166,6 +173,10 @@ export async function getMonthTotals(months: string[], financialMonth: Financial
     }
   }
 
+  for (const [month, amount] of paidBack) {
+    const bucket = totals.get(month)!;
+    bucket.expenses = Math.max(0, bucket.expenses - amount);
+  }
   return ranges.map((r) => totals.get(r.month)!);
 }
 

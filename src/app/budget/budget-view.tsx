@@ -274,9 +274,10 @@ function MoreMenu() {
 function HeroCard({ data, figures }: { data: BudgetViewData; figures: SafeToSpend }) {
   const t = useTranslations("plan.budget.hero");
   const short = useShortDate();
-  const { target, spent, reserved, perDay, pace } = figures;
-  const left = target - spent;
-  const even = (target * data.day) / data.totalDays;
+  const { target, spent, reserved, perDay, pace, even, amount } = figures;
+  // What is left once the bills still to come are paid, the figure Home and the per-day
+  // tile use; an ended month has none to come.
+  const left = data.ended ? target - spent : amount;
   const paceTone = data.ended ? (left >= 0 ? "mint" : "rose") : pace === "onPace" ? "mint" : pace === "fast" ? "butter" : "rose";
   const billsToCome = data.bills.filter((b) => !b.isIncome && !b.paid && b.dueDate != null && b.dueDate >= data.today).length;
   const tile = "flex min-w-0 flex-col gap-1 rounded-clear-tile px-3.5 py-3";

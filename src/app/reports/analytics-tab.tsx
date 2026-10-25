@@ -7,14 +7,15 @@ import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { getBudgetOverview } from "@/lib/budget-overview";
-import { getBudgetRecurringMode } from "@/lib/app-settings";
+import { getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
+import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { safeToSpend } from "@/lib/safe-to-spend";
 import { currentFinancialMonth, daysInclusive, shiftDate, todayStr, type FinancialMonthConfig } from "@/lib/date-range";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { isAiReady } from "@/lib/ai-provider";
 import { getCachedSummary } from "@/lib/ai-features";
-import { averagePerDay, buildSummaryFacts, dayToDayPerDay, monthOfPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
+import { averagePerDay, buildSummaryFacts, dayToDayPerDay, monthOfPeriod, previousPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
 import { SummaryCard } from "./summary-card";
 import { OverviewHero, type PeriodName } from "./overview-hero";
 import { RunningTotalCard } from "./running-total-card";
@@ -84,7 +85,7 @@ function chartRanges(from: string, to: string): { grain: FlowGrain; ranges: { fr
 
 // ── Data ────────────────────────────────────────────────────────────────────
 
-async function loadAllocations(from: string, to: string, categoryIds?: number[], accounts?: string[]) {
+async function loadAllocations(from: string, to: string, netReimbursements: boolean, categoryIds?: number[], accounts?: string[]) {
   let rows = await db
     .select({
       id: transactions.id,
@@ -92,6 +93,7 @@ async function loadAllocations(from: string, to: string, categoryIds?: number[],
       direction: transactions.direction,
       amount: transactions.amount,
       correctedAmount: transactions.correctedAmount,
+      reimbursedAmount: reimbursedAmountExpr,
       categoryId: transactions.categoryId,
       categoryName: categories.name,
       categoryColor: categories.color,
@@ -119,15 +121,19 @@ async function loadAllocations(from: string, to: string, categoryIds?: number[],
   if (accounts && accounts.length > 0) rows = rows.filter((r) => r.account != null && accounts.includes(r.account));
 
   const splitRows = await getTransactionSplitRows(rows.map((r) => r.id));
-  const allocations = buildSplitAllocations(rows, groupTransactionSplits(splitRows));
+  // The shared-cost setting (net: your share of a shared bill) applies here as on Trends,
+  // Health and Budget.
+  const allocations = buildSplitAllocations(rows, groupTransactionSplits(splitRows), { netReimbursements });
   return { rows, allocations };
 }
 
 async function getOverviewData(from: string, to: string, financialMonth: FinancialMonthConfig, categoryIds?: number[], accounts?: string[]) {
   const days = daysInclusive(from, to);
-  const prevTo = shiftDate(from, -1);
-  const prevFrom = shiftDate(prevTo, -(days - 1));
+  // A budget month is compared with the budget month before it, not just as many days back.
+  const { from: prevFrom, to: prevTo } = previousPeriod(from, to, financialMonth);
+  const prevDays = daysInclusive(prevFrom, prevTo);
   const today = todayStr();
+  const net = (await getSharedCostMode()) === "net";
   const ongoing = from <= today && today <= to;
   // The two periods before the previous one: with it, the history the projection's
   // day-to-day rate is read from.
@@ -135,9 +141,9 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   const olderTo = shiftDate(prevFrom, -1);
 
   const [current, previous, older, [firstTransaction], allBanks, allCategories, budgetOverview, recurringMode, billStatuses] = await Promise.all([
-    loadAllocations(from, to, categoryIds, accounts),
-    loadAllocations(prevFrom, prevTo, categoryIds, accounts),
-    ongoing ? loadAllocations(olderFrom, olderTo, categoryIds, accounts) : Promise.resolve<Awaited<ReturnType<typeof loadAllocations>>>({ rows: [], allocations: [] }),
+    loadAllocations(from, to, net, categoryIds, accounts),
+    loadAllocations(prevFrom, prevTo, net, categoryIds, accounts),
+    ongoing ? loadAllocations(olderFrom, olderTo, net, categoryIds, accounts) : Promise.resolve<Awaited<ReturnType<typeof loadAllocations>>>({ rows: [], allocations: [] }),
     db.select({ date: min(transactions.date) }).from(transactions),
     db.select().from(banks),
     db.select().from(categories),
@@ -158,9 +164,13 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
 
   const income = sum(relevant, "income");
   const expense = sum(relevant, "expense");
-  const prevIncome = sum(prevRelevant, "income");
   const prevExpense = sum(prevRelevant, "expense");
-  const saved = income - expense;
+  // Money others paid back (a Tikkie) isn't income, but it is money you kept: reporting
+  // gross, it counts toward Saved; netting, the expenses already shrank by it.
+  const paidBack = net
+    ? 0
+    : current.allocations.filter((r) => r.direction === "income" && r.isReimbursement && !r.isInternalTransfer).reduce((s, r) => s + r.amount, 0);
+  const saved = income + paidBack - expense;
 
   const dailyExpense = new Map<string, number>();
   const dailyIncome = new Map<string, number>();
@@ -199,7 +209,20 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   });
   const billsDue = [...dailyBills.values()].reduce((s, v) => s + v, 0);
   // The running-total card's lines: this period and the previous one added up day by day.
-  const totals = runningTotals({ from, to, today, daily: dailyExpense, previousDaily: prevDailyExpense, ahead: { billsDue, perDay } });
+  const totals = runningTotals({
+    from,
+    to,
+    today,
+    daily: dailyExpense,
+    previousDaily: prevDailyExpense,
+    previousRange: { from: prevFrom, to: prevTo },
+    ahead: { billsDue, perDay },
+  });
+  // While the period runs, the changes compare with the previous period by the same day,
+  // like the spending chip, not a few days of this one with the whole of the last.
+  const prevSameDayEnd = ongoing ? shiftDate(prevFrom, Math.min(totals.elapsed, prevDays) - 1) : prevTo;
+  const prevIncomeSoFar = prevRelevant.filter((r) => r.direction === "income" && r.date <= prevSameDayEnd).reduce((s, r) => s + r.amount, 0);
+  const prevExpenseSoFar = prevRelevant.filter((r) => r.direction === "expense" && r.date <= prevSameDayEnd).reduce((s, r) => s + r.amount, 0);
 
   const { grain, ranges } = chartRanges(from, to);
   const sumRange = (map: Map<string, number>, r: { from: string; to: string }) => {
@@ -372,15 +395,15 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     expense,
     saved,
     prevExpense,
-    prevDays: days,
+    prevDays,
     prevFrom,
     prevTo,
     daysElapsed,
     totals,
     budgetTarget,
     chartBudget: runningTotalBudget({ from, to, today, financialMonth, overview: budgetOverview, filtered: !!categoryIds?.length || !!accounts?.length }),
-    incomeChange: change(income, prevIncome),
-    expenseChange: change(expense, prevExpense),
+    incomeChange: change(income, prevIncomeSoFar),
+    expenseChange: change(expense, prevExpenseSoFar),
     largest: largest
       ? {
           amount: largest.amount,
@@ -405,7 +428,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     accountsSpend,
     calendar,
     avgExpensePerDay: averagePerDay(expense, daysElapsed),
-    prevAvgExpensePerDay: prevExpense > 0 ? averagePerDay(prevExpense, days) : null,
+    prevAvgExpensePerDay: prevExpense > 0 ? averagePerDay(prevExpense, prevDays) : null,
     uncategorised: { count: uncategorisedIds.size, amount: uncategorisedAmount },
     popularDayIdx,
     popularDayAvg,

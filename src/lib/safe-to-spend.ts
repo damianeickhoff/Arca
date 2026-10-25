@@ -19,6 +19,11 @@ export interface SafeToSpend {
   resetsOn: string;
   /** How far through the period today is, 0–1. */
   elapsed: number;
+  /** What an even pace has spent by the end of today: the bills already paid plus the
+   *  day-to-day budget (the budget minus this period's bills) spread evenly over the days. */
+  even: number;
+  /** Bills already paid this period, part of `spent`. */
+  billsSpent: number;
   /** Days in the budget period. */
   totalDays: number;
   pace: SafeToSpendPace;
@@ -41,7 +46,8 @@ export interface UpcomingBill {
  * "bills" to "spent" without changing the total. Null without a budget.
  */
 export function safeToSpend(
-  overview: Pick<BudgetOverview, "budget" | "allocated" | "totalSpent" | "budgetedSpent" | "from" | "to" | "categories">,
+  overview: Pick<BudgetOverview, "budget" | "allocated" | "totalSpent" | "budgetedSpent" | "from" | "to" | "categories"> &
+    Partial<Pick<BudgetOverview, "billsSpent" | "budgetedBillsSpent">>,
   bills: readonly UpcomingBill[],
   recurringMode: BudgetRecurringMode,
   today: string,
@@ -50,6 +56,7 @@ export function safeToSpend(
   const target = hasOverall ? overview.budget!.amount : overview.allocated;
   if (target <= 0) return null;
   const spent = hasOverall ? overview.totalSpent : overview.budgetedSpent;
+  const billsSpent = (hasOverall ? overview.billsSpent : overview.budgetedBillsSpent) ?? 0;
 
   const reserved = bills
     .filter((b) => !b.isIncome && b.dueDate >= today && b.dueDate <= overview.to)
@@ -60,7 +67,13 @@ export function safeToSpend(
   const totalDays = Math.max(1, daysInclusive(overview.from, overview.to));
   const daysLeft = Math.max(1, daysInclusive(today < overview.from ? overview.from : today, overview.to));
   const elapsed = (totalDays - daysLeft) / totalDays;
-  const used = (spent + reserved) / target;
+  // The pace is about day-to-day spending: bills are taken as they come (paid ones as
+  // paid, the rest reserved), and what is left of the budget is spread evenly over the
+  // days, today included. Comparing spent + bills with the budget × elapsed instead put
+  // every month on "Spending fast" on day one, the bills all being due early.
+  const daysSoFar = today < overview.from ? 0 : daysInclusive(overview.from, today < overview.to ? today : overview.to);
+  const dayToDayBudget = Math.max(0, target - billsSpent - reserved);
+  const even = billsSpent + (dayToDayBudget * daysSoFar) / totalDays;
 
   return {
     target,
@@ -70,8 +83,10 @@ export function safeToSpend(
     perDay: Math.max(0, amount) / daysLeft,
     resetsOn: shiftDate(overview.to, 1),
     elapsed,
+    even,
+    billsSpent,
     totalDays,
-    pace: amount < 0 ? "over" : used > elapsed + 0.05 ? "fast" : "onPace",
+    pace: amount < 0 ? "over" : spent - even > 0.05 * dayToDayBudget ? "fast" : "onPace",
   };
 }
 

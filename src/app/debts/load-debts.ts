@@ -85,12 +85,6 @@ export function unlinkedDebtMinimums(computed: readonly ComputedDebt[]): number 
     .reduce((s, c) => s + Math.max(0, c.debt.minimumPayment), 0);
 }
 
-/** The same, loading the debts first — for the Forecast plan. */
-export async function loadUnlinkedDebtMinimums(): Promise<number> {
-  const { computed } = await loadDebtsData();
-  return unlinkedDebtMinimums(computed);
-}
-
 /**
  * "This month's payments": each open debt's payment in the current financial month.
  * A debt paid by a linked recurring bill takes that bill's status (matched to a
