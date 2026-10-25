@@ -33,7 +33,7 @@ function row(partial: Partial<TrendsRow>): TrendsRow {
     categoryGroup: "",
     budgetType: "nodig",
     isReimbursement: false,
-    isInternalTransfer: false,
+    outOfReports: false,
     ...partial,
   };
 }
@@ -87,7 +87,7 @@ describe("trendsMonths", () => {
 
 describe("classifyRow and monthFlows", () => {
   it("leaves transfers and reimbursements out and counts savings as saved", () => {
-    expect(classifyRow(row({ isInternalTransfer: true }))).toBeNull();
+    expect(classifyRow(row({ outOfReports: true }))).toBeNull();
     expect(classifyRow(row({ direction: "income", isReimbursement: true }))).toBeNull();
     expect(classifyRow(row({ categoryGroup: "savings" }))).toBe("saved");
     expect(classifyRow(row({ categoryGroup: "savings", direction: "income" }))).toBeNull();

@@ -11,7 +11,8 @@ import { financialMonthRange } from "@/lib/date-range";
  * What each category counted this financial month, for the Categories settings list:
  * money spent for spending categories, money received for income ones and money put
  * aside for savings ones (split transactions count per part). Reimbursements and
- * transfers between your own accounts are left out, except into savings. Also the
+ * transfers between your own accounts are left out, except into savings; so is a row
+ * excluded from reports. Also the
  * standing budget of every category and group that has one.
  */
 export async function getCategoryMonthTotals() {
@@ -30,7 +31,7 @@ export async function getCategoryMonthTotals() {
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(and(gte(transactions.date, from), lte(transactions.date, to)));
+    .where(and(gte(transactions.date, from), lte(transactions.date, to), eq(transactions.excludeFromReports, false)));
   const allocations = buildSplitAllocations(rows, groupTransactionSplits(await getTransactionSplitRows(rows.map((r) => r.id))));
 
   const totals: Record<number, number> = {};

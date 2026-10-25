@@ -608,7 +608,28 @@ export function createSchema(sqlite: Database.Database): void {
   sqlite.exec(RECURRING_SUGGESTIONS_TABLE_SQL);
   sqlite.exec(DEBT_PAYMENTS_TABLE_SQL);
   sqlite.exec(NOTIFICATION_TABLES_SQL);
+  sqlite.exec(OWN_ACCOUNTS_TABLE_SQL);
+  try {
+    sqlite.exec(`ALTER TABLE transactions ADD COLUMN transfer_pair_id INTEGER REFERENCES transactions(id) ON DELETE SET NULL`);
+  } catch { /* column already exists */ }
+  try {
+    sqlite.exec(`ALTER TABLE transactions ADD COLUMN not_transfer INTEGER NOT NULL DEFAULT 0`);
+  } catch { /* column already exists */ }
 }
+
+// The owner's accounts that are not imported (savings, investments, a joint account,
+// card top-ups): money to or from one is an internal transfer. See ownAccounts in
+// src/db/schema.ts. Shared with the runtime auto-migrate in src/db/index.ts.
+export const OWN_ACCOUNTS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS own_accounts (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    name           TEXT    NOT NULL,
+    account_number TEXT,
+    match_text     TEXT,
+    transfer_kind  TEXT    NOT NULL DEFAULT 'other',
+    created_at     TEXT    DEFAULT (datetime('now'))
+  );
+`;
 
 // Notifications (/notifications) and the devices that get them as a push (Settings ›
 // Notifications), see src/lib/notifications.ts and src/lib/push.ts. Shared with the

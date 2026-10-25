@@ -24,6 +24,8 @@ export type SplitAwareTransactionBase = {
   reimbursedAmount?: number;
   isReimbursement?: boolean;
   isInternalTransfer?: boolean;
+  /** Left out of every total (outOfReportsExpr); falls back to isInternalTransfer. */
+  outOfReports?: boolean;
   categoryId?: number | null;
   categoryName?: string | null;
   categoryColor?: string | null;
@@ -38,6 +40,7 @@ export type SplitAwareAllocation = {
   amount: number;
   isReimbursement: boolean;
   isInternalTransfer: boolean;
+  outOfReports: boolean;
   categoryId: number | null;
   categoryName: string | null;
   categoryColor: string | null;
@@ -168,6 +171,7 @@ export function buildSplitAllocations<
             : roundToCents(split.amount),
           isReimbursement: transaction.isReimbursement ?? false,
           isInternalTransfer: transaction.isInternalTransfer ?? false,
+          outOfReports: transaction.outOfReports ?? transaction.isInternalTransfer ?? false,
           categoryId: split.categoryId,
           categoryName: split.categoryName ?? null,
           categoryColor: split.categoryColor ?? null,
@@ -185,6 +189,7 @@ export function buildSplitAllocations<
       amount: reimbursed > 0 ? roundToCents(baseTotal - reimbursed) : baseTotal,
       isReimbursement: transaction.isReimbursement ?? false,
       isInternalTransfer: transaction.isInternalTransfer ?? false,
+      outOfReports: transaction.outOfReports ?? transaction.isInternalTransfer ?? false,
       categoryId: transaction.categoryId ?? null,
       categoryName: transaction.categoryName ?? null,
       categoryColor: transaction.categoryColor ?? null,

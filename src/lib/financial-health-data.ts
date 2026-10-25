@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, categories, recurringItems, budgets, vermogenAccounts, debtRecurring } from "@/db/schema";
 import { and, asc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
@@ -131,7 +131,7 @@ export async function getMonthTotals(months: string[], financialMonth: Financial
         categoryId: transactions.categoryId,
         categoryGroup: categories.group,
         isReimbursement: transactions.isReimbursement,
-        isInternalTransfer: isInternalTransferExpr,
+        outOfReports: outOfReportsExpr,
       })
       .from(transactions)
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -155,7 +155,7 @@ export async function getMonthTotals(months: string[], financialMonth: Financial
 
   const paidBack = new Map<string, number>();
   for (const row of allocations) {
-    if (row.isInternalTransfer) continue;
+    if (row.outOfReports) continue;
     const range = ranges.find((r) => row.date >= r.from && row.date <= r.to);
     if (!range) continue;
     const bucket = totals.get(range.month)!;

@@ -1,9 +1,9 @@
 import { db } from "@/db";
-import { transactions, categories, categoryRules, banks, transactionSplits, type Bank } from "@/db/schema";
+import { transactions, categories, categoryRules, banks, ownAccounts, transactionSplits, type Bank } from "@/db/schema";
 import { matchRules, applyAllRules } from "@/lib/apply-rules";
 import { detectRecurringSuggestions } from "@/lib/recurring-suggestions";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
-import { isOwnAccountTransfer, normalizeAccountNumber } from "@/lib/internal-transfers";
+import { isOwnAccountTransfer, normalizeAccountNumber, pairNewTransfers } from "@/lib/internal-transfers";
 import { assignMissingMerchants, getOrCreateMerchantId } from "@/lib/merchants";
 import { deriveMerchantName } from "@/lib/merchant-name";
 import { and, isNotNull, isNull, sql, eq, inArray } from "drizzle-orm";
@@ -46,6 +46,7 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
   const recurringMatchers = await loadRecurringMatchers();
   const allBanks = await db.select().from(banks);
   const ownBanks = allBanks.map((b) => ({ accountNumber: b.accountNumber, displayName: b.displayName }));
+  const otherOwnAccounts = await db.select({ accountNumber: ownAccounts.accountNumber, matchText: ownAccounts.matchText }).from(ownAccounts);
 
   // Build banksByAccountNumber map for matchRules
   const banksByAccountNumber = new Map(
@@ -127,6 +128,7 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
         description: row.description,
       },
       ownBanks,
+      otherOwnAccounts,
     );
 
     let categoryId = recurringMatch?.categoryId
@@ -206,6 +208,10 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
   // Safety net for rows that slipped through without a merchant (e.g. duplicates whose
   // bank metadata was backfilled above). No-op when everything already has one.
   await assignMissingMerchants();
+
+  // Moves between two imported accounts (a top-up and the card payment that paid for it)
+  // are only visible once both legs are in.
+  pairNewTransfers();
 
   // Now that the new rows are in, link every transaction to its matching recurring item,
   // then look for new regular payments among the counterparties this import touched

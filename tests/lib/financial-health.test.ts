@@ -77,13 +77,13 @@ describe("getDailyBucketSplit", () => {
   it("buckets the last N days of expense by budget type, inside the range only", () => {
     const types = new Map<number, string | null>([[1, "nodig"], [2, "willen"], [3, null]]);
     const allocations = [
-      { date: "2026-03-10", direction: "expense", amount: 10, isInternalTransfer: false, categoryId: 1 },
-      { date: "2026-03-10", direction: "expense", amount: 5, isInternalTransfer: false, categoryId: 1 },
-      { date: "2026-03-09", direction: "expense", amount: 7, isInternalTransfer: false, categoryId: 2 },
-      { date: "2026-03-09", direction: "income", amount: 100, isInternalTransfer: false, categoryId: 1 },
-      { date: "2026-03-08", direction: "expense", amount: 50, isInternalTransfer: true, categoryId: 1 },
-      { date: "2026-03-08", direction: "expense", amount: 3, isInternalTransfer: false, categoryId: 3 },
-      { date: "2026-03-08", direction: "expense", amount: 4, isInternalTransfer: false, categoryId: null },
+      { date: "2026-03-10", direction: "expense", amount: 10, outOfReports: false, categoryId: 1 },
+      { date: "2026-03-10", direction: "expense", amount: 5, outOfReports: false, categoryId: 1 },
+      { date: "2026-03-09", direction: "expense", amount: 7, outOfReports: false, categoryId: 2 },
+      { date: "2026-03-09", direction: "income", amount: 100, outOfReports: false, categoryId: 1 },
+      { date: "2026-03-08", direction: "expense", amount: 50, outOfReports: true, categoryId: 1 },
+      { date: "2026-03-08", direction: "expense", amount: 3, outOfReports: false, categoryId: 3 },
+      { date: "2026-03-08", direction: "expense", amount: 4, outOfReports: false, categoryId: null },
     ];
     const split = getDailyBucketSplit(allocations, types, "2026-03-07", "2026-04-06", 7);
     expect(split).toEqual([

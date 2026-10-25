@@ -139,6 +139,13 @@ export const transactions = sqliteTable("transactions", {
   // cash_withdrawal/shared_account/other). Null = derive it from the opposite account's
   // banks.transferKind (see src/lib/internal-transfers.ts effectiveTransferTypeExpr).
   transferType: text("transfer_type"),
+  // The other leg when this row is one half of a move between two imported accounts
+  // (same amount, opposite direction, close in time; see src/lib/transfer-pairs.ts).
+  // Both legs point at each other; a paired row is an internal transfer.
+  transferPairId: integer("transfer_pair_id").references((): AnySQLiteColumn => transactions.id, { onDelete: "set null" }),
+  // true = the owner said this is not a transfer ("Not a transfer" in the detail panel):
+  // overrides every automatic rule (account match, pair) and keeps it out of pairing.
+  notTransfer: integer("not_transfer", { mode: "boolean" }).notNull().default(false),
   // The account balance the bank itself reported *after* this transaction ("Saldo na
   // mutatie" / "Resulting balance"), when the import mapped such a column. Null for
   // manual entries and for every import whose file has no balance column.
@@ -497,6 +504,24 @@ export const banks = sqliteTable("banks", {
 
 export type Bank = typeof banks.$inferSelect;
 export type NewBank = typeof banks.$inferInsert;
+
+// ─── Own accounts ───────────────────────────────────────────────────────────
+// The owner's accounts that are not imported (a savings or investment account, a
+// joint account, a card top-up): money moving to or from one is an internal transfer,
+// never income or spending. A row matches by account number (its counter account, or
+// the number in its description) or by a piece of its description. See
+// src/lib/internal-transfers.ts; managed in Settings › Accounts.
+export const ownAccounts = sqliteTable("own_accounts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  accountNumber: text("account_number"), // normalized: no spaces, upper case
+  matchText: text("match_text"),
+  // savings | investments | shared_account | other (see src/lib/transfer-types.ts)
+  transferKind: text("transfer_kind").notNull().default("other"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`),
+});
+
+export type OwnAccount = typeof ownAccounts.$inferSelect;
 
 // ─── Bank connections (Enable Banking) ──────────────────────────────────────
 // One consent at one bank (an Enable Banking session), valid until `validUntil` (at

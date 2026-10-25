@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, categories, budgetTargets, budgets } from "@/db/schema";
 import { eq, and, gte, lte, asc, inArray, notInArray } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
@@ -61,7 +61,7 @@ async function variableSpend(from: string, to: string, variableIds: Set<number>,
     reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     isReimbursement: transactions.isReimbursement,
-    isInternalTransfer: isInternalTransferExpr,
+    outOfReports: outOfReportsExpr,
     recurringItemId: transactions.recurringItemId,
   }).from(transactions)
     .where(and(gte(transactions.date, from), lte(transactions.date, to)));
@@ -75,7 +75,7 @@ async function variableSpend(from: string, to: string, variableIds: Set<number>,
   const byCategory = new Map<number, CategorySpend>();
   const uncategorised: CategorySpend = { nonRecurring: 0, recurring: 0 };
   for (const row of allocations) {
-    if (row.direction !== "expense" || row.isInternalTransfer) continue;
+    if (row.direction !== "expense" || row.outOfReports) continue;
     if (row.categoryId == null) {
       if (recurringTxIds.has(row.transactionId)) uncategorised.recurring += row.amount;
       else uncategorised.nonRecurring += row.amount;

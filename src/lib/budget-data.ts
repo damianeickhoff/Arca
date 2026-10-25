@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, categories, budgetTargets } from "@/db/schema";
 import { eq, and, gte, lte, asc, inArray } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getSharedCostMode } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, offsetFinancialMonth, type FinancialMonthConfig } from "@/lib/date-range";
@@ -15,7 +15,7 @@ function toDateStr(d: Date) {
 /** Per-day spend for each budget bucket (nodig/willen/sparen), for the last N days within the
  * selected financial month — drives the small heatmap on the income card. */
 export function getDailyBucketSplit(
-  allocations: { date: string; direction: string; amount: number; isInternalTransfer: boolean; categoryId: number | null }[],
+  allocations: { date: string; direction: string; amount: number; outOfReports: boolean; categoryId: number | null }[],
   catBudgetTypeById: Map<number, string | null>,
   rangeStart: string,
   rangeEnd: string,
@@ -33,7 +33,7 @@ export function getDailyBucketSplit(
 
   const perDay = new Map<string, Record<string, number>>(columns.map((d) => [d, {}]));
   for (const row of allocations) {
-    if (row.direction !== "expense" || row.isInternalTransfer) continue;
+    if (row.direction !== "expense" || row.outOfReports) continue;
     if (!perDay.has(row.date) || row.categoryId == null) continue;
     const bucket = catBudgetTypeById.get(row.categoryId);
     if (!bucket) continue;
@@ -66,7 +66,7 @@ export async function getBudgetData(
       categoryGroup: categories.group,
       budgetTypeOverride: transactions.budgetTypeOverride,
       isReimbursement: transactions.isReimbursement,
-      isInternalTransfer: isInternalTransferExpr,
+      outOfReports: outOfReportsExpr,
     }).from(transactions)
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
       .where(and(gte(transactions.date, start), lte(transactions.date, end))),
@@ -91,7 +91,7 @@ export async function getBudgetData(
   const rollupId = (id: number) => catById.get(id)?.parentCategoryId ?? id;
 
   const income = allocations
-    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer)
+    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.outOfReports)
     .reduce((sum, row) => sum + row.amount, 0);
 
   const allExpenseCatIds = new Set(allExpenseCats.map((c) => c.id));
@@ -100,7 +100,7 @@ export async function getBudgetData(
   const variableCatIds = new Set(allVariableCats.map((c) => c.id));
   const spendingMap = new Map(
     allocations
-      .filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryId != null && variableCatIds.has(row.categoryId))
+      .filter((row) => row.direction === "expense" && !row.outOfReports && row.categoryId != null && variableCatIds.has(row.categoryId))
       .reduce((map, row) => {
         const cid = rollupId(row.categoryId!);
         map.set(cid, (map.get(cid) ?? 0) + row.amount);
@@ -141,7 +141,7 @@ export async function getBudgetData(
         categoryId: transactions.categoryId,
         categoryGroup: categories.group,
         isReimbursement: transactions.isReimbursement,
-        isInternalTransfer: isInternalTransferExpr,
+        outOfReports: outOfReportsExpr,
       }).from(transactions)
         .leftJoin(categories, eq(transactions.categoryId, categories.id))
         .where(and(gte(transactions.date, prevStart), lte(transactions.date, prevEnd))),
@@ -155,7 +155,7 @@ export async function getBudgetData(
     const prevAllocations = buildSplitAllocations(prevPeriodRows, prevSplitMap, { netReimbursements });
     const prevSpendingMap = new Map(
       prevAllocations
-        .filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryId != null && variableCatIds.has(row.categoryId))
+        .filter((row) => row.direction === "expense" && !row.outOfReports && row.categoryId != null && variableCatIds.has(row.categoryId))
         .reduce((map, row) => {
           const cid = rollupId(row.categoryId!);
           map.set(cid, (map.get(cid) ?? 0) + row.amount);
@@ -198,7 +198,7 @@ export async function getBudgetData(
   const overrideById = new Map(periodRows.map((row) => [row.id, row.budgetTypeOverride]));
   const byBudgetType: Record<string, number> = {};
   for (const row of allocations) {
-    if (row.direction !== "expense" || row.isInternalTransfer || row.categoryId == null || !allExpenseCatIds.has(row.categoryId)) continue;
+    if (row.direction !== "expense" || row.outOfReports || row.categoryId == null || !allExpenseCatIds.has(row.categoryId)) continue;
     const cat = catById.get(row.categoryId)!;
     if (cat.group === "income") continue;
     const kind = overrideById.get(row.transactionId) ?? (cat.group === "savings" ? "sparen" : cat.budgetType);

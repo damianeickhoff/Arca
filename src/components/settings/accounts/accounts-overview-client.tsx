@@ -23,11 +23,13 @@ import {
   assetGlyph,
   useAccountTypeLabels,
 } from "@/app/settings/account-edit-dialogs";
-import type { Bank, VermogenAccount } from "@/db/schema";
+import type { Bank, OwnAccount, VermogenAccount } from "@/db/schema";
+import type { OwnAccountSuggestion } from "@/lib/own-account-suggestions";
 import type { BankBalance, BalancePoint } from "@/lib/account-balances";
 import type { OverdraftMode } from "@/lib/app-settings";
 import { MoneyText } from "@/components/clear/money";
 import { OverdraftModeSwitch } from "@/components/settings/accounts/overdraft-mode-switch";
+import { OwnAccountsSection } from "@/components/settings/accounts/own-accounts-section";
 
 const RANGES = [
   { key: "1w", days: 7 },
@@ -44,15 +46,18 @@ interface Props {
   assets: VermogenAccount[];
   history: BalancePoint[];
   overdraftMode: OverdraftMode;
+  ownAccounts: OwnAccount[];
+  ownAccountSuggestions: OwnAccountSuggestion[];
 }
 
 /**
  * The Accounts settings panel: the combined total and its history, then bank accounts
- * and other assets, each with its add button. A row opens its edit dialog. The old
+ * and other assets, each with its add button, then the own accounts that are not
+ * imported (transfers to them are not income or spending). A row opens its edit dialog. The old
  * /settings/accounts/{banks,vermogen}/add routes redirect here with ?add=bank|asset,
  * which opens the matching add dialog.
  */
-export function AccountsOverviewClient({ banks: initialBanks, assets: initialAssets, history, overdraftMode }: Props) {
+export function AccountsOverviewClient({ banks: initialBanks, assets: initialAssets, history, overdraftMode, ownAccounts, ownAccountSuggestions }: Props) {
   const t = useTranslations("accountForms");
   const tSettings = useTranslations("settings");
   const locale = useLocale();
@@ -204,6 +209,9 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
             />
           ))}
         </AccountSection>
+
+        {/* ── Own accounts that are not imported ── */}
+        <OwnAccountsSection accounts={ownAccounts} suggestions={ownAccountSuggestions} />
 
         {/* The add buttons now open real dialogs with every field (IBAN, starting
             balance and date, transfer type; the asset kinds) — point them out once. */}

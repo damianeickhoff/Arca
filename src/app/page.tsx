@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { and, desc, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { banks, categories, goals, merchants, recurringItems, transactions } from "@/db/schema";
-import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
+import { isInternalTransferExpr, effectiveTransferTypeExpr, outOfReportsExpr, savedTransferExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getDateRange, financialMonthForDate, financialMonthRange, currentFinancialMonth, daysInclusive, shiftDate, todayStr } from "@/lib/date-range";
 import { getFinancialMonthConfig, getBudgetRecurringMode, getSharedCostMode, getHomeGetStartedDismissed, getOverdraftMode } from "@/lib/app-settings";
@@ -49,8 +49,9 @@ const CHART_MONTHS = 6;
 
 /**
  * Money in and out for the Home figures, with the dashboard's spending rules: split
- * aware, internal transfers and reimbursements left out, and money moved into savings
- * categories counted as saved rather than spent.
+ * aware, internal transfers, rows excluded from reports and reimbursements left out, and
+ * money moved into savings (a savings category, or an own savings or investment account)
+ * counted as saved rather than spent.
  */
 async function getHomeData(from: string, to: string, financialMonth: Awaited<ReturnType<typeof getFinancialMonthConfig>>, netReimbursements: boolean) {
   const chartFrom = financialMonthRange(financialMonth, -(CHART_MONTHS - 1)).from;
@@ -72,7 +73,8 @@ async function getHomeData(from: string, to: string, financialMonth: Awaited<Ret
         categoryName: categories.name,
         categoryGroup: categories.group,
         isReimbursement: transactions.isReimbursement,
-        isInternalTransfer: isInternalTransferExpr,
+        outOfReports: outOfReportsExpr,
+        savedTransfer: savedTransferExpr,
         recurringItemId: transactions.recurringItemId,
       })
       .from(transactions)
@@ -133,6 +135,7 @@ async function getHomeData(from: string, to: string, financialMonth: Awaited<Ret
   let fixed = 0;
   let saved = 0;
   const recurringTx = new Set(rows.filter((r) => r.recurringItemId != null).map((r) => r.id));
+  const savedTransferTx = new Set(rows.filter((r) => r.savedTransfer).map((r) => r.id));
   const byMonth = new Map<string, { income: number; expense: number }>();
   // Every expense, for the hero's pace line (lib/safe-to-spend decides what counts).
   const expenses: SpendEntry[] = [];
@@ -140,7 +143,12 @@ async function getHomeData(from: string, to: string, financialMonth: Awaited<Ret
   const flow = new Map<string, { in: number; out: number }>();
 
   for (const a of allocations) {
-    if (a.isReimbursement || a.isInternalTransfer) continue;
+    if (a.isReimbursement) continue;
+    if (savedTransferTx.has(a.transactionId)) {
+      if (a.date >= from && a.date <= to && a.direction === "expense") saved += a.amount;
+      continue;
+    }
+    if (a.outOfReports) continue;
     if (a.direction === "expense") {
       expenses.push({ date: a.date, amount: a.amount, categoryId: a.categoryId, recurring: recurringTx.has(a.transactionId) });
     }
