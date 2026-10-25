@@ -7,6 +7,7 @@ import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { getBudgetStrategy, getBudgetRecurringMode, getSharedCostMode } from "@/lib/app-settings";
 import { currentFinancialMonth, financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
+import { getBudgetIncome, type BudgetIncomeSource } from "@/lib/budget-income";
 
 const VARIABLE_TYPES = ["nodig", "willen", "sparen"] as const;
 
@@ -104,7 +105,11 @@ export interface BudgetOverview {
   last30Total: number;     // trailing-30-day variable spend (creation hint, shown for monthly)
   last7Total: number;      // trailing-7-day variable spend (creation hint, shown for weekly)
   allocated: number;       // sum of category budgets
-  income: number;          // current financial-month income (for the advised amount)
+  /** Monthly income the budget is planned on (the strategy, the advised amount): the
+   *  regular income from recurring income items, or — without any — what came in this
+   *  financial month. `incomeSource` says which. See getBudgetIncome. */
+  income: number;
+  incomeSource: BudgetIncomeSource;
   strategy: { nodig: number; willen: number; sparen: number };
   categories: BudgetCategoryRow[];
 }
@@ -155,25 +160,11 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig, op
     variableSpend(last7From, todayStr, variableIds, netReimbursements),
   ]);
 
-  // Current financial-month income — used to compute the strategy-based advised amount.
+  // The income the strategy and the advised amount are planned on: the regular monthly
+  // income (recurring income items), else what came in this financial month. An earlier
+  // month is read as of its last day, so items that ended since still count for it.
   const fmRange = financialMonthRangeByMonth(month, financialMonth);
-  const incomeRows = await db.select({
-    id: transactions.id,
-    date: transactions.date,
-    direction: transactions.direction,
-    amount: transactions.amount,
-    correctedAmount: transactions.correctedAmount,
-    reimbursedAmount: reimbursedAmountExpr,
-    categoryId: transactions.categoryId,
-    isReimbursement: transactions.isReimbursement,
-    isInternalTransfer: isInternalTransferExpr,
-  }).from(transactions)
-    .where(and(gte(transactions.date, fmRange.from), lte(transactions.date, fmRange.to), eq(transactions.direction, "income")));
-  const incomeSplitRows = await getTransactionSplitRows(incomeRows.map((r) => r.id));
-  const incomeAlloc = buildSplitAllocations(incomeRows, groupTransactionSplits(incomeSplitRows));
-  const income = incomeAlloc
-    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer)
-    .reduce((s, row) => s + row.amount, 0);
+  const { income, source: incomeSource } = await getBudgetIncome(fmRange, fmRange.to < todayStr ? fmRange.to : todayStr);
 
   const defaultMap = new Map(defaultTargetRows.map((t) => [t.categoryId, t.targetAmount]));
 
@@ -250,6 +241,7 @@ export async function getBudgetOverview(financialMonth: FinancialMonthConfig, op
     last7Total: resolvedTotal(last7Spend),
     allocated,
     income,
+    incomeSource,
     strategy,
     categories: categoryRows,
   };

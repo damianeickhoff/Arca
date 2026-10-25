@@ -216,7 +216,13 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
   const strategyChanged = KINDS.some((k) => strategyDraft[k] !== data.strategy[k]);
   // A split that doesn't add up only blocks the editor's Save once it has been touched.
   const editorCanSave = strategyOk || !strategyChanged;
-  const advised = Math.round((data.income * (strategyDraft.nodig + strategyDraft.willen)) / 100);
+  // The income the budget is planned on is a monthly figure; a weekly budget is measured
+  // against its weekly share (12 months over 52 weeks).
+  const periodIncome = period === "weekly" ? (data.income * 12) / 52 : data.income;
+  const advisedMonthly = Math.round((data.income * (strategyDraft.nodig + strategyDraft.willen)) / 100);
+  const advised = Math.round((periodIncome * (strategyDraft.nodig + strategyDraft.willen)) / 100);
+  // A soft warning only: Save stays enabled.
+  const overIncome = data.income > 0 && parsedAmount > periodIncome ? parsedAmount - periodIncome : 0;
 
   // Parents with their sub-categories right after them — the order rows and the
   // picker list categories in.
@@ -600,10 +606,19 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
                 </button>
               )}
             </div>
+            {overIncome > 0 && (
+              <p role="status" className="m-0 rounded-clear-tile bg-clear-peach px-4 py-3 text-[13px] leading-[1.45] font-semibold text-clear-peach-ink">
+                <MoneyText>{t(data.incomeSource === "recurring" ? "overIncome" : "overReceived", {
+                  period,
+                  amount: formatEurWhole(overIncome),
+                  income: formatEurWhole(periodIncome),
+                })}</MoneyText>
+              </p>
+            )}
           </div>
 
           {/* Budget strategy */}
-          <BudgetStrategyEditor title={t("strategyTitle")} value={strategyDraft} onChange={setStrategyDraft} income={data.income} />
+          <BudgetStrategyEditor title={t("strategyTitle")} value={strategyDraft} onChange={setStrategyDraft} income={data.income} incomeSource={data.incomeSource} />
 
           {/* Category budgets */}
           <section ref={categoriesRef} aria-labelledby="budget-editor-categories" className="flex scroll-mt-2 flex-col gap-3.5">
@@ -792,13 +807,14 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
           </ClearDialogFooter>
         }
       >
-        <BudgetStrategyEditor value={strategyDraft} onChange={setStrategyDraft} income={data.income} />
+        <BudgetStrategyEditor value={strategyDraft} onChange={setStrategyDraft} income={data.income} incomeSource={data.incomeSource} />
         {data.income > 0 && (
           <p className="m-0 text-[13px] text-clear-ink-2">
             <MoneyText>{t.rich("advisedBudget", {
-              amount: formatEurWhole(advised),
+              amount: formatEurWhole(advisedMonthly),
               pct: strategyDraft.nodig + strategyDraft.willen,
               income: formatEurWhole(data.income),
+              source: data.incomeSource,
               b: (chunks) => <b className="text-clear-ink"><MoneyText>{chunks}</MoneyText></b>,
             })}</MoneyText>
           </p>

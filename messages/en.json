@@ -693,10 +693,12 @@
     "removeBudget": "Remove budget",
     "strategyTitle": "Budget strategy",
     "strategyDesc": "How your income splits across Needs, Wants, and Savings.",
-    "strategyBasedOn": "Based on <b>{income}</b> income this month",
-    "strategyNoIncome": "No income this month yet, so no amounts to show.",
-    "advisedBudget": "Advised budget: <b>{amount}</b> ({pct}% of {income} income)",
+    "strategyBasedOn": "{source, select, recurring {Based on your regular income of <b>{income}</b> a month} other {Based on <b>{income}</b> that came in this month}}",
+    "strategyNoIncome": "No recurring income set up and no income this month yet, so no amounts to show.",
+    "advisedBudget": "{source, select, recurring {Advised budget: <b>{amount}</b> a month ({pct}% of your regular income of {income})} other {Advised budget: <b>{amount}</b> a month ({pct}% of the {income} that came in this month)}}",
     "advised": "Advised: {amount}",
+    "overIncome": "{period, select, weekly {That's {amount} more than your regular income of {income} a week.} other {That's {amount} more than your regular income of {income} a month.}}",
+    "overReceived": "{period, select, weekly {That's {amount} more than your income this month, about {income} a week.} other {That's {amount} more than the {income} that came in this month.}}",
     "exceedTitle": "Category budgets exceed your overall budget",
     "exceedDesc": "Your category budgets add up to {total}, more than your overall budget of {overall}. Increase the overall budget to {total}, or cancel and lower the category amount instead.",
     "increaseOverall": "Increase overall to {amount}",
@@ -4390,8 +4392,8 @@
         "of": "<b>{actual}</b> of {target}",
         "target": "Target",
         "actual": "Actual",
-        "onIncome": "On {income} income: needs {needs}, wants {wants}, savings {savings}.",
-        "noIncome": "No income this month yet, so there is nothing to split. The percentages apply as soon as income comes in."
+        "onIncome": "{source, select, recurring {On your regular income of {income} a month: needs {needs}, wants {wants}, savings {savings}.} other {On the {income} that came in this month: needs {needs}, wants {wants}, savings {savings}.}}",
+        "noIncome": "No recurring income set up and no income this month yet, so there is nothing to split. Add your salary as recurring income, or the percentages apply as soon as income comes in."
       },
       "categories": {
         "title": "Category budgets",

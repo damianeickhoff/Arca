@@ -156,6 +156,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
     unbudgeted: Math.max(0, overview.totalSpent - overview.budgetedSpent),
     strategy: overview.strategy,
     income: overview.income,
+    incomeSource: overview.incomeSource,
     actuals: {
       nodig: budgetData.byBudgetType.nodig ?? 0,
       willen: budgetData.byBudgetType.willen ?? 0,

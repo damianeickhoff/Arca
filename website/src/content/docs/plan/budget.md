@@ -15,6 +15,7 @@ The overall budget is the most you want to spend in a period.
 
 - Choose **Monthly** or **Weekly**. A monthly budget follows your [financial month](/Arca/settings/preferences/#financial-month) (usually payday to payday); a weekly one resets every Monday.
 - **Edit budget** changes the amount; **Delete budget** removes it (and the category budgets with it).
+- If the amount you type is more than your regular income, the editor says by how much. It's only a heads-up: you can still save it.
 
 :::tip
 You don't need an overall budget. Without one, your category budgets together are the limit.
@@ -53,7 +54,7 @@ Use the arrows next to the dates to see how an earlier budget month ended: what 
 
 ## Your strategy: needs, wants and savings
 
-The **Budget strategy** splits your income into three parts:
+The **Budget strategy** splits your income into three parts. Your income here is your regular income: the [recurring](/Arca/plan/recurring/) income items such as salary and benefits, averaged to a month, so it's there before payday and a one-off refund or sale doesn't change it. Without recurring income, Arca uses what came in this month.
 
 - **Needs**: things you can't skip, like rent, groceries and insurance.
 - **Wants**: everything that's nice but optional.

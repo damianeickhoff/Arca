@@ -693,10 +693,12 @@
     "removeBudget": "Budget verwijderen",
     "strategyTitle": "Budgetstrategie",
     "strategyDesc": "Hoe je inkomen wordt verdeeld over Nodig, Willen en Sparen.",
-    "strategyBasedOn": "Op basis van <b>{income}</b> inkomen deze maand",
-    "strategyNoIncome": "Nog geen inkomen deze maand, dus nog geen bedragen.",
-    "advisedBudget": "Aanbevolen budget: <b>{amount}</b> ({pct}% van {income} inkomen)",
+    "strategyBasedOn": "{source, select, recurring {Op basis van je vaste inkomen van <b>{income}</b> per maand} other {Op basis van <b>{income}</b> die deze maand binnenkwam}}",
+    "strategyNoIncome": "Geen vast inkomen ingesteld en nog geen inkomen deze maand, dus nog geen bedragen.",
+    "advisedBudget": "{source, select, recurring {Aanbevolen budget: <b>{amount}</b> per maand ({pct}% van je vaste inkomen van {income})} other {Aanbevolen budget: <b>{amount}</b> per maand ({pct}% van de {income} die deze maand binnenkwam)}}",
     "advised": "Aanbevolen: {amount}",
+    "overIncome": "{period, select, weekly {Dat is {amount} meer dan je vaste inkomen van {income} per week.} other {Dat is {amount} meer dan je vaste inkomen van {income} per maand.}}",
+    "overReceived": "{period, select, weekly {Dat is {amount} meer dan je inkomen deze maand, ongeveer {income} per week.} other {Dat is {amount} meer dan de {income} die deze maand binnenkwam.}}",
     "exceedTitle": "Categoriebudgetten overschrijden je totale budget",
     "exceedDesc": "Je categoriebudgetten komen samen op {total}, meer dan je totale budget van {overall}. Verhoog het totale budget naar {total}, of annuleer en verlaag het categoriebedrag.",
     "increaseOverall": "Verhoog totaal naar {amount}",
@@ -4390,8 +4392,8 @@
         "of": "<b>{actual}</b> van {target}",
         "target": "Doel",
         "actual": "Werkelijk",
-        "onIncome": "Bij {income} inkomen: nodig {needs}, willen {wants}, sparen {savings}.",
-        "noIncome": "Nog geen inkomen deze maand, dus er valt nog niets te verdelen. De percentages gelden zodra er inkomen binnenkomt."
+        "onIncome": "{source, select, recurring {Bij je vaste inkomen van {income} per maand: nodig {needs}, willen {wants}, sparen {savings}.} other {Bij de {income} die deze maand binnenkwam: nodig {needs}, willen {wants}, sparen {savings}.}}",
+        "noIncome": "Geen vast inkomen ingesteld en nog geen inkomen deze maand, dus er valt nog niets te verdelen. Voeg je salaris toe als vast inkomen, of de percentages gelden zodra er inkomen binnenkomt."
       },
       "categories": {
         "title": "Budget per categorie",

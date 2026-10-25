@@ -150,8 +150,10 @@ describe("budget-overview: getBudgetOverview", () => {
     expect([o.from, o.to, o.daysLeft]).toEqual(["2026-03-01", "2026-03-31", 12]);
     // Allocated = sum of default category targets (the March override is not used here).
     expect(o.allocated).toBe(500);
-    // Income excludes the Tikkie but includes Piet's repayment: 2500 + 50.
-    expect(o.income).toBe(2550);
+    // The regular income: the Salary item only. Piet's €50 is linked to a debt owed to
+    // the household, a repayment that stops once he has paid it all back.
+    expect(o.income).toBe(2500);
+    expect(o.incomeSource).toBe("recurring");
     expect(o.strategy).toEqual({ nodig: 60, willen: 25, sparen: 15 });
 
     const byId = new Map(o.categories.map((c) => [c.categoryId, c]));
