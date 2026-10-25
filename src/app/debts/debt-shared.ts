@@ -93,6 +93,10 @@ export function scheduledPaymentMonths(fromDate: string, toDate: string): string
  * The month the next payment falls in: one month after whichever is later, the balance
  * date or the last month already accounted for. Replaces payoffAnchor, which anchored on
  * the current month and so double-counted a payment already recorded this month.
+ *
+ * With a payment history (a linked bill: `lastRecordedMonth` is the calendar month of its
+ * latest payment) the next one is the month after that payment, never before this month:
+ * a bill still to come this month is this month's payment, not next month's.
  */
 export function firstOutstandingMonth(
   debt: { balanceDate?: string | null; startDate?: string | null; startMonth: string },
@@ -100,6 +104,11 @@ export function firstOutstandingMonth(
   asOf: Date = new Date(),
 ): string {
   const balanceDate = debtBalanceDate(debt);
+  if (lastRecordedMonth) {
+    const next = addMonths([monthOf(balanceDate), lastRecordedMonth].reduce((a, b) => (a > b ? a : b)), 1);
+    const thisMonth = monthOf(toDateString(asOf));
+    return next > thisMonth ? next : thisMonth;
+  }
   // Months already accounted for: every scheduled payment between the balance date and
   // now. Derived here rather than taken from the caller so the unlinked path lands on the
   // same month as the linked one — a debt shouldn't shift its payoff date by a month
@@ -119,6 +128,8 @@ export type DebtProgress = {
   /** Cash actually paid. Not the same as principal retired once interest is involved. */
   total: number;
   byMonth: { month: string; amount: number }[];
+  /** The date of the latest payment counted; null when none was. */
+  lastPaidDate?: string | null;
 };
 
 /**
@@ -194,7 +205,8 @@ export function computeDebt(debt: Debt, progress: DebtProgress | null, extras: r
   // The FINAL payment's date (not the month after). With N payments left, counting from
   // the first outstanding one, the last falls (N − 1) months later. Keep the debt's own
   // payment day (its start date's day) so the date shows a real day, not the 1st.
-  const lastRecorded = progress?.byMonth.filter((m) => m.amount > 0).at(-1)?.month ?? null;
+  // The calendar month of the latest payment counted: the schedule resumes after it.
+  const lastRecorded = progress?.lastPaidDate ? monthOf(progress.lastPaidDate) : null;
   const lastPaymentDate =
     monthsRemaining != null && monthsRemaining > 0
       ? (() => {

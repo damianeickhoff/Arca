@@ -39,7 +39,18 @@ export async function PlanCard({ data }: { data: ForecastData }) {
     { key: "recurring", value: p.recurring, fill: "bg-clear-primary", name: t("recurring"), meta: names(p.recurringNames) },
     { key: "debts", value: p.debts, fill: "bg-clear-rose-ink", name: t("debts"), meta: t("debtsMeta") },
     { key: "savings", value: p.savings, fill: "bg-clear-info-fill", name: t("savings"), meta: t("savingsMeta", { count: p.savingsNames.length, names: names(p.savingsNames) }) },
-    { key: "budgets", value: p.budgets, fill: "bg-clear-lilac-ink", name: p.budgetSource === "overall" ? t("budgetOverall") : t("budgets"), meta: p.budgetSource === "overall" ? t("budgetOverallMeta") : t("budgetsMeta", { count: p.budgetNames.length, names: names(p.budgetNames) }) },
+    {
+      key: "budgets",
+      value: p.budgets,
+      fill: "bg-clear-lilac-ink",
+      name: p.budgetSource === "overall" ? t("budgetOverall") : t("budgets"),
+      meta:
+        p.budgetSource === "overall"
+          ? p.covered > 0
+            ? t("budgetOverallCovers", { amount: formatEurWhole(p.covered) })
+            : t("budgetOverallMeta")
+          : t("budgetsMeta", { count: p.budgetNames.length, names: names(p.budgetNames) }),
+    },
     { key: "free", value: Math.max(0, p.free), fill: "bg-clear-ember", name: t("free"), meta: t("freeMeta", { amount: formatEurWhole(p.free / p.days) }) },
   ].filter((r) => r.value > 0);
 

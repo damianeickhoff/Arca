@@ -15,7 +15,8 @@ The **Period** menu at the top: **Budget** (your budget month, payday to payday)
 
 ## The cards
 
-- **Income**, **Expenses**, **Saved** (with the share of income) and your **Largest expense**.
+- **Income**, **Expenses**, **Saved** (with the share of income) and your **Largest expense**. Money moved to or from your Savings and Investments categories is left out.
+- **At this pace**: where the period ends, against your budget. Arca adds what you've spent so far, the bills still due before the end, and your usual day-to-day spending (everything no recurring bill pays, averaged over this period so far and the three before it) for the days left. Rent or a holiday paid on payday is counted once, not multiplied by the month.
 - A chart of money in and out, day by day, week by week or month by month, depending on how long the period is.
 - **Summary**: the period in three facts and what's left to spend per day (below).
 - **Spending by group** or **by category**: switch between spending and income, and between [groups](/Arca/settings/categories/) (like everything for the house) and single categories. Money without a category shows as **Other**, with a link to sort it.

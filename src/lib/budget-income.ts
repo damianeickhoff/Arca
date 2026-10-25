@@ -1,6 +1,6 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { debtRecurring, debts, recurringItems, transactions } from "@/db/schema";
+import { categories, debtRecurring, debts, recurringItems, transactions } from "@/db/schema";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
@@ -52,6 +52,20 @@ export function regularMonthlyIncome(items: IncomeItem[], today: string): number
     .reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
 }
 
+/** The default categories (categories.config_key) that hold salary and benefits. */
+const SALARY_AND_BENEFITS = new Set(["Salary", "Benefits"]);
+
+/**
+ * The income items the budget is planned on: salary and benefits, i.e. the items in the
+ * Salary or Benefits category (renamed or not) — not someone paying back their share of a
+ * bill, a loan being repaid or pocket money from the grandparents. Someone who keeps
+ * their income in categories of their own has none there, so then every item counts.
+ */
+export function salaryAndBenefits<T extends IncomeItem & { categoryKey: string | null }>(items: T[], today: string): T[] {
+  const main = items.filter((i) => i.categoryKey != null && SALARY_AND_BENEFITS.has(i.categoryKey));
+  return regularMonthlyIncome(main, today) > 0 ? main : items;
+}
+
 /** Income received over [from,to]: incoming transactions, minus reimbursements and
  *  transfers between own accounts, splits honoured. */
 export async function receivedIncome(from: string, to: string): Promise<number> {
@@ -74,9 +88,10 @@ export async function receivedIncome(from: string, to: string): Promise<number> 
 }
 
 /**
- * The income the budget is planned on: the regular monthly income (see
- * regularMonthlyIncome) as of `today`; without any, what came in during the financial
- * month [from,to] — so nothing changes for someone who hasn't set up recurring income.
+ * The income the budget is planned on: the regular monthly salary and benefits (see
+ * salaryAndBenefits, regularMonthlyIncome) as of `today`; without any, what came in
+ * during the financial month [from,to] — so nothing changes for someone who hasn't set up
+ * recurring income.
  */
 export async function getBudgetIncome(range: { from: string; to: string }, today: string): Promise<BudgetIncome> {
   // An income item linked to a debt owed TO the household is someone paying back a loan:
@@ -99,10 +114,12 @@ export async function getBudgetIncome(range: { from: string; to: string }, today
     isReimbursement: recurringItems.isReimbursement,
     startDate: recurringItems.startDate,
     endDate: recurringItems.endDate,
+    categoryKey: categories.configKey,
   }).from(recurringItems)
+    .leftJoin(categories, eq(recurringItems.categoryId, categories.id))
     .where(eq(recurringItems.type, "income"));
   const items = rows.filter((r) => !repaymentIds.has(r.id));
-  const regular = regularMonthlyIncome(items, today);
+  const regular = regularMonthlyIncome(salaryAndBenefits(items, today), today);
   if (regular > 0) return { income: regular, source: "recurring" };
   return { income: await receivedIncome(range.from, range.to), source: "received" };
 }

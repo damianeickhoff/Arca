@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { db } from "@/db";
 import { transactions, categories, banks, merchants } from "@/db/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and, gte, lte, desc, min } from "drizzle-orm";
 import { getLocale, getTranslations } from "next-intl/server";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
@@ -14,7 +14,7 @@ import { currentFinancialMonth, daysInclusive, shiftDate, todayStr, type Financi
 import { AnchoredTip } from "@/components/anchored-tip";
 import { isAiReady } from "@/lib/ai-provider";
 import { getCachedSummary } from "@/lib/ai-features";
-import { averagePerDay, buildSummaryFacts, monthOfPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
+import { averagePerDay, buildSummaryFacts, dayToDayPerDay, monthOfPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
 import { SummaryCard } from "./summary-card";
 import { OverviewHero, type PeriodName } from "./overview-hero";
 import { RunningTotalCard } from "./running-total-card";
@@ -105,6 +105,7 @@ async function loadAllocations(from: string, to: string, categoryIds?: number[],
       merchantColor: merchants.color,
       isReimbursement: transactions.isReimbursement,
       isInternalTransfer: isInternalTransferExpr,
+      recurringItemId: transactions.recurringItemId,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -128,10 +129,16 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   const prevFrom = shiftDate(prevTo, -(days - 1));
   const today = todayStr();
   const ongoing = from <= today && today <= to;
+  // The two periods before the previous one: with it, the history the projection's
+  // day-to-day rate is read from.
+  const olderFrom = shiftDate(prevFrom, -2 * days);
+  const olderTo = shiftDate(prevFrom, -1);
 
-  const [current, previous, allBanks, allCategories, budgetOverview, recurringMode, billStatuses] = await Promise.all([
+  const [current, previous, older, [firstTransaction], allBanks, allCategories, budgetOverview, recurringMode, billStatuses] = await Promise.all([
     loadAllocations(from, to, categoryIds, accounts),
     loadAllocations(prevFrom, prevTo, categoryIds, accounts),
+    ongoing ? loadAllocations(olderFrom, olderTo, categoryIds, accounts) : Promise.resolve<Awaited<ReturnType<typeof loadAllocations>>>({ rows: [], allocations: [] }),
+    db.select({ date: min(transactions.date) }).from(transactions),
     db.select().from(banks),
     db.select().from(categories),
     loadBudgetOverview(financialMonth),
@@ -163,8 +170,6 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   }
   const prevDailyExpense = new Map<string, number>();
   for (const r of prevRelevant) if (r.direction === "expense") prevDailyExpense.set(r.date, (prevDailyExpense.get(r.date) ?? 0) + r.amount);
-  // The running-total card's lines: this period and the previous one added up day by day.
-  const totals = runningTotals({ from, to, today, daily: dailyExpense, previousDaily: prevDailyExpense });
 
   // Bills still due, by due date — expenses only, and only when they can belong to the
   // selection (no account is known for a bill, so an account filter leaves them out).
@@ -178,6 +183,23 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
       dailyBills.set(due, (dailyBills.get(due) ?? 0) + (s.item.amount ?? 0));
     }
   }
+
+  // Day-to-day spending: what no recurring bill paid (those are in the bills still due).
+  const recurringIds = new Set([...current.rows, ...previous.rows, ...older.rows].filter((r) => r.recurringItemId != null).map((r) => r.id));
+  const dayToDay = (list: typeof relevant, upTo: string) =>
+    list.filter((r) => r.direction === "expense" && r.date <= upTo && !recurringIds.has(r.transactionId)).reduce((s, r) => s + r.amount, 0);
+  const historyFrom = firstTransaction?.date && firstTransaction.date > olderFrom ? firstTransaction.date : olderFrom;
+  const lastSoFar = today < to ? today : to;
+  const perDay = dayToDayPerDay({
+    current: { spent: dayToDay(relevant, lastSoFar), days: today < from ? 0 : daysInclusive(from, lastSoFar) },
+    history: {
+      spent: dayToDay([...prevRelevant, ...older.allocations.filter(counts)], prevTo),
+      days: historyFrom <= prevTo ? daysInclusive(historyFrom, prevTo) : 0,
+    },
+  });
+  const billsDue = [...dailyBills.values()].reduce((s, v) => s + v, 0);
+  // The running-total card's lines: this period and the previous one added up day by day.
+  const totals = runningTotals({ from, to, today, daily: dailyExpense, previousDaily: prevDailyExpense, ahead: { billsDue, perDay } });
 
   const { grain, ranges } = chartRanges(from, to);
   const sumRange = (map: Map<string, number>, r: { from: string; to: string }) => {

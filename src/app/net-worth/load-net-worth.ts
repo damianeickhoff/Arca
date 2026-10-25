@@ -5,7 +5,7 @@ import { getBankBalances } from "@/lib/account-balances";
 import { getBillStatuses } from "@/lib/bill-status";
 import { getDebtRecurringLinks } from "@/lib/debt-recurring-paid";
 import { getNetWorthForecast } from "@/lib/net-worth-forecast";
-import { currentFinancialMonth, financialMonthRangeByMonth, todayStr, type FinancialMonthConfig } from "@/lib/date-range";
+import { currentFinancialMonth, financialMonthForDate, financialMonthRangeByMonth, todayStr, type FinancialMonthConfig } from "@/lib/date-range";
 import {
   addDays,
   balanceSeries,
@@ -265,7 +265,7 @@ export async function loadNetWorth(range: NetWorthRange, financialMonth: Financi
 
   // Debts, both ways, with the Debts page's own balance maths at each date.
   const balanceOn = (debt: (typeof debtsData.computed)[number]["debt"]) =>
-    allDates.map((d) => Math.max(0, debtBalance(debt, links.paidFor(debt, d.slice(0, 7)), new Date(`${d}T12:00:00`), links.extrasFor(debt.id)).currentBalance));
+    allDates.map((d) => Math.max(0, debtBalance(debt, links.paidFor(debt, financialMonthForDate(d, financialMonth)), new Date(`${d}T12:00:00`), links.extrasFor(debt.id)).currentBalance));
   for (const c of debtsData.computedOwed) {
     const { series, monthStart } = at(balanceOn(c.debt));
     if (Math.max(...series, c.currentBalance) <= 0) continue;

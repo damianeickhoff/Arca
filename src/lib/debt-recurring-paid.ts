@@ -2,9 +2,17 @@ import { db } from "@/db";
 import { billPayments, debtPayments, debtRecurring, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
 import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
+import { recurringItemPatterns } from "@/lib/recurring-patterns";
 import { eq } from "drizzle-orm";
-import { debtBalanceDate, scheduledPaymentMonths, type DebtExtraPayment, type DebtProgress } from "@/app/debts/debt-shared";
-import { financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
+import { debtBalanceDate, type DebtExtraPayment, type DebtProgress } from "@/app/debts/debt-shared";
+import {
+  currentFinancialMonth,
+  financialMonthForDate,
+  financialMonthRangeByMonth,
+  offsetFinancialMonth,
+  todayStr,
+  type FinancialMonthConfig,
+} from "@/lib/date-range";
 
 /**
  * Debt payoff progress, derived from the paid-months history of the recurring bills a
@@ -15,12 +23,13 @@ import { financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/dat
  * otherwise the bill auto-matches when a transaction in that month matches its
  * matchPattern (and amount constraints). Each paid month contributes the marked
  * amount when there is one, else the bill's own amount.
+ *
+ * The months are financial months (payday to payday), the ones the bill statuses use,
+ * from the one the balance date falls in: in that first month only payments after the
+ * balance date count. A month the history can't tell about is taken as paid on schedule:
+ * one that ended before the first imported transaction, or any ended month of a bill
+ * without a match pattern (nothing could ever match it).
  */
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 export type DebtRecurringLinks = {
   /** debtId → linked recurring item ids */
@@ -28,9 +37,9 @@ export type DebtRecurringLinks = {
   /** recurring item id → item */
   itemsById: Map<number, RecurringItem>;
   /**
-   * Paid per debt, from the linked bills' paid months between the debt's start month and
-   * `endMonth` (defaults to the current month — pass an earlier one to reconstruct a
-   * historical balance). `null` for a debt with no links — callers fall back to the
+   * Paid per debt, from the linked bills' paid months between the debt's balance date and
+   * the financial month `endMonth` (defaults to the current one — pass an earlier one to
+   * reconstruct a historical balance). `null` for a debt with no links — callers fall back to the
    * linear minimumPayment × monthsElapsed model.
    *
    * Takes the debt rather than an id because the direction decides which way the
@@ -55,6 +64,12 @@ export type DebtRecurringLinks = {
 
 /** Re-exported so callers don't need both modules for the one type. */
 export type { DebtProgress };
+
+function nextDay(date: string): string {
+  const d = new Date(`${date}T12:00:00`);
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export async function getDebtRecurringLinks(
   financialMonth: FinancialMonthConfig,
@@ -104,19 +119,21 @@ export async function getDebtRecurringLinks(
   ]);
 
   const itemsById = new Map(items.filter((i) => linkedIds.has(i.id)).map((i) => [i.id, i]));
+  const firstTxDate = allTx.reduce<string | null>((min, t) => (min == null || t.date < min ? t.date : min), null);
 
   // (itemId, month) → manual mark
   const paymentKey = (itemId: number, month: string) => `${itemId}:${month}`;
   const paymentByItemMonth = new Map(payments.map((p) => [paymentKey(p.recurringItemId, p.month), p]));
 
-  function autoMatched(item: RecurringItem, from: string, to: string, direction: string): boolean {
-    return allTx.some(
-      (t) =>
-        t.direction === direction &&
-        t.date >= from &&
-        t.date <= to &&
-        transactionMatchesRecurringItem(t.description, t.amount, item),
-    );
+  /** The latest matching payment in [from, to], or null. */
+  function autoMatched(item: RecurringItem, from: string, to: string, direction: string): string | null {
+    let latest: string | null = null;
+    for (const t of allTx) {
+      if (t.direction !== direction || t.date < from || t.date > to) continue;
+      if (!transactionMatchesRecurringItem(t.description, t.amount, item)) continue;
+      if (latest == null || t.date > latest) latest = t.date;
+    }
+    return latest;
   }
 
   function paidFor(
@@ -128,7 +145,7 @@ export async function getDebtRecurringLinks(
       balanceDate?: string | null;
       direction?: string | null;
     },
-    endMonth: string = currentMonth(),
+    endMonth: string = currentFinancialMonth(financialMonth),
   ): DebtProgress | null {
     const ids = linkMap.get(debt.id);
     if (!ids || ids.length === 0) return null;
@@ -139,31 +156,47 @@ export async function getDebtRecurringLinks(
     const owed = debt.direction === "owed";
 
     let total = 0;
+    let lastPaidDate: string | null = null;
     // One entry per month, including the ones where nothing was paid — an interest-
     // bearing debt still accrues on a missed month, so the gaps have to be in the list
     // rather than collapsed out of it (see debtBalance in app/debts/debt-shared.ts).
     const byMonth: { month: string; amount: number }[] = [];
     // Only the payments that come *after* the balance date — anything earlier is already
-    // baked into startingBalance. Shares scheduledPaymentMonths with the unlinked model,
-    // so linking a bill can no longer shift the payoff date by a month on its own.
-    for (const month of scheduledPaymentMonths(debtBalanceDate(debt), `${endMonth}-01`)) {
-      const { from, to } = financialMonthRangeByMonth(month, financialMonth);
+    // baked into startingBalance.
+    const balanceDate = debtBalanceDate(debt);
+    const today = todayStr();
+    const firstMonth = financialMonthForDate(balanceDate, financialMonth);
+    // A payment in the balance date's own month joins the next month's entry, so there is
+    // one entry per month of interest after the balance date (none for the balance month).
+    let carry = 0;
+    for (let month = firstMonth, i = 0; month <= endMonth && i < 1200; month = offsetFinancialMonth(month, 1), i++) {
+      const range = financialMonthRangeByMonth(month, financialMonth);
+      const from = month === firstMonth ? nextDay(balanceDate) : range.from;
+      if (from > range.to) continue;
+      const ended = range.to < today;
       let paidThisMonth = 0;
       for (const id of ids) {
         const item = itemsById.get(id);
         if (!item) continue;
         const wantedDirection = owed || item.type === "income" ? "income" : "expense";
-        const mark = paymentByItemMonth.get(paymentKey(id, month));
-        if (mark) {
-          paidThisMonth += mark.amount ?? item.amount ?? 0;
-        } else if (autoMatched(item, from, to, wantedDirection)) {
-          paidThisMonth += item.amount ?? 0;
+        const mark = month === firstMonth ? undefined : paymentByItemMonth.get(paymentKey(id, month));
+        const matched = mark ? null : autoMatched(item, from, range.to, wantedDirection);
+        const unknowable = ended && ((firstTxDate != null && range.to < firstTxDate) || recurringItemPatterns(item).length === 0);
+        if (mark || matched || unknowable) {
+          paidThisMonth += (mark ? mark.amount : null) ?? item.amount ?? 0;
+          const paidOn = matched ?? range.to;
+          if (lastPaidDate == null || paidOn > lastPaidDate) lastPaidDate = paidOn;
         }
       }
-      byMonth.push({ month, amount: paidThisMonth });
       total += paidThisMonth;
+      if (month === firstMonth && month < endMonth) {
+        carry = paidThisMonth;
+        continue;
+      }
+      byMonth.push({ month, amount: paidThisMonth + carry });
+      carry = 0;
     }
-    return { total, byMonth };
+    return { total, byMonth, lastPaidDate };
   }
 
   return { linkMap, itemsById, paidFor, extrasFor };

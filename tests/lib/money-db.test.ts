@@ -164,14 +164,16 @@ describe("budget-overview: getBudgetOverview", () => {
     // The 500 manual transfer is excluded.
     expect(byId.get(cat.fun)).toMatchObject({ budget: 100, spent: 135 });
     // Storage is a bill category but has budgetType "nodig", so it is variable spend too.
-    // It has no budget, so its recurring-matched charge is NOT counted in "budgeted" mode.
-    expect(byId.get(cat.storage)).toMatchObject({ budget: null, spent: 0 });
-    expect(byId.get(cat.savings)).toMatchObject({ budget: null, spent: 200 });
-    expect(o.totalSpent).toBe(120 + 30 + 20 + 40 + 45 + 50 + 200);
+    // It has no budget of its own, but the overall budget covers every bill in "budgeted" mode.
+    expect(byId.get(cat.storage)).toMatchObject({ budget: null, spent: 103 });
+    // Money moved to savings is never spending against the budget.
+    expect(byId.has(cat.savings)).toBe(false);
+    // The overall budget also covers spending without a category (the 150 car payment).
+    expect(o.totalSpent).toBe(120 + 30 + 20 + 40 + 45 + 50 + 103 + 150);
     expect(o.budgetedSpent).toBe(170 + 135);
     expect(o.categories.find((c) => c.categoryId === cat.groceries)!.last30).toBe(170);
     expect(o.last7Total).toMatchInlineSnapshot(`95`);
-    expect(o.last30Total).toMatchInlineSnapshot(`505`);
+    expect(o.last30Total).toMatchInlineSnapshot(`558`);
   });
 
   it("recurring mode 'always' counts recurring charges everywhere; 'exclude' nowhere", async () => {
@@ -301,11 +303,13 @@ describe("debts: getDebtRecurringLinks / getDebtSummary", () => {
         { month: "2026-02", amount: 150 },
         { month: "2026-03", amount: 150 },
       ],
+      lastPaidDate: "2026-03-11",
     });
     // "owed" debts settle on income: Piet's €50 landed in March.
     expect(links.paidFor({ id: debt.piet, startMonth: "2026-02", startDate: "2026-02-01", direction: "owed" })).toEqual({
       total: 50,
       byMonth: [{ month: "2026-03", amount: 50 }],
+      lastPaidDate: "2026-03-03",
     });
     // Reconstructing an earlier month only replays history up to it.
     expect(links.paidFor({ id: debt.car, startMonth: "2026-01", startDate: "2026-01-10" }, "2026-02")!.total).toBe(150);
@@ -364,8 +368,9 @@ describe("financial-health-data: getHealthMetrics", () => {
     expect(metrics.emergencyFundMonths).toBeCloseTo(5000 / (10700 / 6), 10);
     // Budget 800: months over it score 1 − overspend/limit, floored at 0.
     expect(metrics.budgetAdherence).toMatchInlineSnapshot(`0.16666666666666666`);
-    // Recurring bill + subscription + debt items (103 + 50 + 150 + 240/12) vs average income.
-    expect(metrics.recurringRatio).toBeCloseTo((103 + 50 + 150 + 20) / 2500, 10);
+    // Recurring bill + subscription items (103 + 50 + 240/12) vs average income. The 150 car
+    // loan bill pays a debt, so it is in the debt ratio only, not counted twice.
+    expect(metrics.recurringRatio).toBeCloseTo((103 + 50 + 20) / 2500, 10);
     expect(metrics.debtRatio).toBeCloseTo((100 + 150) / 2500, 10);
     expect(metrics.incomeVariation).toMatchInlineSnapshot(`0.02309401076758503`);
   });

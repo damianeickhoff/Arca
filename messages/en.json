@@ -693,7 +693,7 @@
     "removeBudget": "Remove budget",
     "strategyTitle": "Budget strategy",
     "strategyDesc": "How your income splits across Needs, Wants, and Savings.",
-    "strategyBasedOn": "{source, select, recurring {Based on your regular income of <b>{income}</b> a month} other {Based on <b>{income}</b> that came in this month}}",
+    "strategyBasedOn": "{source, select, budget {Based on your overall budget of <b>{income}</b> a month} recurring {Based on your regular income of <b>{income}</b> a month} other {Based on <b>{income}</b> that came in this month}}",
     "strategyNoIncome": "No recurring income set up and no income this month yet, so no amounts to show.",
     "advisedBudget": "{source, select, recurring {Advised budget: <b>{amount}</b> a month ({pct}% of your regular income of {income})} other {Advised budget: <b>{amount}</b> a month ({pct}% of the {income} that came in this month)}}",
     "advised": "Advised: {amount}",
@@ -3695,7 +3695,8 @@
         "budgets": "Category budgets",
         "budgetsMeta": "{count, plural, one {# category} other {# categories}} · {names}",
         "budgetOverall": "Budget",
-        "budgetOverallMeta": "Your overall budget for day-to-day spending",
+        "budgetOverallMeta": "Your overall budget: everything you plan to spend",
+        "budgetOverallCovers": "Your overall budget, with {amount} of bills inside it",
         "debts": "Debt payments",
         "debtsMeta": "Minimum payments of debts without a recurring bill",
         "free": "Free to spend",
@@ -4392,7 +4393,7 @@
         "of": "<b>{actual}</b> of {target}",
         "target": "Target",
         "actual": "Actual",
-        "onIncome": "{source, select, recurring {On your regular income of {income} a month: needs {needs}, wants {wants}, savings {savings}.} other {On the {income} that came in this month: needs {needs}, wants {wants}, savings {savings}.}}",
+        "onIncome": "{source, select, budget {On your overall budget of {income} a month: needs {needs}, wants {wants}, savings {savings}.} recurring {On your regular income of {income} a month: needs {needs}, wants {wants}, savings {savings}.} other {On the {income} that came in this month: needs {needs}, wants {wants}, savings {savings}.}}",
         "noIncome": "No recurring income set up and no income this month yet, so there is nothing to split. Add your salary as recurring income, or the percentages apply as soon as income comes in."
       },
       "categories": {

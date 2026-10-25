@@ -33,7 +33,8 @@ export interface RunningTotals {
   current: number[];
   /** The previous period's running total, aligned by day index (`days` entries). */
   previous: number[];
-  /** Where the period ends at the daily average so far; null unless it is running. */
+  /** Where the period ends: spent so far, the bills still due and day-to-day spending
+   *  for the days left (see runningTotals); null unless it is running. */
   projected: number | null;
   /** The previous period's total by the same day; null when it had no spending or
    *  this period has no days yet. */
@@ -43,9 +44,27 @@ export interface RunningTotals {
 }
 
 /**
+ * Day-to-day spending per day: spending no recurring bill pays (groceries, fuel, a
+ * holiday), over this period so far and the periods before it together. Taking the
+ * history along keeps a one-off early in the period from being read as the month's
+ * pace; as the period runs, its own days weigh in more.
+ */
+export function dayToDayPerDay(input: {
+  /** Day-to-day spending in this period so far, and the days that covers. */
+  current: { spent: number; days: number };
+  /** The same over the periods before it (only days since the first transaction). */
+  history: { spent: number; days: number };
+}): number {
+  const days = input.current.days + input.history.days;
+  return days > 0 ? roundToCents((input.current.spent + input.history.spent) / days) : 0;
+}
+
+/**
  * Running totals for the hero's line chart. The previous period is the one of the
  * same length right before `from`, so day 1 is compared with day 1. The projection is
- * linear: the average per day so far, carried on to the last day.
+ * built from what is known, never a straight line from the first days (rent and a
+ * holiday paid on payday would be multiplied by the month's length): spent so far, plus
+ * the bills still due before the end, plus day-to-day spending per day for the days left.
  */
 export function runningTotals(input: {
   from: string;
@@ -55,6 +74,9 @@ export function runningTotals(input: {
   daily: ReadonlyMap<string, number>;
   /** Spending per date in the previous period. */
   previousDaily: ReadonlyMap<string, number>;
+  /** What is still to come while the period runs: the bills due from today to the end
+   *  and day-to-day spending per day (dayToDayPerDay). */
+  ahead: { billsDue: number; perDay: number };
 }): RunningTotals {
   const { from, to, today } = input;
   const days = Math.max(1, daysInclusive(from, to));
@@ -75,7 +97,8 @@ export function runningTotals(input: {
 
   const spent = current[elapsed - 1] ?? 0;
   const running = from <= today && today <= to;
-  const projected = running ? roundToCents((spent / elapsed) * days) : null;
+  // Today's own spending is already in `spent`, so the per-day rate covers the days after it.
+  const projected = running ? roundToCents(spent + input.ahead.billsDue + input.ahead.perDay * (days - elapsed)) : null;
   const previousAtSameDay = elapsed > 0 && previous[days - 1] > 0 ? previous[elapsed - 1] : null;
   return {
     days,

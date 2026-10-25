@@ -82,7 +82,7 @@ export function StrategyStep({
           </span>
         </div>
 
-        <BudgetStrategyEditor value={value} onChange={onChange} income={0} />
+        <BudgetStrategyEditor value={value} onChange={onChange} base={0} />
 
         <span className="text-[13px] text-clear-muted">{ok ? t("later") : t("mustTotal")}</span>
       </div>

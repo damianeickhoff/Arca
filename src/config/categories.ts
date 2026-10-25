@@ -409,9 +409,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   nameNl: "Bankkosten",
   budgetType: "Wants", 
   color: "#15c556", 
-  icon: "IconPigFilled", 
+  icon: "IconPigFilled",
   parentKey: "Finance",
-  kind: "savings",
   matchingPatterns: [
     "ING Bank",
     "ABN AMRO",
@@ -431,8 +430,9 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   nameNl: "Beleggingen",
   budgetType: "Wants", 
   color: "#15c556", 
-  icon: "IconChartAreaLineFilled", 
+  icon: "IconChartAreaLineFilled",
   parentKey: "Finance",
+  kind: "savings",
   matchingPatterns: [
     "DEGIRO",
     "Trade Republic",
@@ -468,8 +468,9 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   nameNl: "Sparen",
   budgetType: "Wants", 
   color: "#15c556", 
-  icon: "IconPigFilled", 
+  icon: "IconPigFilled",
   parentKey: "Finance",
+  kind: "savings",
   matchingPatterns: [
     "Spaarrekening",
     "Sparen",

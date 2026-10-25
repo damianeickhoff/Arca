@@ -14,7 +14,7 @@ import {
   variablePrognoseOverrides,
 } from "@/db/schema";
 import type { Category, Goal, RecurringItem, SavingsGoal } from "@/db/schema";
-import { getBudgetStrategy, getFinancialMonthConfig } from "@/lib/app-settings";
+import { getBudgetRecurringMode, getBudgetStrategy, getFinancialMonthConfig } from "@/lib/app-settings";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
 import { getCashFlowForecast, type CashFlowForecast } from "@/lib/cash-flow-forecast";
 import { currentFinancialMonth, financialMonthRangeByMonth, offsetFinancialMonth, todayStr } from "@/lib/date-range";
@@ -22,7 +22,7 @@ import { formatEur, formatEurWhole, toMonthly } from "@/lib/format";
 import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
 import { computeNetWorth } from "@/lib/net-worth-snapshots";
 import type { TransactionDetail } from "@/app/transactions/transaction-types";
-import { freeToSpend, getOverallMonthlyBudget, PLAN_EXPENSE_TYPES } from "@/lib/monthly-free-to-spend";
+import { budgetCategoryInfo, coveredByBudget, freeToSpend, getOverallMonthlyBudget, PLAN_EXPENSE_TYPES } from "@/lib/monthly-free-to-spend";
 import { loadUnlinkedDebtMinimums } from "@/app/debts/load-debts";
 import { amountFor } from "./plan-amounts";
 
@@ -95,6 +95,8 @@ export interface ForecastData {
     budgetNames: string[];
     /** "overall": budgets is the overall budget; "categories": the sum of category budgets. */
     budgetSource: "overall" | "categories";
+    /** Recurring costs the budget already covers (in `budgets`, not in `recurring`). */
+    covered: number;
     /** Minimums of open debts that no recurring bill pays — a monthly cost too. */
     debts: number;
     free: number;
@@ -256,7 +258,8 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
 
   const planItems: PlanItem[] = [];
   for (const item of itemsRaw) {
-    if (item.type !== "income" && !(EXPENSE_TYPES as readonly string[]).includes(item.type)) continue;
+    // Recurring savings (a monthly deposit to an investment account) plan as savings.
+    if (item.type !== "income" && item.type !== "savings" && !(EXPENSE_TYPES as readonly string[]).includes(item.type)) continue;
     const icon = resolveRecurringIcon(item, categoriesById);
     const defaultAmount = toMonthly(item.amount, item.frequency);
     // A recurrence with a start or end date (a payment plan, a debt's bill) costs nothing
@@ -349,15 +352,28 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
   // ── The plan for the chosen month ───────────────────────────────────────────
   const sum = (list: PlanItem[], month: string) => list.reduce((s, i) => s + amountFor(i, month), 0);
   // The same rule as the Debts page (lib/monthly-free-to-spend.ts): the overall budget
-  // when one is set, else the category budgets; plus the debt minimums no bill pays.
-  const [overallBudget, unlinkedDebts] = await Promise.all([getOverallMonthlyBudget(), loadUnlinkedDebtMinimums()]);
+  // when one is set, else the category budgets; the costs that budget already covers are
+  // part of it, not counted again; plus the debt minimums no bill pays (paid from the
+  // overall budget when there is one, like any other spending).
+  const [overallBudget, debtMinimums, recurringMode] = await Promise.all([getOverallMonthlyBudget(), loadUnlinkedDebtMinimums(), getBudgetRecurringMode()]);
+  const unlinkedDebts = overallBudget != null ? 0 : debtMinimums;
   const budgetFor = (list: PlanItem[], month: string) => overallBudget ?? sum(list, month);
   const byAmount = (list: PlanItem[]) => [...list].sort((a, b) => amountFor(b, baseMonth) - amountFor(a, baseMonth)).filter((i) => amountFor(i, baseMonth) > 0).map((i) => i.name);
 
   const incomeItems = planItems.filter((i) => i.type === "income");
-  const costItems = planItems.filter((i) => (EXPENSE_TYPES as readonly string[]).includes(i.type));
   const goalItems = planItems.filter((i) => i.type === "savings");
   const budgetItems = planItems.filter((i) => i.type === "budget");
+  const budgetSource = overallBudget != null ? "overall" : budgetFor(budgetItems, baseMonth) > 0 ? "categories" : "none";
+  const budgetTargetFor = new Map(budgetItems.map((i) => [i.id, amountFor(i, baseMonth)]));
+  const categoryInfo = budgetCategoryInfo(allCategories, (id) => (budgetTargetFor.get(id) ?? 0) > 0);
+  const itemCategory = new Map(itemsRaw.map((i) => [i.id, i.categoryId]));
+  const isCovered = (i: PlanItem) => {
+    const categoryId = itemCategory.get(i.id);
+    return coveredByBudget(categoryId != null ? (categoryInfo.get(categoryId) ?? null) : null, budgetSource, recurringMode);
+  };
+  const allCostItems = planItems.filter((i) => (EXPENSE_TYPES as readonly string[]).includes(i.type));
+  const costItems = allCostItems.filter((i) => !isCovered(i));
+  const coveredItems = allCostItems.filter(isCovered);
 
   const income = sum(incomeItems, baseMonth);
   const recurring = sum(costItems, baseMonth);
@@ -369,7 +385,7 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
   // budget type, category budgets by the category's, savings goals count as savings.
   const itemBudgetType = new Map(itemsRaw.map((i) => [i.id, i.budgetType]));
   const kindTotal = (kind: "nodig" | "willen" | "sparen") =>
-    costItems.filter((i) => itemBudgetType.get(i.id) === kind).reduce((s, i) => s + amountFor(i, baseMonth), 0) +
+    allCostItems.filter((i) => itemBudgetType.get(i.id) === kind).reduce((s, i) => s + amountFor(i, baseMonth), 0) +
     budgetItems.filter((i) => categoriesById.get(i.id)?.budgetType === kind).reduce((s, i) => s + amountFor(i, baseMonth), 0);
 
   const range = months[baseMonth];
@@ -414,6 +430,7 @@ export async function loadForecast(requestedMonth?: string): Promise<ForecastDat
       budgets,
       budgetNames: byAmount(budgetItems),
       budgetSource: overallBudget != null ? "overall" : "categories",
+      covered: sum(coveredItems, baseMonth),
       debts: unlinkedDebts,
       free,
       days,

@@ -4,6 +4,7 @@ import * as schema from "./schema";
 import path from "path";
 import { runConfigSync, applyDefaultCategoryRulesSync } from "@/lib/config-sync";
 import { migrateCategoryGroups } from "@/lib/category-groups-migration";
+import { migrateCategoryKinds } from "@/lib/category-kinds-migration";
 import { deriveMerchantName, normalizeMerchantKey } from "@/lib/merchant-name";
 import { detectBrandIcon } from "@/lib/brand-detect";
 import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
@@ -654,6 +655,8 @@ addColumnIfMissing("recurring_items", "alt_match_patterns", "TEXT");
   // Two levels: every top-level category becomes a group, every other category sits in
   // one. Runs after the config sync so the seeded "Other" group exists.
   migrateCategoryGroups(sqlite);
+  // Kinds (income / savings) for databases seeded before categories had them (one time).
+  migrateCategoryKinds(sqlite);
 
   // Auto-migrate: the change log (Settings › Data health › Recent changes).
   sqlite.exec(ACTIVITY_LOG_TABLE_SQL);

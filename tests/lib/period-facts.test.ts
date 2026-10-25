@@ -5,6 +5,7 @@ import {
   balanceOf,
   blockMapLayout,
   buildSummaryFacts,
+  dayToDayPerDay,
   monthOfPeriod,
   runningTotals,
   toPeriodSummary,
@@ -59,7 +60,7 @@ describe("runningTotals", () => {
     ["2026-09-10", 170], // day 11
     ["2026-09-25", 300], // day 26
   ]);
-  const base = { from: "2026-10-01", to: "2026-10-31", today: "2026-10-20", daily, previousDaily };
+  const base = { from: "2026-10-01", to: "2026-10-31", today: "2026-10-20", daily, previousDaily, ahead: { billsDue: 0, perDay: 10 } };
 
   it("adds up this period day by day up to today", () => {
     const r = runningTotals(base);
@@ -85,8 +86,12 @@ describe("runningTotals", () => {
     expect(r.difference).toBe(-50);
   });
 
-  it("projects the daily average so far to the last day", () => {
+  it("projects spent so far, the bills still due and day-to-day spending for the days left", () => {
+    // 200 spent by the 20th, 11 days to go at 10 a day, no bills.
     expect(runningTotals(base).projected).toBe(310);
+    // Rent and a holiday on day 1 aren't multiplied by the month: only what is still to come is added.
+    const early = runningTotals({ ...base, today: "2026-10-01", daily: new Map([["2026-10-01", 4000]]), ahead: { billsDue: 250.5, perDay: 40 } });
+    expect(early.projected).toBe(4000 + 250.5 + 40 * 30);
   });
 
   it("has no projection once the period is over, and compares whole periods", () => {
@@ -107,6 +112,18 @@ describe("runningTotals", () => {
     const noPrevious = runningTotals({ ...base, previousDaily: new Map() });
     expect(noPrevious.previousAtSameDay).toBeNull();
     expect(noPrevious.difference).toBeNull();
+  });
+});
+
+describe("dayToDayPerDay", () => {
+  it("averages this period so far together with the periods before it", () => {
+    // A €1,675 holiday in the first 3 days next to 90 days of €30 a day.
+    expect(dayToDayPerDay({ current: { spent: 1675, days: 3 }, history: { spent: 2700, days: 90 } })).toBe(47.04);
+  });
+
+  it("uses this period alone without history, and nothing without days", () => {
+    expect(dayToDayPerDay({ current: { spent: 300, days: 10 }, history: { spent: 0, days: 0 } })).toBe(30);
+    expect(dayToDayPerDay({ current: { spent: 0, days: 0 }, history: { spent: 0, days: 0 } })).toBe(0);
   });
 });
 

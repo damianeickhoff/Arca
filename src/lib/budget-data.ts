@@ -64,6 +64,7 @@ export async function getBudgetData(
       categoryColor: categories.color,
       categoryIcon: categories.icon,
       categoryGroup: categories.group,
+      budgetTypeOverride: transactions.budgetTypeOverride,
       isReimbursement: transactions.isReimbursement,
       isInternalTransfer: isInternalTransferExpr,
     }).from(transactions)
@@ -93,16 +94,7 @@ export async function getBudgetData(
     .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer)
     .reduce((sum, row) => sum + row.amount, 0);
 
-  // Full spending map (all expense categories) — used for bucket totals
   const allExpenseCatIds = new Set(allExpenseCats.map((c) => c.id));
-  const fullSpendingMap = new Map(
-    allocations
-      .filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryId != null && allExpenseCatIds.has(row.categoryId))
-      .reduce((map, row) => {
-        map.set(row.categoryId!, (map.get(row.categoryId!) ?? 0) + row.amount);
-        return map;
-      }, new Map<number, number>()),
-  );
 
   // Variable-only spending map — used for "Per category" table
   const variableCatIds = new Set(allVariableCats.map((c) => c.id));
@@ -199,13 +191,18 @@ export async function getBudgetData(
     };
   });
 
-  // Compute byBudgetType from ALL expense categories (bills, subscriptions, debts, savings, variable)
+  // Needs / wants / savings across ALL expense categories (bills, subscriptions, debts,
+  // savings, variable): a transaction's own override first, then money moved to a savings
+  // category as savings, else the category's budget type. Income categories are never
+  // spending.
+  const overrideById = new Map(periodRows.map((row) => [row.id, row.budgetTypeOverride]));
   const byBudgetType: Record<string, number> = {};
-  for (const cat of allExpenseCats) {
-    const spent = fullSpendingMap.get(cat.id) ?? 0;
-    if (spent > 0 && cat.budgetType) {
-      byBudgetType[cat.budgetType] = (byBudgetType[cat.budgetType] ?? 0) + spent;
-    }
+  for (const row of allocations) {
+    if (row.direction !== "expense" || row.isInternalTransfer || row.categoryId == null || !allExpenseCatIds.has(row.categoryId)) continue;
+    const cat = catById.get(row.categoryId)!;
+    if (cat.group === "income") continue;
+    const kind = overrideById.get(row.transactionId) ?? (cat.group === "savings" ? "sparen" : cat.budgetType);
+    if (kind) byBudgetType[kind] = (byBudgetType[kind] ?? 0) + row.amount;
   }
 
   const catBudgetTypeById = new Map(allExpenseCats.map((cat) => [cat.id, cat.budgetType]));

@@ -84,7 +84,7 @@ export function RecurringItemsCard({
             <section key={type} aria-label={t(`types.${type}`)} className="mb-6 flex break-inside-avoid flex-col">
               <div className="flex h-10 items-center justify-between gap-2 rounded-clear-icon bg-clear-tile px-3">
                 <span className="truncate text-sm font-bold">
-                  {t(`types.${type}`)} <span className="font-semibold text-clear-muted">{type === "savings" ? t("goals", { count: list.length }) : t("count", { count: list.length })}</span>
+                  {t(`types.${type}`)} <span className="font-semibold text-clear-muted">{type === "savings" && list.every((i) => i.kind === "savings") ? t("goals", { count: list.length }) : t("count", { count: list.length })}</span>
                 </span>
                 <span
                   className={cn(

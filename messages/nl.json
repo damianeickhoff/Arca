@@ -693,7 +693,7 @@
     "removeBudget": "Budget verwijderen",
     "strategyTitle": "Budgetstrategie",
     "strategyDesc": "Hoe je inkomen wordt verdeeld over Nodig, Willen en Sparen.",
-    "strategyBasedOn": "{source, select, recurring {Op basis van je vaste inkomen van <b>{income}</b> per maand} other {Op basis van <b>{income}</b> die deze maand binnenkwam}}",
+    "strategyBasedOn": "{source, select, budget {Op basis van je totale budget van <b>{income}</b> per maand} recurring {Op basis van je vaste inkomen van <b>{income}</b> per maand} other {Op basis van <b>{income}</b> die deze maand binnenkwam}}",
     "strategyNoIncome": "Geen vast inkomen ingesteld en nog geen inkomen deze maand, dus nog geen bedragen.",
     "advisedBudget": "{source, select, recurring {Aanbevolen budget: <b>{amount}</b> per maand ({pct}% van je vaste inkomen van {income})} other {Aanbevolen budget: <b>{amount}</b> per maand ({pct}% van de {income} die deze maand binnenkwam)}}",
     "advised": "Aanbevolen: {amount}",
@@ -3695,7 +3695,8 @@
         "budgets": "Categoriebudgetten",
         "budgetsMeta": "{count, plural, one {# categorie} other {# categorieën}} · {names}",
         "budgetOverall": "Budget",
-        "budgetOverallMeta": "Je totale budget voor dagelijkse uitgaven",
+        "budgetOverallMeta": "Je totale budget: alles wat je wilt uitgeven",
+        "budgetOverallCovers": "Je totale budget, met {amount} aan vaste lasten erin",
         "debts": "Aflossingen",
         "debtsMeta": "Minimale aflossing van schulden zonder vaste last",
         "free": "Vrij te besteden",
@@ -4392,7 +4393,7 @@
         "of": "<b>{actual}</b> van {target}",
         "target": "Doel",
         "actual": "Werkelijk",
-        "onIncome": "{source, select, recurring {Bij je vaste inkomen van {income} per maand: nodig {needs}, willen {wants}, sparen {savings}.} other {Bij de {income} die deze maand binnenkwam: nodig {needs}, willen {wants}, sparen {savings}.}}",
+        "onIncome": "{source, select, budget {Bij je totale budget van {income} per maand: nodig {needs}, willen {wants}, sparen {savings}.} recurring {Bij je vaste inkomen van {income} per maand: nodig {needs}, willen {wants}, sparen {savings}.} other {Bij de {income} die deze maand binnenkwam: nodig {needs}, willen {wants}, sparen {savings}.}}",
         "noIncome": "Geen vast inkomen ingesteld en nog geen inkomen deze maand, dus er valt nog niets te verdelen. Voeg je salaris toe als vast inkomen, of de percentages gelden zodra er inkomen binnenkomt."
       },
       "categories": {

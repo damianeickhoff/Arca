@@ -53,7 +53,7 @@ export function safeToSpend(
 
   const reserved = bills
     .filter((b) => !b.isIncome && b.dueDate >= today && b.dueDate <= overview.to)
-    .filter((b) => countsTowardBudget(overview.categories.find((c) => c.categoryId === b.categoryId), hasOverall, true, recurringMode))
+    .filter((b) => countsTowardBudget(b.categoryId, overview.categories, hasOverall, true, recurringMode))
     .reduce((s, b) => s + b.amount, 0);
 
   const amount = target - spent - reserved;
@@ -75,17 +75,35 @@ export function safeToSpend(
   };
 }
 
-/** Whether a recurring bill's spend counts toward a category in the budget. */
+/**
+ * Whether bills (transactions matched to a recurring item) count toward a budget, the
+ * one rule the overview's spend, Safe to spend's bills still due and Home's pace line
+ * share. "always" and "exclude" decide outright; "budgeted" counts them where a budget
+ * covers them: everywhere under an overall budget (it is what may be spent in total),
+ * else in a category with a budget of its own or on its group.
+ */
+export function recurringCountsToward(mode: BudgetRecurringMode, hasOverall: boolean, budgeted: boolean): boolean {
+  return mode === "always" || (mode === "budgeted" && (hasOverall || budgeted));
+}
+
+type BudgetCategory = Pick<BudgetOverview["categories"][number], "categoryId" | "parentCategoryId" | "budget">;
+
+/** Whether spending in a category (null: uncategorised) counts toward the budget. */
 function countsTowardBudget(
-  cat: { budget: number | null } | undefined,
+  categoryId: number | null,
+  categories: readonly BudgetCategory[],
   hasOverall: boolean,
   recurring: boolean,
   recurringMode: BudgetRecurringMode,
 ) {
-  if (!cat) return false; // not a variable category: never part of the budget
-  if (!hasOverall && cat.budget == null) return false; // outside the category budgets
-  if (!recurring) return true;
-  return recurringMode === "always" || (recurringMode === "budgeted" && cat.budget != null);
+  // Uncategorised spending is part of an overall budget, outside category budgets.
+  const cat = categoryId == null ? null : categories.find((c) => c.categoryId === categoryId);
+  if (cat === undefined) return false; // not a variable category: never part of the budget
+  if (cat === null && !hasOverall) return false;
+  const group = cat?.parentCategoryId != null ? categories.find((c) => c.categoryId === cat.parentCategoryId) : undefined;
+  const budgeted = cat != null && (cat.budget != null || group?.budget != null);
+  if (!hasOverall && !budgeted) return false; // outside the category budgets
+  return !recurring || recurringCountsToward(recurringMode, hasOverall, budgeted);
 }
 
 export interface SpendEntry {
@@ -115,8 +133,7 @@ export function budgetSpendByDay(
 
   for (const e of entries) {
     if (e.date < overview.from || e.date > last) continue;
-    const cat = overview.categories.find((c) => c.categoryId === e.categoryId);
-    if (!countsTowardBudget(cat, hasOverall, e.recurring, recurringMode)) continue;
+    if (!countsTowardBudget(e.categoryId, overview.categories, hasOverall, e.recurring, recurringMode)) continue;
     daily[daysInclusive(overview.from, e.date) - 1] += e.amount;
   }
 

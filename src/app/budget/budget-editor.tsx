@@ -21,6 +21,7 @@ import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { BudgetDialog } from "./budget-dialog";
 import { BudgetStrategyEditor, strategyTotal, type BudgetStrategyDraft } from "./budget-strategy-editor";
+import { strategyBase } from "@/lib/budget-strategy-base";
 import { MoneyText } from "@/components/clear/money";
 
 // The budget's dialogs, opened from the /budget page through useBudgetEditor():
@@ -223,6 +224,11 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
   const advised = Math.round((periodIncome * (strategyDraft.nodig + strategyDraft.willen)) / 100);
   // A soft warning only: Save stays enabled.
   const overIncome = data.income > 0 && parsedAmount > periodIncome ? parsedAmount - periodIncome : 0;
+  // The split divides the overall budget: the one being typed in the editor, the saved
+  // one in the strategy dialog; the income without one.
+  const income = { income: data.income, source: data.incomeSource };
+  const draftBase = strategyBase(parsedAmount > 0 ? { amount: parsedAmount, period } : null, income);
+  const savedBase = strategyBase(data.budget, income);
 
   // Parents with their sub-categories right after them — the order rows and the
   // picker list categories in.
@@ -618,7 +624,7 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
           </div>
 
           {/* Budget strategy */}
-          <BudgetStrategyEditor title={t("strategyTitle")} value={strategyDraft} onChange={setStrategyDraft} income={data.income} incomeSource={data.incomeSource} />
+          <BudgetStrategyEditor title={t("strategyTitle")} value={strategyDraft} onChange={setStrategyDraft} base={draftBase.amount} baseSource={draftBase.source} />
 
           {/* Category budgets */}
           <section ref={categoriesRef} aria-labelledby="budget-editor-categories" className="flex scroll-mt-2 flex-col gap-3.5">
@@ -807,7 +813,7 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
           </ClearDialogFooter>
         }
       >
-        <BudgetStrategyEditor value={strategyDraft} onChange={setStrategyDraft} income={data.income} incomeSource={data.incomeSource} />
+        <BudgetStrategyEditor value={strategyDraft} onChange={setStrategyDraft} base={savedBase.amount} baseSource={savedBase.source} />
         {data.income > 0 && (
           <p className="m-0 text-[13px] text-clear-ink-2">
             <MoneyText>{t.rich("advisedBudget", {

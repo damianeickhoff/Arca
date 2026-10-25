@@ -42,6 +42,32 @@ afterAll(() => {
   removeTestDb();
 });
 
+describe("budget-income: salaryAndBenefits", () => {
+  const base = { type: "income", active: true, paused: false, dismissed: false, isReimbursement: false, startDate: null, endDate: null, frequency: "monthly" };
+
+  it("keeps salary and benefits, not paybacks, repayments or gifts", async () => {
+    const { salaryAndBenefits } = await import("@/lib/budget-income");
+    const items = [
+      { ...base, amount: 3570.14, categoryKey: "Salary" },
+      { ...base, amount: 358.3, frequency: "quarterly", categoryKey: "Benefits" },
+      { ...base, amount: 40.24, categoryKey: "Utilities" }, // a share of the storage bill paid back
+      { ...base, amount: 177.79, categoryKey: "Loans" }, // a loan paid back
+      { ...base, amount: 10, categoryKey: "Other Income" },
+    ];
+    expect(salaryAndBenefits(items, TODAY).map((i) => i.categoryKey)).toEqual(["Salary", "Benefits"]);
+  });
+
+  it("keeps everything when no item is in Salary or Benefits", async () => {
+    const { salaryAndBenefits } = await import("@/lib/budget-income");
+    const items = [
+      { ...base, amount: 2500, categoryKey: null },
+      { ...base, amount: 300, categoryKey: "Other Income" },
+      { ...base, amount: 900, categoryKey: "Salary", paused: true }, // not regular
+    ];
+    expect(salaryAndBenefits(items, TODAY)).toHaveLength(3);
+  });
+});
+
 describe("budget-income: regularMonthlyIncome", () => {
   it("averages each frequency to a month", async () => {
     const { regularMonthlyIncome } = await import("@/lib/budget-income");

@@ -6,7 +6,7 @@ import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { getBankBalances } from "@/lib/account-balances";
 import { getBillStatuses } from "@/lib/bill-status";
 import { getCashFlowWarningThreshold, getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
-import { currentFinancialMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
+import { currentFinancialMonth, financialMonthRangeByMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
 import { occurrencesBetween } from "@/lib/recurring-occurrence";
 import {
   FORECAST_HORIZON_DAYS,
@@ -130,7 +130,10 @@ export async function getCashFlowForecast(
   const paidDates = new Set(billStatuses.filter((s) => settled(s) && s.dueDate).map((s) => `${s.item.id}|${s.dueDate}`));
   const unpaidItems = new Set(billStatuses.filter((s) => !settled(s)).map((s) => s.item.id));
   const paidThisMonth = new Set(billStatuses.filter((s) => settled(s) && !unpaidItems.has(s.item.id)).map((s) => s.item.id));
-  const currentMonthKey = today.slice(0, 7);
+  // "This month" is the financial month the statuses were read for (payday to payday),
+  // not the calendar month: from the 1st to payday a calendar check dropped every
+  // occurrence after payday of a bill already paid this financial month.
+  const statusMonth = financialMonthRangeByMonth(currentFinancialMonth(financialMonth), financialMonth);
 
   for (const item of items) {
     if (item.amount == null || item.amount === 0) continue;
@@ -140,7 +143,7 @@ export async function getCashFlowForecast(
     for (const date of occurrencesBetween(item, from, to)) {
       const monthKey = date.slice(0, 7);
       if (paidDates.has(`${item.id}|${date}`)) continue;
-      if (monthKey === currentMonthKey && paidThisMonth.has(item.id)) continue;
+      if (date >= statusMonth.from && date <= statusMonth.to && paidThisMonth.has(item.id)) continue;
       if (bookedRecurringMonths.has(`${item.id}|${monthKey}`)) continue;
       events.push({
         key: `rec-${item.id}-${date}`,

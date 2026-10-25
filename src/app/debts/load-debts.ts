@@ -66,14 +66,16 @@ export async function loadDebtsData(): Promise<DebtsPageData> {
 
 /**
  * This month's free to spend, for the simulator: the plan the Forecast shows (see
- * getMonthlyFreeToSpend — recurring income minus bills, subscriptions and debt payments,
- * savings contributions and the budget), minus the minimums of open debts that no
- * recurring bill pays. Those are paid every month too, but only linked debts are in the
- * recurring items the plan reads.
+ * getMonthlyFreeToSpend — recurring income minus the bills, subscriptions and debt
+ * payments the budget doesn't cover, savings contributions and the budget), minus the
+ * minimums of open debts that no recurring bill pays. Those are paid every month too,
+ * but only linked debts are in the recurring items the plan reads; an overall budget
+ * already covers them, like any other spending.
  */
 export async function loadDebtsFreeToSpend(computed: readonly ComputedDebt[]): Promise<DebtsFreeToSpend> {
   const plan = await getMonthlyFreeToSpend(await getFinancialMonthConfig());
-  return { income: plan.income, free: plan.free - unlinkedDebtMinimums(computed) };
+  const unlinked = plan.budgetSource === "overall" ? 0 : unlinkedDebtMinimums(computed);
+  return { income: plan.income, free: plan.free - unlinked };
 }
 
 /** Monthly minimums of open debts (you owe) that no recurring bill pays. */

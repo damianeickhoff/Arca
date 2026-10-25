@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { transactions, categories, recurringItems, budgets, vermogenAccounts } from "@/db/schema";
-import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
+import { transactions, categories, recurringItems, budgets, vermogenAccounts, debtRecurring } from "@/db/schema";
+import { and, asc, eq, gte, inArray, lte, notInArray } from "drizzle-orm";
 import { isInternalTransferExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
@@ -104,7 +104,11 @@ function coefficientOfVariation(values: number[]): number | null {
  *   • internal transfers between your own accounts are not income or spending;
  *   • reimbursements received (Tikkie) are not income;
  *   • transfers into savings categories are not spending — they're the savings the
- *     savings rate is trying to measure (same rule as getMonthComparison).
+ *     savings rate is trying to measure (same rule as getMonthComparison) — and money
+ *     taken back out of savings is not income;
+ *   • spending against the budget (variableSpend) is what the overall budget covers on
+ *     Plan › Budget: the variable categories, bills and uncategorised spending included,
+ *     savings and income categories never.
  */
 export async function getMonthTotals(months: string[], financialMonth: FinancialMonthConfig): Promise<MonthTotals[]> {
   if (months.length === 0) return [];
@@ -133,7 +137,7 @@ export async function getMonthTotals(months: string[], financialMonth: Financial
     db
       .select({ id: categories.id })
       .from(categories)
-      .where(inArray(categories.budgetType, VARIABLE_BUDGET_TYPES)),
+      .where(and(inArray(categories.budgetType, VARIABLE_BUDGET_TYPES), notInArray(categories.group, ["savings", "income"]))),
     getSharedCostMode(),
   ]);
 
@@ -154,11 +158,11 @@ export async function getMonthTotals(months: string[], financialMonth: Financial
     const bucket = totals.get(range.month)!;
 
     if (row.direction === "income") {
-      bucket.income += row.amount;
+      if (row.categoryGroup !== "savings") bucket.income += row.amount;
     } else if (row.direction === "expense") {
       // Money moved into a savings category is saving, not spending.
       if (row.categoryGroup !== "savings") bucket.expenses += row.amount;
-      if (row.categoryId != null && variableIds.has(row.categoryId)) bucket.variableSpend += row.amount;
+      if (row.categoryId == null || variableIds.has(row.categoryId)) bucket.variableSpend += row.amount;
     }
   }
 
@@ -209,10 +213,18 @@ export async function getHealthMetrics(financialMonth: FinancialMonthConfig): Pr
     // Same "first active row wins" rule as getBudgetOverview, so the Health tab is
     // always measuring against the budget the Budget portal shows.
     db.select().from(budgets).where(eq(budgets.active, true)).orderBy(asc(budgets.id)).limit(1),
+    // Debt payments are the debt ratio's; leaving them (and bills that pay a debt) out
+    // here keeps them from counting twice.
     db
       .select({ type: recurringItems.type, amount: recurringItems.amount, frequency: recurringItems.frequency })
       .from(recurringItems)
-      .where(and(eq(recurringItems.active, true), inArray(recurringItems.type, RECURRING_EXPENSE_TYPES))),
+      .where(
+        and(
+          eq(recurringItems.active, true),
+          inArray(recurringItems.type, RECURRING_EXPENSE_TYPES.filter((type) => type !== "debt")),
+          notInArray(recurringItems.id, db.select({ id: debtRecurring.recurringItemId }).from(debtRecurring)),
+        ),
+      ),
     getDebtSummary(),
   ]);
 

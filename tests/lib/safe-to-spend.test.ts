@@ -35,9 +35,16 @@ describe("safeToSpend", () => {
     expect(r.amount).toBeCloseTo(3000 - 1742.6 - 48.98, 2);
   });
 
-  it("only counts bills in budgeted categories in 'budgeted' mode", () => {
-    const r = safeToSpend(overview, [gym, streaming], "budgeted", today)!;
-    expect(r.reserved).toBeCloseTo(34.99, 2);
+  it("counts every variable-category bill under an overall budget in 'budgeted' mode", () => {
+    const r = safeToSpend(overview, [gym, streaming, energy], "budgeted", today)!;
+    expect(r.reserved).toBeCloseTo(34.99 + 13.99, 2);
+  });
+
+  it("only counts bills in budgeted categories, or in a budgeted group, without an overall budget", () => {
+    const grouped = { ...overview, budget: null, categories: [cat(10, 200), cat(11, null), { ...cat(12, null), parentCategoryId: 10 }] };
+    const inGroup: UpcomingBill = { ...streaming, categoryId: 12 };
+    const r = safeToSpend(grouped, [gym, streaming, inGroup], "budgeted", today)!;
+    expect(r.reserved).toBeCloseTo(34.99 + 13.99, 2); // gym, and the bill in the Leisure group
   });
 
   it("reserves nothing when recurring bills are excluded from budgets", () => {

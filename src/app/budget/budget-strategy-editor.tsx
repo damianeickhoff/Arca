@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatEurWhole } from "@/lib/format";
 import { ClearChip } from "@/components/clear/chip";
 import { MoneyText } from "@/components/clear/money";
-import type { BudgetIncomeSource } from "@/lib/budget-income";
+import type { StrategyBaseSource } from "@/lib/budget-strategy-base";
 
 export type BudgetStrategyDraft = { nodig: number; willen: number; sparen: number };
 
@@ -24,22 +24,23 @@ export function strategyTotal(s: BudgetStrategyDraft) {
 
 /**
  * The Needs / Wants / Savings split as three sliders on a grey tile: each share with
- * what it comes to on the monthly income the budget is planned on (regular income, or
- * what came in this month without any), a check that they add up to 100% and the
- * combined bar. A slider can't take the total past 100%.
+ * what it comes to a month on the base (the overall budget, else the income the budget is
+ * planned on — see strategyBase), a check that they add up to 100% and the combined bar.
+ * A slider can't take the total past 100%.
  */
 export function BudgetStrategyEditor({
   value,
   onChange,
-  income,
-  incomeSource = "received",
+  base,
+  baseSource = "received",
   title,
 }: {
   value: BudgetStrategyDraft;
   onChange: (next: BudgetStrategyDraft) => void;
-  income: number;
-  /** Which income `income` is, for the wording; only read when income > 0. */
-  incomeSource?: BudgetIncomeSource;
+  /** What the split divides, per month. */
+  base: number;
+  /** What `base` is, for the wording; only read when base > 0. */
+  baseSource?: StrategyBaseSource;
   /** Shown above the income line; the standalone dialog already has it as its title. */
   title?: string;
 }) {
@@ -60,8 +61,8 @@ export function BudgetStrategyEditor({
         <div className="flex min-w-0 flex-col gap-[3px]">
           {title && <h3 className="m-0 text-base font-bold">{title}</h3>}
           <span className="text-[13px] text-clear-ink-2">
-            <MoneyText>{income > 0
-              ? t.rich("strategyBasedOn", { income: formatEurWhole(income), source: incomeSource, b: (c) => <b className="text-clear-ink"><MoneyText>{c}</MoneyText></b> })
+            <MoneyText>{base > 0
+              ? t.rich("strategyBasedOn", { income: formatEurWhole(base), source: baseSource, b: (c) => <b className="text-clear-ink"><MoneyText>{c}</MoneyText></b> })
               : t("strategyNoIncome")}</MoneyText>
           </span>
         </div>
@@ -92,7 +93,7 @@ export function BudgetStrategyEditor({
               </label>
               <span className="text-right whitespace-nowrap tabular-nums sm:order-last">
                 <b className="text-[15px] font-extrabold">{v}%</b>
-                {income > 0 && <span className="text-[13px] font-semibold text-clear-ink-2"> · <MoneyText>{formatEurWhole((income * v) / 100)}</MoneyText></span>}
+                {base > 0 && <span className="text-[13px] font-semibold text-clear-ink-2"> · <MoneyText>{formatEurWhole((base * v) / 100)}</MoneyText></span>}
               </span>
               <div className="relative col-span-2 h-2 rounded-full bg-clear-line sm:col-span-1">
                 <span aria-hidden className={cn("absolute inset-y-0 left-0 rounded-full", FILL[kind])} style={{ width: at }} />

@@ -20,7 +20,7 @@ import { BillStatusControl } from "@/components/bill-status-control";
 import { CategoryDetailPortal } from "@/components/category-detail-portal";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { BudgetPeriod } from "@/lib/budget-overview";
-import type { BudgetIncomeSource } from "@/lib/budget-income";
+import type { StrategyBase } from "@/lib/budget-strategy-base";
 import type { SafeToSpend } from "@/lib/safe-to-spend";
 import type { NeedsReviewSummary } from "@/lib/needs-review-summary";
 import type { RecurringItem } from "@/db/schema";
@@ -80,10 +80,8 @@ export interface BudgetViewData {
   allocated: number;
   unbudgeted: number;
   strategy: Strategy;
-  /** Monthly income the budget is planned on; `incomeSource` says whether it is the regular
-   *  (recurring) income or what came in this month. */
-  income: number;
-  incomeSource: BudgetIncomeSource;
+  /** What the split divides each month: the overall budget, else the income (strategyBase). */
+  strategyBase: StrategyBase;
   actuals: Strategy;
   rows: {
     categoryId: number;
@@ -148,7 +146,7 @@ export function BudgetView({ data }: { data: BudgetViewData }) {
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {data.figures ? <HeroCard data={data} figures={data.figures} /> : <EmptyHeroCard />}
-        <StrategyCard strategy={data.strategy} income={data.income} incomeSource={data.incomeSource} actuals={data.actuals} />
+        <StrategyCard strategy={data.strategy} base={data.strategyBase} actuals={data.actuals} />
         <SuggestionCard data={data} />
         <CategoryBudgetsCard data={data} />
         <div className="order-1 flex min-w-0 flex-col gap-5 self-start lg:order-none lg:col-start-1 xl:col-start-auto">
@@ -395,13 +393,15 @@ function EmptyHeroCard() {
 // ── Strategy ──────────────────────────────────────────────────────────────────
 
 /**
- * The Needs / Wants / Savings split, one bar per kind: the share of income actually
- * spent or saved so far (solid) over the target share (hatched, ending in a tick), all
- * on one shared scale. Kept short so the cards beside it don't stretch.
+ * The Needs / Wants / Savings split, one bar per kind: the share of the base (the overall
+ * budget, else the income) actually spent or saved so far (solid) over the target share
+ * (hatched, ending in a tick), all on one shared scale. Kept short so the cards beside it
+ * don't stretch.
  */
-function StrategyCard({ strategy, income, incomeSource, actuals }: { strategy: Strategy; income: number; incomeSource: BudgetIncomeSource; actuals: Strategy }) {
+function StrategyCard({ strategy, base, actuals }: { strategy: Strategy; base: StrategyBase; actuals: Strategy }) {
   const t = useTranslations("plan.budget.strategy");
   const editor = useBudgetEditor();
+  const income = base.amount;
   const actualPct = (k: (typeof KINDS)[number]) => (income > 0 ? (actuals[k] / income) * 100 : 0);
   const top = Math.max(...KINDS.map((k) => Math.max(strategy[k], actualPct(k))));
   // The scale runs to the next multiple of 20 (at least 60%), so short bars stay readable.
@@ -464,7 +464,7 @@ function StrategyCard({ strategy, income, incomeSource, actuals }: { strategy: S
       <div className="mt-auto flex items-center justify-between gap-3 rounded-clear-tile bg-clear-tile px-4 py-3.5">
         <span className="text-sm leading-[1.45] text-clear-ink-2">
           <MoneyText>{income > 0
-            ? t("onIncome", { source: incomeSource, income: formatEurWhole(income), needs: share(strategy.nodig), wants: share(strategy.willen), savings: share(strategy.sparen) })
+            ? t("onIncome", { source: base.source, income: formatEurWhole(income), needs: share(strategy.nodig), wants: share(strategy.willen), savings: share(strategy.sparen) })
             : t("noIncome")}</MoneyText>
         </span>
         <button type="button" onClick={editor.openStrategy} className="shrink-0 cursor-pointer text-[15px] font-bold text-clear-ember-text hover:underline">

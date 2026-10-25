@@ -42,6 +42,8 @@ The line shows the expected balance day by day, with the **lowest point**, the m
 
 The **plan** card shows how this month's expected income is divided over **Recurring bills**, **Savings**, your **budget**, **Debt payments** and what's **Free to spend** (or **Short**). Use the arrows to see other months.
 
+An overall budget already covers your bills, so the bills inside it are part of the budget line and aren't taken off a second time; only bills it doesn't cover show as **Recurring bills**. Savings are your savings goals and your recurring savings, such as a monthly investment deposit.
+
 ## Coming up
 
 The next booked and expected payments, as a **List** or a **Calendar** with every day that has money moving. Tap a payment for its details.

@@ -3,6 +3,7 @@ import { getBudgetRecurringMode, getFinancialMonthConfig } from "@/lib/app-setti
 import { currentFinancialMonth, daysInclusive, offsetFinancialMonth, shiftDate, todayStr } from "@/lib/date-range";
 import { getBudgetOverview } from "@/lib/budget-overview";
 import { getBudgetData } from "@/lib/budget-data";
+import { strategyBase } from "@/lib/budget-strategy-base";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { safeToSpend } from "@/lib/safe-to-spend";
 import { getNeedsReviewTransactions } from "@/lib/needs-review";
@@ -155,8 +156,7 @@ export default async function BudgetPage({ searchParams }: { searchParams: Promi
     // Spend in categories without a budget of their own (or a budgeted parent).
     unbudgeted: Math.max(0, overview.totalSpent - overview.budgetedSpent),
     strategy: overview.strategy,
-    income: overview.income,
-    incomeSource: overview.incomeSource,
+    strategyBase: strategyBase(overview.budget, { income: overview.income, source: overview.incomeSource }),
     actuals: {
       nodig: budgetData.byBudgetType.nodig ?? 0,
       willen: budgetData.byBudgetType.willen ?? 0,
