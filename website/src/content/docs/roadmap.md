@@ -47,12 +47,13 @@ tableOfContents: false
 <div class="rm not-content">
 
 <div class="rm-shipped">
-  <span class="rm-shipped__chip">Just shipped · 1.6.1</span>
+  <span class="rm-shipped__chip">Just shipped · 1.7.0</span>
   <ul class="rm-shipped__items">
-    <li>Security fixes in the framework</li>
-    <li>A backup before every update</li>
-    <li>Settings › About with release notes</li>
-    <li>Import inside Settings, with a sync log</li>
+    <li>Notifications, also as push on your phone</li>
+    <li>AI on your own server</li>
+    <li>Internal transfers and rules for many at once</li>
+    <li>Every Tabler icon in the picker</li>
+    <li>An opt-in update check</li>
   </ul>
   <a class="rm-shipped__link" href="https://github.com/damianeickhoff/Arca/releases/latest">Release notes</a>
 </div>
@@ -64,8 +65,8 @@ tableOfContents: false
     <p class="rm-hero__text">Every number on screen comes from Arca itself. The model writes sentences and picks from your own lists. Each feature below keeps these rules.</p>
   </div>
   <ul class="rm-hero__rules">
-    <li><h3>Opt-in, per feature</h3><p>Off until you add a key. Every feature has its own switch.</p></li>
-    <li><h3>The minimum leaves your server</h3><p>Cleaned descriptions, amounts, dates, category names. Never account numbers.</p></li>
+    <li><h3>Opt-in, per feature</h3><p>Off until you add a key or your own server. Every feature has its own switch.</p></li>
+    <li><h3>The minimum leaves your server</h3><p>Cleaned descriptions, amounts, dates, category names. Never account numbers. On your own AI server, nothing leaves at all.</p></li>
     <li><h3>You confirm</h3><p>Nothing is saved without a tap.</p></li>
     <li><h3>Works without it</h3><p>Every screen keeps working with AI off.</p></li>
   </ul>
@@ -80,27 +81,6 @@ tableOfContents: false
   <span class="rm-area rm-area--ai">AI</span>
   <h3>AI picks become rules</h3>
   <p>File a merchant with the AI's suggestion and Arca offers the rule straight away, so next month it's sorted without asking again.</p>
-  <p class="rm-meta">In progress · Oct 2026</p>
-</div>
-
-<div class="rm-tile">
-  <span class="rm-area rm-area--banking">Banking</span>
-  <h3>Bank connection, round two</h3>
-  <p>Reconnect reminders before a consent runs out. The sync log is in.</p>
-  <p class="rm-meta">In progress · Oct 2026</p>
-</div>
-
-<div class="rm-tile">
-  <span class="rm-area rm-area--app">App</span>
-  <h3>Update check, if you want it</h3>
-  <p>A switch in Settings › About that asks GitHub once a day whether a newer Arca is out, off until you turn it on. Shows up on About and once on Home.</p>
-  <p class="rm-meta">In progress · Oct 2026</p>
-</div>
-
-<div class="rm-tile">
-  <span class="rm-area rm-area--app">App</span>
-  <h3>Notifications</h3>
-  <p>A Notifications page for bills due or overdue, a forecast running low, the payday check-in, bank consent and sync trouble, new transactions and new versions. Push to your phone or computer, opt-in per device. No email yet.</p>
   <p class="rm-meta">In progress · Oct 2026</p>
 </div>
 

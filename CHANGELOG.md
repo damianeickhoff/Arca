@@ -4,6 +4,47 @@ Every release of Arca, newest first. The same notes are on the GitHub releases p
 and in the app under Settings › About. Format: `## version — date`, one line with the
 release title, an intro paragraph, then `###` sections with bullets.
 
+## 1.7.0 — 2026-10-25
+Notifications, your own AI server, and a faster Needs a category
+
+Arca 1.7.0 tells you when a bill is due or a sync failed, also on your phone; lets you run AI on your own server instead of Google; and makes sorting transactions quicker with internal transfers, lasting AI picks and rules for several merchants at once.
+
+### 🔔 Notifications
+- A **Notifications** page under Home, with the unread count on the sidebar row and a bell in the phone header. Eight kinds, each with its own switch in Settings › **Notifications**: a bill due in the next days and one gone overdue, the forecast dipping under your warning line, the payday check-in with what is safe to spend, a bank consent about to run out, a failed sync, new transactions that came in, and a newer Arca when the update check is on.
+- **Push to your phone or computer.** Turn it on per device in Settings › Notifications, send a test, remove a device again. On iPhone, add Arca to the home screen first (iOS 16.4 or newer). The text goes through your browser's push service, encrypted so it cannot read it; nothing else leaves your server.
+
+### ✨ AI
+- **Your own server.** Settings › AI has a **Google Gemini · Local server** switch. Local server takes any OpenAI-compatible server on your network (Ollama, LM Studio, llama.cpp, vLLM, LocalAI, Open WebUI): enter the address, load the model list, pick a model, test, save. One provider serves every AI feature. Answers are checked against the expected shape and asked again once when a model wanders.
+- **Receipt scanning** uses the vision model of that server, set in the same place. The old `OLLAMA_HOST` and `OLLAMA_VISION_MODEL` variables still fill the fields until you save them. The scan buttons show once a vision model is set.
+- Changing the provider, address, keys or models is for admins.
+
+### 🏷️ Needs a category
+- **Internal transfer** is a choice next to the categories, for the current transaction and in Worth teaching, for a transfer to an account you have not added to Arca. Those stay out of your budget like other transfers.
+- **Ask AI's picks stay.** They are stored on the transaction, survive a reload and are not asked for again.
+- **See what a rule will file.** The rule card has **Show the N transactions**: every match with a checkbox, untick the ones the rule should leave alone this time.
+- **Several at once.** Select transactions from different merchants, give them one category and get one rule per merchant, with the matches grouped per merchant. Hold a row on your phone or Shift-click on a computer to start selecting. Activity's bulk Category does the same.
+- Worth teaching stays visible while you select, and the page no longer leaves empty space beside the queue.
+
+### 🏦 Bank connection
+- **Sync log.** Every sync, automatic or by hand, is listed in Settings › Import › Bank connection with what it brought in, and a failed one with its error. Data health › Recent changes names the bank.
+- Accounts linked from a bank get their **type** (Checking, Savings, Card) from the bank, with a chip in the link dialog. Accounts linked earlier get it on their next sync. A type you set yourself is never overwritten.
+- Sync times are shown in your time zone.
+
+### ⚙️ Settings
+- **Import lives in Settings**, as two tabs: **CSV file** (upload, Map columns, saved profiles, recent imports) and **Bank connection** (your banks and the sync log). The Import item in the sidebar and every Import button open it; the old address still works.
+- **About** shows what leaves your server with its live state per connection, and an opt-in **Check for updates** switch, off by default: on, the server asks GitHub once a day for the newest version and tells you on About and once on Home.
+- **Icons.** The icon picker offers every Tabler icon, 5,093 of them, with search and category chips, under the usual suggestions. Icons now load one at a time, so the app's first download is about a third smaller.
+- **Eye Care** is a new default category under Health, with rules for the usual opticians.
+- Test builds say so: the `dev` image shows a **Beta** chip under the logo and lists the changes it contains on About. A release shows neither.
+
+### 📖 Guide
+- New pages for Notifications and About; the AI, Import, bank connection, Data health, Needs a category and categories pages follow the new features.
+
+### 🐳 Installing and updating
+Image: `damianeickhoff/arca:latest` (also `1.7.0`) on Docker Hub, mirrored to `ghcr.io/damianeickhoff/arca`. On Unraid, **Check for updates** in the Docker tab. New on start: the `notifications` and `push_subscriptions` tables, a `cash_account_type` column on bank connection accounts and an `ai_suggested_category_id` column on transactions, all created by Arca itself.
+
+As always: Arca backs the database up before the first start on a new version.
+
 ## 1.6.1 — 2026-10-22
 Security fixes, backups before every update, and About
 
