@@ -1,7 +1,16 @@
 import { db } from "@/db";
 import { billPayments, debtPayments, debtRecurring, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
-import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
+import {
+  dueKey,
+  hasNoDueDates,
+  matchBillPayments,
+  paymentFitsItem,
+  paymentReachDays,
+  type BillPaymentMatches,
+  type DirectionOf,
+} from "@/lib/bill-match";
+import { occurrencesBetween } from "@/lib/recurring-occurrence";
 import { recurringItemPatterns } from "@/lib/recurring-patterns";
 import { eq } from "drizzle-orm";
 import { debtBalanceDate, type DebtExtraPayment, type DebtProgress } from "@/app/debts/debt-shared";
@@ -10,6 +19,7 @@ import {
   financialMonthForDate,
   financialMonthRangeByMonth,
   offsetFinancialMonth,
+  shiftDate,
   todayStr,
   type FinancialMonthConfig,
 } from "@/lib/date-range";
@@ -20,9 +30,10 @@ import {
  *
  * A bill counts as paid in a given financial month using the same rule as the bills
  * calendar (see lib/bill-status.ts): a manual mark in bill_payments always wins,
- * otherwise the bill auto-matches when a transaction in that month matches its
- * matchPattern (and amount constraints). Each paid month contributes the marked
- * amount when there is one, else the bill's own amount.
+ * otherwise each of the bill's due dates in that month is paid by its nearest payment
+ * (lib/bill-match.ts — the same pairing the statuses use, so a date paid on Budget is
+ * paid here). A marked month contributes the marked amount (else the bill's amount),
+ * any other month the bill's amount once per paid due date.
  *
  * The months are financial months (payday to payday), the ones the bill statuses use,
  * from the one the balance date falls in: in that first month only payments after the
@@ -71,6 +82,9 @@ function nextDay(date: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+const minDate = (a: string, b: string) => (a < b ? a : b);
+const maxDate = (a: string, b: string) => (a > b ? a : b);
+
 export async function getDebtRecurringLinks(
   financialMonth: FinancialMonthConfig,
 ): Promise<DebtRecurringLinks> {
@@ -111,10 +125,13 @@ export async function getDebtRecurringLinks(
     db.select().from(recurringItems),
     db.select().from(billPayments),
     db.select({
+      id: transactions.id,
       date: transactions.date,
-      description: transactions.description,
       amount: transactions.amount,
       direction: transactions.direction,
+      description: transactions.description,
+      rawDescription: transactions.rawDescription,
+      recurringItemId: transactions.recurringItemId,
     }).from(transactions),
   ]);
 
@@ -125,15 +142,46 @@ export async function getDebtRecurringLinks(
   const paymentKey = (itemId: number, month: string) => `${itemId}:${month}`;
   const paymentByItemMonth = new Map(payments.map((p) => [paymentKey(p.recurringItemId, p.month), p]));
 
-  /** The latest matching payment in [from, to], or null. */
-  function autoMatched(item: RecurringItem, from: string, to: string, direction: string): string | null {
-    let latest: string | null = null;
-    for (const t of allTx) {
-      if (t.direction !== direction || t.date < from || t.date > to) continue;
-      if (!transactionMatchesRecurringItem(t.description, t.amount, item)) continue;
-      if (latest == null || t.date > latest) latest = t.date;
+  // The whole history paired once (per direction, below). The items the statuses list
+  // compete here too, so a charge that pays another bill doesn't also pay a debt's.
+  const competitors = items.filter((i) => i.active || linkedIds.has(i.id));
+  const historyFrom = firstTxDate ?? todayStr();
+  const historyTo = shiftDate(todayStr(), 62);
+  const matchesByDirection = new Map<boolean, BillPaymentMatches>();
+  // A debt in the "owed" direction is repaid *to* you, so its bills settle on income.
+  const directionOf = (owed: boolean): DirectionOf => (item) =>
+    (owed && linkedIds.has(item.id)) || item.type === "income" ? "income" : "expense";
+  function matchesFor(owed: boolean): BillPaymentMatches {
+    let matches = matchesByDirection.get(owed);
+    if (!matches) {
+      matches = matchBillPayments(competitors, allTx, historyFrom, historyTo, directionOf(owed));
+      matchesByDirection.set(owed, matches);
     }
-    return latest;
+    return matches;
+  }
+
+  /** The payment dates of the item's due dates in [datesFrom, to] (paid after `after`),
+   *  and how many dates it is due in [scheduleFrom, to]. An item with no date at all is
+   *  due once a month and paid by any payment in the range no dated item took. */
+  function paidDates(
+    item: RecurringItem,
+    range: { datesFrom: string; scheduleFrom: string; to: string },
+    after: string | null,
+    owed: boolean,
+  ) {
+    const matches = matchesFor(owed);
+    if (hasNoDueDates(item)) {
+      const tx = allTx.find(
+        (t) =>
+          t.date >= range.scheduleFrom && t.date <= range.to && (after == null || t.date > after) &&
+          !matches.used.has(t.id) && paymentFitsItem(t, item, directionOf(owed)),
+      );
+      return { paid: tx ? [tx.date] : [], due: 1 };
+    }
+    const paid = occurrencesBetween(item, range.datesFrom, range.to)
+      .map((date) => matches.byDueDate.get(dueKey(item.id, date))?.date)
+      .filter((date): date is string => date != null && (after == null || date > after));
+    return { paid, due: occurrencesBetween(item, range.scheduleFrom, range.to).length };
   }
 
   function paidFor(
@@ -152,7 +200,7 @@ export async function getDebtRecurringLinks(
 
     // Same rule as the bills calendar (lib/bill-status.ts): an income recurrence is
     // settled by an income transaction. A debt in the "owed" direction is repaid *to*
-    // you, so its linked bills settle on income however they are typed.
+    // you, so its linked bills settle on income however they are typed (directionOf).
     const owed = debt.direction === "owed";
 
     let total = 0;
@@ -169,24 +217,38 @@ export async function getDebtRecurringLinks(
     // A payment in the balance date's own month joins the next month's entry, so there is
     // one entry per month of interest after the balance date (none for the balance month).
     let carry = 0;
+    let opening = true;
     for (let month = firstMonth, i = 0; month <= endMonth && i < 1200; month = offsetFinancialMonth(month, 1), i++) {
       const range = financialMonthRangeByMonth(month, financialMonth);
-      const from = month === firstMonth ? nextDay(balanceDate) : range.from;
-      if (from > range.to) continue;
+      if (month === firstMonth && nextDay(balanceDate) > range.to) continue;
+      // The first month counted takes only payments after the balance date, including
+      // the late one for a date due shortly before it (the balance didn't include it),
+      // and is on schedule only from the day after it.
+      const after = opening ? balanceDate : null;
+      const window = {
+        datesFrom: opening ? minDate(range.from, shiftDate(balanceDate, -paymentReachDays("monthly"))) : range.from,
+        scheduleFrom: opening ? maxDate(range.from, nextDay(balanceDate)) : range.from,
+        to: range.to,
+      };
+      opening = false;
       const ended = range.to < today;
       let paidThisMonth = 0;
       for (const id of ids) {
         const item = itemsById.get(id);
         if (!item) continue;
-        const wantedDirection = owed || item.type === "income" ? "income" : "expense";
         const mark = month === firstMonth ? undefined : paymentByItemMonth.get(paymentKey(id, month));
-        const matched = mark ? null : autoMatched(item, from, range.to, wantedDirection);
-        const unknowable = ended && ((firstTxDate != null && range.to < firstTxDate) || recurringItemPatterns(item).length === 0);
-        if (mark || matched || unknowable) {
-          paidThisMonth += (mark ? mark.amount : null) ?? item.amount ?? 0;
-          const paidOn = matched ?? range.to;
-          if (lastPaidDate == null || paidOn > lastPaidDate) lastPaidDate = paidOn;
+        if (mark) {
+          paidThisMonth += mark.amount ?? item.amount ?? 0;
+          if (lastPaidDate == null || range.to > lastPaidDate) lastPaidDate = range.to;
+          continue;
         }
+        const { paid, due } = paidDates(item, window, after, owed);
+        const unknowable = ended && ((firstTxDate != null && range.to < firstTxDate) || recurringItemPatterns(item).length === 0);
+        // A month the history can't tell about is paid on schedule: once per due date.
+        const count = unknowable ? Math.max(due, paid.length) : paid.length;
+        paidThisMonth += count * (item.amount ?? 0);
+        const paidOn = paid.length > 0 ? paid.reduce((a, b) => (a > b ? a : b)) : count > 0 ? range.to : null;
+        if (paidOn != null && (lastPaidDate == null || paidOn > lastPaidDate)) lastPaidDate = paidOn;
       }
       total += paidThisMonth;
       if (month === firstMonth && month < endMonth) {

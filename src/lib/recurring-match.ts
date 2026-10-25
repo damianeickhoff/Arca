@@ -79,6 +79,14 @@ export function transactionMatchesRecurringItem(
   const desc = description.toLowerCase();
   const hit = patterns.some((pattern) => (item.matchWholeWord ? containsWholeWord(desc, pattern) : desc.includes(pattern)));
   if (!hit) return false;
+  return amountSatisfiesRecurringItem(amount, item);
+}
+
+/** The amount half of transactionMatchesRecurringItem: true when the item sets no amount. */
+export function amountSatisfiesRecurringItem(
+  amount: number,
+  item: Pick<RecurringMatcher, "matchAmount" | "matchAmountMin" | "matchAmountMax">,
+): boolean {
   const abs = absCents(amount);
   if (item.matchAmountMin != null || item.matchAmountMax != null) {
     if (item.matchAmountMin != null && abs < absCents(item.matchAmountMin) - 1) return false;

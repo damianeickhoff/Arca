@@ -138,4 +138,97 @@ describe("getBillStatuses", () => {
       vi.setSystemTime(new Date(2026, 9, 15, 12));
     }
   });
+
+  // The owner's months start on the 23rd, a weekend start rolling back to the Friday.
+  const payday23 = { defaultStartDay: 23, weekendRollback: true };
+  const status = (rows: { item: { id: number }; dueDate: string | null; paid: boolean | null }[], id: number) =>
+    rows.filter((b) => b.item.id === id).map((b) => [b.dueDate, b.paid]);
+
+  it("pays each due date with its nearest payment, across the payday boundary", async () => {
+    const { db } = await import("@/db");
+    const s = await import("@/db/schema");
+    const { getBillStatuses } = await import("@/lib/bill-status");
+    const [storage, loan] = await db
+      .insert(s.recurringItems)
+      .values([
+        { name: "Self Storage", type: "bill", amount: 103.16, frequency: "monthly", dueDay: 22, startDate: "2026-07-22", matchPattern: "self storage tiel" },
+        { name: "Loan 3k", type: "debt", amount: 56.17, frequency: "monthly", dueDay: 22, startDate: "2026-07-22", matchPattern: "ing bank nv", matchAmount: 56.17 },
+      ])
+      .returning();
+    await db.insert(s.transactions).values([
+      { date: "2026-08-18", direction: "expense", type: "variabel", amount: 103.16, description: "Self Storage Tiel B.V." },
+      { date: "2026-09-23", direction: "expense", type: "variabel", amount: 103.16, description: "Self Storage Tiel B.V." },
+      { date: "2026-10-20", direction: "expense", type: "variabel", amount: 103.16, description: "Self Storage Tiel B.V." },
+      { date: "2026-08-24", direction: "expense", type: "variabel", amount: 56.17, description: "ING BANK NV" },
+      { date: "2026-09-24", direction: "expense", type: "variabel", amount: 56.17, description: "ING BANK NV" },
+    ]);
+
+    // 21 August – 22 September holds two due dates of each. Storage was collected on the
+    // 18th (before the month) and the 23rd (after it), the loan two days after each date.
+    const august = await getBillStatuses("2026-08", payday23);
+    expect(status(august, storage.id)).toEqual([["2026-08-24", true], ["2026-09-22", true]]);
+    expect(status(august, loan.id)).toEqual([["2026-08-24", true], ["2026-09-22", true]]);
+    // The loan's 24 September payment already paid 22 September: it doesn't also pay
+    // 22 October just because it falls in that month.
+    const september = await getBillStatuses("2026-09", payday23);
+    expect(status(september, storage.id)).toEqual([["2026-10-22", true]]);
+    expect(status(september, loan.id)).toEqual([["2026-10-22", false]]);
+  });
+
+  it("lets one transaction pay one item, preferring the one it is linked to", async () => {
+    const { db } = await import("@/db");
+    const s = await import("@/db/schema");
+    const { getBillStatuses } = await import("@/lib/bill-status");
+    // A gym paid through the same payee and amount as the tracker subscription.
+    const [o2t, gym] = await db
+      .insert(s.recurringItems)
+      .values([
+        { name: "O2T", type: "subscription", amount: 7.95, frequency: "monthly", dueDay: 2, startDate: "2026-08-02", matchPattern: "O2T", matchAmount: 7.95 },
+        { name: "Gym Lily", type: "bill", amount: 22.5, frequency: "quarterly", dueDay: 8, startDate: "2026-08-08", matchPattern: "O2T", matchAmount: 7.95 },
+      ])
+      .returning();
+    await db.insert(s.transactions).values([
+      { date: "2026-08-04", direction: "expense", type: "variabel", amount: 7.95, description: "O2T Holding B.V. via Mollie", recurringItemId: o2t.id },
+      // Not linked: it goes to the nearest due date, O2T's on the 2nd, not the gym's on the 9th.
+      { date: "2026-11-03", direction: "expense", type: "variabel", amount: 7.95, description: "O2T Holding B.V. via Mollie" },
+    ]);
+
+    const august = await getBillStatuses("2026-08", 1);
+    expect(status(august, o2t.id)).toEqual([["2026-08-03", true]]);
+    expect(status(august, gym.id)).toEqual([["2026-08-10", false]]);
+    const november = await getBillStatuses("2026-11", 1);
+    expect(status(november, o2t.id)).toEqual([["2026-11-02", true]]);
+    expect(status(november, gym.id)).toEqual([["2026-11-09", false]]);
+
+    // A manual mark still wins.
+    await db.insert(s.billPayments).values({ recurringItemId: gym.id, month: "2026-11", amount: 22.5 });
+    expect((await getBillStatuses("2026-11", 1)).find((b) => b.item.id === gym.id)).toMatchObject({ paid: true, paidSource: "manual" });
+  });
+
+  it("matches the bank's full text and keeps a charge with the item its amount fits", async () => {
+    const { db } = await import("@/db");
+    const s = await import("@/db/schema");
+    const { getBillStatuses } = await import("@/lib/bill-status");
+    const [icloud, arcade] = await db
+      .insert(s.recurringItems)
+      .values([
+        { name: "iCloud+", type: "subscription", amount: 2.99, frequency: "monthly", dueDay: 30, startDate: "2026-07-30", matchPattern: "APPLE.COM BILL CORK" },
+        { name: "Arcade", type: "subscription", amount: 10, frequency: "monthly", dueDay: 25, startDate: "2026-07-25", matchPattern: "APPLE.COM", matchAmount: 10 },
+      ])
+      .returning();
+    await db.insert(s.transactions).values([
+      { date: "2026-09-24", direction: "expense", type: "variabel", amount: 10, description: "APPLE.COM BILL CORK IRL" },
+      // Bank sync shortens the description; the full text still names Cork.
+      { date: "2026-09-29", direction: "expense", type: "variabel", amount: 2.99, description: "APPLE.COM BILL", rawDescription: "APPLE.COM BILL CORK IRL Kaartnr: 5238 53** **** 7037" },
+      { date: "2026-10-24", direction: "expense", type: "variabel", amount: 10, description: "APPLE.COM BILL CORK IRL" },
+    ]);
+
+    const september = await getBillStatuses("2026-09", 1);
+    expect(status(september, arcade.id)).toEqual([["2026-09-25", true]]);
+    expect(status(september, icloud.id)).toEqual([["2026-09-30", true]]);
+    // October's only charge is Arcade's €10: iCloud+ is still to come.
+    const october = await getBillStatuses("2026-10", 1);
+    expect(status(october, arcade.id)).toEqual([["2026-10-26", true]]);
+    expect(status(october, icloud.id)).toEqual([["2026-10-30", false]]);
+  });
 });

@@ -3,9 +3,10 @@ import { db } from "@/db";
 import { billPayments, billSkips, categories, recurringItems, transactions } from "@/db/schema";
 import type { RecurringItem } from "@/db/schema";
 import { resolveRecurringIcon } from "@/lib/auto-brand";
-import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
-import { financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
+import { dueKey, matchBillPayments, MATCH_CONTEXT_DAYS, paymentFitsItem } from "@/lib/bill-match";
+import { financialMonthRangeByMonth, shiftDate, type FinancialMonthConfig } from "@/lib/date-range";
 import { occurrencesBetween } from "@/lib/recurring-occurrence";
+import { recurringItemPatterns } from "@/lib/recurring-patterns";
 
 export type BillStatus = {
   item: RecurringItem;
@@ -40,9 +41,10 @@ export const UPCOMING_TYPES = [...EXPENSE_TYPES, "income"];
  * not persisted; only the manual override needs a row.
  *
  * An item is listed once per date it is due in the month: a quarterly or yearly item
- * only in its own months, a weekly or four-weekly one on each of its dates (the first
- * N dates count as paid when N payments matched). An auto-detected item with nothing to
- * place it in a month is not a bill and is left out.
+ * only in its own months, a weekly or four-weekly one on each of its dates. Each date is
+ * paid by its nearest payment, even one just across the month boundary, and each
+ * transaction pays one date of one item (see lib/bill-match.ts). An auto-detected item
+ * with nothing to place it in a month is not a bill and is left out.
  */
 export async function getBillStatuses(
   month: string,
@@ -68,10 +70,22 @@ export async function getBillStatuses(
       .where(or(eq(recurringItems.active, true), and(eq(recurringItems.dismissed, false), gt(recurringItems.startDate, todayStr)))),
     // Both directions: an income recurrence is "paid" (received) by an *income*
     // transaction, so restricting this to expenses would leave every salary showing as
-    // still outstanding. The direction is carried through and checked per item below.
-    db.select({ description: transactions.description, amount: transactions.amount, direction: transactions.direction })
+    // still outstanding. The matcher checks the direction per item. Read around the
+    // month too: a bill due on the 22nd may be collected after the next payday.
+    db.select({
+      id: transactions.id,
+      date: transactions.date,
+      amount: transactions.amount,
+      direction: transactions.direction,
+      description: transactions.description,
+      rawDescription: transactions.rawDescription,
+      recurringItemId: transactions.recurringItemId,
+    })
       .from(transactions)
-      .where(and(gte(transactions.date, from), lte(transactions.date, to))),
+      .where(and(
+        gte(transactions.date, shiftDate(from, -2 * MATCH_CONTEXT_DAYS)),
+        lte(transactions.date, shiftDate(to, 2 * MATCH_CONTEXT_DAYS)),
+      )),
     db.select().from(billPayments).where(eq(billPayments.month, month)),
     db.select({ id: categories.id, icon: categories.icon, color: categories.color }).from(categories),
     db.select({ recurringItemId: billSkips.recurringItemId }).from(billSkips).where(eq(billSkips.month, month)),
@@ -81,14 +95,17 @@ export async function getBillStatuses(
   const paymentByItem = new Map(payments.map((p) => [p.recurringItemId, p]));
   const categoriesById = new Map(cats.map((c) => [c.id, { icon: c.icon, color: c.color }]));
 
-  function matchCount(item: RecurringItem) {
-    // Only consider transactions moving the way this recurrence does, so a same-named
-    // refund can't mark a bill as paid (or an outgoing transfer mark a salary received).
-    const wantedDirection = item.type === "income" ? "income" : "expense";
-    return periodTx.filter(
-      (t) => t.direction === wantedDirection && transactionMatchesRecurringItem(t.description, t.amount, item),
-    ).length;
-  }
+  // Every loaded item competes for the payments, whatever `types` asks to report, so a
+  // due date reads the same on every screen. Only transactions moving the way an item
+  // does count, so a same-named refund can't mark a bill as paid.
+  const matches = matchBillPayments(items, periodTx, from, to);
+  /** Items without a date (daily, or no day set) are paid by any payment in the month
+   *  that no dated item took. */
+  const undatedPaid = new Set(
+    items
+      .filter((item) => periodTx.some((t) => t.date >= from && t.date <= to && !matches.used.has(t.id) && paymentFitsItem(t, item)))
+      .map((item) => item.id),
+  );
 
   /** The dates this item is due in the month; null when it has nothing to place it by. */
   function dueDatesOf(item: RecurringItem): (string | null)[] {
@@ -109,24 +126,25 @@ export async function getBillStatuses(
       if (!item.active && dates[0] == null) return [];
 
       const manual = paymentByItem.get(item.id);
-      const matched = item.matchPattern ? matchCount(item) : 0;
+      const hasPattern = recurringItemPatterns(item).length > 0;
       const resolved = resolveRecurringIcon(item, categoriesById);
 
-      return dates.map((dueDate, i): BillStatus => {
+      return dates.map((dueDate): BillStatus => {
+        const matched = dueDate == null ? undatedPaid.has(item.id) : matches.byDueDate.has(dueKey(item.id, dueDate));
         let paid: boolean | null;
         let paidSource: "match" | "manual" | null;
         if (manual) {
           paid = true;
           paidSource = "manual";
-        } else if (matched > i) {
+        } else if (matched) {
           paid = true;
           paidSource = "match";
-        } else if (item.matchPattern) {
-          // Has a pattern but no (further) match this month — known unpaid.
+        } else if (hasPattern) {
+          // Has a pattern but no payment for this date — known unpaid.
           paid = false;
           paidSource = null;
         } else {
-          // No pattern and no manual mark — paid status is simply unknown.
+          // No pattern, no linked payment and no manual mark — paid status is unknown.
           paid = null;
           paidSource = null;
         }
