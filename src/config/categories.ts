@@ -8,6 +8,11 @@
 // `key` is the stable identity of an entry (stored as categories.config_key) — never
 // change it once set. Everything else (including `name`) can be edited freely.
 //
+// `name` is the English name and `nameNl` the Dutch one. The seed writes English; once a
+// language is chosen (Settings › Language, the onboarding), every default the user hasn't
+// renamed takes that language's name — see localizeDefaultCategories in
+// src/lib/config-sync.ts. Keep each name unique within its kind in both languages.
+//
 // `matchingPatterns` auto-categorizes transactions whose description matches any of
 // the listed patterns (case-insensitive), the same way a user-created category rule
 // would — list as many as you need. Each entry is either:
@@ -65,7 +70,10 @@ export function normalizeMatchingPattern(entry: MatchingPattern): NormalizedPatt
 
 export interface DefaultCategory {
   key: string;
+  /** English name (what the seed writes). */
   name: string;
+  /** Dutch name. */
+  nameNl: string;
   budgetType: string | null;
   color: string | null;
   icon: string | null;
@@ -85,7 +93,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
   { 
   key: "Education", 
-  name: "Education", 
+  name: "Education",
+  nameNl: "Onderwijs",
   budgetType: "Needs", 
   color: "#de3535", 
   icon: "IconSchoolFilled",
@@ -122,6 +131,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Entertainment",
   name: "Entertainment",
+  nameNl: "Vrije tijd",
   budgetType: "Wants",
   color: "#de3535",
   icon: "IconDeviceTvFilled"
@@ -130,6 +140,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Events",
   name: "Events",
+  nameNl: "Evenementen",
   budgetType: "Wants",
   color: "#de3535",
   icon: "IconRollercoasterFilled",
@@ -153,6 +164,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Hobbies",
   name: "Hobbies",
+  nameNl: "Hobby's",
   budgetType: "Wants",
   color: "#de3535",
   icon: "IconBallBowlingFilled",
@@ -171,6 +183,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Cinema",
   name: "Cinema",
+  nameNl: "Bioscoop",
   budgetType: "Wants",
   color: "#de3535",
   icon: "IconTicketFilled",
@@ -186,6 +199,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Sports & Recreation",
   name: "Sports & Recreation",
+  nameNl: "Sport en recreatie",
   budgetType: "Wants",
   color: "#de3535",
   icon: "IconTrophyFilled",
@@ -199,10 +213,11 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 },
 
 // Subscriptions
-{ key: "Subscriptions", name: "Subscriptions", budgetType: "Wants", color: "#6e88eb", icon: "IconHeadphonesFilled" },
+{ key: "Subscriptions", name: "Subscriptions", nameNl: "Abonnementen", budgetType: "Wants", color: "#6e88eb", icon: "IconHeadphonesFilled" },
 { 
   key: "Streaming Services",
   name: "Streaming Services",
+  nameNl: "Streamingdiensten",
   budgetType: "Wants",
   color: "#6e88eb",
   icon: "IconVideoFilled",
@@ -226,6 +241,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Gaming",
   name: "Gaming",
+  nameNl: "Gaming",
   budgetType: "Wants",
   color: "#6e88eb",
   icon: "IconDeviceGamepad2Filled",
@@ -245,6 +261,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Apps & Software",
   name: "Apps & Software",
+  nameNl: "Apps en software",
   budgetType: "Wants",
   color: "#6e88eb",
   icon: "IconAppsFilled",
@@ -266,6 +283,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Shopping",
   name: "Shopping",
+  nameNl: "Winkelen",
   budgetType: "Wants",
   color: "#9c8bf4",
   icon: "IconBasketFilled"
@@ -274,6 +292,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Clothing",
   name: "Clothing",
+  nameNl: "Kleding",
   budgetType: "Wants",
   color: "#9c8bf4",
   icon: "IconShirtFilled",
@@ -299,6 +318,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Electronics",
   name: "Electronics",
+  nameNl: "Elektronica",
   budgetType: "Wants",
   color: "#9c8bf4",
   icon: "IconDeviceDesktopFilled",
@@ -317,6 +337,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "Home Goods",
   name: "Home Goods",
+  nameNl: "Woonartikelen",
   budgetType: "Wants",
   color: "#9c8bf4",
   icon: "IconBedFilled",
@@ -340,6 +361,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 { 
   key: "General Shopping",
   name: "General Shopping",
+  nameNl: "Overige aankopen",
   budgetType: "Wants",
   color: "#9c8bf4",
   icon: "IconShoppingCartFilled",
@@ -357,7 +379,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   // Family
   { 
   key: "Family", 
-  name: "Family", 
+  name: "Family",
+  nameNl: "Gezin",
   budgetType: "Needs", 
   color: "#deb435", 
   icon: "IconHomeFilled",
@@ -378,11 +401,12 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 },
 
 // Finance
-{ key: "Finance", name: "Finance", budgetType: "Wants", color: "#15c556", icon: "IconCashBanknoteFilled" },
+{ key: "Finance", name: "Finance", nameNl: "Financiën", budgetType: "Wants", color: "#15c556", icon: "IconCashBanknoteFilled" },
 
 { 
   key: "Bank Fees", 
-  name: "Bank Fees", 
+  name: "Bank Fees",
+  nameNl: "Bankkosten",
   budgetType: "Wants", 
   color: "#15c556", 
   icon: "IconPigFilled", 
@@ -403,7 +427,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Investments", 
-  name: "Investments", 
+  name: "Investments",
+  nameNl: "Beleggingen",
   budgetType: "Wants", 
   color: "#15c556", 
   icon: "IconChartAreaLineFilled", 
@@ -425,7 +450,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Pocket money", 
-  name: "Pocket money", 
+  name: "Pocket money",
+  nameNl: "Zakgeld",
   budgetType: "Wants", 
   color: "#15c556", 
   icon: "IconCashBanknoteFilled", 
@@ -438,7 +464,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Savings", 
-  name: "Savings", 
+  name: "Savings",
+  nameNl: "Sparen",
   budgetType: "Wants", 
   color: "#15c556", 
   icon: "IconPigFilled", 
@@ -453,7 +480,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Taxes", 
-  name: "Taxes", 
+  name: "Taxes",
+  nameNl: "Belastingen",
   budgetType: "Wants", 
   color: "#15c556", 
   icon: "IconReceiptEuroFilled", 
@@ -469,10 +497,11 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 },
 
 // Food & Dining
-{ key: "Food & Dining", name: "Food & Dining", budgetType: "Needs", color: "#ef5b3f", icon: "IconToolsKitchen2Filled" },
+{ key: "Food & Dining", name: "Food & Dining", nameNl: "Eten en drinken", budgetType: "Needs", color: "#ef5b3f", icon: "IconToolsKitchen2Filled" },
 { 
   key: "Groceries",
   name: "Groceries",
+  nameNl: "Boodschappen",
   budgetType: "Needs",
   color: "#ef5b3f",
   icon: "IconShoppingCartFilled",
@@ -499,6 +528,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Food Delivery",
   name: "Food Delivery",
+  nameNl: "Maaltijdbezorging",
   budgetType: "Wants",
   color: "#ef5b3f",
   icon: "IconBowlChopsticksFilled",
@@ -516,6 +546,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Restaurants & Bars",
   name: "Restaurants & Bars",
+  nameNl: "Restaurants en cafés",
   budgetType: "Wants",
   color: "#ef5b3f",
   icon: "IconBeerFilled",
@@ -534,7 +565,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 },
 { 
   key: "Gifts", 
-  name: "Gifts", 
+  name: "Gifts",
+  nameNl: "Cadeaus",
   budgetType: "Wants", 
   color: "#4ade35", 
   icon: "IconGiftFilled",
@@ -554,11 +586,12 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 // Health
-{ key: "Health", name: "Health", budgetType: "Needs", color: "#90d731", icon: "IconDeviceHeartMonitorFilled" },
+{ key: "Health", name: "Health", nameNl: "Gezondheid", budgetType: "Needs", color: "#90d731", icon: "IconDeviceHeartMonitorFilled" },
 
 { 
   key: "Doctor Visits", 
-  name: "Doctor Visits", 
+  name: "Doctor Visits",
+  nameNl: "Huisarts en zorg",
   budgetType: "Needs", 
   color: "#90d731", 
   icon: "IconFaceMaskFilled", 
@@ -579,7 +612,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Health Insurance", 
-  name: "Health Insurance", 
+  name: "Health Insurance",
+  nameNl: "Zorgverzekering",
   budgetType: "Needs", 
   color: "#90d731", 
   icon: "IconShieldCheckFilled", 
@@ -600,7 +634,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Medication", 
-  name: "Medication", 
+  name: "Medication",
+  nameNl: "Medicijnen",
   budgetType: "Needs", 
   color: "#90d731", 
   icon: "IconPillFilled", 
@@ -616,7 +651,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Dental Care", 
-  name: "Dental Care", 
+  name: "Dental Care",
+  nameNl: "Tandarts",
   budgetType: "Needs", 
   color: "#90d731", 
   icon: "IconMedicalCrossFilled", 
@@ -633,6 +669,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Eye Care",
   name: "Eye Care",
+  nameNl: "Oogzorg",
   budgetType: "Needs",
   color: "#90d731",
   icon: "IconEyeglassFilled",
@@ -651,7 +688,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Sport", 
-  name: "Sport", 
+  name: "Sport",
+  nameNl: "Sport",
   budgetType: "Wants", 
   color: "#90d731", 
   icon: "IconBarbellFilled", 
@@ -671,7 +709,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Life Insurance", 
-  name: "Life Insurance", 
+  name: "Life Insurance",
+  nameNl: "Levensverzekering",
   budgetType: "Wants", 
   color: "#90d731", 
   icon: "IconUmbrellaFilled", 
@@ -687,10 +726,11 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 // Housing
-{ key: "Housing", name: "Housing", budgetType: "Needs", color: "#489bd8", icon: "IconHome2Filled"},
+{ key: "Housing", name: "Housing", nameNl: "Wonen", budgetType: "Needs", color: "#489bd8", icon: "IconHome2Filled"},
 {
   key: "Utilities",
   name: "Utilities",
+  nameNl: "Energie en water",
   budgetType: "Needs",
   color: "#489bd8",
   icon: "IconBoltFilled",
@@ -711,6 +751,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Internet",
   name: "Internet",
+  nameNl: "Internet",
   budgetType: "Needs",
   color: "#489bd8",
   icon: "IconCloudFilled",
@@ -730,6 +771,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Phone",
   name: "Phone",
+  nameNl: "Telefoon",
   budgetType: "Needs",
   color: "#489bd8",
   icon: "IconDeviceMobileFilled",
@@ -745,11 +787,12 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 // Income
-{ key: "Income", name: "Income", budgetType: "Needs", color: "#15cf85", icon: "IconCoinFilled", kind: "income" },
+{ key: "Income", name: "Income", nameNl: "Inkomsten", budgetType: "Needs", color: "#15cf85", icon: "IconCoinFilled", kind: "income" },
 
 { 
   key: "Benefits", 
-  name: "Benefits", 
+  name: "Benefits",
+  nameNl: "Toeslagen en uitkeringen",
   budgetType: "Wants", 
   color: "#15cf85", 
   icon: "IconSparklesFilled", 
@@ -768,7 +811,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Other Income", 
-  name: "Other Income", 
+  name: "Other Income",
+  nameNl: "Overige inkomsten",
   budgetType: "Wants", 
   color: "#15cf85", 
   icon: "IconCashBanknoteFilled", 
@@ -783,7 +827,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Refunds", 
-  name: "Refunds", 
+  name: "Refunds",
+  nameNl: "Restituties",
   budgetType: "Wants", 
   color: "#15cf85", 
   icon: "IconExchangeFilled", 
@@ -799,7 +844,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Reimbursement", 
-  name: "Reimbursement", 
+  name: "Reimbursement",
+  nameNl: "Terugbetalingen",
   budgetType: "Wants", 
   color: "#15cf85", 
   icon: "IconReplaceFilled", 
@@ -815,7 +861,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Salary", 
-  name: "Salary", 
+  name: "Salary",
+  nameNl: "Salaris",
   budgetType: "Wants", 
   color: "#15cf85", 
   icon: "IconCreditCardFilled", 
@@ -832,7 +879,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 // Loans
 { 
   key: "Loans", 
-  name: "Loans", 
+  name: "Loans",
+  nameNl: "Leningen",
   budgetType: "Needs", 
   color: "#359fde", 
   icon: "IconReportMoneyFilled",
@@ -849,11 +897,12 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 },
 
 // Personal Care
-{ key: "Personal Care", name: "Personal Care", budgetType: "Needs", color: "#faac6c", icon: "IconHeartFilled" },
+{ key: "Personal Care", name: "Personal Care", nameNl: "Verzorging", budgetType: "Needs", color: "#faac6c", icon: "IconHeartFilled" },
 
 { 
   key: "Beauty Services", 
-  name: "Beauty Services", 
+  name: "Beauty Services",
+  nameNl: "Kapper en beauty",
   budgetType: "Needs", 
   color: "#faac6c", 
   icon: "IconFlowerFilled", 
@@ -872,7 +921,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Cosmetics", 
-  name: "Cosmetics", 
+  name: "Cosmetics",
+  nameNl: "Cosmetica",
   budgetType: "Needs", 
   color: "#faac6c", 
   icon: "IconDropletFilled", 
@@ -890,7 +940,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Massage & Spa", 
-  name: "Massage & Spa", 
+  name: "Massage & Spa",
+  nameNl: "Massage en wellness",
   budgetType: "Needs", 
   color: "#faac6c", 
   icon: "IconSparklesFilled", 
@@ -904,11 +955,12 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 },
 
 // Pets
-{ key: "Pets", name: "Pets", budgetType: "Needs", color: "#4a35de", icon: "IconPawFilled" },
+{ key: "Pets", name: "Pets", nameNl: "Huisdieren", budgetType: "Needs", color: "#4a35de", icon: "IconPawFilled" },
 
 { 
   key: "Veterinary", 
-  name: "Veterinary", 
+  name: "Veterinary",
+  nameNl: "Dierenarts",
   budgetType: "Wants", 
   color: "#4a35de", 
   icon: "IconBoneFilled", 
@@ -923,10 +975,11 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 // Transportation
-{ key: "Transportation", name: "Transportation", budgetType: "Needs", color: "#21cabe", icon: "IconCarFilled"},
+{ key: "Transportation", name: "Transportation", nameNl: "Vervoer", budgetType: "Needs", color: "#21cabe", icon: "IconCarFilled"},
 {
   key: "Fuel",
   name: "Fuel",
+  nameNl: "Brandstof",
   budgetType: "Needs",
   color: "#21cabe",
   icon: "IconGasStationFilled",
@@ -946,6 +999,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Public Transportation",
   name: "Public Transportation",
+  nameNl: "Openbaar vervoer",
   budgetType: "Needs",
   color: "#21cabe",
   icon: "IconTrainFilled",
@@ -965,6 +1019,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Car maintenance",
   name: "Car maintenance",
+  nameNl: "Auto-onderhoud",
   budgetType: "Needs",
   color: "#21cabe",
   icon: "IconEngineFilled",
@@ -974,6 +1029,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 {
   key: "Parking",
   name: "Parking",
+  nameNl: "Parkeren",
   budgetType: "Needs",
   color: "#21cabe",
   icon: "IconParkingCircleFilled",
@@ -988,11 +1044,12 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   ]
 },
 // Travel
-{ key: "Travel", name: "Travel", budgetType: "Needs", color: "#de3575", icon: "IconWorldFilled" },
+{ key: "Travel", name: "Travel", nameNl: "Reizen", budgetType: "Needs", color: "#de3575", icon: "IconWorldFilled" },
 
 { 
   key: "Accommodation", 
-  name: "Accommodation", 
+  name: "Accommodation",
+  nameNl: "Overnachtingen",
   budgetType: "Needs", 
   color: "#de3575", 
   icon: "IconHome2Filled", 
@@ -1016,7 +1073,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Activities", 
-  name: "Activities", 
+  name: "Activities",
+  nameNl: "Activiteiten",
   budgetType: "Needs", 
   color: "#de3575", 
   icon: "IconSpeedboatFilled", 
@@ -1035,7 +1093,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Car Rentals", 
-  name: "Car Rentals", 
+  name: "Car Rentals",
+  nameNl: "Autohuur",
   budgetType: "Needs", 
   color: "#de3575", 
   icon: "IconCaravanFilled", 
@@ -1055,7 +1114,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Flights", 
-  name: "Flights", 
+  name: "Flights",
+  nameNl: "Vluchten",
   budgetType: "Needs", 
   color: "#de3575", 
   icon: "IconPlaneDepartureFilled", 
@@ -1077,7 +1137,8 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 
 { 
   key: "Travel Insurance", 
-  name: "Travel Insurance", 
+  name: "Travel Insurance",
+  nameNl: "Reisverzekering",
   budgetType: "Needs", 
   color: "#de3575", 
   icon: "IconShieldFilled", 
@@ -1094,5 +1155,5 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
 },
 
   // The group for categories that fit nowhere else.
-  { key: "Other", name: "Other", budgetType: "Wants", color: "#8a8a96", icon: "IconCategoryFilled" },
+  { key: "Other", name: "Other", nameNl: "Overig", budgetType: "Wants", color: "#8a8a96", icon: "IconCategoryFilled" },
 ];

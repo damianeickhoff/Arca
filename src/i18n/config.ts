@@ -6,6 +6,11 @@ export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = "en";
 
+/** A cookie or setting value as a supported locale; anything else is the default. */
+export function parseLocale(value: string | null | undefined): Locale {
+  return locales.includes(value as Locale) ? (value as Locale) : defaultLocale;
+}
+
 // Cookie the chosen locale is persisted in. next-intl has no i18n *routing* here
 // (no /en or /nl URL segment) — the locale lives entirely in this cookie, which the
 // request config below reads on every render.

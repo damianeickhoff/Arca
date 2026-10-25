@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { db } from "@/db";
 import { categories } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { DEFAULT_CATEGORIES } from "@/config/categories";
+import { defaultCategoryNames } from "@/lib/config-sync";
 import { getReceiptScanConfig } from "@/lib/ai-provider";
 import { parseJsonAnswer } from "@/lib/ai-schema";
 import { chatCompletion } from "@/lib/openai-compatible";
@@ -71,14 +74,26 @@ export async function POST(req: NextRequest) {
 
   // Best-effort match against the user's real categories (case-insensitive, either
   // direction of substring) — never invents a new category, leaves it unset if unsure.
+  // A default category also answers to its config names in every language, so the
+  // model's English "Groceries" still finds it once it is called "Boodschappen". Groups
+  // are never assigned.
   let categoryId: number | null = null;
   let matchedCategoryName: string | null = null;
   if (categoryName) {
-    const allCats = await db.select({ id: categories.id, name: categories.name }).from(categories);
+    const rows = await db
+      .select({ id: categories.id, name: categories.name, configKey: categories.configKey })
+      .from(categories)
+      .where(eq(categories.isGroup, false));
+    const defsByKey = new Map(DEFAULT_CATEGORIES.map((d) => [d.key, d]));
+    const allCats = rows.map((c) => {
+      const def = c.configKey ? defsByKey.get(c.configKey) : undefined;
+      const aliases = [c.name, ...(def ? Object.values(defaultCategoryNames(def)) : [])].map((n) => n.toLowerCase());
+      return { ...c, aliases };
+    });
     const needle = categoryName.toLowerCase();
     const match =
-      allCats.find((c) => c.name.toLowerCase() === needle) ??
-      allCats.find((c) => c.name.toLowerCase().includes(needle) || needle.includes(c.name.toLowerCase()));
+      allCats.find((c) => c.aliases.includes(needle)) ??
+      allCats.find((c) => c.aliases.some((a) => a.includes(needle) || needle.includes(a)));
     if (match) {
       categoryId = match.id;
       matchedCategoryName = match.name;

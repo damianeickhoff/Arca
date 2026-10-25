@@ -26,6 +26,8 @@ import { GooFilterDefs } from "@/components/ui/goo-filter-defs";
 import { PageTransition } from "@/components/page-transition";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
+import { parseLocale } from "@/i18n/config";
+import { ensureCategoryNamesLocale } from "@/lib/category-locale";
 import "leaflet/dist/leaflet.css";
 import { SettingsPortalProvider } from "@/lib/settings-portal-state";
 import { FinishTransitionProvider } from "@/lib/finish-transition-state";
@@ -102,6 +104,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Fire-and-forget-ish: cheap select-first check after the first request of the day,
   // wrapped internally in try/catch so it can never break the layout render.
+  // One time, for installs seeded before category names followed the language: the
+  // first signed-in render puts the untouched default names in this browser's language
+  // (src/lib/category-locale.ts). Afterwards only a language change renames them, and
+  // this is a single settings read (none once this process has seen the setting).
+  // Not mid-onboarding: the wizard's language step makes that choice (setLocale).
+  if (user?.onboardingComplete) ensureCategoryNamesLocale(parseLocale(locale));
+
   if (user) {
     void maybeRecordDailyNetWorthSnapshot();
     void maybeRecordMonthlyHealthSnapshot();

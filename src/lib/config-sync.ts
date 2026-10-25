@@ -1,7 +1,8 @@
-import crypto from "crypto";
 import type { Database } from "better-sqlite3";
-import { DEFAULT_CATEGORIES, defaultCategoryKind, normalizeMatchingPattern } from "@/config/categories";
+import { DEFAULT_CATEGORIES, defaultCategoryKind, normalizeMatchingPattern, type DefaultCategory } from "@/config/categories";
 import { matchRules } from "@/lib/apply-rules";
+import { findNameConflict } from "@/lib/category-name-conflict";
+import { locales, parseLocale, type Locale } from "@/i18n/config";
 import type { CategoryRule, Bank } from "@/db/schema";
 
 // Runs synchronously (raw better-sqlite3, no drizzle) from src/db/index.ts module
@@ -10,10 +11,6 @@ import type { CategoryRule, Bank } from "@/db/schema";
 // page's own queries and the first render shows stale data. Because every page
 // (transitively) imports the db module, and a config file edit reloads that module
 // graph in dev, changes to src/config/*.ts are visible on the very next request.
-
-function hashOf(value: unknown): string {
-  return crypto.createHash("sha256").update(JSON.stringify(value)).digest("hex");
-}
 
 /** Set once the default categories have been seeded (first run); they never are again. */
 const SEEDED_KEY = "default_categories_seeded";
@@ -123,7 +120,10 @@ function syncDefaultCategories(sqlite: Database) {
  * freshly seeded default rules at the end (applyDefaultCategoryRulesSync, called from
  * syncDefaultCategories).
  */
-export function resetDefaultCategories(sqlite: Database) {
+export function resetDefaultCategories(sqlite: Database, locale?: Locale) {
+  // The fresh set ends in the caller's language, else the one the names were last put
+  // in, else English (what the seed writes).
+  const target = locale ?? parseLocale(getSetting(sqlite, CATEGORY_NAMES_LOCALE_KEY));
   const run = sqlite.transaction(() => {
     sqlite.prepare("UPDATE transactions SET category_id = NULL").run();
     sqlite.prepare("UPDATE transaction_splits SET category_id = NULL").run();
@@ -137,8 +137,67 @@ export function resetDefaultCategories(sqlite: Database) {
     syncDefaultCategories(sqlite);
     backfillDefaultParents(sqlite);
     setSetting(sqlite, SEEDED_KEY, "1");
+    localizeDefaultCategories(sqlite, target);
   });
   run();
+}
+
+/** The language the default category names were last put in (see localizeDefaultCategories). */
+export const CATEGORY_NAMES_LOCALE_KEY = "category_names_locale";
+
+/** A default entry's name in every supported locale. */
+export function defaultCategoryNames(def: DefaultCategory): Record<Locale, string> {
+  return { en: def.name, nl: def.nameNl };
+}
+
+/** The language the default category names were last put in, or null before the first time. */
+export function getCategoryNamesLocale(sqlite: Database): Locale | null {
+  const value = getSetting(sqlite, CATEGORY_NAMES_LOCALE_KEY);
+  return value === null ? null : parseLocale(value);
+}
+
+/**
+ * Puts the default categories' names in `locale`: every row linked to a config entry
+ * (config_key) whose name is still that entry's name in one of the supported languages —
+ * a default the user never renamed — takes the entry's name in `locale`. A name the user
+ * changed is never touched, and a row whose new name would clash with another category of
+ * the same kind (the UNIQUE(name, "group") index) is left as it is. Records `locale` as
+ * the app setting category_names_locale.
+ *
+ * Runs on an explicit language choice (the setLocale action), the one-time catch-up for
+ * installs from before this existed (ensureCategoryNamesLocale), and at the end of
+ * resetDefaultCategories — never on every request, so two people of one household with
+ * different languages don't flip the names back and forth.
+ */
+export function localizeDefaultCategories(sqlite: Database, locale: Locale): { renamed: number; skipped: number } {
+  const defsByKey = new Map(DEFAULT_CATEGORIES.map((d) => [d.key, d]));
+  const run = sqlite.transaction(() => {
+    const rows = (sqlite.prepare(`SELECT id, name, "group", is_group, parent_category_id, config_key FROM categories`).all() as {
+      id: number; name: string; group: string; is_group: number; parent_category_id: number | null; config_key: string | null;
+    }[]).map((r) => ({ id: r.id, name: r.name, group: r.group, isGroup: r.is_group === 1, parentCategoryId: r.parent_category_id, configKey: r.config_key }));
+
+    const rename = sqlite.prepare("UPDATE categories SET name = ? WHERE id = ?");
+    let renamed = 0;
+    let skipped = 0;
+    for (const row of rows) {
+      const def = row.configKey ? defsByKey.get(row.configKey) : undefined;
+      if (!def) continue;
+      const names = defaultCategoryNames(def);
+      const target = names[locale];
+      if (row.name === target) continue;
+      if (!locales.some((l) => names[l] === row.name)) continue; // renamed by the user
+      if (findNameConflict(rows, { name: target, kind: row.group, excludeId: row.id })) {
+        skipped++;
+        continue;
+      }
+      rename.run(target, row.id);
+      row.name = target;
+      renamed++;
+    }
+    setSetting(sqlite, CATEGORY_NAMES_LOCALE_KEY, locale);
+    return { renamed, skipped };
+  });
+  return run();
 }
 
 /**

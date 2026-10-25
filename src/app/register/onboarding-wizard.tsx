@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { m, AnimatePresence, spring, easeOutQuart } from "@/lib/motion";
 import { useTheme } from "@/lib/theme";
-import { LOCALE_COOKIE, type Locale } from "@/i18n/config";
+import type { Locale } from "@/i18n/config";
+import { setLocale as saveLocale } from "@/app/actions/locale";
 import { useFinishTransition, type FinishTransitionOptions } from "@/lib/finish-transition-state";
 import type { BudgetStrategyDraft } from "@/app/budget/budget-strategy-editor";
 import { cn } from "@/lib/utils";
@@ -193,11 +194,13 @@ export function OnboardingWizard({ resumeUser, inviteToken = null }: { resumeUse
   }
 
   // The locale lives in a cookie (no /en or /nl routes); refreshing re-renders the
-  // server tree with the new messages while the wizard keeps its state.
+  // server tree with the new messages while the wizard keeps its state. The action also
+  // puts the default category names in the chosen language (the account exists by now).
   function chooseLocale(next: Locale) {
     setLocale(next);
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-    router.refresh();
+    void saveLocale(next)
+      .catch(() => undefined)
+      .finally(() => router.refresh());
   }
 
   async function saveStrategy() {
