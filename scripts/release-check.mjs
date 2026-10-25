@@ -12,7 +12,8 @@ if (!/^\d+\.\d+\.\d+$/.test(version ?? "")) {
 }
 
 const root = path.resolve(import.meta.dirname, "..");
-const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
+// CRLF checkouts: compare on LF so the line-anchored patterns below hold.
+const read = (p) => fs.readFileSync(path.join(root, p), "utf8").replace(/\r/g, "");
 const problems = [];
 
 // package.json
