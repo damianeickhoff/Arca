@@ -5,10 +5,15 @@ import { shiftDate } from "@/lib/date-range";
 // occurrencesBetween (every date in a range: the forecast, the bill tracker) and
 // nextOccurrence (the single next date). Month-based frequencies clamp their anchor day
 // to the length of each month; weekly and four-weekly walk forward from the start date
-// in steps of 7 or 28 days, so the weekday is preserved.
+// in steps of 7 or 28 days, so the weekday is preserved. A payment that falls on a
+// Saturday or Sunday is collected on the Monday after (banks don't book on weekends),
+// so both views move those dates to the Monday — except income (a weekend payday is
+// usually paid early, not late) and daily items.
 
 export type OccurrenceItem = {
   frequency: string;
+  /** The recurrence type; "income" keeps its weekend dates as they are. */
+  type?: string | null;
   dueDay?: number | null;
   startDate?: string | null;
   endDate?: string | null;
@@ -32,6 +37,17 @@ function iso(year: number, month: number, day: number) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+/** The Monday after a Saturday or Sunday; any other date as is. */
+export function weekendToMonday(date: string): string {
+  const dow = new Date(`${date}T12:00:00`).getDay(); // 0 = Sunday, 6 = Saturday
+  return dow === 6 ? shiftDate(date, 2) : dow === 0 ? shiftDate(date, 1) : date;
+}
+
+/** Whether this item's weekend dates move to the Monday after. */
+function shiftsWeekends(item: OccurrenceItem): boolean {
+  return item.frequency !== "daily" && item.type !== "income";
+}
+
 /** Days between occurrences for the frequencies that step by days, else null. */
 function dayStep(frequency: string): number | null {
   return frequency === "weekly" ? 7 : frequency === "four_weekly" ? 28 : null;
@@ -45,9 +61,34 @@ function monthStep(frequency: string): number {
 /**
  * Every date this item is due within [from, to], respecting its own start/end period.
  * Month-based frequencies clamp their anchor day to the length of each month (a 31st
- * bill falls on the 30th in April).
+ * bill falls on the 30th in April). Weekend dates move to the Monday after, so a bill
+ * due Saturday the 31st lands in the next period, on Monday the 2nd.
  */
 export function occurrencesBetween(item: OccurrenceItem, from: string, to: string): string[] {
+  if (!shiftsWeekends(item)) return scheduledBetween(item, from, to);
+  // A weekend date moves at most two days, so look two days back for dates that
+  // land inside the range.
+  return scheduledBetween(item, shiftDate(from, -2), to)
+    .map(weekendToMonday)
+    .filter((date) => date >= from && date <= to);
+}
+
+/**
+ * The first date this item is due strictly after `after` (defaults to today), or null
+ * when it has already ended / has no further occurrence. Weekend dates move to the
+ * Monday after, like occurrencesBetween.
+ */
+export function nextOccurrence(item: OccurrenceItem, after?: string): string | null {
+  const day = after ?? new Date().toISOString().slice(0, 10);
+  if (!shiftsWeekends(item)) return scheduledNext(item, day);
+  // A date up to two days back can still land after `day` once it moves to Monday.
+  let date = scheduledNext(item, shiftDate(day, -3));
+  while (date != null && weekendToMonday(date) <= day) date = scheduledNext(item, date);
+  return date == null ? null : weekendToMonday(date);
+}
+
+/** Every scheduled date within [from, to], before any weekend move. */
+function scheduledBetween(item: OccurrenceItem, from: string, to: string): string[] {
   const start = item.startDate && item.startDate > from ? item.startDate : from;
   const end = item.endDate && item.endDate < to ? item.endDate : to;
   if (start > end) return [];
@@ -100,12 +141,9 @@ export function occurrencesBetween(item: OccurrenceItem, from: string, to: strin
   return dates;
 }
 
-/**
- * The first date this item is due strictly after `after` (defaults to today), or null
- * when it has already ended / has no further occurrence.
- */
-export function nextOccurrence(item: OccurrenceItem, after?: string): string | null {
-  const from = shiftDate(after ?? new Date().toISOString().slice(0, 10), 1);
+/** The first scheduled date strictly after `after`, before any weekend move. */
+function scheduledNext(item: OccurrenceItem, after: string): string | null {
+  const from = shiftDate(after, 1);
   const start = item.startDate && item.startDate > from ? item.startDate : from;
   const withinPeriod = (date: string) => (!item.endDate || date <= item.endDate) && date >= start;
 

@@ -1,4 +1,4 @@
-import { nextOccurrence, type OccurrenceItem } from "@/lib/recurring-occurrence";
+import { nextOccurrence, weekendToMonday, type OccurrenceItem } from "@/lib/recurring-occurrence";
 
 // Payment plans: a one-off cost paid off in parts (recurring items of type "plan").
 // Pure date and money maths only, so the editor, list rows and server code share it.
@@ -13,10 +13,11 @@ export function planPartAmount(total: number, parts: number): number {
   return Math.round((total / parts) * 100) / 100;
 }
 
-/** The due dates of every part, starting on `startDate` and stepping by the frequency. */
+/** The due dates of every part, starting on `startDate` and stepping by the frequency
+ *  (a part due on a weekend is paid the Monday after, like every other bill). */
 export function planSchedule(startDate: string, frequency: string, parts: number): string[] {
   const item: OccurrenceItem = { frequency, startDate, dueDay: Number(startDate.slice(8, 10)) || 1 };
-  const dates = [startDate];
+  const dates = [weekendToMonday(startDate)];
   while (dates.length < parts) {
     const next = nextOccurrence(item, dates[dates.length - 1]);
     if (!next) break;

@@ -12,9 +12,17 @@ describe("plan schedule", () => {
   });
 
   it("puts one part in each period from the start date, clamping to short months", () => {
-    expect(planSchedule("2026-11-16", "monthly", 3)).toEqual(["2026-11-16", "2026-12-16", "2027-01-16"]);
-    expect(planSchedule("2027-01-31", "monthly", 3)).toEqual(["2027-01-31", "2027-02-28", "2027-03-31"]);
+    expect(planSchedule("2026-11-16", "monthly", 2)).toEqual(["2026-11-16", "2026-12-16"]);
+    expect(planSchedule("2027-03-31", "monthly", 3)).toEqual(["2027-03-31", "2027-04-30", "2027-05-31"]);
     expect(planSchedule("2026-11-02", "weekly", 2)).toEqual(["2026-11-02", "2026-11-09"]);
+  });
+
+  it("pays a part due on a weekend on the Monday after", () => {
+    // Saturday 16 January 2027; Sunday 31 January and Sunday 28 February 2027.
+    expect(planSchedule("2026-11-16", "monthly", 3)).toEqual(["2026-11-16", "2026-12-16", "2027-01-18"]);
+    expect(planSchedule("2027-01-31", "monthly", 3)).toEqual(["2027-02-01", "2027-03-01", "2027-03-31"]);
+    const plan = { type: "plan", frequency: "monthly", startDate: "2026-11-16", planParts: 3 };
+    expect(planPartNumber(plan, "2027-01-18")).toBe(3);
   });
 
   it("numbers the part due on a date, and nothing for other types or dates", () => {

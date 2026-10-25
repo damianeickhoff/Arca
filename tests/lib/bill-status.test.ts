@@ -14,9 +14,29 @@ describe("occurrencesBetween", () => {
   it("places quarterly and yearly items only in their months", () => {
     const water = { frequency: "quarterly", dueDay: 8, startDate: "2025-11-08" };
     expect(occurrencesBetween(water, "2026-10-01", "2026-10-31")).toEqual([]);
-    expect(occurrencesBetween(water, "2026-11-01", "2026-11-30")).toEqual(["2026-11-08"]);
+    // Sunday 8 November moves to Monday the 9th.
+    expect(occurrencesBetween(water, "2026-11-01", "2026-11-30")).toEqual(["2026-11-09"]);
     const insurance = { frequency: "yearly", dueDay: 13, startDate: "2025-03-13" };
     expect(occurrencesBetween(insurance, "2026-01-01", "2026-12-31")).toEqual(["2026-03-13"]);
+  });
+
+  it("moves a weekend due date to the Monday after", () => {
+    // Saturday 24 and Sunday 25 October 2026 are both paid on Monday the 26th.
+    expect(occurrencesBetween({ frequency: "monthly", dueDay: 24 }, "2026-10-01", "2026-10-31")).toEqual(["2026-10-26"]);
+    expect(occurrencesBetween({ frequency: "monthly", dueDay: 25 }, "2026-10-01", "2026-10-31")).toEqual(["2026-10-26"]);
+    expect(nextOccurrence({ frequency: "monthly", dueDay: 24 }, "2026-10-25")).toBe("2026-10-26");
+    expect(nextOccurrence({ frequency: "monthly", dueDay: 24 }, "2026-10-26")).toBe("2026-11-24");
+    // Saturday 31 October lands in November (Monday the 2nd), next to Monday 30 November.
+    const rent = { frequency: "monthly", dueDay: 31 };
+    expect(occurrencesBetween(rent, "2026-10-01", "2026-10-31")).toEqual([]);
+    expect(occurrencesBetween(rent, "2026-11-01", "2026-11-30")).toEqual(["2026-11-02", "2026-11-30"]);
+    expect(nextOccurrence({ frequency: "once", startDate: "2026-10-31" }, "2026-10-30")).toBe("2026-11-02");
+  });
+
+  it("keeps income on its weekend date", () => {
+    const salary = { frequency: "monthly", dueDay: 24, type: "income" };
+    expect(occurrencesBetween(salary, "2026-10-01", "2026-10-31")).toEqual(["2026-10-24"]);
+    expect(nextOccurrence(salary, "2026-10-01")).toBe("2026-10-24");
   });
 
   it("steps weekly and four-weekly items by days from their start", () => {
@@ -81,8 +101,9 @@ describe("getBillStatuses", () => {
 
   it("puts quarterly and yearly bills in their own month", async () => {
     const { getBillStatuses } = await import("@/lib/bill-status");
-    expect((await getBillStatuses("2026-11", 1)).find((s) => s.item.name === "Water")?.dueDate).toBe("2026-11-08");
-    expect((await getBillStatuses("2027-03", 1)).find((s) => s.item.name === "Insurance")?.dueDate).toBe("2027-03-13");
+    // Sunday 8 November 2026 and Saturday 13 March 2027 move to the Monday after.
+    expect((await getBillStatuses("2026-11", 1)).find((s) => s.item.name === "Water")?.dueDate).toBe("2026-11-09");
+    expect((await getBillStatuses("2027-03", 1)).find((s) => s.item.name === "Insurance")?.dueDate).toBe("2027-03-15");
   });
 
   it("leaves a skipped month out unless asked for, and only that month", async () => {
@@ -96,7 +117,25 @@ describe("getBillStatuses", () => {
     await db.insert(s.billSkips).values({ recurringItemId: saving.id, month: "2026-10" });
     expect((await getBillStatuses("2026-10", 1)).some((b) => b.item.id === saving.id)).toBe(false);
     const listed = (await getBillStatuses("2026-10", 1, undefined, { includeSkipped: true })).find((b) => b.item.id === saving.id);
-    expect(listed).toMatchObject({ skipped: true, overdue: false, dueDate: "2026-10-25" });
+    // Due Sunday the 25th, so listed on Monday the 26th.
+    expect(listed).toMatchObject({ skipped: true, overdue: false, dueDate: "2026-10-26" });
     expect((await getBillStatuses("2026-11", 1)).find((b) => b.item.id === saving.id)?.skipped).toBe(false);
+  });
+
+  it("doesn't call a bill due on the weekend overdue before the Monday", async () => {
+    const { db } = await import("@/db");
+    const s = await import("@/db/schema");
+    const { getBillStatuses } = await import("@/lib/bill-status");
+    const [phone] = await db
+      .insert(s.recurringItems)
+      .values({ name: "Phone", type: "bill", amount: 20, frequency: "monthly", dueDay: 24, startDate: "2026-01-24", matchPattern: "telefoon" })
+      .returning();
+    vi.setSystemTime(new Date(2026, 9, 25, 12)); // Sunday, the day after the 24th
+    try {
+      const row = (await getBillStatuses("2026-10", 1)).find((b) => b.item.id === phone.id);
+      expect(row).toMatchObject({ dueDate: "2026-10-26", paid: false, overdue: false });
+    } finally {
+      vi.setSystemTime(new Date(2026, 9, 15, 12));
+    }
   });
 });
