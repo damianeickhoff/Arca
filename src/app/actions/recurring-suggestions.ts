@@ -39,7 +39,7 @@ export async function resolveMigratedAction(keep: boolean, id?: number): Promise
 
 /** Settings › Data health › "Look for regular payments": the full pass over every
  *  counterparty (imports and bank syncs only re-test the ones they touched). */
-export async function findRegularPaymentsAction(): Promise<{ error?: string; suggested?: number; autoAccepted?: number }> {
+export async function findRegularPaymentsAction(): Promise<{ error?: string; suggested?: number }> {
   const user = await getCurrentUser();
   if (!user) return { error: "unauthorized" };
   // An import runs the detector itself at its end; don't race it.

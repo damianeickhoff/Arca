@@ -15,6 +15,8 @@ export type ActivityKind =
   | "ruleDeleted"
   | "merchantDeleted"
   | "categoryDeleted"
+  // Nothing writes this any more (the detector only suggests since then); kept so
+  // entries already in users' change logs still render and undo.
   | "recurringDetected"
   | "recurringMigrated";
 
@@ -363,28 +365,6 @@ export function merchantDeletedEntry(merchant: { id: number; name: string }, unl
     affectedCount: unlinkedTransactionIds.length,
     refs: { merchants: [merchant.id], ...(unlinkedTransactionIds.length ? { transactions: unlinkedTransactionIds } : {}) },
     undoData: { ops },
-  };
-}
-
-/**
- * Recurring items auto-detection created. Undo dismisses them rather than deleting
- * them, so the detector doesn't simply recreate them on the next import.
- */
-export function recurringDetectedEntry(items: { id: number; name: string }[]): ActivityEntryInput | null {
-  if (items.length === 0) return null;
-  return {
-    kind: "recurringDetected",
-    params: { count: items.length, name: items[0].name },
-    affectedCount: items.length,
-    refs: { recurring_items: items.map((i) => i.id) },
-    undoData: {
-      ops: [{
-        op: "update",
-        table: "recurring_items",
-        rows: items.map((i) => ({ id: i.id, before: { dismissed: 1, active: 0 }, after: { dismissed: 0, active: 1 } })),
-      }],
-      rerunRules: true,
-    },
   };
 }
 

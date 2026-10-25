@@ -37,6 +37,7 @@ const KIND_LOOK: Record<ActivityKind, { icon: React.ComponentType<{ stroke?: num
   ruleDeleted: { icon: IconBoltOff, tone: "rose" },
   merchantDeleted: { icon: IconBuildingStore, tone: "rose" },
   categoryDeleted: { icon: IconFolderX, tone: "rose" },
+  // Only older entries: the detector no longer adds items without the user.
   recurringDetected: { icon: IconRepeat, tone: "mint" },
   recurringMigrated: { icon: IconRepeat, tone: "butter" },
 };

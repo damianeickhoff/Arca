@@ -4,6 +4,7 @@
 // those are exercised through importParsedRows in import-rows.test.ts.
 import { describe, expect, it } from "vitest";
 import { matchRecurringItem, transactionMatchesRecurringItem, type RecurringMatcher } from "@/lib/recurring-match";
+import { normalizeMatchPatterns, parseAltMatchPatterns, recurringItemPatterns } from "@/lib/recurring-patterns";
 import { matchRules } from "@/lib/apply-rules";
 import { isOwnAccountTransfer, normalizeAccountNumber } from "@/lib/internal-transfers";
 import type { Bank, CategoryRule } from "@/db/schema";
@@ -60,6 +61,66 @@ describe("transactionMatchesRecurringItem", () => {
     expect(transactionMatchesRecurringItem("Energie", 110.01, item)).toBe(true);
     expect(transactionMatchesRecurringItem("Energie", 1, item)).toBe(false);
     expect(transactionMatchesRecurringItem("Energie", 500, matcher({ matchPattern: "energie", matchAmountMin: 90 }))).toBe(true);
+  });
+});
+
+describe("alternative match patterns", () => {
+  it("matches the old or the new name of a renamed payee", () => {
+    const item = matcher({ matchPattern: "netflix.com", altMatchPatterns: JSON.stringify(["Netflix International"]) });
+    expect(transactionMatchesRecurringItem("NETFLIX.COM Amsterdam", 13.99, item)).toBe(true);
+    expect(transactionMatchesRecurringItem("Netflix International B.V.", 13.99, item)).toBe(true);
+    expect(transactionMatchesRecurringItem("Spotify AB", 13.99, item)).toBe(false);
+    // An already parsed list works too (the editor's preview builds one).
+    expect(transactionMatchesRecurringItem("Netflix International B.V.", 13.99, matcher({ matchPattern: "netflix.com", altMatchPatterns: ["netflix international"] }))).toBe(true);
+  });
+
+  it("applies the amount rule to every name", () => {
+    const item = matcher({ matchPattern: "old gym", altMatchPatterns: '["new gym"]', matchAmount: 29.99 });
+    expect(transactionMatchesRecurringItem("New Gym BV", 29.99, item)).toBe(true);
+    expect(transactionMatchesRecurringItem("New Gym BV", 35, item)).toBe(false);
+    const ranged = matcher({ matchPattern: "eneco", altMatchPatterns: '["vattenfall"]', matchAmountMin: 90, matchAmountMax: 110 });
+    expect(transactionMatchesRecurringItem("Vattenfall", 100, ranged)).toBe(true);
+    expect(transactionMatchesRecurringItem("Vattenfall", 150, ranged)).toBe(false);
+  });
+
+  it("applies whole-word mode to every name", () => {
+    const item = matcher({ matchPattern: "ns", altMatchPatterns: '["gvb"]', matchWholeWord: true });
+    expect(transactionMatchesRecurringItem("GVB Amsterdam", 3.4, item)).toBe(true);
+    expect(transactionMatchesRecurringItem("GVBX Holding", 3.4, item)).toBe(false);
+  });
+
+  it("ignores bad JSON, non-strings and blank names, keeping the main pattern", () => {
+    for (const bad of ["not json", "{\"a\":1}", "[1, null, \"  \"]", ""]) {
+      const item = matcher({ matchPattern: "netflix", altMatchPatterns: bad });
+      expect(transactionMatchesRecurringItem("Netflix", 10, item)).toBe(true);
+      expect(transactionMatchesRecurringItem("Spotify", 10, item)).toBe(false);
+    }
+    expect(parseAltMatchPatterns("not json")).toEqual([]);
+    expect(parseAltMatchPatterns('["a", 2, " b "]')).toEqual(["a", "b"]);
+  });
+
+  it("matches through an extra name when the main pattern is empty", () => {
+    expect(transactionMatchesRecurringItem("Netflix", 10, matcher({ matchPattern: null, altMatchPatterns: '["netflix"]' }))).toBe(true);
+  });
+
+  it("lists every pattern once, main first", () => {
+    expect(recurringItemPatterns({ matchPattern: " Netflix.com ", altMatchPatterns: '["Netflix International", " "]' })).toEqual([
+      "netflix.com",
+      "netflix international",
+    ]);
+  });
+
+  it("normalizes what a save stores", () => {
+    expect(normalizeMatchPatterns("netflix.com", ["", "  Netflix International ", "NETFLIX.COM", "netflix international"])).toEqual({
+      matchPattern: "netflix.com",
+      altMatchPatterns: '["Netflix International"]',
+    });
+    expect(normalizeMatchPatterns("netflix", [" ", ""])).toEqual({ matchPattern: "netflix", altMatchPatterns: null });
+    expect(normalizeMatchPatterns("netflix", null)).toEqual({ matchPattern: "netflix", altMatchPatterns: null });
+    // An empty main pattern takes the first extra name…
+    expect(normalizeMatchPatterns("", ["old", "new"])).toEqual({ matchPattern: "old", altMatchPatterns: '["new"]' });
+    // …unless the save leaves the main pattern alone.
+    expect(normalizeMatchPatterns(null, ["old", "new"], { promote: false })).toEqual({ matchPattern: null, altMatchPatterns: '["old","new"]' });
   });
 });
 

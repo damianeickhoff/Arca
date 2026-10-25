@@ -5,7 +5,6 @@ import {
   findUndoConflict,
   importEntry,
   merchantDeletedEntry,
-  recurringDetectedEntry,
   refsIntersect,
   ruleCreatedEntry,
   ruleDeletedEntry,
@@ -144,13 +143,5 @@ describe("entry builders", () => {
         { id: 2, before: { merchant_id: 8 }, after: { merchant_id: null } },
       ],
     });
-  });
-
-  it("recurring detected: undo dismisses, then re-runs the rules", () => {
-    expect(recurringDetectedEntry([])).toBeNull();
-    const e = recurringDetectedEntry([{ id: 5, name: "Netflix" }])!;
-    expect(e.params).toEqual({ count: 1, name: "Netflix" });
-    expect(e.undoData!.rerunRules).toBe(true);
-    expect(e.undoData!.ops[0]).toEqual({ op: "update", table: "recurring_items", rows: [{ id: 5, before: { dismissed: 1, active: 0 }, after: { dismissed: 0, active: 1 } }] });
   });
 });

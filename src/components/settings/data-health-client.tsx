@@ -243,9 +243,8 @@ function RegularPaymentsScan() {
         return;
       }
       const found = r.suggested ?? 0;
-      const accepted = r.autoAccepted ?? 0;
-      if (found === 0 && accepted === 0) setResult({ tone: "info", text: t("nothingNew"), review: false });
-      else setResult({ tone: "success", text: t("found", { found, accepted }), review: found > 0 });
+      if (found === 0) setResult({ tone: "info", text: t("nothingNew"), review: false });
+      else setResult({ tone: "success", text: t("found", { found }), review: true });
     });
   }
 

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth";
 import { isNotificationKind } from "@/lib/notification-kinds";
-import { markAllNotificationsRead, markNotificationRead, setKindEnabled } from "@/lib/notifications";
+import { clearAllNotifications, markAllNotificationsRead, markNotificationRead, setKindEnabled } from "@/lib/notifications";
 
 // /notifications and Settings › Notifications. The unread count lives in the root
 // layout (sidebar badge, Home's bell dot), so every change revalidates the layout.
@@ -20,6 +20,15 @@ export async function markAllNotificationsReadAction(): Promise<{ error?: "denie
   const user = await getCurrentUser();
   if (!user) return { error: "denied" };
   await markAllNotificationsRead(user.id);
+  revalidatePath("/", "layout");
+  return {};
+}
+
+/** "Clear all": hides every notice of this user (soft, see clearAllNotifications). */
+export async function clearAllNotificationsAction(): Promise<{ error?: "denied" }> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "denied" };
+  await clearAllNotifications(user.id);
   revalidatePath("/", "layout");
   return {};
 }

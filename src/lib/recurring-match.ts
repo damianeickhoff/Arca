@@ -1,11 +1,15 @@
 import { db } from "@/db";
 import { recurringItems } from "@/db/schema";
+import { recurringItemPatterns } from "@/lib/recurring-patterns";
 
 // Minimal shape needed to test a transaction against a recurring item.
 export type RecurringMatcher = {
   id: number;
   name: string;
   matchPattern: string | null;
+  /** More names the item goes by (see lib/recurring-patterns.ts): the stored JSON text,
+   *  or an already parsed list. Optional so a matcher built without it matches as before. */
+  altMatchPatterns?: string | string[] | null;
   matchWholeWord: boolean;
   matchAmount: number | null;
   matchAmountMin: number | null;
@@ -53,10 +57,12 @@ function containsWholeWord(haystack: string, pattern: string): boolean {
 type AmountConstraint = Pick<RecurringMatcher, "matchPattern" | "matchAmount" | "matchAmountMin" | "matchAmountMax"> &
   // Optional so callers that predate the whole-word option (and rows loaded without the
   // column) keep the old "contains" behaviour instead of failing to type-check.
-  Partial<Pick<RecurringMatcher, "matchWholeWord">>;
+  Partial<Pick<RecurringMatcher, "matchWholeWord" | "altMatchPatterns">>;
 
 /**
- * Whether a single transaction matches a recurring item's pattern + amount constraint:
+ * Whether a single transaction matches a recurring item's pattern + amount constraint.
+ * The description must contain the matchPattern or any altMatchPatterns entry (each under
+ * the same whole-word setting); the amount rule then applies whichever name hit:
  *   - range mode (matchAmountMin/Max set): |amount| must fall within [min, max] (±1 cent);
  *   - exact mode (matchAmount set): |amount| must equal it within a cent;
  *   - otherwise pattern-only.
@@ -68,11 +74,11 @@ export function transactionMatchesRecurringItem(
   amount: number,
   item: AmountConstraint,
 ): boolean {
-  if (!item.matchPattern) return false;
+  const patterns = recurringItemPatterns(item);
+  if (patterns.length === 0) return false;
   const desc = description.toLowerCase();
-  const pattern = item.matchPattern.toLowerCase().trim();
-  if (!pattern) return false;
-  if (item.matchWholeWord ? !containsWholeWord(desc, pattern) : !desc.includes(pattern)) return false;
+  const hit = patterns.some((pattern) => (item.matchWholeWord ? containsWholeWord(desc, pattern) : desc.includes(pattern)));
+  if (!hit) return false;
   const abs = absCents(amount);
   if (item.matchAmountMin != null || item.matchAmountMax != null) {
     if (item.matchAmountMin != null && abs < absCents(item.matchAmountMin) - 1) return false;
@@ -106,6 +112,7 @@ export async function loadRecurringMatchers(): Promise<RecurringMatcher[]> {
       id: recurringItems.id,
       name: recurringItems.name,
       matchPattern: recurringItems.matchPattern,
+      altMatchPatterns: recurringItems.altMatchPatterns,
       matchWholeWord: recurringItems.matchWholeWord,
       matchAmount: recurringItems.matchAmount,
       matchAmountMin: recurringItems.matchAmountMin,

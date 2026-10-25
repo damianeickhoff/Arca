@@ -13,7 +13,7 @@ import { amountBands, amountBucket, byDate, derivePattern, groupByCounterparty }
 // suggestions for the user to accept.
 
 export type { DetectTransaction, RecurringCandidate, DetectedFrequency } from "./types";
-export { confidenceLevel, shouldAutoAccept, type ConfidenceLevel } from "./score";
+export { confidenceLevel, type ConfidenceLevel } from "./score";
 
 export type DetectOptions = {
   /** YYYY-MM-DD; a series whose last payment is too long ago has stopped. */

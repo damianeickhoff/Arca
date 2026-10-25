@@ -192,17 +192,25 @@ export const recurringItems = sqliteTable("recurring_items", {
   frequency: text("frequency").notNull().default("monthly"),
   dueDay: integer("due_day"), // day of month (1-31); derived from startDate's day when set
   // Period: the recurrence's start (anchor/first due date) and an optional end date.
-  // Once endDate has passed the item is auto-disabled (see syncRecurringLifecycle).
+  // Once endDate has passed the item is auto-disabled (see syncRecurringLifecycle) and
+  // shows under Archived in Settings › Recurring.
   startDate: text("start_date"), // ISO date YYYY-MM-DD
   endDate: text("end_date"),     // ISO date YYYY-MM-DD, optional
   categoryId: integer("category_id").references(() => categories.id, { onDelete: "cascade" }),
   // nodig | willen
   budgetType: text("budget_type"),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
+  // Switched off by the user (Pause, or the editor's Active switch): the date lifecycle
+  // never switches it back on, and Settings › Recurring lists it under Archived.
+  paused: integer("paused", { mode: "boolean" }).notNull().default(false),
   notes: text("notes"),
   icon: text("icon"),
   iconColor: text("icon_color"),
   matchPattern: text("match_pattern"),
+  // More names the same item goes by (a bank renamed the payee): a JSON array of
+  // strings, matched exactly like matchPattern (same whole-word and amount rules), so the
+  // old and new name both link. NULL = none. Read through recurringItemPatterns.
+  altMatchPatterns: text("alt_match_patterns"),
   // true = the pattern must appear as a whole word ("NS" doesn't match "NSPCC"),
   // false (default) = plain "contains". Same semantics as categoryRules.nameWholeWord.
   matchWholeWord: integer("match_whole_word", { mode: "boolean" }).notNull().default(false),
@@ -787,7 +795,9 @@ export type VariablePrognoseOverride = typeof variablePrognoseOverrides.$inferSe
 // their JSON values, so the text renders in the reader's language at read time; never
 // English text. `subject` names what the notice is about (a bill occurrence, a
 // connection, a month, a version) and `day` the local date it was made: the unique index
-// keeps the job from writing the same notice twice in a day.
+// keeps the job from writing the same notice twice in a day. `clearedAt` is set by
+// "Clear all" on /notifications: the row stays (it is what stops the job announcing the
+// same subject again) but the list and the unread count skip it.
 export const notifications = sqliteTable("notifications", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -800,6 +810,7 @@ export const notifications = sqliteTable("notifications", {
   href: text("href"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
   readAt: text("read_at"),
+  clearedAt: text("cleared_at"),
 }, (t) => [
   uniqueIndex("notifications_dedupe").on(t.userId, t.kind, t.subject, t.day),
 ]);

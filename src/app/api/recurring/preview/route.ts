@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { transactions } from "@/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { desc, or, sql } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
 import { transactionMatchesRecurringItem } from "@/lib/recurring-match";
+import { recurringItemPatterns } from "@/lib/recurring-patterns";
 
 /** How many matching charges the preview hands back (the "Last 12 charges" chart). */
 const LIMIT = 12;
@@ -19,24 +20,28 @@ function amountParam(v: string | null): number | null {
 // transactions match plus the latest ones for the "Last 12 charges" chart. Matching is
 // the exact rule apply-rules uses to link transactions once the item is saved
 // (transactionMatchesRecurringItem on the description and amount), so the preview shows
-// what saving will link. SQL only narrows by the pattern; the rule itself runs here.
+// what saving will link. SQL only narrows by the patterns; the rule itself runs here.
 export async function GET(req: NextRequest) {
   const denied = await requireAuth();
   if (denied) return denied;
 
   const p = req.nextUrl.searchParams;
-  const pattern = (p.get("pattern") ?? "").trim();
-  if (!pattern) return NextResponse.json({ total: 0, rows: [] });
-
+  // The main pattern plus every extra name (`alt`, repeated): all names together.
   const matcher = {
-    matchPattern: pattern,
+    matchPattern: (p.get("pattern") ?? "").trim() || null,
+    altMatchPatterns: p.getAll("alt"),
     matchWholeWord: p.get("wholeWord") === "1",
     matchAmount: amountParam(p.get("amount")),
     matchAmountMin: amountParam(p.get("min")),
     matchAmountMax: amountParam(p.get("max")),
   };
+  const patterns = recurringItemPatterns(matcher);
+  if (patterns.length === 0) return NextResponse.json({ total: 0, rows: [] });
 
-  const like = `%${pattern.toLowerCase().replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const likes = patterns.map((pattern) => {
+    const like = `%${pattern.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    return sql`lower(${transactions.description}) like ${like} escape '\\'`;
+  });
   const candidates = await db
     .select({
       id: transactions.id,
@@ -46,7 +51,7 @@ export async function GET(req: NextRequest) {
       description: transactions.description,
     })
     .from(transactions)
-    .where(sql`lower(${transactions.description}) like ${like} escape '\\'`)
+    .where(or(...likes))
     .orderBy(desc(transactions.date), desc(transactions.id));
 
   const matches = candidates.filter((t) => transactionMatchesRecurringItem(t.description, t.amount, matcher));

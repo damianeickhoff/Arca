@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth";
 import { applyAllRules } from "@/lib/apply-rules";
 import { findRecurringItemByName } from "@/lib/recurring-dedupe";
 import { computeDebtBillEndDate } from "@/app/debts/debt-shared";
+import { normalizeMatchPatterns } from "@/lib/recurring-patterns";
 
 // When a bill linked to a debt has its start date changed, mirror it back onto the debt
 // (start date + month), then re-project the debt's last-payment date onto every one of
@@ -26,6 +27,18 @@ async function syncDebtFromBill(billId: number, newStartDate: string | null) {
   }
 }
 
+// The editor sends altMatchPatterns as a list of names (or null); the column holds them
+// as JSON text. Blank names are dropped, and an empty main pattern takes the first one.
+function withStoredPatterns<T extends Record<string, unknown>>(data: T): T {
+  if (!("altMatchPatterns" in data)) return data;
+  // A PATCH that leaves the main pattern alone keeps it; only the extra names change.
+  if (!("matchPattern" in data)) {
+    return { ...data, altMatchPatterns: normalizeMatchPatterns(null, data.altMatchPatterns, { promote: false }).altMatchPatterns };
+  }
+  const main = typeof data.matchPattern === "string" ? data.matchPattern : null;
+  return { ...data, ...normalizeMatchPatterns(main, data.altMatchPatterns) };
+}
+
 export async function GET() {
   const denied = await requireAuth();
   if (denied) return denied;
@@ -40,8 +53,10 @@ export async function GET() {
       dueDay: recurringItems.dueDay,
       budgetType: recurringItems.budgetType,
       active: recurringItems.active,
+      paused: recurringItems.paused,
       notes: recurringItems.notes,
       matchPattern: recurringItems.matchPattern,
+      altMatchPatterns: recurringItems.altMatchPatterns,
       matchWholeWord: recurringItems.matchWholeWord,
       matchAmount: recurringItems.matchAmount,
       matchAmountMin: recurringItems.matchAmountMin,
@@ -80,7 +95,7 @@ export async function POST(req: NextRequest) {
       { status: 409 },
     );
   }
-  const [row] = await db.insert(recurringItems).values(body).returning();
+  const [row] = await db.insert(recurringItems).values(withStoredPatterns(body)).returning();
   // Backfill existing transactions so the new item's category/link/friendly name apply.
   await applyAllRules();
   return NextResponse.json(row, { status: 201 });
@@ -90,7 +105,15 @@ export async function PATCH(req: NextRequest) {
   const denied = await requireAuth();
   if (denied) return denied;
 
-  const { id, ...data } = await req.json();
+  const { id, ...body } = await req.json();
+  const data = withStoredPatterns(body);
+  // Switching Active by hand pauses or resumes the item, which the date lifecycle then
+  // respects. Only a real change counts: the editor always sends `active`, and an item
+  // the lifecycle switched off (ended) must not become "paused" by saving another field.
+  if (typeof data.active === "boolean" && data.paused === undefined) {
+    const [current] = await db.select({ active: recurringItems.active }).from(recurringItems).where(eq(recurringItems.id, id));
+    if (current && current.active !== data.active) data.paused = !data.active;
+  }
   const [row] = await db.update(recurringItems).set(data).where(eq(recurringItems.id, id)).returning();
   if (!row) return NextResponse.json({ error: "Recurring item not found" }, { status: 404 });
   // If this bill is linked to a debt and its start date changed, sync it back to the debt.

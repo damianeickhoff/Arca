@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconChevronDown, IconDotsVertical, IconPlus, IconRepeat, IconSearch, IconTrash } from "@tabler/icons-react";
+import { IconChevronDown, IconDotsVertical, IconPlus, IconRepeat, IconSearch, IconTrash, IconX } from "@tabler/icons-react";
 import type { RecurringItem, Category } from "@/db/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
@@ -24,6 +24,7 @@ import { evaluateExpression } from "@/lib/amount-expression";
 import { isValidISODate } from "@/lib/date-valid";
 import { PLAN_MAX_PARTS, PLAN_MIN_PARTS, planPartAmount, planSchedule } from "@/lib/payment-plan";
 import { cn } from "@/lib/utils";
+import { parseAltMatchPatterns } from "@/lib/recurring-patterns";
 import { MoneyText } from "@/components/clear/money";
 
 /** Starting values for a new recurrence, for callers that already know some of them —
@@ -278,6 +279,18 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  // More names the item goes by (a renamed payee), each its own field under the pattern.
+  // The id keeps a field's focus and value in place when one above it is removed.
+  const [alts, setAlts] = useState(() => parseAltMatchPatterns(item?.altMatchPatterns).map((value, id) => ({ id, value })));
+  const [focusAltId, setFocusAltId] = useState<number | null>(null);
+  function addAlt() {
+    const id = alts.reduce((max, a) => Math.max(max, a.id), -1) + 1;
+    setAlts((list) => [...list, { id, value: "" }]);
+    setFocusAltId(id);
+  }
+  const setAlt = (id: number, value: string) => setAlts((list) => list.map((a) => (a.id === id ? { ...a, value } : a)));
+  const removeAlt = (id: number) => setAlts((list) => list.filter((a) => a.id !== id));
+
   const patternRef = useRef<HTMLInputElement>(null);
   const focusField = props.action === "edit" ? props.focusField : undefined;
   useEffect(() => {
@@ -311,20 +324,23 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
   // would match; an untouched saved item shows the transactions actually linked to it.
   const criteria: MatchCriteria = {
     pattern: form.matchPattern.trim(),
+    alts: alts.map((a) => a.value.trim()).filter(Boolean),
     wholeWord: form.matchWholeWord,
     amount: form.matchMode === "exact" ? matchNumber(form.matchAmount) : null,
     min: form.matchMode === "range" ? matchNumber(form.matchAmountMin) : null,
     max: form.matchMode === "range" ? matchNumber(form.matchAmountMax) : null,
   };
+  const hasPattern = !!criteria.pattern || criteria.alts.length > 0;
   const ruleChanged =
     !item ||
     criteria.pattern !== (item.matchPattern ?? "").trim() ||
+    criteria.alts.join("\n") !== parseAltMatchPatterns(item.altMatchPatterns).join("\n") ||
     criteria.wholeWord !== (item.matchWholeWord ?? false) ||
     criteria.amount !== (item.matchAmountMin == null && item.matchAmountMax == null ? item.matchAmount ?? null : null) ||
     criteria.min !== (item.matchAmountMin ?? null) ||
     criteria.max !== (item.matchAmountMax ?? null);
   const preview = useMatchPreview(ruleChanged ? criteria : null);
-  const charges = ruleChanged ? (criteria.pattern ? preview?.rows ?? null : null) : txs;
+  const charges = ruleChanged ? (hasPattern ? preview?.rows ?? null : null) : txs;
 
   async function save() {
     if (!canSave) return;
@@ -347,6 +363,9 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
       planTotal: isPlan ? amountVal : null,
       planParts: isPlan ? planParts : null,
       matchPattern: form.matchPattern || null,
+      // A list here; the API stores it as JSON (and moves the first one up when the
+      // main pattern is empty).
+      altMatchPatterns: criteria.alts.length ? criteria.alts : null,
       matchWholeWord: form.matchWholeWord,
       matchAmount: form.matchMode === "exact" && form.matchAmount ? parseFloat(form.matchAmount.replace(",", ".")) : null,
       matchAmountMin: form.matchMode === "range" && form.matchAmountMin ? parseFloat(form.matchAmountMin.replace(",", ".")) : null,
@@ -589,8 +608,10 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
       )}
 
       <div className="flex flex-col gap-2">
+        {/* The extra names line up under the pattern field (the grid's first column); on a
+            phone the Whole word switch moves below them. */}
         <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-          <ClearField label={t("matchPattern")} htmlFor="rec-pattern">
+          <ClearField label={t("matchPattern")} htmlFor="rec-pattern" className="sm:col-start-1 sm:row-start-1">
             <div className={cn(FIELD_BOX, "gap-2.5 text-clear-muted")}>
               <IconSearch size={18} stroke={2} aria-hidden className="shrink-0" />
               <input
@@ -605,16 +626,47 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
               />
             </div>
           </ClearField>
-          <div className="flex h-12 items-center justify-between gap-3.5 rounded-clear-row bg-clear-tile pr-3 pl-4">
+          <div className="order-last flex h-12 items-center justify-between gap-3.5 rounded-clear-row bg-clear-tile pr-3 pl-4 sm:order-none sm:col-start-2 sm:row-start-1">
             <span id="rec-whole-label" className="text-sm font-bold">{t("wholeWord")}</span>
             <ClearSwitch checked={form.matchWholeWord} onCheckedChange={(v) => set("matchWholeWord", v)} labelledBy="rec-whole-label" />
           </div>
+          {alts.map((alt, i) => (
+            <div key={alt.id} className={cn(FIELD_BOX, "gap-2.5 pr-1.5 text-clear-muted sm:col-start-1")}>
+              <IconSearch size={18} stroke={2} aria-hidden className="shrink-0" />
+              <input
+                type="text"
+                autoComplete="off"
+                aria-label={t("altPattern", { number: i + 1 })}
+                // Only the field "Add another name" just created.
+                autoFocus={alt.id === focusAltId}
+                value={alt.value}
+                onChange={(e) => setAlt(alt.id, e.target.value)}
+                placeholder={t("altPlaceholder")}
+                className={cn(FIELD_INPUT, "tracking-[0.04em]")}
+              />
+              <button
+                type="button"
+                onClick={() => removeAlt(alt.id)}
+                aria-label={t("removeAltPattern")}
+                className={cn(clearButtonVariants({ variant: "ghost", size: "icon" }), "size-9 text-clear-muted hover:bg-clear-line hover:text-clear-ink")}
+              >
+                <IconX aria-hidden />
+              </button>
+            </div>
+          ))}
         </div>
         <span className="text-xs font-semibold text-clear-muted">
           {form.matchWholeWord ? t("wholeWordHint") : t("containsHint")}{" "}
           {ruleChanged
-            ? criteria.pattern && preview ? t("matchesHint", { count: preview.total }) : t("autoHint")
+            ? hasPattern && preview ? t("matchesHint", { count: preview.total }) : t("autoHint")
             : txs && txs.length > 0 ? t("linkedHint", { count: txs.length }) : t("autoHint")}
+        </span>
+        <span className="text-xs font-semibold text-clear-muted">
+          {t("altHint")}
+          <button type="button" onClick={addAlt} className="ml-1.5 inline-flex cursor-pointer items-center gap-0.5 font-bold text-clear-ember-text hover:underline">
+            <IconPlus size={14} stroke={2.5} aria-hidden />
+            {t("addAltPattern")}
+          </button>
         </span>
       </div>
 
@@ -663,7 +715,7 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
       </div>
 
       {/* The last 12 charges — of what the rule as typed would match, live while you edit. */}
-      {charges && <RecurringCharges txs={charges} tipAnchor={ruleChanged ? "recurringMatchPreview" : "recurringCharges"} income={isIncome} />}
+      {charges && <RecurringCharges txs={charges} tipAnchor={ruleChanged ? "recurringMatchPreview" : "recurringCharges"} income={isIncome} frequency={form.frequency} />}
 
       <div className="flex flex-col gap-3 rounded-clear-tile border border-clear-line px-4 py-3">
         <div className="flex items-center justify-between gap-4">

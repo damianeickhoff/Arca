@@ -4,7 +4,8 @@ import { MAX_GAP_SPREAD } from "./rhythm";
 
 // Confidence, 0–1: how many periods the series covers, how tight its rhythm is and how
 // steady its amount. A curated merchant (RECURRING_MERCHANTS) adds a boost; it never
-// stands in for the tests themselves.
+// stands in for the tests themselves, and never adds an item on its own: every candidate
+// is a suggestion the user reviews.
 
 /** Occurrences at which the "how many periods" part is full. */
 const FULL_RUN: Record<DetectedFrequency, number> = {
@@ -15,11 +16,8 @@ const FULL_RUN: Record<DetectedFrequency, number> = {
   yearly: 3,
 };
 
+/** Lifts a curated merchant's suggestion so it sorts first in the review. */
 export const CURATED_BOOST = 0.15;
-/** Curated suggestions at or above this, with at least AUTO_ACCEPT_MIN_RUN payments,
- *  are accepted without asking (the false-positive rate there is near zero). */
-export const AUTO_ACCEPT_CONFIDENCE = 0.85;
-export const AUTO_ACCEPT_MIN_RUN = 3;
 
 export type ConfidenceLevel = "high" | "medium" | "low";
 
@@ -42,8 +40,4 @@ export function confidenceLevel(confidence: number): ConfidenceLevel {
   if (confidence >= 0.8) return "high";
   if (confidence >= 0.6) return "medium";
   return "low";
-}
-
-export function shouldAutoAccept(candidate: { curated: boolean; confidence: number; occurrences: number }): boolean {
-  return candidate.curated && candidate.confidence >= AUTO_ACCEPT_CONFIDENCE && candidate.occurrences >= AUTO_ACCEPT_MIN_RUN;
 }

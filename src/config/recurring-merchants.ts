@@ -1,8 +1,8 @@
 // Curated list of merchants that are almost always recurring (subscriptions, utilities,
 // insurers, telecom). The recurring detector (src/lib/recurring-detect/) uses it as a
 // confidence boost and a source for the name and type: a series that matches one may show
-// after two payments, and a high-confidence one is accepted without asking. It never
-// creates an item from one transaction. Same shape/spirit as FRIENDLY_NAMES.
+// after two payments and sorts first in the review. Like every other match it is only a
+// suggestion until the user accepts it. Same shape/spirit as FRIENDLY_NAMES.
 export interface RecurringMerchant {
   /** case-insensitive substring matched against the transaction description */
   pattern: string;

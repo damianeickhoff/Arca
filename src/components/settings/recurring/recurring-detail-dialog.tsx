@@ -20,6 +20,7 @@ import { TransactionPanelSheet } from "@/app/transactions/_activity/transaction-
 import { formatEur, normalizeBudgetType } from "@/lib/format";
 import { isValidISODate } from "@/lib/date-valid";
 import { planPartNumber, type PlanProgress } from "@/lib/payment-plan";
+import { parseAltMatchPatterns } from "@/lib/recurring-patterns";
 import { UNCATEGORIZED_ICON, UNCATEGORIZED_COLOR } from "@/lib/auto-brand";
 import type { RecurringItem, Category } from "@/db/schema";
 import { MoneyText } from "@/components/clear/money";
@@ -174,6 +175,7 @@ function DetailBody({
   const signed = (v: number) => (isIncome ? Math.abs(v) : -Math.abs(v));
   const isPlan = item.type === "plan" && item.planTotal != null && item.planParts != null;
   const nextPart = dueDate ? planPartNumber(item, dueDate) : null;
+  const altPatterns = parseAltMatchPatterns(item.altMatchPatterns);
 
   const details: { label: string; value: React.ReactNode }[] = [
     {
@@ -209,6 +211,8 @@ function DetailBody({
     ...(item.dueDay != null ? [{ label: t("dueDay"), value: t("dueDayValue", { day: item.dueDay }) }] : []),
     ...(dueDate ? [{ label: t("next"), value: fmt(dueDate) }] : []),
     ...(item.endDate ? [{ label: t("endDate"), value: fmt(item.endDate) }] : []),
+    // The extra names (a renamed payee) that also link charges to this item.
+    ...(altPatterns.length ? [{ label: t("alsoMatches"), value: altPatterns.join(", ") }] : []),
     ...(item.notes ? [{ label: t("notes"), value: item.notes }] : []),
   ];
 
@@ -259,7 +263,7 @@ function DetailBody({
         </div>
       )}
 
-      {txs && <RecurringCharges txs={txs} income={isIncome} />}
+      {txs && <RecurringCharges txs={txs} income={isIncome} frequency={item.frequency} />}
 
       <dl className="m-0 flex flex-col overflow-hidden rounded-clear-tile border border-clear-line">
         {details.map((d, i) => (

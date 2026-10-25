@@ -141,8 +141,10 @@ export function ClearDialogHeader({
     // scrolls; the card fill hides what scrolls under it and a hairline marks the edge
     // once something is underneath. The icon is always a 48px tile and the title +
     // one-line subtitle are set to the same 48px, so the two lines sit exactly beside
-    // it, top to bottom.
-    <div ref={ref} className="group/bar sticky top-0 z-20 flex items-center gap-3.5 bg-clear-card">
+    // it, top to bottom. The bar reaches 12px below the icon so that hairline has room
+    // under the buttons; the negative margin keeps the gap to the content at rest the
+    // dialog's own (every dialog's gap is at least that).
+    <div ref={ref} className="group/bar sticky top-0 z-20 -mb-3 flex items-center gap-3.5 bg-clear-card pb-3">
       <EdgeLine edge="top" />
       {icon && <span className="flex shrink-0 [&>*]:size-12!">{icon}</span>}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">

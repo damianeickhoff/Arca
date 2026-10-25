@@ -174,7 +174,9 @@ async function gatherInputs(): Promise<RuleInputs> {
  * Writes one notice for one user. Returns the row when it is new (or, for a notice that
  * replaces today's, when it changed), null when it was already there. A subject is only
  * ever announced once; the unique index on (user, kind, subject, day) is the hard stop
- * for two runs at the same moment.
+ * for two runs at the same moment. A cleared notice still counts as announced (which is
+ * why "Clear all" hides rows instead of deleting them); one that replaces today's and
+ * changed comes back, since it says something new.
  */
 export async function writeNotice(userId: number, draft: NoticeDraft, today: string): Promise<NotificationRow | null> {
   const keys = notificationKeys(draft.kind);
@@ -189,7 +191,7 @@ export async function writeNotice(userId: number, draft: NoticeDraft, today: str
     if (!draft.replace || existing.day !== today || (existing.params === params && existing.href === draft.href)) return null;
     const [updated] = await db
       .update(notifications)
-      .set({ params, href: draft.href, readAt: null, createdAt: sql`(datetime('now'))` })
+      .set({ params, href: draft.href, readAt: null, clearedAt: null, createdAt: sql`(datetime('now'))` })
       .where(eq(notifications.id, existing.id))
       .returning();
     return updated ?? null;
@@ -273,13 +275,13 @@ function toIso(sqliteUtc: string) {
   return sqliteUtc.includes("T") ? sqliteUtc : `${sqliteUtc.replace(" ", "T")}Z`;
 }
 
-/** The user's notices, newest first, rendered in `locale`; `offset` pages to older ones. */
+/** The user's notices (not the cleared ones), newest first, rendered in `locale`; `offset` pages to older ones. */
 export async function listNotifications(userId: number, locale: string, opts: { offset?: number; limit?: number } = {}) {
   const limit = opts.limit ?? NOTIFICATION_PAGE_SIZE;
   const rows = await db
     .select()
     .from(notifications)
-    .where(eq(notifications.userId, userId))
+    .where(and(eq(notifications.userId, userId), isNull(notifications.clearedAt)))
     // A replaced notice moves to the top with its new time.
     .orderBy(desc(notifications.createdAt), desc(notifications.id))
     .limit(limit + 1)
@@ -299,7 +301,7 @@ export async function countUnreadNotifications(userId: number): Promise<number> 
   const [row] = await db
     .select({ n: sql<number>`count(*)` })
     .from(notifications)
-    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+    .where(and(eq(notifications.userId, userId), isNull(notifications.readAt), isNull(notifications.clearedAt)));
   return Number(row?.n ?? 0);
 }
 
@@ -312,5 +314,17 @@ export async function markNotificationRead(userId: number, id: number) {
 
 export async function markAllNotificationsRead(userId: number) {
   await db.update(notifications).set({ readAt: sql`(datetime('now'))` }).where(and(eq(notifications.userId, userId), isNull(notifications.readAt)));
+}
+
+/**
+ * "Clear all" on /notifications: hides every notice the user has. The rows stay, marked
+ * cleared (and read), so the hourly job still sees each subject as announced and doesn't
+ * write the same notices again.
+ */
+export async function clearAllNotifications(userId: number) {
+  await db
+    .update(notifications)
+    .set({ clearedAt: sql`(datetime('now'))`, readAt: sql`coalesce(${notifications.readAt}, datetime('now'))` })
+    .where(and(eq(notifications.userId, userId), isNull(notifications.clearedAt)));
 }
 

@@ -40,10 +40,12 @@ if (!hasTables) createSchema(sqlite);
 // Adds a column only if it doesn't already exist, by checking the table's actual schema
 // instead of firing the ALTER and swallowing the "duplicate column" error — so a real
 // failure (e.g. a typo in the column definition) surfaces instead of being silently eaten.
-function addColumnIfMissing(table: string, column: string, definition: string) {
+/** Adds the column unless it exists; true when it was just added (for a one-time backfill). */
+function addColumnIfMissing(table: string, column: string, definition: string): boolean {
   const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
-  if (cols.some((c) => c.name === column)) return;
+  if (cols.some((c) => c.name === column)) return false;
   sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  return true;
 }
 
 // Auto-migrate: brandIcon + brandIconColor columns on transactions (a per-transaction
@@ -408,6 +410,17 @@ addColumnIfMissing("transactions", "shared_with_count", "INTEGER");
 addColumnIfMissing("recurring_items", "plan_total", "REAL");
 addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
 
+// Auto-migrate: "paused" — switched off by the user, so syncRecurringLifecycle (which
+// turns date-bound items on and off by their dates) leaves it off. Backfilled from the
+// items that are off while inside their period, which only the user can have done.
+if (addColumnIfMissing("recurring_items", "paused", "INTEGER NOT NULL DEFAULT 0")) {
+  sqlite.exec(`UPDATE recurring_items SET paused = 1 WHERE active = 0 AND dismissed = 0
+    AND (start_date IS NULL OR start_date <= date('now')) AND (end_date IS NULL OR end_date >= date('now'))`);
+}
+
+// Auto-migrate: more names a recurring item matches (JSON array; see recurringItems.altMatchPatterns)
+addColumnIfMissing("recurring_items", "alt_match_patterns", "TEXT");
+
   // Auto-migrate: per-account "count towards net worth" toggle
   addColumnIfMissing("banks", "include_in_net_worth", "INTEGER NOT NULL DEFAULT 0");
 
@@ -655,6 +668,8 @@ addColumnIfMissing("recurring_items", "plan_parts", "INTEGER");
   // Auto-migrate: notifications and the devices that get them as a push, see
   // src/lib/notifications.ts and src/lib/push.ts.
   sqlite.exec(NOTIFICATION_TABLES_SQL);
+  // "Clear all" on /notifications hides rows instead of deleting them (dedupe needs them).
+  addColumnIfMissing("notifications", "cleared_at", "TEXT");
 
   // The old detector's items, re-tested against the new rules (one time).
   migrateAutoRecurringItems(sqlite);

@@ -89,3 +89,35 @@ describe("reading notices", () => {
     expect(new Set([...page1.items, ...page2.items].map((i) => i.id)).size).toBe(page1.items.length + page2.items.length);
   });
 });
+
+describe("clearing notices", () => {
+  it("hides the user's notices without letting the job write them again", async () => {
+    const { writeDueNotices, writeNotice, clearAllNotifications, listNotifications, countUnreadNotifications } = await import("@/lib/notifications");
+    const bill = { kind: "billDueSoon" as const, subject: "8:2026-10-20", params: { name: "Gym", amount: 30, date: "2026-10-20", days: 3 }, href: "/transactions/upcoming" };
+    const imported = { kind: "importDone" as const, subject: "2026-10-17", params: { count: 2, waiting: 0 }, href: "/transactions/needs-review", replace: true };
+    await writeDueNotices([bill], "2026-10-17");
+    await writeNotice(userId, imported, "2026-10-17");
+    expect((await listNotifications(userId, "en")).items.length).toBeGreaterThan(0);
+    const otherBefore = (await listNotifications(otherId, "en")).items.length;
+
+    await clearAllNotifications(userId);
+    expect((await listNotifications(userId, "en")).items).toEqual([]);
+    expect(await countUnreadNotifications(userId)).toBe(0);
+    // Only this user's notices go.
+    expect((await listNotifications(otherId, "en")).items).toHaveLength(otherBefore);
+
+    // The next hourly run finds the same subjects and writes nothing.
+    expect(await writeDueNotices([bill], "2026-10-17")).toEqual([]);
+    expect(await writeDueNotices([{ ...bill, params: { ...bill.params, days: 2 } }], "2026-10-18")).toEqual([]);
+    expect(await writeNotice(userId, imported, "2026-10-17")).toBeNull();
+    expect((await listNotifications(userId, "en")).items).toEqual([]);
+
+    // Something new still arrives, and a replaced notice that grew comes back.
+    await writeNotice(userId, { kind: "updateAvailable", subject: "3.0.0", params: { version: "3.0.0" }, href: "/" }, "2026-10-17");
+    const grown = await writeNotice(userId, { ...imported, params: { count: 4, waiting: 1 } }, "2026-10-17");
+    expect(grown?.clearedAt).toBeNull();
+    const after = await listNotifications(userId, "en");
+    expect(after.items.map((i) => i.kind).sort()).toEqual(["importDone", "updateAvailable"]);
+    expect(await countUnreadNotifications(userId)).toBe(2);
+  });
+});

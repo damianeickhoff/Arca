@@ -514,6 +514,12 @@ export function createSchema(sqlite: Database.Database): void {
     sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN plan_parts INTEGER`);
   } catch { /* column already exists */ }
   try {
+    sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN paused INTEGER NOT NULL DEFAULT 0`);
+  } catch { /* column already exists */ }
+  try {
+    sqlite.exec(`ALTER TABLE recurring_items ADD COLUMN alt_match_patterns TEXT`);
+  } catch { /* column already exists */ }
+  try {
     sqlite.exec(`ALTER TABLE users ADD COLUMN first_name TEXT`);
   } catch { /* column already exists */ }
   try {
@@ -619,7 +625,8 @@ export const NOTIFICATION_TABLES_SQL = `
     params     TEXT,
     href       TEXT,
     created_at TEXT    NOT NULL DEFAULT (datetime('now')),
-    read_at    TEXT
+    read_at    TEXT,
+    cleared_at TEXT
   );
   CREATE UNIQUE INDEX IF NOT EXISTS notifications_dedupe ON notifications(user_id, kind, subject, day);
   CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, id);

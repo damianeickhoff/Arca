@@ -4,13 +4,14 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconChecks, IconSettings } from "@tabler/icons-react";
+import { IconChecks, IconSettings, IconTrash } from "@tabler/icons-react";
 import { ClearCard } from "@/components/clear/card";
 import { ClearButton } from "@/components/clear/button";
 import { clearButtonVariants } from "@/components/clear/button-variants";
+import { useConfirm } from "@/components/clear/confirm-dialog";
 import { MoneyText } from "@/components/clear/money";
 import { NotificationIcon } from "@/components/notification-icon";
-import { markAllNotificationsReadAction, markNotificationReadAction } from "@/app/actions/notifications";
+import { clearAllNotificationsAction, markAllNotificationsReadAction, markNotificationReadAction } from "@/app/actions/notifications";
 import type { NotificationView } from "@/lib/notification-kinds";
 import { cn } from "@/lib/utils";
 
@@ -47,11 +48,15 @@ export function NotificationsView({
 }) {
   const t = useTranslations("notifications");
   const router = useRouter();
+  const confirm = useConfirm();
   const when = useRelativeTime(now);
   const [, startTransition] = useTransition();
   // Rows marked read here, before the revalidated page comes back.
   const [readHere, setReadHere] = useState<ReadonlySet<number>>(new Set());
   const [allReadHere, setAllReadHere] = useState(false);
+  // Rows cleared here, hidden before the revalidated (empty) page comes back. By id, so a
+  // notice that arrives after the clear still shows.
+  const [clearedHere, setClearedHere] = useState<ReadonlySet<number>>(new Set());
   // "Older" pages, appended under the server's first page.
   const [older, setOlder] = useState<NotificationView[]>([]);
   const [olderHasMore, setOlderHasMore] = useState<boolean | null>(null);
@@ -59,10 +64,14 @@ export function NotificationsView({
   const [loadFailed, setLoadFailed] = useState(false);
 
   const seen = new Set(items.map((i) => i.id));
-  const list = [...items, ...older.filter((o) => !seen.has(o.id))];
+  const list = [...items, ...older.filter((o) => !seen.has(o.id))].filter((n) => !clearedHere.has(n.id));
   const isRead = (n: NotificationView) => allReadHere || n.read || readHere.has(n.id);
-  const unread = allReadHere ? 0 : Math.max(0, unreadCount - items.filter((i) => !i.read && readHere.has(i.id)).length);
-  const moreToLoad = olderHasMore ?? hasMore;
+  const unread = allReadHere
+    ? 0
+    : Math.max(0, unreadCount - items.filter((i) => !i.read && (readHere.has(i.id) || clearedHere.has(i.id))).length);
+  // While a clear waits for the refreshed page, the older pages are gone too.
+  const clearing = items.some((i) => clearedHere.has(i.id));
+  const moreToLoad = clearing ? false : (olderHasMore ?? hasMore);
 
   function open(n: NotificationView) {
     if (!isRead(n)) {
@@ -78,6 +87,23 @@ export function NotificationsView({
     setAllReadHere(true);
     startTransition(async () => {
       await markAllNotificationsReadAction();
+      router.refresh();
+    });
+  }
+
+  async function clearAll() {
+    const ok = await confirm({ title: t("clearAllTitle"), body: t("clearAllBody"), confirmLabel: t("clearAll"), destructive: true });
+    if (!ok) return;
+    const ids = new Set(list.map((n) => n.id));
+    setClearedHere(ids);
+    startTransition(async () => {
+      const res = await clearAllNotificationsAction();
+      if (res.error) {
+        setClearedHere(new Set());
+        return;
+      }
+      setOlder([]);
+      setOlderHasMore(null);
       router.refresh();
     });
   }
@@ -110,6 +136,12 @@ export function NotificationsView({
             <ClearButton variant="surface" size="sm" onClick={markAll} disabled={unread === 0}>
               <IconChecks aria-hidden />
               {t("markAllRead")}
+            </ClearButton>
+          )}
+          {list.length > 0 && (
+            <ClearButton variant="surface" size="sm" onClick={clearAll}>
+              <IconTrash aria-hidden />
+              {t("clearAll")}
             </ClearButton>
           )}
           <Link href={SETTINGS_HREF} className={clearButtonVariants({ variant: "surface", size: "sm", className: "no-underline" })}>

@@ -1,7 +1,7 @@
 // The recurring detector (src/lib/recurring-detect/), pure: grouping, rhythm, amount
 // and scoring, against the fixtures the plan names (docs/recurring-detection-plan.md).
 import { describe, expect, it } from "vitest";
-import { detectRecurring, evaluateSeries, shouldAutoAccept, confidenceLevel } from "@/lib/recurring-detect";
+import { detectRecurring, evaluateSeries, confidenceLevel } from "@/lib/recurring-detect";
 import { classifyRhythm, fixedMonthDay } from "@/lib/recurring-detect/rhythm";
 import { classifyAmount } from "@/lib/recurring-detect/amount";
 import { amountBands, derivePattern, groupByCounterparty } from "@/lib/recurring-detect/grouping";
@@ -183,18 +183,16 @@ describe("scoring and the curated list", () => {
     const [found] = detect(netflix(["2026-05-08", "2026-06-08", "2026-07-08", "2026-08-08", "2026-09-08", "2026-10-08"]));
     expect(found).toMatchObject({ name: "Netflix", type: "subscription", budgetType: "willen", curated: true, matchPattern: "netflix", matchAmount: null });
     expect(confidenceLevel(found.confidence)).toBe("high");
-    expect(shouldAutoAccept(found)).toBe(true);
   });
 
-  it("lets a curated merchant show after two payments, but not auto-accept", () => {
+  it("lets a curated merchant show after two payments", () => {
     const [found] = detect(netflix(["2026-09-08", "2026-10-08"]));
     expect(found).toMatchObject({ curated: true, occurrences: 2 });
-    expect(shouldAutoAccept(found)).toBe(false);
   });
 
-  it("never auto-accepts something off the curated list", () => {
+  it("marks something off the curated list as not curated", () => {
     const [found] = detect(salary());
-    expect(shouldAutoAccept(found)).toBe(false);
+    expect(found.curated).toBe(false);
   });
 
   it("scores longer, tighter, steadier series higher", () => {

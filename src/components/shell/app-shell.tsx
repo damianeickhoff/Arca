@@ -21,6 +21,7 @@ import type { BankSyncStatus } from "@/lib/bank-sync-status";
 import type { BuildInfo } from "@/lib/build-info";
 import { ClearChip } from "@/components/clear/chip";
 import { useBankSyncText } from "@/components/shell/bank-sync-line";
+import { BankSyncButton } from "@/components/shell/bank-sync-button";
 
 export interface ShellUser {
   name: string;
@@ -35,7 +36,7 @@ export interface ShellUser {
 //   (the add menu, also Ctrl/Cmd+N — see quick-add.tsx), the four destinations
 //   (Plan opens its Budget · Debts · Goals sub-menu while one of them is showing,
 //   Insights its five tabs while it is open, Activity carries the needs-a-category
-//   count) with Notifications under Home (its unread count beside it), then Import (with "Last synced …" under it once a bank is connected),
+//   count) with Notifications under Home (its unread count beside it), then Import (with "Last synced …" under it and a sync button at its end once a bank is connected),
 //   Settings, the theme and Sign out. Pages sit to its right (MainContent).
 //   Phones (< lg): a floating black tab bar with the four destinations, the ember
 //   add button (the same add menu) in the middle and, set apart at the end, the global search button.
@@ -279,31 +280,35 @@ function DesktopSidebar({
         <span aria-hidden className="mb-1 h-px bg-clear-line [@media(min-height:900px)]:mb-3" />
         {/* Import: a shortcut to Settings › Import (CSV file and bank connection). Once a
             bank is connected a second line says when it last synced (or that its consent
-            ran out); the whole row still opens the panel. */}
-        <Link
-          href="/settings?panel=import"
-          aria-current={importActive ? "page" : undefined}
-          className={cn(
-            row,
-            importActive ? "bg-clear-primary font-bold text-clear-primary-ink" : idle,
-            sync && "h-auto min-h-12 py-2 [@media(min-height:800px)]:h-auto [@media(min-height:900px)]:h-auto",
-          )}
-        >
-          <IconFileUpload size={20} stroke={1.9} aria-hidden className="shrink-0" />
-          <span className="flex min-w-0 flex-col">
-            {t("import")}
-            {sync && (
-              <span
-                className={cn(
-                  "truncate text-xs font-semibold",
-                  importActive ? "opacity-70" : sync.attention ? "text-clear-ember-text" : "text-clear-muted",
-                )}
-              >
-                {sync.text}
-              </span>
+            ran out); the whole row still opens the panel, and a round button at its end
+            syncs every connection on the spot (a sibling of the link, laid over the row). */}
+        <div className="relative">
+          <Link
+            href="/settings?panel=import"
+            aria-current={importActive ? "page" : undefined}
+            className={cn(
+              row,
+              importActive ? "bg-clear-primary font-bold text-clear-primary-ink" : idle,
+              sync && "h-auto min-h-12 py-2 pr-12 [@media(min-height:800px)]:h-auto [@media(min-height:900px)]:h-auto",
             )}
-          </span>
-        </Link>
+          >
+            <IconFileUpload size={20} stroke={1.9} aria-hidden className="shrink-0" />
+            <span className="flex min-w-0 flex-col">
+              {t("import")}
+              {sync && (
+                <span
+                  className={cn(
+                    "truncate text-xs font-semibold",
+                    importActive ? "opacity-70" : sync.attention ? "text-clear-ember-text" : "text-clear-muted",
+                  )}
+                >
+                  {sync.text}
+                </span>
+              )}
+            </span>
+          </Link>
+          {sync && <BankSyncButton onDark={importActive} />}
+        </div>
         <Link href="/settings" className={cn(row, pathname.startsWith("/settings") ? "bg-clear-primary font-bold text-clear-primary-ink" : idle)}>
           <IconSettings size={20} stroke={1.9} aria-hidden />
           {t("settings")}

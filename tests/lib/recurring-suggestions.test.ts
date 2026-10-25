@@ -1,6 +1,6 @@
 // The recurring detector's database half (lib/recurring-suggestions.ts) against a real
-// temporary database: suggestions are stored, a curated match is auto-accepted and
-// logged, Accept links the payments, Not a bill keeps a series from coming back, and an
+// temporary database: suggestions are stored (a curated match too: nothing becomes an
+// item without the user), Accept links the payments, Not a bill keeps a series from coming back, and an
 // incremental run only re-tests the counterparties it was given.
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
@@ -64,24 +64,35 @@ afterAll(() => {
 });
 
 describe("detectRecurringSuggestions", () => {
-  it("stores suggestions and auto-accepts a curated, high-confidence match", async () => {
+  it("stores every candidate as a suggestion, a curated high-confidence match too", async () => {
     const { db } = await import("@/db");
     const s = await import("@/db/schema");
     const { detectRecurringSuggestions, listPendingSuggestions } = await import("@/lib/recurring-suggestions");
 
-    expect(await detectRecurringSuggestions()).toEqual({ suggested: 2, autoAccepted: 1 });
+    expect(await detectRecurringSuggestions()).toEqual({ suggested: 3 });
 
     const pending = await listPendingSuggestions();
-    expect(pending.map((p) => p.name).sort()).toEqual(["Acme BV", "Waterbedrijf Noord"]);
+    expect(pending.map((p) => p.name).sort()).toEqual(["Acme BV", "Netflix", "Waterbedrijf Noord"]);
+    expect(pending.find((p) => p.name === "Netflix")).toMatchObject({ type: "subscription", frequency: "monthly", occurrences: 6 });
 
-    const items = await db.select().from(s.recurringItems);
-    expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({ name: "Netflix", type: "subscription", source: "auto", active: true, frequency: "monthly" });
-    const linked = await db.select().from(s.transactions);
-    expect(linked.filter((t) => t.recurringItemId === items[0].id)).toHaveLength(6);
-
+    // Nothing is added without the user, and nothing goes in the change log.
+    expect(await db.select().from(s.recurringItems)).toHaveLength(0);
+    expect((await db.select().from(s.transactions)).every((t) => t.recurringItemId == null)).toBe(true);
     const log = await db.select().from(s.activityLog);
-    expect(log.map((e) => e.kind)).toContain("recurringDetected");
+    expect(log.map((e) => e.kind)).not.toContain("recurringDetected");
+  });
+
+  it("Accept on a curated suggestion makes the item and links its payments", async () => {
+    const { db } = await import("@/db");
+    const s = await import("@/db/schema");
+    const { acceptSuggestion, listPendingSuggestions } = await import("@/lib/recurring-suggestions");
+    const netflix = (await listPendingSuggestions()).find((p) => p.name === "Netflix")!;
+
+    expect(await acceptSuggestion(netflix.id)).toBe(true);
+    const [item] = await db.select().from(s.recurringItems).where(eq(s.recurringItems.name, "Netflix"));
+    expect(item).toMatchObject({ type: "subscription", source: "auto", active: true, frequency: "monthly" });
+    const linked = await db.select().from(s.transactions);
+    expect(linked.filter((t) => t.recurringItemId === item.id)).toHaveLength(6);
   });
 
   it("Accept makes the item with the detected rhythm and links its payments", async () => {
@@ -104,7 +115,7 @@ describe("detectRecurringSuggestions", () => {
     const acme = (await listPendingSuggestions()).find((p) => p.name === "Acme BV")!;
     expect(await rejectSuggestion(acme.id)).toBe(true);
 
-    expect(await detectRecurringSuggestions()).toEqual({ suggested: 0, autoAccepted: 0 });
+    expect(await detectRecurringSuggestions()).toEqual({ suggested: 0 });
     expect(await listPendingSuggestions()).toEqual([]);
   });
 
@@ -112,9 +123,9 @@ describe("detectRecurringSuggestions", () => {
     const { detectRecurringSuggestions, listPendingSuggestions } = await import("@/lib/recurring-suggestions");
     await insert(carInsurance());
     // Groceries touched: nothing to find there, and the insurance isn't looked at.
-    expect(await detectRecurringSuggestions(groceryIds.slice(0, 1))).toEqual({ suggested: 0, autoAccepted: 0 });
+    expect(await detectRecurringSuggestions(groceryIds.slice(0, 1))).toEqual({ suggested: 0 });
     expect(await listPendingSuggestions()).toEqual([]);
     // A full run finds it.
-    expect(await detectRecurringSuggestions()).toEqual({ suggested: 1, autoAccepted: 0 });
+    expect(await detectRecurringSuggestions()).toEqual({ suggested: 1 });
   });
 });

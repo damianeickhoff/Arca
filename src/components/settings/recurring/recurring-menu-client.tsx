@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { IconRepeat } from "@tabler/icons-react";
+import { IconChevronDown, IconRepeat } from "@tabler/icons-react";
 import { RecurringClient, RecurringRestoreButton } from "@/components/settings/recurring/recurring-client";
 import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
 import { RecurringSuggestions } from "@/components/settings/recurring/recurring-suggestions";
@@ -39,8 +39,11 @@ interface Props {
   suggestions: SuggestionView[];
 }
 
-/** The Recurring settings panel: the monthly total, type filters and a search, then
- *  every recurring item (a row opens its detail) and the dismissed ones to restore. */
+/** The Recurring settings panel: the monthly total, type filters and a search, then the
+ *  current recurring items (running or starting later; a row opens its detail). Below
+ *  them a collapsed Archived section holds the paused and ended items (same rows, same
+ *  filter and search, opened by itself when a search matches one), then the dismissed
+ *  auto-detected items to restore. The summary, counts and total use current items only. */
 export function RecurringMenuClient({ items, categories, planProgress, suggestions }: Props) {
   const t = useTranslations("settings.recurringList");
   const tPanels = useTranslations("settings.panels");
@@ -48,6 +51,10 @@ export function RecurringMenuClient({ items, categories, planProgress, suggestio
   const locale = useLocale();
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
+  // The Archived section is collapsed by default. While a search matches archived rows
+  // it opens by itself; its header can still close it for that query.
+  const [archivedOpen, setArchivedOpen] = useState(false);
+  const [archivedSearchClosed, setArchivedSearchClosed] = useState(false);
   // Track just the id, not the item object — otherwise router.refresh() (e.g. after
   // saving an edit) produces new item objects in `items` while this state keeps
   // pointing at the stale pre-edit object, so the open dialog never shows the update.
@@ -73,27 +80,108 @@ export function RecurringMenuClient({ items, categories, planProgress, suggestio
   }, [items]);
 
   const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
-  const activeItems = items.filter((i) => !i.dismissed);
+  const endFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
   const query = search.trim().toLowerCase();
-  const countFor = (f: Filter) => (f === "all" ? activeItems.length : activeItems.filter((i) => i.type === f).length);
 
-  // Items shown for the current filter + search query — alphabetical, so the list is a
+  // Current = running now or starting later (a "future" item keeps its Upcoming chip even
+  // though the lifecycle keeps it switched off until then). Archived = paused by the user
+  // or past its end date: out of the list, the counts and the total.
+  const isArchived = (i: RecurringItem) => {
+    const status = recurringPeriodStatus(i);
+    return i.paused || status === "expired" || (!i.active && status !== "future");
+  };
+  const currentItems = items.filter((i) => !i.dismissed && !isArchived(i));
+  const archivedItems = items.filter((i) => !i.dismissed && isArchived(i));
+  const countFor = (f: Filter) => (f === "all" ? currentItems.length : currentItems.filter((i) => i.type === f).length);
+
+  // Rows shown for the current filter + search query — alphabetical, so the list is a
   // stable index you can scan for a specific bill. `base` sensitivity so casing and
   // accents don't split otherwise-adjacent names.
-  const visible = activeItems
-    .filter((i) => (filter === "all" ? true : i.type === filter))
-    .filter((i) => !query || i.name.toLowerCase().includes(query))
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const applyView = (list: RecurringItem[]) =>
+    list
+      .filter((i) => (filter === "all" ? true : i.type === filter))
+      .filter((i) => !query || i.name.toLowerCase().includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  const visible = applyView(currentItems);
+  const archivedVisible = applyView(archivedItems);
+
+  const archivedAutoOpen = !!query && archivedVisible.length > 0;
+  const showArchived = archivedAutoOpen ? !archivedSearchClosed : archivedOpen;
+  const toggleArchived = () => (archivedAutoOpen ? setArchivedSearchClosed((v) => !v) : setArchivedOpen((v) => !v));
+  const onSearch = (value: string) => {
+    setSearch(value);
+    setArchivedSearchClosed(false);
+  };
 
   // Monthly total for the summary line: income items in the income view, otherwise the
   // non-income items (all) or the chosen type.
   const isIncomeView = filter === "income";
-  const totalPool = activeItems.filter((i) =>
+  const totalPool = currentItems.filter((i) =>
     isIncomeView ? i.type === "income" : filter === "all" ? i.type !== "income" : i.type === filter,
   );
   const monthlyTotal = totalPool.reduce((s, i) => s + toMonthly(i.amount, i.frequency), 0);
 
   const dismissedItems = filter === "all" ? items.filter((i) => i.dismissed) : [];
+
+  // One row, shared by the current list and the Archived section. Archived rows are
+  // dimmed and say why they're archived where current rows show the next date.
+  const renderRow = (item: RecurringItem, archived: boolean) => {
+    const cat = item.categoryId != null ? catById.get(item.categoryId) : undefined;
+    const due = dueDateByItemId[item.id];
+    const status = recurringPeriodStatus(item);
+    const budgetKey = item.budgetType ? BUDGET_KEY[item.budgetType] : undefined;
+    const progress = item.type === "plan" ? planProgress[item.id] : undefined;
+    const reason = archived
+      ? status === "expired" && item.endDate
+        ? t("archivedEnded", { date: endFmt.format(new Date(`${item.endDate}T12:00:00`)) })
+        : t("archivedPaused")
+      : null;
+    const meta = [
+      cat?.name ?? t("noCategory"),
+      progress && item.planParts
+        ? t("planProgress", { paid: progress.paidParts, parts: item.planParts, left: formatEur(progress.remaining) })
+        : tForm(`frequencies.${item.frequency}` as "frequencies.monthly"),
+      reason ?? (due ? t("next", { date: dateFmt.format(new Date(`${due}T12:00:00`)) }) : null),
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return (
+      <ListRow
+        key={item.id}
+        onClick={() => setDetailItemId(item.id)}
+        className={cn(archived && "opacity-60")}
+        icon={
+          <Icon
+            iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
+            color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
+            soft
+            size="md"
+          />
+        }
+        title={
+          <span className="inline-flex min-w-0 max-w-full items-center gap-2">
+            <span className="truncate">{item.name}</span>
+            {status === "future" && <ClearChip tone="sky" className="h-6 px-2.5 text-xs">{t("upcoming")}</ClearChip>}
+            {item.source === "auto" && <ClearChip tone="lilac" className="h-6 px-2.5 text-xs">{t("auto")}</ClearChip>}
+          </span>
+        }
+        meta={meta}
+        trailing={
+          <span className="flex shrink-0 flex-col items-end gap-0.5">
+            {item.amount ? (
+              <Amount value={item.type === "income" ? item.amount : -item.amount} sign={item.type === "income" ? "always" : "auto"} className="text-[17px]" />
+            ) : (
+              <span className="text-[17px] font-bold text-clear-muted">—</span>
+            )}
+            <span className="text-xs text-clear-muted">
+              {tForm(`types.${item.type}` as "types.bill")}
+              {budgetKey ? ` · ${tForm(`budgetTypes.${budgetKey}`)}` : ""}
+            </span>
+          </span>
+        }
+      />
+    );
+  };
 
   return (
     <>
@@ -104,7 +192,7 @@ export function RecurringMenuClient({ items, categories, planProgress, suggestio
         {/* Summary */}
         <div className="flex flex-col gap-1">
           <span className="text-[13px] font-bold text-clear-ink-2">
-            {t("summaryLabel", { shown: visible.length, count: activeItems.length })}
+            {t("summaryLabel", { shown: visible.length, count: currentItems.length })}
           </span>
           <span className="flex flex-wrap items-baseline gap-x-2">
             <Amount value={monthlyTotal} className="text-[34px] leading-none tracking-[-0.03em]" />
@@ -137,94 +225,69 @@ export function RecurringMenuClient({ items, categories, planProgress, suggestio
           })}
         </div>
 
-        <SettingsSearch value={search} onChange={setSearch} placeholder={t("search")} label={t("search")} />
+        <SettingsSearch value={search} onChange={onSearch} placeholder={t("search")} label={t("search")} />
 
         {/* List */}
-        {visible.length === 0 && dismissedItems.length === 0 ? (
-          <SettingsEmpty icon={<IconRepeat stroke={1.9} />} action={<RecurringClient action="add" variant="default" />}>
-            {query ? t("noMatch") : t("empty")}
-          </SettingsEmpty>
-        ) : (
-          <div className="flex flex-col">
-            {visible.map((item) => {
-              const cat = item.categoryId != null ? catById.get(item.categoryId) : undefined;
-              const due = dueDateByItemId[item.id];
-              const status = recurringPeriodStatus(item);
-              const budgetKey = item.budgetType ? BUDGET_KEY[item.budgetType] : undefined;
-              const progress = item.type === "plan" ? planProgress[item.id] : undefined;
-              const meta = [
-                cat?.name ?? t("noCategory"),
-                progress && item.planParts
-                  ? t("planProgress", { paid: progress.paidParts, parts: item.planParts, left: formatEur(progress.remaining) })
-                  : tForm(`frequencies.${item.frequency}` as "frequencies.monthly"),
-                due ? t("next", { date: dateFmt.format(new Date(`${due}T12:00:00`)) }) : null,
-                !item.active && status === "active" ? t("inactive") : null,
-              ]
-                .filter(Boolean)
-                .join(" · ");
-              return (
-                <ListRow
-                  key={item.id}
-                  onClick={() => setDetailItemId(item.id)}
-                  className={cn(!item.active && "opacity-60")}
-                  icon={
-                    <Icon
-                      iconKey={cat?.icon ?? UNCATEGORIZED_ICON}
-                      color={cat?.icon ? cat.color : UNCATEGORIZED_COLOR}
-                      soft
-                      size="md"
-                    />
-                  }
-                  title={
-                    <span className="inline-flex min-w-0 max-w-full items-center gap-2">
-                      <span className="truncate">{item.name}</span>
-                      {status === "future" && <ClearChip tone="sky" className="h-6 px-2.5 text-xs">{t("upcoming")}</ClearChip>}
-                      {status === "expired" && <ClearChip tone="butter" className="h-6 px-2.5 text-xs">{t("expired")}</ClearChip>}
-                      {item.source === "auto" && <ClearChip tone="lilac" className="h-6 px-2.5 text-xs">{t("auto")}</ClearChip>}
-                    </span>
-                  }
-                  meta={meta}
-                  trailing={
-                    <span className="flex shrink-0 flex-col items-end gap-0.5">
-                      {item.amount ? (
-                        <Amount value={item.type === "income" ? item.amount : -item.amount} sign={item.type === "income" ? "always" : "auto"} className="text-[17px]" />
-                      ) : (
-                        <span className="text-[17px] font-bold text-clear-muted">—</span>
-                      )}
-                      <span className="text-xs text-clear-muted">
-                        {tForm(`types.${item.type}` as "types.bill")}
-                        {budgetKey ? ` · ${tForm(`budgetTypes.${budgetKey}`)}` : ""}
-                      </span>
-                    </span>
-                  }
-                />
-              );
-            })}
+        <div className="flex flex-col">
+          {visible.length === 0 ? (
+            <SettingsEmpty icon={<IconRepeat stroke={1.9} />} action={<RecurringClient action="add" variant="default" />}>
+              {query ? t("noMatch") : t("empty")}
+            </SettingsEmpty>
+          ) : (
+            visible.map((item) => renderRow(item, false))
+          )}
 
-            {/* Dismissed auto-detected items — kept so detection never recreates them, restorable. */}
-            {dismissedItems.length > 0 && (
-              <section aria-labelledby="recurring-dismissed" className="mt-5 flex flex-col gap-1.5">
-                <h3 id="recurring-dismissed" className="m-0 flex h-10 items-center rounded-clear-icon bg-clear-tile px-3 text-[15px] font-bold">
-                  {t("dismissed")} <span className="ml-1 font-semibold text-clear-muted">· {dismissedItems.length}</span>
-                </h3>
-                {dismissedItems.map((item) => (
-                  <div key={item.id} className="flex min-h-16 items-center gap-3 border-b border-clear-ground px-2 last:border-b-0">
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="truncate text-[15px] font-bold text-clear-ink-2">{item.name}</span>
-                      <span className="truncate text-[13px] text-clear-muted">
-                        <MoneyText>
-                          {item.matchPattern ? t("pattern", { pattern: item.matchPattern }) : t("notDetectedAgain")}
-                          {item.amount ? ` · ${formatEur(item.amount)}` : ""}
-                        </MoneyText>
-                      </span>
-                    </div>
-                    <RecurringRestoreButton item={item} />
+          {/* Paused and ended items: out of the list and the total, still openable. */}
+          {archivedVisible.length > 0 && (
+            <section aria-labelledby="recurring-archived" className="mt-5 flex flex-col gap-1.5">
+              <h3 id="recurring-archived" className="m-0">
+                <button
+                  type="button"
+                  aria-expanded={showArchived}
+                  aria-controls="recurring-archived-rows"
+                  onClick={toggleArchived}
+                  className="flex h-10 w-full cursor-pointer items-center rounded-clear-icon bg-clear-tile px-3 text-left text-[15px] font-bold text-clear-ink outline-none transition-colors hover:bg-clear-line focus-visible:ring-3 focus-visible:ring-clear-ember/50"
+                >
+                  {t("archived")} <span className="ml-1 font-semibold text-clear-muted">· {archivedVisible.length}</span>
+                  <IconChevronDown
+                    size={18}
+                    stroke={2.2}
+                    aria-hidden
+                    className={cn("ml-auto shrink-0 text-clear-muted transition-transform", showArchived && "rotate-180")}
+                  />
+                </button>
+              </h3>
+              {showArchived && (
+                <div id="recurring-archived-rows" className="flex flex-col">
+                  {archivedVisible.map((item) => renderRow(item, true))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Dismissed auto-detected items — kept so detection never recreates them, restorable. */}
+          {dismissedItems.length > 0 && (
+            <section aria-labelledby="recurring-dismissed" className="mt-5 flex flex-col gap-1.5">
+              <h3 id="recurring-dismissed" className="m-0 flex h-10 items-center rounded-clear-icon bg-clear-tile px-3 text-[15px] font-bold">
+                {t("dismissed")} <span className="ml-1 font-semibold text-clear-muted">· {dismissedItems.length}</span>
+              </h3>
+              {dismissedItems.map((item) => (
+                <div key={item.id} className="flex min-h-16 items-center gap-3 border-b border-clear-ground px-2 last:border-b-0">
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[15px] font-bold text-clear-ink-2">{item.name}</span>
+                    <span className="truncate text-[13px] text-clear-muted">
+                      <MoneyText>
+                        {item.matchPattern ? t("pattern", { pattern: item.matchPattern }) : t("notDetectedAgain")}
+                        {item.amount ? ` · ${formatEur(item.amount)}` : ""}
+                      </MoneyText>
+                    </span>
                   </div>
-                ))}
-              </section>
-            )}
-          </div>
-        )}
+                  <RecurringRestoreButton item={item} />
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
       </div>
 
       <RecurringDetailDialog
