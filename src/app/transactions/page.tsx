@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, categories, banks, goals, merchants, recurringItems } from "@/db/schema";
 import { eq, and, gte, lte, desc, like, or, sql, asc, isNotNull, inArray } from "drizzle-orm";
-import { isInternalTransferExpr, effectiveTransferTypeExpr } from "@/lib/internal-transfers";
+import { isInternalTransferExpr, effectiveTransferTypeExpr, outOfReportsExpr } from "@/lib/internal-transfers";
 import { currentFinancialMonth, financialMonthRange, shiftDate } from "@/lib/date-range";
 import { getActivityContext } from "@/lib/activity-context";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
@@ -90,6 +90,7 @@ async function getTransactions(
       isReimbursement: transactions.isReimbursement,
       isManualTransfer: transactions.isManualTransfer,
       isInternalTransfer: isInternalTransferExpr,
+      outOfReports: outOfReportsExpr,
       transferType: effectiveTransferTypeExpr,
       categoryGroup: categories.group,
       bankName: banks.displayName,
@@ -221,9 +222,9 @@ export default async function TransactionsPage({
   const allocationRows = buildSplitAllocations(filteredRows, splitMap);
 
   const incomeRows = allocationRows.filter(
-    (row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer && row.categoryGroup !== "savings",
+    (row) => row.direction === "income" && !row.isReimbursement && !row.outOfReports && row.categoryGroup !== "savings",
   );
-  const expenseRows = allocationRows.filter((row) => row.direction === "expense" && !row.isInternalTransfer && row.categoryGroup !== "savings");
+  const expenseRows = allocationRows.filter((row) => row.direction === "expense" && !row.outOfReports && row.categoryGroup !== "savings");
   const income = incomeRows.reduce((sum, row) => sum + row.amount, 0);
   const expense = expenseRows.reduce((sum, row) => sum + row.amount, 0);
   // For the summary's explanations: how many payments came in, and how much of the money

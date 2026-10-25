@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions } from "@/db/schema";
 import { and, gte, lte } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { currentFinancialMonth, financialMonthRangeByMonth, type FinancialMonthConfig } from "@/lib/date-range";
@@ -19,7 +19,7 @@ export async function getCurrentMonthIncome(financialMonth: FinancialMonthConfig
       amount: transactions.amount,
       correctedAmount: transactions.correctedAmount,
       isReimbursement: transactions.isReimbursement,
-      isInternalTransfer: isInternalTransferExpr,
+      outOfReports: outOfReportsExpr,
     })
     .from(transactions)
     .where(and(gte(transactions.date, from), lte(transactions.date, to)));
@@ -29,6 +29,6 @@ export async function getCurrentMonthIncome(financialMonth: FinancialMonthConfig
   const allocations = buildSplitAllocations(rows, splitMap);
 
   return allocations
-    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer)
+    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.outOfReports)
     .reduce((sum, row) => sum + row.amount, 0);
 }

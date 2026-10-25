@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, categories } from "@/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { financialMonthRange } from "@/lib/date-range";
@@ -23,7 +23,7 @@ export async function getMonthComparison(financialMonth: { defaultStartDay: numb
     categoryIcon: categories.icon,
     categoryGroup: categories.group,
     isReimbursement: transactions.isReimbursement,
-    isInternalTransfer: isInternalTransferExpr,
+    outOfReports: outOfReportsExpr,
   })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -33,7 +33,7 @@ export async function getMonthComparison(financialMonth: { defaultStartDay: numb
   const allocations = buildSplitAllocations(rows, splitMap);
   const totals = { last: { income: 0, expense: 0 }, prior: { income: 0, expense: 0 } };
   for (const row of allocations) {
-    if (row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
+    if (row.isReimbursement || row.outOfReports || row.categoryGroup === "savings") continue;
     const bucket = row.date >= lastRange.from ? totals.last : totals.prior;
     if (row.direction === "income" || row.direction === "expense") bucket[row.direction] += row.amount;
   }

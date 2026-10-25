@@ -10,6 +10,7 @@ import { resolveMerchantIdFor } from "@/lib/merchants";
 import { recordActivity, selectRowsByIds } from "@/lib/activity-log";
 import { bulkCategoryMoveEntry, type ActivityEntryInput } from "@/lib/activity-log-entries";
 import { isValidISODate } from "@/lib/date-valid";
+import { breakTransferPair } from "@/lib/internal-transfers";
 
 // The columns a client may set. Everything else in a request body is dropped, so a body
 // can never touch `id`, `importHash`, `reportedBalance` or `createdAt`.
@@ -34,6 +35,7 @@ const WRITABLE_FIELDS = [
   "customName",
   "budgetTypeOverride",
   "isManualTransfer",
+  "notTransfer",
   "isReimbursement",
   "excludeFromReports",
   "expectedReimbursement",
@@ -61,6 +63,9 @@ function pickWritable(body: unknown): TransactionPatch | null {
   // "Internal transfer" (Needs a category, the detail panel): a real boolean, nothing else.
   if (data.isManualTransfer !== undefined && typeof data.isManualTransfer !== "boolean") {
     throw new Error("isManualTransfer must be true or false.");
+  }
+  if (data.notTransfer !== undefined && typeof data.notTransfer !== "boolean") {
+    throw new Error("notTransfer must be true or false.");
   }
   return data as TransactionPatch;
 }
@@ -263,6 +268,8 @@ export async function PATCH(req: NextRequest) {
 
   const [row] = await db.update(transactions).set({ ...data, ...clearAiPick(data.categoryId) }).where(eq(transactions.id, id)).returning();
   if (!row) return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+  // "Not a transfer" breaks the pair it was in, so the other leg counts again too.
+  if (data.notTransfer === true) breakTransferPair(id);
 
   if (existing?.goalId) {
     await adjustGoalAmount(existing.goalId, -goalDeltaForTransaction(existing.direction, getTransactionSplitTotal(existing.amount, existing.correctedAmount)));

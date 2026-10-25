@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { merchants, transactions } from "@/db/schema";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { countsInReportsCondition } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits, getTransactionSplitTotal } from "@/lib/transaction-splits";
 import { resolveDisplayName } from "@/lib/friendly-names";
@@ -79,7 +79,7 @@ export async function getMerchantDetail(
   const rangeConditions = [
     eq(transactions.merchantId, merchantId),
     eq(transactions.direction, "expense"),
-    sql`not (${isInternalTransferExpr})`,
+    countsInReportsCondition,
   ];
   if (from) rangeConditions.push(gte(transactions.date, from));
   if (to) rangeConditions.push(lte(transactions.date, to));

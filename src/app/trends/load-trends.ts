@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { categories, merchants, transactions } from "@/db/schema";
 import { and, asc, eq, gte, lte } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr, savedTransferExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getBudgetStrategy, getSharedCostMode } from "@/lib/app-settings";
 import { getBillStatuses } from "@/lib/bill-status";
@@ -103,7 +103,8 @@ export async function loadTrends({
       budgetTypeOverride: transactions.budgetTypeOverride,
       account: transactions.account,
       isReimbursement: transactions.isReimbursement,
-      isInternalTransfer: isInternalTransferExpr,
+      outOfReports: outOfReportsExpr,
+      savedTransfer: savedTransferExpr,
       recurringItemId: transactions.recurringItemId,
       description: transactions.description,
       customName: transactions.customName,
@@ -146,7 +147,8 @@ export async function loadTrends({
       categoryGroup: a.categoryGroup,
       budgetType: (!split ? tx?.budgetTypeOverride : null) ?? (a.categoryId != null ? (catById.get(a.categoryId)?.budgetType ?? null) : null),
       isReimbursement: a.isReimbursement,
-      isInternalTransfer: a.isInternalTransfer,
+      outOfReports: a.outOfReports,
+      savedTransfer: !!tx?.savedTransfer,
     };
   });
 

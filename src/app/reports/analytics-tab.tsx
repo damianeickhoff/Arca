@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { transactions, categories, banks, merchants } from "@/db/schema";
 import { eq, and, gte, lte, desc, min } from "drizzle-orm";
 import { getLocale, getTranslations } from "next-intl/server";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { getBudgetOverview } from "@/lib/budget-overview";
@@ -106,7 +106,7 @@ async function loadAllocations(from: string, to: string, netReimbursements: bool
       merchantIcon: merchants.icon,
       merchantColor: merchants.color,
       isReimbursement: transactions.isReimbursement,
-      isInternalTransfer: isInternalTransferExpr,
+      outOfReports: outOfReportsExpr,
       recurringItemId: transactions.recurringItemId,
     })
     .from(transactions)
@@ -156,8 +156,8 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
 
   // Spending and income leave out reimbursements, transfers between own accounts and
   // money moved into savings categories.
-  const counts = (r: { isReimbursement: boolean; isInternalTransfer: boolean; categoryGroup: string | null }) =>
-    !r.isReimbursement && !r.isInternalTransfer && r.categoryGroup !== "savings";
+  const counts = (r: { isReimbursement: boolean; outOfReports: boolean; categoryGroup: string | null }) =>
+    !r.isReimbursement && !r.outOfReports && r.categoryGroup !== "savings";
   const relevant = current.allocations.filter(counts);
   const prevRelevant = previous.allocations.filter(counts);
   const sum = (list: typeof relevant, direction: "income" | "expense") => list.filter((r) => r.direction === direction).reduce((s, r) => s + r.amount, 0);
@@ -169,7 +169,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   // gross, it counts toward Saved; netting, the expenses already shrank by it.
   const paidBack = net
     ? 0
-    : current.allocations.filter((r) => r.direction === "income" && r.isReimbursement && !r.isInternalTransfer).reduce((s, r) => s + r.amount, 0);
+    : current.allocations.filter((r) => r.direction === "income" && r.isReimbursement && !r.outOfReports).reduce((s, r) => s + r.amount, 0);
   const saved = income + paidBack - expense;
 
   const dailyExpense = new Map<string, number>();
@@ -356,7 +356,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
   const bankByAccount = new Map(allBanks.filter((b) => b.accountNumber).map((b) => [b.accountNumber!, b]));
   const accountMap = new Map<string, AccountRow>();
   for (const row of current.rows) {
-    if (row.direction !== "expense" || row.isReimbursement || row.isInternalTransfer || row.categoryGroup === "savings") continue;
+    if (row.direction !== "expense" || row.isReimbursement || row.outOfReports || row.categoryGroup === "savings") continue;
     const key = row.account ?? "unknown";
     const bank = row.account ? bankByAccount.get(row.account) : undefined;
     const entry = accountMap.get(key) ?? { key, name: bank?.displayName ?? row.account ?? null, color: bank?.color ?? null, total: 0 };

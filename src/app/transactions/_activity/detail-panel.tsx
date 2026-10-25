@@ -383,8 +383,17 @@ export function TransactionDetailPanel({
     router.refresh();
   }
 
-  async function toggleFlag(field: "isReimbursement" | "isManualTransfer", value: boolean) {
+  async function toggleFlag(field: "isReimbursement", value: boolean) {
     await patchTransaction({ id: row.id, [field]: value });
+    await refreshLayoutAction();
+    router.refresh();
+  }
+
+  // A transfer (by hand or found automatically) becomes "not a transfer", which also
+  // overrides an own-account match or a pair; anything else is marked by hand.
+  async function toggleTransfer() {
+    const transfer = !!row.isInternalTransfer;
+    await patchTransaction({ id: row.id, isManualTransfer: !transfer, notTransfer: transfer });
     await refreshLayoutAction();
     router.refresh();
   }
@@ -511,12 +520,9 @@ export function TransactionDetailPanel({
           <IconReceiptRefund className="size-4" />
           {row.isReimbursement ? t("menu.unmarkReimbursement") : t("menu.markReimbursement")}
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={() => toggleFlag("isManualTransfer", !row.isManualTransfer)}
-          disabled={row.isInternalTransfer && !row.isManualTransfer}
-        >
+        <DropdownMenuItem onClick={toggleTransfer}>
           <IconArrowsLeftRight className="size-4" />
-          {row.isManualTransfer ? t("menu.unmarkTransfer") : t("menu.markTransfer")}
+          {row.isInternalTransfer ? t("menu.notTransfer") : t("menu.markTransfer")}
         </DropdownMenuItem>
         {lookupQuery && (
           <DropdownMenuItem

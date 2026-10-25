@@ -76,7 +76,16 @@ When the money comes back, open the incoming payment and use **Reimburse** to li
 
 ## Transfers between your own accounts
 
-Moving money from your checking account to savings isn't spending. Arca recognises most of these by itself. If one slipped through, open it and choose **Mark as internal transfer** in the ⋯ menu. Internal transfers have no category and are left out of income, spending and budgets.
+Moving money from your checking account to savings isn't spending. Arca recognises these by itself:
+
+- the other side is one of your accounts in Arca, or one of the [own accounts](/Arca/settings/accounts/#own-accounts) you added in Settings → Accounts (a savings, investment or joint account that isn't imported);
+- or the same amount leaves one of your accounts and arrives in another within two days, like a Revolut top-up and the card payment that paid for it.
+
+Internal transfers have no category and are left out of income, spending, budgets, Insights and merchants on every screen. Money going to a savings or investment account still counts as **Saved**.
+
+If one slipped through, open it and choose **Mark as internal transfer** in the ⋯ menu. Arca got one wrong? Choose **Not an internal transfer**: it counts as income or spending again, and so does the other half of a pair.
+
+**Exclude from reports** in the same menu leaves a transaction out of every total too, without calling it a transfer.
 
 ## Receipts
 

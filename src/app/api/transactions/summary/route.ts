@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { transactions, categories } from "@/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
 import { requireAuth } from "@/lib/auth";
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       categoryColor: categories.color,
       categoryGroup: categories.group,
       isReimbursement: transactions.isReimbursement,
-      isInternalTransfer: isInternalTransferExpr,
+      outOfReports: outOfReportsExpr,
     })
     .from(transactions)
     .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
   const totals = Array.from(
     allocations
-      .filter((row) => !row.isInternalTransfer)
+      .filter((row) => !row.outOfReports)
       .reduce((map, row) => {
         map.set(row.direction, (map.get(row.direction) ?? 0) + row.amount);
         return map;
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
   // By category
   const byCategory = Array.from(
     allocations
-      .filter((row) => !row.isInternalTransfer)
+      .filter((row) => !row.outOfReports)
       .reduce((map, row) => {
         const key = `${row.direction}:${row.categoryId ?? "null"}:${row.categoryName ?? ""}`;
         const current = map.get(key) ?? {
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
   const monthlyRows = rows.filter((row) => row.date >= `${currentYear}-01-01`);
   const monthly = Array.from(
     buildSplitAllocations(monthlyRows, splitMap)
-      .filter((row) => !row.isInternalTransfer)
+      .filter((row) => !row.outOfReports)
       .reduce((map, row) => {
         const key = `${row.date.slice(0, 7)}:${row.direction}`;
         const current = map.get(key) ?? { month: row.date.slice(0, 7), direction: row.direction, total: 0 };

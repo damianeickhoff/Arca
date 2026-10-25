@@ -10,8 +10,9 @@ import { detectBrandIcon } from "@/lib/brand-detect";
 import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { migrateAutoRecurringItems } from "@/lib/recurring-migration";
+import { pairTransfers } from "@/lib/transfer-pairs";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
-import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE_SQL, INVITES_TABLE_SQL, NOTIFICATION_TABLES_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
+import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE_SQL, INVITES_TABLE_SQL, NOTIFICATION_TABLES_SQL, OWN_ACCOUNTS_TABLE_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
 // full schema for fresh databases — run on first start and by `npm run db:init`). Any
@@ -676,6 +677,14 @@ addColumnIfMissing("recurring_items", "alt_match_patterns", "TEXT");
 
   // The old detector's items, re-tested against the new rules (one time).
   migrateAutoRecurringItems(sqlite);
+
+  // Auto-migrate: own accounts that are not imported, and moves between two imported
+  // accounts (see src/lib/internal-transfers.ts). Pairing only looks at unpaired rows, so
+  // after the first boot it is a quick pass; imports and bank syncs pair their own rows.
+  sqlite.exec(OWN_ACCOUNTS_TABLE_SQL);
+  addColumnIfMissing("transactions", "not_transfer", "INTEGER NOT NULL DEFAULT 0");
+  addColumnIfMissing("transactions", "transfer_pair_id", "INTEGER REFERENCES transactions(id) ON DELETE SET NULL");
+  pairTransfers(sqlite);
 
   return drizzle(sqlite, { schema });
 }

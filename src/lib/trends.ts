@@ -82,18 +82,24 @@ export interface TrendsRow {
   /** The transaction's own budget type override, else its category's. */
   budgetType: string | null;
   isReimbursement: boolean;
-  isInternalTransfer: boolean;
+  /** Left out of every total: an internal transfer or excluded from reports (outOfReportsExpr). */
+  outOfReports: boolean;
+  /** A transfer to an own savings or investment account (savedTransferExpr): saved when it goes out. */
+  savedTransfer?: boolean;
 }
 
 export type RowKind = "income" | "needs" | "wants" | "saved";
 
 /**
- * What a row counts as, with Home's rules: reimbursements and internal transfers left
- * out, money moved into savings categories saved rather than spent. Spending is a need
+ * What a row counts as, with Home's rules: reimbursements, internal transfers and rows
+ * excluded from reports left out, money moved into savings (a savings category, or an own
+ * savings or investment account) saved rather than spent. Spending is a need
  * when its budget type says so; everything else (wants, nothing set) counts as wants.
  */
-export function classifyRow(row: Pick<TrendsRow, "direction" | "categoryGroup" | "budgetType" | "isReimbursement" | "isInternalTransfer">): RowKind | null {
-  if (row.isReimbursement || row.isInternalTransfer) return null;
+export function classifyRow(row: Pick<TrendsRow, "direction" | "categoryGroup" | "budgetType" | "isReimbursement" | "outOfReports" | "savedTransfer">): RowKind | null {
+  if (row.isReimbursement) return null;
+  if (row.savedTransfer) return row.direction === "expense" ? "saved" : null;
+  if (row.outOfReports) return null;
   if (row.categoryGroup === "savings") return row.direction === "expense" ? "saved" : null;
   if (row.direction === "income") return "income";
   return normalizeBudgetType(row.budgetType) === "nodig" ? "needs" : "wants";

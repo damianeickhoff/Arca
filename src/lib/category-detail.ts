@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { transactions, categories, budgetTargets, banks } from "@/db/schema";
 import { eq, and, gte, lte, inArray } from "drizzle-orm";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getSharedCostMode } from "@/lib/app-settings";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
@@ -108,7 +108,7 @@ async function categoryAllocations(from: string, to: string, categoryIds: number
     reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     isReimbursement: transactions.isReimbursement,
-    isInternalTransfer: isInternalTransferExpr,
+    outOfReports: outOfReportsExpr,
     account: transactions.account,
     customName: transactions.customName,
     description: transactions.description,
@@ -125,7 +125,7 @@ async function categoryAllocations(from: string, to: string, categoryIds: number
 
   const idSet = new Set(categoryIds);
   return allocations
-    .filter((row) => row.direction === direction && !row.isInternalTransfer && row.categoryId != null && idSet.has(row.categoryId))
+    .filter((row) => row.direction === direction && !row.outOfReports && row.categoryId != null && idSet.has(row.categoryId))
     .map((row) => {
       const meta = metaById.get(row.transactionId);
       return {

@@ -1,7 +1,7 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
 import { categories, debtRecurring, debts, recurringItems, transactions } from "@/db/schema";
-import { isInternalTransferExpr } from "@/lib/internal-transfers";
+import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
 import { buildSplitAllocations, groupTransactionSplits } from "@/lib/transaction-splits";
@@ -78,12 +78,12 @@ export async function receivedIncome(from: string, to: string): Promise<number> 
     reimbursedAmount: reimbursedAmountExpr,
     categoryId: transactions.categoryId,
     isReimbursement: transactions.isReimbursement,
-    isInternalTransfer: isInternalTransferExpr,
+    outOfReports: outOfReportsExpr,
   }).from(transactions)
     .where(and(gte(transactions.date, from), lte(transactions.date, to), eq(transactions.direction, "income")));
   const splitRows = await getTransactionSplitRows(rows.map((r) => r.id));
   return buildSplitAllocations(rows, groupTransactionSplits(splitRows))
-    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.isInternalTransfer)
+    .filter((row) => row.direction === "income" && !row.isReimbursement && !row.outOfReports)
     .reduce((s, row) => s + row.amount, 0);
 }
 
