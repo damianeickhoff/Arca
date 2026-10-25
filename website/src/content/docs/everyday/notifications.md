@@ -20,7 +20,7 @@ Arca keeps an eye on your money between visits and collects what it notices on t
 
 Arca checks once an hour, and right after every import or sync. The same thing is never announced twice. Each notice is written in your language when you read it.
 
-Tap a notice to open the page it is about; that also marks it read. **Mark all as read** clears the lot, and **Older** loads earlier notices.
+Tap a notice to open the page it is about; that also marks it read. **Mark all as read** marks the lot read, **Clear all** empties the list (after asking; Arca doesn't send the cleared ones again, only new ones), and **Older** loads earlier notices.
 
 ## Push to your phone or computer
 

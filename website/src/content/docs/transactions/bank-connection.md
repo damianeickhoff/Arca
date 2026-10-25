@@ -89,7 +89,7 @@ Banks usually share about the last 90 days on the first sync. [Import a CSV](/Ar
 
 While Arca is running, it syncs every connected bank **once a day** by itself. Each sync also looks back a week, to pick up payments your bank booked late. You can always choose **Sync now** for one bank or **Sync all**.
 
-The sidebar shows when your banks last synced, under **Import**. A dot on the **Bank connection** tab means a consent ran out.
+The sidebar shows when your banks last synced, under **Import**, with a sync button beside it that syncs every bank on the spot, without opening Settings. A dot on the **Bank connection** tab means a consent ran out.
 
 The **Sync log** under the banks lists every sync, automatic or by hand: when it ran, which bank, how many transactions were new and how many were already there. A sync that failed shows up too, with a red dot and the reason (for example an expired permission, or the bank's daily limit). Every sync is also in Settings → **Data health** → **Recent changes**, where you can undo one that brought in transactions: Arca then removes them again, except the ones you changed since.
 

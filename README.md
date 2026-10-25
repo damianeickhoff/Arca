@@ -64,7 +64,7 @@
 
 **Plan ahead**
 - **Budget**: an overall or per-category budget with a needs / wants / savings strategy.
-- **Recurring**: bills, subscriptions, income and savings, matched to transactions automatically, with an **Upcoming** calendar.
+- **Recurring**: bills, subscriptions, income and savings, matched to transactions automatically (also under a payee's old and new name), suggested from your history for you to accept, with an **Upcoming** calendar and an archive for paused and ended ones.
 - **Notifications**: a bill due or overdue, the forecast running low, the payday check-in, bank consent and sync trouble, new transactions and new versions, in the app and as push to your phone or computer, each kind with its own switch.
 - **Payment plans**: pay one cost in parts (the dentist in three instalments); each part counts in the month it's due.
 - **Debts**: what you owe and what you're owed, with a payoff simulator.

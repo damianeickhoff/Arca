@@ -47,13 +47,13 @@ tableOfContents: false
 <div class="rm not-content">
 
 <div class="rm-shipped">
-  <span class="rm-shipped__chip">Just shipped · 1.7.0</span>
+  <span class="rm-shipped__chip">Just shipped · 1.8.0</span>
   <ul class="rm-shipped__items">
-    <li>Notifications, also as push on your phone</li>
-    <li>AI on your own server</li>
-    <li>Internal transfers and rules for many at once</li>
-    <li>Every Tabler icon in the picker</li>
-    <li>An opt-in update check</li>
+    <li>An archive for paused and ended bills</li>
+    <li>One bill, several payee names</li>
+    <li>Recurring bills only added when you accept them</li>
+    <li>Clear all notifications</li>
+    <li>Sync your bank from the sidebar</li>
   </ul>
   <a class="rm-shipped__link" href="https://github.com/damianeickhoff/Arca/releases/latest">Release notes</a>
 </div>

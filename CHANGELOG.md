@@ -4,6 +4,35 @@ Every release of Arca, newest first. The same notes are on the GitHub releases p
 and in the app under Settings › About. Format: `## version — date`, one line with the
 release title, an intro paragraph, then `###` sections with bullets.
 
+## 1.8.0 — 2026-10-25
+A tidier recurring list, and bills that keep up with renamed payees
+
+Arca 1.8.0 moves paused and ended bills out of the way, never adds a bill without asking, reads a cancelled-and-restarted subscription correctly, and lets one bill match a payee's old and new name.
+
+### 🔁 Recurring
+- **Archived.** Paused bills and bills past their end date move to a collapsed **Archived** section at the bottom of Settings › Recurring, so the list, the counts and the monthly total only show what is running. A search that matches an archived bill opens the section.
+- **Pausing sticks.** A paused bill used to switch itself back on when it had a start date; now it stays off until you resume it. Ended bills are no longer deleted two months after their end date: they stay in the archive with their charges.
+- **Nothing is added without asking.** Well-known subscriptions found by the detector used to be added straight away; now they wait as suggestions like everything else (they are listed first). Accept, Edit or Not a bill decides.
+- **Another name.** Banks sometimes rename a payee. **Add another name** under the match pattern links the old and the new name to the same bill, so no charge drops off it. The preview chart shows what all names match together. Changing a match never changes your categories, but an old name you remove stops counting as that bill's charge.
+- **Smarter charges chart.** A long gap, like a subscription you stopped and started again, is a restart instead of a price change: it shows as a dashed line and no longer says the price went up. When the charges span more than one year, the years are under the bars, and the new price sits centred above its bar.
+
+### 🔔 Notifications
+- **Clear all** on the Notifications page empties the list after asking. Cleared notifications are not sent again; something new still comes in.
+
+### 🏦 Bank connection
+- Once a bank is connected, the **Import** row in the sidebar has a sync button: one click syncs every connection and tells you how many new transactions came in.
+
+### ⚙️ Settings
+- The line under a popup's title now keeps a little distance from the icon and buttons when the content scrolls under it.
+
+### 📖 Guide
+- The Recurring page covers the archive, extra match names, the charges chart and how suggestions work.
+
+### 🐳 Installing and updating
+Image: `damianeickhoff/arca:latest` (also `1.8.0`) on Docker Hub, mirrored to `ghcr.io/damianeickhoff/arca`. On Unraid, **Check for updates** in the Docker tab. New on start: `paused` and `alt_match_patterns` columns on recurring items and a `cleared_at` column on notifications, all created by Arca itself.
+
+As always: Arca backs the database up before the first start on a new version.
+
 ## 1.7.0 — 2026-10-25
 Notifications, your own AI server, and a faster Needs a category
 
