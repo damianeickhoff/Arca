@@ -39,7 +39,7 @@ const MIN_MONTHS_FOR_STABILITY = 3;
 /** Asset account types that count as "liquid" for emergency-fund cover. Investments
  * (beleggingen) and possessions (bezitting) are deliberately excluded — they aren't
  * money you can reach this week. */
-const LIQUID_VERMOGEN_TYPES = ["spaarrekening", "betaalrekening"];
+const LIQUID_VERMOGEN_TYPES = ["spaarrekening", "betaalrekening", "gezamenlijk"];
 
 /** Recurring item types that are commitments going out. Mirrors the Forecast page's
  * EXPENSE_TYPES; "income" recurring items are the counterpart and never counted here. */

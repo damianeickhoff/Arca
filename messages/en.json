@@ -1406,8 +1406,8 @@
       "body": "Switch the forecast between the next 30 days and the next 3 months. The numbers and the status next to it follow along."
     },
     "accountsAdd": {
-      "title": "Add accounts and assets",
-      "body": "Give a bank account its IBAN so imported rows land on it, and a starting balance so the total matches your bank. Savings, investments and things you own go under Add asset."
+      "title": "Add your accounts",
+      "body": "Add account asks whether Arca imports it (give it the IBAN so imported rows land on it, and a starting balance) or you keep it by hand: savings or investments elsewhere, a joint account, something you own. Accounts kept by hand are recognised in your transactions too."
     },
     "addTransactionAnother": {
       "title": "Add several in a row",
@@ -2322,7 +2322,8 @@
       "spaarrekening": "Savings account",
       "beleggingen": "Investments",
       "bezitting": "Possession",
-      "betaalrekening": "Checking account"
+      "betaalrekening": "Checking account",
+      "gezamenlijk": "Joint account"
     },
     "transferKinds": {
       "none": "None",
@@ -2361,27 +2362,36 @@
       "confirmDeleteBody": "Its transactions stay in Activity, but its balance no longer counts toward your net worth, the forecast or safe to spend.",
       "confirmDeleteLabel": "Delete account",
       "overdraft": "Overdraft limit",
-      "overdraftHint": "How far below zero your bank lets this account go. Leave it empty if it can't."
+      "overdraftHint": "How far below zero your bank lets this account go. Leave it empty if it can't.",
+      "namesHint": "Other names it goes by in your other accounts' transactions, like Revolut**4527 for the card that tops it up."
     },
     "asset": {
-      "addTitle": "Add an asset",
-      "editTitle": "Edit asset",
-      "subtitle": "Things you own that count toward your net worth.",
-      "type": "What kind of asset?",
+      "addTitle": "Add an account kept by hand",
+      "editTitle": "Edit account",
+      "subtitle": "An account Arca doesn't import, or something you own. You keep its value up to date.",
+      "type": "What kind?",
       "name": "Name",
-      "namePlaceholder": "e.g. Index fund",
+      "namePlaceholder": "e.g. Oranje spaarrekening",
       "value": "Current value",
       "valueAsOf": "Value as of",
       "notes": "Notes",
       "notesPlaceholder": "Optional note",
-      "netWorthHint": "Counts this asset towards your net worth",
+      "netWorthHint": "Counts this account towards your net worth",
       "addsToNetWorth": "This adds <b>{amount}</b> to your assets in Net worth.",
-      "countsInNetWorth": "Net worth counts this asset at <b>{amount}</b>.",
-      "notInNetWorth": "This asset stays out of Net worth.",
-      "add": "Add asset",
-      "confirmDelete": "Delete this asset?",
-      "confirmDeleteBody": "Its value no longer counts toward your net worth.",
-      "confirmDeleteLabel": "Delete asset"
+      "countsInNetWorth": "Net worth counts this account at <b>{amount}</b>.",
+      "notInNetWorth": "This account stays out of Net worth.",
+      "add": "Add account",
+      "confirmDelete": "Delete this account?",
+      "confirmDeleteBody": "It no longer counts toward your net worth, and money to and from it is no longer recognised.",
+      "confirmDeleteLabel": "Delete account",
+      "valueHint": "Leave the value empty if you don't know it yet.",
+      "recognise": "Recognise it in your transactions",
+      "recogniseSaved": "Money to it counts as saved and money from it as taken from savings, never as income or spending.",
+      "recogniseTransfer": "Money to and from it is a transfer, never income or spending.",
+      "recogniseJoint": "Money you put in counts as spending: file it under a household category. Money it pays back to you isn't income.",
+      "accountNumber": "Account number",
+      "accountNumberHint": "The IBAN, or the number your bank shows in descriptions, like M58896551.",
+      "namesHint": "Other names it shows up under, like Beleggingsrek."
     },
     "panel": {
       "total": "Total",
@@ -2395,58 +2405,60 @@
         "6m": "6M",
         "1y": "1Y"
       },
-      "banks": "Bank accounts",
-      "assets": "Other assets",
-      "noBanks": "No bank accounts yet",
-      "noAssets": "No assets yet",
-      "addBank": "Add bank account",
-      "addAsset": "Add asset",
       "edit": "Edit {name}",
       "bankFallback": "Bank {id}",
       "updated": "Updated {date}",
       "overdraftMeta": "Overdraft {amount}",
       "overdraftUsed": "{used} of {limit} overdraft used",
-      "overdraftPast": "{amount} past the overdraft limit"
-    },
-    "own": {
-      "title": "Own accounts",
-      "intro": "Your accounts that aren't imported, like a savings, investment or joint account. Money to and from them is a transfer, never income or spending.",
-      "empty": "No own accounts yet",
-      "add": "Add own account",
-      "addShort": "Add",
-      "addTitle": "Add own account",
-      "editTitle": "Edit own account",
-      "edit": "Edit {name}",
-      "subtitle": "Money to and from this account is a transfer, not income or spending.",
-      "name": "Name",
-      "namePlaceholder": "Savings account",
-      "kind": "Kind",
-      "kinds": {
+      "overdraftPast": "{amount} past the overdraft limit",
+      "noAccounts": "No accounts yet",
+      "addAccount": "Add account",
+      "addImported": "Imported from your bank",
+      "addImportedHint": "From a file or your bank connection. The balance follows your transactions.",
+      "addHandKept": "Kept by hand",
+      "addHandKeptHint": "Savings or investments elsewhere, a joint account, something you own. You enter the value.",
+      "imported": "From your bank",
+      "fromTransactions": "From your transactions",
+      "noBalance": "No balance yet",
+      "keptByHand": "Kept by hand",
+      "groups": {
+        "checking": "Checking",
         "savings": "Savings",
         "investments": "Investments",
-        "shared_account": "Joint",
-        "other": "Other"
-      },
-      "accountNumber": "Account number",
-      "accountNumberHint": "The IBAN, or the number your bank shows, like M58896551.",
-      "matchText": "Or match the description",
-      "matchTextHint": "Text in every transfer to this account, like Revolut**4527.",
-      "needsMatch": "Fill in an account number, or at least 4 characters to match.",
-      "matches": "Matches “{text}”",
-      "suggestions": "Found in your transactions",
-      "suggestionMeta": "{count, plural, one {# payment} other {# payments}} · {amount}",
-      "review": "Add",
-      "reviewLabel": "Add {name}",
-      "dismiss": "Not mine",
-      "dismissLabel": "Hide {name}",
-      "confirmDelete": "Delete this own account?",
-      "confirmDeleteBody": "Money to and from it counts as income and spending again.",
-      "confirmDeleteLabel": "Delete"
+        "joint": "Joint accounts",
+        "creditcard": "Credit cards",
+        "cash": "Cash",
+        "possessions": "Possessions"
+      }
     },
     "overdraftMode": {
       "title": "Count overdraft as spendable",
       "hint": "On: the forecast treats your overdraft as money you can use and only warns near the limit. Off: it's a safety net, and the forecast warns as soon as you dip below zero.",
       "saveError": "Couldn't save this setting. Try again."
+    },
+    "names": {
+      "label": "Other names in transactions",
+      "field": "Name {number}",
+      "remove": "Remove this name",
+      "add": "Add a name",
+      "tooShort": "Names need at least {count} characters, shorter ones are left out."
+    },
+    "suggestions": {
+      "title": "Found in your transactions",
+      "intro": "Money keeps going to or coming from these accounts. Add them so it counts the right way: savings as saved, a transfer as neither income nor spending.",
+      "meta": "{count, plural, one {# payment} other {# payments}} · {amount}",
+      "nameFor": "Another name for {bank}",
+      "types": {
+        "spaarrekening": "Savings account",
+        "beleggingen": "Investments",
+        "betaalrekening": "Checking account",
+        "gezamenlijk": "Joint account",
+        "bezitting": "Possession"
+      },
+      "add": "Add",
+      "addLabel": "Add {name}",
+      "dismiss": "Not mine",
+      "dismissLabel": "Hide {name}"
     }
   },
   "onboarding": {
@@ -3467,6 +3479,7 @@
           "spaarrekening": "Savings",
           "beleggingen": "Investments",
           "betaalrekening": "Checking",
+          "gezamenlijk": "Joint account",
           "bezitting": "Possessions",
           "other": "Other"
         },
@@ -3924,6 +3937,7 @@
       "income": "Income",
       "spent": "Spent",
       "saved": "Saved",
+      "takenFromSavings": "Taken from savings",
       "billsDue": "Bills to come",
       "vsLastMonth": "vs last month",
       "fixed": "{amount} of it fixed costs",

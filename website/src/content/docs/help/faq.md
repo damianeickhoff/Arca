@@ -24,7 +24,7 @@ Arca skips rows it already has, so importing overlapping files is safe. Duplicat
 
 ## My balance doesn't match my bank
 
-Set a starting balance: open the account in Settings → **Accounts** and fill in the balance on a given date, or correct the **Current balance**. See [Accounts and assets](/Arca/settings/accounts/).
+Set a starting balance: open the account in Settings → **Accounts** and fill in the balance on a given date, or correct the **Current balance**. See [Accounts](/Arca/settings/accounts/).
 
 ## The forecast shows a shortfall
 

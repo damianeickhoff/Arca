@@ -111,7 +111,7 @@ export default defineConfig({
         {
           label: "Settings",
           items: [
-            { label: "Accounts and assets", slug: "settings/accounts" },
+            { label: "Accounts", slug: "settings/accounts" },
             { label: "Sign-in and security", slug: "settings/security" },
             { label: "Preferences", slug: "settings/preferences" },
             { label: "Categories and groups", slug: "settings/categories" },

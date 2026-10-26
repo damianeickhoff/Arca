@@ -5,6 +5,7 @@ import { banks } from "@/db/schema";
 import { normalizeAccountNumber } from "@/lib/internal-transfers";
 import { eq, asc } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth";
+import { serializeMatchNames } from "@/lib/account-names";
 
 // Stored as a positive amount however it was typed ("-500" and "500" both mean the account
 // may reach −500); nothing, zero or junk means no overdraft.
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
       transferKind: body.transferKind || null,
       includeInNetWorth: body.includeInNetWorth ?? false,
       overdraftLimit: parseOverdraftLimit(body.overdraftLimit),
+      matchNames: serializeMatchNames(body.matchNames),
     })
     .returning();
 
@@ -89,6 +91,7 @@ export async function PATCH(req: NextRequest) {
       transferKind: data.transferKind !== undefined ? (data.transferKind || null) : undefined,
       includeInNetWorth: data.includeInNetWorth !== undefined ? !!data.includeInNetWorth : undefined,
       overdraftLimit: data.overdraftLimit !== undefined ? parseOverdraftLimit(data.overdraftLimit) : undefined,
+      matchNames: data.matchNames !== undefined ? serializeMatchNames(data.matchNames) : undefined,
     })
     .where(eq(banks.id, id))
     .returning();

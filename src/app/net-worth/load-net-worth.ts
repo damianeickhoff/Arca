@@ -62,7 +62,7 @@ export interface NetWorthAccount {
 
 // The kind of value a hand-kept account holds (vermogen_accounts.type).
 function manualKind(type: string): AssetKind {
-  return type === "beleggingen" ? "investments" : type === "spaarrekening" || type === "betaalrekening" ? "cash" : "things";
+  return type === "beleggingen" ? "investments" : type === "spaarrekening" || type === "betaalrekening" || type === "gezamenlijk" ? "cash" : "things";
 }
 
 /** The newest imported or synced row on these accounts ("Synced ones follow your imports · last 20 Oct"). */

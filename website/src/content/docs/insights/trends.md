@@ -13,6 +13,6 @@ description: How your income and spending change from month to month.
 - **Month comparison**: two months next to each other, per category. **Change months** picks which ones.
 - **Expenses per category**: a small chart per category, with its average per month and total. Filter on all, needs or wants.
 
-Transfers between your [own accounts](/Arca/settings/accounts/#own-accounts) and transactions excluded from reports are left out everywhere. Money moved into savings, by a savings category or to a savings or investment account, counts as saved rather than spent.
+Transfers between your [own accounts](/Arca/settings/accounts/#what-money-to-and-from-an-account-means) and transactions excluded from reports are left out everywhere. Money moved into savings, by a savings category or to a savings or investment account, counts as saved rather than spent. Saved is net: money you took back out of savings is subtracted, so a month can show a negative figure.
 
 Use the **Period** menu at the top to look at a longer or shorter stretch.

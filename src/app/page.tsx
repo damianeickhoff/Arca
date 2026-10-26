@@ -50,8 +50,8 @@ const CHART_MONTHS = 6;
 /**
  * Money in and out for the Home figures, with the dashboard's spending rules: split
  * aware, internal transfers, rows excluded from reports and reimbursements left out, and
- * money moved into savings (a savings category, or an own savings or investment account)
- * counted as saved rather than spent.
+ * money moved into savings (a savings category, or a savings or investment account)
+ * counted as saved rather than spent — net: money taken back out of savings lowers it.
  */
 async function getHomeData(from: string, to: string, financialMonth: Awaited<ReturnType<typeof getFinancialMonthConfig>>, netReimbursements: boolean) {
   const chartFrom = financialMonthRange(financialMonth, -(CHART_MONTHS - 1)).from;
@@ -145,7 +145,7 @@ async function getHomeData(from: string, to: string, financialMonth: Awaited<Ret
   for (const a of allocations) {
     if (a.isReimbursement) continue;
     if (savedTransferTx.has(a.transactionId)) {
-      if (a.date >= from && a.date <= to && a.direction === "expense") saved += a.amount;
+      if (a.date >= from && a.date <= to) saved += a.direction === "expense" ? a.amount : -a.amount;
       continue;
     }
     if (a.outOfReports) continue;
@@ -154,7 +154,7 @@ async function getHomeData(from: string, to: string, financialMonth: Awaited<Ret
     }
     const inPeriod = a.date >= from && a.date <= to;
     if (a.categoryGroup === "savings") {
-      if (inPeriod && a.direction === "expense") saved += a.amount;
+      if (inPeriod) saved += a.direction === "expense" ? a.amount : -a.amount;
       continue;
     }
     if (inPeriod) {

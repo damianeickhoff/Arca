@@ -11,8 +11,9 @@ import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { migrateAutoRecurringItems } from "@/lib/recurring-migration";
 import { pairTransfers } from "@/lib/transfer-pairs";
+import { markJointPaybacks } from "@/lib/joint-accounts";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
-import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE_SQL, INVITES_TABLE_SQL, NOTIFICATION_TABLES_SQL, OWN_ACCOUNTS_TABLE_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
+import { ACTIVITY_LOG_TABLE_SQL, BANK_CONNECTION_TABLES_SQL, DEBT_PAYMENTS_TABLE_SQL, INVITES_TABLE_SQL, NOTIFICATION_TABLES_SQL, RECURRING_SUGGESTIONS_TABLE_SQL, createSchema } from "./create-schema";
 
 // NOTE: this runtime auto-migrate block is separate from src/db/create-schema.ts (the
 // full schema for fresh databases — run on first start and by `npm run db:init`). Any
@@ -678,15 +679,43 @@ addColumnIfMissing("recurring_items", "alt_match_patterns", "TEXT");
   // The old detector's items, re-tested against the new rules (one time).
   migrateAutoRecurringItems(sqlite);
 
-  // Auto-migrate: own accounts that are not imported, and moves between two imported
-  // accounts (see src/lib/internal-transfers.ts). Pairing only looks at unpaired rows, so
-  // after the first boot it is a quick pass; imports and bank syncs pair their own rows.
-  sqlite.exec(OWN_ACCOUNTS_TABLE_SQL);
+  // Auto-migrate: accounts are recognised in the transactions (src/lib/internal-transfers.ts):
+  // a hand-kept account by its number and other names, an imported one by other names
+  // too; moves between two imported accounts are paired. Pairing only looks at unpaired
+  // rows, so after the first boot it is a quick pass; imports and bank syncs pair their own.
+  addColumnIfMissing("banks", "match_names", "TEXT");
+  addColumnIfMissing("vermogen_accounts", "account_number", "TEXT");
+  addColumnIfMissing("vermogen_accounts", "match_names", "TEXT");
+  migrateOwnAccounts(sqlite);
   addColumnIfMissing("transactions", "not_transfer", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing("transactions", "transfer_pair_id", "INTEGER REFERENCES transactions(id) ON DELETE SET NULL");
   pairTransfers(sqlite);
 
   return drizzle(sqlite, { schema });
+}
+
+// own_accounts (on dev for a day, 2026-10-25) became accounts kept by hand: each one
+// moves over once with its number, other name and type (no balance yet), then the
+// table goes. A joint account's paybacks are marked the way saving one would.
+function migrateOwnAccounts(sqlite: Database.Database) {
+  const exists = sqlite.prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'own_accounts'`).get();
+  if (!exists) return;
+  const TYPE: Record<string, string> = { savings: "spaarrekening", investments: "beleggingen", shared_account: "gezamenlijk" };
+  const rows = sqlite.prepare(`SELECT name, account_number, match_text, transfer_kind FROM own_accounts`).all() as {
+    name: string;
+    account_number: string | null;
+    match_text: string | null;
+    transfer_kind: string;
+  }[];
+  const insert = sqlite.prepare(
+    `INSERT INTO vermogen_accounts (name, type, value, last_updated, active, include_in_net_worth, account_number, match_names)
+     VALUES (?, ?, 0, NULL, 1, 1, ?, ?)`,
+  );
+  sqlite.transaction(() => {
+    for (const r of rows) insert.run(r.name, TYPE[r.transfer_kind] ?? "betaalrekening", r.account_number, r.match_text ? JSON.stringify([r.match_text]) : null);
+    sqlite.exec(`DROP TABLE own_accounts`);
+  })();
+  markJointPaybacks(sqlite);
 }
 
 let _db: BetterSQLite3Database<typeof schema> | null = null;

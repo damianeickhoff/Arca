@@ -1,7 +1,7 @@
 import { toClientUser } from "@/lib/auth";
 import { Suspense } from "react";
 import { db } from "@/db";
-import { categories, categoryRules, banks, recurringItems, vermogenAccounts, users, ownAccounts } from "@/db/schema";
+import { categories, categoryRules, banks, recurringItems, vermogenAccounts, users } from "@/db/schema";
 import type { CategoryRule } from "@/db/schema";
 import { asc, eq } from "drizzle-orm";
 import { CategoriesClient } from "@/components/settings/categories/categories-client";
@@ -17,7 +17,7 @@ import { listMerchants } from "@/lib/merchants";
 import { UsersClient } from "@/components/settings/users-client";
 import { listPendingInvites } from "@/lib/invites";
 import { getBankBalances, getAccountBalanceHistory } from "@/lib/account-balances";
-import { listOwnAccountSuggestions } from "@/lib/own-account-suggestions";
+import { listAccountSuggestions } from "@/lib/account-suggestions";
 import { getFinancialMonthConfig, getOverdraftMode } from "@/lib/app-settings";
 import { getPlanProgress } from "@/lib/payment-plan-progress";
 import { syncRecurringLifecycle } from "@/lib/recurring-period";
@@ -89,7 +89,7 @@ async function RecurringPanel() {
 }
 
 async function AccountsPanel() {
-  const [bankBalances, assets, history, overdraftMode, own, ownSuggestions] = await Promise.all([
+  const [bankBalances, assets, history, overdraftMode, suggestions] = await Promise.all([
     getBankBalances(),
     db
       .select()
@@ -98,8 +98,7 @@ async function AccountsPanel() {
       .orderBy(asc(vermogenAccounts.type), asc(vermogenAccounts.name)),
     getAccountBalanceHistory(),
     getOverdraftMode(),
-    db.select().from(ownAccounts).orderBy(asc(ownAccounts.name)),
-    listOwnAccountSuggestions(),
+    listAccountSuggestions(),
   ]);
 
   return (
@@ -108,8 +107,7 @@ async function AccountsPanel() {
       assets={assets}
       history={history}
       overdraftMode={overdraftMode}
-      ownAccounts={own}
-      ownAccountSuggestions={ownSuggestions}
+      suggestions={suggestions}
     />
   );
 }

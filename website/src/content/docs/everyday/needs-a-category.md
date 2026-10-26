@@ -21,7 +21,7 @@ You see one transaction at a time, with the text exactly as it appears on your b
 
 ## Internal transfer
 
-Money you moved to one of your own accounts isn't spending. Arca spots this by itself when both accounts are in Arca, or when you added the other one as an [own account](/Arca/settings/accounts/#own-accounts). For a one-off, pick **Internal transfer** beside the suggestions and choose **Save and next**. The transaction leaves the queue and stays out of your budgets and spending, just like the transfers Arca finds itself. You can undo it in the transaction's details.
+Money you moved to one of your own accounts isn't spending. Arca spots this by itself when both accounts are in Arca, or when you added the other one to your [accounts](/Arca/settings/accounts/#kept-by-hand). For a one-off, pick **Internal transfer** beside the suggestions and choose **Save and next**. The transaction leaves the queue and stays out of your budgets and spending, just like the transfers Arca finds itself. You can undo it in the transaction's details.
 
 ## Also create a rule
 

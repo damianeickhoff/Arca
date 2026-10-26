@@ -39,7 +39,7 @@ function signed(v: number, plus = true) {
   return `${r < 0 ? "−" : plus && r > 0 ? "+" : ""}${formatEurWhole(Math.abs(r))}`;
 }
 
-const MANUAL_TYPES = new Set(["spaarrekening", "beleggingen", "betaalrekening", "bezitting"]);
+const MANUAL_TYPES = new Set(["spaarrekening", "beleggingen", "betaalrekening", "gezamenlijk", "bezitting"]);
 const CARD_TYPES = new Set(["debitcard", "creditcard", "savings", "cash"]);
 
 /** The tile tone and sparkline colour per kind of row. */

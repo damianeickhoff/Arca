@@ -90,7 +90,9 @@ describe("classifyRow and monthFlows", () => {
     expect(classifyRow(row({ outOfReports: true }))).toBeNull();
     expect(classifyRow(row({ direction: "income", isReimbursement: true }))).toBeNull();
     expect(classifyRow(row({ categoryGroup: "savings" }))).toBe("saved");
-    expect(classifyRow(row({ categoryGroup: "savings", direction: "income" }))).toBeNull();
+    // Money back out of savings is "saved" too: monthFlows takes it off.
+    expect(classifyRow(row({ categoryGroup: "savings", direction: "income" }))).toBe("saved");
+    expect(classifyRow(row({ outOfReports: true, savedTransfer: true, direction: "income" }))).toBe("saved");
     expect(classifyRow(row({ direction: "income", budgetType: null }))).toBe("income");
     expect(classifyRow(row({ budgetType: "needs" }))).toBe("needs");
     expect(classifyRow(row({ budgetType: "willen" }))).toBe("wants");
@@ -104,11 +106,13 @@ describe("classifyRow and monthFlows", () => {
         row({ amount: 50.2, budgetType: "willen" }),
         row({ direction: "income", amount: 3000, budgetType: null }),
         row({ categoryGroup: "savings", amount: 200 }),
+        row({ outOfReports: true, savedTransfer: true, amount: 300 }),
+        row({ outOfReports: true, savedTransfer: true, direction: "income", amount: 120 }),
         row({ month: "2026-04", amount: 999 }),
       ],
       ["2026-05", "2026-06"],
     );
-    expect(flows[0]).toEqual({ month: "2026-05", income: 3000, needs: 100.1, wants: 50.2, saved: 200, expense: 150.3 });
+    expect(flows[0]).toEqual({ month: "2026-05", income: 3000, needs: 100.1, wants: 50.2, saved: 380, expense: 150.3 });
     expect(flows[1]).toEqual({ month: "2026-06", income: 0, needs: 0, wants: 0, saved: 0, expense: 0 });
   });
 

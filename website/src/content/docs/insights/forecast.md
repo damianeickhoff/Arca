@@ -9,7 +9,7 @@ description: Where your balance goes over the next 30 days or 3 months, and a wa
 
 ## What it's built from
 
-- **Your balance today**: the balances of your bank accounts. This needs a starting balance on at least one account (see [Accounts and assets](/Arca/settings/accounts/)). Without one, the forecast adds up cash flow from today instead.
+- **Your balance today**: the balances of your bank accounts. This needs a starting balance on at least one account (see [Accounts](/Arca/settings/accounts/)). Without one, the forecast adds up cash flow from today instead.
 - **Your recurring items**: income, bills, subscriptions, savings and debt payments that are still to come. Items already paid this month are left out. See [Recurring](/Arca/plan/recurring/).
 - **Payments you already booked** with a date in the future.
 

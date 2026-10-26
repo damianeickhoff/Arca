@@ -1406,8 +1406,8 @@
       "body": "Wissel de prognose tussen de komende 30 dagen en de komende 3 maanden. De cijfers en de status ernaast gaan mee."
     },
     "accountsAdd": {
-      "title": "Rekeningen en bezittingen toevoegen",
-      "body": "Geef een bankrekening haar IBAN, zodat geïmporteerde regels erop terechtkomen, en een beginsaldo zodat het totaal klopt met je bank. Spaargeld, beleggingen en wat je bezit voeg je toe via Bezitting toevoegen."
+      "title": "Voeg je rekeningen toe",
+      "body": "Rekening toevoegen vraagt of Arca hem importeert (geef het IBAN op zodat geïmporteerde regels erop terechtkomen, en een beginsaldo) of dat je hem zelf bijhoudt: sparen of beleggen elders, een gezamenlijke rekening, iets wat je bezit. Ook zelf bijgehouden rekeningen herkent Arca in je transacties."
     },
     "addTransactionAnother": {
       "title": "Meerdere achter elkaar",
@@ -2322,7 +2322,8 @@
       "spaarrekening": "Spaarrekening",
       "beleggingen": "Beleggingen",
       "bezitting": "Bezitting",
-      "betaalrekening": "Betaalrekening"
+      "betaalrekening": "Betaalrekening",
+      "gezamenlijk": "Gezamenlijke rekening"
     },
     "transferKinds": {
       "none": "Geen",
@@ -2361,27 +2362,36 @@
       "confirmDeleteBody": "De transacties blijven in Activiteit staan, maar het saldo telt niet meer mee in je vermogen, de prognose en wat je vrij kunt besteden.",
       "confirmDeleteLabel": "Rekening verwijderen",
       "overdraft": "Rood staan tot",
-      "overdraftHint": "Hoe ver je bank deze rekening onder nul laat gaan. Laat leeg als dat niet kan."
+      "overdraftHint": "Hoe ver je bank deze rekening onder nul laat gaan. Laat leeg als dat niet kan.",
+      "namesHint": "Andere namen waaronder hij in de transacties van je andere rekeningen staat, zoals Revolut**4527 voor de kaart waarmee je hem opwaardeert."
     },
     "asset": {
-      "addTitle": "Bezitting toevoegen",
-      "editTitle": "Bezitting bewerken",
-      "subtitle": "Wat je bezit en meetelt in je vermogen.",
-      "type": "Wat voor bezitting?",
+      "addTitle": "Zelf bijgehouden rekening toevoegen",
+      "editTitle": "Rekening bewerken",
+      "subtitle": "Een rekening die Arca niet importeert, of iets wat je bezit. Jij houdt de waarde bij.",
+      "type": "Wat voor soort?",
       "name": "Naam",
-      "namePlaceholder": "bijv. Indexfonds",
+      "namePlaceholder": "bijv. Oranje spaarrekening",
       "value": "Huidige waarde",
       "valueAsOf": "Waarde op",
       "notes": "Notities",
       "notesPlaceholder": "Optionele notitie",
-      "netWorthHint": "Telt deze bezitting mee in je vermogen",
+      "netWorthHint": "Telt deze rekening mee in je vermogen",
       "addsToNetWorth": "Dit voegt <b>{amount}</b> toe aan je bezittingen in Vermogen.",
-      "countsInNetWorth": "Vermogen telt deze bezitting mee voor <b>{amount}</b>.",
-      "notInNetWorth": "Deze bezitting telt niet mee in Vermogen.",
-      "add": "Bezitting toevoegen",
-      "confirmDelete": "Deze bezitting verwijderen?",
-      "confirmDeleteBody": "De waarde telt dan niet meer mee in je vermogen.",
-      "confirmDeleteLabel": "Bezitting verwijderen"
+      "countsInNetWorth": "Vermogen telt deze rekening mee voor <b>{amount}</b>.",
+      "notInNetWorth": "Deze rekening telt niet mee in Vermogen.",
+      "add": "Rekening toevoegen",
+      "confirmDelete": "Deze rekening verwijderen?",
+      "confirmDeleteBody": "Hij telt dan niet meer mee in je vermogen, en geld van en naar deze rekening wordt niet meer herkend.",
+      "confirmDeleteLabel": "Rekening verwijderen",
+      "valueHint": "Laat de waarde leeg als je die nog niet weet.",
+      "recognise": "Herken hem in je transacties",
+      "recogniseSaved": "Geld ernaartoe telt als gespaard en geld eruit als opgenomen spaargeld, nooit als inkomsten of uitgaven.",
+      "recogniseTransfer": "Geld van en naar deze rekening is een overboeking, nooit inkomsten of uitgaven.",
+      "recogniseJoint": "Wat je erin stort telt als uitgave: zet het onder een huishoudcategorie. Wat hij je terugbetaalt is geen inkomen.",
+      "accountNumber": "Rekeningnummer",
+      "accountNumberHint": "Het IBAN, of het nummer dat je bank in omschrijvingen toont, zoals M58896551.",
+      "namesHint": "Andere namen waaronder hij voorkomt, zoals Beleggingsrek."
     },
     "panel": {
       "total": "Totaal",
@@ -2395,58 +2405,60 @@
         "6m": "6M",
         "1y": "1J"
       },
-      "banks": "Bankrekeningen",
-      "assets": "Overige bezittingen",
-      "noBanks": "Nog geen bankrekeningen",
-      "noAssets": "Nog geen bezittingen",
-      "addBank": "Bankrekening toevoegen",
-      "addAsset": "Bezitting toevoegen",
       "edit": "{name} bewerken",
       "bankFallback": "Bank {id}",
       "updated": "Bijgewerkt {date}",
       "overdraftMeta": "Rood tot {amount}",
       "overdraftUsed": "{used} van {limit} rood gebruikt",
-      "overdraftPast": "{amount} over de roodlimiet"
-    },
-    "own": {
-      "title": "Eigen rekeningen",
-      "intro": "Je rekeningen die niet geïmporteerd worden, zoals een spaar-, beleggings- of gezamenlijke rekening. Geld van en naar deze rekeningen is een overboeking, nooit inkomsten of uitgaven.",
-      "empty": "Nog geen eigen rekeningen",
-      "add": "Eigen rekening toevoegen",
-      "addShort": "Toevoegen",
-      "addTitle": "Eigen rekening toevoegen",
-      "editTitle": "Eigen rekening bewerken",
-      "edit": "{name} bewerken",
-      "subtitle": "Geld van en naar deze rekening is een overboeking, geen inkomsten of uitgaven.",
-      "name": "Naam",
-      "namePlaceholder": "Spaarrekening",
-      "kind": "Soort",
-      "kinds": {
+      "overdraftPast": "{amount} over de roodlimiet",
+      "noAccounts": "Nog geen rekeningen",
+      "addAccount": "Rekening toevoegen",
+      "addImported": "Geïmporteerd van je bank",
+      "addImportedHint": "Uit een bestand of je bankkoppeling. Het saldo volgt je transacties.",
+      "addHandKept": "Zelf bijgehouden",
+      "addHandKeptHint": "Sparen of beleggen elders, een gezamenlijke rekening, iets wat je bezit. Jij vult de waarde in.",
+      "imported": "Van je bank",
+      "fromTransactions": "Uit je transacties",
+      "noBalance": "Nog geen saldo",
+      "keptByHand": "Zelf bijgehouden",
+      "groups": {
+        "checking": "Betaalrekeningen",
         "savings": "Sparen",
         "investments": "Beleggen",
-        "shared_account": "Gezamenlijk",
-        "other": "Overig"
-      },
-      "accountNumber": "Rekeningnummer",
-      "accountNumberHint": "Het IBAN, of het nummer dat je bank toont, zoals M58896551.",
-      "matchText": "Of herken aan de omschrijving",
-      "matchTextHint": "Tekst die in elke overboeking naar deze rekening staat, zoals Revolut**4527.",
-      "needsMatch": "Vul een rekeningnummer in, of minstens 4 tekens om op te herkennen.",
-      "matches": "Herkent “{text}”",
-      "suggestions": "Gevonden in je transacties",
-      "suggestionMeta": "{count, plural, one {# betaling} other {# betalingen}} · {amount}",
-      "review": "Toevoegen",
-      "reviewLabel": "{name} toevoegen",
-      "dismiss": "Niet van mij",
-      "dismissLabel": "{name} verbergen",
-      "confirmDelete": "Deze eigen rekening verwijderen?",
-      "confirmDeleteBody": "Geld van en naar deze rekening telt weer als inkomsten en uitgaven.",
-      "confirmDeleteLabel": "Verwijderen"
+        "joint": "Gezamenlijke rekeningen",
+        "creditcard": "Creditcards",
+        "cash": "Contant",
+        "possessions": "Bezittingen"
+      }
     },
     "overdraftMode": {
       "title": "Rood staan meetellen als besteedbaar",
       "hint": "Aan: de prognose ziet je roodlimiet als geld dat je kunt gebruiken en waarschuwt pas vlak bij de grens. Uit: het is een vangnet, en de prognose waarschuwt zodra je onder nul komt.",
       "saveError": "Deze instelling kon niet worden opgeslagen. Probeer het opnieuw."
+    },
+    "names": {
+      "label": "Andere namen in transacties",
+      "field": "Naam {number}",
+      "remove": "Deze naam verwijderen",
+      "add": "Naam toevoegen",
+      "tooShort": "Namen hebben minstens {count} tekens nodig, kortere tellen niet mee."
+    },
+    "suggestions": {
+      "title": "Gevonden in je transacties",
+      "intro": "Er gaat steeds geld naar of komt geld van deze rekeningen. Voeg ze toe zodat het goed telt: sparen als gespaard, een overboeking als geen inkomsten of uitgaven.",
+      "meta": "{count, plural, one {# betaling} other {# betalingen}} · {amount}",
+      "nameFor": "Andere naam voor {bank}",
+      "types": {
+        "spaarrekening": "Spaarrekening",
+        "beleggingen": "Beleggingen",
+        "betaalrekening": "Betaalrekening",
+        "gezamenlijk": "Gezamenlijke rekening",
+        "bezitting": "Bezitting"
+      },
+      "add": "Toevoegen",
+      "addLabel": "{name} toevoegen",
+      "dismiss": "Niet van mij",
+      "dismissLabel": "{name} verbergen"
     }
   },
   "onboarding": {
@@ -3467,6 +3479,7 @@
           "spaarrekening": "Sparen",
           "beleggingen": "Beleggingen",
           "betaalrekening": "Betaalrekening",
+          "gezamenlijk": "Gezamenlijke rekening",
           "bezitting": "Bezit",
           "other": "Overig"
         },
@@ -3924,6 +3937,7 @@
       "income": "Inkomsten",
       "spent": "Uitgegeven",
       "saved": "Gespaard",
+      "takenFromSavings": "Uit spaargeld gehaald",
       "billsDue": "Nog te betalen",
       "vsLastMonth": "t.o.v. vorige maand",
       "fixed": "waarvan {amount} vaste lasten",

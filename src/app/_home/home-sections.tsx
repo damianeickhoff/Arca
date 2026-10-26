@@ -48,7 +48,9 @@ export interface MonthFigures {
 export async function ThisMonthCard({ figures }: { figures: MonthFigures }) {
   const t = await getTranslations("home.month");
   const { income, incomeChange, spent, fixed, saved, billsDue, billsDueCount, billsBy } = figures;
-  const savedShare = income > 0 ? Math.round((saved / income) * 100) : null;
+  // Saved is net: a month that took more out of savings than it put in says so instead.
+  const tookFromSavings = saved < 0;
+  const savedShare = income > 0 && !tookFromSavings ? Math.round((saved / income) * 100) : null;
 
   return (
     <section aria-label={t("title")} className="grid grid-cols-2 gap-2.5 rounded-clear-card bg-clear-card p-3.5 font-clear text-clear-ink">
@@ -75,9 +77,9 @@ export async function ThisMonthCard({ figures }: { figures: MonthFigures }) {
         foot={fixed > 0 ? <MoneyText>{t("fixed", { amount: formatEurWhole(fixed) })}</MoneyText> : null}
       />
       <StatTile
-        label={t("saved")}
+        label={tookFromSavings ? t("takenFromSavings") : t("saved")}
         icon={<IconTarget aria-hidden />}
-        value={<Amount value={saved} whole className="text-[26px] lg:text-[30px]" />}
+        value={<Amount value={Math.abs(saved)} whole className="text-[26px] lg:text-[30px]" />}
         foot={
           savedShare != null && (
             <span className="inline-flex items-center gap-1.5">

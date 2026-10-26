@@ -1,7 +1,8 @@
 import type Database from "better-sqlite3";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
-import { banks, ownAccounts, transactions } from "@/db/schema";
+import { banks, transactions, vermogenAccounts } from "@/db/schema";
+import { BANK_CARD_TRANSFER_KIND, HAND_KEPT_TRANSFER_KIND, JOINT_TYPE, MIN_MATCH_NAME_LENGTH, parseMatchNames } from "@/lib/account-names";
 import { pairTransfers, unpairTransfer } from "@/lib/transfer-pairs";
 
 const client = () => (db as unknown as { $client: Database.Database }).$client;
@@ -19,11 +20,13 @@ export function breakTransferPair(id: number) {
 type BankRef = {
   accountNumber: string | null;
   displayName: string | null;
+  matchNames?: string | null;
 };
 
-type OwnAccountRef = {
+/** An account kept by hand that money can move to (not a joint account, see isHandKeptTransferTarget). */
+type HandKeptRef = {
   accountNumber: string | null;
-  matchText: string | null;
+  matchNames: string | null;
 };
 
 type ImportedTransferRef = {
@@ -38,14 +41,23 @@ export function normalizeAccountNumber(value: string | null | undefined) {
   return normalized || null;
 }
 
+const compact = (value: string) => value.toLowerCase().replace(/\s+/g, "");
+const namesIn = (haystack: string, raw: string | null | undefined) =>
+  parseMatchNames(raw).some((name) => compact(name).length >= MIN_MATCH_NAME_LENGTH && haystack.includes(compact(name)));
+
+/** Money to or from a hand-kept account of this type is a transfer (a joint account's is spending). */
+export function isHandKeptTransferTarget(type: string) {
+  return type !== JOINT_TYPE;
+}
+
 /**
  * The import-time version of isInternalTransferExpr's account rules (pairs are found
- * after the rows are in): an imported account or an own account that is not imported.
+ * after the rows are in): another imported account, or an account kept by hand.
  */
-export function isOwnAccountTransfer(row: ImportedTransferRef, ownBanks: BankRef[], others: OwnAccountRef[] = []) {
+export function isOwnAccountTransfer(row: ImportedTransferRef, ownBanks: BankRef[], handKept: HandKeptRef[] = []) {
   const account = normalizeAccountNumber(row.account);
   const counterAccount = normalizeAccountNumber(row.counterAccount);
-  const haystack = `${row.name ?? ""} ${row.description ?? ""} ${counterAccount ?? ""}`.toLowerCase().replace(/\s+/g, "");
+  const haystack = compact(`${row.name ?? ""} ${row.description ?? ""} ${counterAccount ?? ""}`);
 
   const byBank = ownBanks.some((bank) => {
     const bankAccount = normalizeAccountNumber(bank.accountNumber);
@@ -54,15 +66,15 @@ export function isOwnAccountTransfer(row: ImportedTransferRef, ownBanks: BankRef
     if (bankAccount && bankAccount !== account) {
       if (counterAccount === bankAccount) return true;
       if (haystack.includes(bankAccount.toLowerCase())) return true;
+      if (namesIn(haystack, bank.matchNames)) return true;
     }
 
     return !!bankName && haystack.includes(bankName.replace(/\s+/g, ""));
   });
-  return byBank || others.some((own) => {
+  return byBank || handKept.some((own) => {
     const number = normalizeAccountNumber(own.accountNumber);
-    const text = own.matchText?.toLowerCase().replace(/\s+/g, "");
     if (number && (counterAccount === number || haystack.includes(number.toLowerCase()))) return true;
-    return !!text && haystack.includes(text);
+    return namesIn(haystack, own.matchNames);
   });
 }
 
@@ -72,10 +84,21 @@ const normalizedDescription = sql<string>`lower(replace(coalesce(${transactions.
 const normalizedRawDescription = sql<string>`lower(replace(coalesce(${transactions.rawDescription}, ''), ' ', ''))`;
 const normalizedBankAccount = sql<string>`upper(replace(coalesce(${banks.accountNumber}, ''), ' ', ''))`;
 const normalizedBankName = sql<string>`lower(replace(coalesce(${banks.displayName}, ''), ' ', ''))`;
-const normalizedOwnNumber = sql<string>`upper(replace(coalesce(${ownAccounts.accountNumber}, ''), ' ', ''))`;
-const normalizedOwnText = sql<string>`lower(replace(coalesce(${ownAccounts.matchText}, ''), ' ', ''))`;
+const normalizedHandKeptNumber = sql<string>`upper(replace(coalesce(${vermogenAccounts.accountNumber}, ''), ' ', ''))`;
 
-// The row's counter account or text names another imported account.
+// The row's text contains one of the names in a match_names column (a JSON array).
+// instr, not like, so a "_" or "%" in a name is just a character.
+const namesMatch = (column: typeof banks.matchNames | typeof vermogenAccounts.matchNames) => sql<boolean>`exists (
+  select 1
+  from json_each(case when json_valid(${column}) then ${column} else '[]' end) as match_name
+  where length(replace(match_name.value, ' ', '')) >= ${MIN_MATCH_NAME_LENGTH}
+    and (
+      instr(${normalizedDescription}, lower(replace(match_name.value, ' ', ''))) > 0
+      or instr(${normalizedRawDescription}, lower(replace(match_name.value, ' ', ''))) > 0
+    )
+)`;
+
+// The row's counter account, number, name or other names point at another imported account.
 const bankMatchExpr = sql<boolean>`exists (
   select 1
   from ${banks}
@@ -86,6 +109,7 @@ const bankMatchExpr = sql<boolean>`exists (
       ${normalizedCounterAccount} = ${normalizedBankAccount}
       or instr(${normalizedDescription}, lower(${normalizedBankAccount})) > 0
       or instr(${normalizedRawDescription}, lower(${normalizedBankAccount})) > 0
+      or ${namesMatch(banks.matchNames)}
     )
   ) or (
     ${normalizedBankName} <> ''
@@ -96,33 +120,33 @@ const bankMatchExpr = sql<boolean>`exists (
   )
 )`;
 
-// The row's counter account or text names an own account that is not imported
-// (Settings › Accounts › Own accounts): a savings or investment account, a joint account,
-// a card top-up. instr, not like, so a "_" or "%" in the match text is just a character.
-const ownAccountMatchExpr = sql<boolean>`exists (
+// The hand-kept account the row's counter account, number or other names point at.
+const handKeptMatch = sql<boolean>`(
+  (
+    ${normalizedHandKeptNumber} <> ''
+    and (
+      ${normalizedCounterAccount} = ${normalizedHandKeptNumber}
+      or instr(${normalizedDescription}, lower(${normalizedHandKeptNumber})) > 0
+      or instr(${normalizedRawDescription}, lower(${normalizedHandKeptNumber})) > 0
+    )
+  ) or ${namesMatch(vermogenAccounts.matchNames)}
+)`;
+
+// Money to or from an account kept by hand (Settings › Accounts): savings, investments,
+// a checking account elsewhere. Not a joint account: money into that is spending.
+const handKeptMatchExpr = sql<boolean>`exists (
   select 1
-  from ${ownAccounts}
-  where (
-    ${normalizedOwnNumber} <> ''
-    and (
-      ${normalizedCounterAccount} = ${normalizedOwnNumber}
-      or instr(${normalizedDescription}, lower(${normalizedOwnNumber})) > 0
-      or instr(${normalizedRawDescription}, lower(${normalizedOwnNumber})) > 0
-    )
-  ) or (
-    ${normalizedOwnText} <> ''
-    and (
-      instr(${normalizedDescription}, ${normalizedOwnText}) > 0
-      or instr(${normalizedRawDescription}, ${normalizedOwnText}) > 0
-    )
-  )
+  from ${vermogenAccounts}
+  where ${vermogenAccounts.active} = 1
+    and ${vermogenAccounts.type} <> ${JOINT_TYPE}
+    and ${handKeptMatch}
 )`;
 
 /**
  * Money moving between the owner's own accounts — never income or spending. Marked by
  * hand, or (unless the owner said "Not a transfer") an imported row that is half of a
- * pair between two imported accounts (src/lib/transfer-pairs.ts) or names another
- * imported account or an own account that is not imported.
+ * pair between two imported accounts (src/lib/transfer-pairs.ts) or points at another
+ * imported account or an account kept by hand.
  */
 export const isInternalTransferExpr = sql<boolean>`(
   ${transactions.isManualTransfer} = 1
@@ -132,7 +156,7 @@ export const isInternalTransferExpr = sql<boolean>`(
     and (
       ${transactions.transferPairId} is not null
       or ${bankMatchExpr}
-      or ${ownAccountMatchExpr}
+      or ${handKeptMatchExpr}
     )
   )
 )`;
@@ -148,53 +172,57 @@ export const outOfReportsExpr = sql<boolean>`(${transactions.excludeFromReports}
 /** Rows that count in reports: the opposite of outOfReportsExpr, for a WHERE. */
 export const countsInReportsCondition = sql<boolean>`not (${outOfReportsExpr})`;
 
+// An imported account's transfer kind: the one set on it, else what its card type implies.
+const bankKind = sql.raw(
+  `coalesce(banks.transfer_kind, case banks.card_type ${Object.entries(BANK_CARD_TRANSFER_KIND)
+    .map(([card, kind]) => `when '${card}' then '${kind}'`)
+    .join(" ")} end)`,
+);
+// What a transfer to a hand-kept account counts as, by its type.
+const handKeptKind = sql.raw(
+  `case vermogen_accounts.type ${Object.entries(HAND_KEPT_TRANSFER_KIND)
+    .map(([type, kind]) => `when '${type}' then ${kind ? `'${kind}'` : "null"}`)
+    .join(" ")} end`,
+);
+
 // The internal-transfer sub-type actually shown/used: a manual per-transaction override
-// if set, otherwise inherited live from the opposite account's tagged kind (so re-tagging
-// an account updates every un-overridden transfer transaction, not just future ones) —
-// the counter account's bank, an own account the row matches, or the other leg's bank.
+// if set, otherwise inherited live from the account on the other side (so re-tagging an
+// account updates every un-overridden transfer, not just future ones) — the counter
+// account's bank, a hand-kept account the row points at, or the other leg's bank.
 export const effectiveTransferTypeExpr = sql<string | null>`COALESCE(
   ${transactions.transferType},
   (
-    select ${banks.transferKind}
+    select ${bankKind}
     from ${banks}
     where ${normalizedCounterAccount} <> ''
       and ${normalizedBankAccount} = ${normalizedCounterAccount}
-      and ${banks.transferKind} is not null
+      and ${bankKind} is not null
     limit 1
   ),
   (
-    select ${ownAccounts.transferKind}
-    from ${ownAccounts}
-    where (
-      ${normalizedOwnNumber} <> ''
-      and (
-        ${normalizedCounterAccount} = ${normalizedOwnNumber}
-        or instr(${normalizedDescription}, lower(${normalizedOwnNumber})) > 0
-        or instr(${normalizedRawDescription}, lower(${normalizedOwnNumber})) > 0
-      )
-    ) or (
-      ${normalizedOwnText} <> ''
-      and (
-        instr(${normalizedDescription}, ${normalizedOwnText}) > 0
-        or instr(${normalizedRawDescription}, ${normalizedOwnText}) > 0
-      )
-    )
+    select ${handKeptKind}
+    from ${vermogenAccounts}
+    where ${vermogenAccounts.active} = 1
+      and ${vermogenAccounts.type} <> ${JOINT_TYPE}
+      and ${handKeptMatch}
     limit 1
   ),
   (
-    select ${banks.transferKind}
+    select ${bankKind}
     from transactions pair_leg
     join ${banks} on ${normalizedBankAccount} = upper(replace(coalesce(pair_leg.account, ''), ' ', ''))
     where pair_leg.id = ${transactions.transferPairId}
-      and ${banks.transferKind} is not null
+      and ${bankKind} is not null
     limit 1
   )
 )`;
 
 /**
- * A transfer that puts money aside: to an own savings or investment account, or filed in
- * a savings-kind category. Out of income and spending like every transfer, but money
- * going out this way still counts as saved (Home's Saved, Trends' "saved").
+ * A transfer that puts money aside or takes it back: to or from a savings or investment
+ * account, or filed in a savings-kind category. Out of income and spending like every
+ * transfer; on Home and in Trends money going out this way counts as saved and money
+ * coming back as taken from savings (Saved is net). Only the leg on the everyday
+ * account counts, so a pair with an imported savings account isn't counted twice.
  */
 export const savedTransferExpr = sql<boolean>`(
   ${transactions.excludeFromReports} = 0
@@ -202,5 +230,11 @@ export const savedTransferExpr = sql<boolean>`(
   and (
     coalesce(${effectiveTransferTypeExpr}, '') in ('savings', 'investments')
     or (select c."group" from categories c where c.id = ${transactions.categoryId}) = 'savings'
+  )
+  and not exists (
+    select 1
+    from ${banks}
+    where ${normalizedBankAccount} = ${normalizedTransactionAccount}
+      and ${bankKind} in ('savings', 'investments')
   )
 )`;

@@ -84,7 +84,7 @@ export interface TrendsRow {
   isReimbursement: boolean;
   /** Left out of every total: an internal transfer or excluded from reports (outOfReportsExpr). */
   outOfReports: boolean;
-  /** A transfer to an own savings or investment account (savedTransferExpr): saved when it goes out. */
+  /** A transfer to or from a savings or investment account (savedTransferExpr): saved, net. */
   savedTransfer?: boolean;
 }
 
@@ -92,15 +92,16 @@ export type RowKind = "income" | "needs" | "wants" | "saved";
 
 /**
  * What a row counts as, with Home's rules: reimbursements, internal transfers and rows
- * excluded from reports left out, money moved into savings (a savings category, or an own
- * savings or investment account) saved rather than spent. Spending is a need
+ * excluded from reports left out, money moved into savings (a savings category, or a
+ * savings or investment account) saved rather than spent. "saved" is net: money coming
+ * back out of savings counts against it (monthFlows subtracts it). Spending is a need
  * when its budget type says so; everything else (wants, nothing set) counts as wants.
  */
 export function classifyRow(row: Pick<TrendsRow, "direction" | "categoryGroup" | "budgetType" | "isReimbursement" | "outOfReports" | "savedTransfer">): RowKind | null {
   if (row.isReimbursement) return null;
-  if (row.savedTransfer) return row.direction === "expense" ? "saved" : null;
+  if (row.savedTransfer) return "saved";
   if (row.outOfReports) return null;
-  if (row.categoryGroup === "savings") return row.direction === "expense" ? "saved" : null;
+  if (row.categoryGroup === "savings") return "saved";
   if (row.direction === "income") return "income";
   return normalizeBudgetType(row.budgetType) === "nodig" ? "needs" : "wants";
 }
@@ -124,7 +125,8 @@ export function monthFlows(rows: TrendsRow[], months: string[]): MonthFlow[] {
     const flow = byMonth.get(row.month);
     const kind = classifyRow(row);
     if (!flow || !kind) continue;
-    flow[kind] += row.amount;
+    // Money back out of savings is saving undone.
+    flow[kind] += kind === "saved" && row.direction === "income" ? -row.amount : row.amount;
   }
   return months.map((m) => {
     const f = byMonth.get(m)!;
@@ -134,7 +136,7 @@ export function monthFlows(rows: TrendsRow[], months: string[]): MonthFlow[] {
 
 /** Whether anything moved in a month. */
 export function hasData(f: MonthFlow): boolean {
-  return f.income > 0 || f.expense > 0 || f.saved > 0;
+  return f.income > 0 || f.expense > 0 || f.saved !== 0;
 }
 
 /**

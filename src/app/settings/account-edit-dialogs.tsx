@@ -14,8 +14,11 @@ import {
   IconInfoCircle,
   IconLink,
   IconPigMoney,
+  IconPlus,
   IconTrash,
+  IconUsers,
   IconWallet,
+  IconX,
 } from "@tabler/icons-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
@@ -34,6 +37,7 @@ import { parseAmountInput } from "@/app/debts/debt-form-dialog";
 import { currencySymbol, formatEur } from "@/lib/format";
 import { roundToCents } from "@/lib/transaction-splits";
 import { TRANSFER_TYPES } from "@/lib/transfer-types";
+import { MIN_MATCH_NAME_LENGTH, hasNoBalance, parseMatchNames, type HandKeptType } from "@/lib/account-names";
 import { cn } from "@/lib/utils";
 import type { Bank, VermogenAccount } from "@/db/schema";
 import { MoneyText } from "@/components/clear/money";
@@ -52,14 +56,16 @@ const BANK_TYPE_ICON: Record<BankType, typeof IconWallet> = {
   cash: IconCash,
 };
 
-export const ASSET_TYPES = ["spaarrekening", "beleggingen", "bezitting", "betaalrekening"] as const;
+// The order the type tiles show in: accounts first, then things you own.
+export const ASSET_TYPES = ["spaarrekening", "beleggingen", "betaalrekening", "gezamenlijk", "bezitting"] as const satisfies readonly HandKeptType[];
 type AssetType = (typeof ASSET_TYPES)[number];
 
 export const ASSET_TYPE_STYLE: Record<AssetType, { icon: typeof IconWallet; tone: ClearTone }> = {
   spaarrekening: { icon: IconPigMoney, tone: "sky" },
   beleggingen: { icon: IconChartLine, tone: "mint" },
-  bezitting: { icon: IconHome, tone: "butter" },
   betaalrekening: { icon: IconWallet, tone: "stone" },
+  gezamenlijk: { icon: IconUsers, tone: "lilac" },
+  bezitting: { icon: IconHome, tone: "butter" },
 };
 
 const TRANSFER_KINDS = TRANSFER_TYPES.filter((t) => t.value !== "other").map((t) => t.value);
@@ -214,6 +220,61 @@ function DateField({
 }
 
 /** The "Include in net worth" tile. */
+/**
+ * The other names an account goes by in transactions ("Revolut**4527"), one field each
+ * with a remove button, and "Add a name". Names shorter than MIN_MATCH_NAME_LENGTH are
+ * dropped on save (they would match half the transactions).
+ */
+function MatchNamesField({ names, onChange, label, hint }: { names: string[]; onChange: (v: string[]) => void; label: string; hint: string }) {
+  const t = useTranslations("accountForms");
+  const ids = useId();
+  const [focusIndex, setFocusIndex] = useState<number | null>(null);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span id={`${ids}-label`} className={FIELD_LABEL}>{label}</span>
+      {names.map((name, i) => (
+        <div key={i} className={cn(FIELD_BOX, "pr-1.5")}>
+          <input
+            type="text"
+            autoComplete="off"
+            aria-label={t("names.field", { number: i + 1 })}
+            autoFocus={i === focusIndex}
+            value={name}
+            onChange={(e) => onChange(names.map((n, j) => (j === i ? e.target.value : n)))}
+            placeholder="Revolut**1234"
+            className="min-w-0 flex-1 border-none bg-transparent p-0 font-clear text-[15px] font-bold text-clear-ink outline-none placeholder:font-semibold placeholder:text-clear-placeholder"
+          />
+          <button
+            type="button"
+            onClick={() => onChange(names.filter((_, j) => j !== i))}
+            aria-label={t("names.remove")}
+            className={cn(clearButtonVariants({ variant: "ghost", size: "icon" }), "size-9 text-clear-muted hover:bg-clear-line hover:text-clear-ink")}
+          >
+            <IconX aria-hidden />
+          </button>
+        </div>
+      ))}
+      <span className="text-[13px] text-clear-muted">
+        {hint}{" "}
+        <button
+          type="button"
+          onClick={() => {
+            setFocusIndex(names.length);
+            onChange([...names, ""]);
+          }}
+          className="inline-flex cursor-pointer items-center gap-0.5 font-bold text-clear-ember-text hover:underline"
+        >
+          <IconPlus size={14} stroke={2.5} aria-hidden />
+          {t("names.add")}
+        </button>
+      </span>
+      {names.some((n) => n.trim() && n.replace(/s+/g, "").length < MIN_MATCH_NAME_LENGTH) && (
+        <span className="text-[13px] text-clear-ember-text">{t("names.tooShort", { count: MIN_MATCH_NAME_LENGTH })}</span>
+      )}
+    </div>
+  );
+}
+
 function NetWorthSwitch({ checked, onChange, hint }: { checked: boolean; onChange: (v: boolean) => void; hint: string }) {
   const t = useTranslations("accountForms");
   const id = useId();
@@ -413,6 +474,7 @@ function BankFormBody({
   const [expiration, setExpiration] = useState(bank?.expirationDate ?? "");
   const [includeInNetWorth, setIncludeInNetWorth] = useState(bank?.includeInNetWorth ?? false);
   const [overdraftExpr, setOverdraftExpr] = useState(bank?.overdraftLimit ? moneyToExpr(bank.overdraftLimit) : "");
+  const [matchNames, setMatchNames] = useState(() => parseMatchNames(bank?.matchNames));
   // Adding only.
   const [accountNumber, setAccountNumber] = useState("");
   const [startingExpr, setStartingExpr] = useState("");
@@ -478,6 +540,7 @@ function BankFormBody({
           startingBalance: nextStartingBalance,
           includeInNetWorth,
           overdraftLimit: parseMoney(overdraftExpr),
+          matchNames,
         }),
       });
       onSaved(await res.json());
@@ -498,6 +561,7 @@ function BankFormBody({
           transferKind: transferKind || null,
           includeInNetWorth,
           overdraftLimit: parseMoney(overdraftExpr),
+          matchNames,
         }),
       });
       onSaved(await res.json());
@@ -571,6 +635,8 @@ function BankFormBody({
           />
         </ClearField>
       )}
+
+      <MatchNamesField names={matchNames} onChange={setMatchNames} label={t("names.label")} hint={t("bank.namesHint")} />
 
       <div className="flex flex-col gap-1.5">
         <span className={FIELD_LABEL} aria-hidden>{t("bank.type")}</span>
@@ -653,15 +719,25 @@ function BankFormBody({
 
 // ─── Asset: add or edit ──────────────────────────────────────────────────────
 
-/** Add an asset (`account` null) or edit one — a vermogen_accounts row. */
+/** A new hand-kept account filled in from "Found in your transactions". */
+export type AccountDraft = { name: string; type: HandKeptType; accountNumber: string | null; matchNames: string[] };
+
+/**
+ * Add an account kept by hand (`account` null, optionally from a `draft`) or edit one —
+ * a vermogen_accounts row: savings, investments, a checking or joint account Arca
+ * doesn't import, or something you own. Its value is typed in (or not yet); an account
+ * is also recognised in the imported transactions by its number and other names.
+ */
 export function AssetFormDialog({
   account,
+  draft,
   open,
   onOpenChange,
   onSaved,
   onDeleted,
 }: {
   account: VermogenAccount | null;
+  draft?: AccountDraft | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: (account: VermogenAccount) => void;
@@ -676,7 +752,7 @@ export function AssetFormDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent hideHeaderRow title={title} className="gap-5 pt-6 font-clear text-clear-ink" sheetClassName="lg:max-w-[560px]">
-        <AssetFormBody account={current} title={title} onClose={() => onOpenChange(false)} onSaved={onSaved} onDeleted={onDeleted} />
+        <AssetFormBody account={current} draft={current ? null : draft ?? null} title={title} onClose={() => onOpenChange(false)} onSaved={onSaved} onDeleted={onDeleted} />
       </DialogContent>
     </Dialog>
   );
@@ -684,12 +760,14 @@ export function AssetFormDialog({
 
 function AssetFormBody({
   account,
+  draft,
   title,
   onClose,
   onSaved,
   onDeleted,
 }: {
   account: VermogenAccount | null;
+  draft: AccountDraft | null;
   title: string;
   onClose: () => void;
   onSaved: (account: VermogenAccount) => void;
@@ -703,10 +781,15 @@ function AssetFormBody({
 
   const [busy, setBusy] = useState(false);
   // An unknown stored type stays as it is until another one is picked.
-  const [type, setType] = useState<string>(account?.type ?? "beleggingen");
-  const [name, setName] = useState(account?.name ?? "");
-  const [valueExpr, setValueExpr] = useState(account ? moneyToExpr(account.value) : "");
+  const [type, setType] = useState<string>(account?.type ?? draft?.type ?? "spaarrekening");
+  const [name, setName] = useState(account?.name ?? draft?.name ?? "");
+  // Empty = no balance entered yet (an account added from a suggestion often has none).
+  const [valueExpr, setValueExpr] = useState(account && !hasNoBalance(account) ? moneyToExpr(account.value) : "");
   const [lastUpdated, setLastUpdated] = useState(account ? account.lastUpdated ?? "" : todayISO());
+  const [accountNumber, setAccountNumber] = useState(account?.accountNumber ?? draft?.accountNumber ?? "");
+  const [matchNames, setMatchNames] = useState(() => (account ? parseMatchNames(account.matchNames) : draft?.matchNames ?? []));
+  // Something you own has no account number; every other type is recognised in transactions.
+  const recognised = type !== "bezitting";
   const [notes, setNotes] = useState(account?.notes ?? "");
   const [icon, setIcon] = useState<string | null>(account?.icon ?? null);
   const [color, setColor] = useState(account?.color ?? DEFAULT_ASSET_COLOR);
@@ -726,8 +809,10 @@ function AssetFormBody({
       icon: icon || null,
       color: color || null,
       notes: notes.trim() || null,
-      lastUpdated: lastUpdated || null,
+      lastUpdated: value == null ? null : lastUpdated || null,
       includeInNetWorth,
+      accountNumber: recognised ? accountNumber.trim() || null : null,
+      matchNames: recognised ? matchNames : [],
     };
     const res = await fetch("/api/vermogen", {
       method: isEdit ? "PATCH" : "POST",
@@ -765,7 +850,7 @@ function AssetFormBody({
 
       <div className="flex flex-col gap-2">
         <span id={`${ids}-type`} className={FIELD_LABEL}>{t("asset.type")}</span>
-        <div role="radiogroup" aria-labelledby={`${ids}-type`} className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div role="radiogroup" aria-labelledby={`${ids}-type`} className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
           {ASSET_TYPES.map((v) => {
             const { icon: TypeIcon, tone } = ASSET_TYPE_STYLE[v];
             const selected = type === v;
@@ -811,7 +896,30 @@ function AssetFormBody({
           <MoneyInput id={`${ids}-value`} value={valueExpr} onChange={setValueExpr} />
         </ClearField>
         <DateField label={t("asset.valueAsOf")} value={lastUpdated} onChange={setLastUpdated} />
+        <p className="m-0 -mt-1.5 text-[13px] text-clear-muted sm:col-span-2">{t("asset.valueHint")}</p>
       </div>
+
+      {recognised && (
+        <div className="flex flex-col gap-3 border-t border-clear-ground pt-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[15px] font-bold">{t("asset.recognise")}</span>
+            <span className="text-[13px] leading-[1.5] text-clear-muted">
+              {t(type === "gezamenlijk" ? "asset.recogniseJoint" : type === "betaalrekening" ? "asset.recogniseTransfer" : "asset.recogniseSaved")}
+            </span>
+          </div>
+          <ClearField label={t("asset.accountNumber")} htmlFor={`${ids}-number`} hint={t("asset.accountNumberHint")}>
+            <ClearInput
+              id={`${ids}-number`}
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value)}
+              placeholder="NL00 BANK 0000 0000 00"
+              autoComplete="off"
+              className="font-bold tracking-[0.02em] tabular-nums"
+            />
+          </ClearField>
+          <MatchNamesField names={matchNames} onChange={setMatchNames} label={t("names.label")} hint={t("asset.namesHint")} />
+        </div>
+      )}
 
       <ClearField label={t("asset.notes")} htmlFor={`${ids}-notes`}>
         <ClearInput id={`${ids}-notes`} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("asset.notesPlaceholder")} />

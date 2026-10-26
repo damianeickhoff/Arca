@@ -1,9 +1,12 @@
 import { db } from "@/db";
-import { transactions, categories, categoryRules, banks, ownAccounts, transactionSplits, type Bank } from "@/db/schema";
+import { transactions, categories, categoryRules, banks, vermogenAccounts, transactionSplits, type Bank } from "@/db/schema";
 import { matchRules, applyAllRules } from "@/lib/apply-rules";
 import { detectRecurringSuggestions } from "@/lib/recurring-suggestions";
 import { loadRecurringMatchers, matchRecurringItem } from "@/lib/recurring-match";
-import { isOwnAccountTransfer, normalizeAccountNumber, pairNewTransfers } from "@/lib/internal-transfers";
+import { isHandKeptTransferTarget, isOwnAccountTransfer, normalizeAccountNumber, pairNewTransfers } from "@/lib/internal-transfers";
+import { markJointPaybacks } from "@/lib/joint-accounts";
+import { BANK_CARD_FOR_HAND_KEPT } from "@/lib/account-names";
+import type Database from "better-sqlite3";
 import { assignMissingMerchants, getOrCreateMerchantId } from "@/lib/merchants";
 import { deriveMerchantName } from "@/lib/merchant-name";
 import { and, isNotNull, isNull, sql, eq, inArray } from "drizzle-orm";
@@ -45,8 +48,9 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
   const rules = await db.select().from(categoryRules);
   const recurringMatchers = await loadRecurringMatchers();
   const allBanks = await db.select().from(banks);
-  const ownBanks = allBanks.map((b) => ({ accountNumber: b.accountNumber, displayName: b.displayName }));
-  const otherOwnAccounts = await db.select({ accountNumber: ownAccounts.accountNumber, matchText: ownAccounts.matchText }).from(ownAccounts);
+  const ownBanks = allBanks.map((b) => ({ accountNumber: b.accountNumber, displayName: b.displayName, matchNames: b.matchNames }));
+  const handKept = await db.select().from(vermogenAccounts).where(eq(vermogenAccounts.active, true));
+  const handKeptTargets = handKept.filter((v) => isHandKeptTransferTarget(v.type));
 
   // Build banksByAccountNumber map for matchRules
   const banksByAccountNumber = new Map(
@@ -128,7 +132,7 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
         description: row.description,
       },
       ownBanks,
-      otherOwnAccounts,
+      handKeptTargets,
     );
 
     let categoryId = recurringMatch?.categoryId
@@ -198,7 +202,28 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
   const distinctAccounts = [...new Set(rows.map((r) => normalizeAccountNumber(r.account)).filter(Boolean))] as string[];
   const newAccountNumbers: string[] = [];
   for (const acct of distinctAccounts) {
-    await db.insert(banks).values({ accountNumber: acct }).onConflictDoNothing();
+    // An account kept by hand with this number is now imported: it becomes this bank
+    // account (name, look, type, other names) instead of a second copy of it.
+    const kept = existingAccountNumbers.has(acct) ? undefined : handKept.find((v) => normalizeAccountNumber(v.accountNumber) === acct);
+    const card = kept ? BANK_CARD_FOR_HAND_KEPT[kept.type] : undefined;
+    await db
+      .insert(banks)
+      .values(
+        kept
+          ? {
+              accountNumber: acct,
+              displayName: kept.name,
+              icon: kept.icon,
+              color: kept.color,
+              cardType: card?.cardType ?? "debitcard",
+              transferKind: card?.transferKind ?? null,
+              includeInNetWorth: kept.includeInNetWorth,
+              matchNames: kept.matchNames,
+            }
+          : { accountNumber: acct },
+      )
+      .onConflictDoNothing();
+    if (kept) await db.update(vermogenAccounts).set({ active: false, accountNumber: null }).where(eq(vermogenAccounts.id, kept.id));
     if (!existingAccountNumbers.has(acct)) newAccountNumbers.push(acct);
   }
   const newAccounts = newAccountNumbers.length > 0
@@ -212,6 +237,8 @@ async function insertRows(rows: ParsedRow[], source: "csv_import" | "bank"): Pro
   // Moves between two imported accounts (a top-up and the card payment that paid for it)
   // are only visible once both legs are in.
   pairNewTransfers();
+  // Money back from a joint account kept by hand is not income.
+  markJointPaybacks((db as unknown as { $client: Database.Database }).$client, insertedIds);
 
   // Now that the new rows are in, link every transaction to its matching recurring item,
   // then look for new regular payments among the counterparties this import touched

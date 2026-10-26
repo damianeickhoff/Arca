@@ -44,7 +44,7 @@ Four tiles for the current period:
 
 - **Income**, compared with last month.
 - **Spent**, with how much of it was fixed costs.
-- **Saved**: money that went into your savings categories, as a share of income.
+- **Saved**: what you put into savings (a savings category, or a savings or investment [account](/Arca/settings/accounts/#what-money-to-and-from-an-account-means)) minus what you took back out, as a share of income.
 - **Bills to come** before the end of the period, or "Nothing left to pay".
 
 Transfers between your own accounts and money paid back to you are left out, so they don't count as income or spending.
@@ -67,7 +67,7 @@ The next unpaid bills and expected income this month, soonest first, with **Over
 
 ## Accounts
 
-One balance per bank account and the total, which links to your [net worth](/Arca/insights/net-worth/). If an account may go below zero, you see how much of its overdraft you use. See [Accounts and assets](/Arca/settings/accounts/).
+One balance per bank account and the total, which links to your [net worth](/Arca/insights/net-worth/). If an account may go below zero, you see how much of its overdraft you use. See [Accounts](/Arca/settings/accounts/).
 
 ## Recent activity
 

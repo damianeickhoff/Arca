@@ -11,8 +11,8 @@ Your net worth over the last **30**, **90** or **180** days. Arca keeps one snap
 
 ## What counts
 
-- **Your accounts**: the balances of your bank accounts. See [Accounts and assets](/Arca/settings/accounts/).
-- **Assets**: savings accounts, investments and things you own (a car, a house) that you add yourself under Accounts → **Add asset**. Switch off **Include in net worth** for anything you'd rather leave out.
+- **Your accounts**: the balances of your bank accounts. See [Accounts](/Arca/settings/accounts/).
+- **Assets**: savings accounts, investments and things you own (a car, a house) that you add yourself under Accounts → **Add account** → **Kept by hand**. Switch off **Include in net worth** for anything you'd rather leave out.
 - **Debts** from [Plan → Debts](/Arca/plan/debts/), with their debt-free date.
 - **Savings goals** from [Plan → Goals](/Arca/plan/goals/).
 

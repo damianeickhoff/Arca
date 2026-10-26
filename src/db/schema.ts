@@ -493,6 +493,10 @@ export const banks = sqliteTable("banks", {
   // transactions.transferType / src/lib/internal-transfers.ts effectiveTransferTypeExpr).
   // savings | investments | credit_card_payment | cash_withdrawal | shared_account | other
   transferKind: text("transfer_kind"),
+  // Other names this account shows up under in transactions (a JSON array of strings),
+  // e.g. "Revolut**4527" for the card payments that top it up. Money to or from a row
+  // that names it is an internal transfer (see src/lib/internal-transfers.ts).
+  matchNames: text("match_names"),
   includeInNetWorth: integer("include_in_net_worth", { mode: "boolean" }).notNull().default(false),
   // How far below zero the bank lets this account go, as a positive amount (500 = the
   // account may reach −500). Null = no overdraft. The forecast only calls a dip a
@@ -504,24 +508,6 @@ export const banks = sqliteTable("banks", {
 
 export type Bank = typeof banks.$inferSelect;
 export type NewBank = typeof banks.$inferInsert;
-
-// ─── Own accounts ───────────────────────────────────────────────────────────
-// The owner's accounts that are not imported (a savings or investment account, a
-// joint account, a card top-up): money moving to or from one is an internal transfer,
-// never income or spending. A row matches by account number (its counter account, or
-// the number in its description) or by a piece of its description. See
-// src/lib/internal-transfers.ts; managed in Settings › Accounts.
-export const ownAccounts = sqliteTable("own_accounts", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
-  accountNumber: text("account_number"), // normalized: no spaces, upper case
-  matchText: text("match_text"),
-  // savings | investments | shared_account | other (see src/lib/transfer-types.ts)
-  transferKind: text("transfer_kind").notNull().default("other"),
-  createdAt: text("created_at").default(sql`(datetime('now'))`),
-});
-
-export type OwnAccount = typeof ownAccounts.$inferSelect;
 
 // ─── Bank connections (Enable Banking) ──────────────────────────────────────
 // One consent at one bank (an Enable Banking session), valid until `validUntil` (at
@@ -580,12 +566,18 @@ export const importProfiles = sqliteTable("import_profiles", {
 export type ImportProfile = typeof importProfiles.$inferSelect;
 
 // ─── Vermogen accounts ───────────────────────────────────────────────────────
-// Manual asset tracking for net worth calculation.
-// Types: spaarrekening | beleggingen | betaalrekening | bezitting
+// Accounts kept by hand (not imported): their value is typed in, for net worth. They
+// are also recognised in the imported transactions, by account number or other names:
+// money to or from a savings, investment or checking account kept by hand is an
+// internal transfer; money into a joint account is spending (see
+// src/lib/internal-transfers.ts and src/lib/joint-accounts.ts). Importing an account
+// with the same number turns it into a bank account (src/lib/import-rows.ts).
+// Types: spaarrekening | beleggingen | betaalrekening | gezamenlijk | bezitting
 export const vermogenAccounts = sqliteTable("vermogen_accounts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  type: text("type").notNull(), // spaarrekening | beleggingen | betaalrekening | bezitting
+  type: text("type").notNull(), // spaarrekening | beleggingen | betaalrekening | gezamenlijk | bezitting
+  // 0 with no lastUpdated = no balance entered yet.
   value: real("value").notNull().default(0),
   icon: text("icon"), // account glyph shown in the edit sheet / accounts overview
   color: text("color"),
@@ -593,6 +585,10 @@ export const vermogenAccounts = sqliteTable("vermogen_accounts", {
   lastUpdated: text("last_updated"), // ISO date YYYY-MM-DD
   active: integer("active", { mode: "boolean" }).notNull().default(true),
   includeInNetWorth: integer("include_in_net_worth", { mode: "boolean" }).notNull().default(true),
+  // IBAN or the number the bank shows in descriptions (e.g. M58896551), normalized.
+  accountNumber: text("account_number"),
+  // Other names it shows up under in transactions (a JSON array of strings).
+  matchNames: text("match_names"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 export type VermogenAccount = typeof vermogenAccounts.$inferSelect;

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { IconBuildingBank, IconPencil, IconPlus } from "@tabler/icons-react";
+import { IconBuildingBank, IconHandFinger, IconPencil, IconPlus } from "@tabler/icons-react";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Amount } from "@/components/clear/amount";
@@ -12,6 +12,7 @@ import { DeltaChip } from "@/components/clear/chip";
 import { ListRow } from "@/components/clear/list-row";
 import { Segmented } from "@/components/clear/segmented";
 import { clearButtonVariants } from "@/components/clear/button-variants";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { PanelHeader } from "@/components/settings/settings-panel-chrome";
 import {
@@ -21,15 +22,16 @@ import {
   DEFAULT_ASSET_COLOR,
   DEFAULT_BANK_COLOR,
   assetGlyph,
-  useAccountTypeLabels,
+  type AccountDraft,
 } from "@/app/settings/account-edit-dialogs";
-import type { Bank, OwnAccount, VermogenAccount } from "@/db/schema";
-import type { OwnAccountSuggestion } from "@/lib/own-account-suggestions";
+import type { Bank, VermogenAccount } from "@/db/schema";
 import type { BankBalance, BalancePoint } from "@/lib/account-balances";
 import type { OverdraftMode } from "@/lib/app-settings";
+import type { AccountSuggestion } from "@/lib/account-suggestions";
+import { hasNoBalance } from "@/lib/account-names";
 import { MoneyText } from "@/components/clear/money";
 import { OverdraftModeSwitch } from "@/components/settings/accounts/overdraft-mode-switch";
-import { OwnAccountsSection } from "@/components/settings/accounts/own-accounts-section";
+import { AccountSuggestions } from "@/components/settings/accounts/account-suggestions";
 
 const RANGES = [
   { key: "1w", days: 7 },
@@ -41,27 +43,48 @@ const RANGES = [
 
 type RangeKey = (typeof RANGES)[number]["key"];
 
+// The groups the one account list is split into, in this order. An account's group
+// follows from its type, whether it is imported or kept by hand.
+const GROUPS = ["checking", "savings", "investments", "joint", "creditcard", "cash", "possessions"] as const;
+type Group = (typeof GROUPS)[number];
+
+function bankGroup(b: Bank): Group {
+  if (b.cardType === "savings") return b.transferKind === "investments" ? "investments" : "savings";
+  if (b.cardType === "creditcard") return "creditcard";
+  if (b.cardType === "cash") return "cash";
+  return b.transferKind === "shared_account" ? "joint" : "checking";
+}
+
+const HAND_KEPT_GROUP: Record<string, Group> = {
+  spaarrekening: "savings",
+  beleggingen: "investments",
+  betaalrekening: "checking",
+  gezamenlijk: "joint",
+  bezitting: "possessions",
+};
+
+type Row = { key: string; group: Group; balance: number } & ({ kind: "bank"; bank: BankBalance } | { kind: "handKept"; account: VermogenAccount });
+
 interface Props {
   banks: BankBalance[];
   assets: VermogenAccount[];
   history: BalancePoint[];
   overdraftMode: OverdraftMode;
-  ownAccounts: OwnAccount[];
-  ownAccountSuggestions: OwnAccountSuggestion[];
+  suggestions: AccountSuggestion[];
 }
 
 /**
- * The Accounts settings panel: the combined total and its history, then bank accounts
- * and other assets, each with its add button, then the own accounts that are not
- * imported (transfers to them are not income or spending). A row opens its edit dialog. The old
- * /settings/accounts/{banks,vermogen}/add routes redirect here with ?add=bank|asset,
- * which opens the matching add dialog.
+ * The Accounts settings panel: the combined total and its history, then every account
+ * in one list grouped by type (checking, savings, investments, joint, credit cards, cash,
+ * possessions). Imported accounts and accounts kept by hand sit side by side; the row
+ * says where the balance comes from. "Add account" asks which of the two it is. Below,
+ * accounts found in the transactions. The old /settings/accounts/{banks,vermogen}/add
+ * routes redirect here with ?add=bank|asset, which opens the matching add dialog.
  */
-export function AccountsOverviewClient({ banks: initialBanks, assets: initialAssets, history, overdraftMode, ownAccounts, ownAccountSuggestions }: Props) {
+export function AccountsOverviewClient({ banks: initialBanks, assets: initialAssets, history, overdraftMode, suggestions }: Props) {
   const t = useTranslations("accountForms");
   const tSettings = useTranslations("settings");
   const locale = useLocale();
-  const labels = useAccountTypeLabels();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -72,10 +95,14 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
 
   // The local state above gives instant feedback on add/edit/delete, but a balance
   // correction changes a transaction-derived total only the server can recompute —
-  // resync whenever router.refresh() lands new `banks`/`assets` props, so this panel
-  // never keeps showing a pre-correction balance.
-  useEffect(() => { setBanks(initialBanks); }, [initialBanks]);
-  useEffect(() => { setAssets(initialAssets); }, [initialAssets]);
+  // take over whatever router.refresh() lands, so this panel never keeps showing a
+  // pre-correction balance.
+  const [synced, setSynced] = useState({ initialBanks, initialAssets });
+  if (synced.initialBanks !== initialBanks || synced.initialAssets !== initialAssets) {
+    setSynced({ initialBanks, initialAssets });
+    setBanks(initialBanks);
+    setAssets(initialAssets);
+  }
 
   const requestedAdd = searchParams.get("add");
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
@@ -83,9 +110,12 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
   const [adding, setAdding] = useState<"bank" | "asset" | null>(
     requestedAdd === "bank" || requestedAdd === "asset" ? requestedAdd : null,
   );
+  // A hand-kept account to add, filled in from a suggestion.
+  const [draft, setDraft] = useState<AccountDraft | null>(null);
 
   function closeAdd() {
     setAdding(null);
+    setDraft(null);
     // Drop ?add= so a reload doesn't open the dialog again.
     if (requestedAdd) {
       const params = new URLSearchParams(searchParams.toString());
@@ -95,9 +125,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
     }
   }
 
-  const bankTotal = banks.reduce((s, b) => s + b.balance, 0);
-  const assetTotal = assets.reduce((s, a) => s + a.value, 0);
-  const total = bankTotal + assetTotal;
+  const total = banks.reduce((s, b) => s + b.balance, 0) + assets.reduce((s, a) => s + a.value, 0);
   const accountCount = banks.length + assets.length;
 
   const days = RANGES.find((r) => r.key === range)!.days;
@@ -110,6 +138,12 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
   const updatedFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
   const hasOverdraft = banks.some((b) => (b.overdraftLimit ?? 0) > 0);
 
+  const rows: Row[] = [
+    ...banks.map((b) => ({ key: `bank-${b.id}`, group: bankGroup(b), balance: b.balance, kind: "bank" as const, bank: b })),
+    ...assets.map((a) => ({ key: `asset-${a.id}`, group: HAND_KEPT_GROUP[a.type] ?? "possessions", balance: a.value, kind: "handKept" as const, account: a })),
+  ];
+  const groups = GROUPS.map((g) => ({ group: g, rows: rows.filter((r) => r.group === g) })).filter((g) => g.rows.length > 0);
+
   // How much of its overdraft an account uses, for its row: past the limit, the part
   // used, or just the limit while it's above zero.
   function overdraftMeta(b: BankBalance): string | null {
@@ -118,6 +152,47 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
     if (b.balance < -limit) return t("panel.overdraftPast", { amount: formatEur(-limit - b.balance) });
     if (b.balance < 0) return t("panel.overdraftUsed", { used: formatEur(-b.balance), limit: formatEur(limit) });
     return t("panel.overdraftMeta", { amount: formatEur(limit) });
+  }
+
+  const tail = (number: string | null) => (number && !number.startsWith("CUSTOM-") ? `••${number.replace(/\s/g, "").slice(-4)}` : null);
+
+  function renderRow(r: Row) {
+    if (r.kind === "bank") {
+      const b = r.bank;
+      const name = b.displayName ?? b.accountNumber ?? t("panel.bankFallback", { id: b.id });
+      const imported = !!b.accountNumber && !b.accountNumber.startsWith("CUSTOM-");
+      return (
+        <ListRow
+          key={r.key}
+          onClick={() => setEditingBank(b)}
+          icon={<AccountGlyph icon={b.icon} color={b.color ?? DEFAULT_BANK_COLOR} fallback={IconBuildingBank} />}
+          title={name}
+          meta={[tail(b.accountNumber), imported ? t("panel.imported") : t("panel.fromTransactions"), overdraftMeta(b)].filter(Boolean).join(" · ")}
+          trailing={<RowTrailing value={b.balance} editLabel={t("panel.edit", { name })} />}
+        />
+      );
+    }
+    const a = r.account;
+    const empty = hasNoBalance(a);
+    return (
+      <ListRow
+        key={r.key}
+        onClick={() => setEditingAsset(a)}
+        icon={<AccountGlyph icon={a.icon} color={a.color ?? DEFAULT_ASSET_COLOR} fallback={assetGlyph(a.type)} />}
+        title={a.name}
+        meta={[
+          tail(a.accountNumber),
+          empty
+            ? t("panel.noBalance")
+            : a.lastUpdated
+              ? t("panel.updated", { date: updatedFmt.format(new Date(`${a.lastUpdated}T12:00:00`)) })
+              : t("panel.keptByHand"),
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        trailing={<RowTrailing value={empty ? null : a.value} editLabel={t("panel.edit", { name: a.name })} />}
+      />
+    );
   }
 
   return (
@@ -154,67 +229,49 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
           </div>
         )}
 
-        {/* ── Bank accounts ── */}
-        <AccountSection
-          title={t("panel.banks")}
-          count={banks.length}
-          total={bankTotal}
-          empty={t("panel.noBanks")}
-          addLabel={t("panel.addBank")}
-          onAdd={() => setAdding("bank")}
-          addAnchor="accountsAdd"
-          headerAnchor="accountsBanks"
-        >
-          {banks.map((b) => {
-            const iban = b.accountNumber && !b.accountNumber.startsWith("CUSTOM-") ? `••${b.accountNumber.replace(/\s/g, "").slice(-4)}` : null;
-            const name = b.displayName ?? b.accountNumber ?? t("panel.bankFallback", { id: b.id });
-            return (
-              <ListRow
-                key={`bank-${b.id}`}
-                onClick={() => setEditingBank(b)}
-                icon={<AccountGlyph icon={b.icon} color={b.color ?? DEFAULT_BANK_COLOR} fallback={IconBuildingBank} />}
-                title={name}
-                meta={[b.cardType ? labels.bankType(b.cardType) : null, iban, overdraftMeta(b)].filter(Boolean).join(" · ") || undefined}
-                trailing={<RowTrailing value={b.balance} editLabel={t("panel.edit", { name })} />}
-              />
-            );
-          })}
-        </AccountSection>
+        {/* ── Every account, grouped by type ── */}
+        <div data-tip-anchor="accountsBanks" className="flex flex-col gap-5">
+          {groups.length === 0 ? (
+            <div className="rounded-clear-tile border-2 border-dashed border-clear-line px-4 py-5 text-center text-[13px] text-clear-muted">{t("panel.noAccounts")}</div>
+          ) : (
+            groups.map(({ group, rows: list }) => (
+              <section key={group} className="flex flex-col gap-1.5">
+                <div className="flex h-10 items-center justify-between gap-2 rounded-clear-icon bg-clear-tile px-3">
+                  <h3 className="m-0 text-[15px] font-bold">
+                    {t(`panel.groups.${group}`)} <span className="font-semibold text-clear-muted">· {list.length}</span>
+                  </h3>
+                  <Amount value={list.reduce((s, r) => s + r.balance, 0)} splitCents={false} className="text-sm" />
+                </div>
+                <div className="flex flex-col">{list.map(renderRow)}</div>
+              </section>
+            ))
+          )}
+
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger data-tip-anchor="accountsAdd" className={cn(clearButtonVariants({ variant: "secondary" }), "self-start")}>
+              <IconPlus aria-hidden stroke={2.2} />
+              {t("panel.addAccount")}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[min(340px,calc(100vw-32px))] font-clear">
+              <AddChoice icon={<IconBuildingBank aria-hidden size={20} stroke={2} />} title={t("panel.addImported")} hint={t("panel.addImportedHint")} onClick={() => setAdding("bank")} />
+              <AddChoice icon={<IconHandFinger aria-hidden size={20} stroke={2} />} title={t("panel.addHandKept")} hint={t("panel.addHandKeptHint")} onClick={() => setAdding("asset")} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Only once an account can go into the red is there anything to decide. */}
         {hasOverdraft && <OverdraftModeSwitch initialMode={overdraftMode} />}
 
-        {/* ── Other assets ── */}
-        <AccountSection
-          title={t("panel.assets")}
-          count={assets.length}
-          total={assetTotal}
-          empty={t("panel.noAssets")}
-          addLabel={t("panel.addAsset")}
-          onAdd={() => setAdding("asset")}
-        >
-          {assets.map((a) => (
-            <ListRow
-              key={`asset-${a.id}`}
-              onClick={() => setEditingAsset(a)}
-              icon={<AccountGlyph icon={a.icon} color={a.color ?? DEFAULT_ASSET_COLOR} fallback={assetGlyph(a.type)} />}
-              title={a.name}
-              meta={[
-                labels.assetType(a.type),
-                a.lastUpdated ? t("panel.updated", { date: updatedFmt.format(new Date(`${a.lastUpdated}T12:00:00`)) }) : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-              trailing={<RowTrailing value={a.value} editLabel={t("panel.edit", { name: a.name })} />}
-            />
-          ))}
-        </AccountSection>
+        <AccountSuggestions
+          suggestions={suggestions}
+          onAdd={(d) => {
+            setDraft(d);
+            setAdding("asset");
+          }}
+        />
 
-        {/* ── Own accounts that are not imported ── */}
-        <OwnAccountsSection accounts={ownAccounts} suggestions={ownAccountSuggestions} />
-
-        {/* The add buttons now open real dialogs with every field (IBAN, starting
-            balance and date, transfer type; the asset kinds) — point them out once. */}
+        {/* "Add account" opens real dialogs with every field (IBAN, starting balance and
+            date, transfer type; the hand-kept kinds) — point it out once. */}
         <AnchoredTip id="accountsAdd" anchor="accountsAdd" />
         {/* Overdraft limits are set inside a bank account's dialog — point at the list. */}
         <AnchoredTip id="accountsOverdraft" anchor="accountsBanks" active={banks.length > 0} />
@@ -241,6 +298,7 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
         />
         <AssetFormDialog
           account={null}
+          draft={draft}
           open={adding === "asset"}
           onOpenChange={(v) => !v && closeAdd()}
           onSaved={(account) => setAssets((list) => [...list, account])}
@@ -250,57 +308,22 @@ export function AccountsOverviewClient({ banks: initialBanks, assets: initialAss
   );
 }
 
-function AccountSection({
-  title,
-  count,
-  total,
-  empty,
-  addLabel,
-  onAdd,
-  addAnchor,
-  headerAnchor,
-  children,
-}: {
-  title: string;
-  count: number;
-  total: number;
-  empty: string;
-  addLabel: string;
-  onAdd: () => void;
-  addAnchor?: string;
-  headerAnchor?: string;
-  children: React.ReactNode;
-}) {
+function AddChoice({ icon, title, hint, onClick }: { icon: React.ReactNode; title: string; hint: string; onClick: () => void }) {
   return (
-    <section className="flex flex-col gap-1.5">
-      <div data-tip-anchor={headerAnchor} className="flex h-10 items-center justify-between gap-2 rounded-clear-icon bg-clear-tile px-3">
-        <h3 className="m-0 text-[15px] font-bold">
-          {title} <span className="font-semibold text-clear-muted">· {count}</span>
-        </h3>
-        <Amount value={total} splitCents={false} className="text-sm" />
-      </div>
-      {count === 0 ? (
-        <div className="rounded-clear-tile border-2 border-dashed border-clear-line px-4 py-5 text-center text-[13px] text-clear-muted">{empty}</div>
-      ) : (
-        <div className="flex flex-col">{children}</div>
-      )}
-      <button
-        type="button"
-        onClick={onAdd}
-        data-tip-anchor={addAnchor}
-        className={cn(clearButtonVariants({ variant: "secondary" }), "mt-2 self-start")}
-      >
-        <IconPlus aria-hidden stroke={2.2} />
-        {addLabel}
-      </button>
-    </section>
+    <DropdownMenuItem onClick={onClick} className="items-start gap-3 py-2.5">
+      <span className="mt-0.5 shrink-0 text-clear-ink">{icon}</span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-[15px] font-bold text-clear-ink">{title}</span>
+        <span className="text-[13px] leading-[1.4] whitespace-normal text-clear-muted">{hint}</span>
+      </span>
+    </DropdownMenuItem>
   );
 }
 
-function RowTrailing({ value, editLabel }: { value: number; editLabel: string }) {
+function RowTrailing({ value, editLabel }: { value: number | null; editLabel: string }) {
   return (
     <>
-      <Amount value={value} className="shrink-0 text-[17px]" />
+      {value != null && <Amount value={value} className="shrink-0 text-[17px]" />}
       <span aria-hidden title={editLabel} className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-clear-tile text-clear-ink">
         <IconPencil size={18} stroke={2} />
       </span>
