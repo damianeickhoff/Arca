@@ -16,7 +16,8 @@
   <a href="https://damianeickhoff.github.io/Arca/"><img alt="Documentation" src="https://img.shields.io/badge/docs-user%20guide-111113"></a>
 </p>
 
-<p align="center">📖 <b><a href="https://damianeickhoff.github.io/Arca/">Documentation</a></b>: install, first run, bank connection, budgets and more, in plain language.</p>
+<p align="center">📖 <b><a href="https://damianeickhoff.github.io/Arca/">Documentation</a></b>: install, first run, bank connection, budgets and more, in plain language.<br>
+🧭 <b><a href="https://damianeickhoff.github.io/Arca/demo/">Take the tour</a></b> or ▶️ <b><a href="https://damianeickhoff.github.io/Arca/#launch-video-title">watch Arca in 20 seconds</a></b>, no install needed.</p>
 
 > **Updates are safe to take.** Arca backs up its database before the first start on every new version and keeps the last five copies in `/data/backups`. The database is brought up to date by itself; a breaking change only ever comes with a new major version and says so in the release notes.
 

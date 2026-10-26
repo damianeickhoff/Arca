@@ -1,0 +1,503 @@
+---
+// The guided tour on /demo/: one step per screenshot of the built-in demo data, an ember
+// hotspot on the thing the step is about, and the explanation on the black hero card next
+// to it. Without JavaScript every step is shown in a column; with it, one step at a time
+// with Back / Next, the dots, the arrow keys and #step-N links.
+//
+// x and y place the hotspot, in percent of the screenshot. On phones a desktop screenshot
+// is shown zoomed in around the hotspot (--zoom), so the part the step is about is readable.
+import { Image } from "astro:assets";
+import home from "../assets/screenshots/home.png";
+import homeDark from "../assets/screenshots/home-dark.png";
+import activity from "../assets/screenshots/activity.png";
+import plan from "../assets/screenshots/plan.png";
+import insights from "../assets/screenshots/insights.png";
+import forecast from "../assets/screenshots/forecast.png";
+import mobile from "../assets/screenshots/mobile.png";
+import mobileDark from "../assets/screenshots/mobile-dark.png";
+
+type Step = {
+  area: string;
+  title: string;
+  body: string;
+  more: { text: string; link: string };
+  shot: ImageMetadata;
+  dark?: ImageMetadata;
+  alt: string;
+  x: number;
+  y: number;
+  phone?: boolean;
+};
+
+const steps: Step[] = [
+  {
+    area: "Home",
+    title: "One number for today",
+    body: "Safe to spend is your budget minus what you've spent so far and the bills still to come. Under it: about how much a day that leaves, and whether you're on pace.",
+    more: { text: "How Safe to spend works", link: "/everyday/home/#safe-to-spend" },
+    shot: home,
+    dark: homeDark,
+    alt: "Home, with Safe to spend at €730,35 and about €81 a day until Oct 25",
+    x: 27.2,
+    y: 28,
+  },
+  {
+    area: "Home",
+    title: "Bills before they land",
+    body: "Bills to come shows what's still due before the period ends, next to this month's income, spending and savings. Coming up lists them soonest first.",
+    more: { text: "Upcoming bills", link: "/everyday/upcoming/" },
+    shot: home,
+    dark: homeDark,
+    alt: "Home, with the tile Bills to come: €153, 2 bills before Oct 24",
+    x: 63.1,
+    y: 51.1,
+  },
+  {
+    area: "Activity",
+    title: "Every transaction, explained",
+    body: "Activity lists every transaction by day. Open one to see its category and what this payment did to that category's budget.",
+    more: { text: "The detail panel", link: "/everyday/activity/#the-detail-panel" },
+    shot: activity,
+    alt: "Activity, with an Albert Heijn payment open: Groceries, €232,12 of €460 spent this period",
+    x: 81.7,
+    y: 76.3,
+  },
+  {
+    area: "Activity",
+    title: "Teach it once",
+    body: "Split a payment, mark it as recurring or make a rule from it. Pick a category once, say Always, and every payment from that shop is filed the same way.",
+    more: { text: "Rules and merchants", link: "/transactions/rules-and-merchants/#teach-it-once" },
+    shot: activity,
+    alt: "The detail panel's buttons: Split, Reimburse, Recurring, Rule and More actions",
+    x: 87.8,
+    y: 91.6,
+  },
+  {
+    area: "Plan",
+    title: "A budget that nudges",
+    body: "Plan shows what's left this month, your needs, wants and savings against the target, and a suggestion when a category runs over.",
+    more: { text: "Budget", link: "/plan/budget/" },
+    shot: plan,
+    alt: "Plan, with €730,35 left of €1.600 and a suggestion to move €125 from Groceries to Electronics",
+    x: 83,
+    y: 59.9,
+  },
+  {
+    area: "Insights",
+    title: "Where the money went",
+    body: "Insights breaks any period down by week, group and category, with your income, expenses, savings and largest expense on top.",
+    more: { text: "Insights overview", link: "/insights/overview/" },
+    shot: insights,
+    alt: "Insights overview, with spending by group: €2.678 spent so far, Housing 53%",
+    x: 85.4,
+    y: 78.2,
+  },
+  {
+    area: "Insights",
+    title: "See the next 30 days coming",
+    body: "The forecast plays your bills and income forward from today's balance, marks the lowest point and warns you before you drop under your safety line.",
+    more: { text: "Forecast", link: "/insights/forecast/" },
+    shot: forecast,
+    alt: "The forecast for the next 30 days, with the lowest point at €6.890 on 20 Oct",
+    x: 38.6,
+    y: 70.6,
+  },
+  {
+    area: "On your phone",
+    title: "In your pocket too",
+    body: "Add Arca to your phone's home screen and it opens like an app: the same cards, stacked, with the orange + to add a payment on the go.",
+    more: { text: "Add Arca to your phone", link: "/getting-started/install/" },
+    shot: mobile,
+    dark: mobileDark,
+    alt: "Arca on a phone: Safe to spend, income and spending, and the tab bar with the orange add button",
+    x: 41.8,
+    y: 93.6,
+    phone: true,
+  },
+];
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const total = steps.length;
+---
+
+<div class="tour not-content" data-tour>
+  <p class="sr-only" aria-live="polite" data-tour-status></p>
+  <ol class="tour__steps">
+    {
+      steps.map((step, i) => (
+        <li
+          class="tour__step"
+          id={`step-${i + 1}`}
+          data-phone={step.phone ? "" : undefined}
+          data-ratio={step.shot.height / step.shot.width}
+          style={`--x: ${step.x}; --y: ${step.y}`}
+        >
+          <div class="tour__frame">
+            <div class="tour__canvas">
+              <Image
+                src={step.shot}
+                alt={step.alt}
+                widths={step.phone ? [390, 780] : [900, 1350, 1800]}
+                sizes={step.phone ? "(min-width: 64rem) 20rem, 60vw" : "(min-width: 64rem) 52rem, 200vw"}
+                loading={i === 0 ? "eager" : "lazy"}
+                class:list={["tour__shot", { "tour__shot--light": step.dark }]}
+              />
+              {step.dark && (
+                <Image
+                  src={step.dark}
+                  alt={step.alt}
+                  widths={step.phone ? [390, 780] : [900, 1350, 1800]}
+                  sizes={step.phone ? "(min-width: 64rem) 20rem, 60vw" : "(min-width: 64rem) 52rem, 200vw"}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  class="tour__shot tour__shot--dark"
+                />
+              )}
+              <button class="tour__spot" type="button" tabindex="-1" aria-hidden="true" data-tour-next />
+
+            </div>
+          </div>
+          <div class="tour__panel">
+            <div class="tour__meta">
+              <span class="tour__chip">{step.area}</span>
+              <span class="tour__count">
+                Step {i + 1} of {total}
+              </span>
+            </div>
+            <h2 class="tour__title">{step.title}</h2>
+            <p class="tour__body">{step.body}</p>
+            <a class="tour__more" href={base + step.more.link}>
+              {step.more.text} →
+            </a>
+            <div class="tour__nav">
+              {i > 0 && (
+                <button class="arca-pill arca-pill--outline" type="button" data-tour-prev>
+                  Back
+                </button>
+              )}
+              {i < total - 1 ? (
+                <button class="arca-pill arca-pill--hero" type="button" data-tour-next>
+                  Next
+                </button>
+              ) : (
+                <a class="arca-pill arca-pill--hero" href={`${base}/getting-started/install/`}>
+                  Install Arca
+                </a>
+              )}
+            </div>
+          </div>
+        </li>
+      ))
+    }
+  </ol>
+  <div class="tour__dots" role="group" aria-label="Steps">
+    {
+      steps.map((step, i) => (
+        <button class="tour__dot" type="button" data-tour-go={i} aria-label={`Step ${i + 1}: ${step.title}`} />
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  for (const root of document.querySelectorAll<HTMLElement>("[data-tour]")) {
+    const steps = [...root.querySelectorAll<HTMLElement>(".tour__step")];
+    const dots = [...root.querySelectorAll<HTMLButtonElement>("[data-tour-go]")];
+    const status = root.querySelector<HTMLElement>("[data-tour-status]");
+    let current = 0;
+
+    // Zooms a desktop screenshot around its hotspot when --zoom is above 1 (phones),
+    // keeping the screenshot's edges inside the frame.
+    const layout = (step: HTMLElement) => {
+      const frame = step.querySelector<HTMLElement>(".tour__frame");
+      const canvas = step.querySelector<HTMLElement>(".tour__canvas");
+      if (!frame || !canvas || step.hasAttribute("data-phone")) return;
+      const zoom = parseFloat(getComputedStyle(frame).getPropertyValue("--zoom")) || 1;
+      if (zoom === 1) {
+        canvas.style.cssText = "";
+        return;
+      }
+      const ratio = Number(step.dataset.ratio);
+      const x = parseFloat(step.style.getPropertyValue("--x")) / 100;
+      const y = parseFloat(step.style.getPropertyValue("--y")) / 100;
+      const fw = frame.clientWidth;
+      const fh = frame.clientHeight;
+      const cw = fw * zoom;
+      const ch = cw * ratio;
+      const left = Math.min(0, Math.max(fw - cw, fw / 2 - x * cw));
+      const top = Math.min(0, Math.max(fh - ch, fh / 2 - y * ch));
+      canvas.style.cssText = `width: ${cw}px; left: ${left}px; top: ${top}px`;
+    };
+
+    // `focus` moves keyboard focus to the same button in the new step (Next stays on Next,
+    // Back on Back), or the other one where that button doesn't exist.
+    const show = (index: number, focus?: "next" | "prev") => {
+      current = Math.max(0, Math.min(steps.length - 1, index));
+      steps.forEach((step, i) => (step.hidden = i !== current));
+      dots.forEach((dot, i) => dot.setAttribute("aria-current", i === current ? "step" : "false"));
+      const step = steps[current];
+      layout(step);
+      const title = step.querySelector(".tour__title")?.textContent ?? "";
+      if (status) status.textContent = `Step ${current + 1} of ${steps.length}: ${title}`;
+      if (current > 0 || location.hash) history.replaceState(null, "", `#step-${current + 1}`);
+      if (focus) {
+        const nav = step.querySelector(".tour__nav");
+        const wanted = focus === "next" ? "[data-tour-next], a" : "[data-tour-prev]";
+        (nav?.querySelector<HTMLElement>(wanted) ?? nav?.querySelector<HTMLElement>("button, a"))?.focus();
+      }
+    };
+
+    root.addEventListener("click", (event) => {
+      const target = (event.target as HTMLElement).closest("button");
+      if (!target) return;
+      const fromNav = Boolean(target.closest(".tour__nav"));
+      if (target.hasAttribute("data-tour-next")) show(current + 1, fromNav ? "next" : undefined);
+      else if (target.hasAttribute("data-tour-prev")) show(current - 1, "prev");
+      else if (target.dataset.tourGo) show(Number(target.dataset.tourGo));
+    });
+
+    document.addEventListener("keydown", (event) => {
+      const el = event.target as HTMLElement;
+      if (event.altKey || event.ctrlKey || event.metaKey || el.closest("input, textarea, select, dialog, [contenteditable]")) return;
+      if (event.key === "ArrowRight") show(current + 1);
+      else if (event.key === "ArrowLeft") show(current - 1);
+    });
+
+    new ResizeObserver(() => layout(steps[current])).observe(root);
+
+    const fromHash = Number(location.hash.match(/^#step-(\d+)$/)?.[1] ?? 1) - 1;
+    root.classList.add("is-ready");
+    show(Number.isNaN(fromHash) ? 0 : fromHash);
+  }
+</script>
+
+<style>
+  /* The tour brings its own cards, so the page body drops its white card here. Rules
+     prefixed with .sl-markdown-content below outrank the guide's Markdown text styles. */
+  :global(html:not([data-has-hero]) .sl-markdown-content:has(> .tour)) {
+    background-color: transparent;
+    padding: 0;
+  }
+  .tour {
+    margin-top: 0.5rem;
+  }
+  .tour__steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  /* Screenshot and explanation: stacked on phones, side by side from 64rem. */
+  .tour__step {
+    display: grid;
+    gap: 1.25rem;
+    margin: 0;
+  }
+  .tour__step[hidden] {
+    display: none;
+  }
+  @media (min-width: 64rem) {
+    .tour__step {
+      grid-template-columns: minmax(0, 1fr) 20rem;
+      align-items: stretch;
+    }
+  }
+
+  /* The screenshot sits in a white card on the ground colour, 16px corners inside. */
+  .tour__frame {
+    --zoom: 1;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    border: 0.75rem solid var(--clr-card);
+    border-radius: 24px;
+    background-color: var(--clr-ground);
+    align-self: start;
+  }
+  @media (max-width: 49.99em) {
+    .tour.is-ready .tour__step:not([data-phone]) .tour__frame {
+      --zoom: 2;
+      aspect-ratio: 4 / 3;
+    }
+  }
+  .tour__canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .tour__shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+  }
+
+  /* The phone screenshot stands upright in the middle of the frame. */
+  .tour__step[data-phone] .tour__frame {
+    aspect-ratio: 16 / 10;
+  }
+  @media (max-width: 49.99em) {
+    .tour__step[data-phone] .tour__frame {
+      aspect-ratio: 4 / 5;
+    }
+  }
+  .tour__step[data-phone] .tour__canvas {
+    left: 50%;
+    top: 5%;
+    width: auto;
+    height: 90%;
+    aspect-ratio: 780 / 1688;
+    transform: translateX(-50%);
+  }
+  .tour__step[data-phone] .tour__shot {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: top;
+    border-radius: 20px;
+  }
+
+  /* One screenshot per theme where there is a dark one. */
+  :root[data-theme="dark"] .tour__shot--light,
+  :root[data-theme="light"] .tour__shot--dark {
+    display: none;
+  }
+
+  /* The hotspot: an ember ring around the thing the step is about, see-through so the
+     number under it stays readable, with a soft pulse. */
+  .tour__spot {
+    position: absolute;
+    left: calc(var(--x) * 1%);
+    top: calc(var(--y) * 1%);
+    width: 3.25rem;
+    height: 3.25rem;
+    padding: 0;
+    border: 3px solid var(--clr-ember);
+    border-radius: 999px;
+    outline: 2px solid var(--clr-card);
+    background-color: transparent;
+    cursor: pointer;
+    translate: -50% -50%;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--clr-ember) 55%, transparent);
+    animation: tour-pulse 1.8s ease-out infinite;
+  }
+  .tour:not(.is-ready) .tour__spot {
+    pointer-events: none;
+  }
+  @keyframes tour-pulse {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--clr-ember) 55%, transparent);
+    }
+    100% {
+      box-shadow: 0 0 0 1.125rem color-mix(in srgb, var(--clr-ember) 0%, transparent);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tour__spot {
+      animation: none;
+      box-shadow: 0 0 0 0.375rem color-mix(in srgb, var(--clr-ember) 35%, transparent);
+    }
+  }
+
+  /* The explanation, on the page's one hero card. */
+  .tour__panel {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--clr-hero);
+    color: var(--clr-hero-ink);
+    border-radius: 24px;
+    padding: 1.5rem;
+  }
+  .tour__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .tour__chip {
+    display: inline-flex;
+    align-items: center;
+    height: 1.75rem;
+    padding: 0 0.75rem;
+    border-radius: 999px;
+    background-color: var(--clr-ember);
+    color: var(--clr-ember-ink);
+    font-size: 0.8125rem;
+    font-weight: 700;
+  }
+  .tour__count {
+    color: var(--clr-hero-ink-2);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  :global(.sl-markdown-content) h2.tour__title {
+    margin: 1.25rem 0 0;
+    color: var(--clr-hero-ink);
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  :global(.sl-markdown-content) .tour__body {
+    margin: 0.625rem 0 0;
+    color: var(--clr-hero-ink-2);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+  :global(.sl-markdown-content) .tour__more {
+    align-self: flex-start;
+    margin-top: 1rem;
+    color: var(--clr-hero-ink);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--clr-hero-ink) 40%, transparent);
+    text-underline-offset: 0.2em;
+  }
+  :global(.sl-markdown-content) .tour__more:hover {
+    text-decoration-color: var(--clr-hero-ink);
+  }
+  .tour__nav {
+    display: none;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 1.5rem;
+  }
+  .tour.is-ready .tour__nav {
+    display: flex;
+  }
+  .tour__nav > :last-child {
+    flex: 1;
+  }
+
+  /* The step dots under the tour, one per step; the current one is a black pill. */
+  .tour__dots {
+    display: none;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+  .tour.is-ready .tour__dots {
+    display: flex;
+  }
+  .tour__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background-color: var(--clr-line);
+    cursor: pointer;
+    transition: width 200ms ease, background-color 200ms ease;
+  }
+  .tour__dot:hover {
+    background-color: var(--clr-placeholder);
+  }
+  .tour__dot[aria-current="step"] {
+    width: 1.75rem;
+    background-color: var(--clr-primary);
+  }
+</style>
