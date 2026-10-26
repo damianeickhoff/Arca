@@ -65,6 +65,7 @@ export default defineConfig({
           label: "Getting started",
           items: [
             { label: "What is Arca", slug: "getting-started/what-is-arca" },
+            { label: "Take the tour", slug: "demo" },
             { label: "Install", slug: "getting-started/install" },
             { label: "First run", slug: "getting-started/first-run" },
             { label: "Updating and backups", slug: "getting-started/updating-and-backups" },
