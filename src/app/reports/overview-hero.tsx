@@ -17,8 +17,8 @@ export interface PeriodName {
 
 /**
  * Insights › Overview's answer card (black, two columns wide): what is spent so far,
- * how that compares with the previous period by the same day and where the period is
- * heading against the budget. Beside it four tiles: income, saved, left to spend and
+ * how that compares with the previous period by the same day and how much of the
+ * budget is already spoken for (spent plus the bills still to come — no guess). Beside it four tiles: income, saved, left to spend and
  * the largest expense, a 2×2 grid with equal rows that stretch to the card's height.
  * Under the sentence the running total as a line (this period and the previous one,
  * the ember dot at today), from the same series as the "This month against last"
@@ -60,7 +60,6 @@ export async function OverviewHero({
   className?: string;
 }) {
   const t = await getTranslations("insights.overview");
-  const period = month?.long ?? "none";
   const previous = previousMonth?.long ?? "none";
   const previousShort = previousMonth?.short ?? "none";
   const bold = (chunks: React.ReactNode) => <b className="font-semibold text-clear-hero-ink">{chunks}</b>;
@@ -77,27 +76,24 @@ export async function OverviewHero({
             text: t(`hero.${difference < 0 ? "less" : "more"}${ongoing ? "SoFar" : ""}`, { amount: formatEurWhole(Math.abs(difference)), period: previous }),
           };
 
-  // Where the period ends at this pace, against the budget when there is one.
-  const projected = totals.projected;
+  // What is spoken for: spent so far plus the bills still to come, against the budget
+  // when there is one. Known money only; the Left to spend tile says what remains a day.
+  const committed = totals.committed;
+  const bills = committed != null ? Math.max(0, committed - spent) : 0;
+  const amounts = { spent: formatEurWhole(spent), bills: formatEurWhole(bills), committed: formatEurWhole(committed ?? 0), b: bold };
   const pace =
-    projected == null
+    committed == null
       ? null
       : budget == null
-        ? t.rich("hero.pace", { period, amount: formatEurWhole(projected), b: bold })
-        : projected <= budget
-          ? t.rich("hero.paceInside", { period, amount: formatEurWhole(projected), budget: formatEurWhole(budget), b: bold })
-          : t.rich("hero.paceOver", {
-              period,
-              amount: formatEurWhole(projected),
-              over: formatEurWhole(projected - budget),
-              budget: formatEurWhole(budget),
-              b: bold,
-            });
+        ? t.rich("hero.committed", amounts)
+        : committed <= budget
+          ? t.rich("hero.committedInside", { ...amounts, budget: formatEurWhole(budget), left: formatEurWhole(budget - committed) })
+          : t.rich("hero.committedOver", { ...amounts, budget: formatEurWhole(budget), over: formatEurWhole(committed - budget) });
 
   const chartLabel = t("runningTotal.chartLabel", {
     spent: formatEurWhole(totals.current[totals.elapsed - 1] ?? 0),
     previous: totals.previousAtSameDay != null ? formatEurWhole(totals.previousAtSameDay) : "none",
-    projected: projected != null ? formatEurWhole(projected) : "none",
+    committed: committed != null ? formatEurWhole(committed) : "none",
   });
 
   const incomeChip = incomeChange

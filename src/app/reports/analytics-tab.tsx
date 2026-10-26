@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { db } from "@/db";
 import { transactions, categories, banks, merchants } from "@/db/schema";
-import { eq, and, gte, lte, desc, min } from "drizzle-orm";
+import { eq, and, gte, lte, desc } from "drizzle-orm";
 import { getLocale, getTranslations } from "next-intl/server";
 import { outOfReportsExpr } from "@/lib/internal-transfers";
 import { getTransactionSplitRows } from "@/lib/transaction-split-queries";
@@ -15,7 +15,7 @@ import { currentFinancialMonth, daysInclusive, shiftDate, todayStr, type Financi
 import { AnchoredTip } from "@/components/anchored-tip";
 import { isAiReady } from "@/lib/ai-provider";
 import { getCachedSummary } from "@/lib/ai-features";
-import { averagePerDay, buildSummaryFacts, dayToDayPerDay, monthOfPeriod, previousPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
+import { averagePerDay, buildSummaryFacts, monthOfPeriod, previousPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
 import { SummaryCard } from "./summary-card";
 import { OverviewHero, type PeriodName } from "./overview-hero";
 import { RunningTotalCard } from "./running-total-card";
@@ -128,23 +128,16 @@ async function loadAllocations(from: string, to: string, netReimbursements: bool
 }
 
 async function getOverviewData(from: string, to: string, financialMonth: FinancialMonthConfig, categoryIds?: number[], accounts?: string[]) {
-  const days = daysInclusive(from, to);
   // A budget month is compared with the budget month before it, not just as many days back.
   const { from: prevFrom, to: prevTo } = previousPeriod(from, to, financialMonth);
   const prevDays = daysInclusive(prevFrom, prevTo);
   const today = todayStr();
   const net = (await getSharedCostMode()) === "net";
   const ongoing = from <= today && today <= to;
-  // The two periods before the previous one: with it, the history the projection's
-  // day-to-day rate is read from.
-  const olderFrom = shiftDate(prevFrom, -2 * days);
-  const olderTo = shiftDate(prevFrom, -1);
 
-  const [current, previous, older, [firstTransaction], allBanks, allCategories, budgetOverview, recurringMode, billStatuses] = await Promise.all([
+  const [current, previous, allBanks, allCategories, budgetOverview, recurringMode, billStatuses] = await Promise.all([
     loadAllocations(from, to, net, categoryIds, accounts),
     loadAllocations(prevFrom, prevTo, net, categoryIds, accounts),
-    ongoing ? loadAllocations(olderFrom, olderTo, net, categoryIds, accounts) : Promise.resolve<Awaited<ReturnType<typeof loadAllocations>>>({ rows: [], allocations: [] }),
-    db.select({ date: min(transactions.date) }).from(transactions),
     db.select().from(banks),
     db.select().from(categories),
     loadBudgetOverview(financialMonth),
@@ -194,19 +187,6 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     }
   }
 
-  // Day-to-day spending: what no recurring bill paid (those are in the bills still due).
-  const recurringIds = new Set([...current.rows, ...previous.rows, ...older.rows].filter((r) => r.recurringItemId != null).map((r) => r.id));
-  const dayToDay = (list: typeof relevant, upTo: string) =>
-    list.filter((r) => r.direction === "expense" && r.date <= upTo && !recurringIds.has(r.transactionId)).reduce((s, r) => s + r.amount, 0);
-  const historyFrom = firstTransaction?.date && firstTransaction.date > olderFrom ? firstTransaction.date : olderFrom;
-  const lastSoFar = today < to ? today : to;
-  const perDay = dayToDayPerDay({
-    current: { spent: dayToDay(relevant, lastSoFar), days: today < from ? 0 : daysInclusive(from, lastSoFar) },
-    history: {
-      spent: dayToDay([...prevRelevant, ...older.allocations.filter(counts)], prevTo),
-      days: historyFrom <= prevTo ? daysInclusive(historyFrom, prevTo) : 0,
-    },
-  });
   const billsDue = [...dailyBills.values()].reduce((s, v) => s + v, 0);
   // The running-total card's lines: this period and the previous one added up day by day.
   const totals = runningTotals({
@@ -216,7 +196,7 @@ async function getOverviewData(from: string, to: string, financialMonth: Financi
     daily: dailyExpense,
     previousDaily: prevDailyExpense,
     previousRange: { from: prevFrom, to: prevTo },
-    ahead: { billsDue, perDay },
+    billsDue,
   });
   // While the period runs, the changes compare with the previous period by the same day,
   // like the spending chip, not a few days of this one with the whole of the last.

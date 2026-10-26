@@ -3254,7 +3254,7 @@
         "budgetLine": "Budget {amount}",
         "budgetLineAll": "Budget (all spending) {amount}",
         "today": "today",
-        "chartLabel": "Spending added up day by day: {spent} so far{previous, select, none {} other {, against {previous} in the previous period by the same day}}{projected, select, none {} other {, heading for about {projected}}}."
+        "chartLabel": "Spending added up day by day: {spent} so far{previous, select, none {} other {, against {previous} in the previous period by the same day}}{committed, select, none {} other {, {committed} with the bills still to come}}."
       },
       "hero": {
         "soFarMonth": "So far this month",
@@ -3267,9 +3267,9 @@
         "less": "{amount} less than {period, select, none {last period} other {{period}}}",
         "more": "{amount} more than {period, select, none {last period} other {{period}}}",
         "same": "Same as {period, select, none {last period} other {{period}}}",
-        "pace": "At this pace {period, select, none {the period} other {{period}}} ends around <b>{amount}</b>.",
-        "paceInside": "At this pace {period, select, none {the period} other {{period}}} ends around <b>{amount}</b>, inside the {budget} budget.",
-        "paceOver": "At this pace {period, select, none {the period} other {{period}}} ends around <b>{amount}</b>, {over} over the {budget} budget.",
+        "committed": "{spent} spent and {bills} in bills still to come: <b>{committed}</b> is spoken for.",
+        "committedInside": "{spent} spent and {bills} in bills still to come: <b>{committed}</b> of the {budget} budget is spoken for, {left} left for everything else.",
+        "committedOver": "{spent} spent and {bills} in bills still to come: <b>{committed}</b>, already {over} over the {budget} budget.",
         "incomeVs": "{change} vs {period, select, none {last period} other {{period}}}",
         "incomeSame": "same as {period, select, none {last period} other {{period}}}",
         "savedShare": "{pct}% of income",
@@ -3422,7 +3422,7 @@
         "assets": "Assets",
         "debts": "Debts",
         "pace": "At this pace",
-        "paceNote": "Income, savings and repayments",
+        "paceNote": "Income minus what you plan to spend",
         "by": "by {date}"
       },
       "chart": {

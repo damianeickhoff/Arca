@@ -34,30 +34,15 @@ export interface RunningTotals {
   /** The previous period's running total, aligned by day index (one entry per day of
    *  the previous period, which can be a day or two shorter or longer). */
   previous: number[];
-  /** Where the period ends: spent so far, the bills still due and day-to-day spending
-   *  for the days left (see runningTotals); null unless it is running. */
-  projected: number | null;
+  /** What is spoken for while the period runs: spent so far plus the bills still due
+   *  before the end. Where the period ends before any more day-to-day spending — known
+   *  money, never a guess; null unless it is running. */
+  committed: number | null;
   /** The previous period's total by the same day; null when it had no spending or
    *  this period has no days yet. */
   previousAtSameDay: number | null;
   /** This period minus the previous one by the same day; null without a previous. */
   difference: number | null;
-}
-
-/**
- * Day-to-day spending per day: spending no recurring bill pays (groceries, fuel, a
- * holiday), over this period so far and the periods before it together. Taking the
- * history along keeps a one-off early in the period from being read as the month's
- * pace; as the period runs, its own days weigh in more.
- */
-export function dayToDayPerDay(input: {
-  /** Day-to-day spending in this period so far, and the days that covers. */
-  current: { spent: number; days: number };
-  /** The same over the periods before it (only days since the first transaction). */
-  history: { spent: number; days: number };
-}): number {
-  const days = input.current.days + input.history.days;
-  return days > 0 ? roundToCents((input.current.spent + input.history.spent) / days) : 0;
 }
 
 /**
@@ -73,10 +58,10 @@ export function previousPeriod(from: string, to: string, config: number | Financ
 
 /**
  * Running totals for the hero's line chart. The previous period (previousPeriod) is
- * aligned by day index, so day 1 is compared with day 1. The projection is
- * built from what is known, never a straight line from the first days (rent and a
- * holiday paid on payday would be multiplied by the month's length): spent so far, plus
- * the bills still due before the end, plus day-to-day spending per day for the days left.
+ * aligned by day index, so day 1 is compared with day 1. There is no guess at where the
+ * period ends: a straight line from the first days multiplied rent and a holiday paid on
+ * payday by the month's length, and an average of earlier months swung with every
+ * one-off. `committed` is what is known: spent so far plus the bills still due.
  */
 export function runningTotals(input: {
   from: string;
@@ -88,9 +73,8 @@ export function runningTotals(input: {
   previousDaily: ReadonlyMap<string, number>;
   /** The previous period; the same length right before `from` when left out. */
   previousRange?: { from: string; to: string };
-  /** What is still to come while the period runs: the bills due from today to the end
-   *  and day-to-day spending per day (dayToDayPerDay). */
-  ahead: { billsDue: number; perDay: number };
+  /** The bills due from today to the end, while the period runs. */
+  billsDue: number;
 }): RunningTotals {
   const { from, to, today } = input;
   const days = Math.max(1, daysInclusive(from, to));
@@ -112,15 +96,14 @@ export function runningTotals(input: {
 
   const spent = current[elapsed - 1] ?? 0;
   const running = from <= today && today <= to;
-  // Today's own spending is already in `spent`, so the per-day rate covers the days after it.
-  const projected = running ? roundToCents(spent + input.ahead.billsDue + input.ahead.perDay * (days - elapsed)) : null;
+  const committed = running ? roundToCents(spent + input.billsDue) : null;
   const previousAtSameDay = elapsed > 0 && previous[prevDays - 1] > 0 ? previous[Math.min(elapsed, prevDays) - 1] : null;
   return {
     days,
     elapsed,
     current,
     previous,
-    projected,
+    committed,
     previousAtSameDay,
     difference: previousAtSameDay != null ? roundToCents(spent - previousAtSameDay) : null,
   };
@@ -133,7 +116,8 @@ export interface RunningTotalPlot {
   current: string | null;
   /** The previous period's line over the whole length; null when it had no spending. */
   previous: string | null;
-  /** From today to where the period ends at this pace; null unless it is running. */
+  /** From today to the end of the period at what is committed (the bills still due on
+   *  top of what is spent); null unless it is running. */
   projection: { x1: number; y1: number; x2: number; y2: number } | null;
   /** The budget's height in viewBox units; null without a budget. */
   budgetY: number | null;
@@ -143,14 +127,14 @@ export interface RunningTotalPlot {
 
 /**
  * Lays out the running totals: the scale fits the highest of this period, the previous
- * one, the projection and the budget, with `top` units kept free above it.
+ * one, what is committed and the budget, with `top` units kept free above it.
  */
 export function runningTotalPlot(totals: RunningTotals, opts: { width: number; height: number; top: number; budget?: number | null }): RunningTotalPlot {
-  const { days, elapsed, current, previous, projected } = totals;
+  const { days, elapsed, current, previous, committed } = totals;
   const { width: W, height: H, top, budget = null } = opts;
   const spent = current[elapsed - 1] ?? 0;
   const previousTotal = previous.at(-1) ?? 0;
-  const ceiling = Math.max(1, previousTotal, projected ?? 0, budget ?? 0, spent) * 1.04;
+  const ceiling = Math.max(1, previousTotal, committed ?? 0, budget ?? 0, spent) * 1.04;
   const x = (day: number) => (day / days) * W;
   const y = (v: number) => H - (v / ceiling) * (H - top);
   const points = (values: number[]) => [`0,${H}`, ...values.map((v, i) => `${x(i + 1)},${y(v)}`)].join(" ");
@@ -158,7 +142,7 @@ export function runningTotalPlot(totals: RunningTotals, opts: { width: number; h
     current: elapsed > 0 ? points(current) : null,
     // A previous month a day or two longer ends at the right edge with this one.
     previous: previous.some((v) => v > 0) ? points(previous.slice(0, days)) : null,
-    projection: projected != null && elapsed > 0 && elapsed < days ? { x1: x(elapsed), y1: y(spent), x2: W, y2: y(projected) } : null,
+    projection: committed != null && elapsed > 0 && elapsed < days ? { x1: x(elapsed), y1: y(spent), x2: W, y2: y(committed) } : null,
     budgetY: budget != null ? y(budget) : null,
     today: elapsed > 0 ? { left: (x(elapsed) / W) * 100, top: (y(spent) / H) * 100 } : null,
   };

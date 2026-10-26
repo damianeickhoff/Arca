@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 /**
  * Insights › Overview "This month against last": spending added up day by day, this
  * period solid up to today, the previous period grey and dashed over the whole length,
- * a dotted projection from today to the end, the budget as a thin ember dashed line
+ * a dotted line from today to what is committed at the end (the bills still to come), the budget as a thin ember dashed line
  * with its label, and the ember dot at today.
  *
  * The plot box carries its own minimum height and the SVG fills it absolutely, so the
@@ -39,7 +39,7 @@ export async function RunningTotalCard({
   className?: string;
 }) {
   const t = await getTranslations("insights.overview");
-  const { elapsed, current, previous, projected } = totals;
+  const { elapsed, current, previous, committed } = totals;
   const spent = current[elapsed - 1] ?? 0;
   const empty = spent <= 0 && !previous.some((v) => v > 0);
 
@@ -53,7 +53,7 @@ export async function RunningTotalCard({
   const label = t("runningTotal.chartLabel", {
     spent: formatEurWhole(spent),
     previous: totals.previousAtSameDay != null ? formatEurWhole(totals.previousAtSameDay) : "none",
-    projected: projected != null ? formatEurWhole(projected) : "none",
+    committed: committed != null ? formatEurWhole(committed) : "none",
   });
 
   return (

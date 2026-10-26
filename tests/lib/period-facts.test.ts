@@ -5,7 +5,6 @@ import {
   balanceOf,
   blockMapLayout,
   buildSummaryFacts,
-  dayToDayPerDay,
   monthOfPeriod,
   previousPeriod,
   runningTotals,
@@ -61,7 +60,7 @@ describe("runningTotals", () => {
     ["2026-09-10", 170], // day 11
     ["2026-09-25", 300], // day 26
   ]);
-  const base = { from: "2026-10-01", to: "2026-10-31", today: "2026-10-20", daily, previousDaily, ahead: { billsDue: 0, perDay: 10 } };
+  const base = { from: "2026-10-01", to: "2026-10-31", today: "2026-10-20", daily, previousDaily, billsDue: 0 };
 
   it("adds up this period day by day up to today", () => {
     const r = runningTotals(base);
@@ -87,18 +86,17 @@ describe("runningTotals", () => {
     expect(r.difference).toBe(-50);
   });
 
-  it("projects spent so far, the bills still due and day-to-day spending for the days left", () => {
-    // 200 spent by the 20th, 11 days to go at 10 a day, no bills.
-    expect(runningTotals(base).projected).toBe(310);
-    // Rent and a holiday on day 1 aren't multiplied by the month: only what is still to come is added.
-    const early = runningTotals({ ...base, today: "2026-10-01", daily: new Map([["2026-10-01", 4000]]), ahead: { billsDue: 250.5, perDay: 40 } });
-    expect(early.projected).toBe(4000 + 250.5 + 40 * 30);
+  it("commits what is spent so far plus the bills still due, never a guess", () => {
+    expect(runningTotals(base).committed).toBe(200);
+    // Rent and a holiday on day 1 aren't multiplied by the month: only the bills to come are added.
+    const early = runningTotals({ ...base, today: "2026-10-01", daily: new Map([["2026-10-01", 4000]]), billsDue: 1295.51 });
+    expect(early.committed).toBe(5295.51);
   });
 
   it("has no projection once the period is over, and compares whole periods", () => {
     const r = runningTotals({ ...base, today: "2026-11-03" });
     expect(r.elapsed).toBe(31);
-    expect(r.projected).toBeNull();
+    expect(r.committed).toBeNull();
     expect(r.current[30]).toBe(1199);
     expect(r.previousAtSameDay).toBe(550);
     expect(r.difference).toBe(649);
@@ -108,7 +106,7 @@ describe("runningTotals", () => {
     const before = runningTotals({ ...base, today: "2026-09-15" });
     expect(before.elapsed).toBe(0);
     expect(before.current).toEqual([]);
-    expect(before.projected).toBeNull();
+    expect(before.committed).toBeNull();
     expect(before.previousAtSameDay).toBeNull();
     const noPrevious = runningTotals({ ...base, previousDaily: new Map() });
     expect(noPrevious.previousAtSameDay).toBeNull();
@@ -138,23 +136,11 @@ describe("previousPeriod", () => {
       daily: new Map([["2026-10-23", 100]]),
       previousDaily: new Map([["2026-09-23", 40], ["2026-09-25", 60], ["2026-10-22", 500]]),
       previousRange: { from: "2026-09-23", to: "2026-10-22" },
-      ahead: { billsDue: 0, perDay: 0 },
+      billsDue: 0,
     });
     expect(r.previous).toHaveLength(30);
     expect(r.previousAtSameDay).toBe(100);
     expect(r.difference).toBe(0);
-  });
-});
-
-describe("dayToDayPerDay", () => {
-  it("averages this period so far together with the periods before it", () => {
-    // A €1,675 holiday in the first 3 days next to 90 days of €30 a day.
-    expect(dayToDayPerDay({ current: { spent: 1675, days: 3 }, history: { spent: 2700, days: 90 } })).toBe(47.04);
-  });
-
-  it("uses this period alone without history, and nothing without days", () => {
-    expect(dayToDayPerDay({ current: { spent: 300, days: 10 }, history: { spent: 0, days: 0 } })).toBe(30);
-    expect(dayToDayPerDay({ current: { spent: 0, days: 0 }, history: { spent: 0, days: 0 } })).toBe(0);
   });
 });
 

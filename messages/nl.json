@@ -3254,7 +3254,7 @@
         "budgetLine": "Budget {amount}",
         "budgetLineAll": "Budget (alle uitgaven) {amount}",
         "today": "vandaag",
-        "chartLabel": "Uitgaven dag voor dag opgeteld: {spent} tot nu toe{previous, select, none {} other {, tegen {previous} in de vorige periode op dezelfde dag}}{projected, select, none {} other {, op weg naar zo'n {projected}}}."
+        "chartLabel": "Uitgaven dag voor dag opgeteld: {spent} tot nu toe{previous, select, none {} other {, tegen {previous} in de vorige periode op dezelfde dag}}{committed, select, none {} other {, {committed} met de vaste lasten die nog komen}}."
       },
       "hero": {
         "soFarMonth": "Deze maand tot nu toe",
@@ -3267,9 +3267,9 @@
         "less": "{amount} minder dan {period, select, none {vorige periode} other {in {period}}}",
         "more": "{amount} meer dan {period, select, none {vorige periode} other {in {period}}}",
         "same": "Net zoveel als {period, select, none {vorige periode} other {in {period}}}",
-        "pace": "In dit tempo eindigt {period, select, none {de periode} other {{period}}} rond <b>{amount}</b>.",
-        "paceInside": "In dit tempo eindigt {period, select, none {de periode} other {{period}}} rond <b>{amount}</b>, binnen het budget van {budget}.",
-        "paceOver": "In dit tempo eindigt {period, select, none {de periode} other {{period}}} rond <b>{amount}</b>, {over} boven het budget van {budget}.",
+        "committed": "{spent} uitgegeven en {bills} aan vaste lasten die nog komen: <b>{committed}</b> ligt al vast.",
+        "committedInside": "{spent} uitgegeven en {bills} aan vaste lasten die nog komen: <b>{committed}</b> van het budget van {budget} ligt al vast, {left} over voor de rest.",
+        "committedOver": "{spent} uitgegeven en {bills} aan vaste lasten die nog komen: <b>{committed}</b>, al {over} boven het budget van {budget}.",
         "incomeVs": "{change} t.o.v. {period, select, none {vorige periode} other {{period}}}",
         "incomeSame": "gelijk aan {period, select, none {vorige periode} other {{period}}}",
         "savedShare": "{pct}% van je inkomen",
@@ -3422,7 +3422,7 @@
         "assets": "Bezittingen",
         "debts": "Schulden",
         "pace": "In dit tempo",
-        "paceNote": "Inkomen, sparen en aflossingen",
+        "paceNote": "Inkomen min wat je wilt uitgeven",
         "by": "in {date}"
       },
       "chart": {
