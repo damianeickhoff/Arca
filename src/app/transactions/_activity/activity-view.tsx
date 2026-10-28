@@ -199,7 +199,7 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "toolba
     </div>
   );
 
-  if (variant === "toolbar") return <div className="min-w-0 flex-1">{field}</div>;
+  if (variant === "toolbar") return <div className="min-w-[180px] flex-1">{field}</div>;
   return (
     <div
       data-hide-under-sheet=""
@@ -397,8 +397,8 @@ export function ActivityView({
       {/* The list, with its toolbar on desktop */}
       <section aria-label={t("listTitle")} className="flex min-w-0 flex-col rounded-clear-card bg-clear-card lg:self-stretch">
         {isDesktop && (
-          <div role="search" className="sticky top-0 z-10 flex shrink-0 items-center gap-2 rounded-t-clear-card bg-clear-card px-5 pt-5 pb-2">
-            <h2 className="m-0 mr-2 ml-1 shrink-0 text-lg font-bold whitespace-nowrap text-clear-ink">
+          <div role="search" className="sticky top-0 z-10 flex shrink-0 flex-wrap items-center gap-2 rounded-t-clear-card bg-clear-card px-5 pt-5 pb-2">
+            <h2 className="m-0 mr-2 ml-1 hidden shrink-0 text-lg font-bold whitespace-nowrap text-clear-ink xl:block">
               {t("listTitle")}
             </h2>
             <ActivitySearch search={filters.search} variant="toolbar" />

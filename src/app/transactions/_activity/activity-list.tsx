@@ -117,8 +117,9 @@ function ActivityRow({
   const value = signedValue(row);
   const tags = rowTags(row, tr);
   const name = resolveDisplayName(row);
-  // Under the name: the time of day when the bank gave one (and the date in a flat list).
-  const sub = [dateLabel, transactionTime(row.rawDescription)].filter(Boolean).join(" · ");
+  // Under the name: the time of day when the bank gave one, else the account (and the
+  // date first in a flat list).
+  const sub = [dateLabel, transactionTime(row.rawDescription) ?? row.bankName].filter(Boolean).join(" · ");
 
   return (
     <div

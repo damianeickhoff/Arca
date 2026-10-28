@@ -17,7 +17,7 @@ const iso = (d: string) => new Date(`${d}T12:00:00`);
  * period or filters the list shows. "Left after spending" (in minus out) is the answer;
  * In and Out sit under it, the month's dates are a label on the card, and the chart shows
  * the money out per day with the bills still scheduled after today hatched.
- * Desktop: the figures on the left, the chart on the right. Phones: a compact card with
+ * Desktop: the figures on the left, the chart on the right (stacked below xl). Phones: a compact card with
  * a small chart beside the figure and In / Out on one line.
  */
 export function PeriodHero({
@@ -68,7 +68,7 @@ export function PeriodHero({
       </div>
 
       {/* Desktop */}
-      <div className="hidden min-h-0 flex-1 gap-7 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+      <div className="hidden min-h-0 flex-1 gap-6 lg:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] xl:gap-7">
         <div className="flex min-w-0 flex-col gap-4">
           <span className="self-start">{month}</span>
           <div className="flex min-w-0 flex-col gap-1.5">
