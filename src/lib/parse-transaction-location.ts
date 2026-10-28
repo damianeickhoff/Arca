@@ -36,14 +36,32 @@ const COMPANY_SUFFIXES = new Set([
   "BV", "NV", "VOF", "CV", "LTD", "INC", "SA", "AG", "GMBH", "PLC", "CO", "CORP", "GROUP",
 ]);
 
+// "2switch" → "2Switch": a word that starts with digits gets its first letter capitalised.
 function titleCase(s: string): string {
-  return s.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return s
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\b(\d+)([a-z])/g, (_, digits: string, c: string) => digits + c.toUpperCase());
+}
+
+// A brand written with a leading digit ("2Switch", "2theloo"). Store codes and
+// reference numbers ("1451", "CUL009", "EV2348", "I82611") never look like this.
+function isDigitBrand(token: string): boolean {
+  return /^\d{1,2}[a-zA-Z]{3,}$/.test(token);
+}
+
+function isStoreCode(token: string): boolean {
+  return /\d/.test(token) && !isDigitBrand(token);
+}
+
+function isWord(token: string): boolean {
+  return /^[a-zA-Z]/.test(token) || isDigitBrand(token);
 }
 
 function isNoise(token: string): boolean {
   if (token.endsWith(":")) return true;          // label tokens: "Kaartnr:", "Omschrijving:"
   if (token.endsWith(".") && token.length <= 2) return true; // single-letter abbreviations: "a."
-  if (/\d/.test(token)) return true;             // store codes / reference numbers
+  if (isStoreCode(token)) return true;           // store codes / reference numbers
   if (SKIP_TOKENS.has(token.toUpperCase())) return true;
   return false;
 }
@@ -75,6 +93,11 @@ export function parseTransactionLocation(description: string): ParsedLocation | 
     }
   }
 
+  return parseCardDescription(description);
+}
+
+// The generic "MERCHANT [CODE] CITY [CITY] NLD" parse, without the configured overrides.
+function parseCardDescription(description: string): ParsedLocation | null {
   let s = description.replace(/\s+/g, " ").trim();
   s = s.replace(/\b(PAS(?:volgnr|nr)?|betaalpas|apple\s*pay|google\s*pay|contactloos)\b\.?/gi, " ");
   s = s.replace(/\b[A-Z]{2}\d{2}[A-Z0-9]{8,}\b/g, " ");
@@ -107,14 +130,14 @@ export function parseTransactionLocation(description: string): ParsedLocation | 
   }
 
   // Strip store/location codes (tokens containing digits) just before the city.
-  while (cityStart - 1 >= 0 && /\d/.test(tokens[cityStart - 1])) {
+  while (cityStart - 1 >= 0 && isStoreCode(tokens[cityStart - 1])) {
     cityStart -= 1;
   }
 
   // Merchant = remaining leading tokens, filtered for noise, then company suffixes stripped.
   const rawMerchant = tokens
     .slice(0, cityStart)
-    .filter((t) => /^[a-zA-Z]/.test(t) && !isNoise(t))
+    .filter((t) => isWord(t) && !isNoise(t))
     .slice(0, 4);
 
   const merchantTokens = stripSuffixes(rawMerchant).slice(0, 3);
@@ -128,9 +151,12 @@ export function parseTransactionLocation(description: string): ParsedLocation | 
 export function extractMerchantName(description: string | null | undefined): string | null {
   if (!description) return null;
 
-  // Try location-aware parsing first (handles "MERCHANT CITY CITY NLD" patterns).
-  const parsed = parseTransactionLocation(description);
-  if (parsed?.merchant) return parsed.merchant;
+  // Try location-aware parsing first (handles "MERCHANT CITY CITY NLD" patterns). Its
+  // merchant is whatever stands before the city; when nothing does ("1451 Lienden
+  // Lienden NLD": a store number and the town) there is no merchant to find, and the
+  // fallback below would only make one out of the town and the country code.
+  const parsed = cardLine(description);
+  if (parsed) return parsed.merchant || null;
 
   // Fallback: walk tokens left-to-right, skip leading noise, collect brand words.
   const tokens = description.trim().split(/\s+/);
@@ -142,7 +168,7 @@ export function extractMerchantName(description: string | null | undefined): str
       if (brand.length === 0) { skippedNoise = true; continue; } // skip leading noise
       break; // stop collecting once we hit noise after brand words
     }
-    if (!/^[a-zA-Z]/.test(t)) break;
+    if (!isWord(t)) break;
     brand.push(t);
     if (brand.length >= 3) break;
   }
@@ -154,5 +180,30 @@ export function extractMerchantName(description: string | null | undefined): str
   // Reject single short words that were only found after skipping noise — likely noise too.
   if (skippedNoise && cleaned.length === 1 && cleaned[0].length <= 3) return null;
 
-  return cleaned.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  return cleaned.map(capitalize).join(" ");
+}
+
+/** A description's card line parsed: the merchant before the town ("" when nothing
+ *  stands there) and the town ("1451 Lienden LIENDEN NLD Pasvolgnr: …" → "", "Lienden"),
+ *  or null when it has no card line. */
+export function cardLine(description: string | null | undefined): ParsedLocation | null {
+  if (!description) return null;
+  return parseCardDescription(cardPart(description));
+}
+
+// A bank sync's raw description carries the card line with the payment details after it
+// ("JD1601GammaTiel TIEL NLD Pasvolgnr: 906 …"): the part up to the first upper-case
+// three-letter country code. Two-letter codes are left out, they are ordinary words too
+// ("De Veerstoep").
+function cardPart(description: string): string {
+  const tokens = description.trim().split(/\s+/);
+  const i = tokens.findIndex((t, idx) => idx > 0 && t.length === 3 && t === t.toUpperCase() && COUNTRY_CODES.has(t));
+  return i < 0 ? description : tokens.slice(0, i + 1).join(" ");
+}
+
+// "ALBERT" → "Albert", "2SWITCH" → "2Switch".
+function capitalize(word: string): string {
+  const lower = word.toLowerCase();
+  const i = lower.search(/[a-z]/);
+  return i < 0 ? lower : lower.slice(0, i) + lower[i].toUpperCase() + lower.slice(i + 1);
 }

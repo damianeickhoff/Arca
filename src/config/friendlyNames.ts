@@ -19,6 +19,8 @@ export const FRIENDLY_NAMES: FriendlyNameRule[] = [
   { pattern: "amazon", name: "Amazon" },
   { pattern: "bol.com", name: "Bol.com" },
   { pattern: "action", name: "Action" },
+  // Action's Lienden store: its terminal sends only the store number and the town.
+  { pattern: "1451 lienden", name: "Action" },
   { pattern: "Wibra", name: "Wibra" },
   { pattern: "paypal", name: "PayPal" },
   { pattern: "tikkie", name: "Tikkie" },

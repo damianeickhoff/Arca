@@ -10,6 +10,7 @@ import { detectBrandIcon } from "@/lib/brand-detect";
 import { matchMerchantPattern, sortPatterns } from "@/lib/merchant-patterns";
 import { migrateBrandRulesToMerchants } from "@/lib/brand-rules-migration";
 import { migrateAutoRecurringItems } from "@/lib/recurring-migration";
+import { cleanUpCityMerchants } from "@/lib/merchant-cleanup-migration";
 import { pairTransfers } from "@/lib/transfer-pairs";
 import { markJointPaybacks } from "@/lib/joint-accounts";
 import { DEFAULT_CATEGORIES, normalizeMatchingPattern } from "@/config/categories";
@@ -509,6 +510,10 @@ addColumnIfMissing("recurring_items", "alt_match_patterns", "TEXT");
     )
   `);
   sqlite.exec(`CREATE UNIQUE INDEX IF NOT EXISTS merchant_patterns_unique ON merchant_patterns(merchant_id, pattern)`);
+
+  // One-time: drop the merchants the old extractor made out of a town name (see
+  // src/lib/merchant-cleanup-migration.ts); the backfill below links their rows again.
+  cleanUpCityMerchants(sqlite);
 
   // Backfill: derive a merchant for every transaction that doesn't have one yet.
   // Runs on every boot but only ever looks at merchant_id IS NULL rows, so after the

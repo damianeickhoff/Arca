@@ -2,7 +2,7 @@
 // the boot-time backfill in src/db/index.ts calls these directly against the raw sqlite
 // handle, and importing db from here would make that circular.
 
-import { extractMerchantName } from "@/lib/parse-transaction-location";
+import { cardLine, extractMerchantName } from "@/lib/parse-transaction-location";
 import { resolveFriendlyName } from "@/lib/friendly-names";
 
 /** Dedup key for a merchant name: lowercase, accents and punctuation removed, spaces
@@ -23,7 +23,9 @@ export function normalizeMerchantKey(name: string): string {
  *   3. the same extractor on the raw bank description, which sometimes carries the
  *      merchant when the short description doesn't.
  * Returns null when nothing merchant-like could be found — a person-to-person transfer
- * or a bare reference number should stay merchant-less rather than get a junk profile. */
+ * or a bare reference number should stay merchant-less rather than get a junk profile.
+ * So is a name that is only the town on the card line: a terminal registered as a store
+ * number and its town ("1451 Lienden", Action's Lienden store) names no merchant. */
 export function deriveMerchantName(row: {
   description: string;
   rawDescription?: string | null;
@@ -31,10 +33,14 @@ export function deriveMerchantName(row: {
   const friendly = resolveFriendlyName(row.description);
   if (friendly) return friendly;
 
-  const fromDescription = extractMerchantName(row.description);
+  const card = cardLine(row.description) ?? cardLine(row.rawDescription);
+  const townKey = card ? normalizeMerchantKey(card.city) : "";
+  const real = (name: string | null) => (name && normalizeMerchantKey(name) !== townKey ? name : null);
+
+  const fromDescription = real(extractMerchantName(row.description));
   if (fromDescription) return fromDescription;
 
-  const fromRaw = extractMerchantName(row.rawDescription);
+  const fromRaw = real(extractMerchantName(row.rawDescription));
   if (fromRaw) return fromRaw;
 
   return null;
