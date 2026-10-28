@@ -218,10 +218,13 @@ export default async function TransactionsPage({
   });
 
   const visibleRows = filteredRows.slice(0, limit);
-  // Totals must reflect every filtered transaction, not just the page currently shown —
-  // the "show more" limit only affects which rows render, not the summary figures.
-  const allocationRows = buildSplitAllocations(filteredRows, splitMap);
 
+  // ── The hero: always the current financial month, whatever the list shows (period
+  // and filters only narrow the list).
+  const monthRange = financialMonthRange(financialMonth, 0);
+  const monthRows = await getTransactions(monthRange.from, monthRange.to);
+  const monthSplitMap = groupTransactionSplits(await getTransactionSplitRows(monthRows.map((row) => row.id)));
+  const allocationRows = buildSplitAllocations(monthRows, monthSplitMap);
   const incomeRows = allocationRows.filter(
     (row) => row.direction === "income" && !row.isReimbursement && !row.outOfReports && row.categoryGroup !== "savings",
   );
@@ -231,7 +234,7 @@ export default async function TransactionsPage({
   // For the hero's In and Out explanations: how many payments came in, and how much of
   // the money out went to recurring bills.
   const incomeCount = new Set(incomeRows.map((row) => row.transactionId)).size;
-  const recurringIds = new Set(filteredRows.filter((row) => row.recurringItemId != null).map((row) => row.id));
+  const recurringIds = new Set(monthRows.filter((row) => row.recurringItemId != null).map((row) => row.id));
   const fixed = expenseRows.filter((row) => recurringIds.has(row.transactionId)).reduce((sum, row) => sum + row.amount, 0);
 
   // "Show more" link — bumps the row limit by 50 while keeping every other filter intact.
@@ -273,23 +276,18 @@ export default async function TransactionsPage({
   };
 
   // ── Context for the detail panel (see _activity/context.ts and lib/activity-context.ts)
-  const monthRange = financialMonthRange(financialMonth, 0);
   const linkedRecurringIds = visibleRows.map((r) => r.recurringItemId).filter((id): id is number => id != null);
   const [context, locale, receiptScan] = await Promise.all([getActivityContext(financialMonth, linkedRecurringIds), getLocale(), isReceiptScanReady()]);
 
-  // ── The period hero's chart: money out per day, the bills still due after today
-  // hatched. "All" starts at the oldest transaction shown, not the year-2000 floor.
+  // ── The hero's chart: this month's money out per day, the bills still due after
+  // today hatched.
   const today = todayStr();
   const chart = buildSpendChart({
-    start: from === ALL_FROM ? filteredRows.reduce((min, r) => (r.date < min ? r.date : min), to) : from,
-    end: to,
+    start: monthRange.from,
+    end: monthRange.to,
     today,
     spending: expenseRows,
-    // Bills are money out: none while only money in is shown.
-    scheduled:
-      direction === "income"
-        ? []
-        : upcomingStatuses.filter((s) => s.item.type !== "income").map((s) => ({ date: s.dueDate!, amount: Math.abs(s.item.amount ?? 0) })),
+    scheduled: upcomingStatuses.filter((s) => s.item.type !== "income").map((s) => ({ date: s.dueDate!, amount: Math.abs(s.item.amount ?? 0) })),
   });
 
   // ── The cards beside the hero ──────────────────────────────────────────────
@@ -312,7 +310,7 @@ export default async function TransactionsPage({
     <div className="flex flex-col gap-3.5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
       <ActivityNavigationProvider>
       <ActivitySelectionProvider>
-      <ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} canSelect={visibleRows.length > 0} receiptScan={receiptScan} />
+      <ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} receiptScan={receiptScan} />
       <ActivityView
         filters={filters}
         categories={cats}

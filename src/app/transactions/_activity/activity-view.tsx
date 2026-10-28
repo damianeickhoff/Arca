@@ -22,7 +22,7 @@ import { useFadeOnChange } from "@/lib/use-motion";
 import { TransactionDetailPanel } from "./detail-panel";
 import type { ActivityContext, ActivitySpendChart, ActivityTiles } from "./context";
 import { ActivitySideCards, PeriodHero } from "./period-hero";
-import { ActivitySelectButton, useActivitySelection } from "./select-mode";
+import { useActivitySelection } from "./select-mode";
 
 export type ActivityFilters = {
   cats: Category[];
@@ -92,21 +92,19 @@ function SortMenu({ sort, dir }: { sort?: string; dir?: string }) {
 
 /**
  * Activity's header row: the title with "Every transaction across N accounts · M need a
- * category" from lg; phone actions are Select (select mode) and Filters (every filter
- * in a sheet); desktop actions are Scan receipt, Import CSV and Add transaction.
+ * category" from lg; the phone action is Filters (every filter in a sheet); desktop
+ * actions are Scan receipt, Import CSV and Add transaction. Select mode starts from a
+ * press and hold on a row (or a Shift- / Ctrl / Cmd-click), so there is no Select button.
  */
 export function ActivityHeader({
   accountCount,
   needsReviewCount,
   filters,
-  canSelect,
   receiptScan,
 }: {
   accountCount: number;
   needsReviewCount: number;
   filters: ActivityFilters;
-  /** False when the list is empty: there is nothing to select. */
-  canSelect: boolean;
   /** The local AI server has a vision model (Settings › AI), so receipts can be scanned. */
   receiptScan: boolean;
 }) {
@@ -122,7 +120,6 @@ export function ActivityHeader({
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <ActivitySelectButton layout="phone" disabled={!canSelect} />
         <TransactionFilters {...filters} layout="header" />
         {receiptScan && (
           <Link href="/transactions/add?scan=1" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
@@ -223,7 +220,7 @@ function ActivitySearch({ search, variant }: { search?: string; variant: "toolba
  * the detail panel as a bottom sheet, search is docked above the tab bar and Filters
  * sits in the header. From lg: one grid of two columns (two thirds, one third) — the
  * hero beside the stacked Needs a category and Upcoming cards, and under them the list
- * (with its toolbar: count, search, Filters, sort, Select) beside the inline detail
+ * (with its toolbar: search, Filters, sort) beside the inline detail
  * panel for the selected row.
  */
 export function ActivityView({
@@ -384,7 +381,7 @@ export function ActivityView({
     <div className="flex flex-col gap-3.5 pb-[var(--bottom-bar-clearance)] lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)] lg:items-start lg:gap-5 lg:pb-0">
       {/* The period: left after spending, in / out, spending per day */}
       <div ref={summaryRef} className={cn("min-w-0 lg:flex lg:flex-col lg:self-stretch lg:[&>section]:flex-1", dim, !hasSide && "lg:col-span-2")}>
-        <PeriodHero filters={filters} income={income} expense={expense} fixed={fixed} incomeCount={incomeCount} chart={chart} />
+        <PeriodHero income={income} expense={expense} fixed={fixed} incomeCount={incomeCount} chart={chart} />
       </div>
       {hasSide && (
         <>
@@ -402,12 +399,11 @@ export function ActivityView({
         {isDesktop && (
           <div role="search" className="sticky top-0 z-10 flex shrink-0 items-center gap-2 rounded-t-clear-card bg-clear-card px-5 pt-5 pb-2">
             <h2 className="m-0 mr-2 ml-1 shrink-0 text-lg font-bold whitespace-nowrap text-clear-ink">
-              {t("listTitle")} <span className="font-semibold text-clear-ink-2">· {filteredCount}</span>
+              {t("listTitle")}
             </h2>
             <ActivitySearch search={filters.search} variant="toolbar" />
             <TransactionFilters {...filters} layout="toolbar" />
             <SortMenu sort={filters.sort} dir={filters.dir} />
-            <ActivitySelectButton layout="desktop" disabled={filteredCount === 0} />
           </div>
         )}
         <div ref={listRef} className={cn("px-3 pt-0.5 pb-2.5 lg:px-5 lg:pt-0 lg:pb-5", dim)}>

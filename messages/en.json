@@ -1311,11 +1311,11 @@
     },
     "activityFilters": {
       "title": "All filters in one place",
-      "body": "Narrow the list by account, category, needs/wants/save, direction, amount or recurring. The count shows how many are on; Clear all resets them. The period sits on the black card."
+      "body": "Narrow the list by period, account, category, needs/wants/save, direction, amount or recurring. The count shows how many are on; Clear all resets them."
     },
     "activitySelectMode": {
       "title": "Select several at once",
-      "body": "Tap Select, hold a row, or Shift-click."
+      "body": "Hold a row to start selecting, or Shift-click one on a computer."
     },
     "activitySearchBar": {
       "title": "Search sits at the bottom",
@@ -4100,21 +4100,19 @@
       "notInReports": "Not in reports"
     },
     "bulk": {
-      "select": "Select",
-      "deselect": "Deselect",
-      "done": "Done"
+      "deselect": "Deselect"
     },
     "summary": {
       "in": "In",
       "out": "Out",
-      "label": "This period",
+      "label": "This month",
       "inSub": "{count, plural, one {# payment in} other {# payments in}}",
       "outSub": "{amount} of it fixed costs",
       "outSubNone": "No fixed costs in this selection",
       "left": "Left after spending",
       "over": "More out than in",
       "chart": {
-        "title": "{unit, select, day {Spending per day} week {Spending per week} other {Spending per month}}",
+        "title": "Spending per day",
         "average": "{amount} a day on average",
         "today": "Today",
         "scheduled": "Bills still scheduled · {amount}"
@@ -4415,8 +4413,6 @@
       "more": "More budget actions",
       "resetDay": "Change the reset day",
       "deleteBudget": "Delete budget",
-      "periodLabel": "{from} – {to} · day {day} of {total}",
-      "periodLabelEnded": "{from} – {to} · ended",
       "previousPeriod": "Previous budget month",
       "nextPeriod": "Next budget month",
       "hero": {
@@ -4548,7 +4544,8 @@
         "merchantCount": "{name} · {count}",
         "more": "{count} more",
         "sort": "Sort them"
-      }
+      },
+      "periodCurrent": "Currently"
     },
     "debts": {
       "add": "Add a debt",

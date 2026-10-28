@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { IconCheck, IconReload } from "@tabler/icons-react";
-import { Icon, softIconColors } from "@/components/icon";
+import { IconCheck, IconRepeat } from "@tabler/icons-react";
+import { Icon } from "@/components/icon";
 import { Amount } from "@/components/clear/amount";
 import { Pressable } from "@/components/ui/pressable";
 import { formatEur } from "@/lib/format";
 import { isValidISODate } from "@/lib/date-valid";
 import { resolveTransactionIcon } from "@/lib/auto-brand";
 import { resolveDisplayName } from "@/lib/friendly-names";
-import { TRANSFER_TYPE_LABELS } from "@/lib/transfer-types";
+import { transactionTime } from "@/lib/transaction-time";
 import { useLongPress } from "@/lib/use-long-press";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/db/schema";
@@ -44,38 +44,21 @@ export function signedAmount(row: Pick<TransactionRow, "direction" | "amount" | 
   return `${value < 0 ? "−" : "+"}${formatEur(Math.abs(value))}`;
 }
 
-/** The tags a row carries, as plain words after the name: Paid back, Split, Recurring, Not in reports. */
-function rowTags(row: TransactionRow, tr: T): string[] {
-  const tags: string[] = [];
-  if (row.isReimbursement) tags.push(tr("tags.paidBack"));
-  if (row.isSplit) tags.push(tr("tags.split"));
-  if (row.recurringItemId != null) tags.push(tr("tags.recurring"));
-  if (row.excludeFromReports) tags.push(tr("tags.notInReports"));
+type Tag = { key: string; label: string; tone: string; dot: string };
+
+/** The tags a row carries, as pills before the amount: Paid back, Split, Recurring, Not in reports. */
+function rowTags(row: TransactionRow, tr: T): Tag[] {
+  const tags: Tag[] = [];
+  if (row.isReimbursement) tags.push({ key: "paidBack", label: tr("tags.paidBack"), tone: "bg-clear-mint text-clear-mint-ink", dot: "bg-clear-positive-fill" });
+  if (row.isSplit) tags.push({ key: "split", label: tr("tags.split"), tone: "bg-clear-lilac text-clear-lilac-ink", dot: "bg-clear-lilac-ink" });
+  if (row.recurringItemId != null) tags.push({ key: "recurring", label: tr("tags.recurring"), tone: "bg-clear-sky text-clear-sky-ink", dot: "bg-clear-info-fill" });
+  if (row.excludeFromReports) tags.push({ key: "excluded", label: tr("tags.notInReports"), tone: "bg-clear-stone text-clear-stone-ink", dot: "bg-clear-muted" });
   return tags;
 }
 
-/** The small pastel chip on a row's second line: its category (in the category's own
- *  colour), the split, the transfer, or Needs a category. */
-function CategoryChip({ row, tr }: { row: TransactionRow; tr: T }) {
-  const base = "inline-flex h-[22px] max-w-[60%] min-w-0 shrink-0 items-center rounded-full px-2 text-xs font-bold whitespace-nowrap";
-  if (row.isInternalTransfer) {
-    return <span className={cn(base, "bg-clear-stone text-clear-stone-ink")}><span className="truncate">{(row.transferType && TRANSFER_TYPE_LABELS[row.transferType]) || tr("internalTransfer")}</span></span>;
-  }
-  if (row.isSplit) {
-    return <span className={cn(base, "bg-clear-lilac text-clear-lilac-ink")}><span className="truncate">{row.splitSummary ?? tr("splitParts", { count: row.splitCount })}</span></span>;
-  }
-  if (needsCategory(row)) return <span className={cn(base, "bg-clear-peach text-clear-ember-text")}><span className="truncate">{tr("needsCategory")}</span></span>;
-  if (!row.categoryName) return null;
-  const tint = row.categoryColor ? softIconColors(row.categoryColor) : null;
-  return (
-    <span className={cn(base, !tint && "bg-clear-stone text-clear-stone-ink")} style={tint ? { backgroundColor: tint.background, color: tint.foreground } : undefined}>
-      <span className="truncate">{row.categoryName}</span>
-    </span>
-  );
-}
-
 /** The row icon: the category / merchant / brand icon as a rounded tile, or a dashed
- *  "?" tile while the row still needs a category. `round` keeps the circle. */
+ *  "?" tile while the row still needs a category. `round` keeps the circle. On phones a
+ *  recurring row gets a small repeat badge on the tile (desktop shows the Recurring pill). */
 export function RowIcon({ row, size = "md", round = false }: { row: TransactionRow; size?: "md" | "xl"; round?: boolean }) {
   if (needsCategory(row)) {
     return (
@@ -96,8 +79,8 @@ export function RowIcon({ row, size = "md", round = false }: { row: TransactionR
     <span className="relative inline-flex shrink-0">
       <Icon iconKey={ic.iconKey} color={ic.color} background={ic.background} initials={ic.initials} round={round} size={size} soft />
       {row.recurringItemId != null && (
-        <span aria-hidden className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-clear-primary ring-2 ring-clear-card">
-          <IconReload className="size-2.5 text-clear-primary-ink" stroke={3} />
+        <span aria-hidden className="absolute -right-1.5 -bottom-1.5 flex size-[18px] items-center justify-center rounded-full bg-clear-sky text-clear-sky-ink ring-2 ring-clear-card lg:hidden">
+          <IconRepeat className="size-[11px]" stroke={2.6} />
         </span>
       )}
     </span>
@@ -114,6 +97,7 @@ function ActivityRow({
   onToggle,
   onStartSelect,
   dateLabel,
+  tipAnchor,
 }: {
   row: TransactionRow;
   tr: T;
@@ -125,16 +109,21 @@ function ActivityRow({
   onStartSelect: () => void;
   /** In a flat (amount-sorted) list each row shows its own date. */
   dateLabel?: string;
+  /** The first row carries the select-mode tip. */
+  tipAnchor?: boolean;
 }) {
   // Press and hold starts select mode (phones); on desktop Shift- or Ctrl/Cmd-click does.
   const { longPressProps, consumeClick } = useLongPress(onStartSelect, !selectMode);
   const value = signedValue(row);
   const tags = rowTags(row, tr);
   const name = resolveDisplayName(row);
+  // Under the name: the time of day when the bank gave one (and the date in a flat list).
+  const sub = [dateLabel, transactionTime(row.rawDescription)].filter(Boolean).join(" · ");
 
   return (
     <div
       data-row-id={row.id}
+      data-tip-anchor={tipAnchor ? "activitySelect" : undefined}
       className={cn(
         "relative flex items-center rounded-clear-row px-1 transition-colors duration-150 lg:px-3",
         selected ? "bg-clear-peach" : active ? "bg-clear-tile" : "hover:bg-clear-tile/60 active:bg-clear-tile",
@@ -180,15 +169,19 @@ function ActivityRow({
             </span>
           </span>
         </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[15px] font-bold text-clear-ink">{name}</span>
-          <span className="flex min-w-0 items-center gap-1.5 lg:gap-2">
-            <CategoryChip row={row} tr={tr} />
-            <span className="min-w-0 truncate text-[13px] text-clear-ink-2">{[row.bankName, dateLabel].filter(Boolean).join(" · ")}</span>
-          </span>
+          {sub && <span className="truncate text-[13px] text-clear-ink-2">{sub}</span>}
         </span>
         {tags.length > 0 && (
-          <span className="hidden shrink-0 text-[13px] font-semibold whitespace-nowrap text-clear-ink-2 sm:inline">{tags.join(" · ")}</span>
+          <span className="hidden shrink-0 flex-wrap justify-end gap-1.5 sm:flex">
+            {tags.map((tag) => (
+              <span key={tag.key} className={cn("inline-flex h-[26px] items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-xs font-bold", tag.tone)}>
+                <span aria-hidden className={cn("size-[7px] rounded-full", tag.dot)} />
+                {tag.label}
+              </span>
+            ))}
+          </span>
         )}
         <Amount
           value={value}
@@ -330,6 +323,7 @@ export function ActivityList({
                   onToggle={() => toggle(row.id)}
                   onStartSelect={() => enter([row.id])}
                   dateLabel={grouped ? undefined : shortDate(row.date)}
+                  tipAnchor={row.id === rows[0]?.id}
                 />
               ))}
             </div>

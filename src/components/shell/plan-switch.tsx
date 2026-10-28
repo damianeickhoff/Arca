@@ -9,9 +9,10 @@ import { PLAN_ITEMS, activePlanKey } from "@/components/shell/nav-config";
 /**
  * The Plan hub's segmented switch — Budget | Debts | Goals — shown at the top of each
  * of the three Plan pages. They stay separate routes; the switch is what makes them
- * read as one place.
+ * read as one place. `size="sm"` is the compact switch Budget shares a row with its
+ * period stepper.
  */
-export function PlanSwitch({ className }: { className?: string }) {
+export function PlanSwitch({ size = "md", className }: { size?: "sm" | "md"; className?: string }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const active = activePlanKey(pathname);
@@ -21,6 +22,8 @@ export function PlanSwitch({ className }: { className?: string }) {
       <nav aria-label={t("plan")} data-tip-anchor="planSwitch" className={className}>
         <Segmented
           label={t("plan")}
+          size={size}
+          className={size === "sm" ? "[&>a]:px-2.5" : undefined}
           value={active ?? ""}
           items={PLAN_ITEMS.map((item) => ({ value: item.key, label: t(`planItems.${item.key}`), href: item.href }))}
         />

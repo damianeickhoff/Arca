@@ -2,26 +2,19 @@
 
 import { useState } from "react";
 import { useTranslations, useLocale } from "next-intl";
-import { IconAdjustmentsHorizontal, IconChevronDown } from "@tabler/icons-react";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { DatePicker } from "@/components/date-picker";
+import { IconAdjustmentsHorizontal, IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
 import { AccountMultiPicker } from "@/components/account-multi-picker";
 import { Icon } from "@/components/icon";
 import { ResponsivePopover } from "@/components/clear/responsive-popover";
 import { Segmented } from "@/components/clear/segmented";
+import { ClearInput } from "@/components/clear/field";
 import { ClearSwitch } from "@/components/clear/switch";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useActivityNavigation } from "./_activity/filter-transition";
 import { cn } from "@/lib/utils";
 import { currencySymbol } from "@/lib/format";
-import { transactionPeriods, matchTransactionPeriod } from "./periods";
+import { transactionPeriods, matchTransactionPeriod, ALL_FROM, todayStr } from "./periods";
 import type { Bank, Category } from "@/db/schema";
 import type { FinancialMonthConfig } from "@/lib/date-range";
 
@@ -69,79 +62,87 @@ function useFilterPush(props: Props) {
   };
 }
 
-/** How many of the Filters popover's filters are on (the period lives on the hero). */
-export function activeFilterCount(p: Pick<Props, "account" | "category" | "budgetType" | "recurring" | "min" | "max" | "direction">) {
-  return [p.account, p.category, p.budgetType, p.recurring, p.min || p.max, p.direction].filter(Boolean).length;
+/** How many of the Filters popover's filters are on; a period other than All counts too. */
+export function activeFilterCount(p: Pick<Props, "from" | "to" | "account" | "category" | "budgetType" | "recurring" | "min" | "max" | "direction">) {
+  const period = p.from !== ALL_FROM || p.to !== todayStr();
+  return [period, p.account, p.category, p.budgetType, p.recurring, p.min || p.max, p.direction].filter(Boolean).length;
 }
 
 /**
- * The period as a pill on Activity's hero card ("25 Sep – 24 Oct ▾"): the presets, and
- * Custom… for any range.
+ * The period, first in the Filters popover: a field that opens the presets in place
+ * (a floating menu would sit under the popover), and Custom… for any range — two date
+ * fields, also in place (a dialog would close the popover).
  */
-export function TransactionPeriodPill(props: Props) {
-  const { from, to, financialMonth } = props;
-  const push = useFilterPush(props);
+function PeriodField({ from, to, financialMonth, onChange }: { from: string; to: string; financialMonth: FinancialMonthConfig; onChange: (from: string, to: string) => void }) {
   const t = useTranslations("transactions");
   const locale = useLocale();
-  const fmtDate = (d: string) =>
-    new Date(d + "T00:00:00").toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "short" });
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customFrom, setCustomFrom] = useState(from);
-  const [customTo, setCustomTo] = useState(to);
+  const fmtDate = (d: string) => new Date(d + "T00:00:00").toLocaleDateString(locale === "nl" ? "nl-NL" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
   const periods = transactionPeriods(financialMonth);
   const matched = matchTransactionPeriod(financialMonth, from, to);
-  // A financial month reads better as its dates than as "This month".
-  const label = matched && matched.key !== "this-month" && matched.key !== "prev-month" ? t(`periods.${matched.key}`) : `${fmtDate(from)} – ${fmtDate(to)}`;
-
-  function openCustom() {
-    setCustomFrom(from);
-    setCustomTo(to);
-    setCustomOpen(true);
-  }
-
-  function applyCustom() {
-    push({ from: customFrom, to: customTo });
-    setCustomOpen(false);
-  }
+  const [custom, setCustom] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
+  const [customFrom, setCustomFrom] = useState(from);
+  const [customTo, setCustomTo] = useState(to);
+  const label = matched ? t(`periods.${matched.key}`) : `${fmtDate(from)} – ${fmtDate(to)}`;
+  const dateInput = "h-11 text-sm";
 
   return (
-    <>
-      <DropdownMenu modal={false}>
-        <DropdownMenuTrigger
-          aria-label={`${t("filters.period")}: ${label}`}
-          className="inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-clear-hero-ink/25 pr-2.5 pl-3 font-clear text-[13px] font-bold text-clear-hero-ink transition-colors hover:bg-clear-hero-ink/10 data-popup-open:bg-clear-hero-ink/10 lg:h-9 lg:pr-3 lg:pl-3.5 lg:text-sm"
-        >
-          {label}
-          <IconChevronDown aria-hidden className="size-3.5" stroke={2.2} />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" sideOffset={8} className="min-w-48 w-auto p-1.5">
-          {periods.map((p) => (
-            <DropdownMenuItem key={p.key} onClick={() => push({ from: p.from, to: p.to })} className={matched?.key === p.key ? "font-bold" : undefined}>
-              {t(`periods.${p.key}`)}
-            </DropdownMenuItem>
+    <FilterGroup label={t("filters.period")}>
+      <button
+        type="button"
+        onClick={() => setListOpen((o) => !o)}
+        aria-expanded={listOpen}
+        aria-label={`${t("filters.period")}: ${label}`}
+        className={FIELD}
+      >
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        <IconChevronDown aria-hidden className={cn("size-4 shrink-0 text-clear-muted transition-transform", listOpen && "rotate-180")} stroke={2.2} />
+      </button>
+      {listOpen && (
+        <div role="listbox" aria-label={t("filters.period")} className="flex flex-col gap-0.5 rounded-clear-row border border-clear-line p-1">
+          {[...periods.map((p) => ({ key: p.key, label: t(`periods.${p.key}`), on: matched?.key === p.key, pick: () => onChange(p.from, p.to) })),
+            { key: "custom", label: t("filters.custom"), on: !matched || custom, pick: () => { setCustomFrom(from); setCustomTo(to); } },
+          ].map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              role="option"
+              aria-selected={o.on}
+              onClick={() => {
+                setCustom(o.key === "custom");
+                setListOpen(false);
+                o.pick();
+              }}
+              className={cn("flex cursor-pointer items-center justify-between gap-3 rounded-clear-row px-3 py-2.5 text-left text-sm text-clear-ink transition-colors hover:bg-clear-tile", o.on && "font-bold")}
+            >
+              {o.label}
+              {o.on && <IconCheck aria-hidden className="size-4 shrink-0" stroke={2.4} />}
+            </button>
           ))}
-          <DropdownMenuItem onClick={openCustom}>{t("filters.custom")}</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Dialog open={customOpen} onOpenChange={setCustomOpen}>
-        <DialogContent title={t("filters.customPeriod")}>
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div>
-              <label className="text-xs text-clear-ink/60 px-1">{t("filters.from")}</label>
-              <DatePicker value={customFrom} onChange={setCustomFrom} triggerClassName="h-10 text-xs mt-0 mb-0" />
-            </div>
-            <div>
-              <label className="text-xs text-clear-ink/60 px-1">{t("filters.to")}</label>
-              <DatePicker value={customTo} onChange={setCustomTo} triggerClassName="h-10 text-xs mt-0 mb-0" />
-            </div>
-          </div>
-          <button type="button" onClick={applyCustom} className={cn(clearButtonVariants(), "mt-4 w-full")}>
+        </div>
+      )}
+      {(custom || !matched) && (
+        <form
+          className="grid grid-cols-[1fr_1fr_auto] items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (customFrom && customTo) onChange(customFrom <= customTo ? customFrom : customTo, customFrom <= customTo ? customTo : customFrom);
+          }}
+        >
+          <label className="flex min-w-0 flex-col gap-1">
+            <span className="px-1 text-xs font-bold text-clear-ink-2">{t("filters.from")}</span>
+            <ClearInput type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className={dateInput} />
+          </label>
+          <label className="flex min-w-0 flex-col gap-1">
+            <span className="px-1 text-xs font-bold text-clear-ink-2">{t("filters.to")}</span>
+            <ClearInput type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className={dateInput} />
+          </label>
+          <button type="submit" className={cn(clearButtonVariants({ size: "sm" }), "h-11")}>
             {t("filters.apply")}
           </button>
-        </DialogContent>
-      </Dialog>
-    </>
+        </form>
+      )}
+    </FilterGroup>
   );
 }
 
@@ -149,7 +150,7 @@ export function TransactionPeriodPill(props: Props) {
  * Activity's Filters: one button (a labelled pill in the desktop list toolbar, a round
  * icon button in the phone header) with the number of filters on, opening every filter
  * at once — a popover on desktop, a sheet on phones. Each change applies immediately;
- * Clear all resets them (the period, search and sort stay). Every filter lives in the
+ * Clear all resets them, the period included (search and sort stay). Every filter lives in the
  * URL, so the server page does the filtering.
  */
 export function TransactionFilters({ layout, ...props }: Props & { layout: "toolbar" | "header" }) {
@@ -194,7 +195,7 @@ export function TransactionFilters({ layout, ...props }: Props & { layout: "tool
         <button
           type="button"
           disabled={count === 0}
-          onClick={() => push({ account: undefined, category: undefined, budgetType: undefined, recurring: undefined, min: undefined, max: undefined, direction: undefined })}
+          onClick={() => push({ from: undefined, to: undefined, account: undefined, category: undefined, budgetType: undefined, recurring: undefined, min: undefined, max: undefined, direction: undefined })}
           className={cn(clearButtonVariants({ variant: "secondary", size: "sm" }), "w-full lg:h-10")}
         >
           {t("filters.clearAll")}
@@ -202,6 +203,7 @@ export function TransactionFilters({ layout, ...props }: Props & { layout: "tool
       }
     >
       <div data-surface="card" className="flex flex-col gap-4 px-0 pb-1 lg:px-2.5 lg:pt-2.5">
+        <PeriodField from={props.from} to={props.to} financialMonth={props.financialMonth} onChange={(from, to) => push({ from, to })} />
         <AccountsField banks={props.banks} value={props.account} onChange={(v) => push({ account: v })} />
         <CategoriesField cats={props.cats} value={props.category} onChange={(v) => push({ category: v })} />
         <FilterGroup label={t("filters.nature")}>

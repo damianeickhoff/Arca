@@ -8,28 +8,25 @@ import { MoneyText } from "@/components/clear/money";
 import { IconTile } from "@/components/clear/icon-tile";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { TransactionPeriodPill } from "../transaction-filter-bar";
-import type { ActivityFilters } from "./activity-view";
 import type { ActivitySpendChart, ActivityTiles } from "./context";
 
 const iso = (d: string) => new Date(`${d}T12:00:00`);
 
 /**
- * Activity's one black hero card: how the period went. "Left after spending" (in minus
- * out) is the answer; In and Out sit under it, the period is a pill on the card, and the
- * chart shows the money out per day with the bills still scheduled after today hatched.
+ * Activity's one black hero card: how the current financial month is going, whatever
+ * period or filters the list shows. "Left after spending" (in minus out) is the answer;
+ * In and Out sit under it, the month's dates are a label on the card, and the chart shows
+ * the money out per day with the bills still scheduled after today hatched.
  * Desktop: the figures on the left, the chart on the right. Phones: a compact card with
  * a small chart beside the figure and In / Out on one line.
  */
 export function PeriodHero({
-  filters,
   income,
   expense,
   fixed,
   incomeCount,
   chart,
 }: {
-  filters: ActivityFilters;
   income: number;
   expense: number;
   fixed: number;
@@ -40,6 +37,13 @@ export function PeriodHero({
   const net = income - expense;
   const title = net >= 0 ? t("left") : t("over");
   const tile = "flex min-w-0 flex-col gap-0.5 rounded-clear-tile bg-clear-hero-ink/8 px-3.5 py-3";
+  const locale = useLocale();
+  const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
+  const month = (
+    <span className="inline-flex h-8 shrink-0 items-center rounded-full border border-clear-hero-ink/25 px-3 text-[13px] font-bold whitespace-nowrap lg:h-9 lg:px-3.5 lg:text-sm">
+      {fmt.format(iso(chart.start))} – {fmt.format(iso(chart.end))}
+    </span>
+  );
 
   return (
     <section aria-label={t("label")} className="flex min-w-0 flex-col rounded-clear-card bg-clear-hero p-[18px] font-clear text-clear-hero-ink lg:p-6">
@@ -47,7 +51,7 @@ export function PeriodHero({
       <div className="flex flex-col gap-3 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <span className="text-[15px] font-bold text-clear-hero-ink-2">{title}</span>
-          <TransactionPeriodPill {...filters} />
+          {month}
         </div>
         <div className="flex items-end justify-between gap-3">
           <Amount value={net} sign="always" className="min-w-0 truncate text-[36px]" centsClassName="text-clear-hero-ink-2 opacity-100" />
@@ -66,9 +70,7 @@ export function PeriodHero({
       {/* Desktop */}
       <div className="hidden min-h-0 flex-1 gap-7 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
         <div className="flex min-w-0 flex-col gap-4">
-          <span className="self-start">
-            <TransactionPeriodPill {...filters} />
-          </span>
+          <span className="self-start">{month}</span>
           <div className="flex min-w-0 flex-col gap-1.5">
             <span className="text-[15px] font-bold text-clear-hero-ink-2">{title}</span>
             <Amount value={net} sign="always" className="truncate text-[40px] xl:text-[48px]" centsClassName="text-clear-hero-ink-2 opacity-100" />
@@ -98,7 +100,7 @@ export function PeriodHero({
 function SpendChartPanel({ chart }: { chart: ActivitySpendChart }) {
   const t = useTranslations("activity.summary.chart");
   const locale = useLocale();
-  const fmt = new Intl.DateTimeFormat(locale, chart.unit === "month" ? { month: "short", year: "numeric" } : { day: "numeric", month: "short" });
+  const fmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
   const todayAt = chart.todayIndex != null ? ((chart.todayIndex + 0.5) / chart.bars.length) * 100 : null;
   // The start and end labels step aside when "Today" would sit on top of them.
   const showEnd = todayAt == null || todayAt < 76;
@@ -107,7 +109,7 @@ function SpendChartPanel({ chart }: { chart: ActivitySpendChart }) {
   return (
     <div className="flex min-w-0 flex-col gap-2.5">
       <div className="flex items-baseline justify-between gap-3 text-[13px]">
-        <span className="font-bold text-clear-hero-ink-2">{t("title", { unit: chart.unit })}</span>
+        <span className="font-bold text-clear-hero-ink-2">{t("title")}</span>
         <span className="truncate font-bold">
           <MoneyText>{t("average", { amount: formatEur(Math.round(chart.perDay)).replace(/,00$/, "") })}</MoneyText>
         </span>
@@ -141,7 +143,7 @@ function SpendChart({ chart, compact = false, className }: { chart: ActivitySpen
   const max = Math.max(1, ...chart.bars.map((b) => b.spent + b.scheduled));
   const todayAt = chart.todayIndex != null ? ((chart.todayIndex + 0.5) / chart.bars.length) * 100 : null;
   const label = [
-    t("title", { unit: chart.unit }),
+    t("title"),
     t("average", { amount: formatEur(Math.round(chart.perDay)) }),
     chart.scheduledTotal > 0 ? t("scheduled", { amount: formatEur(chart.scheduledTotal) }) : null,
   ]

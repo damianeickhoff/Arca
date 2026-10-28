@@ -29,12 +29,11 @@ export interface ActivityTiles {
 }
 
 /**
- * The period hero's "spending per" chart: money out per day (per week or month over a
- * long period), with the bills still scheduled after today as hatched bars.
+ * The hero's spending-per-day chart for the financial month, with the bills still
+ * scheduled after today as hatched bars.
  */
 export interface ActivitySpendChart {
-  unit: "day" | "week" | "month";
-  /** Each bar: its first date, what went out, and the bills still due in it. */
+  /** Each bar: its day, what went out, and the bills still due on it. */
   bars: { from: string; spent: number; scheduled: number }[];
   /** The bar holding today, when the period runs past today. */
   todayIndex: number | null;
@@ -42,7 +41,7 @@ export interface ActivitySpendChart {
   scheduledTotal: number;
   /** Money out per elapsed day of the period. */
   perDay: number;
-  /** The first and last day the chart covers. */
+  /** The first and last day of the financial month. */
   start: string;
   end: string;
 }

@@ -1311,11 +1311,11 @@
     },
     "activityFilters": {
       "title": "Alle filters op één plek",
-      "body": "Verfijn de lijst op rekening, categorie, nodig/willen/sparen, richting, bedrag of terugkerend. Het getal laat zien hoeveel er aan staan; Alles wissen zet ze terug. De periode staat op de zwarte kaart."
+      "body": "Verfijn de lijst op periode, rekening, categorie, nodig/willen/sparen, richting, bedrag of terugkerend. Het getal laat zien hoeveel er aan staan; Alles wissen zet ze terug."
     },
     "activitySelectMode": {
       "title": "Meerdere tegelijk selecteren",
-      "body": "Tik op Selecteren, houd een rij ingedrukt of Shift-klik."
+      "body": "Houd een rij ingedrukt om te selecteren, of Shift-klik op een computer."
     },
     "activitySearchBar": {
       "title": "Zoeken zit onderin",
@@ -4100,21 +4100,19 @@
       "notInReports": "Niet in rapporten"
     },
     "bulk": {
-      "select": "Selecteren",
-      "deselect": "Deselecteren",
-      "done": "Klaar"
+      "deselect": "Deselecteren"
     },
     "summary": {
       "in": "In",
       "out": "Uit",
-      "label": "Deze periode",
+      "label": "Deze maand",
       "inSub": "{count, plural, one {# betaling erin} other {# betalingen erin}}",
       "outSub": "waarvan {amount} vaste lasten",
       "outSubNone": "Geen vaste lasten in deze selectie",
       "left": "Over na uitgaven",
       "over": "Meer eruit dan erin",
       "chart": {
-        "title": "{unit, select, day {Uitgaven per dag} week {Uitgaven per week} other {Uitgaven per maand}}",
+        "title": "Uitgaven per dag",
         "average": "Gemiddeld {amount} per dag",
         "today": "Vandaag",
         "scheduled": "Rekeningen nog gepland · {amount}"
@@ -4415,8 +4413,6 @@
       "more": "Meer budgetacties",
       "resetDay": "Startdag wijzigen",
       "deleteBudget": "Budget verwijderen",
-      "periodLabel": "{from} – {to} · dag {day} van {total}",
-      "periodLabelEnded": "{from} – {to} · afgelopen",
       "previousPeriod": "Vorige budgetmaand",
       "nextPeriod": "Volgende budgetmaand",
       "hero": {
@@ -4548,7 +4544,8 @@
         "merchantCount": "{name} · {count}",
         "more": "{count} meer",
         "sort": "Sorteren"
-      }
+      },
+      "periodCurrent": "Nu"
     },
     "debts": {
       "add": "Schuld toevoegen",

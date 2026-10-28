@@ -172,9 +172,7 @@ function BudgetHeader({ data }: { data: BudgetViewData }) {
   const t = useTranslations("plan.budget");
   const tPlan = useTranslations("plan");
   const editor = useBudgetEditor();
-  const short = useShortDate();
   const resetDay = dayAfter(data.to).getDate();
-  const editLabel = data.hasBudget ? t("editBudget") : t("createBudget");
 
   return (
     <div className="flex flex-col gap-4 lg:gap-[18px]">
@@ -186,71 +184,73 @@ function BudgetHeader({ data }: { data: BudgetViewData }) {
           </span>
         </div>
         <div className="flex items-center gap-2.5">
-          {data.hasBudget && <MoreMenu />}
-          <button
-            type="button"
-            onClick={editor.openEdit}
-            data-tip-anchor="budgetEdit"
-            aria-label={editLabel}
-            className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}
-          >
-            {data.hasBudget ? <IconPencil aria-hidden /> : <IconPlus aria-hidden />}
-          </button>
-          <button type="button" onClick={editor.openEdit} className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
-            {data.hasBudget ? <IconPencil aria-hidden /> : <IconPlus aria-hidden />}
-            {editLabel}
-          </button>
+          {/* With a budget, Edit sits in ⋯; without one, Create budget is the action. */}
+          {data.hasBudget ? (
+            <MoreMenu />
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={editor.openEdit}
+                aria-label={t("createBudget")}
+                className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}
+              >
+                <IconPlus aria-hidden />
+              </button>
+              <button type="button" onClick={editor.openEdit} className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
+                <IconPlus aria-hidden />
+                {t("createBudget")}
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <PlanSwitch />
-        {data.hasBudget && <PeriodStepper data={data} label={
-          data.ended
-            ? t("periodLabelEnded", { from: short(data.from), to: short(data.to) })
-            : t("periodLabel", { from: short(data.from), to: short(data.to), day: data.day, total: data.totalDays })
-        } />}
+      {/* The tabs and the period on one row; the hero below says how far into it we are. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <PlanSwitch size="sm" />
+        {data.hasBudget && <PeriodStepper data={data} label={data.ended ? data.budgetMonthName : t("periodCurrent")} />}
       </div>
     </div>
   );
 }
 
-/** "‹ 25 Sep – 24 Oct · day 21 of 30 ›": steps through earlier budget months (?month=). */
+/** "‹ Currently ›" / "‹ September ›": steps through earlier budget months (?month=). */
 function PeriodStepper({ data, label }: { data: BudgetViewData; label: string }) {
   const t = useTranslations("plan.budget");
   const nav = data.periodNav;
-  const btn = "inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-clear-ground text-clear-ink transition-colors";
+  const btn = "inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-clear-ground text-clear-ink transition-colors";
   const href = (month: string) => (month ? `/budget?month=${month}` : "/budget");
   return (
-    <div data-tip-anchor="budgetPeriodNav" className="inline-flex h-[50px] items-center gap-1 rounded-full bg-clear-card px-[5px]">
+    <div data-tip-anchor="budgetPeriodNav" className="inline-flex h-[38px] items-center gap-0.5 rounded-full bg-clear-card px-[5px]">
       {nav &&
         (nav.prev != null ? (
           <Link href={href(nav.prev)} scroll={false} aria-label={t("previousPeriod")} className={cn(btn, "hover:bg-clear-line")}>
-            <IconChevronLeft size={18} stroke={2.2} aria-hidden />
+            <IconChevronLeft size={16} stroke={2.2} aria-hidden />
           </Link>
         ) : (
           <span aria-hidden className={cn(btn, "text-clear-placeholder")}>
-            <IconChevronLeft size={18} stroke={2.2} />
+            <IconChevronLeft size={16} stroke={2.2} />
           </span>
         ))}
-      <span aria-live="polite" className={cn("text-sm font-bold tabular-nums", nav ? "px-2.5" : "px-[13px]")}>
+      <span aria-live="polite" className={cn("text-[13px] font-bold whitespace-nowrap first-letter:uppercase", nav ? "px-1" : "px-2.5")}>
         {label}
       </span>
       {nav &&
         (nav.next != null ? (
           <Link href={href(nav.next)} scroll={false} aria-label={t("nextPeriod")} className={cn(btn, "hover:bg-clear-line")}>
-            <IconChevronRight size={18} stroke={2.2} aria-hidden />
+            <IconChevronRight size={16} stroke={2.2} aria-hidden />
           </Link>
         ) : (
           <span aria-hidden className={cn(btn, "text-clear-placeholder")}>
-            <IconChevronRight size={18} stroke={2.2} />
+            <IconChevronRight size={16} stroke={2.2} />
           </span>
         ))}
     </div>
   );
 }
 
-/** "⋯": the budget's less common actions — the reset day lives in Settings. */
+/** "⋯": Edit budget and the less common actions — the reset day lives in Settings. */
 function MoreMenu() {
   const t = useTranslations("plan.budget");
   const editor = useBudgetEditor();
@@ -260,6 +260,10 @@ function MoreMenu() {
         <IconDots aria-hidden />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="min-w-52 p-1.5">
+        <DropdownMenuItem onClick={editor.openEdit}>
+          <IconPencil aria-hidden />
+          {t("editBudget")}
+        </DropdownMenuItem>
         <DropdownMenuLinkItem render={<Link href="/settings?panel=financialMonth" />}>{t("resetDay")}</DropdownMenuLinkItem>
         <DropdownMenuItem variant="destructive" disabled={editor.busy} onClick={editor.deleteBudget}>
           {t("deleteBudget")}

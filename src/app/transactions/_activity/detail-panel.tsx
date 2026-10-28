@@ -603,29 +603,46 @@ export function TransactionDetailPanel({
           </div>
         ))}
 
-      {/* 2. Who it was with and the amount on one row, the status chips under it */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          {/* The shared icon components draw circles; the panel wants the 12px-radius tile. */}
-          <span className="inline-flex shrink-0 [&>*]:size-11! [&>*]:rounded-clear-icon!">
+      {/* 2. Who it was with and the amount — centred and stacked in the desktop card, on
+          one row in the phone sheet — with the status chips under it. */}
+      <div className={cn("flex flex-col gap-3", layout === "card" && "items-center text-center")}>
+        <div className={cn("flex items-center gap-3", layout === "card" && "flex-col gap-2 py-1")}>
+          {/* The shared icon components draw circles; the panel wants the rounded tile. */}
+          <span className={cn("inline-flex shrink-0", layout === "card" ? "[&>*]:size-14! [&>*]:rounded-clear-tile!" : "[&>*]:size-11! [&>*]:rounded-clear-icon!")}>
             {uncategorised ? (
               <RowIcon row={{ ...row, categoryId }} size="xl" />
             ) : (
               <Icon iconKey={icon.iconKey} color={icon.color} background={icon.background} initials={icon.initials} size="xl" glyphSize={22} soft />
             )}
           </span>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            {nameNode}
-            <span className="truncate text-[13px] text-clear-muted">{[dateLabel, row.bankName].filter(Boolean).join(" · ")}</span>
-          </div>
-          <Amount
-            value={isExpense ? -shownAmount : shownAmount}
-            sign="always"
-            className={cn("shrink-0 text-[30px] leading-none tracking-[-0.03em] lg:text-[34px]", isExpense ? "text-clear-ink" : "text-clear-positive")}
-          />
+          {layout === "card" ? (
+            <>
+              <span className="flex max-w-full min-w-0 justify-center [&>*]:text-lg">{nameNode}</span>
+              <Amount
+                value={isExpense ? -shownAmount : shownAmount}
+                sign="always"
+                className={cn("text-[36px] leading-none tracking-[-0.03em]", isExpense ? "text-clear-ink" : "text-clear-positive")}
+                centsClassName="text-clear-ink-2 opacity-100"
+              />
+              <span className="max-w-full truncate text-[13px] text-clear-ink-2">{[dateLabel, row.bankName].filter(Boolean).join(" · ")}</span>
+            </>
+          ) : (
+            <>
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                {nameNode}
+                <span className="truncate text-[13px] text-clear-muted">{[dateLabel, row.bankName].filter(Boolean).join(" · ")}</span>
+              </div>
+              <Amount
+                value={isExpense ? -shownAmount : shownAmount}
+                sign="always"
+                className={cn("shrink-0 text-[30px] leading-none tracking-[-0.03em]", isExpense ? "text-clear-ink" : "text-clear-positive")}
+                centsClassName="text-clear-ink-2 opacity-100"
+              />
+            </>
+          )}
         </div>
         {(row.isInternalTransfer || uncategorised || row.isSplit || row.isReimbursement || paidBack > 0 || recurringId != null || excluded || priceChange) && (
-          <div className="flex flex-wrap gap-2">
+          <div className={cn("flex flex-wrap gap-2", layout === "card" && "justify-center")}>
             {!!row.isInternalTransfer && (
               <ClearChip icon={<IconTransfer aria-hidden />}>{(transferType && TRANSFER_TYPE_LABELS[transferType]) || t("internalTransfer")}</ClearChip>
             )}
@@ -694,7 +711,7 @@ export function TransactionDetailPanel({
   const summary = (
     <div role="tabpanel" id="tx-panel-summary" aria-labelledby="tx-tab-summary" className="flex flex-col gap-4">
       {/* What it is and what it did to the budget */}
-      <section aria-label={t("tabs.summary")} className="flex flex-col gap-4 rounded-clear-tile bg-clear-tile p-4">
+      <section aria-label={t("tabs.summary")} className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-3.5">
         <div className="flex items-center gap-3">
           {row.isInternalTransfer ? (
             <button type="button" onClick={() => setTransferOpen(true)} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left">
@@ -715,8 +732,8 @@ export function TransactionDetailPanel({
               className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left disabled:cursor-default"
             >
               {currentCat && !row.isSplit && (
-                <span className="inline-flex shrink-0 [&>*]:size-10! [&>*]:rounded-clear-icon!">
-                  <Icon iconKey={currentCat.icon} color={currentCat.color} size="md" glyphSize={18} soft />
+                <span className="inline-flex shrink-0 [&>*]:size-9! [&>*]:rounded-clear-icon!">
+                  <Icon iconKey={currentCat.icon} color={currentCat.color} size="md" glyphSize={17} soft />
                 </span>
               )}
               <span className="flex min-w-0 flex-col">
@@ -757,9 +774,9 @@ export function TransactionDetailPanel({
         )}
 
         {showBudget && (
-          <div className="flex flex-col gap-2 border-t border-clear-line pt-3.5">
-            <div className="flex items-baseline justify-between gap-2 text-sm">
-              <span className="font-semibold text-clear-ink-2">{t("budgetThisPeriod")}</span>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-baseline justify-between gap-2 text-[13px]">
+              <span className="font-bold text-clear-ink">{t("budgetThisPeriod")}</span>
               <span className="tabular-nums text-clear-muted">
                 <MoneyText>{t.rich("budgetOfRich", {
                   spent: formatEur(budget!.spent),
@@ -768,14 +785,14 @@ export function TransactionDetailPanel({
                 })}</MoneyText>
               </span>
             </div>
-            <div aria-hidden className="clear-hatch flex h-2.5 overflow-hidden rounded-full">
+            <div aria-hidden className="clear-hatch flex h-2 overflow-hidden rounded-full">
               <span
                 className={overBy > 0 ? "bg-clear-negative-fill" : "bg-clear-primary"}
                 style={{ width: `${Math.min(100, (Math.max(0, budget!.spent - ownPart) / budget!.budget!) * 100)}%` }}
               />
               <span className="bg-clear-ember" style={{ width: `${Math.min(100, (ownPart / budget!.budget!) * 100)}%` }} />
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px]">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
               {ownPart > 0 ? (
                 <span className="inline-flex items-center gap-1.5 font-semibold text-clear-ink-2">
                   <span aria-hidden className="size-2.5 rounded-[3px] bg-clear-ember" />
@@ -803,12 +820,11 @@ export function TransactionDetailPanel({
           onClick={() => setFieldsOpen((o) => !o)}
           aria-expanded={fieldsOpen}
           aria-controls="tx-fields"
-          className="flex min-h-[60px] w-full cursor-pointer items-center gap-3 px-4 text-left transition-colors hover:bg-clear-tile"
+          className="flex min-h-[52px] w-full cursor-pointer items-center gap-2.5 px-3.5 text-left transition-colors hover:bg-clear-tile"
         >
-          <IconPencil className="size-[18px] shrink-0 text-clear-ink-2" aria-hidden />
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-sm font-bold">{t("editDetails")}</span>
-            <span className="truncate text-xs text-clear-muted">{fieldPreview}</span>
+          <IconPencil className="size-[17px] shrink-0 text-clear-ink" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-sm font-bold">
+            {t("editDetails")} <span className="font-semibold text-clear-ink-2">· {fieldPreview}</span>
           </span>
           <IconChevronDown className={cn("size-4 shrink-0 text-clear-muted transition-transform duration-200", fieldsOpen && "rotate-180")} stroke={2.2} aria-hidden />
         </button>
@@ -877,14 +893,10 @@ export function TransactionDetailPanel({
           type="button"
           onClick={() => setHistoryOpen(true)}
           data-tip-anchor="activityHistory"
-          className="group flex min-h-14 w-full cursor-pointer items-center gap-3.5 border-t border-clear-line pt-3 text-left"
+          className="flex min-h-[52px] w-full cursor-pointer items-center gap-2.5 rounded-clear-tile bg-clear-tile px-3.5 text-left transition-colors hover:bg-clear-line"
         >
-          <span aria-hidden className="inline-flex size-10 shrink-0 items-center justify-center rounded-clear-icon bg-clear-tile text-clear-ink-2">
-            {merchantRow ? <ColumnsGlyph /> : <IconRepeat className="size-[18px]" stroke={1.9} />}
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="truncate text-sm font-bold group-hover:underline group-hover:underline-offset-4"><MoneyText>{historyRow.title}</MoneyText></span>
-            <span className="truncate text-xs text-clear-muted"><MoneyText>{historyRow.sub}</MoneyText></span>
+          <span className="min-w-0 flex-1 truncate text-sm font-bold">
+            <MoneyText>{historyRow.title}</MoneyText> <span className="font-semibold text-clear-ink-2">· <MoneyText>{historyRow.sub}</MoneyText></span>
           </span>
           <IconChevronRight className="size-4 shrink-0 text-clear-muted" stroke={2.2} aria-hidden />
         </button>
@@ -980,7 +992,7 @@ export function TransactionDetailPanel({
       {layout === "card" ? (
         <div className="flex h-full min-h-0 flex-col" data-tip-anchor="activityDetail">
           <div className="relative min-h-0 flex-1">
-            <div className="clear-scrollbar flex h-full flex-col gap-5 overflow-y-auto p-6 pb-10">{body}</div>
+            <div className="clear-scrollbar flex h-full flex-col gap-4 overflow-y-auto px-5 pt-6 pb-10">{body}</div>
             <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-b from-transparent to-clear-card" />
           </div>
           <div className="shrink-0 border-t border-clear-line px-4 pt-3 pb-4">{actionBar}</div>
@@ -1380,15 +1392,6 @@ function monthOf(date: string) {
 
 function isIncomeRowOf(row: TransactionRow) {
   return row.direction === "income";
-}
-
-/** The mockup's column-chart glyph for the merchant row. */
-function ColumnsGlyph() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 20V12M10 20V6M16 20v-9M22 20H2" />
-    </svg>
-  );
 }
 
 /** Whole days from a date until today (0 on the day itself). */
