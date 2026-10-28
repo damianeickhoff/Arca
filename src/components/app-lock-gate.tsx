@@ -207,9 +207,8 @@ function LockScreen({
     "inline-flex size-[76px] cursor-pointer items-center justify-center rounded-full text-[28px] font-bold tabular-nums transition-transform active:scale-95 disabled:opacity-40 outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/60";
 
   return (
-    // Dark in both themes (Phone-AppLock mockup): the hero black in light mode, the
-    // page ground in dark mode, where an inverted near-white screen would glare.
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-clear-hero font-clear text-clear-hero-ink dark:bg-clear-ground dark:text-clear-ink">
+    // Follows the chosen theme: the light page ground in light mode, the dark one in dark mode.
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-clear-ground font-clear text-clear-ink">
       <div className="flex min-h-full flex-col items-center justify-center gap-3.5 px-4 pt-[calc(var(--sat)+48px)] pb-[calc(var(--sab)+32px)]">
         <BrandMark size="xl" />
 
@@ -217,7 +216,7 @@ function LockScreen({
           <h1 className="m-0 text-2xl font-extrabold tracking-[-0.02em]">
             {firstName ? t("title", { name: firstName }) : t("titleNoName")}
           </h1>
-          <p className="m-0 text-[15px] font-medium text-clear-hero-ink-2 dark:text-clear-ink-2">{t("body")}</p>
+          <p className="m-0 text-[15px] font-medium text-clear-ink-2">{t("body")}</p>
         </div>
 
         {/* PIN dots — sized to the passcode length (4–6). When the length is
@@ -282,7 +281,7 @@ function LockScreen({
             type="button"
             onClick={() => submitPin(pin)}
             disabled={!canConfirm || verifying}
-            className="mt-6 inline-flex h-12 w-full max-w-[284px] cursor-pointer items-center justify-center rounded-full bg-clear-hero-ink text-[15px] font-bold text-clear-hero transition-[opacity,transform] active:scale-[0.97] disabled:opacity-40 dark:bg-clear-ink dark:text-clear-ground"
+            className="mt-6 inline-flex h-12 w-full max-w-[284px] cursor-pointer items-center justify-center rounded-full bg-clear-primary text-[15px] font-bold text-clear-primary-ink transition-[opacity,transform] active:scale-[0.97] disabled:opacity-40"
           >
             {t("unlock")}
           </button>
