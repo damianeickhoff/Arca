@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
-import { useReducedMotion } from "@/lib/motion";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useGuide } from "@/lib/guide-context";
 import { TOURS, type TipId, type TourId } from "@/lib/guide";
@@ -62,11 +61,11 @@ function scrollerOf(el: Element): Element {
   return document.scrollingElement ?? document.documentElement;
 }
 
-/** Fixed or sticky chrome (the tab bar's + button) never needs scrolling to. */
+/** Fixed chrome (the tab bar's + button) never needs scrolling to. Sticky things do:
+ *  they move with the page until they stick (Activity's detail panel). */
 function isPinned(el: Element) {
   for (let node: Element | null = el; node; node = node.parentElement) {
-    const { position } = getComputedStyle(node);
-    if (position === "fixed" || position === "sticky") return true;
+    if (getComputedStyle(node).position === "fixed") return true;
   }
   return false;
 }
@@ -141,7 +140,6 @@ function TourOverlay({
 }) {
   const t = useTranslations("tours");
   const desktop = useIsDesktop();
-  const reduce = useReducedMotion() ?? false;
   const [index, setIndex] = useState(0);
   const [layout, setLayout] = useState<Layout | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -158,8 +156,8 @@ function TourOverlay({
 
   // Follow the element every frame while the tour is up: smooth scrolling, a resize or a
   // re-render all move it. A few seconds in a user's life, so the cost doesn't matter.
+  // (elRef already points at this step's element: the scroll below sets it first.)
   useEffect(() => {
-    elRef.current = findLaidOut(step.anchor);
     let frame = 0;
     const tick = () => {
       let el = elRef.current;
@@ -177,9 +175,11 @@ function TourOverlay({
   }, [step.anchor, desktop]);
 
   // Bring the element into view, clear of the card: centred on a desktop, between the
-  // top of the screen and the card on a phone.
+  // top of the screen and the card on a phone. A layout effect runs before the tracking
+  // effect above, so this is where the step's element is looked up.
   useLayoutEffect(() => {
-    const el = elRef.current ?? findLaidOut(step.anchor);
+    const el = findLaidOut(step.anchor);
+    elRef.current = el;
     if (!el || isPinned(el)) return;
     const r = el.getBoundingClientRect();
     const areaTop = EDGE + 8;
@@ -187,9 +187,10 @@ function TourOverlay({
     if (r.top >= areaTop && r.bottom <= areaBottom) return;
     const room = areaBottom - areaTop;
     const target = r.height >= room ? areaTop : areaTop + (room - r.height) / 2;
-    const scroller = scrollerOf(el);
-    scroller.scrollBy({ top: r.top - target, behavior: reduce ? "auto" : "smooth" });
-  }, [index, step.anchor, desktop, reduce, placed]);
+    // An instant jump: a smooth scroll can stall (a webview that isn't drawing, a
+    // browser setting), and then the card points at something off screen.
+    scrollerOf(el).scrollBy({ top: r.top - target });
+  }, [index, step.anchor, desktop, placed]);
 
   // Focus moves to the card's main button on every step, and back where it was after.
   useEffect(() => {
@@ -223,9 +224,6 @@ function TourOverlay({
 
   const titleId = "page-tour-title";
 
-  // CSS transitions rather than motion springs: they stay time-based in a tab that is
-  // not drawing, and motion-reduce turns them off.
-  const glide = "duration-300 ease-out motion-reduce:transition-none";
   const card = layout?.card;
 
   return (
@@ -240,7 +238,9 @@ function TourOverlay({
       {layout && (
         <div
           aria-hidden
-          className={cn("clear-tour-spotlight pointer-events-none fixed transition-[top,left,width,height]", glide)}
+          // Sits exactly on the element every frame, no transition: a gliding ring trails
+          // behind while the page scrolls to the next step.
+          className="clear-tour-spotlight pointer-events-none fixed"
           style={{ top: layout.hole.top, left: layout.hole.left, width: layout.hole.width, height: layout.hole.height, borderRadius: layout.hole.radius }}
         />
       )}
@@ -253,7 +253,7 @@ function TourOverlay({
         data-guide=""
         className={cn(
           "fixed flex flex-col gap-2.5 rounded-clear-card bg-clear-card p-5 text-clear-ink shadow-clear-dialog",
-          desktop ? cn("w-[340px] transition-[left,top]", glide) : "inset-x-4 bottom-[var(--bottom-bar-offset)]",
+          desktop ? "w-[340px]" : "inset-x-4 bottom-[var(--bottom-bar-offset)]",
         )}
         style={desktop ? (card ? { left: card.left, top: card.top } : { visibility: "hidden" }) : layout?.phoneBottom != null ? { bottom: layout.phoneBottom } : undefined}
       >
