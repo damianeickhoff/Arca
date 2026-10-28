@@ -145,13 +145,13 @@
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
-  /* Vertical space the floating tab bar occupies on phones: the bar's own 68px
+  /* Vertical space the floating tab bar occupies on phones: the bar's own 64px
      height plus its 20px bottom offset to its top edge, plus a 16px gap so the last
      row doesn't just touch it, plus the home-indicator inset. Pages reserve this at
      the bottom so their last row never sits under the bar. From lg up there is no tab
      bar (the top bar holds the navigation) and the clearance shrinks to a plain bottom
      margin (see the media query after this block). See components/shell/app-shell.tsx. */
-  --nav-clearance: calc(6.5rem + var(--sab));
+  --nav-clearance: calc(6.25rem + var(--sab));
   /* A bar docked just above the phone tab bar (Activity's search): it sits 12px above
      the tab bar's top edge, and a page showing one adds --bottom-bar-clearance on top
      of --nav-clearance so its last row clears both. Phones only — from lg there is no

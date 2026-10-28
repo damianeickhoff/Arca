@@ -91,8 +91,9 @@ contain user-facing text themselves.
   button — search lives in the shell so it never reads as "search this page" (a page
   may have a search that filters its own list, like Activity).
 - Phone: header (avatar/title + round buttons), content in 16px gutters, and the
-  floating black tab bar (Home, Activity, ember add button (the same add menu), Plan, Insights, and the
-  global search button set apart at the end). Pages
+  floating black tab bar, icons only (the names are aria-labels): Home, Activity, the ember
+  add button (the same add menu), Plan and Insights, with the global search as its own
+  round black button beside the bar. Pages
   reserve space at the bottom so the last row clears the tab bar.
 - Pages fill the available width; content never sets its own max width or centres
   itself (`mx-auto max-w-*`), except single-card pages (sign-in, errors) and dialogs.

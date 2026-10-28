@@ -3932,7 +3932,7 @@
       },
       "perDay": "About <b>{amount} a day</b> until {date}",
       "overBudget": "You've spent more than this period's budget.",
-      "sum": "{spent} spent · {bills} bills to come",
+      "sum": "{spent} spent",
       "budget": "{amount} budget",
       "openBudget": "Open your budget",
       "add": "Add transaction",
@@ -4049,7 +4049,10 @@
       "out": "Out",
       "net": "Net",
       "empty": "No money has moved this period yet.",
-      "description": "Line chart of money in and money out this period, added up per day. So far {in} in and {out} out, a net of {net}."
+      "description": "Line chart of money in and money out this period, added up per day. So far {in} in and {out} out, a net of {net}.",
+      "expected": "Expected",
+      "expectedBy": "{amount} by {date}",
+      "expectedDescription": "With the scheduled bills and income still to come, {in} in and {out} out by {date}."
     },
     "setSalary": "Set your salary",
     "salaryName": "Salary",

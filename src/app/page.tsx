@@ -261,9 +261,26 @@ export default async function HomePage({
     dueDate: s.dueDate!,
     overdue: s.overdue,
     isIncome: s.item.type === "income",
+    icon: s.icon,
+    iconColor: s.iconColor,
+    iconBackground: s.iconBackground,
   }));
   const billsDue = billsDueTotal(comingUp);
   const billsDueCount = comingUp.filter((b) => !b.isIncome).length;
+
+  // Money flow's expected lines: what the unpaid scheduled items still bring in or take
+  // out after today, per day. Savings are left out, as they are of the flow itself.
+  const savingsCategoryIds = new Set(data.allCategories.filter((c) => c.group === "savings").map((c) => c.id));
+  const expectedByDay = new Map<string, FlowDay>();
+  for (const s of upcoming) {
+    if (s.dueDate! <= today || s.dueDate! > to) continue;
+    if (s.item.type === "savings" || (s.item.categoryId != null && savingsCategoryIds.has(s.item.categoryId))) continue;
+    const amount = Math.abs(s.item.amount ?? 0);
+    if (amount === 0) continue;
+    const day = expectedByDay.get(s.dueDate!) ?? { date: s.dueDate!, in: 0, out: 0 };
+    day[s.item.type === "income" ? "in" : "out"] += amount;
+    expectedByDay.set(s.dueDate!, day);
+  }
 
   const hero = safeToSpend(
     budgetOverview,
@@ -374,13 +391,13 @@ export default async function HomePage({
             {/* Money flow and net worth share a row, so they're the same height; both
                 charts stretch to fill it. */}
             <div className="flex min-w-0 xl:col-span-2 [&>*]:flex-1">
-              <MoneyFlowCard days={data.flowDays} today={today} />
+              <MoneyFlowCard days={data.flowDays} expected={[...expectedByDay.values()]} today={today} />
             </div>
             <div className="flex min-w-0 [&>*]:flex-1">
               <NetWorthCard data={netWorth} />
             </div>
-            {/* Coming up and the accounts share the height of recent activity equally; their
-                tiles grow to fill each card. */}
+            {/* Coming up and the accounts share the height of recent activity equally; the
+                account tiles grow to fill their card. */}
             <div className="flex min-w-0 flex-col gap-5">
               <div className="flex flex-1 flex-col [&>*]:flex-1">
                 <ComingUpCard bills={comingUp.slice(0, 4)} totalDue={billsDue} today={today} />

@@ -3932,7 +3932,7 @@
       },
       "perDay": "Ongeveer <b>{amount} per dag</b> tot {date}",
       "overBudget": "Je hebt meer uitgegeven dan het budget voor deze periode.",
-      "sum": "{spent} uitgegeven · {bills} rekeningen nog te gaan",
+      "sum": "{spent} uitgegeven",
       "budget": "{amount} budget",
       "openBudget": "Je budget openen",
       "add": "Transactie toevoegen",
@@ -4049,7 +4049,10 @@
       "out": "Eruit",
       "net": "Netto",
       "empty": "Deze periode is er nog geen geld in of uit gegaan.",
-      "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}."
+      "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}.",
+      "expected": "Verwacht",
+      "expectedBy": "{amount} op {date}",
+      "expectedDescription": "Met de geplande rekeningen en inkomsten die nog komen {in} erin en {out} eruit op {date}."
     },
     "setSalary": "Stel je salaris in",
     "salaryName": "Salaris",

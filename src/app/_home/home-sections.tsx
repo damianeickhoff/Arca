@@ -3,7 +3,9 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { IconCalendar, IconCoins, IconInbox, IconShoppingBag, IconTarget } from "@tabler/icons-react";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader, ClearCardLink, ClearTile } from "@/components/clear/card";
+import { ListRow } from "@/components/clear/list-row";
 import { StatTile } from "@/components/clear/stat-tile";
+import { Icon } from "@/components/icon";
 import { formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MoneyText } from "@/components/clear/money";
@@ -196,7 +198,7 @@ export async function IncomeSpendingCard({ months }: { months: MonthBar[] }) {
 }
 
 /** In a two-column tile grid, the last tile of an odd count spans the full row, so
- *  the grid is always filled (Coming up and Accounts). */
+ *  the grid is always filled (Accounts). */
 function spansRow(index: number, count: number) {
   return count % 2 === 1 && index === count - 1;
 }
@@ -210,8 +212,13 @@ export interface ComingUpBill {
   dueDate: string;
   overdue: boolean;
   isIncome: boolean;
+  /** The bill's brand or category icon, as lib/bill-status.ts resolves it. */
+  icon: string | null;
+  iconColor: string | null;
+  iconBackground: string | null;
 }
 
+/** The next bills still to pay (and income still to come) as a list, soonest first. */
 export async function ComingUpCard({ bills, totalDue, today }: { bills: ComingUpBill[]; totalDue: number; today: string }) {
   const t = await getTranslations("home.comingUp");
   const locale = await getLocale();
@@ -232,17 +239,23 @@ export async function ComingUpCard({ bills, totalDue, today }: { bills: ComingUp
       {bills.length === 0 ? (
         <p className="m-0 text-sm text-clear-muted">{t("empty")}</p>
       ) : (
-        <ul className="m-0 grid flex-1 list-none auto-rows-fr grid-cols-2 gap-2.5 p-0">
+        <ul className="m-0 list-none p-0">
           {bills.map((b, i) => (
-            <li key={`${b.id}-${b.dueDate}`} className={cn("flex min-w-0 flex-col justify-center gap-1 rounded-clear-tile bg-clear-tile p-3.5", spansRow(i, bills.length) && "col-span-2")}>
-              <span className="truncate text-[13px] text-clear-ink-2">{b.name}</span>
-              <Amount
-                value={b.amount}
-                sign={b.isIncome ? "always" : "none"}
-                className={cn("text-[17px]", b.isIncome && "text-clear-positive")}
-                splitCents={false}
+            <li key={`${b.id}-${b.dueDate}`} className="border-b border-clear-ground last:border-b-0">
+              <ListRow
+                className="min-h-14 border-b-0 px-0"
+                icon={<Icon iconKey={b.icon} color={b.iconColor} background={b.iconBackground} size="md" soft />}
+                title={b.name}
+                meta={<span className={cn("font-bold", b.overdue || i === 0 ? "text-clear-ember-text" : "text-clear-ink-2")}>{when(b)}</span>}
+                trailing={
+                  <Amount
+                    value={b.amount}
+                    sign={b.isIncome ? "always" : "none"}
+                    className={cn("text-[15px]", b.isIncome && "text-clear-positive")}
+                    splitCents={false}
+                  />
+                }
               />
-              <span className={cn("text-xs font-bold", b.overdue || i === 0 ? "text-clear-ember-text" : "text-clear-ink-2")}>{when(b)}</span>
             </li>
           ))}
         </ul>
@@ -264,7 +277,7 @@ export interface AccountTile {
 }
 
 
-/** The bank accounts as small tiles, in the same style as Coming up, under it. */
+/** The bank accounts as small tiles, under Coming up. */
 export async function AccountsCard({ accounts, total, overdraftMode }: { accounts: AccountTile[]; total: number; overdraftMode: OverdraftMode }) {
   const t = await getTranslations("home.accounts");
   if (accounts.length === 0) return null;
@@ -305,6 +318,16 @@ export async function AccountsCard({ accounts, total, overdraftMode }: { account
 
 /* ── Money flow ───────────────────────────────────────────────────────────────── */
 
+/** A Money flow tile's figure: whole euros at 17px on phones, with cents from lg. */
+function FlowTileAmount({ value, sign, className }: { value: number; sign?: "always"; className?: string }) {
+  return (
+    <>
+      <Amount value={value} sign={sign} whole className={cn("text-[17px] lg:hidden", className)} />
+      <Amount value={value} sign={sign} splitCents={false} className={cn("hidden text-xl lg:inline", className)} />
+    </>
+  );
+}
+
 export interface FlowDay {
   /** YYYY-MM-DD */
   date: string;
@@ -315,9 +338,12 @@ export interface FlowDay {
 /**
  * Money in against money out through the current period, each added up day by day:
  * the ink line is money in, the dashed ember line money out. The gap between them at
- * today is this period's net, called out on the chart. Days after today aren't drawn.
+ * today is this period's net, called out on the chart. After today both lines go on
+ * as lighter dotted lines to the period's end, stepping up on each day `expected`
+ * (the scheduled, unpaid recurring items) has money coming in or going out; with
+ * nothing scheduled after today nothing more is drawn.
  */
-export async function MoneyFlowCard({ days, today }: { days: FlowDay[]; today: string }) {
+export async function MoneyFlowCard({ days, expected, today }: { days: FlowDay[]; expected: FlowDay[]; today: string }) {
   const t = await getTranslations("home.flow");
   const locale = await getLocale();
   const label = (d: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${d}T12:00:00`));
@@ -332,7 +358,12 @@ export async function MoneyFlowCard({ days, today }: { days: FlowDay[]; today: s
   const cout = cumulative.at(-1)?.out ?? 0;
   const net = cin - cout;
 
-  const max = Math.max(1, cin, cout);
+  const dayIndex = new Map(days.map((d, i) => [d.date, i]));
+  const future = cumulative.length === 0 ? [] : expected.filter((e) => e.date > today && dayIndex.has(e.date)).sort((a, z) => a.date.localeCompare(z.date));
+  const expectedIn = cin + future.reduce((s, e) => s + e.in, 0);
+  const expectedOut = cout + future.reduce((s, e) => s + e.out, 0);
+
+  const max = Math.max(1, cin, cout, expectedIn, expectedOut);
   const ceiling = Math.ceil(max / 1000) * 1000 || 1000;
   // Positions in percent of the plot, so the chart stretches to whatever height the
   // card gets (it shares a row with the budget card). Lines keep their stroke width
@@ -341,13 +372,33 @@ export async function MoneyFlowCard({ days, today }: { days: FlowDay[]; today: s
   const py = (v: number) => 100 - (v / ceiling) * 100;
   const line = (key: "in" | "out") => cumulative.map((p, i) => `${px(i)},${py(p[key])}`).join(" ");
   const todayIndex = cumulative.length - 1;
+  // From today's point: flat to each scheduled day, then a step up by what it brings.
+  const expectedLine = (key: "in" | "out", from: number) => {
+    let v = from;
+    const points = [`${px(todayIndex)},${py(v)}`];
+    for (const e of future) {
+      if (e[key] === 0) continue;
+      const x = px(dayIndex.get(e.date)!);
+      points.push(`${x},${py(v)}`);
+      v += e[key];
+      points.push(`${x},${py(v)}`);
+    }
+    points.push(`${px(days.length - 1)},${py(v)}`);
+    return points.join(" ");
+  };
+  const periodEnd = label(days.at(-1)?.date ?? today);
   // A handful of date labels: the first day, every week, and the last day — skipping a
   // weekly label that would sit within four days of the last one and collide with it.
   const lastIndex = days.length - 1;
   const ticks = days
     .map((d, i) => ({ d, i }))
     .filter(({ i }) => i === 0 || i === lastIndex || (i % 7 === 0 && lastIndex - i >= 4));
-  const description = t("description", { in: formatEurWhole(cin), out: formatEurWhole(cout), net: formatEurWhole(net) });
+  const description = [
+    t("description", { in: formatEurWhole(cin), out: formatEurWhole(cout), net: formatEurWhole(net) }),
+    future.length > 0 && t("expectedDescription", { date: periodEnd, in: formatEurWhole(expectedIn), out: formatEurWhole(expectedOut) }),
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <ClearCard aria-labelledby="home-flow-title" data-tip-anchor="homeMoneyFlow">
@@ -364,21 +415,28 @@ export async function MoneyFlowCard({ days, today }: { days: FlowDay[]; today: s
               <span aria-hidden className="w-4 border-t-2 border-dashed border-clear-ember" />
               {t("out")}
             </span>
+            {future.length > 0 && (
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="w-4 border-t-[3px] border-dotted border-clear-placeholder" />
+                {t("expected")}
+              </span>
+            )}
           </span>
         }
       />
       <div className="grid grid-cols-3 gap-2.5">
-        <ClearTile className="flex flex-col gap-1 px-3.5 py-3">
+        {/* Smaller amounts and padding on phones, in whole euros, so three amounts fit side by side. */}
+        <ClearTile className="flex min-w-0 flex-col gap-1 px-3 py-3 lg:px-3.5">
           <span className="text-[13px] text-clear-ink-2">{t("in")}</span>
-          <Amount value={cin} splitCents={false} className="text-xl" />
+          <FlowTileAmount value={cin} />
         </ClearTile>
-        <ClearTile className="flex flex-col gap-1 px-3.5 py-3">
+        <ClearTile className="flex min-w-0 flex-col gap-1 px-3 py-3 lg:px-3.5">
           <span className="text-[13px] text-clear-ink-2">{t("out")}</span>
-          <Amount value={cout} splitCents={false} className="text-xl" />
+          <FlowTileAmount value={cout} />
         </ClearTile>
-        <ClearTile className={cn("flex flex-col gap-1 px-3.5 py-3", net >= 0 ? "bg-clear-mint" : "bg-clear-peach")}>
+        <ClearTile className={cn("flex min-w-0 flex-col gap-1 px-3 py-3 lg:px-3.5", net >= 0 ? "bg-clear-mint" : "bg-clear-peach")}>
           <span className="text-[13px] text-clear-ink-2">{t("net")}</span>
-          <Amount value={net} sign="always" splitCents={false} className={cn("text-xl", net >= 0 ? "text-clear-mint-ink" : "text-clear-negative")} />
+          <FlowTileAmount value={net} sign="always" className={net >= 0 ? "text-clear-mint-ink" : "text-clear-negative"} />
         </ClearTile>
       </div>
       {cumulative.length === 0 ? (
@@ -413,6 +471,12 @@ export async function MoneyFlowCard({ days, today }: { days: FlowDay[]; today: s
                 <polygon points={`0,100 ${line("in")} ${px(todayIndex)},100`} fill="var(--clr-ink)" fillOpacity="0.05" />
                 <polyline points={line("in")} fill="none" stroke="var(--clr-ink)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                 <polyline points={line("out")} fill="none" stroke="var(--clr-ember)" strokeWidth="2.5" strokeDasharray="6 5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                {future.length > 0 && (
+                  <>
+                    <polyline points={expectedLine("in", cin)} fill="none" stroke="var(--clr-ink)" strokeOpacity="0.4" strokeWidth="2.5" strokeDasharray="0.1 6" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                    <polyline points={expectedLine("out", cout)} fill="none" stroke="var(--clr-ember)" strokeOpacity="0.6" strokeWidth="2.5" strokeDasharray="0.1 6" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                  </>
+                )}
                 <line x1={px(todayIndex)} x2={px(todayIndex)} y1="0" y2="100" stroke="var(--clr-ink)" strokeOpacity="0.15" vectorEffect="non-scaling-stroke" />
               </svg>
               <span
@@ -425,6 +489,23 @@ export async function MoneyFlowCard({ days, today }: { days: FlowDay[]; today: s
                 className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-[2.5px] border-clear-ember bg-clear-card"
                 style={{ left: `${px(todayIndex)}%`, top: `${py(cumulative[todayIndex].out)}%` }}
               />
+              {/* Where money out is expected to end: the amount, and on wider screens the day.
+                  Above the line, or under it when the In line ends just above. */}
+              {expectedOut > cout && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute right-0 whitespace-nowrap text-xs font-bold text-clear-ember-text",
+                    expectedIn > expectedOut && py(expectedOut) - py(expectedIn) < 20 ? "translate-y-[30%]" : "-translate-y-[130%]",
+                  )}
+                  style={{ top: `${py(expectedOut)}%` }}
+                >
+                  <MoneyText>
+                    <span className="lg:hidden">{formatEurWhole(expectedOut)}</span>
+                    <span className="hidden lg:inline">{t("expectedBy", { amount: formatEurWhole(expectedOut), date: periodEnd })}</span>
+                  </MoneyText>
+                </span>
+              )}
             </div>
           </div>
           <div aria-hidden className="relative ml-10 mr-1 h-4 text-xs text-clear-muted">

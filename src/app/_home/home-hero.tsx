@@ -20,7 +20,7 @@ const heroSolid = "bg-clear-hero-ink text-clear-hero hover:opacity-90";
 /**
  * Home's answer card: Safe to spend (see lib/safe-to-spend.ts for the one definition:
  * the budget, minus what is spent, minus the bills still to come that will count
- * toward it). The card shows that sum underneath so the number explains itself. Without a budget it
+ * toward it). Underneath it shows what is spent against the budget. Without a budget it
  * asks for one instead of showing a different figure under the same label.
  */
 export async function HomeHero({
@@ -100,13 +100,13 @@ export async function HomeHero({
         <ClearProgress
           onHero
           value={target > 0 ? spent / target : 0}
-          reserved={target > 0 ? reserved / target : 0}
           marker={elapsed}
         />
-        {/* The sum behind the number, so it never has to be taken on trust. The budget
-            figure is the way into the Budget page. */}
+        {/* What is spent against the budget. The bills still to come stay out of the bar
+            and this line (the big number has already set them aside). The budget figure
+            is the way into the Budget page. */}
         <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-[13px] text-clear-hero-ink-2">
-          <span><MoneyText>{t("sum", { spent: formatEur(spent), bills: formatEur(reserved) })}</MoneyText></span>
+          <span><MoneyText>{t("sum", { spent: formatEur(spent) })}</MoneyText></span>
           <Link
             href="/budget"
             title={t("openBudget")}
