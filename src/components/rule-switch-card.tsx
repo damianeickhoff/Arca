@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { IconFilter2, IconListCheck } from "@tabler/icons-react";
+import { IconFilter2, IconListCheck, IconPencil } from "@tabler/icons-react";
 import { IconTile } from "@/components/clear/icon-tile";
 import { ClearSwitch } from "@/components/clear/switch";
 import { clearButtonVariants } from "@/components/clear/button-variants";
@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
  * "Also create a rule": the switch that files similar transactions too, with — when the
  * rule would move others — "Show the N transactions", the list where matches can be
  * unticked before the rule runs, and — when some of them already have a category — the
- * choice between moving only the ones without one (the default) or all of them.
+ * the choice between moving only the ones without one (the default) or all of them.
+ * With `onEditRule`, "Edit rule" beside it opens the rule to adjust before it is made.
  * Shared by Needs a category and the category picker; the caller keeps the switch and
  * the unticked ids, and leaves those out when it saves.
  */
@@ -30,6 +31,7 @@ export function RuleSwitchCard({
   disabled,
   excluded,
   onExcludedChange,
+  onEditRule,
   nested,
   tipActive,
   className,
@@ -47,6 +49,8 @@ export function RuleSwitchCard({
   disabled: boolean;
   excluded: Set<number>;
   onExcludedChange: (next: Set<number>) => void;
+  /** "Edit rule": opens the rule dialog (Needs a category). Left out where it isn't offered. */
+  onEditRule?: () => void;
   /** Inside another sheet (the category picker): the list opens above it. */
   nested?: boolean;
   /** Whether the "Show the N transactions" tip may show now. */
@@ -80,18 +84,35 @@ export function RuleSwitchCard({
       {checked && total > 0 && (
         <RuleScopeChoice total={total} categorizedIds={categorizedIds} excluded={excluded} onExcludedChange={onExcludedChange} />
       )}
+      {(total > 0 || onEditRule) && (
+        <div className="flex gap-2">
+          {onEditRule && (
+            <button
+              type="button"
+              onClick={onEditRule}
+              aria-haspopup="dialog"
+              className={cn(clearButtonVariants({ variant: "surface", size: "sm" }), "shrink-0")}
+            >
+              <IconPencil aria-hidden />
+              {t("rule.edit")}
+            </button>
+          )}
+          {total > 0 && (
+            <button
+              type="button"
+              data-tip-anchor="ruleMatches"
+              onClick={() => setOpen(true)}
+              aria-haspopup="dialog"
+              className={cn(clearButtonVariants({ variant: "surface", size: "sm" }), "min-w-0", onEditRule ? "flex-1 sm:flex-none" : "self-start")}
+            >
+              <IconListCheck aria-hidden />
+              <span className="truncate">{ticked < total ? t("rule.showMatchesSome", { count: ticked, total }) : t("rule.showMatches", { count: total })}</span>
+            </button>
+          )}
+        </div>
+      )}
       {total > 0 && (
         <>
-          <button
-            type="button"
-            data-tip-anchor="ruleMatches"
-            onClick={() => setOpen(true)}
-            aria-haspopup="dialog"
-            className={cn(clearButtonVariants({ variant: "surface", size: "sm" }), "self-start")}
-          >
-            <IconListCheck aria-hidden />
-            {ticked < total ? t("rule.showMatchesSome", { count: ticked, total }) : t("rule.showMatches", { count: total })}
-          </button>
           <RuleMatchesDialog
             open={open}
             onOpenChange={setOpen}

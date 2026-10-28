@@ -40,14 +40,15 @@ export function useActivitySelection() {
 
 /**
  * "Select" — turns on select mode; while it is on, the same button reads "Done" (black)
- * and turns it off. Desktop: a labelled surface button beside the filters. Phones: a
+ * and turns it off. Desktop: a labelled button in the list toolbar. Phones: a
  * round button in the page header.
  */
 export function ActivitySelectButton({ layout, disabled }: { layout: "desktop" | "phone"; disabled?: boolean }) {
   const t = useTranslations("activity.bulk");
   const { selectMode, enter, exit } = useActivitySelection();
   const label = selectMode ? t("done") : t("select");
-  const variant = selectMode ? "primary" : "surface";
+  // Desktop sits in the white list card (grey when idle); phones on the grey ground (white).
+  const variant = selectMode ? "primary" : layout === "desktop" ? "secondary" : "surface";
   const Glyph = selectMode ? IconCheck : IconListCheck;
 
   return (
@@ -60,11 +61,12 @@ export function ActivitySelectButton({ layout, disabled }: { layout: "desktop" |
       data-tip-anchor="activitySelect"
       className={cn(
         layout === "desktop"
-          ? cn(clearButtonVariants({ variant, size: "md" }), "hidden lg:inline-flex")
+          ? cn(clearButtonVariants({ variant, size: "sm" }), "hidden h-11 lg:inline-flex")
           : cn(clearButtonVariants({ variant, size: "icon" }), "size-12 lg:hidden"),
       )}
     >
-      <Glyph aria-hidden size={layout === "phone" ? 20 : undefined} stroke={layout === "phone" ? 1.9 : 2} />
+      {/* Desktop: the word alone until it reads Done. */}
+      {(layout === "phone" || selectMode) && <Glyph aria-hidden size={layout === "phone" ? 20 : undefined} stroke={layout === "phone" ? 1.9 : 2} />}
       {layout === "desktop" && label}
     </button>
   );

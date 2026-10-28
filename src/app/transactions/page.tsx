@@ -15,6 +15,7 @@ import { ActivityHeader, ActivityView, type ActivityFilters } from "./_activity/
 import { ActivitySelectionProvider } from "./_activity/select-mode";
 import { ActivityNavigationProvider } from "./_activity/filter-transition";
 import { ALL_FROM, todayStr } from "./periods";
+import { buildSpendChart } from "./_activity/spend-chart";
 import {
   buildSplitAllocations,
   getDisplayedTransactionCategory,
@@ -227,8 +228,8 @@ export default async function TransactionsPage({
   const expenseRows = allocationRows.filter((row) => row.direction === "expense" && !row.outOfReports && row.categoryGroup !== "savings");
   const income = incomeRows.reduce((sum, row) => sum + row.amount, 0);
   const expense = expenseRows.reduce((sum, row) => sum + row.amount, 0);
-  // For the summary's explanations: how many payments came in, and how much of the money
-  // out went to recurring bills.
+  // For the hero's In and Out explanations: how many payments came in, and how much of
+  // the money out went to recurring bills.
   const incomeCount = new Set(incomeRows.map((row) => row.transactionId)).size;
   const recurringIds = new Set(filteredRows.filter((row) => row.recurringItemId != null).map((row) => row.id));
   const fixed = expenseRows.filter((row) => recurringIds.has(row.transactionId)).reduce((sum, row) => sum + row.amount, 0);
@@ -276,11 +277,31 @@ export default async function TransactionsPage({
   const linkedRecurringIds = visibleRows.map((r) => r.recurringItemId).filter((id): id is number => id != null);
   const [context, locale, receiptScan] = await Promise.all([getActivityContext(financialMonth, linkedRecurringIds), getLocale(), isReceiptScanReady()]);
 
-  // ── The two link tiles ─────────────────────────────────────────────────────
+  // ── The period hero's chart: money out per day, the bills still due after today
+  // hatched. "All" starts at the oldest transaction shown, not the year-2000 floor.
+  const today = todayStr();
+  const chart = buildSpendChart({
+    start: from === ALL_FROM ? filteredRows.reduce((min, r) => (r.date < min ? r.date : min), to) : from,
+    end: to,
+    today,
+    spending: expenseRows,
+    // Bills are money out: none while only money in is shown.
+    scheduled:
+      direction === "income"
+        ? []
+        : upcomingStatuses.filter((s) => s.item.type !== "income").map((s) => ({ date: s.dueDate!, amount: Math.abs(s.item.amount ?? 0) })),
+  });
+
+  // ── The cards beside the hero ──────────────────────────────────────────────
   const resetDate = shiftDate(monthRange.to, 1);
   const until = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${resetDate}T12:00:00`));
+  // The next three, for the Upcoming card when nothing needs a category.
+  const next = upcomingStatuses
+    .filter((s) => s.dueDate! >= today)
+    .slice(0, 3)
+    .map((s) => ({ id: `${s.item.id}-${s.dueDate}`, name: s.item.name, date: s.dueDate!, amount: Math.abs(s.item.amount ?? 0) }));
   const tiles = {
-    upcoming: upcomingCount > 0 ? { count: upcomingCount, total: upcomingTotal, until } : null,
+    upcoming: upcomingCount > 0 ? { count: upcomingCount, total: upcomingTotal, until, next } : null,
     needsReview:
       needsReview.length > 0
         ? { count: needsReview.length, total: needsReview.reduce((sum, r) => sum + (r.correctedAmount ?? r.amount), 0) }
@@ -288,7 +309,7 @@ export default async function TransactionsPage({
   };
 
   return (
-    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:h-dvh lg:min-h-[720px] lg:gap-7 lg:px-8 lg:pt-7 lg:pb-4">
+    <div className="flex flex-col gap-3.5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
       <ActivityNavigationProvider>
       <ActivitySelectionProvider>
       <ActivityHeader accountCount={allBanks.length} needsReviewCount={needsReview.length} filters={filters} canSelect={visibleRows.length > 0} receiptScan={receiptScan} />
@@ -305,6 +326,7 @@ export default async function TransactionsPage({
         showMoreHref={showMoreHref}
         hasMore={hasMore}
         tiles={tiles}
+        chart={chart}
         context={context}
       />
       </ActivitySelectionProvider>

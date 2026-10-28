@@ -53,7 +53,7 @@ when the last user of a legacy token (`--arca-*`, the mustard `--color-*` mappin
 
 - Colours: `clear-ground`, `clear-card`, `clear-tile`, `clear-line`, `clear-ink`,
   `clear-ink-2`, `clear-muted`, `clear-placeholder`, `clear-hero` / `clear-hero-ink` /
-  `clear-hero-ink-2`, `clear-primary` / `clear-primary-ink`, `clear-ember` /
+  `clear-hero-ink-2` / `clear-hero-positive` (money in on the hero), `clear-primary` / `clear-primary-ink`, `clear-ember` /
   `clear-ember-ink` / `clear-ember-text`, pastels `clear-{mint,peach,sky,lilac,butter,rose,stone}`
   each with `-ink`, semantic `clear-{positive,negative,warning,info}` (text) with `-fill`.
 - Radius: `rounded-clear-card` (24px, cards and panels), `rounded-clear-dialog` (28px,

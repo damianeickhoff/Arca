@@ -16,8 +16,33 @@ export interface ActivityContext {
   recurring: Record<number, RecurringItem>;
 }
 
-/** The two link tiles above the list (upcoming bills and needs-a-category). */
+/** The cards beside the period hero: upcoming bills and needs-a-category. */
 export interface ActivityTiles {
-  upcoming: { count: number; total: number; until: string } | null;
+  upcoming: {
+    count: number;
+    total: number;
+    until: string;
+    /** The next three, for the Upcoming card when nothing needs a category. */
+    next: { id: string; name: string; date: string; amount: number }[];
+  } | null;
   needsReview: { count: number; total: number } | null;
+}
+
+/**
+ * The period hero's "spending per" chart: money out per day (per week or month over a
+ * long period), with the bills still scheduled after today as hatched bars.
+ */
+export interface ActivitySpendChart {
+  unit: "day" | "week" | "month";
+  /** Each bar: its first date, what went out, and the bills still due in it. */
+  bars: { from: string; spent: number; scheduled: number }[];
+  /** The bar holding today, when the period runs past today. */
+  todayIndex: number | null;
+  /** The bills still scheduled after today, within the period. */
+  scheduledTotal: number;
+  /** Money out per elapsed day of the period. */
+  perDay: number;
+  /** The first and last day the chart covers. */
+  start: string;
+  end: string;
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconArrowRight, IconCalendar, IconCategory, IconCheck, IconInfoCircle, IconListDetails, IconSparkles, IconTransfer } from "@tabler/icons-react";
+import { IconArrowRight, IconCalendar, IconCategory, IconCheck, IconChevronRight, IconInfoCircle, IconListDetails, IconSparkles, IconTransfer } from "@tabler/icons-react";
 import type { Category, Goal } from "@/db/schema";
 import { Icon } from "@/components/icon";
 import { Amount } from "@/components/clear/amount";
@@ -16,6 +16,8 @@ import { MoneyText } from "@/components/clear/money";
 import { CategoryPickerSheet } from "@/components/category-picker";
 import { containsRuleFields, useSaveRule } from "@/components/rule-actions";
 import { RuleSwitchCard } from "@/components/rule-switch-card";
+import { RuleDialog, emptyRuleDraft, fetchRuleMatches, ruleDraftFromRule, type RuleDraft, type RuleFields } from "@/components/rule-dialog";
+import type { CategoryRule } from "@/db/schema";
 import { useChoice } from "@/components/clear/confirm-dialog";
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
@@ -23,7 +25,7 @@ import { TeachRuleStrip, type TeachMoment } from "@/components/teach-rule-strip"
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { suggestCategoriesAction } from "@/app/actions/ai";
 import { AI_CATEGORY_BATCH } from "@/lib/ai-shared";
-import type { CategorySuggestions } from "@/lib/category-suggestions";
+import type { CategorySuggestions, RuleSpec } from "@/lib/category-suggestions";
 import { resolveDisplayName } from "@/lib/friendly-names";
 import { formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -72,12 +74,15 @@ export function NeedsReviewView({
   categories,
   savingsGoals,
   aiReady,
+  mostUsedIds,
 }: {
   rows: TransactionDetail[];
   categories: Category[];
   savingsGoals: Goal[];
   /** AI is switched on and its provider set up (Settings › AI): show "Ask AI". */
   aiReady: boolean;
+  /** The ten categories used most over the last six months, most used first. */
+  mostUsedIds: number[];
 }) {
   const t = useTranslations("needsReview");
   const locale = useLocale();
@@ -177,8 +182,47 @@ export function NeedsReviewView({
     setAiAsked((prev) => new Set([...prev, ...ids]));
     setAiPicks((prev) => ({ ...prev, ...result.suggestions }));
   }
-  const ruleAvailable = (data?.patterns.length ?? 0) > 0;
+  // "Most used": the categories used most lately, minus the ones Suggested already shows.
+  const mostUsed = mostUsedIds
+    .filter((id) => !suggested.some((c) => c.id === id))
+    .map((id) => categories.find((c) => c.id === id))
+    .filter((c): c is Category => !!c);
+
+  // The rule as edited in "Edit rule", for this row: Save and next creates it instead of
+  // the derived "description contains" one, and its matches move with it.
+  const [customRule, setCustomRule] = useState<{
+    id: number;
+    fields: RuleFields;
+    categoryId: number;
+    similarIds: number[];
+    categorizedIds: number[];
+  } | null>(null);
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
+  const custom = current && customRule?.id === current.id ? customRule : null;
+  const ruleAvailable = (data?.patterns.length ?? 0) > 0 || custom != null;
   const withRule = ruleAvailable && ruleOn && stagedId != null;
+  const ruleSpecs: RuleSpec[] = custom
+    ? [{ pattern: custom.fields.namePattern ?? "", direction: custom.fields.direction }]
+    : data?.rules ?? [];
+  const ruleSimilarIds = custom ? custom.similarIds : data?.similarIds ?? [];
+  const ruleCategorizedIds = custom ? custom.categorizedIds : data?.categorizedIds ?? [];
+  // "Edit rule" opens on the edited rule, else on the derived pattern, Contains and the
+  // staged category.
+  const ruleInitial: RuleDraft = custom
+    ? ruleDraftFromRule({ ...custom.fields, categoryId: stagedId ?? custom.categoryId } as CategoryRule)
+    : { ...emptyRuleDraft(stagedId), pattern: ruleSpecs[0]?.pattern ?? "", direction: ruleSpecs[0]?.direction ?? "" };
+
+  /** "Edit rule" saved: stage its category, remember the rule and switch it on. */
+  async function applyEditedRule(fields: RuleFields, categoryId: number | null) {
+    if (!current || categoryId == null) return;
+    const matches = await fetchRuleMatches(fields, { ids: true }).catch(() => null);
+    const similarIds = (matches?.ids ?? []).filter((id) => id !== current.id);
+    setCustomRule({ id: current.id, fields, categoryId, similarIds, categorizedIds: (matches?.categorizedIds ?? []).filter((id) => id !== current.id) });
+    setPicked({ id: current.id, choice: categoryId });
+    setExcludedFor({ id: current.id, ids: new Set((matches?.categorizedIds ?? []).filter((id) => id !== current.id)) });
+    setRuleOn(true);
+    setRuleDialogOpen(false);
+  }
 
   /** Takes `ids` out of the queue and moves on to the next row still in it. */
   function markSorted(ids: number[]) {
@@ -209,17 +253,19 @@ export function NeedsReviewView({
     if (stagedTransfer) return markTransfer();
     if (stagedId == null) return;
     // Unticked matches ("Show the N transactions") stay out of the rule's first run.
-    const ids = withRule && data ? [...new Set([current.id, ...data.similarIds.filter((id) => !excluded.has(id))])] : [current.id];
+    const ids = withRule ? [...new Set([current.id, ...ruleSimilarIds.filter((id) => !excluded.has(id))])] : [current.id];
     setBusy(true);
     setFailed(false);
     try {
       await send("/api/transactions", "PATCH", { ids, categoryId: stagedId });
-      if (withRule && data) {
-        // The same rule the category picker's switch creates. One that already files
-        // elsewhere asks before it moves; a Cancel leaves that rule out.
+      if (withRule) {
+        // The same rule the category picker's switch creates — or the one edited in
+        // "Edit rule". One that already files elsewhere asks before it moves; a Cancel
+        // leaves that rule out.
         let savedAny = false;
-        for (const rule of data.rules) {
-          const saved = await sendRule("POST", { categoryId: stagedId, ...containsRuleFields(rule.pattern, rule.direction) });
+        const ruleFields = custom ? [custom.fields] : ruleSpecs.map((rule) => containsRuleFields(rule.pattern, rule.direction));
+        for (const fields of ruleFields) {
+          const saved = await sendRule("POST", { categoryId: stagedId, ...fields });
           if (saved === "failed") throw new Error("rule failed");
           if (saved !== "cancelled") savedAny = true;
         }
@@ -327,7 +373,7 @@ export function NeedsReviewView({
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
+    <div className={cn("flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12", current && "pb-[calc(var(--bottom-bar-height)+28px)]")}>
       <SubpageHeading
         parentHref="/transactions"
         parentLabel={t("parent")}
@@ -477,15 +523,6 @@ export function NeedsReviewView({
                   {t("transfer.choice")}
                   {stagedTransfer && <IconCheck size={16} stroke={3} aria-hidden />}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen(true)}
-                  aria-haspopup="dialog"
-                  className={cn(clearButtonVariants({ variant: "secondary" }), "h-12 px-[18px]")}
-                >
-                  <IconCategory aria-hidden />
-                  {t("allCategories")}
-                </button>
                 {aiReady && (
                   <button
                     type="button"
@@ -504,25 +541,36 @@ export function NeedsReviewView({
               )}
             </div>
 
+            {/* Most used: wrapping chips (two lines at most) on desktop, one row to swipe on
+                phones; All categories at the end opens the full picker. */}
+            <MostUsed
+              categories={mostUsed}
+              stagedId={stagedId}
+              onPick={(id) => setPicked({ id: current.id, choice: id })}
+              onAll={() => setPickerOpen(true)}
+            />
+
             {/* The rule */}
-            {ruleAvailable && data && (
+            {ruleAvailable && (
               <RuleSwitchCard
                 className="py-3.5 lg:px-[18px]"
-                rules={data.rules}
-                similarIds={data.similarIds}
-                categorizedIds={data.categorizedIds}
+                rules={ruleSpecs}
+                similarIds={ruleSimilarIds}
+                categorizedIds={ruleCategorizedIds}
                 skipIds={[current.id]}
                 checked={withRule}
                 onCheckedChange={setRuleOn}
                 disabled={stagedId == null || busy}
                 excluded={excluded}
                 onExcludedChange={(ids) => setExcludedFor({ id: current.id, ids })}
+                onEditRule={busy ? undefined : () => setRuleDialogOpen(true)}
                 tipActive={!selectMode}
               />
             )}
 
-            {/* Actions */}
-            <div className="flex flex-wrap items-center gap-2.5 border-t border-clear-ground pt-4">
+            {/* Actions. Phones: docked above the tab bar instead (below), so only an error
+                shows here. */}
+            <div className={cn("flex-wrap items-center gap-2.5 border-t border-clear-ground pt-4", failed ? "flex" : "hidden lg:flex")}>
               {failed ? (
                 <p role="alert" className="m-0 min-w-0 flex-[1_1_200px] text-[13px] font-semibold text-clear-negative">
                   {t("failed")}
@@ -530,7 +578,7 @@ export function NeedsReviewView({
               ) : (
                 <span className="hidden min-w-0 flex-[1_1_200px] text-[13px] text-clear-muted lg:inline">{t("keys")}</span>
               )}
-              <div className="flex flex-1 flex-wrap justify-end gap-2.5 lg:flex-none">
+              <div className="hidden flex-1 flex-wrap justify-end gap-2.5 lg:flex lg:flex-none">
                 <button type="button" onClick={() => setDetailOpen(true)} aria-haspopup="dialog" className={clearButtonVariants({ variant: "secondary" })}>
                   <IconListDetails aria-hidden />
                   {t("details")}
@@ -649,8 +697,47 @@ export function NeedsReviewView({
         </div>
       </div>
 
+      {/* Phones: Details, Skip and Save and next docked above the tab bar, always in
+          reach however long the card gets. Steps aside for the bulk bar. */}
+      {current && !selectMode && (
+        <div
+          data-hide-under-sheet=""
+          className="fixed inset-x-4 z-[55] flex gap-2 rounded-full bg-clear-card p-2 shadow-clear-float lg:hidden"
+          style={{ bottom: "var(--bottom-bar-offset)" }}
+        >
+          <button
+            type="button"
+            onClick={() => setDetailOpen(true)}
+            aria-haspopup="dialog"
+            aria-label={t("details")}
+            className={cn(clearButtonVariants({ variant: "secondary", size: "icon" }), "size-11 shrink-0")}
+          >
+            <IconListDetails aria-hidden />
+          </button>
+          {queue.length > 1 && (
+            <button type="button" onClick={skip} disabled={busy} className={cn(clearButtonVariants({ variant: "secondary" }), "h-11 flex-1 px-3")}>
+              {t("skip")}
+            </button>
+          )}
+          <button type="button" onClick={save} disabled={!canSave} className={cn(clearButtonVariants(), "h-11 flex-[2] px-3")}>
+            {busy ? t("saving") : t("save")}
+            <IconArrowRight aria-hidden />
+          </button>
+        </div>
+      )}
+
       {current && (
         <>
+          <RuleDialog
+            open={ruleDialogOpen}
+            onOpenChange={setRuleDialogOpen}
+            initial={ruleInitial}
+            title={t("editRule.title")}
+            subtitle={t("editRule.subtitle")}
+            categories={categories}
+            submitLabel={t("editRule.submit")}
+            onSubmit={applyEditedRule}
+          />
           <CategoryPickerSheet
             categories={categories}
             open={pickerOpen}
@@ -788,5 +875,117 @@ function EmptyCard() {
         {t("back")}
       </Link>
     </ClearCard>
+  );
+}
+
+/** Chip geometry, for working out how many fit on two lines (see MostUsed). */
+const CHIP_GAP = 8;
+const CHIP_CHROME = 5 + 28 + 8 + 14 + 4; // left pad, icon, gap, right pad, border
+
+/**
+ * "Most used": the categories used most over the last six months, as compact chips that
+ * stage the category like a suggestion; All categories at the end opens the full picker.
+ * Desktop wraps them on at most two lines (dropping the least used that don't fit);
+ * phones show one row to swipe sideways.
+ */
+function MostUsed({
+  categories,
+  stagedId,
+  onPick,
+  onAll,
+}: {
+  categories: Category[];
+  stagedId: number | null;
+  onPick: (id: number) => void;
+  onAll: () => void;
+}) {
+  const t = useTranslations("needsReview");
+  const labelId = useId();
+  const listRef = useRef<HTMLDivElement>(null);
+  // How many chips fit on two lines beside All categories (desktop), measured from the
+  // labels' widths whenever the card's width changes.
+  const [fit, setFit] = useState(categories.length);
+  const namesKey = categories.map((c) => c.name).join("\u0000");
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const ctx = document.createElement("canvas").getContext("2d");
+    function measure() {
+      if (!el || !ctx) return;
+      const style = getComputedStyle(el);
+      ctx.font = `700 14px ${style.fontFamily}`;
+      const width = el.clientWidth;
+      const widths = namesKey ? namesKey.split("\u0000").map((n) => Math.ceil(ctx.measureText(n).width) + CHIP_CHROME) : [];
+      const allWidth = Math.ceil(ctx.measureText(el.dataset.allLabel ?? "").width) + 14 * 2 + 16 + 6 + 3;
+      let count = widths.length;
+      for (; count >= 0; count--) {
+        // Lay out `count` chips and All categories; stop at the first count that stays on two lines.
+        let lines = 1;
+        let x = 0;
+        for (const w of [...widths.slice(0, count), allWidth]) {
+          if (x > 0 && x + CHIP_GAP + w > width) {
+            lines++;
+            x = w;
+          } else x = x === 0 ? w : x + CHIP_GAP + w;
+        }
+        if (lines <= 2) break;
+      }
+      setFit(Math.max(0, count));
+    }
+    // Also fires once on observe, for the first measurement.
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [namesKey]);
+
+  const chip =
+    "inline-flex h-10 flex-none cursor-pointer items-center gap-2 rounded-full border-2 bg-clear-tile pr-3.5 pl-[5px] text-sm font-bold whitespace-nowrap outline-none transition-colors focus-visible:ring-3 focus-visible:ring-clear-ember/50";
+
+  return (
+    <div className="flex flex-col gap-2 lg:gap-2.5">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <h3 id={labelId} className="m-0 text-[15px] font-bold lg:text-base">
+          {t("mostUsed")}
+        </h3>
+        <span className="hidden text-[13px] text-clear-muted lg:inline">{t("mostUsedHelp")}</span>
+      </div>
+      <div
+        ref={listRef}
+        role="group"
+        aria-labelledby={labelId}
+        data-all-label={t("allCategories")}
+        className="scrollbar-hide -mx-5 flex gap-2 overflow-x-auto px-5 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0"
+      >
+        {categories.map((c, i) => {
+          const on = stagedId === c.id;
+          return (
+            <button
+              key={c.id}
+              type="button"
+              data-suggestion="true"
+              aria-pressed={on}
+              onClick={() => onPick(c.id)}
+              className={cn(chip, on ? "border-clear-ink" : "border-transparent hover:bg-clear-line", i >= fit && "lg:hidden")}
+            >
+              <span aria-hidden className="inline-flex shrink-0 [&>*]:size-7!">
+                <Icon iconKey={c.icon} color={c.color} soft round size="xs" glyphSize={14} />
+              </span>
+              {c.name}
+              {on && <IconCheck size={14} stroke={3} aria-hidden />}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={onAll}
+          aria-haspopup="dialog"
+          className="inline-flex h-10 flex-none cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] border-clear-line px-3.5 text-sm font-bold whitespace-nowrap text-clear-ink transition-colors outline-none hover:bg-clear-tile focus-visible:ring-3 focus-visible:ring-clear-ember/50"
+        >
+          <IconCategory size={16} stroke={2} aria-hidden />
+          {t("allCategories")}
+          <IconChevronRight size={14} stroke={2.2} aria-hidden className="lg:hidden" />
+        </button>
+      </div>
+    </div>
   );
 }
