@@ -232,8 +232,17 @@ export async function getTrendsHeading(sp: { range?: string; from?: string; to?:
   };
 }
 
-/** Trends' period control for the Insights tab row: 3 · 6 · 12 months and Custom. */
-export async function TrendsPeriodSlot({ sp, financialMonth }: { sp: { range?: string; from?: string; to?: string }; financialMonth: FinancialMonthConfig }) {
+/** Trends' period control for the Insights tab row: 3 · 6 · 12 months and Custom; `menu`
+ *  is the phone heading's pill. */
+export async function TrendsPeriodSlot({
+  sp,
+  financialMonth,
+  menu = false,
+}: {
+  sp: { range?: string; from?: string; to?: string };
+  financialMonth: FinancialMonthConfig;
+  menu?: boolean;
+}) {
   const locale = await getLocale();
   const { range, current } = headingMonths(sp, financialMonth);
   const long = (ym: string) => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(`${financialMonthRangeByMonth(ym, financialMonth).to}T12:00:00`));
@@ -243,6 +252,7 @@ export async function TrendsPeriodSlot({ sp, financialMonth }: { sp: { range?: s
       months={customMonths(current, financialMonth, long)}
       customFrom={range.kind === "custom" ? financialMonthForDate(range.from, financialMonth) : undefined}
       customTo={range.kind === "custom" ? financialMonthForDate(range.to, financialMonth) : undefined}
+      menu={menu}
     />
   );
 }

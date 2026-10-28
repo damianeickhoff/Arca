@@ -50,6 +50,7 @@ import { DebtFormDialog } from "./debt-form-dialog";
 import { DebtIcon, ExtraSlider, PaymentNotice, monthsFromNow, pastel, useMonthYear, usePaymentNotice } from "./debt-ui";
 import { PayoffTimelineCard } from "./payoff-timeline";
 import { ThisMonthCard } from "./this-month-card";
+import { PhoneDebtList, PhoneHero, PhoneOrderList, PhoneResults, PlanSheetRow } from "./debts-phone";
 import { LogPaymentDialog } from "./log-payment-dialog";
 import { setDebtPayoffOrderAction } from "./actions";
 import { MoneyText } from "@/components/clear/money";
@@ -75,7 +76,9 @@ function monthsUntil(date: Date) {
  * timeline as the last full-width row. Every debt opens its detail sheet; adding and
  * editing happen in the debt form sheet; "Log a payment" records an extra or lump sum.
  * The order (saved in app settings) decides which debt the extra goes to first and how
- * Your debts is sorted.
+ * Your debts is sorted. Phones (below lg) stack one column instead: the You owe hero,
+ * this month's payments, your debts as a short list, what others owe you, the
+ * simulator and the timeline (debts-phone.tsx holds the parts laid out differently).
  */
 export function DebtsView({
   computed,
@@ -121,6 +124,7 @@ export function DebtsView({
   // Remounted per opening, so it always starts empty on the first debt.
   const [logOpen, setLogOpen] = useState(false);
   const [logKey, setLogKey] = useState(0);
+  const [logDebtId, setLogDebtId] = useState<number | null>(null);
 
   const all = [...computed, ...computedOwed];
   const sheet = sheetId != null ? all.find((c) => c.debt.id === sheetId) ?? null : null;
@@ -148,7 +152,8 @@ export function DebtsView({
     });
   }
 
-  function openLog() {
+  function openLog(debtId: number | null = null) {
+    setLogDebtId(debtId);
     setLogKey((k) => k + 1);
     setLogOpen(true);
   }
@@ -182,6 +187,7 @@ export function DebtsView({
     [sim, base, plan],
   );
   const hasRight = active.length > 0 || hasOwed;
+  const free = useFreeTile({ hasOwn: computed.length > 0, active, base, sim, extra, totalMonthly });
   // The slider runs to €500, or further when the minimums are higher than that.
   const extraMax = Math.max(500, Math.ceil(totalMonthly / 100) * 100);
 
@@ -193,7 +199,7 @@ export function DebtsView({
         toReceive={openOwed.length + advances.length}
         empty={empty}
         onAdd={() => openForm({ kind: "add", direction: "owe" })}
-        onLog={active.length > 0 ? openLog : undefined}
+        onLog={active.length > 0 ? () => openLog() : undefined}
       />
 
       <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
@@ -204,16 +210,14 @@ export function DebtsView({
           </>
         ) : (
           <>
+            <PhoneHero active={active} totalDebt={totalDebt} totalMonthly={totalMonthly} debtFree={free.value} className="lg:hidden" />
             <SummaryTiles
+              free={free}
               active={active}
               totalDebt={totalDebt}
               owedTotal={totalOwed + advances.reduce((s, a) => s + a.remaining, 0)}
               owedCount={openOwed.length + advances.length}
-              base={base}
               sim={sim}
-              extra={extra}
-              totalMonthly={totalMonthly}
-              hasOwn={computed.length > 0}
             />
 
             {active.length > 0 && (
@@ -230,7 +234,7 @@ export function DebtsView({
                 onExtra={setExtra}
                 totalMonthly={totalMonthly}
                 freeToSpend={freeToSpend}
-                className="lg:col-span-2 xl:col-span-3"
+                className="max-lg:order-5 lg:col-span-2 xl:col-span-3"
               />
             )}
 
@@ -242,33 +246,47 @@ export function DebtsView({
               onOpen={setSheetId}
               onEdit={(id) => openForm({ kind: "edit", id })}
               onAdd={() => openForm({ kind: "add", direction: "owe" })}
-              className={cn("lg:col-span-2", !hasRight && "xl:col-span-3")}
+              className={cn("max-lg:order-3 lg:col-span-2", !hasRight && "xl:col-span-3")}
             />
 
             {/* One column at xl beside Your debts; side by side under it at lg. This
-                month's payments fills the column so it lines up with Your debts. */}
+                month's payments fills the column so it lines up with Your debts. Phones
+                take both into the one column: payments above Your debts, Owed to you
+                under it. */}
             {hasRight && (
-              <div className="grid min-w-0 gap-5 lg:col-span-2 lg:grid-cols-2 xl:col-span-1 xl:flex xl:flex-col">
-                {active.length > 0 && <ThisMonthCard active={active} thisMonth={thisMonth} className={cn("xl:flex-1", !hasOwed && "lg:col-span-2")} />}
+              <div className="grid min-w-0 gap-5 max-lg:contents lg:col-span-2 lg:grid-cols-2 xl:col-span-1 xl:flex xl:flex-col">
+                {active.length > 0 && <ThisMonthCard active={active} thisMonth={thisMonth} className={cn("max-lg:order-2 xl:flex-1", !hasOwed && "lg:col-span-2")} />}
                 {hasOwed && (
                   <OwedCard
                     owed={openOwed}
                     advances={advances}
                     onOpen={setSheetId}
                     onAdd={() => openForm({ kind: "add", direction: "owed" })}
-                    className={cn("lg:self-start xl:self-auto", active.length === 0 && "lg:col-span-2")}
+                    className={cn("max-lg:order-4 lg:self-start xl:self-auto", active.length === 0 && "lg:col-span-2")}
                   />
                 )}
               </div>
             )}
 
-            {active.length > 0 && <PayoffTimelineCard active={active} base={base} sim={sim} extra={extra} className="lg:col-span-2 xl:col-span-3" />}
+            {active.length > 0 && <PayoffTimelineCard active={active} base={base} sim={sim} extra={extra} className="max-lg:order-6 lg:col-span-2 xl:col-span-3" />}
           </>
         )}
       </div>
 
-      {active.length > 0 && <LogPaymentDialog key={logKey} open={logOpen} onOpenChange={setLogOpen} debts={active} />}
-      <DebtDetailDialog computed={sheet} bills={bills} onClose={() => setSheetId(null)} />
+      {active.length > 0 && <LogPaymentDialog key={logKey} open={logOpen} onOpenChange={setLogOpen} debts={active} initialDebtId={logDebtId} />}
+      <DebtDetailDialog
+        computed={sheet}
+        bills={bills}
+        onClose={() => setSheetId(null)}
+        onLogPayment={
+          active.length > 0
+            ? (id) => {
+                setSheetId(null);
+                openLog(id);
+              }
+            : undefined
+        }
+      />
       <DebtFormDialog
         open={formOpen && (form.kind === "add" || editing != null)}
         onOpenChange={formOpenChange}
@@ -384,29 +402,51 @@ function useOweLine(active: ComputedDebt[]) {
   return breakdown.join(" · ");
 }
 
-function SummaryTiles({
+/** What the Debt-free tile says: the month with the extra (or at the minimums), and its foot line. */
+function useFreeTile({
+  hasOwn,
   active,
-  totalDebt,
-  owedTotal,
-  owedCount,
   base,
   sim,
   extra,
   totalMonthly,
-  hasOwn,
 }: {
+  hasOwn: boolean;
   active: ComputedDebt[];
-  totalDebt: number;
-  owedTotal: number;
-  owedCount: number;
   base: Sim;
   sim: Sim;
   extra: number;
   totalMonthly: number;
-  hasOwn: boolean;
-}) {
+}): { value: string; foot: string } {
   const t = useTranslations("plan.debts.tiles");
   const monthYear = useMonthYear();
+  if (!hasOwn) return { value: "—", foot: t("free.none") };
+  if (active.length === 0) return { value: t("free.now"), foot: t("free.allPaid") };
+  if (extra > 0 && sim.months != null)
+    return {
+      value: monthYear(monthsFromNow(sim.months)),
+      foot: base.months != null ? t("freeWithExtra", { amount: formatEurWhole(extra), date: monthYear(monthsFromNow(base.months)) }) : t("free.never"),
+    };
+  if (base.months == null) return { value: "—", foot: t("free.never") };
+  return { value: monthYear(monthsFromNow(base.months)), foot: t("free.atMinimums", { amount: formatEurWhole(totalMonthly) }) };
+}
+
+function SummaryTiles({
+  free,
+  active,
+  totalDebt,
+  owedTotal,
+  owedCount,
+  sim,
+}: {
+  free: { value: string; foot: string };
+  active: ComputedDebt[];
+  totalDebt: number;
+  owedTotal: number;
+  owedCount: number;
+  sim: Sim;
+}) {
+  const t = useTranslations("plan.debts.tiles");
   const oweLine = useOweLine(active);
   const card = "gap-2.5 px-5 py-5 lg:px-6 lg:py-[22px]";
   const figure = "text-[30px] leading-none font-bold! tracking-[-0.03em] lg:text-[36px]";
@@ -414,19 +454,8 @@ function SummaryTiles({
   // The interest still to come at the current extra (the slider's plan).
   const interest = active.length > 0 && sim.months != null && sim.interest >= 0.5 ? t("interestToCome", { amount: formatEurWhole(sim.interest) }) : null;
 
-  let free: { value: string; foot: string };
-  if (!hasOwn) free = { value: "—", foot: t("free.none") };
-  else if (active.length === 0) free = { value: t("free.now"), foot: t("free.allPaid") };
-  else if (extra > 0 && sim.months != null)
-    free = {
-      value: monthYear(monthsFromNow(sim.months)),
-      foot: base.months != null ? t("freeWithExtra", { amount: formatEurWhole(extra), date: monthYear(monthsFromNow(base.months)) }) : t("free.never"),
-    };
-  else if (base.months == null) free = { value: "—", foot: t("free.never") };
-  else free = { value: monthYear(monthsFromNow(base.months)), foot: t("free.atMinimums", { amount: formatEurWhole(totalMonthly) }) };
-
   return (
-    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:col-span-2 xl:col-span-3">
+    <div className="grid grid-cols-2 gap-5 max-lg:hidden sm:grid-cols-3 lg:col-span-2 xl:col-span-3">
       <ClearCard hero aria-labelledby="debts-owe-title" className={cn(card, "col-span-2 sm:col-span-1")}>
         <div className="flex items-center justify-between gap-2">
           <h2 id="debts-owe-title" className="m-0 text-[15px] font-semibold text-clear-hero-ink-2">{t("owe")}</h2>
@@ -517,7 +546,9 @@ function YourDebtsCard({
           </button>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <>
+          <PhoneDebtList computed={computed} payoffMonths={payoff.now} onOpen={onOpen} className="-my-2 lg:hidden" />
+          <div className="grid gap-3 max-lg:hidden md:grid-cols-2">
           {computed.map((c, i) => (
             <DebtTile
               key={c.debt.id}
@@ -531,7 +562,8 @@ function YourDebtsCard({
               onEdit={() => onEdit(c.debt.id)}
             />
           ))}
-        </div>
+          </div>
+        </>
       )}
     </ClearCard>
   );
@@ -832,7 +864,7 @@ function OwedHead({ avatar, name, sub, amount, of }: { avatar: React.ReactNode; 
       </span>
       <span className="flex shrink-0 flex-col items-end gap-0.5">
         <Amount value={amount} sign="none" splitCents={false} className="text-lg font-bold!" />
-        <span className="text-xs text-clear-muted"><MoneyText>{t("leftOf", { amount: formatEurWhole(of) })}</MoneyText></span>
+        <span className="text-xs text-clear-muted max-lg:text-[13px]"><MoneyText>{t("leftOf", { amount: formatEurWhole(of) })}</MoneyText></span>
       </span>
     </div>
   );
@@ -940,21 +972,23 @@ function SimulatorCard({
 
         <div className="flex flex-col gap-3 rounded-clear-tile bg-clear-tile p-4">
           <div className="flex flex-col gap-1">
-            <label htmlFor="debt-extra" className="text-xs font-medium text-clear-muted">
+            <label htmlFor="debt-extra" className="text-xs font-medium text-clear-muted max-lg:text-sm max-lg:font-bold">
               {t("extra")}
             </label>
             <Amount value={extra} whole splitCents={false} sign="none" className="text-[28px] leading-none font-bold! tracking-[-0.03em]" />
           </div>
           <ExtraSlider id="debt-extra" value={extra} max={max} onChange={onExtra} valueText={t("valueText", { amount: formatEurWhole(extra) })} />
-          <div aria-hidden className="flex justify-between text-xs font-medium tabular-nums text-clear-muted">
+          {/* Phones keep only the two ends. */}
+          <div aria-hidden className="flex justify-between text-xs font-medium tabular-nums text-clear-muted max-lg:text-[13px]">
             {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-              <span key={f}><MoneyText>{formatEurWhole(Math.round(max * f))}</MoneyText></span>
+              <span key={f} className={cn(f > 0 && f < 1 && "max-lg:hidden")}><MoneyText>{formatEurWhole(Math.round(max * f))}</MoneyText></span>
             ))}
           </div>
         </div>
 
+        {active.length > 1 && <PhoneOrderList order={order} onOrder={onOrder} sim={sim} sims={sims} className="lg:hidden" />}
         {active.length > 1 && (
-          <div data-tip-anchor="debtsSortAndImpact" className="@container flex flex-col gap-2">
+          <div data-tip-anchor="debtsSortAndImpact" className="@container flex flex-col gap-2 max-lg:hidden">
             <span className="text-[13px] font-medium text-clear-muted">{t("order")}</span>
             <div data-tip-anchor="debtsOrder" className="flex min-w-0">
               <Segmented<DebtSort>
@@ -971,10 +1005,13 @@ function SimulatorCard({
           </div>
         )}
 
+        <PhoneResults base={base} sim={sim} className="lg:hidden" />
         <FreeToSpendTile freeToSpend={freeToSpend} extra={extra} tipAnchor={active.length <= 1} className="xl:mt-auto" />
+        <PlanSheetRow active={active} plan={plan} extra={extra} spread={sim.spread} className="lg:hidden" />
       </div>
 
-      <div className="flex min-w-0 flex-col gap-3">
+      {/* Phones show the results and the plan in the column above instead. */}
+      <div className="flex min-w-0 flex-col gap-3 max-lg:hidden">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div className={cn(stat, "bg-clear-ember text-clear-ember-ink")}>
             <span className="text-xs font-medium">{t("debtFree")}</span>
@@ -1023,7 +1060,7 @@ function FreeToSpendTile({
   if (freeToSpend.income <= 0) {
     return (
       <div data-tip-anchor={anchor} className={cn(box, "flex-col items-start")}>
-        <span className="text-xs font-medium text-clear-muted">{t("title")}</span>
+        <span className="text-xs font-medium text-clear-muted max-lg:text-sm max-lg:font-bold max-lg:text-clear-ink">{t("title")}</span>
         <span className="text-[13px] leading-[1.45] font-medium text-clear-ink-2">{t("noIncome")}</span>
       </div>
     );
@@ -1036,7 +1073,7 @@ function FreeToSpendTile({
   return (
     <div data-tip-anchor={anchor} className={box}>
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-xs font-medium text-clear-muted">{t("title")}</span>
+        <span className="text-xs font-medium text-clear-muted max-lg:text-sm max-lg:font-bold max-lg:text-clear-ink">{t("title")}</span>
         {extra > 0 && <span className="sr-only"><MoneyText>{t("change", { from: formatEurWhole(now), to: formatEurWhole(after) })}</MoneyText></span>}
         <span aria-hidden={extra > 0 || undefined} className="flex flex-wrap items-baseline gap-x-1.5 text-[15px]">
           <Amount value={now} whole splitCents={false} className={cn("font-bold!", extra > 0 && "text-clear-ink-2")} />
@@ -1049,12 +1086,12 @@ function FreeToSpendTile({
         </span>
       </div>
       {short > 0 ? (
-        <ClearChip tone="ember" icon={<IconAlertTriangle stroke={2.2} aria-hidden />} className="h-auto min-h-7 px-2.5 py-1 text-xs font-semibold whitespace-normal">
+        <ClearChip tone="ember" icon={<IconAlertTriangle stroke={2.2} aria-hidden />} className="h-auto min-h-7 px-2.5 py-1 text-xs font-semibold whitespace-normal max-lg:text-[13px]">
           <MoneyText>{t("short", { amount: formatEurWhole(short) })}</MoneyText>
         </ClearChip>
       ) : (
         extra > 0 && (
-          <ClearChip tone="mint" className="h-auto min-h-7 px-2.5 py-1 text-xs font-semibold whitespace-normal">
+          <ClearChip tone="mint" className="h-auto min-h-7 px-2.5 py-1 text-xs font-semibold whitespace-normal max-lg:text-[13px]">
             {t("stillLeft")}
           </ClearChip>
         )

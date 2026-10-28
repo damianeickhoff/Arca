@@ -146,22 +146,10 @@ export function runningBalance({
   return { past, future, lowest, end };
 }
 
-/** The dot a bill gets on the month grid: bigger for bigger amounts. */
+/** The dot a bill gets on the running balance: bigger for bigger amounts. */
 export function dotSize(amount: number | null) {
   const a = amount ?? 0;
   return a >= 500 ? 9 : a >= 50 ? 7 : 5;
-}
-
-/** The day with the most going out (skipped bills left out); null when nothing does. */
-export function busiestDay(bills: readonly PlanBill[]) {
-  const byDay = new Map<string, number>();
-  for (const b of bills) {
-    if (b.isIncome || b.skipped || b.dueDate == null) continue;
-    byDay.set(b.dueDate, (byDay.get(b.dueDate) ?? 0) + (b.amount ?? 0));
-  }
-  let best: { date: string; total: number } | null = null;
-  for (const [date, total] of byDay) if (total > 0 && (best == null || total > best.total)) best = { date, total };
-  return best;
 }
 
 export interface PreviewItem {

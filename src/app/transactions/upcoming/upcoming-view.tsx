@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { IconChevronLeft, IconChevronRight, IconPlus, IconRepeat } from "@tabler/icons-react";
+import { IconPlus, IconRepeat } from "@tabler/icons-react";
 import type { RecurringItem } from "@/db/schema";
 import { ClearCard } from "@/components/clear/card";
 import { clearButtonVariants } from "@/components/clear/button-variants";
@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 import { SubpageHeading } from "../subpage-heading";
 import { UpcomingHero } from "./upcoming-hero";
 import { BalanceCard } from "./balance-card";
-import { BillsListCard } from "./bills-list";
-import { MonthGlance } from "./month-glance";
+import { BillsCalendar } from "./bills-calendar";
+import { StillDueCard } from "./still-due";
 import { NextMonthPreview } from "./next-month-preview";
 
 export interface UpcomingBill {
@@ -86,6 +86,8 @@ export interface UpcomingData {
   /** What still leaves the account up to the day before payday. */
   payday: { amount: number; count: number; until: string };
   nextIncome: { name: string; amount: number | null; date: string; days: number } | null;
+  /** Next month's first bill still to pay, for Still due once everything is paid. */
+  nextUp: { name: string; amount: number | null; date: string } | null;
   /** The checking accounts; balance null until one has a starting balance. Null for a month still to come. */
   account: { name: string | null; count: number; balance: number | null } | null;
   /** The running balance; null without a known balance or for a month still to come. */
@@ -109,10 +111,9 @@ export interface UpcomingData {
 
 /**
  * Activity › Upcoming. One grid: the black hero (what still leaves before payday) beside
- * the running balance (two wide); the grouped bills list (two wide) beside the month at
- * a glance and next month's preview, which fills the column to the list's bottom. The
- * month arrows sit in the heading because they change every card. Phones: hero, bills,
- * month grid, preview, running balance.
+ * the running balance (two wide); the month calendar (two wide, with the month arrows)
+ * beside Still due and next month's preview, which fills the column to the calendar's
+ * bottom. Phones: hero, calendar, Still due, preview, running balance.
  */
 export function UpcomingView({ data }: { data: UpcomingData }) {
   const t = useTranslations("upcoming");
@@ -140,7 +141,6 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
         subtitle={subtitle}
         actions={
           <>
-            <MonthStepper data={data} />
             <Link href="/settings?panel=recurring" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
               <IconRepeat aria-hidden />
               {t("recurringItems")}
@@ -165,9 +165,9 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
           <>
             <UpcomingHero data={data} />
             {data.period !== "future" && <BalanceCard data={data} className="order-last lg:order-none xl:col-span-2" />}
-            <BillsListCard data={data} day={day} onClearDay={() => setDay(null)} className="lg:col-span-2 lg:self-start" />
+            <BillsCalendar data={data} day={day} onDay={(d) => setDay((cur) => (cur === d ? null : d))} className="lg:col-span-2" />
             <div className="flex min-w-0 flex-col gap-5 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-1 xl:flex">
-              <MonthGlance data={data} day={day} onDay={(d) => setDay((cur) => (cur === d ? null : d))} />
+              <StillDueCard data={data} day={day} onClearDay={() => setDay(null)} />
               <NextMonthPreview data={data} />
             </div>
           </>
@@ -178,45 +178,6 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
       <AnchoredTip id="billStatusControl" anchor="billStatusControl" active={!empty} />
       <AnchoredTip id="billSkip" anchor="billSkip" active={data.bills.some((b) => b.skippable && !b.paid)} />
       <AnchoredTip id="upcomingNextMonth" anchor="upcomingNextMonth" active={!empty && data.preview.billCount > 0} />
-    </div>
-  );
-}
-
-/** "‹ October 2026 ›" in the heading, with "Today" when looking at another month. */
-function MonthStepper({ data }: { data: UpcomingData }) {
-  const t = useTranslations("upcoming.nav");
-  const { nav } = data;
-  const btn = "inline-flex size-9 shrink-0 items-center justify-center rounded-full text-clear-ink transition-colors";
-  return (
-    <div className="flex items-center gap-2">
-      <div data-tip-anchor="upcomingMonthNav" className="inline-flex h-11 items-center gap-0.5 rounded-full bg-clear-card px-1">
-        {nav.prev ? (
-          <Link href={nav.prev} scroll={false} aria-label={t("previous")} className={cn(btn, "hover:bg-clear-tile")}>
-            <IconChevronLeft size={16} stroke={2.2} aria-hidden />
-          </Link>
-        ) : (
-          <span aria-hidden className={cn(btn, "text-clear-placeholder")}>
-            <IconChevronLeft size={16} stroke={2.2} />
-          </span>
-        )}
-        <span aria-live="polite" className="px-1.5 text-sm font-bold whitespace-nowrap first-letter:uppercase">
-          {data.monthLabel}
-        </span>
-        {nav.next ? (
-          <Link href={nav.next} scroll={false} aria-label={t("next")} className={cn(btn, "hover:bg-clear-tile")}>
-            <IconChevronRight size={16} stroke={2.2} aria-hidden />
-          </Link>
-        ) : (
-          <span aria-hidden className={cn(btn, "text-clear-placeholder")}>
-            <IconChevronRight size={16} stroke={2.2} />
-          </span>
-        )}
-      </div>
-      {nav.today && (
-        <Link href={nav.today} scroll={false} className={clearButtonVariants({ variant: "surface", size: "sm" })}>
-          {t("today")}
-        </Link>
-      )}
     </div>
   );
 }

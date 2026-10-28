@@ -53,7 +53,7 @@ function toBill(s: BillStatus): UpcomingBill {
 /**
  * Activity › Upcoming: one financial month of bills, subscriptions, debt payments,
  * savings transfers and expected income — what still leaves the account before payday,
- * the running balance through the month, one grouped list, a month grid and a preview
+ * the running balance through the month, a month calendar, what is still due and a preview
  * of the next month. ?month=YYYY-MM steps to another month.
  */
 export default async function UpcomingTransactionsPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
@@ -89,6 +89,9 @@ export default async function UpcomingTransactionsPage({ searchParams }: { searc
   const nextIncome = income
     ? { name: income.name, amount: income.amount, date: income.dueDate!, days: daysBetween(today, income.dueDate!) }
     : null;
+  // Still due names it once everything this month is paid.
+  const upNext = nextBills.find((b) => !b.isIncome && !b.paid && !b.skipped && b.dueDate != null);
+  const nextUp = upNext ? { name: upNext.name, amount: upNext.amount, date: upNext.dueDate! } : null;
   // Before payday means before this month's income; one that lands next month ends it at the month's end.
   const payday = beforePayday(bills, to, nextIncome && nextIncome.date <= to ? nextIncome.date : null);
 
@@ -127,6 +130,7 @@ export default async function UpcomingTransactionsPage({ searchParams }: { searc
     bills,
     payday,
     nextIncome,
+    nextUp,
     account: checking ? { name: checking.name, count: checking.count, balance: balanceNow } : null,
     series,
     preview: {

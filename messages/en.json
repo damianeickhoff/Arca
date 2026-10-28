@@ -3148,7 +3148,12 @@
       "accounts": "Accounts",
       "categoriesCount": "Categories · {count}",
       "accountsCount": "Accounts · {count}",
-      "clear": "Clear filters"
+      "clear": "Clear filters",
+      "title": "Filters",
+      "button": "Filter by category or account",
+      "buttonCount": "Filter by category or account, {count} on",
+      "all": "All",
+      "selected": "{count} selected"
     },
     "period": {
       "title": "Period",
@@ -3400,7 +3405,9 @@
         "customTitle": "Custom period",
         "from": "From {month}",
         "to": "To {month}",
-        "apply": "Apply"
+        "apply": "Apply",
+        "change": "Range: {range}. Change range",
+        "customMenu": "Custom…"
       },
       "empty": {
         "title": "Trends need your transactions",
@@ -3426,7 +3433,8 @@
         "1m": "1 month",
         "3m": "3 months",
         "6m": "6 months",
-        "1y": "1 year"
+        "1y": "1 year",
+        "change": "Range: {range}. Change range"
       },
       "hero": {
         "title": "Net worth today",
@@ -4680,7 +4688,8 @@
         "summary": "{amount} owed today. {end}",
         "summaryInterest": "{amount} interest in total. {end}",
         "summaryDebt": "{name} paid off {date}",
-        "summaryDebtNever": "{name} never paid off"
+        "summaryDebtNever": "{name} never paid off",
+        "tapHint": "Tap the chart to see a month"
       },
       "simulator": {
         "title": "What if I pay extra?",
@@ -4771,7 +4780,19 @@
         "colSplit": "Split",
         "final": "Final payment",
         "split": "{principal} off · {interest} interest",
-        "allPrincipal": "All off the balance"
+        "allPrincipal": "All off the balance",
+        "phone": {
+          "edit": "Edit",
+          "logPayment": "Log a payment",
+          "eachMonth": "Each month",
+          "interest": "Interest",
+          "monthsLeft": "Months left",
+          "linkedBill": "Linked bill",
+          "billOnDay": "{name} · {day, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+          "notLinked": "None",
+          "pctPaidOff": "<b>{pct}%</b> paid off · {amount}",
+          "pctReceived": "<b>{pct}%</b> received · {amount}"
+        }
       },
       "addPlan": "Add payment plan",
       "logPayment": {
@@ -4805,6 +4826,14 @@
         "noBillNoDay": "No bill linked",
         "paid": "paid",
         "extraYear": "Extra paid so far this year"
+      },
+      "phone": {
+        "heroLine": "{count, plural, one {# debt} other {# debts}} · {amount} a month in minimums",
+        "firstPaidOff": "First paid off",
+        "firstValue": "{name} · {date}",
+        "payOffFirst": "Pay off first",
+        "orderResult": "Debt-free {date}",
+        "orderResultLess": "Debt-free {date} · {amount} less interest"
       }
     },
     "goals": {
@@ -4967,12 +4996,7 @@
       "setBalance": "Set a balance"
     },
     "list": {
-      "title": "{month} bills",
-      "toPay": "{count} to pay · {amount}",
-      "paidCount": "{count} paid",
-      "incomeCount": "{count} income",
-      "paidAmount": "{amount} paid",
-      "totalAmount": "{amount} in bills this month",
+      "title": "Still due",
       "groups": {
         "overdue": "Overdue",
         "thisWeek": "This week",
@@ -4980,7 +5004,9 @@
         "notPaid": "Not paid",
         "comingUp": "Coming up"
       },
-      "allDone": "Everything for {month} is paid.",
+      "allDone": "Everything for {month} is paid",
+      "nextUp": "Next up: {name} on {date}, {amount}",
+      "nextUpNoAmount": "Next up: {name} on {date}",
       "dayHeading": "{date} · {amount}",
       "allDays": "All days",
       "dayEmpty": "Nothing on this day.",
@@ -5004,15 +5030,14 @@
       "skip": "Skip {month}",
       "undoSkip": "Undo skip"
     },
-    "glance": {
-      "title": "{month} at a glance",
-      "busiest": "Busiest day: {date} · {amount}",
-      "quiet": "No bills this month",
+    "calendar": {
+      "label": "Bills calendar, {month}",
+      "today": "Today",
+      "payday": "Payday",
       "paid": "Paid",
       "due": "To pay",
-      "overdue": "Overdue",
       "income": "Income",
-      "sizes": "Bigger dot, bigger amount"
+      "more": "{count} more"
     },
     "preview": {
       "title": "{month} preview",

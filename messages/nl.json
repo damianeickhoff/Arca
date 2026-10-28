@@ -3148,7 +3148,12 @@
       "accounts": "Rekeningen",
       "categoriesCount": "Categorieën · {count}",
       "accountsCount": "Rekeningen · {count}",
-      "clear": "Filters wissen"
+      "clear": "Filters wissen",
+      "title": "Filters",
+      "button": "Filter op categorie of rekening",
+      "buttonCount": "Filter op categorie of rekening, {count} aan",
+      "all": "Alle",
+      "selected": "{count} gekozen"
     },
     "period": {
       "title": "Periode",
@@ -3400,7 +3405,9 @@
         "customTitle": "Aangepaste periode",
         "from": "Van {month}",
         "to": "Tot {month}",
-        "apply": "Toepassen"
+        "apply": "Toepassen",
+        "change": "Periode: {range}. Periode wijzigen",
+        "customMenu": "Aangepast…"
       },
       "empty": {
         "title": "Trends hebben je transacties nodig",
@@ -3426,7 +3433,8 @@
         "1m": "1 maand",
         "3m": "3 maanden",
         "6m": "6 maanden",
-        "1y": "1 jaar"
+        "1y": "1 jaar",
+        "change": "Periode: {range}. Periode wijzigen"
       },
       "hero": {
         "title": "Vermogen vandaag",
@@ -4680,7 +4688,8 @@
         "summary": "{amount} schuld vandaag. {end}",
         "summaryInterest": "{amount} rente in totaal. {end}",
         "summaryDebt": "{name} afgelost {date}",
-        "summaryDebtNever": "{name} nooit afgelost"
+        "summaryDebtNever": "{name} nooit afgelost",
+        "tapHint": "Tik op de grafiek om een maand te zien"
       },
       "simulator": {
         "title": "Wat als ik extra betaal?",
@@ -4771,7 +4780,19 @@
         "colSplit": "Verdeling",
         "final": "Laatste betaling",
         "split": "{principal} aflossing · {interest} rente",
-        "allPrincipal": "Alles van de schuld af"
+        "allPrincipal": "Alles van de schuld af",
+        "phone": {
+          "edit": "Bewerken",
+          "logPayment": "Betaling vastleggen",
+          "eachMonth": "Per maand",
+          "interest": "Rente",
+          "monthsLeft": "Maanden te gaan",
+          "linkedBill": "Gekoppelde rekening",
+          "billOnDay": "{name} · de {day}e",
+          "notLinked": "Geen",
+          "pctPaidOff": "<b>{pct}%</b> afgelost · {amount}",
+          "pctReceived": "<b>{pct}%</b> terugontvangen · {amount}"
+        }
       },
       "addPlan": "Betalingsregeling toevoegen",
       "logPayment": {
@@ -4805,6 +4826,14 @@
         "noBillNoDay": "Geen vaste last gekoppeld",
         "paid": "betaald",
         "extraYear": "Extra afgelost dit jaar"
+      },
+      "phone": {
+        "heroLine": "{count, plural, one {# schuld} other {# schulden}} · {amount} per maand aan minimum",
+        "firstPaidOff": "Eerst afbetaald",
+        "firstValue": "{name} · {date}",
+        "payOffFirst": "Eerst aflossen",
+        "orderResult": "Schuldenvrij {date}",
+        "orderResultLess": "Schuldenvrij {date} · {amount} minder rente"
       }
     },
     "goals": {
@@ -4967,12 +4996,7 @@
       "setBalance": "Saldo instellen"
     },
     "list": {
-      "title": "Rekeningen {month}",
-      "toPay": "{count} te betalen · {amount}",
-      "paidCount": "{count} betaald",
-      "incomeCount": "{count} inkomen",
-      "paidAmount": "{amount} betaald",
-      "totalAmount": "{amount} aan rekeningen deze maand",
+      "title": "Nog te betalen",
       "groups": {
         "overdue": "Te laat",
         "thisWeek": "Deze week",
@@ -4980,7 +5004,9 @@
         "notPaid": "Niet betaald",
         "comingUp": "Komt nog"
       },
-      "allDone": "Alles voor {month} is betaald.",
+      "allDone": "Alles voor {month} is betaald",
+      "nextUp": "Hierna: {name} op {date}, {amount}",
+      "nextUpNoAmount": "Hierna: {name} op {date}",
       "dayHeading": "{date} · {amount}",
       "allDays": "Alle dagen",
       "dayEmpty": "Niets op deze dag.",
@@ -5004,15 +5030,14 @@
       "skip": "{month} overslaan",
       "undoSkip": "Toch niet overslaan"
     },
-    "glance": {
-      "title": "{month} in één oogopslag",
-      "busiest": "Drukste dag: {date} · {amount}",
-      "quiet": "Geen rekeningen deze maand",
+    "calendar": {
+      "label": "Rekeningenkalender, {month}",
+      "today": "Vandaag",
+      "payday": "Betaaldag",
       "paid": "Betaald",
       "due": "Te betalen",
-      "overdue": "Te laat",
       "income": "Inkomen",
-      "sizes": "Grotere stip, groter bedrag"
+      "more": "nog {count}"
     },
     "preview": {
       "title": "Vooruitblik {month}",

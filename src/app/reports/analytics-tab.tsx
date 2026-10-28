@@ -446,7 +446,7 @@ export async function InsightsFilters({
           tab={tab}
         />
       )}
-      <AnalyticsFilterBar categories={allCategories} banks={allBanks} />
+      <AnalyticsFilterBar categories={allCategories} banks={allBanks} combined={tab === "trends"} />
     </>
   );
 }

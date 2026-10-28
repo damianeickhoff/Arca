@@ -32,6 +32,8 @@ const PAD = { top: 12, bottom: 10 };
  * 220px chart, so the card never stretches. Hover, tap or the arrow keys read out a
  * month: what is paid off by then, each debt's balance and the total against the
  * minimums. "Interest paid" stacks the interest each debt has cost so far instead.
+ * Phones put Balance / Interest on its own line, the legend as chips under the chart
+ * and the readout below it instead of over it.
  */
 export function PayoffTimelineCard({
   active,
@@ -188,8 +190,8 @@ export function PayoffTimelineCard({
           subtitle={<MoneyText>{showBase ? t("subtitleExtra", { amount: formatEurWhole(extra) }) : t("subtitleMinimums")}</MoneyText>}
           className="min-w-0 flex-1"
         />
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <ul aria-hidden className="m-0 flex list-none flex-wrap gap-x-3.5 gap-y-1 p-0 text-xs font-medium text-clear-ink-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 max-lg:w-full">
+          <ul aria-hidden className="m-0 flex list-none flex-wrap gap-x-3.5 gap-y-1 p-0 text-xs font-medium text-clear-ink-2 max-lg:hidden">
             {debts.map((d) => (
               <li key={d.c.debt.id} className="inline-flex items-center gap-1.5">
                 <span
@@ -216,6 +218,7 @@ export function PayoffTimelineCard({
               { value: "balance", label: t("balance") },
               { value: "interest", label: t("interest") },
             ]}
+            className="max-lg:grid max-lg:w-full max-lg:grid-cols-2"
           />
         </div>
       </div>
@@ -265,7 +268,7 @@ export function PayoffTimelineCard({
             <div
               aria-hidden
               className={cn(
-                "pointer-events-none absolute top-1 flex w-max max-w-[min(280px,75%)] flex-col gap-0.5 rounded-clear-row bg-clear-hero px-3 py-2 text-clear-hero-ink",
+                "pointer-events-none absolute top-1 flex w-max max-w-[min(280px,75%)] flex-col gap-0.5 rounded-clear-row bg-clear-hero px-3 py-2 text-clear-hero-ink max-lg:hidden",
                 flipped ? "-translate-x-[calc(100%+8px)]" : "translate-x-2",
               )}
               style={{ left: x(month) }}
@@ -281,7 +284,7 @@ export function PayoffTimelineCard({
           <MoneyText>{hover != null ? [readout.date, readout.headline, readout.detail, readout.totals].filter(Boolean).join(". ") : ""}</MoneyText>
         </p>
 
-        <div aria-hidden className="relative h-4 text-xs tabular-nums text-clear-muted">
+        <div aria-hidden className="relative h-4 text-xs tabular-nums text-clear-muted max-lg:h-[18px] max-lg:text-[13px]">
           {marks.map((m) => (
             <span
               key={m}
@@ -293,6 +296,30 @@ export function PayoffTimelineCard({
           ))}
         </div>
       </div>
+
+      {/* Phones: the legend as chips, then the readout under the chart. */}
+      <ul aria-hidden className="m-0 flex list-none flex-wrap gap-2 p-0 lg:hidden">
+        {debts.map((d) => (
+          <li key={d.c.debt.id} className="inline-flex h-7 items-center gap-1.5 rounded-full bg-clear-tile px-2.5 text-[13px] font-bold">
+            <span className="size-2.5 shrink-0 rounded-[3px] border" style={{ background: `var(--clr-${d.tone})`, borderColor: `var(--clr-${d.tone}-ink)` }} />
+            {d.c.debt.name}
+          </li>
+        ))}
+        {showBase && (
+          <li className="inline-flex h-7 items-center gap-1.5 rounded-full bg-clear-tile px-2.5 text-[13px] font-bold">
+            <span className="h-0 w-3.5 shrink-0 border-t-2 border-dashed border-clear-muted" />
+            {t("minimumsOnly")}
+          </li>
+        )}
+      </ul>
+      {W > 0 && (
+        <div aria-hidden className="flex flex-col gap-1 rounded-clear-tile bg-clear-tile px-3.5 py-3 lg:hidden">
+          <span className="text-[13px] text-clear-muted">{t("tapHint")}</span>
+          <span className="text-[15px] font-extrabold"><MoneyText>{`${readout.date} · ${readout.headline}`}</MoneyText></span>
+          {readout.detail && <span className="text-sm text-clear-ink-2"><MoneyText>{readout.detail}</MoneyText></span>}
+          <span className="text-sm text-clear-ink-2"><MoneyText>{readout.totals}</MoneyText></span>
+        </div>
+      )}
     </ClearCard>
   );
 }
