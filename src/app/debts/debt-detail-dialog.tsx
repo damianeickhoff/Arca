@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { IconCalendarCheck, IconChevronRight, IconNote, IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconCalendarCheck, IconChevronRight, IconNote, IconPencil, IconTrash, IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-import { formatEur } from "@/lib/format";
+import { formatEur, formatEurWhole } from "@/lib/format";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ClearDialogFooter, ClearDialogFooterDock, ClearDialogHeader } from "@/components/clear/dialog-chrome";
 import { ClearChip } from "@/components/clear/chip";
@@ -14,6 +14,7 @@ import { Amount } from "@/components/clear/amount";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
+import { useIsDesktop } from "@/lib/use-is-desktop";
 import { RecurringDetailDialog } from "@/components/settings/recurring/recurring-detail-dialog";
 import type { Category, RecurringItem } from "@/db/schema";
 import {
@@ -31,17 +32,23 @@ import { MoneyText } from "@/components/clear/money";
 /**
  * One debt in full (Popup-DebtDetail): what is left and when it is gone, the figures,
  * what each payment does, the details, linked bills and note, and every payment still
- * to come. Edit opens the debt form stacked on top, so closing it returns here.
+ * to come. Edit opens the debt form stacked on top, so closing it returns here. Phones
+ * get a shorter sheet (R2-Phone-DebtDetail): the balance, the payoff chip and progress,
+ * four label/value rows, the interest sentence, and Edit beside Log a payment.
  */
 export function DebtDetailDialog({
   computed,
   bills,
   onClose,
+  onLogPayment,
 }: {
   computed: ComputedDebt | null;
   bills: RecurringItem[];
   onClose: () => void;
+  /** Phones: "Log a payment" on this debt; left out when there is nothing to log on. */
+  onLogPayment?: (id: number) => void;
 }) {
+  const isDesktop = useIsDesktop();
   const router = useRouter();
   const t = useTranslations("plan.debts.sheet");
   const confirm = useConfirm();
@@ -77,8 +84,26 @@ export function DebtDetailDialog({
 
   return (
     <Dialog open={computed != null} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent hideHeaderRow title={shown?.debt.name ?? t("title")} className="gap-4 pt-6">
-        {shown && (
+      <DialogContent hideHeaderRow title={shown?.debt.name ?? t("title")} className={isDesktop ? "gap-4 pt-6" : "gap-4 pt-4"}>
+        {shown && !isDesktop && (
+          <>
+            <PhoneBody computed={shown} onClose={onClose} />
+            <ClearDialogFooterDock className="pb-1">
+              <div className="flex gap-2.5">
+                <button type="button" onClick={() => setEditOpen(true)} className={cn(clearButtonVariants({ variant: "secondary", size: "lg" }), "flex-1")}>
+                  <IconPencil aria-hidden />
+                  {t("phone.edit")}
+                </button>
+                {onLogPayment && shown.debt.direction !== "owed" && shown.currentBalance > 0 && (
+                  <button type="button" onClick={() => onLogPayment(shown.debt.id)} className={cn(clearButtonVariants({ size: "lg" }), "flex-[2]")}>
+                    {t("phone.logPayment")}
+                  </button>
+                )}
+              </div>
+            </ClearDialogFooterDock>
+          </>
+        )}
+        {shown && isDesktop && (
           <>
             <DetailBody computed={shown} onClose={onClose} />
             <ClearDialogFooterDock className="pb-1">
@@ -96,20 +121,103 @@ export function DebtDetailDialog({
                 </button>
               </ClearDialogFooter>
             </ClearDialogFooterDock>
-
-            {/* Stacked inside this sheet, so closing the form comes back here. */}
-            <DebtFormDialog
-              open={editOpen}
-              onOpenChange={setEditOpen}
-              bills={bills}
-              debt={shown.debt}
-              currentRecurringIds={shown.linkedBillIds}
-              onDeleted={onClose}
-            />
           </>
+        )}
+        {shown && (
+          /* Stacked inside this sheet, so closing the form comes back here. */
+          <DebtFormDialog
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            bills={bills}
+            debt={shown.debt}
+            currentRecurringIds={shown.linkedBillIds}
+            onDeleted={onClose}
+          />
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** The phone sheet's body: header, balance and payoff chip, progress, four rows and the interest sentence. */
+function PhoneBody({ computed, onClose }: { computed: ComputedDebt; onClose: () => void }) {
+  const t = useTranslations("plan.debts.sheet");
+  const tTile = useTranslations("plan.debts.tile");
+  const tClose = useTranslations("debtForm");
+  const locale = useLocale();
+  const monthYear = useMonthYear();
+  const notice = usePaymentNotice();
+  const { debt, linkedBills, amountPaid, currentBalance, lastPaymentDate, neverPaysOff, monthsRemaining } = computed;
+  const owed = debt.direction === "owed";
+  const done = currentBalance === 0;
+  const pct = Math.round(debtPaidPct(debt, amountPaid, currentBalance));
+  const total = debtEffectiveTotal(debt);
+  const paid = debtEffectivePaid(debt, amountPaid, currentBalance);
+  const rate = debt.interestRate ?? 0;
+  const bill = linkedBills[0] ?? null;
+  const billName = bill ? (bill.friendlyName ?? bill.name) : null;
+
+  const status = done
+    ? { tone: "mint" as const, text: owed ? t("settled") : t("paidOff") }
+    : neverPaysOff
+      ? { tone: "rose" as const, text: t("never") }
+      : lastPaymentDate
+        ? { tone: "mint" as const, text: owed ? t("backBy", { date: monthYear(lastPaymentDate) }) : tTile("payoffIn", { date: monthYear(lastPaymentDate) }) }
+        : { tone: "neutral" as const, text: t("noDate") };
+
+  const rows = [
+    { label: t("phone.eachMonth"), value: formatEur(debt.minimumPayment) },
+    { label: t("phone.interest"), value: rate > 0 ? t("perYear", { rate: rate.toLocaleString(locale) }) : t("noInterest") },
+    { label: t("phone.monthsLeft"), value: !done && monthsRemaining != null && monthsRemaining > 0 ? String(monthsRemaining) : "—" },
+    {
+      label: t("phone.linkedBill"),
+      value: bill ? (bill.dueDay ? t("phone.billOnDay", { name: billName!, day: bill.dueDay }) : billName!) : t("phone.notLinked"),
+    },
+  ];
+
+  return (
+    <>
+      <div className="flex items-center gap-3">
+        <DebtIcon icon={debt.icon ?? bill?.icon} color={debt.color} owed={owed} />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <h2 className="m-0 truncate text-lg font-extrabold">{debt.name}</h2>
+          <span className="truncate text-[13px] text-clear-ink-2">
+            {bill ? (bill.dueDay ? tTile("paidByOn", { name: billName!, day: bill.dueDay }) : tTile("paidBy", { name: billName! })) : tTile("notLinked")}
+          </span>
+        </span>
+        <button type="button" onClick={onClose} aria-label={tClose("close")} className={cn(clearButtonVariants({ variant: "secondary", size: "icon" }), "size-10")}>
+          <IconX aria-hidden size={18} stroke={2.2} />
+        </button>
+      </div>
+
+      <div className="flex items-end justify-between gap-2.5">
+        <span className="flex min-w-0 flex-col gap-1">
+          <Amount value={currentBalance} whole splitCents={false} sign="none" className="text-[36px] leading-none tracking-[-0.03em]" />
+          <span className="text-sm text-clear-ink-2"><MoneyText>{tTile("leftOf", { amount: formatEurWhole(total) })}</MoneyText></span>
+        </span>
+        <ClearChip tone={status.tone}>{status.text}</ClearChip>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <ClearProgress value={pct / 100} size="md" fillClassName={done || owed ? "bg-clear-positive-fill" : "bg-clear-primary"} />
+        <span className="text-sm text-clear-ink-2">
+          <MoneyText>
+            {t.rich(owed ? "phone.pctReceived" : "phone.pctPaidOff", { pct, amount: formatEurWhole(paid), b: (ch) => <b className="font-bold text-clear-ink">{ch}</b> })}
+          </MoneyText>
+        </span>
+      </div>
+
+      <dl aria-label={t("details")} className="m-0 flex flex-col rounded-clear-tile bg-clear-tile px-3.5 py-0.5">
+        {rows.map((r, i) => (
+          <div key={r.label} className={cn("flex min-h-[46px] items-center justify-between gap-3", i > 0 && "border-t border-clear-line")}>
+            <dt className="text-sm text-clear-ink-2">{r.label}</dt>
+            <dd className="m-0 truncate text-right text-[15px] font-extrabold tabular-nums"><MoneyText>{r.value}</MoneyText></dd>
+          </div>
+        ))}
+      </dl>
+
+      <PaymentNotice variant="line" notice={notice({ balance: currentBalance, payment: debt.minimumPayment, rate: debt.interestRate, owed })} className="text-sm" />
+    </>
   );
 }
 

@@ -20,12 +20,13 @@ import { UpdateBalancesButton, UpdateBalancesCard } from "./update-balances";
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
 
-/** The Insights heading's actions on Net worth: Manage accounts and Update balances (a dialog). */
+/** The Insights heading's actions on Net worth: Manage accounts and Update balances (a dialog).
+ *  Phones show Update balances only, as a round icon button; Manage sits in the Accounts card. */
 export async function NetWorthHeadingActions() {
   const [{ today, items, lastImport }, t] = await Promise.all([loadManualValues(), getTranslations("insights.netWorthTab")]);
   return (
     <div className="flex items-center gap-2">
-      <Link href="/settings?panel=accounts" className={clearButtonVariants({ variant: "surface", size: "sm" })}>
+      <Link href="/settings?panel=accounts" className={cn(clearButtonVariants({ variant: "surface", size: "sm" }), "max-lg:hidden")}>
         {t("manageAccounts")}
       </Link>
       <UpdateBalancesButton items={items} today={today} lastImport={lastImport} />

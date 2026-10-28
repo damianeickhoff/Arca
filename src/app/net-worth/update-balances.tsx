@@ -134,10 +134,19 @@ export function UpdateBalancesButton({ items, today, lastImport, className }: { 
   const stale = items.filter((i) => i.stale).length;
   return (
     <>
-      <ClearButton size="sm" onClick={() => setOpen(true)} className={className}>
+      {/* Phones: a round white icon button in the heading, the stale count as a badge. */}
+      <ClearButton
+        size="sm"
+        onClick={() => setOpen(true)}
+        className={cn("relative max-lg:size-11 max-lg:bg-clear-card max-lg:px-0 max-lg:text-clear-ink max-lg:[&_svg]:size-[19px]", className)}
+      >
         <IconRefresh aria-hidden />
-        {t("title")}
-        {stale > 0 && <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-clear-ember text-xs font-bold text-clear-ember-ink">{stale}</span>}
+        <span className="max-lg:sr-only">{t("title")}</span>
+        {stale > 0 && (
+          <span className="ml-0.5 inline-flex size-5 items-center justify-center rounded-full bg-clear-ember text-xs font-bold text-clear-ember-ink max-lg:absolute max-lg:-top-0.5 max-lg:-right-0.5 max-lg:ml-0">
+            {stale}
+          </span>
+        )}
       </ClearButton>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent hideHeaderRow title={t("title")} className="gap-4 pt-7 font-clear text-clear-ink">

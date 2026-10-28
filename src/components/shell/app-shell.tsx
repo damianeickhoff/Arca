@@ -38,8 +38,9 @@ export interface ShellUser {
 //   Insights its five tabs while it is open, Activity carries the needs-a-category
 //   count) with Notifications under Home (its unread count beside it), then Import (with "Last synced …" under it and a sync button at its end once a bank is connected),
 //   Settings, the theme and Sign out. Pages sit to its right (MainContent).
-//   Phones (< lg): a floating black tab bar with the four destinations, the ember
-//   add button (the same add menu) in the middle and, set apart at the end, the global search button.
+//   Phones (< lg): a floating black tab bar, icons only, with the four destinations and
+//   the ember add button (the same add menu) in the middle; the global search is its own
+//   round button beside the bar.
 //   Search lives in the shell rather than in page headers so it never reads as
 //   "search this page".
 //
@@ -82,7 +83,9 @@ export function AppShell({
           {!chromeless && (
             <>
               <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} build={build} user={user!} needsReviewCount={needsReviewCount} unreadNotificationCount={unreadNotificationCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
-              {!navHidden && <PhoneTabBar pathname={pathname} />}
+              {/* Hidden, not unmounted, while a sheet is open: the add menu's own sheet lives
+                  in the bar, and unmounting it would close the menu it just opened. */}
+              <PhoneTabBar pathname={pathname} hidden={navHidden} />
               {/* The navigation changed; it announces itself once, even to someone who
                   turned tips off (see IGNORES_DISABLED). */}
               <AnchoredTip id="clearNavigation" anchor="mainNav" active={!navHidden} />
@@ -337,56 +340,63 @@ function DesktopSidebar({
   );
 }
 
-function PhoneTabBar({ pathname }: { pathname: string }) {
+function PhoneTabBar({ pathname, hidden }: { pathname: string; hidden: boolean }) {
   const t = useTranslations("nav");
   const active = activeNavKey(pathname);
   // Two destinations either side of the add button.
   const [first, second, ...rest] = NAV_ITEMS;
 
+  // The bar (icons only, spread evenly) and, beside it, the global search as its own
+  // round button. Height and bottom offset are what --nav-clearance in globals.css adds up.
   return (
-    <nav
-      aria-label={t("main")}
-      data-tip-anchor="mainNav"
-      className="fixed inset-x-4 z-[60] flex h-[68px] items-center justify-between gap-0.5 rounded-full bg-clear-primary px-2 font-clear shadow-clear-float lg:hidden"
-      style={{ bottom: "calc(20px + var(--sab))" }}
-    >
-      <PhoneTab item={first} active={first.key === active} label={t(first.key)} />
-      <PhoneTab item={second} active={second.key === active} label={t(second.key)} />
-      <QuickAddMenu
-        placement="phone"
-        trigger={
-          <button
-            type="button"
-            aria-label={t("quickAdd.title")}
-            data-tip-anchor="quickAddPhone"
-            className="inline-flex size-[54px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink transition-transform active:scale-95"
-          >
-            <IconPlus size={24} stroke={2.6} />
-          </button>
-        }
-      />
-      {rest.map((item) => (
-        <PhoneTab key={item.key} item={item} active={item.key === active} label={t(item.key)} />
-      ))}
-      <span aria-hidden className="mx-1 h-8 w-px shrink-0 bg-clear-primary-ink/15" />
+    <div className={cn("fixed inset-x-4 z-[60] flex items-center gap-2.5 font-clear lg:hidden", hidden && "hidden")} style={{ bottom: "calc(20px + var(--sab))" }}>
+      <nav
+        aria-label={t("main")}
+        data-tip-anchor="mainNav"
+        className="flex h-16 min-w-0 flex-1 items-center gap-0.5 rounded-full bg-clear-primary px-1.5 shadow-clear-float"
+      >
+        <PhoneTab item={first} active={first.key === active} label={t(first.key)} />
+        <PhoneTab item={second} active={second.key === active} label={t(second.key)} />
+        <QuickAddMenu
+          placement="phone"
+          trigger={
+            <button
+              type="button"
+              aria-label={t("quickAdd.title")}
+              data-tip-anchor="quickAddPhone"
+              className="mx-0.5 inline-flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-ember text-clear-ember-ink transition-transform active:scale-95"
+            >
+              <IconPlus size={22} stroke={2.6} />
+            </button>
+          }
+        />
+        {rest.map((item) => (
+          <PhoneTab key={item.key} item={item} active={item.key === active} label={t(item.key)} />
+        ))}
+      </nav>
       <PhoneSearch />
-    </nav>
+    </div>
   );
 }
 
+/** A tab-bar destination: its icon only (the name is the accessible label), in a light circle while active. */
 function PhoneTab({ item, active, label }: { item: NavItem; active: boolean; label: string }) {
   const { Icon } = item;
   return (
     <Link
       href={item.href}
+      aria-label={label}
       aria-current={active ? "page" : undefined}
-      className={cn(
-        "inline-flex h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-xs transition-colors",
-        active ? "bg-clear-card font-extrabold text-clear-ink" : "font-semibold text-clear-primary-ink/80",
-      )}
+      className="inline-flex h-[52px] min-w-0 flex-1 items-center justify-center"
     >
-      <Icon size={20} stroke={2} />
-      {label}
+      <span
+        className={cn(
+          "inline-flex size-12 items-center justify-center rounded-full transition-colors",
+          active ? "bg-clear-primary-ink text-clear-primary" : "text-clear-primary-ink/70",
+        )}
+      >
+        <Icon size={23} stroke={2} aria-hidden />
+      </span>
     </Link>
   );
 }
@@ -443,7 +453,7 @@ function SidebarAdd() {
   );
 }
 
-/** The phone tab bar's global search button, set apart at the end of the bar. */
+/** The phone's global search: a round button of its own beside the tab bar, in the bar's colours. */
 function PhoneSearch() {
   const t = useTranslations("nav");
   const { openSearch } = useGlobalSearch();
@@ -453,9 +463,9 @@ function PhoneSearch() {
       onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
       aria-label={t("searchEverything")}
       data-tip-anchor="globalSearchPhone"
-      className="inline-flex size-[52px] shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-primary-ink/12 text-clear-primary-ink transition-transform active:scale-95"
+      className="inline-flex size-16 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink shadow-clear-float transition-transform active:scale-95"
     >
-      <IconSearch size={22} stroke={2.2} />
+      <IconSearch size={22} stroke={2} aria-hidden />
     </button>
   );
 }

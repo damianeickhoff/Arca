@@ -19,7 +19,7 @@ export const INSIGHTS_TAB_LABEL_KEY: Record<InsightsTab, string> = {
 };
 
 /** The tab row; `aside` is the active tab's own control at its right (Trends' period,
- *  Net worth's range), under the tabs on phones. */
+ *  Net worth's range), desktop only: phones show it as a pill in the heading. */
 export function ReportsTabs({ active, aside }: { active: string; aside?: React.ReactNode }) {
   const t = useTranslations("insights.tabs");
   const tInsights = useTranslations("insights");
@@ -38,7 +38,7 @@ export function ReportsTabs({ active, aside }: { active: string; aside?: React.R
             className="shrink-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap"
           />
         </nav>
-        {aside && <div className="-mx-4 max-w-[calc(100%+2rem)] overflow-x-auto px-4 scrollbar-hide lg:mx-0 lg:max-w-full lg:px-0">{aside}</div>}
+        {aside && <div className="hidden max-w-full lg:block">{aside}</div>}
       </div>
 
       {/* The feature tips that used to fire inside the Insights portal, now on the page. */}

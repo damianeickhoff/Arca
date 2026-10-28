@@ -137,6 +137,7 @@ export function TransactionDetailPanel({
   context,
   position,
   layout,
+  onClose,
   onCategorized,
   onDeleted,
 }: {
@@ -146,6 +147,8 @@ export function TransactionDetailPanel({
   context: ActivityContext;
   position?: { index: number; total: number; onPrev?: () => void; onNext?: () => void };
   layout: "card" | "sheet";
+  /** The phone sheet's close button, in the panel's own header row. */
+  onClose?: () => void;
   onCategorized: (id: number, categoryId: number | null) => void;
   onDeleted: () => void;
 }) {
@@ -566,22 +569,39 @@ export function TransactionDetailPanel({
 
   const header = (
     <>
-      {/* 1. Position and ↑/↓ navigation. The phone sheet brings its own close button. */}
-      {position && (
-        <div className="flex items-center gap-2" data-tip-anchor="activityKeys">
-          <button type="button" onClick={position.onPrev} disabled={!position.onPrev} aria-label={t("previous")} className={navBtn}>
-            <IconChevronUp className="size-[18px]" stroke={2.2} />
-          </button>
-          <button type="button" onClick={position.onNext} disabled={!position.onNext} aria-label={t("next")} className={navBtn}>
-            <IconChevronDown className="size-[18px]" stroke={2.2} />
-          </button>
-          <span className="min-w-0 flex-1 truncate pl-1 text-[13px] text-clear-muted">
-            {t("position", { index: position.index, total: position.total })}
-            {/* Arrow keys only exist on desktop. */}
-            <span className="hidden lg:inline"> · {t("keysHint")}</span>
-          </span>
-        </div>
-      )}
+      {/* 1. One header row. The desktop card: "3 of 214 · ↑ ↓ to move" with the arrows on
+          the right. The phone sheet: the arrows, "3 of 214" and its close button. */}
+      {position &&
+        (layout === "card" ? (
+          <div className="-mt-2 flex items-center gap-2 border-b border-clear-ground pb-3" data-tip-anchor="activityKeys">
+            <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-clear-ink-2">
+              {t("position", { index: position.index, total: position.total })} · {t("keysHint")}
+            </span>
+            <button type="button" onClick={position.onPrev} disabled={!position.onPrev} aria-label={t("previous")} className={cn(navBtn, "size-9")}>
+              <IconChevronUp className="size-[18px]" stroke={2.2} />
+            </button>
+            <button type="button" onClick={position.onNext} disabled={!position.onNext} aria-label={t("next")} className={cn(navBtn, "size-9")}>
+              <IconChevronDown className="size-[18px]" stroke={2.2} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2" data-tip-anchor="activityKeys">
+            <button type="button" onClick={position.onPrev} disabled={!position.onPrev} aria-label={t("previous")} className={navBtn}>
+              <IconChevronUp className="size-[18px]" stroke={2.2} />
+            </button>
+            <button type="button" onClick={position.onNext} disabled={!position.onNext} aria-label={t("next")} className={navBtn}>
+              <IconChevronDown className="size-[18px]" stroke={2.2} />
+            </button>
+            <span className="min-w-0 flex-1 truncate pl-1 text-[13px] font-bold text-clear-ink-2">
+              {t("position", { index: position.index, total: position.total })}
+            </span>
+            {onClose && (
+              <button type="button" onClick={onClose} aria-label={t("close")} className={navBtn}>
+                <IconX className="size-[18px]" stroke={2.2} />
+              </button>
+            )}
+          </div>
+        ))}
 
       {/* 2. Who it was with and the amount on one row, the status chips under it */}
       <div className="flex flex-col gap-3">

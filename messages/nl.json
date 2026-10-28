@@ -767,7 +767,6 @@
       "from": "Van",
       "to": "Tot",
       "apply": "Toepassen",
-      "reset": "{name} wissen",
       "period": "Periode",
       "needs": "Nodig",
       "wants": "Willen",
@@ -782,7 +781,12 @@
       "selectAll": "Alles selecteren",
       "deselectAll": "Alles deselecteren",
       "noCategories": "Geen categorieën gevonden",
-      "noAccounts": "Geen rekeningen"
+      "noAccounts": "Geen rekeningen",
+      "all": "Alle",
+      "allAccounts": "Alle rekeningen",
+      "allCategories": "Alle categorieën",
+      "clearAll": "Alles wissen",
+      "recurringHelp": "Alleen transacties die bij een terugkerende post horen"
     },
     "bulkSelected": "{count, plural, =0 {Niets geselecteerd} one {# geselecteerd} other {# geselecteerd}}",
     "bulkSelectAll": "Alles selecteren ({count})",
@@ -1306,8 +1310,8 @@
       "body": "Categorie, jouw deel, winkel, notitie en bon, plus splitsen, een Tikkie koppelen, vast maken of een regel maken. Meer acties zitten achter de ⋯-knop."
     },
     "activityFilters": {
-      "title": "Filterchips",
-      "body": "Verfijn de lijst op periode, rekening, categorie, nodig/willen/sparen, vaste lasten, bedrag of richting. Tik op de × van een chip om hem te wissen."
+      "title": "Alle filters op één plek",
+      "body": "Verfijn de lijst op rekening, categorie, nodig/willen/sparen, richting, bedrag of terugkerend. Het getal laat zien hoeveel er aan staan; Alles wissen zet ze terug. De periode staat op de zwarte kaart."
     },
     "activitySelectMode": {
       "title": "Meerdere tegelijk selecteren",
@@ -1695,7 +1699,8 @@
       "helpWithSimilar": "Transacties met {names} krijgen voortaan deze categorie, en {count, plural, one {# eerdere transactie krijgt} other {# eerdere transacties krijgen}} hem nu al.",
       "showMatches": "Toon de {count, plural, one {# transactie} other {# transacties}}",
       "showMatchesSome": "{count} van {total} aangevinkt",
-      "titleMany": "Maak ook een regel voor elk van de {count} winkels"
+      "titleMany": "Maak ook een regel voor elk van de {count} winkels",
+      "edit": "Regel aanpassen"
     },
     "cancel": "Annuleren",
     "apply": "Toepassen op {count, plural, one {# transactie} other {# transacties}}",
@@ -3143,7 +3148,12 @@
       "accounts": "Rekeningen",
       "categoriesCount": "Categorieën · {count}",
       "accountsCount": "Rekeningen · {count}",
-      "clear": "Filters wissen"
+      "clear": "Filters wissen",
+      "title": "Filters",
+      "button": "Filter op categorie of rekening",
+      "buttonCount": "Filter op categorie of rekening, {count} aan",
+      "all": "Alle",
+      "selected": "{count} gekozen"
     },
     "period": {
       "title": "Periode",
@@ -3395,7 +3405,9 @@
         "customTitle": "Aangepaste periode",
         "from": "Van {month}",
         "to": "Tot {month}",
-        "apply": "Toepassen"
+        "apply": "Toepassen",
+        "change": "Periode: {range}. Periode wijzigen",
+        "customMenu": "Aangepast…"
       },
       "empty": {
         "title": "Trends hebben je transacties nodig",
@@ -3421,7 +3433,8 @@
         "1m": "1 maand",
         "3m": "3 maanden",
         "6m": "6 maanden",
-        "1y": "1 jaar"
+        "1y": "1 jaar",
+        "change": "Periode: {range}. Periode wijzigen"
       },
       "hero": {
         "title": "Vermogen vandaag",
@@ -3919,7 +3932,7 @@
       },
       "perDay": "Ongeveer <b>{amount} per dag</b> tot {date}",
       "overBudget": "Je hebt meer uitgegeven dan het budget voor deze periode.",
-      "sum": "{spent} uitgegeven · {bills} rekeningen nog te gaan",
+      "sum": "{spent} uitgegeven",
       "budget": "{amount} budget",
       "openBudget": "Je budget openen",
       "add": "Transactie toevoegen",
@@ -4036,7 +4049,10 @@
       "out": "Eruit",
       "net": "Netto",
       "empty": "Deze periode is er nog geen geld in of uit gegaan.",
-      "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}."
+      "description": "Lijndiagram van geld erin en eruit deze periode, per dag opgeteld. Tot nu toe {in} erin en {out} eruit, netto {net}.",
+      "expected": "Verwacht",
+      "expectedBy": "{amount} op {date}",
+      "expectedDescription": "Met de geplande rekeningen en inkomsten die nog komen {in} erin en {out} eruit op {date}."
     },
     "setSalary": "Stel je salaris in",
     "salaryName": "Salaris",
@@ -4075,11 +4091,9 @@
     "subtitle": "Elke transactie op {accounts, plural, one {# rekening} other {# rekeningen}}",
     "subtitleReview": "{count, plural, one {# heeft een categorie nodig} other {# hebben een categorie nodig}}",
     "filtersButton": "Filters",
-    "clearFilters": "Alle filters wissen",
     "scanReceipt": "Bon scannen",
     "importCsv": "CSV importeren",
     "addTransaction": "Transactie toevoegen",
-    "results": "{count, plural, one {# resultaat} other {# resultaten}}",
     "needsCategory": "Heeft een categorie nodig",
     "internalTransfer": "Eigen overboeking",
     "splitParts": "{count, plural, one {# deel} other {# delen}}",
@@ -4097,13 +4111,18 @@
     "summary": {
       "in": "In",
       "out": "Uit",
-      "net": "Netto",
-      "label": "Geld erin en eruit",
+      "label": "Deze periode",
       "inSub": "{count, plural, one {# betaling erin} other {# betalingen erin}}",
       "outSub": "waarvan {amount} vaste lasten",
       "outSubNone": "Geen vaste lasten in deze selectie",
-      "netSubPositive": "Over na uitgaven",
-      "netSubNegative": "Meer eruit dan erin"
+      "left": "Over na uitgaven",
+      "over": "Meer eruit dan erin",
+      "chart": {
+        "title": "{unit, select, day {Uitgaven per dag} week {Uitgaven per week} other {Uitgaven per maand}}",
+        "average": "Gemiddeld {amount} per dag",
+        "today": "Vandaag",
+        "scheduled": "Rekeningen nog gepland · {amount}"
+      }
     },
     "upcoming": {
       "title": "{count, plural, one {# komt nog deze maand} other {# komen nog deze maand}}",
@@ -4208,7 +4227,7 @@
         "notTransfer": "Geen eigen overboeking",
         "delete": "Transactie verwijderen"
       },
-      "position": "Transactie · {index} van {total}",
+      "position": "{index} van {total}",
       "keysHint": "↑ ↓ om te bladeren",
       "previous": "Vorige transactie",
       "next": "Volgende transactie",
@@ -4345,7 +4364,12 @@
       "upcoming": "{count} komen nog",
       "upcomingSub": "{amount} vóór {date}",
       "needsReview": "{count, plural, one {# heeft een categorie nodig} other {# hebben een categorie nodig}}",
-      "needsReviewSub": "Telt pas mee in budgetten met een categorie"
+      "needsReviewSub": "Telt pas mee in budgetten met een categorie",
+      "review": "Bekijken",
+      "toSort": "{count} te sorteren",
+      "toSortSub": "Nog zonder categorie",
+      "upcomingNext": "Volgende: {name}, {amount} op {date}",
+      "dueIn": "{date} · {days, plural, =0 {vandaag} =1 {morgen} other {over # dagen}}"
     },
     "frequency": {
       "daily": "dagelijks",
@@ -4382,7 +4406,8 @@
       "oldest": "Oudste eerst",
       "highest": "Hoogste bedrag",
       "lowest": "Laagste bedrag"
-    }
+    },
+    "filtersButtonCount": "Filters, {count} aan"
   },
   "plan": {
     "title": "Plan",
@@ -4666,7 +4691,8 @@
         "summary": "{amount} schuld vandaag. {end}",
         "summaryInterest": "{amount} rente in totaal. {end}",
         "summaryDebt": "{name} afgelost {date}",
-        "summaryDebtNever": "{name} nooit afgelost"
+        "summaryDebtNever": "{name} nooit afgelost",
+        "tapHint": "Tik op de grafiek om een maand te zien"
       },
       "simulator": {
         "title": "Wat als ik extra betaal?",
@@ -4757,7 +4783,19 @@
         "colSplit": "Verdeling",
         "final": "Laatste betaling",
         "split": "{principal} aflossing · {interest} rente",
-        "allPrincipal": "Alles van de schuld af"
+        "allPrincipal": "Alles van de schuld af",
+        "phone": {
+          "edit": "Bewerken",
+          "logPayment": "Betaling vastleggen",
+          "eachMonth": "Per maand",
+          "interest": "Rente",
+          "monthsLeft": "Maanden te gaan",
+          "linkedBill": "Gekoppelde rekening",
+          "billOnDay": "{name} · de {day}e",
+          "notLinked": "Geen",
+          "pctPaidOff": "<b>{pct}%</b> afgelost · {amount}",
+          "pctReceived": "<b>{pct}%</b> terugontvangen · {amount}"
+        }
       },
       "addPlan": "Betalingsregeling toevoegen",
       "logPayment": {
@@ -4791,6 +4829,14 @@
         "noBillNoDay": "Geen vaste last gekoppeld",
         "paid": "betaald",
         "extraYear": "Extra afgelost dit jaar"
+      },
+      "phone": {
+        "heroLine": "{count, plural, one {# schuld} other {# schulden}} · {amount} per maand aan minimum",
+        "firstPaidOff": "Eerst afbetaald",
+        "firstValue": "{name} · {date}",
+        "payOffFirst": "Eerst aflossen",
+        "orderResult": "Schuldenvrij {date}",
+        "orderResultLess": "Schuldenvrij {date} · {amount} minder rente"
       }
     },
     "goals": {
@@ -4953,12 +4999,7 @@
       "setBalance": "Saldo instellen"
     },
     "list": {
-      "title": "Rekeningen {month}",
-      "toPay": "{count} te betalen · {amount}",
-      "paidCount": "{count} betaald",
-      "incomeCount": "{count} inkomen",
-      "paidAmount": "{amount} betaald",
-      "totalAmount": "{amount} aan rekeningen deze maand",
+      "title": "Nog te betalen",
       "groups": {
         "overdue": "Te laat",
         "thisWeek": "Deze week",
@@ -4966,7 +5007,9 @@
         "notPaid": "Niet betaald",
         "comingUp": "Komt nog"
       },
-      "allDone": "Alles voor {month} is betaald.",
+      "allDone": "Alles voor {month} is betaald",
+      "nextUp": "Hierna: {name} op {date}, {amount}",
+      "nextUpNoAmount": "Hierna: {name} op {date}",
       "dayHeading": "{date} · {amount}",
       "allDays": "Alle dagen",
       "dayEmpty": "Niets op deze dag.",
@@ -4990,15 +5033,14 @@
       "skip": "{month} overslaan",
       "undoSkip": "Toch niet overslaan"
     },
-    "glance": {
-      "title": "{month} in één oogopslag",
-      "busiest": "Drukste dag: {date} · {amount}",
-      "quiet": "Geen rekeningen deze maand",
+    "calendar": {
+      "label": "Rekeningenkalender, {month}",
+      "today": "Vandaag",
+      "payday": "Betaaldag",
       "paid": "Betaald",
       "due": "Te betalen",
-      "overdue": "Te laat",
       "income": "Inkomen",
-      "sizes": "Grotere stip, groter bedrag"
+      "more": "nog {count}"
     },
     "preview": {
       "title": "Vooruitblik {month}",
@@ -5099,6 +5141,13 @@
       "allBody": "Er {count, plural, one {wacht # transactie} other {wachten # transacties}} van {name}. Eigen overboekingen tellen niet mee in je budgetten en uitgaven.",
       "all": "Alle {count}",
       "justThis": "Alleen deze"
+    },
+    "mostUsed": "Meest gebruikt",
+    "mostUsedHelp": "Je top 10 van de afgelopen 6 maanden",
+    "editRule": {
+      "title": "Regel aanpassen",
+      "subtitle": "Pas de regel aan voordat hij wordt gemaakt. Hij wordt gemaakt als je deze transactie opslaat.",
+      "submit": "Deze regel gebruiken"
     }
   },
   "categoryList": {

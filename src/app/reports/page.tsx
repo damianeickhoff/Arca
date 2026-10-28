@@ -76,6 +76,17 @@ export default async function ReportsPage({
           <span className="hidden text-base text-clear-ink-2 lg:inline">{subtitle}</span>
         </div>
         <div className="flex items-center gap-2.5">
+          {/* Phones: the range is one pill here instead of a second row under the tabs. */}
+          {activeTab === "trends" && (
+            <div className="lg:hidden">
+              <TrendsPeriodSlot sp={trendsSp} financialMonth={financialMonth} menu />
+            </div>
+          )}
+          {activeTab === "vermogen" && (
+            <div className="lg:hidden">
+              <NetWorthRangeControl active={parseNetWorthRange(sp.range)} menu />
+            </div>
+          )}
           {(activeTab === "rapporten" || activeTab === "trends") && (
             <InsightsFilters from={from} to={to} financialMonth={financialMonth} tab={activeTab} />
           )}

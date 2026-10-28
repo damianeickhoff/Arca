@@ -53,7 +53,7 @@ when the last user of a legacy token (`--arca-*`, the mustard `--color-*` mappin
 
 - Colours: `clear-ground`, `clear-card`, `clear-tile`, `clear-line`, `clear-ink`,
   `clear-ink-2`, `clear-muted`, `clear-placeholder`, `clear-hero` / `clear-hero-ink` /
-  `clear-hero-ink-2`, `clear-primary` / `clear-primary-ink`, `clear-ember` /
+  `clear-hero-ink-2` / `clear-hero-positive` (money in on the hero), `clear-primary` / `clear-primary-ink`, `clear-ember` /
   `clear-ember-ink` / `clear-ember-text`, pastels `clear-{mint,peach,sky,lilac,butter,rose,stone}`
   each with `-ink`, semantic `clear-{positive,negative,warning,info}` (text) with `-fill`.
 - Radius: `rounded-clear-card` (24px, cards and panels), `rounded-clear-dialog` (28px,
@@ -91,8 +91,9 @@ contain user-facing text themselves.
   button — search lives in the shell so it never reads as "search this page" (a page
   may have a search that filters its own list, like Activity).
 - Phone: header (avatar/title + round buttons), content in 16px gutters, and the
-  floating black tab bar (Home, Activity, ember add button (the same add menu), Plan, Insights, and the
-  global search button set apart at the end). Pages
+  floating black tab bar, icons only (the names are aria-labels): Home, Activity, the ember
+  add button (the same add menu), Plan and Insights, with the global search as its own
+  round black button beside the bar. Pages
   reserve space at the bottom so the last row clears the tab bar.
 - Pages fill the available width; content never sets its own max width or centres
   itself (`mx-auto max-w-*`), except single-card pages (sign-in, errors) and dialogs.

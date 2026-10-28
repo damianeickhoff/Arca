@@ -18,7 +18,7 @@ import { setDebtMinimumPaidAction } from "./actions";
  * its linked bill matched a transaction (or was marked), else the shared bill status
  * control; a debt with no linked bill asks "Paid?" and stores its own mark. At the
  * bottom, the extra payments logged so far this year. Fills its column (flex-1) so the
- * column lines up with Your debts.
+ * column lines up with Your debts. Phones put the amount over the status on the right.
  */
 export function ThisMonthCard({
   active,
@@ -60,16 +60,18 @@ export function ThisMonthCard({
       />
       <ul className="m-0 flex list-none flex-col p-0">
         {rows.map(({ c, p }) => (
-          <li key={c.debt.id} className="flex min-w-0 items-center gap-3 py-2">
+          <li key={c.debt.id} className="flex min-w-0 items-center gap-3 py-2 max-lg:min-h-16 max-lg:border-t max-lg:border-clear-ground max-lg:first:border-t-0">
             <DebtIcon icon={c.debt.icon ?? c.linkedBills[0]?.icon} color={c.debt.color} size="sm" />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="truncate text-sm font-semibold">{c.debt.name}</span>
-              <span className="truncate text-xs font-medium text-clear-muted">
+              <span className="truncate text-sm font-semibold max-lg:text-[15px] max-lg:font-bold">{c.debt.name}</span>
+              <span className="truncate text-xs font-medium text-clear-muted max-lg:text-[13px]">
                 <MoneyText>{sub(p)}</MoneyText>
               </span>
             </span>
-            <Amount value={p.amount} sign="none" splitCents={false} className="shrink-0 text-sm font-bold!" />
-            <PaymentStatus p={p} label={t("paid")} />
+            <span className="flex shrink-0 items-center gap-3 max-lg:flex-col max-lg:items-end max-lg:gap-1">
+              <Amount value={p.amount} sign="none" splitCents={false} className="shrink-0 text-sm font-bold! max-lg:text-[15px]" />
+              <PaymentStatus p={p} label={t("paid")} />
+            </span>
           </li>
         ))}
       </ul>

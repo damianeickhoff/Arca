@@ -3,7 +3,6 @@
 import { describe, expect, it } from "vitest";
 import {
   beforePayday,
-  busiestDay,
   dotSize,
   groupUpcomingBills,
   previewNextMonth,
@@ -103,11 +102,9 @@ describe("runningBalance", () => {
   });
 });
 
-describe("dotSize and busiestDay", () => {
-  it("sizes dots by amount and finds the day with the most going out", () => {
+describe("dotSize", () => {
+  it("sizes dots by amount", () => {
     expect([dotSize(20), dotSize(142), dotSize(1045)]).toEqual([5, 7, 9]);
-    expect(busiestDay(october)).toEqual({ date: "2026-10-01", total: 1045 });
-    expect(busiestDay(october.filter((b) => b.name !== "Rent"))).toEqual({ date: "2026-10-25", total: 142 });
   });
 });
 

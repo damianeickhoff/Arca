@@ -105,6 +105,7 @@
   --color-clear-hero: var(--clr-hero);
   --color-clear-hero-ink: var(--clr-hero-ink);
   --color-clear-hero-ink-2: var(--clr-hero-ink-2);
+  --color-clear-hero-positive: var(--clr-hero-positive);
   --color-clear-primary: var(--clr-primary);
   --color-clear-primary-ink: var(--clr-primary-ink);
   --color-clear-ember: var(--clr-ember);
@@ -144,13 +145,13 @@
 :root {
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
-  /* Vertical space the floating tab bar occupies on phones: the bar's own 68px
+  /* Vertical space the floating tab bar occupies on phones: the bar's own 64px
      height plus its 20px bottom offset to its top edge, plus a 16px gap so the last
      row doesn't just touch it, plus the home-indicator inset. Pages reserve this at
      the bottom so their last row never sits under the bar. From lg up there is no tab
      bar (the top bar holds the navigation) and the clearance shrinks to a plain bottom
      margin (see the media query after this block). See components/shell/app-shell.tsx. */
-  --nav-clearance: calc(6.5rem + var(--sab));
+  --nav-clearance: calc(6.25rem + var(--sab));
   /* A bar docked just above the phone tab bar (Activity's search): it sits 12px above
      the tab bar's top edge, and a page showing one adds --bottom-bar-clearance on top
      of --nav-clearance so its last row clears both. Phones only — from lg there is no
@@ -200,6 +201,8 @@
   --clr-hero: #111113;
   --clr-hero-ink: #FFFFFF;
   --clr-hero-ink-2: rgba(255, 255, 255, 0.72);
+  /* Money in, on the hero card: a light green on the black hero. */
+  --clr-hero-positive: #7EE2A8;
   --clr-primary: #111113;
   --clr-primary-ink: #FFFFFF;
   /* Ember is a fill. Text on it is always ink; orange text on a card uses ember-text. */
@@ -413,6 +416,7 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   --clr-hero: #F4F4F5;
   --clr-hero-ink: #111113;
   --clr-hero-ink-2: rgba(17, 17, 19, 0.65);
+  --clr-hero-positive: #0E7A3D;
   --clr-primary: #F4F4F5;
   --clr-primary-ink: #111113;
   --clr-ember-text: #FF9F80;
