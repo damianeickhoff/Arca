@@ -7,7 +7,6 @@ import { IconCalendar, IconChevronDown, IconChevronLeft, IconChevronRight, IconX
 import { ResponsivePopover } from "@/components/clear/responsive-popover";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { ClearField, ClearInput } from "@/components/clear/field";
-import { filterPillClass } from "@/components/filter-pill";
 import { useIsDesktop } from "@/lib/use-is-desktop";
 import { cn } from "@/lib/utils";
 import {
@@ -206,11 +205,11 @@ function useRangeNavigation(tab: string | undefined) {
 }
 
 /**
- * The Insights period picker: the heading pill ("Budget period · October", the period
- * alone on phones) that opens the period panel — presets, stepping, a range calendar
- * and from/to fields, applied together. Whole budget months are named ("Budget periods ·
- * Aug – Oct"); any other range shows its dates. Drives `?from=&to=` plus the
- * `date_from`/`date_to` cookie pair.
+ * The Insights period picker: a field in the Filters panel ("Budget period · October")
+ * that opens the period panel — presets, stepping, a range calendar and from/to fields,
+ * applied together. Whole budget months are named ("Budget periods · Aug – Oct"); any
+ * other range shows its dates. Drives `?from=&to=` plus the `date_from`/`date_to`
+ * cookie pair.
  */
 export function PeriodSelector({
   from,
@@ -246,11 +245,16 @@ export function PeriodSelector({
       open={open}
       onOpenChange={setOpen}
       trigger={
-        <button type="button" aria-label={t("triggerLabel", { period: fmtRange(from, to, locale, true) })} className={filterPillClass(open, "shrink-0")}>
-          <IconCalendar aria-hidden stroke={1.9} />
-          <span className="hidden lg:inline">{presetLabel} · </span>
-          <span className="inline-block first-letter:uppercase">{periodLabel}</span>
-          <IconChevronDown aria-hidden stroke={2.2} />
+        <button
+          type="button"
+          aria-label={t("triggerLabel", { period: fmtRange(from, to, locale, true) })}
+          className="flex h-11 w-full min-w-0 cursor-pointer items-center gap-2.5 rounded-clear-row bg-clear-tile pr-3 pl-3.5 text-left font-clear text-sm font-semibold text-clear-ink transition-colors hover:bg-clear-line"
+        >
+          <IconCalendar aria-hidden className="size-4 shrink-0" stroke={1.9} />
+          <span className="min-w-0 flex-1 truncate">
+            {presetLabel} · <span className="inline-block first-letter:uppercase">{periodLabel}</span>
+          </span>
+          <IconChevronDown aria-hidden className="size-4 shrink-0 text-clear-muted" stroke={2.2} />
         </button>
       }
       from={from}

@@ -3146,14 +3146,12 @@
     "filters": {
       "categories": "Categories",
       "accounts": "Accounts",
-      "categoriesCount": "Categories · {count}",
-      "accountsCount": "Accounts · {count}",
-      "clear": "Clear filters",
-      "title": "Filters",
-      "button": "Filter by category or account",
-      "buttonCount": "Filter by category or account, {count} on",
-      "all": "All",
-      "selected": "{count} selected"
+      "button": "Filters",
+      "buttonCount": "Filters, {count} on",
+      "period": "Period",
+      "allCategories": "All categories",
+      "allAccounts": "All accounts",
+      "clearAll": "Clear all"
     },
     "period": {
       "title": "Period",
@@ -3405,9 +3403,7 @@
         "customTitle": "Custom period",
         "from": "From {month}",
         "to": "To {month}",
-        "apply": "Apply",
-        "change": "Range: {range}. Change range",
-        "customMenu": "Custom…"
+        "apply": "Apply"
       },
       "empty": {
         "title": "Trends need your transactions",
@@ -4556,6 +4552,12 @@
     },
     "debts": {
       "add": "Add a debt",
+      "chooser": {
+        "button": "Add",
+        "title": "Add",
+        "debt": "A debt",
+        "debtHint": "Money you owe, or money someone owes you"
+      },
       "yours": "Your debts",
       "yoursOrder": "{count, plural, one {# debt} other {# debts}} · {order}",
       "yoursCount": "{count, plural, one {# debt} other {# debts}}",
@@ -4797,7 +4799,6 @@
           "pctReceived": "<b>{pct}%</b> received · {amount}"
         }
       },
-      "addPlan": "Add payment plan",
       "logPayment": {
         "button": "Log a payment",
         "title": "Log a payment",

@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { IconCheck, IconChevronDown, IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
+import { IconCheck } from "@tabler/icons-react";
 import { ClearButton } from "@/components/clear/button";
 import { ResponsivePopover } from "@/components/clear/responsive-popover";
 import { Segmented } from "@/components/clear/segmented";
@@ -20,23 +19,22 @@ export interface CustomMonth {
   to: string;
 }
 
-// The same pill look as <Segmented>'s items, for the Custom trigger that sits in it.
-const ITEM = "inline-flex h-10 cursor-pointer items-center justify-center whitespace-nowrap rounded-full px-[18px] font-clear text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50";
+// The same pill look as <Segmented size="sm">'s items, for the Custom trigger that sits in it.
+const ITEM = "inline-flex h-8 min-w-0 flex-1 cursor-pointer items-center justify-center whitespace-nowrap rounded-full px-2 font-clear text-[13px] transition-colors outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50";
 const ON = "bg-clear-primary font-bold text-clear-primary-ink";
 const OFF = "font-semibold text-clear-ink-2 hover:text-clear-ink";
 
 /**
- * Trends' grain control: 3 · 6 · 12 months, plus Custom for any run of budget months.
- * All of it lives in the URL (`range`, or `from`/`to` for Custom), merged into the
- * query so the tab and the Categories / Accounts filters stay. `menu` (the phone
- * heading) shows it as one pill naming the range, opening the same choices as a list.
+ * Trends' grain control in the Insights Filters panel: 3 · 6 · 12 months, plus Custom for
+ * any run of budget months (its own picker on top). All of it lives in the URL (`range`,
+ * or `from`/`to` for Custom), merged into the query so the tab and the Categories /
+ * Accounts filters stay.
  */
 export function TrendsPeriodControl({
   active,
   months,
   customFrom,
   customTo,
-  menu = false,
 }: {
   /** "3" | "6" | "12" | "custom". */
   active: string;
@@ -45,8 +43,6 @@ export function TrendsPeriodControl({
   /** The custom period's first and last month, when one is picked. */
   customFrom?: string;
   customTo?: string;
-  /** One pill with a menu instead of the segmented row. */
-  menu?: boolean;
 }) {
   const t = useTranslations("insights.trendsTab.period");
   const pathname = usePathname();
@@ -54,8 +50,6 @@ export function TrendsPeriodControl({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [side, setSide] = useState<"from" | "to">("from");
-  // The menu's two views: the ranges, or the custom picker.
-  const [view, setView] = useState<"list" | "custom">("list");
   const last = months.at(-1)?.value ?? "";
   const [pick, setPick] = useState({ from: customFrom ?? months.at(-6)?.value ?? months[0]?.value ?? "", to: customTo ?? last });
 
@@ -82,116 +76,23 @@ export function TrendsPeriodControl({
   }
 
   const label = (ym: string) => months.find((m) => m.value === ym)?.label ?? ym;
-  const resetPick = () => {
-    setPick({ from: customFrom ?? months.at(-6)?.value ?? months[0]?.value ?? "", to: customTo ?? last });
-    setSide("from");
-  };
-  const applyButton = (
-    <ClearButton size="sm" className="w-full" onClick={apply}>
-      {t("apply")}
-    </ClearButton>
-  );
 
-  const picker = (
-    <div className="flex flex-col gap-2">
-      <Segmented<"from" | "to">
-        label={t("customTitle")}
-        surface="tile"
+  return (
+    <div role="group" aria-label={t("label")} className="flex w-full items-center gap-1 rounded-full bg-clear-tile p-[5px]">
+      <Segmented
+        label={t("label")}
         size="sm"
-        value={side}
-        onChange={setSide}
-        items={[
-          { value: "from", label: t("from", { month: label(pick.from) }) },
-          { value: "to", label: t("to", { month: label(pick.to) }) },
-        ]}
-        className="flex w-full [&>*]:min-w-0 [&>*]:flex-1 [&>*]:truncate"
+        value={active}
+        items={(["3", "6", "12"] as const).map((count) => ({ value: count, label: t("months", { count: Number(count) }), href: hrefFor(count) }))}
+        className="flex min-w-0 flex-[3] bg-transparent p-0 [&>a]:min-w-0 [&>a]:flex-1 [&>a]:px-2 [&>a]:whitespace-nowrap"
       />
-      <div className="flex flex-col">
-        {[...months].reverse().map((m) => {
-          const selected = pick[side] === m.value;
-          return (
-            <button
-              key={m.value}
-              type="button"
-              aria-pressed={selected}
-              onClick={() => {
-                setPick((p) => ({ ...p, [side]: m.value }));
-                if (side === "from") setSide("to");
-              }}
-              className={cn(
-                "flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-clear-row px-3 text-left text-sm font-semibold transition-colors hover:bg-clear-tile",
-                selected && "bg-clear-tile",
-              )}
-            >
-              <span className="first-letter:uppercase">{m.label}</span>
-              {selected && <IconCheck aria-hidden className="size-4 shrink-0" />}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  if (menu) {
-    const row = "flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-clear-row px-3 text-left text-[15px] transition-colors hover:bg-clear-tile";
-    return (
       <ResponsivePopover
         open={open}
         onOpenChange={(next) => {
           if (next) {
-            resetPick();
-            setView("list");
+            setPick({ from: customFrom ?? months.at(-6)?.value ?? months[0]?.value ?? "", to: customTo ?? last });
+            setSide("from");
           }
-          setOpen(next);
-        }}
-        title={view === "custom" ? t("customTitle") : t("label")}
-        className="w-60"
-        trigger={
-          <button type="button" aria-label={t("change", { range: active === "custom" ? t("custom") : t("months", { count: Number(active) }) })} className={cn("inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-full pr-3 pl-3.5 font-clear text-sm font-bold transition-colors", open ? "bg-clear-primary text-clear-primary-ink" : "bg-clear-card text-clear-ink hover:bg-clear-tile")}>
-            {active === "custom" ? t("custom") : t("months", { count: Number(active) })}
-            <IconChevronDown aria-hidden size={16} stroke={2.2} className={cn("transition-transform", open && "rotate-180")} />
-          </button>
-        }
-        footer={view === "custom" ? applyButton : undefined}
-      >
-        {view === "list" ? (
-          <div role="menu" aria-label={t("label")} className="flex flex-col">
-            {(["3", "6", "12"] as const).map((count) => (
-              <Link key={count} role="menuitemradio" aria-checked={active === count} href={hrefFor(count)} scroll={false} onClick={() => setOpen(false)} className={cn(row, active === count ? "bg-clear-tile font-extrabold" : "font-semibold")}>
-                {t("months", { count: Number(count) })}
-                {active === count && <IconCheck aria-hidden className="size-4 shrink-0" stroke={2.6} />}
-              </Link>
-            ))}
-            <button type="button" role="menuitemradio" aria-checked={active === "custom"} onClick={() => setView("custom")} className={cn(row, active === "custom" ? "bg-clear-tile font-extrabold" : "font-semibold")}>
-              {t("customMenu")}
-              <IconChevronRight aria-hidden className="size-4 shrink-0 text-clear-placeholder" stroke={2.2} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <button type="button" onClick={() => setView("list")} className="inline-flex h-9 cursor-pointer items-center gap-1 self-start rounded-full px-2 text-[13px] font-bold text-clear-ink-2 hover:bg-clear-tile">
-              <IconChevronLeft aria-hidden className="size-4" stroke={2.2} />
-              {t("label")}
-            </button>
-            {picker}
-          </div>
-        )}
-      </ResponsivePopover>
-    );
-  }
-
-  return (
-    <div role="group" aria-label={t("label")} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-clear-card p-[5px]">
-      <Segmented
-        label={t("label")}
-        value={active}
-        items={(["3", "6", "12"] as const).map((count) => ({ value: count, label: t("months", { count: Number(count) }), href: hrefFor(count) }))}
-        className="bg-transparent p-0 [&>a]:whitespace-nowrap"
-      />
-      <ResponsivePopover
-        open={open}
-        onOpenChange={(next) => {
-          if (next) resetPick();
           setOpen(next);
         }}
         title={t("customTitle")}
@@ -200,9 +101,49 @@ export function TrendsPeriodControl({
             {t("custom")}
           </button>
         }
-        footer={applyButton}
+        footer={
+          <ClearButton size="sm" className="w-full" onClick={apply}>
+            {t("apply")}
+          </ClearButton>
+        }
       >
-        {picker}
+        <div className="flex flex-col gap-2">
+          <Segmented<"from" | "to">
+            label={t("customTitle")}
+            surface="tile"
+            size="sm"
+            value={side}
+            onChange={setSide}
+            items={[
+              { value: "from", label: t("from", { month: label(pick.from) }) },
+              { value: "to", label: t("to", { month: label(pick.to) }) },
+            ]}
+            className="flex w-full [&>*]:min-w-0 [&>*]:flex-1 [&>*]:truncate"
+          />
+          <div className="flex flex-col">
+            {[...months].reverse().map((m) => {
+              const selected = pick[side] === m.value;
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    setPick((p) => ({ ...p, [side]: m.value }));
+                    if (side === "from") setSide("to");
+                  }}
+                  className={cn(
+                    "flex h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-clear-row px-3 text-left text-sm font-semibold transition-colors hover:bg-clear-tile",
+                    selected && "bg-clear-tile",
+                  )}
+                >
+                  <span className="first-letter:uppercase">{m.label}</span>
+                  {selected && <IconCheck aria-hidden className="size-4 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </ResponsivePopover>
     </div>
   );

@@ -3146,14 +3146,12 @@
     "filters": {
       "categories": "Categorieën",
       "accounts": "Rekeningen",
-      "categoriesCount": "Categorieën · {count}",
-      "accountsCount": "Rekeningen · {count}",
-      "clear": "Filters wissen",
-      "title": "Filters",
-      "button": "Filter op categorie of rekening",
-      "buttonCount": "Filter op categorie of rekening, {count} aan",
-      "all": "Alle",
-      "selected": "{count} gekozen"
+      "button": "Filters",
+      "buttonCount": "Filters, {count} aan",
+      "period": "Periode",
+      "allCategories": "Alle categorieën",
+      "allAccounts": "Alle rekeningen",
+      "clearAll": "Alles wissen"
     },
     "period": {
       "title": "Periode",
@@ -3405,9 +3403,7 @@
         "customTitle": "Aangepaste periode",
         "from": "Van {month}",
         "to": "Tot {month}",
-        "apply": "Toepassen",
-        "change": "Periode: {range}. Periode wijzigen",
-        "customMenu": "Aangepast…"
+        "apply": "Toepassen"
       },
       "empty": {
         "title": "Trends hebben je transacties nodig",
@@ -4556,6 +4552,12 @@
     },
     "debts": {
       "add": "Schuld toevoegen",
+      "chooser": {
+        "button": "Toevoegen",
+        "title": "Toevoegen",
+        "debt": "Een schuld",
+        "debtHint": "Geld dat je schuldig bent, of dat iemand jou schuldig is"
+      },
       "yours": "Je schulden",
       "yoursOrder": "{count, plural, one {# schuld} other {# schulden}} · {order}",
       "yoursCount": "{count, plural, one {# schuld} other {# schulden}}",
@@ -4797,7 +4799,6 @@
           "pctReceived": "<b>{pct}%</b> terugontvangen · {amount}"
         }
       },
-      "addPlan": "Betalingsregeling toevoegen",
       "logPayment": {
         "button": "Betaling vastleggen",
         "title": "Betaling vastleggen",

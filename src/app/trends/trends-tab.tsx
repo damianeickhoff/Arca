@@ -31,7 +31,7 @@ const CUSTOM_MONTHS = 36;
  * expenses, the needs / wants / savings split against the plan, one chart of spending
  * against income, the biggest movers against the months before, and every category as
  * a table that scrolls inside its card. The period is `range=3|6|12` or a `from`/`to`
- * pair in the URL; its control (<TrendsPeriodSlot>) sits in the Insights tab row.
+ * pair in the URL; its control (<TrendsPeriodSlot>) sits in the Insights Filters panel.
  */
 export async function TrendsTab({
   range: rangeParam,
@@ -232,17 +232,8 @@ export async function getTrendsHeading(sp: { range?: string; from?: string; to?:
   };
 }
 
-/** Trends' period control for the Insights tab row: 3 · 6 · 12 months and Custom; `menu`
- *  is the phone heading's pill. */
-export async function TrendsPeriodSlot({
-  sp,
-  financialMonth,
-  menu = false,
-}: {
-  sp: { range?: string; from?: string; to?: string };
-  financialMonth: FinancialMonthConfig;
-  menu?: boolean;
-}) {
+/** Trends' period control for the Insights Filters panel: 3 · 6 · 12 months and Custom. */
+export async function TrendsPeriodSlot({ sp, financialMonth }: { sp: { range?: string; from?: string; to?: string }; financialMonth: FinancialMonthConfig }) {
   const locale = await getLocale();
   const { range, current } = headingMonths(sp, financialMonth);
   const long = (ym: string) => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(new Date(`${financialMonthRangeByMonth(ym, financialMonth).to}T12:00:00`));
@@ -252,7 +243,6 @@ export async function TrendsPeriodSlot({
       months={customMonths(current, financialMonth, long)}
       customFrom={range.kind === "custom" ? financialMonthForDate(range.from, financialMonth) : undefined}
       customTo={range.kind === "custom" ? financialMonthForDate(range.to, financialMonth) : undefined}
-      menu={menu}
     />
   );
 }

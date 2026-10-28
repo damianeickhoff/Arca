@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { cloneElement, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -13,7 +13,6 @@ import {
   IconCreditCard,
   IconPencil,
   IconPlus,
-  IconCalendarDue,
   IconReceipt,
   IconSchool,
   IconUsers,
@@ -32,7 +31,8 @@ import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
 import { PlanSwitch } from "@/components/shell/plan-switch";
 import { AnchoredTip } from "@/components/anchored-tip";
-import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
+import { ResponsivePopover } from "@/components/clear/responsive-popover";
+import { IconTile } from "@/components/clear/icon-tile";
 import type { RecurringItem } from "@/db/schema";
 import {
   DEBT_SORTS,
@@ -340,32 +340,7 @@ function DebtsHeader({
           <span className="hidden text-base font-medium text-clear-ink-2 lg:inline"><MoneyText>{empty ? t("subtitleNone") : parts.join(" · ")}</MoneyText></span>
         </div>
         <div className="flex items-center gap-2.5">
-          {/* A cost paid in parts isn't a debt, but this is where people look for one. */}
-          <AddRecurringButton type="plan" ariaLabel={t("addPlan")} className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 lg:hidden")}>
-            <IconCalendarDue aria-hidden />
-          </AddRecurringButton>
-          <AddRecurringButton type="plan" className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
-            <IconCalendarDue aria-hidden />
-            {t("addPlan")}
-          </AddRecurringButton>
-          {onLog && (
-            <>
-              <button type="button" onClick={onLog} aria-label={t("logPayment.button")} className={cn(clearButtonVariants({ variant: "surface", size: "icon" }), "size-12 lg:hidden")}>
-                <IconReceipt aria-hidden />
-              </button>
-              <button type="button" onClick={onLog} className={cn(clearButtonVariants({ variant: "surface" }), "hidden lg:inline-flex")}>
-                <IconReceipt aria-hidden />
-                {t("logPayment.button")}
-              </button>
-            </>
-          )}
-          <button type="button" onClick={onAdd} aria-label={t("add")} className={cn(clearButtonVariants({ size: "icon" }), "size-12 lg:hidden")}>
-            <IconPlus aria-hidden />
-          </button>
-          <button type="button" onClick={onAdd} className={cn(clearButtonVariants(), "hidden lg:inline-flex")}>
-            <IconPlus aria-hidden />
-            {t("add")}
-          </button>
+          <AddChooser onAdd={onAdd} onLog={onLog} />
         </div>
       </div>
       <div className="flex">
@@ -374,6 +349,52 @@ function DebtsHeader({
     </div>
   );
 }
+
+/**
+ * The page's one + button: a choice between adding a debt and logging a payment, each
+ * opening its own dialog (a popover on desktop, a sheet on phones). With no open debt to
+ * log a payment on, + opens the debt form straight away.
+ */
+function AddChooser({ onAdd, onLog }: { onAdd: () => void; onLog?: () => void }) {
+  const t = useTranslations("plan.debts");
+  const [open, setOpen] = useState(false);
+  const button = (
+    <button type="button" aria-label={t("chooser.button")} className={cn(clearButtonVariants(), "max-lg:size-12 max-lg:px-0")}>
+      <IconPlus aria-hidden />
+      <span className="max-lg:sr-only">{t("chooser.button")}</span>
+    </button>
+  );
+  if (!onLog) return cloneElement(button, { onClick: onAdd });
+
+  const option = "flex w-full cursor-pointer items-center gap-3 rounded-clear-row px-2.5 py-2.5 text-left transition-colors hover:bg-clear-tile";
+  const pick = (next: () => void) => () => {
+    setOpen(false);
+    next();
+  };
+  return (
+    <ResponsivePopover open={open} onOpenChange={setOpen} title={t("chooser.title")} trigger={button} className="w-80">
+      <div className="flex flex-col gap-0.5 font-clear text-clear-ink">
+        <button type="button" onClick={pick(onAdd)} className={option}>
+          <IconTile tone="peach"><IconCreditCard stroke={1.9} /></IconTile>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-bold">{t("chooser.debt")}</span>
+            <span className="text-[13px] text-clear-muted">{t("chooser.debtHint")}</span>
+          </span>
+          <IconChevronRight aria-hidden size={16} stroke={2.2} className="shrink-0 text-clear-placeholder" />
+        </button>
+        <button type="button" onClick={pick(onLog)} className={option}>
+          <IconTile tone="mint"><IconReceipt stroke={1.9} /></IconTile>
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[15px] font-bold">{t("logPayment.button")}</span>
+            <span className="text-[13px] text-clear-muted">{t("logPayment.subtitle")}</span>
+          </span>
+          <IconChevronRight aria-hidden size={16} stroke={2.2} className="shrink-0 text-clear-placeholder" />
+        </button>
+      </div>
+    </ResponsivePopover>
+  );
+}
+
 
 // ── Summary tiles ─────────────────────────────────────────────────────────────
 

@@ -23,6 +23,7 @@ import type { CategorySpendCard } from "@/components/category-spending-row";
 import { CategoryBreakdownCard } from "./category-breakdown-card";
 import { PeriodSelector } from "./period-selector";
 import { AnalyticsFilterBar } from "./analytics-filter-bar";
+import { TrendsPeriodSlot } from "@/app/trends/trends-tab";
 import {
   CalendarCard,
   EmptyOverview,
@@ -424,11 +425,14 @@ export async function InsightsFilters({
   to,
   financialMonth,
   tab,
+  trendsSp,
 }: {
   from: string;
   to: string;
   financialMonth: FinancialMonthConfig;
   tab: "rapporten" | "trends";
+  /** Trends' own period (the URL's range or from/to). */
+  trendsSp?: { range?: string; from?: string; to?: string };
 }) {
   const [allCategories, allBanks, budgetOverview] = await Promise.all([
     db.select().from(categories),
@@ -436,18 +440,23 @@ export async function InsightsFilters({
     tab === "rapporten" ? loadBudgetOverview(financialMonth) : null,
   ]);
   return (
-    <>
-      {tab === "rapporten" && (
-        <PeriodSelector
-          from={from}
-          to={to}
-          financialMonth={financialMonth}
-          budgetPeriod={budgetOverview?.budget ? { from: budgetOverview.from, to: budgetOverview.to } : null}
-          tab={tab}
-        />
-      )}
-      <AnalyticsFilterBar categories={allCategories} banks={allBanks} combined={tab === "trends"} />
-    </>
+    <AnalyticsFilterBar
+      categories={allCategories}
+      banks={allBanks}
+      period={
+        tab === "rapporten" ? (
+          <PeriodSelector
+            from={from}
+            to={to}
+            financialMonth={financialMonth}
+            budgetPeriod={budgetOverview?.budget ? { from: budgetOverview.from, to: budgetOverview.to } : null}
+            tab={tab}
+          />
+        ) : (
+          <TrendsPeriodSlot sp={trendsSp ?? {}} financialMonth={financialMonth} />
+        )
+      }
+    />
   );
 }
 

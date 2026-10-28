@@ -5,7 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import ForecastPage from "@/app/forecast/page";
 import { cookies } from "next/headers";
 import { ReportsTabs } from "./reports-tabs";
-import { getTrendsHeading, TrendsPeriodSlot, TrendsTab } from "@/app/trends/trends-tab";
+import { getTrendsHeading, TrendsTab } from "@/app/trends/trends-tab";
 import { NetWorthHeadingActions, NetWorthTab } from "@/app/net-worth/net-worth-tab";
 import { NetWorthRangeControl } from "@/app/net-worth/net-worth-range-control";
 import { parseNetWorthRange } from "@/lib/net-worth-history";
@@ -76,19 +76,14 @@ export default async function ReportsPage({
           <span className="hidden text-base text-clear-ink-2 lg:inline">{subtitle}</span>
         </div>
         <div className="flex items-center gap-2.5">
-          {/* Phones: the range is one pill here instead of a second row under the tabs. */}
-          {activeTab === "trends" && (
-            <div className="lg:hidden">
-              <TrendsPeriodSlot sp={trendsSp} financialMonth={financialMonth} menu />
-            </div>
-          )}
+          {/* Phones: Net worth's range is one pill here instead of a second row under the tabs. */}
           {activeTab === "vermogen" && (
             <div className="lg:hidden">
               <NetWorthRangeControl active={parseNetWorthRange(sp.range)} menu />
             </div>
           )}
           {(activeTab === "rapporten" || activeTab === "trends") && (
-            <InsightsFilters from={from} to={to} financialMonth={financialMonth} tab={activeTab} />
+            <InsightsFilters from={from} to={to} financialMonth={financialMonth} tab={activeTab} trendsSp={trendsSp} />
           )}
           {activeTab === "vermogen" && <NetWorthHeadingActions />}
         </div>
@@ -101,8 +96,7 @@ export default async function ReportsPage({
         <ReportsTabs
           active={activeTab}
           aside={
-            activeTab === "trends" ? <TrendsPeriodSlot sp={trendsSp} financialMonth={financialMonth} />
-            : activeTab === "vermogen" ? <NetWorthRangeControl active={parseNetWorthRange(sp.range)} />
+            activeTab === "vermogen" ? <NetWorthRangeControl active={parseNetWorthRange(sp.range)} />
             : undefined
           }
         />
