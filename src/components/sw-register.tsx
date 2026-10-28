@@ -4,10 +4,16 @@ import { useEffect } from "react";
 
 // Production-only: dev-server HMR and a caching service worker fight each other
 // constantly, so registering in development just causes stale-bundle confusion.
+// The dev server's chunk names don't change when their code does, so a worker left
+// over from a production run on the same address keeps serving old scripts from its
+// cache. In development, remove any such worker and its caches, then reload once.
 export function ServiceWorkerRegister() {
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
+    if (process.env.NODE_ENV !== "production") {
+      void removeLeftoverWorker();
+      return;
+    }
 
     let refreshing = false;
     // When a newly-installed SW calls skipWaiting() + clients.claim(), the browser
@@ -43,4 +49,20 @@ export function ServiceWorkerRegister() {
   }, []);
 
   return null;
+}
+
+async function removeLeftoverWorker() {
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    if (registrations.length === 0) return;
+    await Promise.all(registrations.map((r) => r.unregister()));
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    }
+    // The page was loaded through the old worker; load it again without one.
+    window.location.reload();
+  } catch {
+    // Storage blocked or unsupported: nothing to clean up.
+  }
 }
