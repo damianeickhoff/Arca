@@ -240,6 +240,8 @@
   /* Page tours: the page dims and the step's element gets a light ring (clear-tour-spotlight). */
   --clr-tour-dim: rgba(17, 17, 19, 0.58);
   --clr-tour-ring: rgba(255, 255, 255, 0.92);
+  /* A thin line inside the light ring, so it still shows around a white card. */
+  --clr-tour-edge: var(--clr-ink);
   /* A step dot that is not the current one. */
   --clr-tour-dot: #D4D4DA;
 
@@ -368,10 +370,10 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-/* Page tours: drawn over the highlighted element, the ring around it and the dim over
-   everything else (a spread so wide it covers the whole screen). */
+/* Page tours: drawn over the highlighted element: a thin edge and a light ring around it,
+   and the dim over everything else (a spread so wide it covers the whole screen). */
 @utility clear-tour-spotlight {
-  box-shadow: 0 0 0 6px var(--clr-tour-ring), 0 0 0 200vmax var(--clr-tour-dim);
+  box-shadow: 0 0 0 2px var(--clr-tour-edge), 0 0 0 6px var(--clr-tour-ring), 0 0 0 200vmax var(--clr-tour-dim);
 }
 @utility clear-hatch {
   background-image: repeating-linear-gradient(
@@ -459,6 +461,7 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   --clr-shadow-float: 0 16px 40px rgba(0, 0, 0, 0.55);
   --clr-tour-dim: rgba(0, 0, 0, 0.66);
   --clr-tour-ring: rgba(244, 244, 245, 0.85);
+  --clr-tour-edge: rgba(244, 244, 245, 0.85);
   --clr-tour-dot: #3F3F46;
 
   /* Every legacy token that points at an --arca-* or --clr-* value follows automatically;
