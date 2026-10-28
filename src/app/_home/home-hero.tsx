@@ -110,7 +110,6 @@ export async function HomeHero({
           <Link
             href="/budget"
             title={t("openBudget")}
-            data-tip-anchor="homeBudgetLink"
             className="inline-flex items-center gap-0.5 rounded-full text-clear-hero-ink-2 no-underline hover:text-clear-hero-ink hover:underline"
           >
             <MoneyText>{t("budget", { amount: formatEurWhole(target) })}</MoneyText>

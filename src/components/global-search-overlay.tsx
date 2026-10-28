@@ -361,7 +361,7 @@ export function GlobalSearchOverlay({ open, onClose, originRect }: Props) {
             </label>
 
             {/* Quick actions are new here; they (and the arrow keys) announce themselves once. */}
-            <ContextualTip id="searchActions" active={open} />
+            <ContextualTip inDialog id="searchActions" active={open} />
 
             <div
               id={`${uid}-results`}

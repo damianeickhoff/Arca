@@ -573,7 +573,7 @@ export function TransactionDetailPanel({
           the right. The phone sheet: the arrows, "3 of 214" and its close button. */}
       {position &&
         (layout === "card" ? (
-          <div className="-mt-2 flex items-center gap-2 border-b border-clear-ground pb-3" data-tip-anchor="activityKeys">
+          <div className="-mt-2 flex items-center gap-2 border-b border-clear-ground pb-3">
             <span className="min-w-0 flex-1 truncate text-[13px] font-bold text-clear-ink-2">
               {t("position", { index: position.index, total: position.total })} · {t("keysHint")}
             </span>
@@ -585,7 +585,7 @@ export function TransactionDetailPanel({
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2" data-tip-anchor="activityKeys">
+          <div className="flex items-center gap-2">
             <button type="button" onClick={position.onPrev} disabled={!position.onPrev} aria-label={t("previous")} className={navBtn}>
               <IconChevronUp className="size-[18px]" stroke={2.2} />
             </button>
@@ -679,7 +679,7 @@ export function TransactionDetailPanel({
       </div>
 
       {/* 3. Summary | Details */}
-      <div role="tablist" aria-label={t("tabs.label")} data-tip-anchor="activityDetailTabs" className="flex gap-1 rounded-full bg-clear-tile p-[5px]">
+      <div role="tablist" aria-label={t("tabs.label")} className="flex gap-1 rounded-full bg-clear-tile p-[5px]">
         {(["summary", "details"] as const).map((key) => (
           <button
             key={key}
@@ -892,7 +892,6 @@ export function TransactionDetailPanel({
         <button
           type="button"
           onClick={() => setHistoryOpen(true)}
-          data-tip-anchor="activityHistory"
           className="flex min-h-[52px] w-full cursor-pointer items-center gap-2.5 rounded-clear-tile bg-clear-tile px-3.5 text-left transition-colors hover:bg-clear-line"
         >
           <span className="min-w-0 flex-1 truncate text-sm font-bold">

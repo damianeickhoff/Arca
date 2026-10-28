@@ -14,8 +14,7 @@ import { ClearProgress } from "@/components/clear/progress";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLinkItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PlanSwitch } from "@/components/shell/plan-switch";
-import { AnchoredTip } from "@/components/anchored-tip";
-import { ContextualTip } from "@/components/contextual-tip";
+import { PageTour } from "@/components/page-tour";
 import { BillStatusControl } from "@/components/bill-status-control";
 import { CategoryDetailPortal } from "@/components/category-detail-portal";
 import type { FinancialMonthConfig } from "@/lib/date-range";
@@ -155,13 +154,7 @@ export function BudgetView({ data }: { data: BudgetViewData }) {
         </div>
       </div>
 
-      <ContextualTip id="budget" />
-      <AnchoredTip id="budgetStrategyTarget" anchor="budgetStrategy" />
-      <AnchoredTip id="budgetMove" anchor="budgetMove" active={data.suggestion?.move != null} />
-      <AnchoredTip id="budgetUnbudgeted" anchor="budgetUnbudgeted" active={data.rows.length > 0} />
-      <AnchoredTip id="billStatusControl" anchor="billStatusControl" active={data.bills.some((b) => !b.isIncome)} />
-      <AnchoredTip id="budgetNeedsCategory" anchor="budgetNeedsCategory" active={data.needsReview.count > 0} />
-      <AnchoredTip id="budgetPeriodNav" anchor="budgetPeriodNav" active={data.periodNav != null && data.hasBudget} />
+      <PageTour id="budget" ready={data.hasBudget} />
     </div>
   );
 }
@@ -385,7 +378,6 @@ function EmptyHeroCard() {
       <button
         type="button"
         onClick={editor.openEdit}
-        data-tip-anchor="budgetEdit"
         className={cn(clearButtonVariants({ size: "lg" }), "bg-clear-hero-ink text-clear-hero hover:opacity-90")}
       >
         <IconPlus aria-hidden />
@@ -560,7 +552,6 @@ function SuggestionCard({ data }: { data: BudgetViewData }) {
         {s.move ? (
           <button
             type="button"
-            data-tip-anchor="budgetMove"
             disabled={editor.busy}
             onClick={() => editor.moveBudget(s.move!.fromId, s.categoryId, s.move!.amount)}
             className={clearButtonVariants()}
@@ -724,7 +715,6 @@ function CategoryBudgetsCard({ data }: { data: BudgetViewData }) {
       {data.unbudgeted > 0 && (
         <Link
           href="/transactions"
-          data-tip-anchor="budgetUnbudgeted"
           className="mt-auto flex min-h-[68px] items-center gap-3.5 rounded-clear-tile bg-clear-tile px-4 text-clear-ink no-underline transition-shadow hover:ring-2 hover:ring-clear-ink/10"
         >
           <span aria-hidden className="inline-flex size-11 shrink-0 items-center justify-center rounded-clear-icon bg-clear-card text-clear-ink-2">
@@ -741,7 +731,6 @@ function CategoryBudgetsCard({ data }: { data: BudgetViewData }) {
         </Link>
       )}
 
-      <AnchoredTip id="budgetCategoryDetail" anchor="budgetCategoryRow" active={data.rows.length > 0 && openId == null} />
       <CategoryDetailPortal
         category={opened ? { categoryId: opened.categoryId, categoryName: opened.name, color: opened.color, icon: opened.icon } : null}
         financialMonth={data.financialMonth}
@@ -785,7 +774,6 @@ function BillsCard({ data }: { data: BudgetViewData }) {
   const visible = showAll ? open : open.slice(0, OPEN_ROWS);
   const shownOverdue = visible.filter((b) => overdue.includes(b));
   const shownComingUp = visible.filter((b) => !overdue.includes(b));
-  const firstControl = visible[0] ?? (paidOpen ? paid[0] : undefined);
 
   const subtitle = empty
     ? undefined
@@ -827,7 +815,6 @@ function BillsCard({ data }: { data: BudgetViewData }) {
             recurringItemId={b.id}
             month={data.billsMonth}
             item={b.item}
-            tipAnchor={b === firstControl}
           />
         </span>
       </li>
@@ -932,7 +919,7 @@ function NeedsCategoryCard({ summary }: { summary: NeedsReviewSummary }) {
   const t = useTranslations("plan.budget.needsCategory");
   if (summary.count === 0) return null;
   return (
-    <ClearCard data-tip-anchor="budgetNeedsCategory" aria-labelledby="budget-review-title" className="gap-3">
+    <ClearCard aria-labelledby="budget-review-title" className="gap-3">
       <ClearCardHeader
         title={<span id="budget-review-title">{t("title")}</span>}
         subtitle={t("subtitle", { count: summary.count, amount: formatEurWhole(summary.total) })}

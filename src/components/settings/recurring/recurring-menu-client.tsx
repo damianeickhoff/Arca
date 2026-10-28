@@ -185,7 +185,7 @@ export function RecurringMenuClient({ items, categories, planProgress, suggestio
 
   return (
     <>
-      <ContextualTip id="recurring" />
+      <ContextualTip inDialog id="recurring" />
       <PanelHeader title={tPanels("recurring.title")} action={<RecurringClient action="add" variant="default" />} />
 
       <div className="flex flex-col gap-4 px-4 pt-1 font-clear text-clear-ink">

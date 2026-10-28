@@ -55,7 +55,7 @@ export async function ThisMonthCard({ figures }: { figures: MonthFigures }) {
   const savedShare = income > 0 && !tookFromSavings ? Math.round((saved / income) * 100) : null;
 
   return (
-    <section aria-label={t("title")} className="grid grid-cols-2 gap-2.5 rounded-clear-card bg-clear-card p-3.5 font-clear text-clear-ink">
+    <section aria-label={t("title")} data-tip-anchor="homeThisMonth" className="grid grid-cols-2 gap-2.5 rounded-clear-card bg-clear-card p-3.5 font-clear text-clear-ink">
       <StatTile
         highlight
         label={t("income")}
@@ -132,7 +132,7 @@ export async function IncomeSpendingCard({ months }: { months: MonthBar[] }) {
   });
 
   return (
-    <ClearCard data-tip-anchor="homeIncomeVsSpending" aria-labelledby="home-chart-title">
+    <ClearCard aria-labelledby="home-chart-title">
       <ClearCardHeader title={<span id="home-chart-title">{t("title")}</span>} subtitle={t("subtitle")} />
       <ClearTile className="flex items-center justify-between gap-3 px-3.5 py-3">
         <span className="text-sm font-bold">{t("legendTitle")}</span>
@@ -231,7 +231,7 @@ export async function ComingUpCard({ bills, totalDue, today }: { bills: ComingUp
   }
 
   return (
-    <ClearCard aria-labelledby="home-coming-up-title" data-tip-anchor="homeComingUp">
+    <ClearCard aria-labelledby="home-coming-up-title">
       <ClearCardHeader
         title={<span id="home-coming-up-title">{t("title")}</span>}
         action={<ClearCardLink href="/transactions/upcoming"><MoneyText>{totalDue > 0 ? t("due", { amount: formatEur(totalDue) }) : t("all")}</MoneyText></ClearCardLink>}

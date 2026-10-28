@@ -12,7 +12,7 @@ import { reimbursedAmountExpr } from "@/lib/reimbursed-amount";
 import { getBillStatuses, UPCOMING_TYPES } from "@/lib/bill-status";
 import { safeToSpend } from "@/lib/safe-to-spend";
 import { currentFinancialMonth, daysInclusive, shiftDate, todayStr, type FinancialMonthConfig } from "@/lib/date-range";
-import { AnchoredTip } from "@/components/anchored-tip";
+import { PageTour } from "@/components/page-tour";
 import { isAiReady } from "@/lib/ai-provider";
 import { getCachedSummary } from "@/lib/ai-features";
 import { averagePerDay, buildSummaryFacts, monthOfPeriod, previousPeriod, runningTotalBudget, runningTotals } from "@/lib/period-facts";
@@ -630,11 +630,8 @@ export async function AnalyticsTab({
         />
       </div>
 
-      <AnchoredTip id="insightsRunningTotal" anchor="insightsRunningTotal" active={data.totals.elapsed > 0} />
-      <AnchoredTip id="insightsBlockMap" anchor="insightsBlockMap" active={data.groupSpendingVisible.length > 0} />
-      <AnchoredTip id="insightsMerchants" anchor="insightsMerchants" active={data.topMerchants.length > 0} />
-      <AnchoredTip id="insightsGroupSwitch" anchor="insightsGroupSwitch" active={data.groupSpendingAll.length > 0} />
-      <AnchoredTip id="insightsSummary" anchor="insightsSummary" />
+      {/* Insights' tour runs on Overview, the tab it opens on, once the period has spending to show. */}
+      <PageTour id="insights" ready={data.totals.elapsed > 0} />
     </div>
   );
 }

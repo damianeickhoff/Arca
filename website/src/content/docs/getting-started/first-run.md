@@ -41,4 +41,6 @@ Home shows a **Get started** checklist until you have some history:
 - Add at least one recurring bill
 - Create a savings goal
 
-Arca also explains new things the first time you see them, with a small tip card next to the feature. Tap **Got it** to close one, or **Don't show again** to stop them. Tips for features added later still show once.
+The first time you open a page with something on it, a short tour walks you through it, one highlighted part at a time. Tap **Next** to move on or **Skip tour** to close it. A rarer feature, like scanning a receipt, explains itself once with a small tip card instead: **Got it** closes it, **Don't show again** turns tips off.
+
+Arca remembers which tours and tips you have seen on your account, so each one shows once on all your devices. **Settings › Help** has a switch for page tours and one for tips, a **Replay** button for every tour you have seen, and **Show every tip and tour again**.

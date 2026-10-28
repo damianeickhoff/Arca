@@ -109,3 +109,22 @@ contain user-facing text themselves.
   phones. Never give a dialog a fixed width or height that can cut text off. Menus and pickers are popovers anchored to their trigger.
 - Empty states keep the page shell and show a simple shape illustration, one sentence,
   a primary action and, where useful, dashed placeholders — never fake numbers.
+
+## Tips and page tours
+
+- What exists and what each account has seen live in `src/lib/guide.ts` (`TIP_IDS`,
+  `TOURS`), stored per account in `users.guide_state` and loaded once by the root layout
+  (`lib/guide-context.tsx`); changes go through `updateGuideAction`. Never keep tip state
+  in localStorage.
+- Every page has a page tour (`<PageTour id ready />`, `components/page-tour.tsx`): the
+  page dims and one `data-tip-anchor` element at a time gets a light ring, with a card
+  beside it (desktop) or above the tab bar (phone). `ready` is "the page has content"; an
+  empty page keeps its empty state and the tour waits. A new page gets a `TOURS` entry and
+  `tours.<id>.*` copy; a page's own controls are explained as steps of its tour, never as
+  separate pointer tips.
+- Tips (`<ContextualTip>`, `<AnchoredTip>`, `<FormTour>`) are only for rarer features:
+  receipt scan, CSV import, the bank connection, AI, the version cards and the like.
+  Settings › Help has a Page tours and a Tips switch, and "Don't show again" turns Tips
+  off; nothing bypasses them. One tip or tour on screen at a time, never over an open
+  dialog or sheet (a tip that belongs to that dialog passes `inDialog`), never during
+  onboarding.

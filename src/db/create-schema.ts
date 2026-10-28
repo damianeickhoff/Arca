@@ -434,6 +434,7 @@ export function createSchema(sqlite: Database.Database): void {
       password_hash TEXT    NOT NULL,
       is_admin      INTEGER NOT NULL DEFAULT 0,
       avatar_url    TEXT,
+      guide_state   TEXT,
       created_at    TEXT    DEFAULT (datetime('now'))
     );
 

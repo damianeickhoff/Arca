@@ -8,7 +8,6 @@ import { ClearChip } from "@/components/clear/chip";
 import { IconTile } from "@/components/clear/icon-tile";
 import { MoneyText } from "@/components/clear/money";
 import type { ClearTone } from "@/components/clear/tones";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { Icon } from "@/components/icon";
 import { getFinancialMonthConfig } from "@/lib/app-settings";
 import { formatEur, formatEurWhole, maskAccountNumber } from "@/lib/format";
@@ -142,7 +141,6 @@ export async function NetWorthTab({ range: rangeParam }: { range?: string }) {
         <UpdateBalancesCard items={data.manual} today={data.today} lastImport={data.lastImport} />
       </div>
 
-      <AnchoredTip id="insightsNetWorthChanges" anchor="insightsNetWorthChanges" />
     </div>
   );
 }
@@ -400,7 +398,7 @@ function ChangesCard({ data, t, Month, dayMonth }: { data: NetWorthData; t: T; M
   const tone = (v: number) => (v > 0.5 ? "text-clear-positive" : v < -0.5 ? "text-clear-ink-2" : "text-clear-muted");
 
   return (
-    <ClearCard aria-labelledby="networth-changes-title" data-tip-anchor="insightsNetWorthChanges" className="gap-0">
+    <ClearCard aria-labelledby="networth-changes-title" className="gap-0">
       <ClearCardHeader
         title={<span id="networth-changes-title">{t("changes.title", { month: Month })}</span>}
         subtitle={

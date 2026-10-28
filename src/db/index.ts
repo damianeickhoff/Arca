@@ -268,6 +268,10 @@ addColumnIfMissing("users", "totp_backup_codes", "TEXT");
 
 // Auto-migrate: per-user dashboard background preset (was a single app-wide setting)
 addColumnIfMissing("users", "auth_background", "TEXT");
+
+// Auto-migrate: tips and page tours remembered per account (lib/guide.ts). What a
+// browser remembered before (localStorage) is merged in by that browser on its next visit.
+addColumnIfMissing("users", "guide_state", "TEXT");
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS mfa_challenges (
     id           TEXT PRIMARY KEY,

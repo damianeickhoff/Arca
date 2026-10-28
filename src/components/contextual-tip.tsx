@@ -22,16 +22,23 @@ import { cn } from "@/lib/utils";
 export function ContextualTip({
   id,
   active = true,
+  inDialog = false,
   title,
   body,
+  onShown,
 }: {
   id: TipId;
   active?: boolean;
+  /** The feature lives in a dialog, sheet or popover (its `open` is `active`): the tip
+   *  may show over it. Every other tip waits until nothing modal is open. */
+  inDialog?: boolean;
   /** Copy overrides for a tip whose text depends on data (the version card). */
   title?: string;
   body?: string;
+  /** For a tip that repeats on a new occasion: records the occasion (see useContextualTip). */
+  onShown?: () => void;
 }) {
-  const { visible, dismiss, dismissAll } = useContextualTip(id, active);
+  const { visible, dismiss, dismissAll } = useContextualTip(id, active, { overDialog: inDialog, onShown });
   const [mounted, setMounted] = useState(false);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- the body portal can't render until after mount, or SSR and hydration disagree

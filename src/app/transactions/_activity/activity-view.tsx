@@ -7,7 +7,7 @@ import { useNavHidden } from "@/lib/nav-visibility";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { IconCamera, IconChevronDown, IconFileUpload, IconPlus, IconSearch, IconX } from "@tabler/icons-react";
-import { AnchoredTip } from "@/components/anchored-tip";
+import { PageTour } from "@/components/page-tour";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { clearButtonVariants } from "@/components/clear/button-variants";
@@ -488,13 +488,7 @@ export function ActivityView({
       {!navHidden && <ActivitySearch search={filters.search} variant="bottom" />}
 
       {/* One-time tips for the new pieces — shown even to people who turned tips off. */}
-      <AnchoredTip id="activitySearchBar" anchor="activitySearchBar" active={!isDesktop && !navHidden} />
-      <AnchoredTip id="activityFilters" anchor="activityFilters" active={isDesktop} />
-      <AnchoredTip id="activityDetail" anchor="activityDetail" active={isDesktop || sheetRow != null} />
-      <AnchoredTip id="activityDetailTabs" anchor="activityDetailTabs" active={isDesktop ? desktopRow != null : sheetRow != null} />
-      <AnchoredTip id="activityHistory" anchor="activityHistory" active={isDesktop ? desktopRow != null : sheetRow != null} />
-      <AnchoredTip id="activityKeys" anchor="activityKeys" active={isDesktop} />
-      <AnchoredTip id="activitySelectMode" anchor="activitySelect" active={!selectMode && rows.length > 1} />
+      <PageTour id="activity" ready={rows.length > 0 && !selectMode} />
     </div>
   );
 }

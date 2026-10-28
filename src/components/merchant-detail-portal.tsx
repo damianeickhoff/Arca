@@ -116,7 +116,7 @@ export function MerchantDetailPortal({
 
   return (
     <>
-      <ContextualTip id="merchant" active={open} />
+      <ContextualTip inDialog id="merchant" active={open} />
       <AnchoredTip id="merchantVisits" anchor="merchantVisits" active={open && !!detail && detail.visitCount > 0 && !renameOpen && openTransactionId == null} />
 
       <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>

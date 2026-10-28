@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { Amount } from "@/components/clear/amount";
 import { ClearCard, ClearCardHeader, ClearCardLink } from "@/components/clear/card";
 import { StatusDot } from "@/components/clear/chip";
@@ -71,12 +70,9 @@ export function HomeRecentActivity({
 
   const shortDate = (d: string) => new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(`${d}T12:00:00`));
   const rows = recent.map(resolveRow);
-  const firstId = rows[0]?.id;
 
   return (
     <ClearCard aria-labelledby="home-activity-title">
-      {/* Held back while the sheet is open — the tip is about opening it. */}
-      <AnchoredTip id="transactionDetail" anchor="transactionRow" active={detailRow == null} />
       <ClearCardHeader
         title={<span id="home-activity-title">{t("title")}</span>}
         action={<ClearCardLink href="/transactions">{t("all")}</ClearCardLink>}
@@ -106,7 +102,6 @@ export function HomeRecentActivity({
                   key={row.id}
                   type="button"
                   onClick={() => setDetailRow(row)}
-                  data-tip-anchor={row.id === firstId ? "transactionRow" : undefined}
                   className={cn(
                     "grid min-h-16 w-full cursor-pointer grid-cols-[1fr_auto] items-center gap-3 border-b border-clear-ground px-2 text-left font-clear text-clear-ink transition-colors last:border-b-0 hover:rounded-clear-row hover:bg-clear-tile lg:px-3.5",
                     COLUMNS,

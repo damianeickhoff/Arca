@@ -87,7 +87,7 @@ export function ReceiptScanDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {/* Portals to <body> itself, so it isn't clipped by the sheet it explains. */}
-      <ContextualTip id="receiptScan" active={open} />
+      <ContextualTip inDialog id="receiptScan" active={open} />
       <DialogContent
         hideHeaderRow
         title={t("title")}

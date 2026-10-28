@@ -102,6 +102,7 @@
   --color-clear-ink-2: var(--clr-ink-2);
   --color-clear-muted: var(--clr-muted);
   --color-clear-placeholder: var(--clr-placeholder);
+  --color-clear-tour-dot: var(--clr-tour-dot);
   --color-clear-hero: var(--clr-hero);
   --color-clear-hero-ink: var(--clr-hero-ink);
   --color-clear-hero-ink-2: var(--clr-hero-ink-2);
@@ -236,6 +237,11 @@
   --clr-hatch-gap: #FFFFFF;
   --clr-shadow-dialog: 0 30px 80px rgba(17, 17, 19, 0.3);
   --clr-shadow-float: 0 16px 40px rgba(17, 17, 19, 0.22);
+  /* Page tours: the page dims and the step's element gets a light ring (clear-tour-spotlight). */
+  --clr-tour-dim: rgba(17, 17, 19, 0.58);
+  --clr-tour-ring: rgba(255, 255, 255, 0.92);
+  /* A step dot that is not the current one. */
+  --clr-tour-dot: #D4D4DA;
 
   /* Motion — the house easing curve (matches .nav-pill-indicator / search-*-in)
      and the standard duration scale. Spring physics live in src/lib/motion.ts.
@@ -362,6 +368,11 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
+/* Page tours: drawn over the highlighted element, the ring around it and the dim over
+   everything else (a spread so wide it covers the whole screen). */
+@utility clear-tour-spotlight {
+  box-shadow: 0 0 0 6px var(--clr-tour-ring), 0 0 0 200vmax var(--clr-tour-dim);
+}
 @utility clear-hatch {
   background-image: repeating-linear-gradient(
     135deg,
@@ -446,6 +457,9 @@ html:has([data-vaul-drawer][data-state="open"]) [data-hide-under-sheet] {
   --clr-hatch-gap: #3A1C12;
   --clr-shadow-dialog: 0 30px 80px rgba(0, 0, 0, 0.6);
   --clr-shadow-float: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --clr-tour-dim: rgba(0, 0, 0, 0.66);
+  --clr-tour-ring: rgba(244, 244, 245, 0.85);
+  --clr-tour-dot: #3F3F46;
 
   /* Every legacy token that points at an --arca-* or --clr-* value follows automatically;
      the ones whose dark value differs from that mapping are restated here. */

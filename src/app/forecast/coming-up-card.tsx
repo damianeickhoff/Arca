@@ -76,7 +76,7 @@ export function ComingUpCard({ events, today, comingUp }: { events: ForecastEven
   const hasMore = events.length > LIST_LENGTH;
 
   return (
-    <ClearCard data-tip-anchor="insightsComingUp" aria-labelledby="forecast-coming-up-title" className="gap-3.5 lg:col-span-2 xl:col-span-1">
+    <ClearCard aria-labelledby="forecast-coming-up-title" className="gap-3.5 lg:col-span-2 xl:col-span-1">
       <ClearCardHeader
         title={<span id="forecast-coming-up-title">{t("title")}</span>}
         action={

@@ -56,7 +56,6 @@ export function PrivacyToggle({ variant = "icon", className }: { variant?: "icon
       aria-label={label}
       aria-pressed={on}
       title={label}
-      data-tip-anchor="privacyEye"
       className={cn(
         "inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-current/14 outline-none transition-[background-color,transform] duration-150 hover:bg-current/20 focus-visible:ring-3 focus-visible:ring-clear-ember/50 active:scale-[0.97]",
         className,

@@ -14,7 +14,7 @@ import { ClearChip } from "@/components/clear/chip";
 import { ClearProgress } from "@/components/clear/progress";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { PlanSwitch } from "@/components/shell/plan-switch";
-import { AnchoredTip } from "@/components/anchored-tip";
+import { PageTour } from "@/components/page-tour";
 import type { GoalsPageData } from "./load-goals";
 import { GOAL_COLORS, addMonths, goalColor, goalProgressPct, linkedAccount, monthsLeft } from "./goal-shared";
 import { ContributionBars, GoalIcon, JarIllustration, MiniBars, ProgressRing } from "./goal-visuals";
@@ -111,9 +111,8 @@ export function GoalsView({ data, initialForm }: { data: GoalsPageData; initialF
       <SavingsGoalDetailDialog goal={detail} data={data} onClose={() => setDetailId(null)} />
       <GoalFormDialog key={form.key} target={form.target} open={form.open} onOpenChange={formOpenChange} categories={data.categories} />
 
-      <AnchoredTip id="goalsContributions" anchor="goalsContributions" active={goals.length > 0} />
-      <AnchoredTip id="goalsDetail" anchor="goalsDetail" active={goals.length > 0 && detail == null} />
-      <AnchoredTip id="goalsSuggestions" anchor="goalsSuggestions" active={goals.length === 0} />
+      {/* Waits for the first goal: an empty page keeps its suggestions. */}
+      <PageTour id="goals" ready={goals.length > 0} />
     </div>
   );
 }
@@ -514,7 +513,7 @@ function EmptyGoals({ onAdd }: { onAdd: (preset?: { name: string; icon: string; 
         </div>
       </ClearCard>
 
-      <section data-tip-anchor="goalsSuggestions" aria-labelledby="goals-suggestions-title" className="flex flex-col gap-3.5">
+      <section aria-labelledby="goals-suggestions-title" className="flex flex-col gap-3.5">
         <div className="flex flex-col gap-1">
           <h2 id="goals-suggestions-title" className="m-0 text-lg font-bold">
             {t("suggestions.title")}

@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { Segmented } from "@/components/clear/segmented";
 import { PLAN_ITEMS, activePlanKey } from "@/components/shell/nav-config";
 
@@ -18,17 +17,14 @@ export function PlanSwitch({ size = "md", className }: { size?: "sm" | "md"; cla
   const active = activePlanKey(pathname);
 
   return (
-    <>
-      <nav aria-label={t("plan")} data-tip-anchor="planSwitch" className={className}>
-        <Segmented
-          label={t("plan")}
-          size={size}
-          className={size === "sm" ? "[&>a]:px-2.5" : undefined}
-          value={active ?? ""}
-          items={PLAN_ITEMS.map((item) => ({ value: item.key, label: t(`planItems.${item.key}`), href: item.href }))}
-        />
-      </nav>
-      <AnchoredTip id="planHub" anchor="planSwitch" />
-    </>
+    <nav aria-label={t("plan")} data-tip-anchor="planSwitch" className={className}>
+      <Segmented
+        label={t("plan")}
+        size={size}
+        className={size === "sm" ? "[&>a]:px-2.5" : undefined}
+        value={active ?? ""}
+        items={PLAN_ITEMS.map((item) => ({ value: item.key, label: t(`planItems.${item.key}`), href: item.href }))}
+      />
+    </nav>
   );
 }

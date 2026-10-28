@@ -322,7 +322,7 @@ export default async function HomePage({
   return (
     <div className="flex flex-col gap-5 px-4 pt-[calc(var(--sat)+16px)] font-clear text-clear-ink lg:gap-7 lg:px-8 lg:pt-7 lg:pb-12">
       <DashboardReadySignal />
-      <HomeTips whatsNew={releaseNoteFor(APP_VERSION)} updateAvailable={updates.available && updates.latest ? updates.latest.version : null} />
+      <HomeTips whatsNew={releaseNoteFor(APP_VERSION)} updateAvailable={updates.available && updates.latest ? updates.latest.version : null} hasContent={hasTransactions} />
 
       {/* Phone header — the avatar opens Settings; the bell (Notifications) sits on the right. */}
       <div className="flex items-center justify-between gap-3 lg:hidden">

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { m, AnimatePresence, spring } from "@/lib/motion";
 import { TipCard } from "@/components/tip-card";
-import { isTipPending, useContextualTip, type TipId } from "@/lib/tips";
+import { OVERLAY_SELECTOR, useContextualTip, useTipPending, type TipId } from "@/lib/tips";
 import {
   ANCHOR_POLL_MS,
   ANCHOR_TIMEOUT_MS,
@@ -17,8 +17,7 @@ import {
   type TipAnchor,
 } from "@/lib/tip-placement";
 
-// Geometry lives in @/lib/tip-placement so <TipWalkthrough> can point at controls the
-// same way. Re-exported here because call sites already import the type from this module.
+// Geometry lives in @/lib/tip-placement. Re-exported here because call sites already import the type from this module.
 export type { TipAnchor };
 
 /**
@@ -43,6 +42,7 @@ export function AnchoredTip({
   const [anchorEl, setAnchorEl] = useState<Element | null>(null);
   const [placement, setPlacement] = useState<Placement | null>(null);
   const [mounted, setMounted] = useState(false);
+  const pending = useTipPending(id);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- the body portal can't render until after mount, or SSR and hydration disagree
   useEffect(() => { setMounted(true); }, []);
@@ -51,7 +51,7 @@ export function AnchoredTip({
   // this component (the overwhelming majority, once the user has seen it) does no
   // DOM work at all.
   useEffect(() => {
-    if (!active || !isTipPending(id)) return;
+    if (!active || !pending) return;
     const deadline = Date.now() + ANCHOR_TIMEOUT_MS;
     let timer: ReturnType<typeof setTimeout> | undefined;
     function look() {
@@ -67,11 +67,14 @@ export function AnchoredTip({
       clearTimeout(timer);
       setAnchorEl(null);
     };
-  }, [id, anchor, active]);
+  }, [id, anchor, active, pending]);
 
   // The slot is claimed (and the tip recorded as seen) only once the anchor is
-  // resolved, so a tip whose control isn't on screen this time isn't spent.
-  const { visible, dismiss, dismissAll } = useContextualTip(id, active && anchorEl != null);
+  // resolved, so a tip whose control isn't on screen this time isn't spent. A control
+  // inside an open dialog or popover belongs to it, so the tip may show over it.
+  const { visible, dismiss, dismissAll } = useContextualTip(id, active && anchorEl != null, {
+    overDialog: anchorEl?.closest(OVERLAY_SELECTOR) != null,
+  });
 
   // Track the anchor while the card is up: scrolling, a rotation, or a list
   // reflowing underneath all move it. If it goes away entirely, so does the tip.

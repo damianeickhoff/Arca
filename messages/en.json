@@ -654,6 +654,27 @@
       "apply": "{count, plural, one {Apply # change} other {Apply # changes}}",
       "applying": "Applying…",
       "close": "Close"
+    },
+    "guide": {
+      "title": "Tips and tours",
+      "subtitle": "Saved to your account, so each one shows once on all your devices.",
+      "tours": {
+        "title": "Page tours",
+        "meta": "A short walk-through the first time you open a page"
+      },
+      "tips": {
+        "title": "Tips",
+        "meta": "A one-line pointer the first time you use a rarer feature"
+      },
+      "toursHeading": "Page tours",
+      "seen": "Seen · {count, plural, one {# step} other {# steps}}",
+      "nextTime": "Next time you open it · {count, plural, one {# step} other {# steps}}",
+      "afterDebt": "Starts after your first debt",
+      "afterGoal": "Starts after your first goal",
+      "off": "Not shown while page tours are off",
+      "replay": "Replay",
+      "replayLabel": "Replay the {page} tour",
+      "reset": "Show every tip and tour again"
     }
   },
   "budget": {
@@ -1058,9 +1079,6 @@
   "tips": {
     "gotIt": "Got it",
     "dontShowAgain": "Don't show again",
-    "next": "Next",
-    "back": "Back",
-    "skipTour": "Skip",
     "categoryPickerSuggestions": {
       "title": "Suggested categories and rules",
       "body": "The categories this transaction most likely belongs to are at the top. Pick one, then apply it — switch on the rule and similar transactions get it too, now and from now on."
@@ -1209,65 +1227,13 @@
       "title": "See what it will match",
       "body": "As you type the match pattern or amount, this chart shows the past charges it picks up, so you can check the rule before you save."
     },
-    "budgetCategoryDetail": {
-      "title": "Open a category",
-      "body": "Tap a category to see where the money went, its pace and the last months. The pencil edits its budget."
-    },
-    "budget": {
-      "title": "Your budget",
-      "body": "Set one overall limit, then fine-tune per category. Arca tracks whether you are ahead of or behind pace for the month."
-    },
     "budgetStrategy": {
       "title": "Budget strategy",
       "body": "Split your income across needs, wants and savings. Arca turns that split into an advised monthly budget."
     },
-    "reports": {
-      "title": "Reports",
-      "body": "Trends, month-to-month comparisons and net worth, over whichever period you pick at the top."
-    },
-    "forecast": {
-      "title": "Cash flow forecast",
-      "body": "Projects your balance forward from your recurring items and usual spending, so you can see dips before they happen."
-    },
-    "health": {
-      "title": "Financial health",
-      "body": "One score out of 100, built from your savings, buffer, budget, fixed costs, debt and income. The breakdown shows exactly where it comes from."
-    },
-    "keyboardShortcuts": {
-      "title": "Arca on a keyboard",
-      "body": "Ctrl+K (⌘K on a Mac) opens search from anywhere, Esc closes whatever is on top, and your numpad types amounts — with Enter to save."
-    },
     "importBalance": {
       "title": "Bring your balance along",
       "body": "If your export has a balance column, point it out here. Arca stores your bank's own figure untouched, ready for balance history and better forecasts."
-    },
-    "budgetLocation": {
-      "title": "Your budget lives here",
-      "body": "Tap the wallet to set an overall limit and, if you want, a target per category."
-    },
-    "healthCard": {
-      "title": "How you are doing overall",
-      "body": "Tap for your financial health score, what each part contributes, and the changes that would lift it most."
-    },
-    "reportsLocation": {
-      "title": "Trends and forecasts",
-      "body": "The chart icon opens your reports: spending over time, month-to-month comparisons, net worth and cash flow."
-    },
-    "settingsLocation": {
-      "title": "Everything else is behind your photo",
-      "body": "Accounts, categories, recurring items and all your preferences live in there."
-    },
-    "transactionDetail": {
-      "title": "Tap for the whole story",
-      "body": "Open any transaction to recategorise it, split it, attach a receipt or jump to the merchant."
-    },
-    "googleLookup": {
-      "title": "Who charged me?",
-      "body": "Open a transaction and tap the Google button to search the shop name on the web — handy for a charge you don’t recognise."
-    },
-    "strategyLocation": {
-      "title": "Your split lives in here",
-      "body": "Tap edit, then the sliders icon, to change how your income divides across needs, wants and savings — Arca re-advises your budget from it."
     },
     "importDatePreview": {
       "title": "Check the dates first",
@@ -1289,125 +1255,13 @@
       "title": "Something imported wrong?",
       "body": "Data Health finds transactions with an unreadable date — the kind an import with the wrong column mapping leaves behind — and lets you correct or delete them."
     },
-    "bulkSelect": {
-      "title": "Hold to select several",
-      "body": "Press and hold any transaction to turn on selection mode. Pick as many as you like, then recategorise, exclude from reports, or delete them all at once."
-    },
     "sharedCost": {
       "title": "Split a bill you pay in full",
       "body": "Mark the part housemates or family pay you back. Your cash flow keeps the whole charge — it really leaves your account — while reports can show only your own share."
     },
-    "planHub": {
-      "title": "Budget, debts and goals together",
-      "body": "Switch between your budget, your debts and your savings goals here. They're all part of Plan now."
-    },
-    "homeComingUp": {
-      "title": "Coming up",
-      "body": "The next bills this month, soonest first. The link opens the full list, where you can mark one as paid."
-    },
-    "activityDetail": {
-      "title": "Everything about a transaction",
-      "body": "Category, your share, merchant, note and receipt, plus split, link a Tikkie, make recurring or create a rule. More actions sit behind the ⋯ button."
-    },
-    "activityFilters": {
-      "title": "All filters in one place",
-      "body": "Narrow the list by period, account, category, needs/wants/save, direction, amount or recurring. The count shows how many are on; Clear all resets them."
-    },
-    "activitySelectMode": {
-      "title": "Select several at once",
-      "body": "Hold a row to start selecting, or Shift-click one on a computer."
-    },
-    "activitySearchBar": {
-      "title": "Search sits at the bottom",
-      "body": "Search your transactions from the bar just above the tab bar, within thumb reach. It filters the list as you type."
-    },
-    "activityHistory": {
-      "title": "History in one tap",
-      "body": "This row shows what you spent at this merchant this period, or when a recurring payment comes next. Tap it for the last 12 months or the last 12 payments."
-    },
-    "activityKeys": {
-      "title": "Move with the arrow keys",
-      "body": "Press ↑ and ↓ to step through the list; the transaction on the right follows."
-    },
-    "activityDetailTabs": {
-      "title": "Summary and bank details",
-      "body": "Summary shows what a payment is and what it did to your budget. Details shows everything the bank sent along, like the IBAN and reference, with copy buttons."
-    },
-    "budgetMove": {
-      "title": "Move budget in one tap",
-      "body": "When a category runs hot, Arca suggests moving budget from a category with room to spare. Your overall budget stays the same."
-    },
-    "billStatusControl": {
-      "title": "auto, Paid and Paid?",
-      "body": "auto: Arca ticks the bill off itself when the payment arrives. Paid: it is due and no payment was found. Paid?: Arca can't tell, so say so yourself or teach Arca the pattern."
-    },
-    "budgetNeedsCategory": {
-      "title": "Still without a category",
-      "body": "No category budget sees these transactions yet. Sort them and what is left per category is right again."
-    },
-    "budgetPeriodNav": {
-      "title": "Look back at earlier months",
-      "body": "Use the arrows next to the dates to see how an earlier budget month ended: what you spent, which categories went over, and which bills were paid."
-    },
     "budgetAddCategory": {
       "title": "Everything in one place",
       "body": "Your overall budget, the strategy and every category budget now sit together. Add categories one at a time; what each spent this period shows under its name."
-    },
-    "debtsDetail": {
-      "title": "Everything about one debt",
-      "body": "Open a debt to see its linked bill, how much of each payment is interest and every payment still to come. The pencil edits it."
-    },
-    "debtsSimulator": {
-      "title": "Try paying a bit extra",
-      "body": "Slide to see how much sooner you are debt-free and how much interest you save. The payoff timeline follows along."
-    },
-    "debtsSortAndImpact": {
-      "title": "Your order, your month",
-      "body": "Choose how the extra is shared out; Your debts follow the same order. Below it, what the extra leaves you to spend each month."
-    },
-    "debtsOrder": {
-      "title": "Three ways to pay off",
-      "body": "Quickest win first pays off the smallest balance first, so a debt is gone as soon as possible. Highest interest first goes after the most expensive debt, which saves the most interest. Spread over all debts splits the extra equally, so every balance goes down each month."
-    },
-    "debtsOwed": {
-      "title": "Money coming back to you",
-      "body": "Debts others owe you and advances that are only partly paid back. Mark one as settled once it is done."
-    },
-    "debtsPayoffDates": {
-      "title": "Each debt's own finish line",
-      "body": "Every debt shows the month it is paid off. Slide the extra payment and the dates move along, in the order your debts are sorted."
-    },
-    "goalsContributions": {
-      "title": "What you put aside",
-      "body": "Twelve months of money moved into your goals, from the transactions linked to them. This month is the bright bar."
-    },
-    "goalsDetail": {
-      "title": "When you get there",
-      "body": "Open a goal to see its history and, at your monthly amount, the month you reach it. You can edit it from there too."
-    },
-    "goalsSuggestions": {
-      "title": "Start from a suggestion",
-      "body": "Use this fills in a name, icon and colour for a common first goal. Add your own amounts and change anything before you save."
-    },
-    "insightsMerchants": {
-      "title": "Where the money went",
-      "body": "Your biggest merchants this period, with how many visits made up each total."
-    },
-    "insightsHealthNextStep": {
-      "title": "What would lift your score",
-      "body": "The step worth the most points, where you stand against its target, and what it takes to get there."
-    },
-    "insightsHealthHistory": {
-      "title": "Your score, month by month",
-      "body": "Each budget month's score next to its income, expenses, savings rate and net worth. The month in progress is marked so far."
-    },
-    "insightsComingUp": {
-      "title": "What's coming",
-      "body": "The next booked and expected payments in your forecast. Switch to Calendar to see every day with money moving, and tap a payment for its details."
-    },
-    "insightsForecastRange": {
-      "title": "30 days or 3 months",
-      "body": "Switch the forecast between the next 30 days and the next 3 months. The numbers and the status next to it follow along."
     },
     "accountsAdd": {
       "title": "Add your accounts",
@@ -1437,26 +1291,6 @@
       "title": "Not in the list?",
       "body": "The list shows recent expenses. Search to find an older one by name."
     },
-    "upcomingMonthNav": {
-      "title": "Look back or ahead",
-      "body": "Use the arrows to see which bills were paid in an earlier month, or what is coming up next month."
-    },
-    "upcomingNextMonth": {
-      "title": "Next month, before it starts",
-      "body": "What next month's bills come to, what is new (a payment plan's first part) and what drops out, so the jump is explained before it hits."
-    },
-    "billSkip": {
-      "title": "Skip a month",
-      "body": "Not saving this month? Skip the transfer and it drops out of every total for this month only. Next month it is back as usual."
-    },
-    "needsReviewTriage": {
-      "title": "One at a time",
-      "body": "Pick a category and press Save and next (or Enter). Switch on the rule and similar transactions get that category from now on."
-    },
-    "needsReviewBulk": {
-      "title": "Sort several at once",
-      "body": "Tap Select to pick several transactions from the queue and give them a category in one go."
-    },
     "financialMonthDays": {
       "title": "Tap a day to set your start",
       "body": "Your month now starts on the day you tap, and it saves straight away. The bar below shows where today sits in the period."
@@ -1469,49 +1303,9 @@
       "title": "Find merchants without a logo",
       "body": "Switch to Without icon to see only the merchants that still have no logo, then open one to give it one."
     },
-    "privacyEye": {
-      "title": "Hide your amounts",
-      "body": "Tap the eye to turn every amount into dots, on every screen, until you tap it again. Handy when someone is looking over your shoulder."
-    },
-    "homeSafeToSpendSum": {
-      "title": "One number, with its sum",
-      "body": "Safe to spend is your budget minus what you've spent and the bills still to come. The line under the bar shows exactly that sum."
-    },
-    "homeIncomeVsSpending": {
-      "title": "Income vs spending",
-      "body": "Six budget months side by side: money in as dark bars, money out striped. This month's spending is the solid orange bar."
-    },
-    "clearNavigation": {
-      "title": "Everything is in the sidebar",
-      "body": "Home, Activity, Plan and Insights sit on the left, with Import, Settings, the theme and Sign out underneath. On a phone they're in the bar at the bottom."
-    },
     "settingsNav": {
       "title": "Every setting in one list",
       "body": "Accounts, categories, recurring items, imports, appearance and your profile are all listed here. Pick one to open it."
-    },
-    "homeMoneyFlow": {
-      "title": "Money flow",
-      "body": "Money in and money out this month, added up day by day. The gap between the two lines today is what you've kept so far."
-    },
-    "homeNetWorth": {
-      "title": "Net worth on Home",
-      "body": "What you own minus what you owe, how it moved this month and the last six months as a line. Tap a row to open your accounts, goals or debts."
-    },
-    "homeBudgetLink": {
-      "title": "Your budget moved",
-      "body": "The budget card is gone: Safe to spend already shows the budget. Tap the budget figure here to open the Budget page."
-    },
-    "budgetStrategyTarget": {
-      "title": "Target against actual",
-      "body": "Each kind shows its target share of income (striped) above what you actually spent or saved so far. Tap Adjust to change the split."
-    },
-    "budgetUnbudgeted": {
-      "title": "Spending without a budget",
-      "body": "Spending in categories without their own budget now shows under the list, so you can see what eats into the free money."
-    },
-    "globalSearch": {
-      "title": "Search moved",
-      "body": "Search finds anything across the app — transactions, merchants, categories, settings. It now lives in the sidebar (and at the end of the bar on phones), so it is clear it searches everywhere, not just this page. Ctrl/Cmd+K still works."
     },
     "categoryPickerByGroup": {
       "title": "Categories, by group",
@@ -1520,26 +1314,6 @@
     "categoryGroups": {
       "title": "Groups add up",
       "body": "Categories now sit in groups like Housing, which add up everything inside them. Tap a group to fold it, or its pencil to rename it or change its colour."
-    },
-    "insightsGroupSwitch": {
-      "title": "Spending by group",
-      "body": "See what a whole group cost, like everything for the house, or switch to Categories for the details."
-    },
-    "insightsRunningTotal": {
-      "title": "Your month as a line",
-      "body": "The black line is what you spent so far, day by day. The grey one is the period before, the dotted one where this pace ends, and the orange dashed line is your budget."
-    },
-    "insightsBlockMap": {
-      "title": "Area is money",
-      "body": "The bigger the block, the more that group cost, with the change since last period. Tap a block for the categories in it."
-    },
-    "insightsMovers": {
-      "title": "What changed, with the numbers",
-      "body": "The categories that went up or down most per month against the months before, from and to. Compare two months opens the month comparison."
-    },
-    "insightsNetWorthChanges": {
-      "title": "Why your net worth moved",
-      "body": "This month's change split into contributions, debt paid down, values entered by hand and cash. A dip before payday is normal."
     },
     "accountsOverdraft": {
       "title": "Accounts that may go into the red",
@@ -1557,10 +1331,6 @@
       "title": "Let AI suggest a category",
       "body": "Ask AI suggests categories for this transaction and the next ones in the queue. Its pick is marked with a sparkle; you still choose."
     },
-    "insightsSummary": {
-      "title": "Three facts and what's left",
-      "body": "This card sums up the period in three facts and what's left to spend per day. With AI on, it can write them up with a budgeting tip."
-    },
     "iconPicker": {
       "title": "One picker for icons, logos and colour",
       "body": "Search finds icons and brand logos at once, and the colour row recolours every tile, so you see the result before you choose."
@@ -1576,10 +1346,6 @@
     "bankConnection": {
       "title": "Connect your bank",
       "body": "Paste your Enable Banking app here and connect a bank: transactions then come in by themselves every day, no CSV needed."
-    },
-    "quickAdd": {
-      "title": "Add from anywhere",
-      "body": "The + next to search (the orange button on phones) adds a transaction, recurring bill, debt, goal or category without leaving the page you are on. Ctrl/Cmd+N opens it too."
     },
     "reviewTeach": {
       "title": "Teach the busy ones",
@@ -1604,14 +1370,6 @@
     "recurringScan": {
       "title": "Check your whole history",
       "body": "Imports only re-check the shops and people they touched. This looks through everything for payments that come back at a steady rhythm."
-    },
-    "debtsWhereExtraGoes": {
-      "title": "Where the extra goes",
-      "body": "One row per debt: its minimum, the extra it gets now and what you pay. When a debt is paid off, its whole payment moves on to the others, so the plan reads month by month."
-    },
-    "debtsPaymentsMonth": {
-      "title": "This month's payments",
-      "body": "Each debt's payment this month: paid once it matches its bill, or say Paid? yourself for a debt without one. Log a payment adds an extra or a lump sum, and it comes straight off the balance."
     },
     "whatsNew": {
       "title": "Arca was updated",
@@ -1649,10 +1407,6 @@
       "title": "The bank says what kind of account it is",
       "body": "Arca sets that type when you link the account. You can change it later in Settings › Accounts."
     },
-    "reviewTransfer": {
-      "title": "Money to your own account",
-      "body": "Pick Internal transfer for money to one of your own accounts, also one that isn't in Arca. It stays out of your budgets and spending."
-    },
     "aiPicksKept": {
       "title": "AI suggestions are kept",
       "body": "What AI suggested earlier is still here after a reload, marked with a sparkle. Arca won't ask again for these transactions."
@@ -1676,6 +1430,174 @@
     "pushDevice": {
       "title": "Get them on your phone",
       "body": "Turn push on per device. On iPhone, add Arca to your home screen first."
+    }
+  },
+  "tours": {
+    "progress": "{page} · {n} of {total}",
+    "dialogLabel": "{page} tour, step {n} of {total}",
+    "skip": "Skip tour",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "home": {
+      "page": "Home",
+      "title": "Home",
+      "steps": {
+        "safeToSpend": {
+          "title": "Safe to spend",
+          "body": "What you can still spend until payday: your budget minus what you have spent, with the bills still to come already set aside. The line shows if you are spending faster than an even pace."
+        },
+        "thisMonth": {
+          "title": "This month",
+          "body": "What came in, what you spent and saved, and the bills still to pay this month. Income shows how it compares with last month."
+        },
+        "moneyFlow": {
+          "title": "Money flow",
+          "body": "Money in and money out this month, added up day by day; the gap today is what you have kept so far. The dotted line is what is still expected until the month ends."
+        },
+        "add": {
+          "title": "Add from anywhere",
+          "body": "The + adds a transaction, recurring bill, debt, goal or category without leaving the page you are on. On a keyboard, Ctrl/Cmd+N opens it too."
+        }
+      }
+    },
+    "activity": {
+      "page": "Activity",
+      "title": "Activity",
+      "steps": {
+        "period": {
+          "title": "The period at a glance",
+          "body": "Money in and out for the period you are looking at, with your spending day by day."
+        },
+        "find": {
+          "title": "Find a transaction",
+          "body": "Search by name, or narrow the list by account, category, needs/wants/save, amount or recurring. The count shows how many filters are on."
+        },
+        "row": {
+          "title": "Every transaction",
+          "body": "Tap one for its category, merchant, note and receipt, or to split or link it. Press and hold (or Shift-click) to select several at once."
+        },
+        "detail": {
+          "title": "The details beside the list",
+          "body": "Everything about the transaction you picked, with what you spent at this merchant. Press ↑ and ↓ to step through the list."
+        }
+      }
+    },
+    "needsReview": {
+      "page": "Needs a category",
+      "title": "Needs a category",
+      "steps": {
+        "card": {
+          "title": "One at a time",
+          "body": "Pick a category and press Save and next (or Enter). Switch on the rule and similar transactions get that category from now on."
+        },
+        "transfer": {
+          "title": "Money to your own account",
+          "body": "Pick Internal transfer for money to one of your own accounts, also one that isn't in Arca. It stays out of your budgets and spending."
+        },
+        "select": {
+          "title": "Sort several at once",
+          "body": "Tap Select to pick several transactions from the queue and give them a category in one go."
+        }
+      }
+    },
+    "upcoming": {
+      "page": "Upcoming",
+      "title": "Upcoming",
+      "steps": {
+        "month": {
+          "title": "Look back or ahead",
+          "body": "Use the arrows to see which bills were paid in an earlier month, or what is coming up next month."
+        },
+        "status": {
+          "title": "Paid or not",
+          "body": "auto means Arca ticks the bill off itself when the payment arrives; Paid? means it can't tell, so you say so. A savings transfer can be skipped for one month."
+        },
+        "nextMonth": {
+          "title": "Next month, before it starts",
+          "body": "What next month's bills come to, what is new and what drops out, so the jump is explained before it hits."
+        }
+      }
+    },
+    "budget": {
+      "page": "Budget",
+      "title": "Plan › Budget",
+      "steps": {
+        "plan": {
+          "title": "Budget, debts and goals together",
+          "body": "Switch between your budget, your debts and your savings goals here. Together they make up Plan."
+        },
+        "period": {
+          "title": "Look back at earlier months",
+          "body": "Use the arrows to see how an earlier budget month ended: what you spent, which categories went over and which bills were paid."
+        },
+        "category": {
+          "title": "Open a category",
+          "body": "Tap a category to see where the money went, its pace and the last months. When one runs hot, Arca suggests moving budget from one with room to spare."
+        },
+        "strategy": {
+          "title": "Target against actual",
+          "body": "Each kind shows its target share of income (striped) above what you actually spent or saved so far. Tap Adjust to change the split."
+        }
+      }
+    },
+    "debts": {
+      "page": "Debts",
+      "title": "Plan › Debts",
+      "steps": {
+        "owe": {
+          "title": "You owe",
+          "body": "Everything you owe sits here, with the month you are debt-free. Next: your payments this month, and what paying a little extra would do."
+        },
+        "payments": {
+          "title": "This month's payments",
+          "body": "Each debt's payment this month: paid once it matches its bill, or say Paid? yourself. Log a payment adds an extra or a lump sum straight off the balance."
+        },
+        "extra": {
+          "title": "What if I pay extra?",
+          "body": "Slide to see how much sooner you are debt-free and how much interest you save. With several debts, choose which one the extra goes to first."
+        }
+      }
+    },
+    "goals": {
+      "page": "Goals",
+      "title": "Plan › Goals",
+      "steps": {
+        "goal": {
+          "title": "When you get there",
+          "body": "Open a goal to see its history and, at your monthly amount, the month you reach it. You can edit it from there too."
+        },
+        "contributions": {
+          "title": "What you put aside",
+          "body": "Twelve months of money moved into your goals, from the transactions linked to them. This month is the bright bar."
+        }
+      }
+    },
+    "insights": {
+      "page": "Insights",
+      "title": "Insights",
+      "steps": {
+        "tabs": {
+          "title": "Five ways to look",
+          "body": "Overview sums up a period, Trends compares months, Net worth follows what you own, Forecast looks ahead and Health scores how you are doing."
+        },
+        "summary": {
+          "title": "Three facts and what's left",
+          "body": "The period in three facts and what is left to spend per day. With AI on, it can write them up with a budgeting tip."
+        },
+        "runningTotal": {
+          "title": "Your month as a line",
+          "body": "The black line is what you spent so far, day by day. The grey one is the period before, the dotted one where this pace ends and the orange dashed line your budget."
+        },
+        "whereItWent": {
+          "title": "Area is money",
+          "body": "The bigger the block, the more that group cost, with the change since last period. Tap a block for its categories, or switch to Categories."
+        },
+        "merchants": {
+          "title": "Where the money went",
+          "body": "Your biggest merchants this period, with how many visits made up each total."
+        }
+      }
     }
   },
   "categoryPicker": {
@@ -3076,12 +2998,15 @@
     "needsReviewBadge": "{count, plural, one {# transaction needs a category} other {# transactions need a category}}",
     "import": "Import",
     "bankSync": {
-      "synced": "Last synced {time}",
       "never": "Never synced",
       "expired": "Consent expired, reconnect",
       "syncNow": "Sync banks now",
       "syncing": "Syncing banks…",
-      "done": "{count, plural, =0 {Synced, no new transactions} one {Synced, # new transaction} other {Synced, # new transactions}}"
+      "done": "{count, plural, =0 {Synced, no new transactions} one {Synced, # new transaction} other {Synced, # new transactions}}",
+      "lastSynced": "Last synced",
+      "today": "Today, {time}",
+      "yesterday": "Yesterday, {time}",
+      "earlier": "{date}, {time}"
     },
     "settings": "Settings",
     "signOut": "Sign out",
@@ -5278,7 +5203,6 @@
     "linkedTo": "Into {bank}",
     "notLinked": "Not linked yet",
     "skipped": "Not synced",
-    "lastSynced": "Last synced {when}",
     "close": "Close",
     "connectTitle": "Connect a bank",
     "connectSubtitle": "Pick your bank. You confirm at the bank, then come back here.",
@@ -5310,7 +5234,8 @@
       "unknownState": "That bank login is no longer valid. Start Connect a bank again.",
       "denied": "The bank didn't give access. Nothing was connected.",
       "signedOut": "You're signed out. Sign in and try again."
-    }
+    },
+    "newCount": "{count, plural, =0 {no new transactions} one {# new transaction} other {# new transactions}}"
   },
   "recurringSuggestions": {
     "title": "{count, plural, one {Arca found a regular payment} other {Arca found # regular payments}}",

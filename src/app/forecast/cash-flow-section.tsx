@@ -91,7 +91,7 @@ export function CashFlowSection({ cashFlow, today }: { cashFlow: CashFlowForecas
           title={<span id="forecast-chart-title">{t("chart.title", { range })}</span>}
           subtitle={cashFlow.hasStartingBalance ? t("chart.subtitle") : t("chart.subtitleCumulative")}
           action={
-            <span data-tip-anchor="insightsForecastRange">
+            <span>
               <Segmented
                 label={t("range.label")}
                 surface="tile"

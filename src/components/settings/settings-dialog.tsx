@@ -11,6 +11,7 @@ import type { FinancialMonthConfig } from "@/lib/date-range";
 import type { SettingsPanelContent } from "@/app/settings-panel-content";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useEscapeToClose } from "@/lib/use-escape-to-close";
+import { useGuide } from "@/lib/guide-context";
 import { logoutAction } from "@/app/actions/auth";
 import type { BudgetRecurringMode, SharedCostMode } from "@/lib/app-settings";
 import type { BuildInfo } from "@/lib/build-info";
@@ -162,6 +163,15 @@ export function SettingsDialog({
     if (shouldClose) closePanel();
   }
 
+  // Replay in Help › Tips and tours: the tour runs on its page, so the sheet gets out
+  // of the way (Home's tour starts on the page under it).
+  const { replay } = useGuide();
+  const [prevReplay, setPrevReplay] = useState(replay);
+  if (replay !== prevReplay) {
+    setPrevReplay(replay);
+    if (replay) setOpen(false);
+  }
+
   // Reset the panel stack whenever the whole dialog closes. Synced during render
   // (guarded) rather than in an effect — the house pattern for this codebase.
   const [prevOpen, setPrevOpen] = useState(open);
@@ -185,9 +195,6 @@ export function SettingsDialog({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t("open")}
-        // Target for the "everything else is behind your photo" pointer tip. Only one
-        // SettingsDialog is ever rendered per route, so the selector stays unambiguous.
-        data-tip-anchor="settingsTrigger"
         className={cn(
           "inline-flex shrink-0 cursor-pointer items-center rounded-full bg-clear-card font-clear text-clear-ink outline-none transition-transform focus-visible:ring-3 focus-visible:ring-clear-ember/50 active:scale-[0.97]",
           iconOnly ? "size-11 justify-center" : "h-11 max-w-[60vw] gap-2 p-1 pr-4",

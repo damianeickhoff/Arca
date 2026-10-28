@@ -27,7 +27,7 @@ export async function NetWorthCard({ data }: { data: NetWorthData }) {
 
   if (data.empty) {
     return (
-      <ClearCard aria-labelledby="home-net-worth-title" data-tip-anchor="homeNetWorth" className="justify-between gap-5">
+      <ClearCard aria-labelledby="home-net-worth-title" className="justify-between gap-5">
         <ClearCardHeader title={<span id="home-net-worth-title">{t("title")}</span>} />
         <div className="flex flex-col items-center gap-4 py-4 text-center">
           <span aria-hidden className="flex h-16 w-16 items-center justify-center rounded-full bg-clear-tile text-clear-muted">
@@ -70,7 +70,7 @@ export async function NetWorthCard({ data }: { data: NetWorthData }) {
   const description = t("chartDescription", { from: signed(net[0] ?? 0), to: signed(data.netWorth), months: 6 });
 
   return (
-    <ClearCard aria-labelledby="home-net-worth-title" data-tip-anchor="homeNetWorth" className="gap-4">
+    <ClearCard aria-labelledby="home-net-worth-title" className="gap-4">
       <ClearCardHeader
         title={<span id="home-net-worth-title">{t("title")}</span>}
         action={<ClearCardLink href="/reports?tab=vermogen">{t("open")}</ClearCardLink>}

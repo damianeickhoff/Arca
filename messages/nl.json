@@ -654,6 +654,27 @@
       "apply": "{count, plural, one {# wijziging toepassen} other {# wijzigingen toepassen}}",
       "applying": "Toepassen…",
       "close": "Sluiten"
+    },
+    "guide": {
+      "title": "Tips en rondleidingen",
+      "subtitle": "Opgeslagen bij je account, dus elke verschijnt één keer op al je apparaten.",
+      "tours": {
+        "title": "Rondleidingen",
+        "meta": "Een korte rondleiding de eerste keer dat je een pagina opent"
+      },
+      "tips": {
+        "title": "Tips",
+        "meta": "Een korte aanwijzing de eerste keer dat je iets minder gebruikelijks doet"
+      },
+      "toursHeading": "Rondleidingen",
+      "seen": "Gezien · {count, plural, one {# stap} other {# stappen}}",
+      "nextTime": "Volgende keer dat je hem opent · {count, plural, one {# stap} other {# stappen}}",
+      "afterDebt": "Begint na je eerste schuld",
+      "afterGoal": "Begint na je eerste doel",
+      "off": "Niet zichtbaar zolang rondleidingen uit staan",
+      "replay": "Opnieuw",
+      "replayLabel": "Rondleiding {page} opnieuw bekijken",
+      "reset": "Alle tips en rondleidingen opnieuw tonen"
     }
   },
   "budget": {
@@ -1058,9 +1079,6 @@
   "tips": {
     "gotIt": "Duidelijk",
     "dontShowAgain": "Niet meer tonen",
-    "next": "Volgende",
-    "back": "Vorige",
-    "skipTour": "Overslaan",
     "categoryPickerSuggestions": {
       "title": "Voorgestelde categorieën en regels",
       "body": "De categorieën waar deze transactie waarschijnlijk bij hoort staan bovenaan. Kies er een en pas hem toe — zet de regel aan en vergelijkbare transacties krijgen hem ook, nu en voortaan."
@@ -1205,69 +1223,17 @@
       "title": "Zie wat hij gaat matchen",
       "body": "Terwijl je het zoekpatroon of bedrag typt, laat deze grafiek de eerdere afschrijvingen zien die erbij horen. Zo controleer je de regel voordat je opslaat."
     },
-    "budgetCategoryDetail": {
-      "title": "Open een categorie",
-      "body": "Tik op een categorie om te zien waar het geld heen ging, het tempo en de afgelopen maanden. Met het potlood bewerk je het budget."
-    },
-    "budget": {
-      "title": "Je budget",
-      "body": "Stel één totaallimiet in en verfijn daarna per categorie. Arca houdt bij of je voor- of achterloopt op het maandtempo."
-    },
     "budgetStrategy": {
       "title": "Budgetstrategie",
       "body": "Verdeel je inkomen over nodig, willen en sparen. Arca maakt daar een geadviseerd maandbudget van."
-    },
-    "reports": {
-      "title": "Rapporten",
-      "body": "Trends, vergelijkingen tussen maanden en je vermogen, over de periode die je bovenin kiest."
-    },
-    "forecast": {
-      "title": "Cashflowprognose",
-      "body": "Berekent je saldo vooruit op basis van je vaste lasten en gebruikelijke uitgaven, zodat je dips ziet aankomen."
-    },
-    "health": {
-      "title": "Financiële gezondheid",
-      "body": "Eén score van 100, opgebouwd uit je sparen, buffer, budget, vaste lasten, schulden en inkomen. De uitsplitsing laat precies zien waar hij vandaan komt."
-    },
-    "keyboardShortcuts": {
-      "title": "Arca met een toetsenbord",
-      "body": "Ctrl+K (⌘K op een Mac) opent zoeken vanaf elke plek, Esc sluit wat er bovenop ligt, en met je numpad typ je bedragen — Enter slaat op."
     },
     "importBalance": {
       "title": "Neem je saldo mee",
       "body": "Heeft je export een saldokolom? Wijs hem hier aan. Arca bewaart het cijfer van je bank ongewijzigd, klaar voor saldohistorie en betere prognoses."
     },
-    "budgetLocation": {
-      "title": "Hier staat je budget",
-      "body": "Tik op de portemonnee om een totaallimiet in te stellen en eventueel een doel per categorie."
-    },
-    "healthCard": {
-      "title": "Hoe je er in het geheel voor staat",
-      "body": "Tik voor je financiële gezondheidsscore, wat elk onderdeel bijdraagt, en welke aanpassingen hem het meest verhogen."
-    },
-    "reportsLocation": {
-      "title": "Trends en prognoses",
-      "body": "Het grafiekicoon opent je rapporten: uitgaven door de tijd, vergelijkingen per maand, vermogen en cashflow."
-    },
-    "settingsLocation": {
-      "title": "De rest zit achter je foto",
-      "body": "Rekeningen, categorieën, vaste lasten en al je voorkeuren vind je daar."
-    },
-    "transactionDetail": {
-      "title": "Tik voor het hele verhaal",
-      "body": "Open een transactie om hem te hercategoriseren, te splitsen, een bon toe te voegen of naar de winkel te springen."
-    },
     "debtLinkedPayment": {
       "title": "Gekoppelde vaste last bepaalt de aflossing",
       "body": "Koppel je een vaste last aan een schuld, dan wordt het maandbedrag daarvan de minimale aflossing. Vul bij Minimale maandbetaling zelf een ander bedrag in om dat te overschrijven."
-    },
-    "googleLookup": {
-      "title": "Wie heeft dit afgeschreven?",
-      "body": "Open een transactie en tik op de Google-knop om de winkelnaam op internet op te zoeken — handig bij een afschrijving die je niet herkent."
-    },
-    "strategyLocation": {
-      "title": "Je verdeling zit hierachter",
-      "body": "Tik op bewerken en dan op het schuifjes-icoon om te wijzigen hoe je inkomen over nodig, willen en sparen wordt verdeeld — Arca past het budgetadvies daarop aan."
     },
     "importDatePreview": {
       "title": "Check eerst de datums",
@@ -1289,125 +1255,13 @@
       "title": "Import misgegaan?",
       "body": "Data Health vindt transacties met een onleesbare datum — precies wat een import met de verkeerde kolomkoppeling achterlaat — en laat je ze corrigeren of verwijderen."
     },
-    "bulkSelect": {
-      "title": "Houd vast om meerdere te kiezen",
-      "body": "Houd een transactie ingedrukt om de selectiemodus aan te zetten. Kies er zoveel je wilt en pas ze in een keer aan, sluit ze uit van rapportages of verwijder ze."
-    },
     "sharedCost": {
       "title": "Deel een rekening die jij volledig betaalt",
       "body": "Geef aan welk deel huisgenoten of familie aan je terugbetalen. Je cashflow houdt het hele bedrag — dat gaat echt van je rekening af — terwijl rapporten alleen jouw eigen deel kunnen tonen."
     },
-    "planHub": {
-      "title": "Budget, schulden en doelen bij elkaar",
-      "body": "Wissel hier tussen je budget, je schulden en je spaardoelen. Ze vallen nu allemaal onder Plan."
-    },
-    "homeComingUp": {
-      "title": "Binnenkort",
-      "body": "De volgende rekeningen van deze maand, de eerste bovenaan. Via de link open je de hele lijst, waar je er een als betaald markeert."
-    },
-    "activityDetail": {
-      "title": "Alles over een transactie",
-      "body": "Categorie, jouw deel, winkel, notitie en bon, plus splitsen, een Tikkie koppelen, vast maken of een regel maken. Meer acties zitten achter de ⋯-knop."
-    },
-    "activityFilters": {
-      "title": "Alle filters op één plek",
-      "body": "Verfijn de lijst op periode, rekening, categorie, nodig/willen/sparen, richting, bedrag of terugkerend. Het getal laat zien hoeveel er aan staan; Alles wissen zet ze terug."
-    },
-    "activitySelectMode": {
-      "title": "Meerdere tegelijk selecteren",
-      "body": "Houd een rij ingedrukt om te selecteren, of Shift-klik op een computer."
-    },
-    "activitySearchBar": {
-      "title": "Zoeken zit onderin",
-      "body": "Zoek in je transacties met de balk vlak boven de tabbalk, binnen bereik van je duim. De lijst filtert terwijl je typt."
-    },
-    "activityHistory": {
-      "title": "Geschiedenis met één tik",
-      "body": "Deze regel laat zien wat je deze periode bij deze winkel uitgaf, of wanneer een terugkerende betaling weer komt. Tik erop voor de laatste 12 maanden of de laatste 12 betalingen."
-    },
-    "activityKeys": {
-      "title": "Bladeren met de pijltjestoetsen",
-      "body": "Druk op ↑ en ↓ om door de lijst te gaan; de transactie rechts volgt mee."
-    },
-    "activityDetailTabs": {
-      "title": "Overzicht en bankgegevens",
-      "body": "Overzicht laat zien wat een betaling is en wat die met je budget deed. Details toont alles wat de bank meestuurde, zoals IBAN en kenmerk, met kopieerknoppen."
-    },
-    "budgetMove": {
-      "title": "Budget verplaatsen met één tik",
-      "body": "Loopt een categorie hard op, dan stelt Arca voor om budget te verplaatsen van een categorie met ruimte over. Je totale budget blijft gelijk."
-    },
-    "billStatusControl": {
-      "title": "auto, Betaald en Betaald?",
-      "body": "auto: Arca vinkt de rekening zelf af zodra de betaling binnenkomt. Betaald: hij is te laat en er is geen betaling gevonden. Betaald?: Arca kan het niet zien, dus zeg het zelf of leer Arca het patroon."
-    },
-    "budgetNeedsCategory": {
-      "title": "Nog zonder categorie",
-      "body": "Geen enkel categoriebudget ziet deze transacties nog. Sorteer ze, dan klopt wat er per categorie over is weer."
-    },
-    "budgetPeriodNav": {
-      "title": "Terugkijken naar eerdere maanden",
-      "body": "Met de pijlen naast de datums zie je hoe een eerdere budgetmaand afliep: wat je uitgaf, welke categorieën over budget gingen en welke rekeningen betaald zijn."
-    },
     "budgetAddCategory": {
       "title": "Alles op één plek",
       "body": "Je totale budget, de strategie en alle categoriebudgetten staan nu bij elkaar. Voeg categorieën één voor één toe; onder elke naam zie je wat er deze periode is uitgegeven."
-    },
-    "debtsDetail": {
-      "title": "Alles over één schuld",
-      "body": "Open een schuld om de gekoppelde vaste last te zien, hoeveel van elke betaling rente is en elke betaling die nog komt. Met het potlood bewerk je hem."
-    },
-    "debtsSimulator": {
-      "title": "Probeer wat extra af te lossen",
-      "body": "Schuif om te zien hoeveel eerder je schuldenvrij bent en hoeveel rente je bespaart. Het aflossingsverloop beweegt mee."
-    },
-    "debtsSortAndImpact": {
-      "title": "Jouw volgorde, jouw maand",
-      "body": "Kies hoe het extra bedrag wordt verdeeld; je schulden staan in dezelfde volgorde. Eronder zie je wat je na de extra aflossing per maand vrij te besteden hebt."
-    },
-    "debtsOrder": {
-      "title": "Drie manieren om af te lossen",
-      "body": "Snelste winst eerst lost het kleinste saldo eerst af, zodat een schuld zo snel mogelijk weg is. Hoogste rente eerst pakt de duurste schuld eerst aan en bespaart zo de meeste rente. Verdeeld over alle schulden deelt het extra bedrag gelijk, zodat elk saldo elke maand daalt."
-    },
-    "debtsOwed": {
-      "title": "Geld dat terugkomt",
-      "body": "Schulden die anderen bij jou hebben en voorschotten die nog maar deels terugbetaald zijn. Markeer er een als afgehandeld zodra het rond is."
-    },
-    "debtsPayoffDates": {
-      "title": "Elke schuld z'n eigen einddatum",
-      "body": "Elke schuld toont de maand waarin hij is afgelost. Schuif met de extra aflossing en de datums schuiven mee, in de volgorde waarin je schulden gesorteerd zijn."
-    },
-    "goalsContributions": {
-      "title": "Wat je opzij zet",
-      "body": "Twaalf maanden geld dat naar je doelen ging, op basis van de gekoppelde transacties. Deze maand is de felste balk."
-    },
-    "goalsDetail": {
-      "title": "Wanneer je er bent",
-      "body": "Open een doel om de geschiedenis te zien en, bij je maandbedrag, de maand waarin je het bereikt. Daar kun je het ook bewerken."
-    },
-    "goalsSuggestions": {
-      "title": "Begin met een suggestie",
-      "body": "Gebruiken vult een naam, icoon en kleur in voor een veelgekozen eerste doel. Vul je eigen bedragen in en pas alles aan voordat je opslaat."
-    },
-    "insightsMerchants": {
-      "title": "Waar het geld naartoe ging",
-      "body": "Je grootste winkels deze periode, met hoeveel bezoeken elk totaal vormden."
-    },
-    "insightsHealthNextStep": {
-      "title": "Wat je score het meest verhoogt",
-      "body": "De stap die de meeste punten oplevert, waar je staat ten opzichte van het doel, en wat ervoor nodig is."
-    },
-    "insightsHealthHistory": {
-      "title": "Je score per maand",
-      "body": "De score van elke budgetmaand naast het inkomen, de uitgaven, de spaarquote en het vermogen. De lopende maand staat gemarkeerd als tot nu toe."
-    },
-    "insightsComingUp": {
-      "title": "Wat er aankomt",
-      "body": "De eerstvolgende geboekte en verwachte betalingen in je prognose. Kies Kalender voor elke dag waarop er geld beweegt, en tik op een betaling voor de details."
-    },
-    "insightsForecastRange": {
-      "title": "30 dagen of 3 maanden",
-      "body": "Wissel de prognose tussen de komende 30 dagen en de komende 3 maanden. De cijfers en de status ernaast gaan mee."
     },
     "accountsAdd": {
       "title": "Voeg je rekeningen toe",
@@ -1437,26 +1291,6 @@
       "title": "Staat hij er niet tussen?",
       "body": "De lijst toont recente uitgaven. Zoek om een oudere op naam te vinden."
     },
-    "upcomingMonthNav": {
-      "title": "Kijk terug of vooruit",
-      "body": "Gebruik de pijlen om te zien welke rekeningen in een eerdere maand betaald zijn, of wat er volgende maand aankomt."
-    },
-    "upcomingNextMonth": {
-      "title": "Volgende maand, alvast bekeken",
-      "body": "Wat de rekeningen van volgende maand kosten, wat er nieuw is (de eerste termijn van een betalingsregeling) en wat wegvalt, zodat je het verschil ziet voordat het zover is."
-    },
-    "billSkip": {
-      "title": "Een maand overslaan",
-      "body": "Deze maand niet sparen? Sla de overboeking over, dan telt hij alleen deze maand nergens mee. Volgende maand staat hij er gewoon weer."
-    },
-    "needsReviewTriage": {
-      "title": "Eén voor één",
-      "body": "Kies een categorie en druk op Opslaan en volgende (of Enter). Zet de regel aan en vergelijkbare transacties krijgen die categorie voortaan vanzelf."
-    },
-    "needsReviewBulk": {
-      "title": "Meerdere tegelijk",
-      "body": "Tik op Selecteren om meerdere transacties uit de wachtrij te kiezen en ze in één keer een categorie te geven."
-    },
     "financialMonthDays": {
       "title": "Tik op een dag om je start te kiezen",
       "body": "Je maand begint nu op de dag waarop je tikt, en dat wordt direct opgeslagen. De balk eronder laat zien waar vandaag in de periode valt."
@@ -1469,49 +1303,9 @@
       "title": "Winkels zonder logo vinden",
       "body": "Kies Zonder icoon om alleen de winkels te zien die nog geen logo hebben, en open er een om het een logo te geven."
     },
-    "privacyEye": {
-      "title": "Verberg je bedragen",
-      "body": "Tik op het oog om elk bedrag op elk scherm in puntjes te veranderen, tot je er nog een keer op tikt. Handig als iemand over je schouder meekijkt."
-    },
-    "homeSafeToSpendSum": {
-      "title": "Eén bedrag, met de som erbij",
-      "body": "Vrij te besteden is je budget min wat je hebt uitgegeven en de rekeningen die nog komen. De regel onder de balk laat precies die som zien."
-    },
-    "homeIncomeVsSpending": {
-      "title": "Inkomsten en uitgaven",
-      "body": "Zes budgetmaanden naast elkaar: geld erin als donkere staven, geld eruit gestreept. De uitgaven van deze maand zijn de oranje staaf."
-    },
-    "clearNavigation": {
-      "title": "Alles staat in de zijbalk",
-      "body": "Home, Activiteit, Plan en Inzichten staan links, met Importeren, Instellingen, het thema en Uitloggen eronder. Op je telefoon staan ze in de balk onderin."
-    },
     "settingsNav": {
       "title": "Alle instellingen in één lijst",
       "body": "Rekeningen, categorieën, terugkerende posten, importeren, weergave en je profiel staan hier allemaal. Kies er een om hem te openen."
-    },
-    "homeMoneyFlow": {
-      "title": "Geldstroom",
-      "body": "Geld erin en eruit deze maand, per dag opgeteld. Het verschil tussen de twee lijnen vandaag is wat je tot nu toe hebt overgehouden."
-    },
-    "homeNetWorth": {
-      "title": "Vermogen op Home",
-      "body": "Wat je bezit min wat je schuldig bent, hoe het deze maand bewoog en de laatste zes maanden als lijn. Tik op een rij om je rekeningen, doelen of schulden te openen."
-    },
-    "homeBudgetLink": {
-      "title": "Je budget is verhuisd",
-      "body": "De budgetkaart is weg: Vrij te besteden toont het budget al. Tik hier op het budgetbedrag om de Budgetpagina te openen."
-    },
-    "budgetStrategyTarget": {
-      "title": "Doel tegen werkelijkheid",
-      "body": "Per soort zie je het doel als aandeel van je inkomen (gestreept) boven wat je tot nu toe echt hebt uitgegeven of gespaard. Tik op Aanpassen om de verdeling te wijzigen."
-    },
-    "budgetUnbudgeted": {
-      "title": "Uitgaven zonder budget",
-      "body": "Uitgaven in categorieën zonder eigen budget staan nu onder de lijst, zodat je ziet wat er van het vrije geld af gaat."
-    },
-    "globalSearch": {
-      "title": "Zoeken is verhuisd",
-      "body": "Zoeken vindt alles in de app — transacties, winkels, categorieën, instellingen. Het staat nu in de zijbalk (en op telefoons aan het eind van de balk), zodat duidelijk is dat het overal zoekt, niet alleen op deze pagina. Ctrl/Cmd+K werkt nog steeds."
     },
     "categoryPickerByGroup": {
       "title": "Categorieën per groep",
@@ -1520,26 +1314,6 @@
     "categoryGroups": {
       "title": "Groepen tellen op",
       "body": "Categorieën staan nu in groepen zoals Wonen, die alles erin bij elkaar optellen. Tik op een groep om hem in te klappen, of op het potlood om hem te hernoemen of een andere kleur te geven."
-    },
-    "insightsGroupSwitch": {
-      "title": "Uitgaven per groep",
-      "body": "Zie wat een hele groep kostte, zoals alles voor het huis, of schakel naar Categorieën voor de details."
-    },
-    "insightsRunningTotal": {
-      "title": "Je maand als lijn",
-      "body": "De zwarte lijn is wat je tot nu toe uitgaf, dag voor dag. De grijze is de periode ervoor, de gestippelde waar dit tempo eindigt en de oranje streepjeslijn je budget."
-    },
-    "insightsBlockMap": {
-      "title": "Oppervlak is geld",
-      "body": "Hoe groter het blok, hoe meer die groep kostte, met het verschil met vorige periode. Tik op een blok voor de categorieën erin."
-    },
-    "insightsMovers": {
-      "title": "Wat veranderde, met de bedragen",
-      "body": "De categorieën die per maand het meest stegen of daalden tegenover de maanden ervoor, van en naar. Twee maanden vergelijken opent de maandvergelijking."
-    },
-    "insightsNetWorthChanges": {
-      "title": "Waarom je vermogen bewoog",
-      "body": "De verandering van deze maand, verdeeld in inleg, afgeloste schuld, met de hand ingevulde waarden en geld. Een dip vóór betaaldag is normaal."
     },
     "accountsOverdraft": {
       "title": "Rekeningen die rood mogen staan",
@@ -1557,10 +1331,6 @@
       "title": "Laat AI een categorie voorstellen",
       "body": "Vraag AI stelt categorieën voor bij deze transactie en de volgende in de wachtrij. Zijn keuze heeft een sterretje; jij beslist."
     },
-    "insightsSummary": {
-      "title": "Drie feiten en wat er over is",
-      "body": "Deze kaart vat de periode samen in drie feiten en wat je per dag nog kunt besteden. Met AI aan kan die ze uitschrijven, met een budgettip."
-    },
     "iconPicker": {
       "title": "Eén kiezer voor iconen, logo's en kleur",
       "body": "Zoeken vindt iconen en merklogo's tegelijk, en de kleurenrij kleurt elke tegel mee, zodat je het resultaat ziet voordat je kiest."
@@ -1576,10 +1346,6 @@
     "bankConnection": {
       "title": "Koppel je bank",
       "body": "Plak hier je Enable Banking-app en koppel een bank: transacties komen dan elke dag vanzelf binnen, zonder CSV."
-    },
-    "quickAdd": {
-      "title": "Overal toevoegen",
-      "body": "Met de + naast zoeken (de oranje knop op je telefoon) voeg je een transactie, vaste last, schuld, doel of categorie toe zonder de pagina te verlaten. Ctrl/Cmd+N opent hem ook."
     },
     "reviewTeach": {
       "title": "Leer de drukke eerst",
@@ -1604,14 +1370,6 @@
     "recurringScan": {
       "title": "Controleer je hele geschiedenis",
       "body": "Een import controleert alleen de winkels en mensen die erin voorkomen. Dit zoekt in alles naar betalingen die met een vast ritme terugkomen."
-    },
-    "debtsWhereExtraGoes": {
-      "title": "Waar het extra bedrag heen gaat",
-      "body": "Eén rij per schuld: het minimum, het extra bedrag dat hij nu krijgt en wat je betaalt. Is een schuld afgelost, dan gaat de hele betaling door naar de andere, zodat je het plan maand voor maand leest."
-    },
-    "debtsPaymentsMonth": {
-      "title": "Betalingen deze maand",
-      "body": "De betaling van elke schuld deze maand: betaald zodra hij bij de vaste last gevonden is, of geef zelf aan of hij betaald is bij een schuld zonder vaste last. Met Betaling vastleggen leg je een extra aflossing of een bedrag ineens vast; dat gaat direct van het saldo af."
     },
     "whatsNew": {
       "title": "Arca is bijgewerkt",
@@ -1649,10 +1407,6 @@
       "title": "De bank vertelt wat voor rekening het is",
       "body": "Arca zet dat type bij het koppelen. Je kunt het later wijzigen in Instellingen › Rekeningen."
     },
-    "reviewTransfer": {
-      "title": "Geld naar je eigen rekening",
-      "body": "Kies Eigen overboeking voor geld naar een van je eigen rekeningen, ook een die niet in Arca staat. Het telt niet mee in je budgetten en uitgaven."
-    },
     "aiPicksKept": {
       "title": "AI-voorstellen blijven bewaard",
       "body": "Wat AI eerder voorstelde staat er na herladen nog, met een sterretje. Arca vraagt het voor deze transacties niet opnieuw."
@@ -1676,6 +1430,174 @@
     "pushDevice": {
       "title": "Krijg ze op je telefoon",
       "body": "Zet push per apparaat aan. Op een iPhone zet je Arca eerst op je beginscherm."
+    }
+  },
+  "tours": {
+    "progress": "{page} · {n} van {total}",
+    "dialogLabel": "Rondleiding {page}, stap {n} van {total}",
+    "skip": "Rondleiding overslaan",
+    "back": "Vorige",
+    "next": "Volgende",
+    "done": "Klaar",
+    "home": {
+      "page": "Home",
+      "title": "Home",
+      "steps": {
+        "safeToSpend": {
+          "title": "Vrij te besteden",
+          "body": "Wat je tot je salaris nog kunt uitgeven: je budget min wat je hebt uitgegeven, met de rekeningen die nog komen al apart gezet. De lijn laat zien of je sneller uitgeeft dan een gelijkmatig tempo."
+        },
+        "thisMonth": {
+          "title": "Deze maand",
+          "body": "Wat er binnenkwam, wat je uitgaf en spaarde, en de rekeningen die deze maand nog komen. Bij je inkomen zie je het verschil met vorige maand."
+        },
+        "moneyFlow": {
+          "title": "Geldstroom",
+          "body": "Geld erin en eruit deze maand, per dag opgeteld; het verschil vandaag is wat je tot nu toe hebt overgehouden. De gestippelde lijn is wat er tot het eind van de maand nog verwacht wordt."
+        },
+        "add": {
+          "title": "Overal toevoegen",
+          "body": "Met de + voeg je een transactie, vaste last, schuld, doel of categorie toe zonder de pagina te verlaten. Op een toetsenbord opent Ctrl/Cmd+N hem ook."
+        }
+      }
+    },
+    "activity": {
+      "page": "Activiteit",
+      "title": "Activiteit",
+      "steps": {
+        "period": {
+          "title": "De periode in één oogopslag",
+          "body": "Geld erin en eruit in de periode die je bekijkt, met je uitgaven per dag."
+        },
+        "find": {
+          "title": "Een transactie vinden",
+          "body": "Zoek op naam, of verfijn de lijst op rekening, categorie, nodig/willen/sparen, bedrag of terugkerend. Het getal laat zien hoeveel filters er aan staan."
+        },
+        "row": {
+          "title": "Elke transactie",
+          "body": "Tik erop voor de categorie, winkel, notitie en bon, of om hem te splitsen of te koppelen. Houd ingedrukt (of Shift-klik) om er meerdere tegelijk te kiezen."
+        },
+        "detail": {
+          "title": "De details naast de lijst",
+          "body": "Alles over de transactie die je koos, met wat je bij deze winkel uitgaf. Druk op ↑ en ↓ om door de lijst te gaan."
+        }
+      }
+    },
+    "needsReview": {
+      "page": "Heeft een categorie nodig",
+      "title": "Heeft een categorie nodig",
+      "steps": {
+        "card": {
+          "title": "Eén voor één",
+          "body": "Kies een categorie en druk op Opslaan en volgende (of Enter). Zet de regel aan en vergelijkbare transacties krijgen die categorie voortaan vanzelf."
+        },
+        "transfer": {
+          "title": "Geld naar je eigen rekening",
+          "body": "Kies Eigen overboeking voor geld naar een van je eigen rekeningen, ook een die niet in Arca staat. Het telt niet mee in je budgetten en uitgaven."
+        },
+        "select": {
+          "title": "Meerdere tegelijk",
+          "body": "Tik op Selecteren om meerdere transacties uit de wachtrij te kiezen en ze in één keer een categorie te geven."
+        }
+      }
+    },
+    "upcoming": {
+      "page": "Binnenkort",
+      "title": "Binnenkort",
+      "steps": {
+        "month": {
+          "title": "Kijk terug of vooruit",
+          "body": "Gebruik de pijlen om te zien welke rekeningen in een eerdere maand betaald zijn, of wat er volgende maand aankomt."
+        },
+        "status": {
+          "title": "Betaald of niet",
+          "body": "auto betekent dat Arca de rekening zelf afvinkt zodra de betaling binnenkomt; bij Betaald? kan Arca het niet zien en zeg je het zelf. Een spaaroverboeking kun je een maand overslaan."
+        },
+        "nextMonth": {
+          "title": "Volgende maand, alvast bekeken",
+          "body": "Wat de rekeningen van volgende maand kosten, wat er nieuw is en wat wegvalt, zodat je het verschil ziet voordat het zover is."
+        }
+      }
+    },
+    "budget": {
+      "page": "Budget",
+      "title": "Plan › Budget",
+      "steps": {
+        "plan": {
+          "title": "Budget, schulden en doelen bij elkaar",
+          "body": "Wissel hier tussen je budget, je schulden en je spaardoelen. Samen vormen ze Plan."
+        },
+        "period": {
+          "title": "Terugkijken naar eerdere maanden",
+          "body": "Met de pijlen zie je hoe een eerdere budgetmaand afliep: wat je uitgaf, welke categorieën over budget gingen en welke rekeningen betaald zijn."
+        },
+        "category": {
+          "title": "Open een categorie",
+          "body": "Tik op een categorie om te zien waar het geld heen ging, het tempo en de afgelopen maanden. Loopt er een uit de hand, dan stelt Arca voor budget te verschuiven van een categorie met ruimte."
+        },
+        "strategy": {
+          "title": "Doel tegen werkelijkheid",
+          "body": "Per soort zie je het doel als aandeel van je inkomen (gestreept) boven wat je tot nu toe echt hebt uitgegeven of gespaard. Tik op Aanpassen om de verdeling te wijzigen."
+        }
+      }
+    },
+    "debts": {
+      "page": "Schulden",
+      "title": "Plan › Schulden",
+      "steps": {
+        "owe": {
+          "title": "Wat je schuldig bent",
+          "body": "Alles wat je schuldig bent staat hier, met de maand waarin je schuldenvrij bent. Hierna: je betalingen deze maand, en wat een beetje extra aflossen doet."
+        },
+        "payments": {
+          "title": "Betalingen deze maand",
+          "body": "De betaling van elke schuld deze maand: betaald zodra hij bij de vaste last gevonden is, of zeg zelf Betaald?. Met Betaling vastleggen gaat een extra aflossing of een bedrag ineens direct van het saldo af."
+        },
+        "extra": {
+          "title": "Wat als ik extra betaal?",
+          "body": "Schuif om te zien hoeveel eerder je schuldenvrij bent en hoeveel rente je bespaart. Met meerdere schulden kies je welke het extra eerst krijgt."
+        }
+      }
+    },
+    "goals": {
+      "page": "Doelen",
+      "title": "Plan › Doelen",
+      "steps": {
+        "goal": {
+          "title": "Wanneer je er bent",
+          "body": "Open een doel om de geschiedenis te zien en, bij je maandbedrag, de maand waarin je het bereikt. Daar kun je het ook bewerken."
+        },
+        "contributions": {
+          "title": "Wat je opzij zet",
+          "body": "Twaalf maanden geld dat naar je doelen ging, op basis van de gekoppelde transacties. Deze maand is de felste balk."
+        }
+      }
+    },
+    "insights": {
+      "page": "Inzichten",
+      "title": "Inzichten",
+      "steps": {
+        "tabs": {
+          "title": "Vijf manieren om te kijken",
+          "body": "Overzicht vat een periode samen, Trends vergelijkt maanden, Vermogen volgt wat je bezit, Prognose kijkt vooruit en Gezondheid geeft een score voor hoe je ervoor staat."
+        },
+        "summary": {
+          "title": "Drie feiten en wat er over is",
+          "body": "De periode in drie feiten en wat je per dag nog kunt besteden. Met AI aan kan die ze uitschrijven, met een budgettip."
+        },
+        "runningTotal": {
+          "title": "Je maand als lijn",
+          "body": "De zwarte lijn is wat je tot nu toe uitgaf, dag voor dag. De grijze is de periode ervoor, de gestippelde waar dit tempo eindigt en de oranje streepjeslijn je budget."
+        },
+        "whereItWent": {
+          "title": "Oppervlak is geld",
+          "body": "Hoe groter het blok, hoe meer die groep kostte, met het verschil met vorige periode. Tik op een blok voor de categorieën erin, of schakel naar Categorieën."
+        },
+        "merchants": {
+          "title": "Waar het geld naartoe ging",
+          "body": "Je grootste winkels deze periode, met hoeveel bezoeken elk totaal vormden."
+        }
+      }
     }
   },
   "categoryPicker": {
@@ -3076,12 +2998,15 @@
     "needsReviewBadge": "{count, plural, one {# transactie heeft een categorie nodig} other {# transacties hebben een categorie nodig}}",
     "import": "Importeren",
     "bankSync": {
-      "synced": "Laatst gesynchroniseerd {time}",
       "never": "Nog nooit gesynchroniseerd",
       "expired": "Toestemming verlopen, koppel opnieuw",
       "syncNow": "Banken nu synchroniseren",
       "syncing": "Banken synchroniseren…",
-      "done": "{count, plural, =0 {Gesynchroniseerd, geen nieuwe transacties} one {Gesynchroniseerd, # nieuwe transactie} other {Gesynchroniseerd, # nieuwe transacties}}"
+      "done": "{count, plural, =0 {Gesynchroniseerd, geen nieuwe transacties} one {Gesynchroniseerd, # nieuwe transactie} other {Gesynchroniseerd, # nieuwe transacties}}",
+      "lastSynced": "Laatst gesynchroniseerd",
+      "today": "Vandaag, {time}",
+      "yesterday": "Gisteren, {time}",
+      "earlier": "{date}, {time}"
     },
     "settings": "Instellingen",
     "signOut": "Uitloggen",
@@ -5278,7 +5203,6 @@
     "linkedTo": "Naar {bank}",
     "notLinked": "Nog niet gekoppeld",
     "skipped": "Niet gesynchroniseerd",
-    "lastSynced": "Laatst gesynchroniseerd {when}",
     "close": "Sluiten",
     "connectTitle": "Bank koppelen",
     "connectSubtitle": "Kies je bank. Je bevestigt bij de bank en komt daarna hier terug.",
@@ -5310,7 +5234,8 @@
       "unknownState": "Die banklogin is niet meer geldig. Begin opnieuw met Bank koppelen.",
       "denied": "De bank heeft geen toegang gegeven. Er is niets gekoppeld.",
       "signedOut": "Je bent uitgelogd. Log in en probeer het opnieuw."
-    }
+    },
+    "newCount": "{count, plural, =0 {geen nieuwe transacties} one {# nieuwe transactie} other {# nieuwe transacties}}"
   },
   "recurringSuggestions": {
     "title": "{count, plural, one {Arca vond een vaste betaling} other {Arca vond # vaste betalingen}}",

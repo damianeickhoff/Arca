@@ -17,6 +17,7 @@ import { LanguageList } from "@/components/language-switcher";
 import { CurrencyList } from "@/components/currency-switcher";
 import { PrivacyToggle } from "@/components/privacy-toggle";
 import { AiSettingsPanel } from "@/components/settings/ai-settings-panel";
+import { GuideSettings } from "@/components/settings/guide-settings";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { IconTile } from "@/components/clear/icon-tile";
 import { ListRow } from "@/components/clear/list-row";
@@ -125,7 +126,8 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
       );
 
     case "help":
-      // The guide lives online (the docs site); problems and ideas go to GitHub.
+      // The guide lives online (the docs site); problems and ideas go to GitHub. Under
+      // them, the tips and page tours of this account.
       return (
         <div className="px-4 pt-4 space-y-3">
           <div className="flex flex-col items-start gap-4 rounded-clear-tile bg-clear-tile p-5">
@@ -151,6 +153,7 @@ function InlinePanel({ panelKey, user, settings }: { panelKey: SettingsPanelKey;
             meta={t("reportProblemMeta")}
             trailing={<IconExternalLink size={18} stroke={2} aria-hidden className="text-clear-placeholder" />}
           />
+          <GuideSettings />
         </div>
       );
 

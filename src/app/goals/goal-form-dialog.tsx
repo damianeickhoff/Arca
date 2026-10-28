@@ -15,7 +15,7 @@ import { useConfirm } from "@/components/clear/confirm-dialog";
 import { DatePicker } from "@/components/date-picker";
 import { CategoryPicker } from "@/components/category-picker";
 import { IconChoiceRow } from "@/components/icon-picker";
-import { TipWalkthrough } from "@/components/tip-walkthrough";
+import { FormTour } from "@/components/page-tour";
 import { evaluateExpression } from "@/lib/amount-expression";
 import { currencySymbol, formatEur, formatEurWhole } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ export type GoalFormTarget =
       preset?: { name: string; icon: string; color: string };
     };
 
-// The walkthrough's running order — each entry needs matching copy at
+// The form tour's running order — each entry needs matching copy at
 // tips.savingsFormTour.steps.<anchor>.
 const SAVING_TOUR_STEPS = [
   "savingIcon",
@@ -166,7 +166,7 @@ export function GoalFormDialog({
   const [color, setColor] = useState<string>(goal?.color ?? preset?.color ?? GOAL_COLORS[0].hex);
   const [iconOpen, setIconOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  // Bumped by the help button to replay the walkthrough.
+  // Bumped by the help button to replay the form tour.
   const [tourToken, setTourToken] = useState(0);
 
   const isSavings = type === "savings";
@@ -470,7 +470,7 @@ export function GoalFormDialog({
           )}
         </form>
 
-        {!goal && isSavings && <TipWalkthrough id="savingsFormTour" steps={SAVING_TOUR_STEPS} active={open && !iconOpen} replayToken={tourToken} />}
+        {!goal && isSavings && <FormTour id="savingsFormTour" steps={SAVING_TOUR_STEPS} active={open && !iconOpen} replayToken={tourToken} />}
       </DialogContent>
     </Dialog>
   );

@@ -30,7 +30,7 @@ import { clearButtonVariants } from "@/components/clear/button-variants";
 import { useConfirm } from "@/components/clear/confirm-dialog";
 import { Icon } from "@/components/icon";
 import { PlanSwitch } from "@/components/shell/plan-switch";
-import { AnchoredTip } from "@/components/anchored-tip";
+import { PageTour } from "@/components/page-tour";
 import { ResponsivePopover } from "@/components/clear/responsive-popover";
 import { IconTile } from "@/components/clear/icon-tile";
 import type { RecurringItem } from "@/db/schema";
@@ -296,14 +296,8 @@ export function DebtsView({
         initialDirection={form.kind === "add" ? form.direction : "owe"}
       />
 
-      <AnchoredTip id="debtsDetail" anchor="debtsDetail" active={computed.length > 0} />
-      <AnchoredTip id="debtsSimulator" anchor="debtsSimulator" active={active.length > 0} />
-      <AnchoredTip id="debtsSortAndImpact" anchor="debtsSortAndImpact" active={active.length > 0} />
-      <AnchoredTip id="debtsOrder" anchor="debtsOrder" active={active.length > 1} />
-      <AnchoredTip id="debtsWhereExtraGoes" anchor="debtsWhereExtraGoes" active={plan.length > 0} />
-      <AnchoredTip id="debtsPaymentsMonth" anchor="debtsPaymentsMonth" active={active.length > 0} />
-      <AnchoredTip id="debtsOwed" anchor="debtsOwed" active={hasOwed} />
-      <AnchoredTip id="debtsPayoffDates" anchor="debtsPayoffDates" active={active.length > 0} />
+      {/* Waits for the first debt (often right after it is added): an empty page keeps its empty state. */}
+      <PageTour id="debts" ready={active.length > 0} />
     </div>
   );
 }
@@ -477,7 +471,7 @@ function SummaryTiles({
 
   return (
     <div className="grid grid-cols-2 gap-5 max-lg:hidden sm:grid-cols-3 lg:col-span-2 xl:col-span-3">
-      <ClearCard hero aria-labelledby="debts-owe-title" className={cn(card, "col-span-2 sm:col-span-1")}>
+      <ClearCard hero data-tip-anchor="debtsOwe" aria-labelledby="debts-owe-title" className={cn(card, "col-span-2 sm:col-span-1")}>
         <div className="flex items-center justify-between gap-2">
           <h2 id="debts-owe-title" className="m-0 text-[15px] font-semibold text-clear-hero-ink-2">{t("owe")}</h2>
           <span aria-hidden className={cn(round, "bg-clear-hero-ink/15")}>
@@ -548,7 +542,6 @@ function YourDebtsCard({
   className?: string;
 }) {
   const t = useTranslations("plan.debts");
-  // The tip points at the first open debt's "Free in …" chip.
   const firstOpen = computed.find((c) => payoff.now.has(c.debt.id))?.debt.id;
   const parts =
     computed.length === 0
@@ -570,12 +563,10 @@ function YourDebtsCard({
         <>
           <PhoneDebtList computed={computed} payoffMonths={payoff.now} onOpen={onOpen} className="-my-2 lg:hidden" />
           <div className="grid gap-3 max-lg:hidden md:grid-cols-2">
-          {computed.map((c, i) => (
+          {computed.map((c) => (
             <DebtTile
               key={c.debt.id}
               c={c}
-              anchor={i === 0}
-              payoffAnchor={c.debt.id === firstOpen}
               months={payoff.now.get(c.debt.id)}
               baseMonths={payoff.base.get(c.debt.id)}
               extraNow={payoff.extraNow.get(c.debt.id) ?? 0}
@@ -592,8 +583,6 @@ function YourDebtsCard({
 
 function DebtTile({
   c,
-  anchor,
-  payoffAnchor,
   months,
   baseMonths,
   extraNow,
@@ -601,8 +590,6 @@ function DebtTile({
   onEdit,
 }: {
   c: ComputedDebt;
-  anchor: boolean;
-  payoffAnchor: boolean;
   /** The month this debt reaches zero with the simulator's extra; null never, undefined not simulated (paid off). */
   months: number | null | undefined;
   /** The same at the minimums, for "N months sooner". */
@@ -642,7 +629,7 @@ function DebtTile({
   // The payoff chip sits in the header row when the tile is wide enough for it beside
   // the name and the pencil, else beside the balance (only one of the two is shown).
   const chip = (className: string) => (
-    <span data-tip-anchor={payoffAnchor ? "debtsPayoffDates" : undefined} className={className}>
+    <span className={className}>
       <ClearChip tone={status.tone} icon={done ? <IconCheck stroke={3} aria-hidden /> : undefined} className="font-semibold">
         {status.text}
       </ClearChip>
@@ -651,7 +638,6 @@ function DebtTile({
 
   return (
     <article
-      data-tip-anchor={anchor ? "debtsDetail" : undefined}
       className="@container relative flex min-w-0 flex-col gap-3.5 rounded-clear-tile bg-clear-tile p-[18px] transition-shadow hover:ring-2 hover:ring-clear-ink/10"
     >
       <div className="flex items-center gap-3">
@@ -789,7 +775,7 @@ function OwedCard({
   const settleButton = cn(clearButtonVariants({ variant: "primary" }), "relative z-10 w-full");
 
   return (
-    <ClearCard data-tip-anchor="debtsOwed" aria-labelledby="debts-owed-list-title" className={cn("gap-4", className)}>
+    <ClearCard aria-labelledby="debts-owed-list-title" className={cn("gap-4", className)}>
       <ClearCardHeader
         title={<span id="debts-owed-list-title">{t("title")}</span>}
         action={
@@ -1009,9 +995,9 @@ function SimulatorCard({
 
         {active.length > 1 && <PhoneOrderList order={order} onOrder={onOrder} sim={sim} sims={sims} className="lg:hidden" />}
         {active.length > 1 && (
-          <div data-tip-anchor="debtsSortAndImpact" className="@container flex flex-col gap-2 max-lg:hidden">
+          <div className="@container flex flex-col gap-2 max-lg:hidden">
             <span className="text-[13px] font-medium text-clear-muted">{t("order")}</span>
-            <div data-tip-anchor="debtsOrder" className="flex min-w-0">
+            <div className="flex min-w-0">
               <Segmented<DebtSort>
                 label={t("orderLabel")}
                 surface="tile"
@@ -1027,7 +1013,7 @@ function SimulatorCard({
         )}
 
         <PhoneResults base={base} sim={sim} className="lg:hidden" />
-        <FreeToSpendTile freeToSpend={freeToSpend} extra={extra} tipAnchor={active.length <= 1} className="xl:mt-auto" />
+        <FreeToSpendTile freeToSpend={freeToSpend} extra={extra} className="xl:mt-auto" />
         <PlanSheetRow active={active} plan={plan} extra={extra} spread={sim.spread} className="lg:hidden" />
       </div>
 
@@ -1065,22 +1051,18 @@ function SimulatorCard({
 function FreeToSpendTile({
   freeToSpend,
   extra,
-  tipAnchor,
   className,
 }: {
   freeToSpend: DebtsFreeToSpend;
   extra: number;
-  /** Carries the order tip's anchor when there is no order switch to point at. */
-  tipAnchor: boolean;
   className?: string;
 }) {
   const t = useTranslations("plan.debts.simulator.free");
   const box = cn("flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-clear-tile bg-clear-tile px-4 py-3", className);
-  const anchor = tipAnchor ? "debtsSortAndImpact" : undefined;
 
   if (freeToSpend.income <= 0) {
     return (
-      <div data-tip-anchor={anchor} className={cn(box, "flex-col items-start")}>
+      <div className={cn(box, "flex-col items-start")}>
         <span className="text-xs font-medium text-clear-muted max-lg:text-sm max-lg:font-bold max-lg:text-clear-ink">{t("title")}</span>
         <span className="text-[13px] leading-[1.45] font-medium text-clear-ink-2">{t("noIncome")}</span>
       </div>
@@ -1092,7 +1074,7 @@ function FreeToSpendTile({
   const short = after < 0 ? -after : 0;
 
   return (
-    <div data-tip-anchor={anchor} className={box}>
+    <div className={box}>
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="text-xs font-medium text-clear-muted max-lg:text-sm max-lg:font-bold max-lg:text-clear-ink">{t("title")}</span>
         {extra > 0 && <span className="sr-only"><MoneyText>{t("change", { from: formatEurWhole(now), to: formatEurWhole(after) })}</MoneyText></span>}
@@ -1154,7 +1136,7 @@ function PlanTile({
   const td = "border-t border-clear-ground py-2 align-top";
 
   return (
-    <div data-tip-anchor="debtsWhereExtraGoes" className={cn("flex min-w-0 flex-col gap-2.5 rounded-clear-tile bg-clear-tile p-4", className)}>
+    <div className={cn("flex min-w-0 flex-col gap-2.5 rounded-clear-tile bg-clear-tile p-4", className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <h3 className="m-0 text-[13px] font-semibold text-clear-ink">
           <MoneyText>{extra > 0 ? t("title", { amount: formatEurWhole(extra) }) : t("titleNone")}</MoneyText>

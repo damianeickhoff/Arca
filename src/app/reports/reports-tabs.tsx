@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { ContextualTip } from "@/components/contextual-tip";
 import { Segmented } from "@/components/clear/segmented";
 
 // Insights' five tabs. The ids are the existing ?tab= values (kept so old links and
@@ -26,25 +25,18 @@ export function ReportsTabs({ active, aside }: { active: string; aside?: React.R
   const pathname = usePathname();
 
   return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        {/* The Clear segmented control (links). Scrolls sideways on the narrowest phones
-            rather than squeezing five labels. */}
-        <nav aria-label={tInsights("title")} className="-mx-4 max-w-[calc(100%+2rem)] overflow-x-auto px-4 scrollbar-hide lg:mx-0 lg:max-w-full lg:px-0">
-          <Segmented
-            label={tInsights("title")}
-            value={active}
-            items={INSIGHTS_TABS.map((id) => ({ value: id, label: t(INSIGHTS_TAB_LABEL_KEY[id]), href: `${pathname}?tab=${id}` }))}
-            className="shrink-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap"
-          />
-        </nav>
-        {aside && <div className="hidden max-w-full lg:block">{aside}</div>}
-      </div>
-
-      {/* The feature tips that used to fire inside the Insights portal, now on the page. */}
-      <ContextualTip id="reports" active={active === "rapporten" || active === "trends" || active === "vermogen"} />
-      <ContextualTip id="forecast" active={active === "prognose"} />
-      <ContextualTip id="health" active={active === "health"} />
-    </>
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      {/* The Clear segmented control (links). Scrolls sideways on the narrowest phones
+          rather than squeezing five labels. */}
+      <nav aria-label={tInsights("title")} data-tip-anchor="insightsTabs" className="-mx-4 max-w-[calc(100%+2rem)] overflow-x-auto px-4 scrollbar-hide lg:mx-0 lg:max-w-full lg:px-0">
+        <Segmented
+          label={tInsights("title")}
+          value={active}
+          items={INSIGHTS_TABS.map((id) => ({ value: id, label: t(INSIGHTS_TAB_LABEL_KEY[id]), href: `${pathname}?tab=${id}` }))}
+          className="shrink-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap"
+        />
+      </nav>
+      {aside && <div className="hidden max-w-full lg:block">{aside}</div>}
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import { IconPlus, IconRepeat } from "@tabler/icons-react";
 import type { RecurringItem } from "@/db/schema";
 import { ClearCard } from "@/components/clear/card";
 import { clearButtonVariants } from "@/components/clear/button-variants";
-import { AnchoredTip } from "@/components/anchored-tip";
+import { PageTour } from "@/components/page-tour";
 import { AddRecurringButton } from "@/components/settings/recurring/add-recurring-button";
 import { MigrationReview, RecurringSuggestions } from "@/components/settings/recurring/recurring-suggestions";
 import type { SuggestionView } from "@/lib/recurring-suggestions";
@@ -174,10 +174,7 @@ export function UpcomingView({ data }: { data: UpcomingData }) {
         )}
       </div>
 
-      <AnchoredTip id="upcomingMonthNav" anchor="upcomingMonthNav" active={!empty} />
-      <AnchoredTip id="billStatusControl" anchor="billStatusControl" active={!empty} />
-      <AnchoredTip id="billSkip" anchor="billSkip" active={data.bills.some((b) => b.skippable && !b.paid)} />
-      <AnchoredTip id="upcomingNextMonth" anchor="upcomingNextMonth" active={!empty && data.preview.billCount > 0} />
+      <PageTour id="upcoming" ready={!empty} />
     </div>
   );
 }

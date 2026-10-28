@@ -20,7 +20,7 @@ import { useIsDesktop } from "@/lib/use-is-desktop";
 import type { BankSyncStatus } from "@/lib/bank-sync-status";
 import type { BuildInfo } from "@/lib/build-info";
 import { ClearChip } from "@/components/clear/chip";
-import { useBankSyncText } from "@/components/shell/bank-sync-line";
+import { SyncMoment, useBankSyncText } from "@/components/shell/bank-sync-line";
 import { BankSyncButton } from "@/components/shell/bank-sync-button";
 
 export interface ShellUser {
@@ -52,7 +52,6 @@ export function AppShell({
   needsReviewCount,
   unreadNotificationCount,
   bankSync,
-  bankSyncNow,
 }: {
   children: React.ReactNode;
   user: ShellUser | null;
@@ -63,8 +62,6 @@ export function AppShell({
   unreadNotificationCount: number;
   /** The bank sync line under Import; null without a connected bank. */
   bankSync: BankSyncStatus | null;
-  /** ISO time `bankSync` is relative to (the server render). */
-  bankSyncNow: string;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -82,17 +79,10 @@ export function AppShell({
           {children}
           {!chromeless && (
             <>
-              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} build={build} user={user!} needsReviewCount={needsReviewCount} unreadNotificationCount={unreadNotificationCount} bankSync={bankSync} bankSyncNow={bankSyncNow} />
+              <DesktopSidebar pathname={pathname} insightsTab={searchParams.get("tab") ?? "rapporten"} settingsPanel={searchParams.get("panel")} build={build} user={user!} needsReviewCount={needsReviewCount} unreadNotificationCount={unreadNotificationCount} bankSync={bankSync} />
               {/* Hidden, not unmounted, while a sheet is open: the add menu's own sheet lives
                   in the bar, and unmounting it would close the menu it just opened. */}
               <PhoneTabBar pathname={pathname} hidden={navHidden} />
-              {/* The navigation changed; it announces itself once, even to someone who
-                  turned tips off (see IGNORES_DISABLED). */}
-              <AnchoredTip id="clearNavigation" anchor="mainNav" active={!navHidden} />
-              {/* Search moved out of the page headers into the shell. */}
-              <AnchoredTip id="globalSearch" anchor={isDesktop ? "globalSearch" : "globalSearchPhone"} active={!navHidden} />
-              {/* Adding moved into the shell too. */}
-              <AnchoredTip id="quickAdd" anchor={isDesktop ? "quickAdd" : "quickAddPhone"} active={!navHidden} />
               {/* Notifications: the sidebar row on desktop, the bell in Home's header on phones. */}
               <AnchoredTip id="notifications" anchor={isDesktop ? "notificationsNav" : "notificationsBell"} active={!navHidden && (isDesktop || pathname === "/")} />
             </>
@@ -142,7 +132,6 @@ function DesktopSidebar({
   needsReviewCount,
   unreadNotificationCount,
   bankSync,
-  bankSyncNow,
 }: {
   pathname: string;
   /** The open Insights tab (?tab=), for its sub-menu. */
@@ -154,7 +143,6 @@ function DesktopSidebar({
   needsReviewCount: number;
   unreadNotificationCount: number;
   bankSync: BankSyncStatus | null;
-  bankSyncNow: string;
 }) {
   const t = useTranslations("nav");
   const tInsights = useTranslations("insights.tabs");
@@ -162,7 +150,7 @@ function DesktopSidebar({
   const activePlan = activePlanKey(pathname);
   const { mode, setMode } = useTheme();
   const importActive = pathname === "/settings" && settingsPanel === "import";
-  const sync = useBankSyncText(bankSync, bankSyncNow);
+  const sync = useBankSyncText(bankSync);
 
   // Rows grow with the window: 40px below 800px of height, 44px from 800px, 48px from 900px.
   const row =
@@ -205,7 +193,7 @@ function DesktopSidebar({
 
       <span aria-hidden className="h-px bg-clear-line" />
 
-      <nav aria-label={t("main")} data-tip-anchor="mainNav" className="flex flex-col gap-1">
+      <nav aria-label={t("main")} className="flex flex-col gap-1">
         {NAV_ITEMS.map((item) => {
           const isActive = item.key === active;
           const { Icon } = item;
@@ -305,7 +293,7 @@ function DesktopSidebar({
                     importActive ? "opacity-70" : sync.attention ? "text-clear-ember-text" : "text-clear-muted",
                   )}
                 >
-                  {sync.text}
+                  {sync.synced ? <SyncMoment at={sync.synced} className="flex" /> : sync.text}
                 </span>
               )}
             </span>
@@ -352,7 +340,6 @@ function PhoneTabBar({ pathname, hidden }: { pathname: string; hidden: boolean }
     <div className={cn("fixed inset-x-4 z-[60] flex items-center gap-2.5 font-clear lg:hidden", hidden && "hidden")} style={{ bottom: "calc(20px + var(--sab))" }}>
       <nav
         aria-label={t("main")}
-        data-tip-anchor="mainNav"
         className="flex h-16 min-w-0 flex-1 items-center gap-0.5 rounded-full bg-clear-primary px-1.5 shadow-clear-float"
       >
         <PhoneTab item={first} active={first.key === active} label={t(first.key)} />
@@ -420,7 +407,6 @@ function SidebarSearch() {
     <button
       type="button"
       onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
-      data-tip-anchor="globalSearch"
       className="flex h-10 min-w-0 flex-1 cursor-pointer items-center gap-2.5 rounded-full bg-clear-tile pl-4 pr-2 text-left text-sm font-semibold text-clear-muted transition-colors hover:bg-clear-line hover:text-clear-ink [@media(min-height:900px)]:h-11"
     >
       <IconSearch size={18} stroke={2} aria-hidden />
@@ -462,7 +448,6 @@ function PhoneSearch() {
       type="button"
       onClick={(e) => openSearch(e.currentTarget.getBoundingClientRect())}
       aria-label={t("searchEverything")}
-      data-tip-anchor="globalSearchPhone"
       className="inline-flex size-16 shrink-0 cursor-pointer items-center justify-center rounded-full bg-clear-primary text-clear-primary-ink shadow-clear-float transition-transform active:scale-95"
     >
       <IconSearch size={22} stroke={2} aria-hidden />

@@ -27,13 +27,13 @@ import { IconChoiceRow } from "@/components/icon-picker";
 import { RecurringMultiPicker } from "@/components/recurring-multi-picker";
 import { CategoryPickerSheet } from "@/components/category-picker";
 import { ContextualTip } from "@/components/contextual-tip";
-import { TipWalkthrough } from "@/components/tip-walkthrough";
+import { FormTour } from "@/components/page-tour";
 import type { Category, Debt, RecurringItem } from "@/db/schema";
 import { amountToExpr, linkedBillsMonthlyTotal } from "./debt-shared";
 import { DebtIcon, PaymentNotice, usePaymentNotice } from "./debt-ui";
 import { MoneyText } from "@/components/clear/money";
 
-// The walkthrough's running order — the order you fill the form in. Each entry needs
+// The form tour's running order — the order you fill the form in. Each entry needs
 // matching copy at tips.debtFormTour.steps.<anchor>.
 const DEBT_TOUR_STEPS = [
   "debtDirection",
@@ -245,7 +245,7 @@ function DebtFormBody({
   const [recurringCatOpen, setRecurringCatOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const recurringCategory = categories.find((c) => String(c.id) === recurringCategoryId) ?? null;
-  // Bumped by the help button to replay the walkthrough.
+  // Bumped by the help button to replay the form tour.
   const [tourToken, setTourToken] = useState(0);
 
   useEffect(() => {
@@ -603,12 +603,12 @@ function DebtFormBody({
 
       {/* Explains that linking a bill also sets the payment — shown the first time the
           picker is opened, and exempt from "Don't show again" (see tips.ts). */}
-      <ContextualTip id="debtLinkedPayment" active={recurringOpen} />
+      <ContextualTip inDialog id="debtLinkedPayment" active={recurringOpen} />
 
       {/* Every field once, in the order you fill them in — automatically the first time
           a debt is added, and replayable from the help button. Paused while a sub-sheet
           is up so a card never points at a field hidden behind it. */}
-      <TipWalkthrough id="debtFormTour" steps={DEBT_TOUR_STEPS} active={open && !isEdit && !subDialogOpen} replayToken={tourToken} />
+      <FormTour id="debtFormTour" steps={DEBT_TOUR_STEPS} active={open && !isEdit && !subDialogOpen} replayToken={tourToken} />
     </>
   );
 }

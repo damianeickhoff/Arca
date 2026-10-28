@@ -182,8 +182,7 @@ export function SettingsView({
         </section>
       </div>
 
-      {/* The page itself is new on desktop: say once that every section is listed here,
-          even to someone who turned tips off (see IGNORES_DISABLED). */}
+      {/* Once: every section is listed here, AI lives in its own row, and so does Help. */}
       <AnchoredTip id="settingsNav" anchor="settingsNav" />
       <AnchoredTip id="aiSettings" anchor="settingsAi" />
       <AnchoredTip id="helpGuide" anchor="settingsHelp" />

@@ -112,7 +112,7 @@ export function CategoryBreakdownCard({
           subtitle={byGroup ? t("breakdown.blocksHint") : t("breakdown.rowsHint")}
         />
         <div className="flex flex-wrap items-center gap-2">
-          <div data-tip-anchor="insightsGroupSwitch">
+          <div>
             <Segmented
               label={t("groupSwitch")}
               surface="tile"

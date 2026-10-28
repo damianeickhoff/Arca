@@ -34,7 +34,6 @@ import { ClearProgress } from "@/components/clear/progress";
 import { IconTile } from "@/components/clear/icon-tile";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import type { ClearTone } from "@/components/clear/tones";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { MoneyText } from "@/components/clear/money";
 
 // ─── Insights → Health ───────────────────────────────────────────────────────
@@ -329,8 +328,6 @@ export async function HealthTab() {
         />
       )}
 
-      <AnchoredTip id="insightsHealthNextStep" anchor="insightsHealthNextStep" active={top != null} />
-      <AnchoredTip id="insightsHealthHistory" anchor="insightsHealthHistory" active={history.length > 0} />
     </div>
   );
 }
@@ -445,7 +442,7 @@ function NextStepCard({
 }) {
   const [primary, secondary] = AREA_META[catKey].links;
   return (
-    <ClearCard data-tip-anchor="insightsHealthNextStep" aria-labelledby="health-step-title" className="gap-4 bg-clear-peach text-clear-ink lg:col-span-2 xl:col-span-1">
+    <ClearCard aria-labelledby="health-step-title" className="gap-4 bg-clear-peach text-clear-ink lg:col-span-2 xl:col-span-1">
       <div className="flex items-center justify-between gap-3">
         <span className="inline-flex items-center gap-2.5 text-[15px] font-bold">
           <span aria-hidden className="inline-flex size-10 items-center justify-center rounded-full bg-clear-card">
@@ -567,7 +564,7 @@ function HistoryCard({
   const list = new Intl.ListFormat(dateLocale, { type: "conjunction" });
 
   return (
-    <ClearCard data-tip-anchor="insightsHealthHistory" aria-labelledby="health-history-title" className="col-span-full">
+    <ClearCard aria-labelledby="health-history-title" className="col-span-full">
       <ClearCardHeader
         title={<span id="health-history-title">{t("history")}</span>}
         subtitle={t("historySubtitle", { day: financialMonth.defaultStartDay })}

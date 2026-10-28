@@ -109,7 +109,7 @@ function ActivityRow({
   onStartSelect: () => void;
   /** In a flat (amount-sorted) list each row shows its own date. */
   dateLabel?: string;
-  /** The first row carries the select-mode tip. */
+  /** The first row is the Activity tour's "a transaction" step. */
   tipAnchor?: boolean;
 }) {
   // Press and hold starts select mode (phones); on desktop Shift- or Ctrl/Cmd-click does.
@@ -124,7 +124,7 @@ function ActivityRow({
   return (
     <div
       data-row-id={row.id}
-      data-tip-anchor={tipAnchor ? "activitySelect" : undefined}
+      data-tip-anchor={tipAnchor ? "activityRow" : undefined}
       className={cn(
         "relative flex items-center rounded-clear-row px-1 transition-colors duration-150 lg:px-3",
         selected ? "bg-clear-peach" : active ? "bg-clear-tile" : "hover:bg-clear-tile/60 active:bg-clear-tile",

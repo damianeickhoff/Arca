@@ -75,7 +75,7 @@ export function RecurringSuggestions({ suggestions, className }: { suggestions: 
 
   return (
     <ClearCard className={className} aria-labelledby="recurring-suggestions-title">
-      <ContextualTip id="recurringSuggestions" />
+      <ContextualTip inDialog id="recurringSuggestions" />
       <div className="flex items-start gap-3">
         <IconTile tone="lilac" className="size-11 shrink-0"><IconSparkles aria-hidden /></IconTile>
         <ClearCardHeader

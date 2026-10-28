@@ -44,7 +44,7 @@ export function PhoneHero({
   const row = "flex min-h-12 items-center justify-between gap-3";
 
   return (
-    <ClearCard hero aria-labelledby="debts-phone-owe-title" className={cn("gap-3.5 p-5", className)}>
+    <ClearCard hero data-tip-anchor="debtsOwe" aria-labelledby="debts-phone-owe-title" className={cn("gap-3.5 p-5", className)}>
       <h2 id="debts-phone-owe-title" className="m-0 text-[17px] font-bold">{t("tiles.owe")}</h2>
       <Amount value={totalDebt} whole splitCents={false} sign="none" className="text-[44px] leading-none tracking-[-0.035em]" />
       <span className="text-[15px] text-clear-hero-ink-2">
@@ -100,7 +100,6 @@ export function PhoneDebtList({
           <li key={c.debt.id} className={cn(i > 0 && "border-t border-clear-ground")}>
             <button
               type="button"
-              data-tip-anchor={i === 0 ? "debtsDetail" : undefined}
               onClick={() => onOpen(c.debt.id)}
               className="flex min-h-[68px] w-full cursor-pointer items-center gap-3 py-2 text-left outline-none focus-visible:ring-3 focus-visible:ring-clear-ember/50"
             >
@@ -111,7 +110,7 @@ export function PhoneDebtList({
                   <Amount value={c.currentBalance} whole splitCents={false} sign="none" className="shrink-0 text-[15px]" />
                 </span>
                 <ClearProgress value={pct / 100} size="sm" fillClassName={done ? "bg-clear-positive-fill" : "bg-clear-primary"} />
-                <span data-tip-anchor={i === 0 ? "debtsPayoffDates" : undefined} className={cn("text-[13px]", done ? "text-clear-positive" : "text-clear-muted")}>
+                <span className={cn("text-[13px]", done ? "text-clear-positive" : "text-clear-muted")}>
                   {status}
                 </span>
               </span>
@@ -148,9 +147,9 @@ export function PhoneOrderList({
     return o !== order && less > 0 ? t("phone.orderResultLess", { date, amount: formatEurWhole(less) }) : t("phone.orderResult", { date });
   };
   return (
-    <div data-tip-anchor="debtsSortAndImpact" className={cn("flex flex-col gap-2", className)}>
+    <div className={cn("flex flex-col gap-2", className)}>
       <span id="debts-phone-order" className="text-sm font-bold">{t("phone.payOffFirst")}</span>
-      <div data-tip-anchor="debtsOrder" role="radiogroup" aria-labelledby="debts-phone-order" className="flex flex-col gap-2">
+      <div role="radiogroup" aria-labelledby="debts-phone-order" className="flex flex-col gap-2">
         {DEBT_SORTS.map((o) => {
           const on = o === order;
           return (
@@ -233,7 +232,6 @@ export function PlanSheetRow({
     <>
       <button
         type="button"
-        data-tip-anchor="debtsWhereExtraGoes"
         onClick={() => setOpen(true)}
         className={cn(
           "flex min-h-[52px] cursor-pointer items-center justify-between gap-3 rounded-clear-tile border border-clear-line bg-clear-card px-3.5 py-2 text-left text-sm font-bold transition-colors hover:bg-clear-tile",

@@ -32,6 +32,8 @@ import "leaflet/dist/leaflet.css";
 import { SettingsPortalProvider } from "@/lib/settings-portal-state";
 import { FinishTransitionProvider } from "@/lib/finish-transition-state";
 import { FinishTransitionOverlay } from "@/components/finish-transition-overlay";
+import { GuideProvider } from "@/lib/guide-context";
+import { parseGuideState } from "@/lib/guide";
 
 // Plus Jakarta Sans is the Clear typeface and the app-wide body font (font-sans and
 // font-clear). DM Sans and DM Mono remain only for the legacy mustard `amount`, `heading`
@@ -129,8 +131,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     : [0, null, 0];
   // The sidebar's Import item says when the bank last synced (null without a connected
   // bank); the bank actions revalidate the layout after a sync, connect or disconnect.
-  // `now` is the moment the line is relative to, so server and browser render the same text.
-  const bankSyncNow = new Date().toISOString();
 
   // The src/config/categories.ts seed runs synchronously in
   // src/db/index.ts (module init) — see src/lib/config-sync.ts for why it can't be
@@ -148,6 +148,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <NextIntlClientProvider>
         <SettingsPortalProvider>
           <FinishTransitionProvider>
+            {/* Tips and page tours: what this account has seen, loaded once here. Nothing
+                shows while signed out or still in the onboarding wizard. */}
+            <GuideProvider initial={user?.onboardingComplete ? parseGuideState(user.guideState) : null}>
             <MotionProvider>
               <AppLockGate
                 // Only gate the app once the user is actually logged in and on a private
@@ -164,7 +167,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   needsReviewCount={needsReviewCount}
                   unreadNotificationCount={unreadNotificationCount}
                   bankSync={bankSync}
-                  bankSyncNow={bankSyncNow}
                   user={user ? { name: user.name, email: user.email, avatarUrl: user.avatarUrl } : null}
                 >
                   <MainContent>
@@ -176,6 +178,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   /register → "/" client-side navigation — see finish-transition-state.tsx. */}
               <FinishTransitionOverlay />
             </MotionProvider>
+            </GuideProvider>
           </FinishTransitionProvider>
         </SettingsPortalProvider>
       </NextIntlClientProvider>

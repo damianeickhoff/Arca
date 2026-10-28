@@ -437,8 +437,8 @@ function RecurringForm(props: Props & { title: string; open: boolean; onClose: (
 
   return (
     <>
-      <ContextualTip id="recurringWholeWord" active={open} />
-      <ContextualTip id="sharedCost" active={open} />
+      <ContextualTip inDialog id="recurringWholeWord" active={open} />
+      <ContextualTip inDialog id="sharedCost" active={open} />
       <AnchoredTip id="recurringMatchPreview" anchor="recurringMatchPreview" active={open && ruleChanged && (charges?.length ?? 0) >= 2} />
       {/* Payment plans are a type here, next to bills and debts: point at the switch once. */}
       <AnchoredTip id="paymentPlan" anchor="recurringType" active={open && !isPlan} />

@@ -515,7 +515,7 @@ export function CategoryPickerSheet(props: SheetProps) {
         <ClearDialogHeader title={title} subtitle={subtitle} onClose={() => change(false)} closeLabel={t("close")} />
         {/* Apply mode is new (suggestions, the rule switch); the pick mode explains the
             grouped, keyboard-driven list. */}
-        <ContextualTip id={apply ? "categoryPickerSuggestions" : "categoryPickerByGroup"} active={open} />
+        <ContextualTip inDialog id={apply ? "categoryPickerSuggestions" : "categoryPickerByGroup"} active={open} />
         <CategoryGrid
           categories={categories}
           current={apply ? staged : current}

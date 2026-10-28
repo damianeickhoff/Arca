@@ -6,7 +6,6 @@ import { clearButtonVariants } from "@/components/clear/button-variants";
 import { ClearCard, ClearCardHeader } from "@/components/clear/card";
 import { ClearChip } from "@/components/clear/chip";
 import { MoneyText } from "@/components/clear/money";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { currentFinancialMonth, financialMonthForDate, financialMonthRangeByMonth, offsetFinancialMonth, type FinancialMonthConfig } from "@/lib/date-range";
 import { formatEurWhole } from "@/lib/format";
 import { parseTrendsRange, trendsMonths } from "@/lib/trends";
@@ -192,7 +191,6 @@ export async function TrendsTab({
         className="lg:col-span-2 xl:col-span-3"
       />
 
-      <AnchoredTip id="insightsMovers" anchor="insightsMovers" />
     </div>
   );
 }
@@ -392,7 +390,7 @@ function MoversCard({
   );
 
   return (
-    <ClearCard aria-labelledby="trends-movers-title" data-tip-anchor="insightsMovers" className={cn("gap-0", className)}>
+    <ClearCard aria-labelledby="trends-movers-title" className={cn("gap-0", className)}>
       <ClearCardHeader title={<span id="trends-movers-title">{t("movers.title")}</span>} subtitle={subtitle} />
       {!movers ? (
         <p className="m-0 mt-3 text-sm text-clear-muted">{t("movers.noHistory")}</p>

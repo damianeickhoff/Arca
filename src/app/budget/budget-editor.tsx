@@ -497,7 +497,7 @@ export function BudgetEditorProvider({ data, children }: { data: BudgetOverview;
     <BudgetEditorContext.Provider value={api}>
       {children}
 
-      <ContextualTip id="budgetStrategy" active={strategyOpen} />
+      <ContextualTip inDialog id="budgetStrategy" active={strategyOpen} />
       <AnchoredTip id="budgetAddCategory" anchor="budgetAddCategory" active={editorOpen} />
 
       {/* ── The editor ───────────────────────────────────────────────────────── */}

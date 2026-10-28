@@ -33,7 +33,7 @@ const PROFILE_TONES: ClearTone[] = ["peach", "sky", "lilac", "mint", "butter", "
  * that tab says a consent ran out. The CSV flow's state lives in this component, so
  * switching tabs mid-import does not lose the file.
  */
-export function ImportPanel({ overview, bankSync, bankSyncNow }: { overview: ImportOverview; bankSync: BankSyncStatus | null; bankSyncNow: string }) {
+export function ImportPanel({ overview, bankSync }: { overview: ImportOverview; bankSync: BankSyncStatus | null }) {
   const t = useTranslations("importPage");
   const tPanels = useTranslations("settings.panels");
   const params = useSearchParams();
@@ -41,7 +41,7 @@ export function ImportPanel({ overview, bankSync, bankSyncNow }: { overview: Imp
     params.get("tab") === "bank" || params.has("bank") || params.has("bankError") ? "bank" : "csv",
   );
   const importer = useCsvImport();
-  const sync = useBankSyncText(bankSync, bankSyncNow);
+  const sync = useBankSyncText(bankSync);
 
   return (
     <>
@@ -71,7 +71,7 @@ export function ImportPanel({ overview, bankSync, bankSyncNow }: { overview: Imp
 
         {tab === "csv" ? (
           <>
-            <ContextualTip id="csvImport" />
+            <ContextualTip inDialog id="csvImport" />
             <ImportFlow importer={importer} variant="panel" />
             {importer.step === "upload" && <MapColumnsTile importer={importer} />}
             <div className="grid gap-4 sm:grid-cols-2">

@@ -21,6 +21,7 @@ import type { CategoryRule } from "@/db/schema";
 import { useChoice } from "@/components/clear/confirm-dialog";
 import { ContextualTip } from "@/components/contextual-tip";
 import { AnchoredTip } from "@/components/anchored-tip";
+import { PageTour } from "@/components/page-tour";
 import { TeachRuleStrip, type TeachMoment } from "@/components/teach-rule-strip";
 import { refreshLayoutAction } from "@/app/actions/refresh-layout";
 import { suggestCategoriesAction } from "@/app/actions/ai";
@@ -442,7 +443,7 @@ export function NeedsReviewView({
         {!current ? (
           <EmptyCard />
         ) : (
-          <ClearCard aria-labelledby="review-current-title" className="gap-6 p-5 lg:p-7 xl:col-span-2">
+          <ClearCard data-tip-anchor="needsReviewCard" aria-labelledby="review-current-title" className="gap-6 p-5 lg:p-7 xl:col-span-2">
             {/* The transaction */}
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-2.5">
@@ -811,13 +812,10 @@ export function NeedsReviewView({
         />
       )}
 
-      {/* The one-at-a-time flow is new; so is selecting several from the queue. */}
-      <ContextualTip id="needsReviewTriage" active={current != null} />
-      <AnchoredTip id="needsReviewBulk" anchor="needsReviewSelect" active={!selectMode && queue.length > 1} />
+      <PageTour id="needsReview" ready={current != null && !selectMode} />
       <ContextualTip id="reviewBulkRules" active={selectMode && selected.size > 1} />
       <AnchoredTip id="aiCategories" anchor="aiCategories" active={aiReady && current != null} />
       <AnchoredTip id="aiPicksKept" anchor="aiCategories" active={aiReady && aiPickStored} />
-      <AnchoredTip id="reviewTransfer" anchor="reviewTransfer" active={current != null && !selectMode} />
       <AnchoredTip id="reviewTeach" anchor="reviewTeach" active={!teach && worthTeaching.length > 0} />
     </div>
   );

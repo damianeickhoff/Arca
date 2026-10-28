@@ -46,7 +46,7 @@ export function PeriodHero({
   );
 
   return (
-    <section aria-label={t("label")} className="flex min-w-0 flex-col rounded-clear-card bg-clear-hero p-[18px] font-clear text-clear-hero-ink lg:p-6">
+    <section aria-label={t("label")} data-tip-anchor="activityPeriod" className="flex min-w-0 flex-col rounded-clear-card bg-clear-hero p-[18px] font-clear text-clear-hero-ink lg:p-6">
       {/* Phones */}
       <div className="flex flex-col gap-3 lg:hidden">
         <div className="flex items-center justify-between gap-3">

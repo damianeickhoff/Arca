@@ -534,7 +534,7 @@ function MappingBody({ data, onImported, onCancel }: { data: NeedsMappingRespons
       {/* Points out the header-row picker, for banks that put an account summary on top. */}
       <AnchoredTip id="importHeaderRow" anchor="importHeaderRow" />
       {/* Points out the balance column while this dialog is the thing on screen. */}
-      <ContextualTip id="importBalance" active />
+      <ContextualTip inDialog id="importBalance" active />
       {/* Only one tip shows at a time, so this queues behind the balance tip. */}
       <AnchoredTip id="importDatePreview" anchor="importDatePreview" />
     </>

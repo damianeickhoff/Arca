@@ -1,91 +1,57 @@
 "use client";
 
-// Geometry shared by the two anchored tip shapes — <AnchoredTip> (one pointer tip) and
-// <TipWalkthrough> (a stepped tour of several controls). Pure measurement only: where a
-// card and its highlight ring go for a given control. Lifecycle, storage and copy all
-// stay with the components.
+// The anchors that pointer tips and tour steps point at, and the geometry of a pointer
+// tip (<AnchoredTip>): where its card and highlight ring go for a given control. Page
+// and form tours place their own card (components/page-tour.tsx). Lifecycle, storage
+// and copy all stay with the components.
 
-/** Mark the control a tip points at: `data-tip-anchor="budgetButton"`. A plain data
- *  attribute rather than a ref so the tip can be declared anywhere in the tree —
- *  several of these controls sit deep inside components that have no business
+/** Mark the element a tip or a tour step points at: `data-tip-anchor="homeHero"`. A
+ *  plain data attribute rather than a ref so the tip can be declared anywhere in the
+ *  tree — several of these controls sit deep inside components that have no business
  *  knowing a tip exists. */
 export type TipAnchor =
-  // Bank connection link dialog: the account type the bank reports
-  | "bankAccountType"
-  | "budgetButton"
-  | "budgetEdit"
-  | "reportsButton"
-  | "settingsTrigger"
-  | "transactionRow"
-  | "healthCard"
-  | "importDatePreview"
-  // Redesigned Import CSV: the Check step's summary and "Map columns"
-  | "importCheck"
-  | "importMapColumns"
-  // Map columns: the header-row picker
-  | "importHeaderRow"
-  | "dataHealthMenu"
-  // Settings › Data health: the change log
-  | "recentChanges"
-  | "transactionListRow"
-  // App shell: the phone tab bar / desktop sidebar nav, and the Plan switch
-  | "mainNav"
-  | "planSwitch"
-  // The Settings page's section list
-  | "settingsNav"
-  // Home sections (Clear)
+  // ── Page tours (lib/guide.ts TOURS) ──
+  // Home: Safe to spend, This month, Money flow and the + (sidebar / tab bar)
   | "homeHero"
-  | "homeComingUp"
-  | "homeIncomeVsSpending"
+  | "homeThisMonth"
   | "homeMoneyFlow"
-  | "homeNetWorth"
-  | "homeBudgetLink"
-  // Privacy mode: the eye button on Home's hero
-  | "privacyEye"
-  // Redesigned Activity
-  | "activitySelect"
-  | "activityFilters"
-  | "activityDetail"
-  | "activitySearchBar"
-  | "activityHistory"
-  | "globalSearch"
-  | "globalSearchPhone"
   | "quickAdd"
   | "quickAddPhone"
-  | "activityKeys"
-  | "activityDetailTabs"
-  // Redesigned Insights
-  | "insightsMerchants"
-  | "insightsHealthNextStep"
-  | "insightsHealthHistory"
-  | "insightsComingUp"
-  | "insightsForecastRange"
+  // Activity: the period card, the filters (desktop) or the docked search (phone), the
+  // first row and the transaction beside the list
+  | "activityPeriod"
+  | "activityFilters"
+  | "activitySearchBar"
+  | "activityRow"
+  | "activityDetail"
+  // Needs a category: the current transaction, Internal transfer and Select
+  | "needsReviewCard"
+  | "reviewTransfer"
+  | "needsReviewSelect"
+  // Upcoming: the month arrows, a bill's status and next month
+  | "upcomingMonthNav"
+  | "billStatusControl"
+  | "upcomingNextMonth"
+  // Plan › Budget: the Plan switch, the period, a category row and the strategy
+  | "planSwitch"
+  | "budgetPeriodNav"
+  | "budgetCategoryRow"
+  | "budgetStrategy"
+  // Plan › Debts: You owe, this month's payments and the simulator
+  | "debtsOwe"
+  | "debtsPaymentsMonth"
+  | "debtsSimulator"
+  // Plan › Goals: a goal and the contributions
+  | "goalsDetail"
+  | "goalsContributions"
+  // Insights › Overview: the tab row, the summary, the running total, Where it went, merchants
+  | "insightsTabs"
+  | "insightsSummary"
   | "insightsRunningTotal"
   | "insightsBlockMap"
-  | "insightsMovers"
-  | "insightsNetWorthChanges"
-  // Redesigned Goals
-  | "goalsContributions"
-  | "goalsDetail"
-  | "goalsSuggestions"
-  // Redesigned Debts
-  | "debtsDetail"
-  | "debtsSimulator"
-  | "debtsSortAndImpact"
-  | "debtsOrder"
-  | "debtsOwed"
-  | "debtsPayoffDates"
-  | "debtsWhereExtraGoes"
-  | "debtsPaymentsMonth"
-  // Redesigned Budget
-  | "budgetStrategy"
-  | "budgetMove"
-  | "billStatusControl"
-  | "budgetNeedsCategory"
-  | "budgetUnbudgeted"
-  | "budgetAddCategory"
-  | "budgetPeriodNav"
-  // Debt form fields (walkthrough)
+  | "insightsMerchants"
+  // ── Form tours (components/page-tour.tsx FormTour) ──
+  // Debt form fields
   | "debtDirection"
   | "debtIcon"
   | "debtStartDate"
@@ -98,7 +64,7 @@ export type TipAnchor =
   | "debtLinkedBills"
   | "debtSave"
   | "debtHelp"
-  // Goal form controls (the new-saving walkthrough)
+  // Goal form controls (the new-saving tour)
   | "savingClose"
   | "savingIcon"
   | "savingTarget"
@@ -108,79 +74,77 @@ export type TipAnchor =
   | "savingCategory"
   | "savingSave"
   | "savingHelp"
+  // ── Pointer tips (<AnchoredTip>) ──
+  // Bank connection link dialog: the account type the bank reports
+  | "bankAccountType"
+  // Import CSV: the date preview, the Check step's summary, "Map columns" and the header-row picker
+  | "importDatePreview"
+  | "importCheck"
+  | "importMapColumns"
+  | "importHeaderRow"
+  // Settings: Data health in the phone sheet, the change log
+  | "dataHealthMenu"
+  | "recentChanges"
+  // The Settings page's section list
+  | "settingsNav"
   // Detail popups: the merchant profile's visit strip, the category detail's merchant
   // breakdown and a recurring item's last 12 charges
   | "merchantVisits"
   | "categoryMerchants"
   | "recurringCharges"
-  // The recurring editor's live "what would this rule match" chart, and a Budget
-  // category row (opens the category detail)
+  // The recurring editor's live "what would this rule match" chart and its type switch
   | "recurringMatchPreview"
-  | "budgetCategoryRow"
-  // Settings › Accounts: the "Add bank account" button
+  | "recurringType"
+  // The budget editor: add a category
+  | "budgetAddCategory"
+  // Settings › Accounts: the "Add bank account" button and the Bank accounts heading
   | "accountsAdd"
-  // Settings › Financial month: the start-day grid; Settings › Merchants: the
-  // All / Without icon switch
+  | "accountsBanks"
+  // Settings › Financial month: the start-day grid and the per-month exceptions;
+  // Settings › Merchants: the All / Without icon switch
   | "financialMonthDays"
-  // Settings › Financial month: the per-month exceptions (once Month overrides)
   | "financialMonthExceptions"
   | "merchantsWithoutIcon"
-  // Settings › Categories: the grouped list; Insights: the Groups / Categories switch
+  // Settings › Categories: the grouped list
   | "categoryGroups"
-  | "insightsGroupSwitch"
   // Transaction popups: Add transaction's "Save and add another", the Correct amount
-  // budget preview and the receipt viewer's zoom bar
+  // budget preview, the receipt viewer's zoom bar, the rule dialog's live match preview,
+  // the split dialog's shared-cost section and the link dialog's search
   | "addTransactionAnother"
   | "correctAmountPreview"
   | "receiptZoom"
-  // Transaction popups: the rule dialog's live match preview, the split dialog's
-  // shared-cost section and the link dialog's search over older expenses
   | "rulePreview"
   | "splitSharedCost"
   | "linkSearch"
-  // Upcoming's month arrows and the Needs a category queue's Select button
-  | "upcomingMonthNav"
-  | "upcomingNextMonth"
-  | "billSkip"
-  | "needsReviewSelect"
-  // Settings › Accounts: the Bank accounts heading (overdraft limits)
-  | "accountsBanks"
-  // The recurring editor's type switch (Payment plan)
-  | "recurringType"
-  // Settings: the AI row; Needs review's Ask AI button; the Insights summary card
+  // AI: the Settings row, Needs a category's Ask AI, the provider switch
   | "settingsAi"
   | "aiCategories"
-  | "insightsSummary"
-  // The one icon picker: its Icons · Brands tabs
+  | "aiProvider"
+  // The one icon picker: its Icons · Brands tabs and the All icons heading
   | "iconPickerTabs"
-  // The icon picker: the All icons heading with its category chips
   | "iconPickerAllIcons"
   // Notifications: the sidebar row, Home's phone bell, Settings › Notifications' push button
   | "notificationsNav"
   | "notificationsBell"
   | "pushDevice"
-  // Merchant-first rules: the teach strip after a category pick
+  // Merchant-first rules: the teach strip, a merchant's patterns, Needs a category's
+  // Worth teaching strip and a rule's "Show the N transactions"
   | "ruleTeach"
-  // Merchant-first rules: the merchant card's Recognised by patterns
   | "merchantPatterns"
-  // Bank connection: Import › Connect a bank
-  | "bankConnect"
-  // Merchant-first rules: Needs a category's Worth teaching strip
   | "reviewTeach"
-  // Import: the Bank connection card at the top of the page
+  | "ruleMatches"
+  // Import: Connect a bank and the CSV · Bank connection tabs
+  | "bankConnect"
   | "importTabs"
   // The Settings page: the Help row (the online guide)
   | "settingsHelp"
-  // Settings › Data health: "Look for regular payments"
+  // Settings › Data health and About: regular payments, backups, the update check, the
+  // Beta chip and the commits in this build
   | "recurringScan"
   | "backups"
   | "updateCheck"
   | "betaBuild"
-  | "betaChanges"
-  | "aiProvider"
-  // Needs a category: the Internal transfer choice and a rule's "Show the N transactions"
-  | "reviewTransfer"
-  | "ruleMatches";
+  | "betaChanges";
 
 export const CARD_WIDTH = 320;
 /** Breathing room between the card and the control it points at. */

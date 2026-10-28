@@ -39,7 +39,7 @@ export function UsersClient({ users: initialUsers, invites, currentUserId }: Pro
 
   return (
     <>
-      <ContextualTip id="userInvites" />
+      <ContextualTip inDialog id="userInvites" />
       <PanelHeader title={tPanels("users.title")} />
       <div className="flex flex-col gap-6 px-4 pt-1 font-clear text-clear-ink">
         <p className="m-0 text-sm text-clear-ink-2">{t("intro", { count: users.length })}</p>

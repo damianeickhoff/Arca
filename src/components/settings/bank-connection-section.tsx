@@ -35,6 +35,7 @@ import {
 } from "@/app/actions/bank";
 import type { AspspOption, BankConnectionView, BankSyncSummary, SyncOutcome } from "@/lib/bank-sync";
 import { maskAccountNumber } from "@/lib/format";
+import { SyncMoment } from "@/components/shell/bank-sync-line";
 import { cn } from "@/lib/utils";
 
 type Status = { tone: "success" | "error" | "warning"; text: string } | null;
@@ -43,8 +44,7 @@ function useDates() {
   const locale = useLocale();
   return useMemo(() => {
     const day = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
-    const moment = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-    return { day: (iso: string) => day.format(new Date(iso)), moment: (iso: string) => moment.format(new Date(iso)) };
+    return { day: (iso: string) => day.format(new Date(iso)) };
   }, [locale]);
 }
 
@@ -426,9 +426,12 @@ function ConnectionTile({
       )}
 
       {connection.lastSyncedAt && (
-        <p className="m-0 text-[13px] text-clear-muted">
-          {t("lastSynced", { when: dates.moment(connection.lastSyncedAt) })}
-          {lastResultText && !connection.lastResult?.error ? ` · ${lastResultText}` : ""}
+        <p className="m-0 flex text-[13px] text-clear-muted">
+          <SyncMoment
+            at={connection.lastSyncedAt}
+            className="gap-1.5"
+            suffix={connection.lastResult && !connection.lastResult.error ? ` · ${t("newCount", { count: connection.lastResult.imported })}` : undefined}
+          />
         </p>
       )}
       {connection.lastResult?.error && connection.lastResult.error !== "expired" && lastResultText && (

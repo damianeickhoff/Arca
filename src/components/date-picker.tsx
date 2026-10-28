@@ -509,7 +509,7 @@ export function DatePicker({ value, onChange, granularity = "day", triggerClassN
       </Dialog>
 
       {/* The quick picks are new; they announce themselves once. */}
-      <ContextualTip id="dateQuickPicks" active={open} />
+      <ContextualTip inDialog id="dateQuickPicks" active={open} />
     </>
   );
 }

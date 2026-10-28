@@ -253,7 +253,6 @@ function BillLine({ bill: b, data, tipAnchor }: { bill: UpcomingBill; data: Upco
             <button
               type="button"
               disabled={busy}
-              data-tip-anchor="billSkip"
               onClick={() => skip(!b.skipped)}
               className={cn(clearButtonVariants({ variant: "outline", size: "sm" }), "h-7 border-clear-line px-3 text-xs text-clear-ink-2")}
             >

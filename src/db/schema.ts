@@ -706,6 +706,10 @@ export const users = sqliteTable("users", {
   // that adds this column marks every pre-existing user (who onboarded before this
   // column existed) as already complete.
   onboardingComplete: integer("onboarding_complete", { mode: "boolean" }).notNull().default(true),
+  // Tips and page tours: what this account has seen and its two switches, as JSON
+  // (lib/guide.ts GuideState). Per account rather than per browser, so each tip and tour
+  // shows once on all devices. Null = nothing seen yet, both switches on.
+  guideState: text("guide_state"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 }, (t) => [
   uniqueIndex("users_email_unique").on(t.email),

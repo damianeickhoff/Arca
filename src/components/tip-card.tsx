@@ -3,8 +3,6 @@
 import type { ComponentType } from "react";
 import { useTranslations } from "next-intl";
 import {
-  IconTransfer,
-  IconListNumbers,
   IconServer,
   IconBook2,
   IconUserPlus,
@@ -12,33 +10,20 @@ import {
   IconSparkles,
   IconFolders,
   IconAdjustments,
-  IconBrandGoogle,
   IconBuildingBank,
   IconBuildingStore,
   IconCalendarCheck,
-  IconCalendarDollar,
-  IconCircleCheck,
   IconCamera,
   IconChartBar,
   IconChecklist,
   IconListCheck,
-  IconCompass,
   IconCalendarDue,
   IconCalendarEvent,
   IconCalendarStats,
-  IconPlayerSkipForward,
-  IconCalculator,
-  IconEyeOff,
-  IconLayoutSidebar,
-  IconChartLine,
-  IconLayoutSidebarRight,
   IconFilter,
   IconSearch,
-  IconChartBarPopular,
-  IconArrowsVertical,
   IconFileTextFilled,
   IconHandFinger,
-  IconHeartbeat,
   IconKeyboard,
   IconReload,
   IconScale,
@@ -46,15 +31,10 @@ import {
   IconStethoscope,
   IconTextWrap,
   IconTrendingUp,
-  IconRoute,
   IconUsers,
-  IconWallet,
   IconArrowsExchange,
-  IconArrowsSort,
-  IconArrowsSplit2,
   IconTag,
   IconFilter2,
-  IconTarget,
   IconCirclePlus,
   IconZoomIn,
   IconCategory2,
@@ -62,7 +42,6 @@ import {
   IconWand,
   IconFingerprint,
   IconHistory,
-  IconLayoutGrid,
   IconTableRow,
   IconDatabase,
   IconDownload,
@@ -74,7 +53,7 @@ import {
   IconDeviceMobileMessage,
 } from "@tabler/icons-react";
 
-import type { TipId } from "@/lib/tips";
+import type { TipId } from "@/lib/guide";
 
 const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   bankAccountType: IconTag,
@@ -82,18 +61,12 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   csvImport: IconFileTextFilled,
   recurring: IconReload,
   recurringWholeWord: IconTextWrap,
-  googleLookup: IconBrandGoogle,
   debtLinkedPayment: IconReload,
   debtFormTour: IconHandFinger,
   savingsFormTour: IconHandFinger,
   sharedCost: IconUsers,
   merchant: IconBuildingStore,
-  budget: IconWallet,
   budgetStrategy: IconAdjustments,
-  reports: IconChartBar,
-  forecast: IconTrendingUp,
-  health: IconHeartbeat,
-  keyboardShortcuts: IconKeyboard,
   importBalance: IconScale,
   dataHealth: IconStethoscope,
   recentChanges: IconHistory,
@@ -101,54 +74,8 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   importCheck: IconChecklist,
   importMapColumns: IconAdjustments,
   importHeaderRow: IconTableRow,
-  bulkSelect: IconChecklist,
-  budgetLocation: IconWallet,
-  reportsLocation: IconChartBar,
-  healthCard: IconHeartbeat,
-  settingsLocation: IconSettings,
-  strategyLocation: IconAdjustments,
-  transactionDetail: IconHandFinger,
-  clearNavigation: IconLayoutSidebar,
   settingsNav: IconSettings,
-  homeMoneyFlow: IconChartLine,
-  homeNetWorth: IconScale,
-  homeBudgetLink: IconWallet,
-  planHub: IconCompass,
-  homeSafeToSpendSum: IconCalculator,
-  privacyEye: IconEyeOff,
-  homeComingUp: IconCalendarDue,
-  homeIncomeVsSpending: IconChartBar,
-  activityDetail: IconLayoutSidebarRight,
-  activityFilters: IconFilter,
-  activitySelectMode: IconListCheck,
-  activitySearchBar: IconSearch,
-  activityHistory: IconChartBarPopular,
-  globalSearch: IconSearch,
-  activityKeys: IconArrowsVertical,
-  activityDetailTabs: IconLayoutSidebarRight,
-  budgetStrategyTarget: IconAdjustments,
-  budgetUnbudgeted: IconTag,
-  budgetMove: IconArrowsExchange,
-  billStatusControl: IconCircleCheck,
-  budgetNeedsCategory: IconTag,
   budgetAddCategory: IconTag,
-  budgetPeriodNav: IconCalendarDue,
-  debtsDetail: IconLayoutSidebarRight,
-  debtsSimulator: IconTrendingUp,
-  debtsSortAndImpact: IconArrowsSort,
-  debtsOrder: IconArrowsSplit2,
-  debtsOwed: IconUsers,
-  debtsPayoffDates: IconCalendarCheck,
-  debtsWhereExtraGoes: IconRoute,
-  debtsPaymentsMonth: IconCalendarDollar,
-  goalsContributions: IconChartBar,
-  goalsDetail: IconChartLine,
-  goalsSuggestions: IconTarget,
-  insightsMerchants: IconBuildingStore,
-  insightsHealthNextStep: IconTarget,
-  insightsHealthHistory: IconHeartbeat,
-  insightsComingUp: IconCalendarDue,
-  insightsForecastRange: IconCalendarStats,
   categoryPickerByGroup: IconTag,
   categoryPickerSuggestions: IconFilter2,
   dateQuickPicks: IconCalendarCheck,
@@ -157,7 +84,6 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   categoryMerchants: IconBuildingStore,
   recurringCharges: IconTrendingUp,
   recurringMatchPreview: IconChartBar,
-  budgetCategoryDetail: IconHandFinger,
   accountsAdd: IconBuildingBank,
   addTransactionAnother: IconCirclePlus,
   correctAmountPreview: IconScale,
@@ -165,36 +91,24 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   rulePreview: IconFilter,
   splitSharedCost: IconUsers,
   linkSearchOlder: IconSearch,
-  upcomingMonthNav: IconCalendarDue,
-  upcomingNextMonth: IconCalendarStats,
-  billSkip: IconPlayerSkipForward,
-  needsReviewTriage: IconTag,
-  needsReviewBulk: IconChecklist,
   financialMonthDays: IconCalendarStats,
   financialMonthExceptions: IconCalendarEvent,
   merchantsWithoutIcon: IconBuildingStore,
   categoryGroups: IconFolders,
-  insightsGroupSwitch: IconFolders,
   accountsOverdraft: IconBuildingBank,
   paymentPlan: IconCalendarDue,
   aiSettings: IconSparkles,
   aiCategories: IconSparkles,
-  insightsSummary: IconListNumbers,
   iconPicker: IconIcons,
   reviewTeach: IconWand,
   merchantPatterns: IconFingerprint,
   ruleTeach: IconWand,
   bankConnection: IconBuildingBank,
-  quickAdd: IconCirclePlus,
   importTabs: IconArrowsExchange,
   helpGuide: IconBook2,
   userInvites: IconUserPlus,
   recurringSuggestions: IconSparkles,
   recurringScan: IconRepeat,
-  insightsRunningTotal: IconChartLine,
-  insightsBlockMap: IconLayoutGrid,
-  insightsMovers: IconTrendingUp,
-  insightsNetWorthChanges: IconScale,
   whatsNew: IconGift,
   backups: IconDatabase,
   updateCheck: IconRefresh,
@@ -202,7 +116,6 @@ const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   betaBuild: IconFlask,
   betaChanges: IconGitCommit,
   aiProvider: IconServer,
-  reviewTransfer: IconTransfer,
   aiPicksKept: IconSparkles,
   ruleMatches: IconListCheck,
   reviewBulkRules: IconListCheck,
@@ -228,7 +141,6 @@ export function TipCard({
   compact = false,
   title,
   body,
-  footer,
   maxHeight,
 }: {
   id: TipId;
@@ -237,14 +149,10 @@ export function TipCard({
   /** Pointer tips sit next to a control rather than across the top, so they drop the
    *  icon chip and run a size tighter — the control they point at is the icon. */
   compact?: boolean;
-  /** Copy overrides. A walkthrough has one card per step, so its text can't come from
-   *  the tip id the way a single-shot tip's does; everything else omits these and gets
-   *  the `tips.<id>` copy as before. */
+  /** Copy overrides for a tip whose text depends on data (the version cards); every
+   *  other tip gets the `tips.<id>` copy. */
   title?: string;
   body?: string;
-  /** Replaces the "Don't show again" / "Got it" pair — a walkthrough steers with
-   *  Back/Next instead. */
-  footer?: React.ReactNode;
   /** Pointer tips pass the room left on screen; beyond it the card scrolls. */
   maxHeight?: number;
 }) {
@@ -268,24 +176,23 @@ export function TipCard({
         </div>
       </div>
 
-      {footer ?? (
-        <div className="mt-3.5 flex items-center justify-end gap-1">
-          <button
-            type="button"
-            onClick={onDismissAll}
-            className="h-9 px-3 rounded-full text-sm font-semibold text-clear-muted active:scale-[0.97] transition-transform"
-          >
-            {t("dontShowAgain")}
-          </button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="h-9 px-5 rounded-full bg-clear-primary text-clear-primary-ink text-sm font-bold active:scale-[0.97] transition-transform"
-          >
-            {t("gotIt")}
-          </button>
-        </div>
-      )}
+      {/* "Don't show again" turns Tips off altogether (Settings › Help). */}
+      <div className="mt-3.5 flex items-center justify-end gap-1">
+        <button
+          type="button"
+          onClick={onDismissAll}
+          className="h-9 px-3 rounded-full text-sm font-semibold text-clear-muted active:scale-[0.97] transition-transform"
+        >
+          {t("dontShowAgain")}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="h-9 px-5 rounded-full bg-clear-primary text-clear-primary-ink text-sm font-bold active:scale-[0.97] transition-transform"
+        >
+          {t("gotIt")}
+        </button>
+      </div>
     </div>
   );
 }

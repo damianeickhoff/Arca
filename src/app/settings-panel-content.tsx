@@ -130,11 +130,10 @@ async function DataHealthPanel({ canManageBackups }: { canManageBackups: boolean
 }
 
 /** Import: the CSV flow and the bank connection as two tabs, with profiles, recent
- *  imports and the sync log beside them. `now` keeps the "last synced" text the same on
- *  the server and in the browser. */
+ *  imports and the sync log beside them. */
 async function ImportPanelContent() {
   const [overview, bankSync] = await Promise.all([loadImportOverview(), getBankSyncStatus()]);
-  return <ImportPanel overview={overview} bankSync={bankSync} bankSyncNow={new Date().toISOString()} />;
+  return <ImportPanel overview={overview} bankSync={bankSync} />;
 }
 
 /** Version, what leaves the server (with its live state), and the release notes. */

@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ClearCard, ClearCardHeader } from "@/components/clear/card";
-import { AnchoredTip } from "@/components/anchored-tip";
 import { NetWorthTrendChart } from "@/app/reports/net-worth-trend-chart";
 import { loadForecast } from "./load-forecast";
 import { CashFlowSection } from "./cash-flow-section";
@@ -55,8 +54,6 @@ export default async function ForecastPage({
         <RecurringItemsCard items={data.items} month={data.month} months={data.months} allowedMonths={data.allowedMonths} />
       </div>
 
-      <AnchoredTip id="insightsForecastRange" anchor="insightsForecastRange" active={data.cashFlow.status !== "empty"} />
-      <AnchoredTip id="insightsComingUp" anchor="insightsComingUp" active={data.cashFlow.events.length > 0} />
     </>
   );
 }

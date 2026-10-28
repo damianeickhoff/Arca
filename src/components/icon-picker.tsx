@@ -882,7 +882,7 @@ export function IconTileButton({
   /** Accessible name, e.g. "Change icon". Already translated. */
   label: string;
   onClick: () => void;
-  /** data-tip-anchor for a walkthrough step. */
+  /** data-tip-anchor for a form tour step. */
   anchor?: string;
 }) {
   return (
@@ -908,7 +908,7 @@ export function IconTileButton({
 /**
  * The "Icon & colour" row of a form (a savings goal, a debt): the big tile that opens
  * the picker, its label and a one-line hint. The picker sets icon and colour together.
- * `open` is controllable so a walkthrough can pause while the picker is up.
+ * `open` is controllable so a form tour can pause while the picker is up.
  */
 export function IconChoiceRow({
   label,

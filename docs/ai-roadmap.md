@@ -41,8 +41,8 @@ Planned AI features for Centje, in build order. One feature per session/commit.
   budgets, totals). The model writes sentences and picks from lists; it never produces an amount
   or a date that is shown as fact.
 - Handle every `AiError` with its own translated message (`errors.*` keys exist per surface).
-- Clear design, translation function for all text (en + nl), and a tip (`src/lib/tips.ts`, add to
-  `IGNORES_DISABLED`) for each new feature, per CLAUDE.md.
+- Clear design, translation function for all text (en + nl), and a tip for each new feature
+  (`TIP_IDS` in `src/lib/guide.ts`, see AGENTS.md "Tips and page tours").
 - Pure helpers get a test in `tests/lib/`.
 - The `@anthropic-ai/sdk` dependency is unused; remove it (or wire it as a second provider behind
   the same `generateJson` interface) rather than leaving it in `package.json`.
