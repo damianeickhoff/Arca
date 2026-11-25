@@ -58,9 +58,11 @@
 - **Insights**: an overview of any period, trends per category and group, net worth over time, a financial health score, and a cash-flow **forecast** that warns before you run short.
 
 **Keep track without the busywork**
+- **Bank connection** through Enable Banking (free for your own accounts): Dutch banks' transactions come in by themselves every day, from all the history the bank shares or from a date you pick.
 - **CSV import** for ING, Rabobank, ABN AMRO, bunq, Knab and Revolut out of the box, plus a column mapper for any other bank (remembered for next time).
 - **Needs a category**: sort uncategorised transactions one by one, and turn each answer into a rule so the list stays short.
-- **Activity**: search, filters, bulk edits, split transactions, receipts, shared costs and transfers between your own accounts.
+- **Activity**: search, filters, bulk edits, split transactions, receipts and shared costs.
+- **Accounts**: bank accounts, savings, investments, joint accounts, cards and cash in one list. Transfers between them are found by themselves and stay out of your income and spending; money into savings counts as saved.
 - **Merchants** with logos, friendly names and category groups (Housing, Transport, …).
 
 **Plan ahead**
@@ -80,7 +82,7 @@
 - Self-hosted: one SQLite file in `/data`, no cloud account. **Settings › About** lists every connection Arca can make (bank, AI, receipts, map) with its state and shows the release notes offline; there is no telemetry, and the update check is a switch that is off until you turn it on.
 - **Backups**: a copy of the database before every update, plus manual backups you can download, all in Settings › Data health.
 - Several users, two-factor sign-in, an app lock (PIN or passkey) and a privacy mode that hides amounts.
-- Light and dark theme, English and Dutch, works on desktop and phone, installable as an app (PWA).
+- Light and dark theme, English and Dutch, works on desktop and phone, installable as an app (PWA). A short tour shows you around each page the first time.
 
 ## 🚀 Getting started
 

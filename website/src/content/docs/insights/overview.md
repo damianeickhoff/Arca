@@ -11,7 +11,7 @@ Insights has five tabs: **Overview**, **Trends**, **Net worth**, **Forecast** an
 
 ## Pick a period
 
-The **Period** menu at the top: **Budget** (your budget month, payday to payday), **Week**, **Month**, **Last 3 months**, **Last 6 months**, **Year** or **Custom**. You can also filter on **Categories** and **Accounts**. Overview opens on your current budget period.
+**Filters** at the top holds the period, **Budget** (your budget month, payday to payday), **Week**, **Month**, **Last 3 months**, **Last 6 months**, **Year** or **Custom**, and the **Categories** and **Accounts** to include. The button shows how many filters are on; **Clear all** resets them. Overview opens on your current budget period.
 
 ## The cards
 

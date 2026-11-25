@@ -15,7 +15,7 @@ You get here from the **Review** strip on Home, the count in Activity, or the ba
 
 You see one transaction at a time, with the text exactly as it appears on your bank statement.
 
-1. Pick a category. **Suggested** ones are at the top, based on your rules and earlier choices; **All categories** are below.
+1. Pick a category. **Suggested** ones are at the top, based on your rules and earlier choices. **Most used** holds your top 10 of the last six months; **All categories** opens the full list.
 2. Choose **Save and next** (or press <kbd>Enter</kbd>).
 3. Not sure? **Skip** (or <kbd>S</kbd>) moves on without saving.
 
@@ -25,7 +25,9 @@ Money you moved to one of your own accounts isn't spending. Arca spots this by i
 
 ## Also create a rule
 
-Switch on **Also create a rule for similar transactions** and Arca files the matching ones too, now and on every import.
+Switch on **Also create a rule for similar transactions** and Arca files the matching ones too, now and on every import. **Edit rule** beside the switch lets you adjust the rule first (the text it looks for, an amount, the account); it's made when you save the transaction.
+
+By default the rule only files earlier matches **without a category**: ones you already filed keep theirs. Pick **All** under the rule to move those too.
 
 Want to know which ones first? **Show the N transactions** lists every earlier transaction the rule would file now, with date, description, amount and account. They're all ticked; untick the ones the rule should leave alone, or use **Select none** and tick a few. Unticked transactions keep what they have now, also when rules run again later. The rule itself stays and files new transactions that match.
 

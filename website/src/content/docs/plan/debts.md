@@ -7,7 +7,7 @@ description: What you owe and what you're owed, with payoff dates and a simulato
 
 ## Add a debt
 
-Use the **+** add menu → **Debt**. Choose **I owe** or **I am owed**, then fill in:
+Choose **Add** on the Debts page → **A debt** (or use the **+** add menu → **Debt**). Choose **I owe** or **I am owed**, then fill in:
 
 - **Name**, **Balance** and the date that balance is from (**Balance as of**).
 - **Minimum monthly payment** and the **Annual interest rate**, if there is one.
@@ -24,6 +24,8 @@ When you link a recurring bill, its payments count as progress on the debt, and 
 At the top: **You owe** and **Owed to you**. Each debt shows its balance, how much of each payment goes to interest, and the month it's paid off. If a payment doesn't even cover the interest, Arca says **Never at this rate**.
 
 Open a debt for its details: the linked bill, the interest in each payment, and every payment still to come. The pencil edits it.
+
+Paid something extra, or a lump sum? Choose **Add** → **Log a payment**: it comes straight off the balance.
 
 ## Payoff timeline
 

@@ -34,6 +34,8 @@ Arca ticks a recurring item off when a transaction matches it:
 
 As you type, a chart shows which past charges the item would pick up, so you can check before you save. A matched transaction gets the recurring item's category.
 
+Each due date is paid by the matching charge closest to it, up to about two weeks before or after (a few days for weekly items), even across the start of a new month. One charge pays one due date of one item: two subscriptions to the same payee no longer tick each other off. A bill due on a Saturday or Sunday counts as due on the Monday after, because banks don't collect at the weekend.
+
 The item's details show its last 12 charges, and call it out when the price changes. A long gap (a subscription you stopped and started again) shows as a dashed line and doesn't count as a price change. When the charges span more than one year, the years are shown under the bars.
 
 ## Found by Arca

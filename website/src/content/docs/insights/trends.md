@@ -3,7 +3,7 @@ title: Trends
 description: How your income and spending change from month to month.
 ---
 
-**Insights → Trends** shows how things change over time, per budget month.
+**Insights → Trends** shows how things change over time, per budget month. **Filters** picks the range (3, 6 or 12 months, or Custom) and the categories and accounts to include.
 
 ## The cards
 

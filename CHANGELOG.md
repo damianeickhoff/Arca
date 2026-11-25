@@ -4,6 +4,61 @@ Every release of Arca, newest first. The same notes are on the GitHub releases p
 and in the app under Settings › About. Format: `## version — date`, one line with the
 release title, an intro paragraph, then `###` sections with bullets.
 
+## 1.9.0 — 2026-11-25
+Your own accounts, honest totals and page tours
+
+Arca 1.9.0 keeps money moving between your own accounts out of income and spending, matches every bill to the payment that belongs to it, gives Activity, Upcoming, Debts and Insights a cleaner layout, and shows you around each page the first time you open it.
+
+### 💳 Accounts and transfers
+- **One Accounts list** in Settings: bank accounts, savings, investments, joint accounts, credit cards, cash and possessions, grouped by type. Each row says where its balance comes from: your bank, kept by hand, or none yet.
+- **The type decides what the money means.** Money to a savings or investment account counts as saved; to a checking account, card or cash it's a transfer; to a joint account you keep by hand it's household spending (money it pays back is marked paid back, not income). Saved is net on Home and in Trends, and Home says **Taken from savings** when more came out than went in.
+- **Transfers are found by themselves**: the same amount leaving one imported account and arriving in another within two days. **Found in your transactions** suggests the accounts it sees, with their type, and a card top-up as another name for the bank it tops up. **Not an internal transfer** in a transaction's details overrides it.
+- Every total (Home, Activity, Budget, Insights, Health, Trends, merchant details) now leaves out transfers and the transactions you excluded from reports.
+
+### 🔁 Recurring
+- **Each due date gets its own payment**: the matching charge closest to it, also just before or after payday, and one charge pays one bill. Bills due around payday no longer show as unpaid, and two subscriptions to the same payee no longer tick each other off.
+- A bill due on a Saturday or Sunday moves to the Monday after, so it isn't overdue a day early.
+
+### 🧾 Plan
+- **Budget** is planned on your regular income (salary and benefits), with a notice when the budget is higher than that. The overall budget covers your bills and spending without a category; savings and income categories never count. The pace is about day-to-day spending, so bills paid early no longer mean "Spending fast".
+- **Edit budget** moved to the ⋯ menu, and the month stepper shares its row with a compact Budget · Debts · Goals switch.
+- **Debts**: one **Add** button for a debt or a payment. On phones, one **You owe** card and a shorter debt sheet. A linked bill counts once per paid due date, and a payment just before the balance date is no longer skipped.
+
+### 🏠 Home and Activity
+- **Safe to spend** shows only what's spent in its bar; **Money flow** goes on dotted to the end of the period with what's still expected; **Coming up** is a list.
+- **Activity** opens with one black card for this month: what's left after spending, money in and out, and spending per day with the bills still to come. Period, accounts, categories and the rest sit behind one **Filters** button. Rows show the time the bank wrote down, else the account.
+- **Upcoming** shows a big calendar of the month, with **Still due** beside it and a preview of next month.
+- **Needs a category**: your **Most used** categories, **Edit rule** before a rule is made, and a new rule leaves earlier transactions that already have a category alone unless you pick **All**.
+- On phones the tab bar shows icons only, with search as its own round button.
+
+### 📊 Insights
+- Overview states what's **spoken for** (spent so far plus the bills still due) instead of guessing where the month ends.
+- A budget month is compared with the budget month before it, up to the same day; money others pay back counts toward Saved.
+- Net worth and the Forecast plan share one projection.
+- Period, categories and accounts sit behind one **Filters** button on Overview and Trends.
+
+### 🏦 Bank connection
+- **Import from**: pick a date in **Link accounts** and nothing older comes in. The date shows on the bank's card, where you can change or clear it. Banks still decide how far back they share.
+
+### 👋 Tips and tours
+- **Page tours**: the first time you open Home, Activity, Needs a category, Upcoming, Budget, Debts, Goals or Insights, a short tour walks you through it. Tips stay for rarer features.
+- What you've seen is kept with your account, so each shows once on all your devices. **Don't show again** really turns tips off, and **Settings › Help** has a switch for each, **Replay** per tour and **Show every tip and tour again**.
+
+### ⚙️ Settings
+- Default category names follow your language: switch to Dutch and the defaults you didn't rename get their Dutch names.
+- Deleting a category keeps its transactions and recurring items, without a category; **Undo** links them back.
+- A card payment that only names a store number and a town no longer becomes a merchant named after the town.
+- The app lock follows your theme instead of always being dark.
+- The sync line in the sidebar shows a clock and the time, like "Today, 14:05".
+
+### 📖 Guide
+- A 20-second video on the start page and a guided tour at `/demo/`. The Accounts, Home, Activity, Upcoming, Recurring, Needs a category, Debts, Insights and bank connection pages follow the new features.
+
+### 🐳 Installing and updating
+Image: `damianeickhoff/arca:latest` (also `1.9.0`) on Docker Hub, mirrored to `ghcr.io/damianeickhoff/arca`. On Unraid, **Check for updates** in the Docker tab. New on start: `transfer_pair_id` and `not_transfer` columns on transactions, `match_names` on bank accounts, `account_number` and `match_names` on hand-kept accounts, `guide_state` on users and `import_from` on bank connections, all created by Arca itself. On the first start Arca also renames untouched default categories to your language, fills in missing category kinds and removes merchants it named after a town.
+
+As always: Arca backs the database up before the first start on a new version.
+
 ## 1.8.0 — 2026-10-25
 A tidier recurring list, and bills that keep up with renamed payees
 

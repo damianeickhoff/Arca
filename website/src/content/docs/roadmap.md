@@ -25,7 +25,7 @@ tableOfContents: false
 #     <span class="rm-area rm-area--ai">AI</span>
 #     <h3>Title</h3>
 #     <p>One plain sentence.</p>
-#     <p class="rm-meta">In progress · Oct 2026</p>
+#     <p class="rm-meta">In progress · Nov 2026</p>
 #   </div>
 #
 #   Area chips: rm-area--ai (AI), rm-area--banking (Banking), rm-area--app (App),
@@ -47,13 +47,13 @@ tableOfContents: false
 <div class="rm not-content">
 
 <div class="rm-shipped">
-  <span class="rm-shipped__chip">Just shipped · 1.8.0</span>
+  <span class="rm-shipped__chip">Just shipped · 1.9.0</span>
   <ul class="rm-shipped__items">
-    <li>An archive for paused and ended bills</li>
-    <li>One bill, several payee names</li>
-    <li>Recurring bills only added when you accept them</li>
-    <li>Clear all notifications</li>
-    <li>Sync your bank from the sidebar</li>
+    <li>All your accounts in one list</li>
+    <li>Transfers between your own accounts kept out of your totals</li>
+    <li>Every bill matched to its own payment</li>
+    <li>A short tour of each page the first time</li>
+    <li>Bank sync from a date you pick</li>
   </ul>
   <a class="rm-shipped__link" href="https://github.com/damianeickhoff/Arca/releases/latest">Release notes</a>
 </div>
