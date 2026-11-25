@@ -8,9 +8,13 @@ import { buildEnableBankingJwt, isUsablePrivateKey, JWT_LIFETIME_SECONDS } from 
 import {
   bankTransactionHash,
   cardTypeForCashAccountType,
+  dropBeforeImportFrom,
+  importFromMovedEarlier,
   mapEnableBankingTransaction,
+  parseImportFrom,
   splitAlreadyImported,
   syncDateFrom,
+  syncWindow,
   transactionDate,
   type EbTransaction,
 } from "@/lib/enable-banking/map";
@@ -189,6 +193,77 @@ describe("syncDateFrom", () => {
   it("looks a week back from the last sync for late bookings", () => {
     expect(syncDateFrom("2026-10-19")).toBe("2026-10-12");
     expect(syncDateFrom("2026-03-03", 7)).toBe("2026-02-24");
+  });
+});
+
+describe("syncWindow", () => {
+  it("asks for the longest history the first time without an Import from", () => {
+    expect(syncWindow(null, null)).toEqual({ strategy: "longest" });
+    expect(syncWindow(null, "not a date")).toEqual({ strategy: "longest" });
+  });
+
+  it("asks from Import from on the first sync", () => {
+    expect(syncWindow(null, "2026-01-01")).toEqual({ date_from: "2026-01-01" });
+  });
+
+  it("looks a week back on later syncs", () => {
+    expect(syncWindow("2026-10-19", null)).toEqual({ date_from: "2026-10-12" });
+  });
+
+  it("never asks from before Import from", () => {
+    // The week back reaches before the date: the date wins.
+    expect(syncWindow("2026-10-03", "2026-10-01")).toEqual({ date_from: "2026-10-01" });
+    // The date is long past: the week back wins.
+    expect(syncWindow("2026-10-19", "2026-01-01")).toEqual({ date_from: "2026-10-12" });
+  });
+});
+
+describe("dropBeforeImportFrom", () => {
+  const rows = [{ date: "2025-12-31" }, { date: "2026-01-01" }, { date: "2026-02-10" }];
+
+  it("keeps rows on and after the date", () => {
+    expect(dropBeforeImportFrom(rows, "2026-01-01")).toEqual([{ date: "2026-01-01" }, { date: "2026-02-10" }]);
+  });
+
+  it("keeps everything without a (valid) date", () => {
+    expect(dropBeforeImportFrom(rows, null)).toBe(rows);
+    expect(dropBeforeImportFrom(rows, "2026-13-01")).toBe(rows);
+  });
+});
+
+describe("importFromMovedEarlier", () => {
+  it("is true for an earlier date or a cleared one", () => {
+    expect(importFromMovedEarlier("2026-03-01", "2026-01-01")).toBe(true);
+    expect(importFromMovedEarlier("2026-03-01", null)).toBe(true);
+  });
+
+  it("is false for a later or the same date, or when there was none", () => {
+    expect(importFromMovedEarlier("2026-01-01", "2026-03-01")).toBe(false);
+    expect(importFromMovedEarlier("2026-01-01", "2026-01-01")).toBe(false);
+    expect(importFromMovedEarlier(null, "2026-01-01")).toBe(false);
+    expect(importFromMovedEarlier(null, null)).toBe(false);
+  });
+});
+
+describe("parseImportFrom", () => {
+  const today = "2026-11-25";
+
+  it("clears on null or an empty string", () => {
+    expect(parseImportFrom(null, today)).toEqual({ ok: true, value: null });
+    expect(parseImportFrom(undefined, today)).toEqual({ ok: true, value: null });
+    expect(parseImportFrom("", today)).toEqual({ ok: true, value: null });
+  });
+
+  it("takes a real date up to today", () => {
+    expect(parseImportFrom("2026-01-01", today)).toEqual({ ok: true, value: "2026-01-01" });
+    expect(parseImportFrom(" 2026-11-25 ", today)).toEqual({ ok: true, value: "2026-11-25" });
+  });
+
+  it("refuses a future date, a non-date and a non-string", () => {
+    expect(parseImportFrom("2026-11-26", today)).toEqual({ ok: false });
+    expect(parseImportFrom("2026-02-30", today)).toEqual({ ok: false });
+    expect(parseImportFrom("1 Jan 2026", today)).toEqual({ ok: false });
+    expect(parseImportFrom(20260101, today)).toEqual({ ok: false });
   });
 });
 

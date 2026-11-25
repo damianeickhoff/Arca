@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ParsedRow } from "@/lib/bank-parsers";
 import { normalizeAccountNumber } from "@/lib/internal-transfers";
+import { isValidISODate } from "@/lib/date-valid";
 
 // Turning Enable Banking transactions into the rows the CSV import already knows how to
 // store (src/lib/import-rows.ts), and the two duplicate checks a bank sync needs. Pure,
@@ -169,6 +170,54 @@ export function syncDateFrom(lastSyncedDate: string | null, overlapDays = SYNC_O
   const d = new Date(`${lastSyncedDate}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() - overlapDays);
   return d.toISOString().slice(0, 10);
+}
+
+/** What a sync asks the bank for: from a date, or as far back as the bank goes. */
+export type SyncWindow = { date_from: string } | { strategy: "longest" };
+
+/**
+ * The window for one account's sync. `importFrom` is the connection's "Import from" date
+ * (null = all the history the bank gives). The first sync asks from that date, or for the
+ * longest history without one; a later sync looks back from the last sync as
+ * `syncDateFrom` does, but never before `importFrom`.
+ */
+export function syncWindow(lastSyncedDate: string | null, importFrom: string | null): SyncWindow {
+  const from = isValidISODate(importFrom) ? importFrom : null;
+  const since = syncDateFrom(lastSyncedDate);
+  if (since && from) return { date_from: since > from ? since : from };
+  if (since) return { date_from: since };
+  if (from) return { date_from: from };
+  return { strategy: "longest" };
+}
+
+/** Rows dated before `importFrom` are dropped: a bank may send more than it was asked for. */
+export function dropBeforeImportFrom<T extends { date: string }>(rows: T[], importFrom: string | null): T[] {
+  if (!isValidISODate(importFrom)) return rows;
+  return rows.filter((r) => r.date >= importFrom);
+}
+
+/**
+ * True when a new "Import from" reaches further back than the old one (clearing it =
+ * all history, the earliest of all). The accounts' last synced dates are then reset, so
+ * the next sync fetches the newly allowed stretch instead of only the last week.
+ */
+export function importFromMovedEarlier(before: string | null, after: string | null): boolean {
+  const a = isValidISODate(before) ? before : null;
+  const b = isValidISODate(after) ? after : null;
+  if (a == null) return false;
+  return b == null || b < a;
+}
+
+/**
+ * An "Import from" as the settings action receives it: null or "" clears it, a real
+ * YYYY-MM-DD up to `today` sets it. Anything else (a future date, garbage) is refused.
+ */
+export function parseImportFrom(value: unknown, today: string): { ok: true; value: string | null } | { ok: false } {
+  if (value == null || value === "") return { ok: true, value: null };
+  if (typeof value !== "string") return { ok: false };
+  const date = value.trim();
+  if (!isValidISODate(date) || date > today) return { ok: false };
+  return { ok: true, value: date };
 }
 
 /** The account types Centje knows (banks.cardType), as far as a bank can tell us. */

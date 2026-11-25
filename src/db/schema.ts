@@ -523,6 +523,9 @@ export const bankConnections = sqliteTable("bank_connections", {
   status: text("status").notNull().default("active"),
   lastSyncedAt: text("last_synced_at"), // ISO timestamp of the last finished sync
   lastResult: text("last_result"), // JSON BankSyncSummary of the last sync
+  // YYYY-MM-DD: sync nothing dated before it (the first sync asks the bank from here
+  // instead of as far back as it goes); null = all the history the bank gives.
+  importFrom: text("import_from"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 

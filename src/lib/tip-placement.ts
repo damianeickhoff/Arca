@@ -77,6 +77,8 @@ export type TipAnchor =
   // ── Pointer tips (<AnchoredTip>) ──
   // Bank connection link dialog: the account type the bank reports
   | "bankAccountType"
+  // … and its "Import from" date field
+  | "bankImportFrom"
   // Import CSV: the date preview, the Check step's summary, "Map columns" and the header-row picker
   | "importDatePreview"
   | "importCheck"

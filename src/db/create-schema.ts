@@ -740,6 +740,7 @@ export const BANK_CONNECTION_TABLES_SQL = `
     status         TEXT    NOT NULL DEFAULT 'active',
     last_synced_at TEXT,
     last_result    TEXT,
+    import_from    TEXT,
     created_at     TEXT    DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS bank_connection_accounts (

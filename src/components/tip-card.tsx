@@ -57,6 +57,7 @@ import type { TipId } from "@/lib/guide";
 
 const TIP_ICONS: Record<TipId, ComponentType<{ className?: string }>> = {
   bankAccountType: IconTag,
+  bankImportFrom: IconCalendarEvent,
   receiptScan: IconCamera,
   csvImport: IconFileTextFilled,
   recurring: IconReload,

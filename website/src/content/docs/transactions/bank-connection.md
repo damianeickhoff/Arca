@@ -77,13 +77,25 @@ Your new app starts as **Inactive**. To switch it on:
 5. Choose **Connect a bank**, search for your bank and pick it.
 6. Confirm at your bank. You come back to Arca automatically.
 7. **Link accounts**: for each account the bank shared, choose which account in Arca it belongs to, **New account from this one**, or **Don't sync**. Accounts whose IBAN Arca already knows are linked for you. Next to each account you see the type your bank reports (**Checking**, **Savings** or **Credit card**): Arca gives the account that type when you link it, unless you already picked one. You can always change it later in Settings → **Accounts**. Accounts you linked before Arca read the type get it on their next sync.
-8. Choose **Save and sync**.
+8. Optional: pick an **Import from** date. Arca then leaves everything older at the bank. Leave it empty for all the history the bank gives.
+9. Choose **Save and sync**.
 
 Your transactions come in, go through your [rules and merchants](/Arca/transactions/rules-and-merchants/), and anything new lands in [Needs a category](/Arca/everyday/needs-a-category/).
 
 :::tip[Older history]
 Banks usually share about the last 90 days on the first sync. [Import a CSV](/Arca/transactions/csv-import/) for anything older; Arca recognises the overlap and won't count anything twice.
 :::
+
+## Import from a date
+
+By default the first sync brings in all the history your bank is willing to share. If you only want transactions from a certain day on (say your CSV import already covers the past, or you start fresh on 1 January), set an **Import from** date in **Link accounts**.
+
+- **Nothing older comes in.** Arca asks the bank from that date on, and drops anything older the bank sends anyway.
+- **The bank still sets the limit.** Banks only share a limited stretch of history, often 90 days to a few years. An earlier date can't reach further back than that.
+- **It shows on the bank's card** as a chip, for example **From 1 Jan 2026**. Tap it to pick another date, or choose **Clear** for all history again.
+- **An earlier date (or clearing it)** makes the next sync fetch the newly allowed stretch. Transactions already there are recognised and not counted twice.
+- **A later date** only stops older transactions from coming in. Transactions already imported stay; delete them yourself if you want them gone.
+- **Reconnecting** keeps the date.
 
 ## The daily sync
 

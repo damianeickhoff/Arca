@@ -12,11 +12,14 @@ import {
 } from "@/lib/enable-banking/client";
 import {
   cardTypeForCashAccountType,
+  dropBeforeImportFrom,
+  importFromMovedEarlier,
   mapEnableBankingTransaction,
   splitAlreadyImported,
-  syncDateFrom,
+  syncWindow,
   type DetectedCardType,
   type EbTransaction,
+  type SyncWindow,
 } from "@/lib/enable-banking/map";
 import type { ParsedRow } from "@/lib/bank-parsers";
 import { importParsedRows } from "@/lib/import-rows";
@@ -134,7 +137,7 @@ export type CallbackOutcome =
  * The browser is back from the bank with `code` (or `error`) and our `state`: exchange
  * the code for a session, store it and its accounts, and link every account whose IBAN
  * is already one of Centje's. A reconnect to the same bank replaces the old connection,
- * keeping each account's link and last synced date.
+ * keeping each account's link and last synced date, and the connection's "Import from".
  */
 export async function completeBankAuth(params: { state: string | null; code: string | null; error: string | null }): Promise<CallbackOutcome> {
   const pending = await readPending();
@@ -167,6 +170,7 @@ export async function completeBankAuth(params: { state: string | null; code: str
       sessionId: session.session_id,
       validUntil: session.access.valid_until,
       status: "active",
+      importFrom: previous.find((p) => p.connection.importFrom)?.connection.importFrom ?? null,
     })
     .returning({ id: bankConnections.id });
 
@@ -229,6 +233,8 @@ export interface BankConnectionView {
   expired: boolean;
   lastSyncedAt: string | null;
   lastResult: BankSyncSummary | null;
+  /** YYYY-MM-DD: nothing older is synced; null = all the history the bank gives. */
+  importFrom: string | null;
   accounts: ConnectedAccountView[];
 }
 
@@ -262,6 +268,7 @@ export async function listBankConnections(): Promise<BankConnectionView[]> {
     expired: isExpired(c),
     lastSyncedAt: c.lastSyncedAt,
     lastResult: parseSummary(c.lastResult),
+    importFrom: c.importFrom ?? null,
     accounts: accounts
       .filter((a) => a.account.connectionId === c.id)
       .map(({ account, bankName, bankNumber }) => ({
@@ -339,6 +346,21 @@ async function fillCardType(bankId: number, cardType: DetectedCardType | null) {
   await db.update(banks).set({ cardType }).where(and(eq(banks.id, bankId), isNull(banks.cardType)));
 }
 
+/**
+ * Sets (or clears, with null) a connection's "Import from". Moving it earlier, or clearing
+ * it, resets the accounts' last synced dates so the next sync fetches the stretch it now
+ * allows; moving it later only stops older rows coming in (rows already there stay).
+ */
+export async function setImportFrom(connectionId: number, importFrom: string | null): Promise<boolean> {
+  const [connection] = await db.select().from(bankConnections).where(eq(bankConnections.id, connectionId)).limit(1);
+  if (!connection) return false;
+  await db.update(bankConnections).set({ importFrom }).where(eq(bankConnections.id, connectionId));
+  if (importFromMovedEarlier(connection.importFrom, importFrom)) {
+    await db.update(bankConnectionAccounts).set({ lastSyncedDate: null }).where(eq(bankConnectionAccounts.connectionId, connectionId));
+  }
+  return true;
+}
+
 export async function disconnectBank(connectionId: number): Promise<void> {
   const [connection] = await db.select().from(bankConnections).where(eq(bankConnections.id, connectionId)).limit(1);
   if (!connection) return;
@@ -359,7 +381,7 @@ interface EbTransactionPage {
   continuation_key?: string | null;
 }
 
-async function fetchBookedTransactions(accountUid: string, dateFrom: string | null): Promise<{ ok: true; rows: EbTransaction[] } | { ok: false; error: BankApiError }> {
+async function fetchBookedTransactions(accountUid: string, window: SyncWindow): Promise<{ ok: true; rows: EbTransaction[] } | { ok: false; error: BankApiError }> {
   const rows: EbTransaction[] = [];
   let continuationKey: string | null = null;
   for (let page = 0; page < MAX_PAGES; page++) {
@@ -369,8 +391,8 @@ async function fetchBookedTransactions(accountUid: string, dateFrom: string | nu
       {
         query: {
           transaction_status: "BOOK",
-          // The first sync asks for as much history as the bank will give.
-          ...(dateFrom ? { date_from: dateFrom } : { strategy: "longest" }),
+          // The first sync asks from "Import from", or for as much history as the bank gives.
+          ...window,
           continuation_key: continuationKey,
         },
       },
@@ -462,15 +484,24 @@ async function syncOne(connection: BankConnection): Promise<BankSyncSummary> {
       const fileUnder = normalizeAccountNumber(accountNumber) ?? normalizeAccountNumber(account.iban);
       if (!fileUnder) continue;
 
-      const fetched = await fetchBookedTransactions(account.accountUid, syncDateFrom(account.lastSyncedDate));
+      const window = syncWindow(account.lastSyncedDate, connection.importFrom);
+      let fetched = await fetchBookedTransactions(account.accountUid, window);
+      // Some banks refuse a date_from before the history they keep: on the first sync,
+      // ask for what they have instead (rows before "Import from" are dropped below).
+      if (!fetched.ok && fetched.error === "badRequest" && "date_from" in window && !account.lastSyncedDate) {
+        fetched = await fetchBookedTransactions(account.accountUid, { strategy: "longest" });
+      }
       if (!fetched.ok) {
         const expired = fetched.error === "sessionExpired";
         return finish({ imported, alreadyThere, at, error: expired ? "expired" : fetched.error }, expired);
       }
       if (account.bankId != null) await fillMissingAccountType(account, account.bankId);
-      const rows = fetched.rows
-        .map((tx) => mapEnableBankingTransaction(tx, { iban, account: fileUnder }))
-        .filter((r): r is ParsedRow => r != null);
+      const rows = dropBeforeImportFrom(
+        fetched.rows
+          .map((tx) => mapEnableBankingTransaction(tx, { iban, account: fileUnder }))
+          .filter((r): r is ParsedRow => r != null),
+        connection.importFrom,
+      );
       const { fresh, present } = await dropRowsAlreadyImported(rows, fileUnder);
       const result = fresh.length > 0 ? await importParsedRows(fresh, { source: "bank" }) : null;
       imported += result?.imported ?? 0;

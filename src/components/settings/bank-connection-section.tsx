@@ -19,6 +19,7 @@ import { ClearField, ClearInput } from "@/components/clear/field";
 import { IconTile } from "@/components/clear/icon-tile";
 import { clearButtonVariants } from "@/components/clear/button-variants";
 import { ClearSelect } from "@/components/settings/accounts/clear-select";
+import { DatePicker } from "@/components/date-picker";
 import { RowIconButton, SettingsEmpty, SettingsNotice, SettingsSearch, SettingsSection } from "@/components/settings/settings-ui";
 import { AnchoredTip } from "@/components/anchored-tip";
 import { useBankErrorText } from "@/components/settings/bank-error-text";
@@ -28,6 +29,7 @@ import {
   listBankChoicesAction,
   saveAccountLinksAction,
   saveBankSettingsAction,
+  setBankImportFromAction,
   startBankConnectAction,
   syncBankAction,
   testBankConnectionAction,
@@ -44,9 +46,22 @@ function useDates() {
   const locale = useLocale();
   return useMemo(() => {
     const day = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
-    return { day: (iso: string) => day.format(new Date(iso)) };
+    return {
+      day: (iso: string) => day.format(new Date(iso)),
+      // A plain YYYY-MM-DD is a local calendar day, not UTC midnight.
+      date: (ymd: string) => day.format(new Date(`${ymd}T00:00:00`)),
+    };
   }, [locale]);
 }
+
+function localToday() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/** The "Import from" chip on a connection: tap it to pick another date or clear it. */
+const IMPORT_FROM_CHIP =
+  "h-7 w-auto max-w-full gap-1.5 rounded-full border-0 bg-clear-lilac px-3 text-[13px] font-extrabold text-clear-lilac-ink [&_svg]:size-3.5 focus-visible:border-0 data-open:border-0";
 
 /**
  * Bank connection (the Import page, Settings › Import): the Enable Banking application id and private
@@ -358,6 +373,7 @@ function ConnectionTile({
   const dates = useDates();
   const confirm = useConfirm();
   const [busy, setBusy] = useState(false);
+  const [dateError, setDateError] = useState(false);
   const unmapped = connection.accounts.some((a) => !a.mapped);
   const linked = connection.accounts.filter((a) => a.bankId != null).length;
 
@@ -370,6 +386,20 @@ function ConnectionTile({
       return;
     }
     window.location.assign(result.url);
+  }
+
+  async function changeImportFrom(next: string | null) {
+    if (next === connection.importFrom) return;
+    if (next && next > localToday()) {
+      setDateError(true);
+      return;
+    }
+    setDateError(false);
+    setBusy(true);
+    const result = await setBankImportFromAction(connection.id, next).catch(() => ({ error: "unavailable" as const }));
+    setBusy(false);
+    if ("error" in result) onError(result.error);
+    else onChanged(result);
   }
 
   async function disconnect() {
@@ -400,7 +430,19 @@ function ConnectionTile({
               <ClearChip tone="mint">{t("validUntil", { date: dates.day(connection.validUntil) })}</ClearChip>
             )}
             {unmapped && !connection.expired && <ClearChip tone="butter">{t("needsLinking")}</ClearChip>}
+            {connection.importFrom && (
+              <span className="inline-flex max-w-full">
+                <DatePicker
+                  value={connection.importFrom}
+                  onChange={(next) => void changeImportFrom(next)}
+                  onClear={() => void changeImportFrom(null)}
+                  label={t("importFromChip", { date: dates.date(connection.importFrom) })}
+                  triggerClassName={IMPORT_FROM_CHIP}
+                />
+              </span>
+            )}
           </div>
+          {dateError && <span role="alert" className="text-[13px] font-semibold text-clear-negative">{t("importFromFuture")}</span>}
         </div>
         <RowIconButton label={t("disconnect")} onClick={() => void disconnect()} disabled={busy} danger>
           <IconTrash aria-hidden stroke={2} />
@@ -566,6 +608,9 @@ function AccountMappingDialog({
   const ids = useId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [importFrom, setImportFrom] = useState(connection.importFrom ?? "");
+  const dates = useDates();
+  const importFromInFuture = !!importFrom && importFrom > localToday();
   const [choices, setChoices] = useState<Record<number, Choice>>(() =>
     Object.fromEntries(
       connection.accounts.map((a) => {
@@ -593,8 +638,18 @@ function AccountMappingDialog({
   ];
 
   async function save(andSync: boolean) {
+    if (importFromInFuture) return;
     setBusy(true);
     setError(null);
+    // The date goes first, so the sync below already asks the bank from it.
+    if ((importFrom || null) !== connection.importFrom) {
+      const dated = await setBankImportFromAction(connection.id, importFrom || null).catch(() => ({ error: "unavailable" as const }));
+      if ("error" in dated) {
+        setBusy(false);
+        setError(errorText(dated.error));
+        return;
+      }
+    }
     const links = connection.accounts.map((a) => {
       const choice = choices[a.id] ?? "skip";
       return { accountId: a.id, choice: choice === "new" ? ("new" as const) : choice === "skip" ? null : Number(choice) };
@@ -654,12 +709,28 @@ function AccountMappingDialog({
         })}
         <AnchoredTip id="bankAccountType" anchor="bankAccountType" active={firstTyped >= 0} />
         <p className="m-0 text-[13px] text-clear-muted">{t("mapHint")}</p>
+        <div data-tip-anchor="bankImportFrom" role="group" aria-labelledby={`${ids}-from`} className="flex flex-col gap-1.5">
+          <span id={`${ids}-from`} className="text-[13px] font-bold text-clear-ink-2">{t("importFrom")}</span>
+          <DatePicker
+            value={importFrom}
+            onChange={setImportFrom}
+            onClear={() => setImportFrom("")}
+            label={importFrom ? dates.date(importFrom) : undefined}
+            placeholder={t("importFromAll")}
+          />
+          {importFromInFuture ? (
+            <span role="alert" className="text-[13px] font-semibold text-clear-negative">{t("importFromFuture")}</span>
+          ) : (
+            <span className="text-[13px] text-clear-muted">{t("importFromHint")}</span>
+          )}
+        </div>
+        <AnchoredTip id="bankImportFrom" anchor="bankImportFrom" active={firstTyped < 0 && connection.accounts.length > 0} />
         {error && <SettingsNotice>{error}</SettingsNotice>}
         <ClearDialogFooter>
-          <button type="button" onClick={() => void save(false)} disabled={busy} className={clearButtonVariants({ variant: "secondary" })}>
+          <button type="button" onClick={() => void save(false)} disabled={busy || importFromInFuture} className={clearButtonVariants({ variant: "secondary" })}>
             {t("mapSaveOnly")}
           </button>
-          <button type="button" onClick={() => void save(true)} disabled={busy} className={clearButtonVariants()}>
+          <button type="button" onClick={() => void save(true)} disabled={busy || importFromInFuture} className={clearButtonVariants()}>
             {busy ? t("syncing") : t("mapSaveSync")}
           </button>
         </ClearDialogFooter>

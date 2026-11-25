@@ -1407,6 +1407,10 @@
       "title": "The bank says what kind of account it is",
       "body": "Arca sets that type when you link the account. You can change it later in Settings › Accounts."
     },
+    "bankImportFrom": {
+      "title": "Only want recent transactions?",
+      "body": "Pick an Import from date and Arca leaves anything older at the bank. Handy when a CSV already covers the past."
+    },
     "aiPicksKept": {
       "title": "AI suggestions are kept",
       "body": "What AI suggested earlier is still here after a reload, marked with a sparkle. Arca won't ask again for these transactions."
@@ -5221,6 +5225,11 @@
     "mapHint": "Accounts whose IBAN Arca already knows are linked for you.",
     "mapSaveOnly": "Save",
     "mapSaveSync": "Save and sync",
+    "importFrom": "Import from",
+    "importFromAll": "All history the bank gives",
+    "importFromHint": "Nothing older than this date comes in. Banks only share a limited stretch of history (often 90 days to a few years), so an earlier date can't reach further back than that.",
+    "importFromFuture": "Pick today or a date in the past.",
+    "importFromChip": "From {date}",
     "errors": {
       "notConfigured": "Save your application ID and private key first.",
       "invalidKey": "That private key can't be read. Paste the whole .pem file, BEGIN and END lines included.",

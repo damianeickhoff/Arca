@@ -49,9 +49,12 @@ export function AnchoredTip({
 
   // Look for the anchor only while the tip is actually owed — every other render of
   // this component (the overwhelming majority, once the user has seen it) does no
-  // DOM work at all.
+  // DOM work at all. Once found, the anchor is kept while the tip is up: showing the
+  // tip records it as seen (pending turns false), and dropping the anchor then would
+  // take the tip down again a moment after it appeared.
+  const lookFor = pending || anchorEl != null;
   useEffect(() => {
-    if (!active || !pending) return;
+    if (!active || !lookFor) return;
     const deadline = Date.now() + ANCHOR_TIMEOUT_MS;
     let timer: ReturnType<typeof setTimeout> | undefined;
     function look() {
@@ -67,7 +70,7 @@ export function AnchoredTip({
       clearTimeout(timer);
       setAnchorEl(null);
     };
-  }, [id, anchor, active, pending]);
+  }, [id, anchor, active, lookFor]);
 
   // The slot is claimed (and the tip recorded as seen) only once the anchor is
   // resolved, so a tip whose control isn't on screen this time isn't spent. A control

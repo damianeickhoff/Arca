@@ -20,6 +20,7 @@ import {
   listAspsps,
   listBankConnections,
   saveAccountLinks,
+  setImportFrom,
   startBankAuth,
   syncBankConnections,
   type AccountLinkChoice,
@@ -27,6 +28,7 @@ import {
   type BankConnectionView,
   type SyncOutcome,
 } from "@/lib/bank-sync";
+import { parseImportFrom } from "@/lib/enable-banking/map";
 
 // Server actions behind Bank connection (the Import page and Settings › Import). The private key only ever
 // travels from the browser to here (when pasted), never back.
@@ -121,6 +123,20 @@ export async function saveAccountLinksAction(connectionId: number, links: { acco
   await saveAccountLinks(connectionId, clean);
   // A bank created from an account shows in the sidebar's account list.
   revalidatePath("/", "layout");
+  return panelData();
+}
+
+function localToday(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+/** Sets a connection's "Import from" (YYYY-MM-DD, not in the future), or clears it with null. */
+export async function setBankImportFromAction(connectionId: number, importFrom: string | null): Promise<BankPanelData | Failure> {
+  if (!(await getCurrentUser())) return { error: "signedOut" };
+  const parsed = parseImportFrom(importFrom, localToday());
+  if (!Number.isInteger(connectionId) || !parsed.ok) return { error: "badRequest" };
+  if (!(await setImportFrom(connectionId, parsed.value))) return { error: "badRequest" };
   return panelData();
 }
 

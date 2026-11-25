@@ -16,6 +16,8 @@ import type { TipAnchor } from "@/lib/tip-placement";
 export const TIP_IDS = [
   // Settings › Import › Bank connection: the account type chip in the link dialog
   "bankAccountType",
+  // … and its "Import from" date
+  "bankImportFrom",
   // feature tips
   "receiptScan",
   "csvImport",

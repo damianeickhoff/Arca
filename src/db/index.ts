@@ -642,6 +642,8 @@ addColumnIfMissing("recurring_items", "alt_match_patterns", "TEXT");
   // The bank's account type code (CACC, SVGS, …), behind banks.cardType on link. Accounts
   // linked before it was stored get it on their next sync (fillAccountTypes in bank-sync.ts).
   addColumnIfMissing("bank_connection_accounts", "cash_account_type", "TEXT");
+  // "Import from": the earliest date a connection syncs (null = all the bank's history).
+  addColumnIfMissing("bank_connections", "import_from", "TEXT");
 
   // Brand icon rules become merchant patterns, logos and colours (one time).
   migrateBrandRulesToMerchants(sqlite);

@@ -1407,6 +1407,10 @@
       "title": "De bank vertelt wat voor rekening het is",
       "body": "Arca zet dat type bij het koppelen. Je kunt het later wijzigen in Instellingen › Rekeningen."
     },
+    "bankImportFrom": {
+      "title": "Alleen recente transacties?",
+      "body": "Kies een datum bij Importeren vanaf en Arca laat alles wat ouder is bij de bank. Handig als een CSV het verleden al dekt."
+    },
     "aiPicksKept": {
       "title": "AI-voorstellen blijven bewaard",
       "body": "Wat AI eerder voorstelde staat er na herladen nog, met een sterretje. Arca vraagt het voor deze transacties niet opnieuw."
@@ -5221,6 +5225,11 @@
     "mapHint": "Rekeningen waarvan Arca de IBAN al kent, zijn al voor je gekoppeld.",
     "mapSaveOnly": "Opslaan",
     "mapSaveSync": "Opslaan en synchroniseren",
+    "importFrom": "Importeren vanaf",
+    "importFromAll": "Alle geschiedenis die de bank geeft",
+    "importFromHint": "Niets ouder dan deze datum komt binnen. Banken delen maar een beperkte periode terug (vaak 90 dagen tot een paar jaar), dus een eerdere datum gaat niet verder terug dan dat.",
+    "importFromFuture": "Kies vandaag of een datum in het verleden.",
+    "importFromChip": "Vanaf {date}",
     "errors": {
       "notConfigured": "Sla eerst je application ID en privésleutel op.",
       "invalidKey": "Die privésleutel is niet te lezen. Plak het hele .pem-bestand, met de BEGIN- en END-regels.",
